@@ -902,7 +902,6 @@ transition: color .3s ease; font-size: 14px;
 </select>
 <div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div>
 </div>
-<!-- Dynamic Fields Container -->
 <div id="dynamic-fields-container" class="dynamic-fields-container">
 <div class="dynamic-fields-title">
 <i class="fas fa-layer-group"></i>
@@ -910,7 +909,6 @@ transition: color .3s ease; font-size: 14px;
 </div>
 <div id="dynamic-fields-content"></div>
 </div>
-<!-- Mood Tags Section -->
 <div id="mood-tags-section" class="mood-tags-section">
 <div class="dynamic-fields-title">
 <i class="fas fa-smile"></i>
@@ -937,7 +935,6 @@ transition: color .3s ease; font-size: 14px;
 </div>
 </div>
 </div>
-<!-- Chapters Section -->
 <div id="chapters-section" class="chapters-section">
 <div class="dynamic-fields-title">
 <i class="fas fa-list-ol"></i>
@@ -949,7 +946,6 @@ transition: color .3s ease; font-size: 14px;
 <i class="fas fa-plus"></i> Add Chapter
 </button>
 </div>
-<!-- Quality Checklist -->
 <div class="quality-checklist">
 <div class="checklist-header">
 <span>Upload Quality Score</span>
@@ -1046,14 +1042,12 @@ Your content will be reviewed and published within 24 hours. Make sure to follow
 <span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span>
 </div>
 </div>
-<!-- Processing State -->
 <div id="processing-state" class="state-screen">
 <div class="success-icon processing-icon"><i class="fas fa-cog"></i></div>
 <h2 class="state-title">Processing Your Content</h2>
 <p class="state-message">🎉 Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p>
 <div class="spinner"></div>
 </div>
-<!-- Success State -->
 <div id="success-state" class="state-screen">
 <div class="success-icon"><i class="fas fa-check"></i></div>
 <h2 class="state-title">Upload Successful!</h2>
@@ -1078,7 +1072,9 @@ Your content will be reviewed and published within 24 hours. Make sure to follow
 </div>
 <div id="toast-container"></div>
 <script>
-// Initialize Supabase client
+// ============================================
+// SUPABASE INITIALIZATION
+// ============================================
 if (!window.supabaseClient) {
 window.supabaseClient = supabase.createClient(
 'https://ydnxqnbjoshvxteevemc.supabase.co',
@@ -1086,8 +1082,6 @@ window.supabaseClient = supabase.createClient(
 );
 console.log('✅ Global Supabase client initialized');
 }
-</script>
-<script>
 // ============================================
 // GENRE CONFIGURATION
 // ============================================
@@ -1096,7 +1090,7 @@ const genreConfig = {
 title: '🎬 Film Details',
 fields: [
 { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
-{ name: 'cast', type: 'tags', label: 'Cast (comma separated)', required: false, placeholder: 'e.g., Actor 1, Actor 2' },
+{ name: 'cast', type: 'tags', label: 'Cast', required: false, placeholder: 'Actor 1, Actor 2' },
 { name: 'release_year', type: 'number', label: 'Release Year', required: true, min: 1900, max: new Date().getFullYear() },
 { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
 { name: 'production_company', type: 'text', label: 'Production Company', required: false }
@@ -1163,7 +1157,6 @@ uses_playlist: true,
 playlist_type: 'series'
 }
 };
-
 // ============================================
 // GLOBAL VARIABLES
 // ============================================
@@ -1181,7 +1174,12 @@ let uploadStartTime = 0;
 let uploadStartBytes = 0;
 let lastLoadedBytes = 0;
 let lastUpdateTime = 0;
-
+// ============================================
+// DOM ELEMENTS
+// ============================================
+let loadingScreen, app, authModal, publishBtn, saveDraftBtn, profileBtn, backBtn;
+let notificationsBtn, searchBtn, progressSection, progressFill, progressPercentage;
+let progressText, progressSpeed, progressEta, uploadFormState, processingState, successState;
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -1211,7 +1209,10 @@ const div = document.createElement('div');
 div.textContent = text;
 return div.innerHTML;
 }
-
+function setLoading(loading) {
+loadingScreen.style.display = loading ? 'flex' : 'none';
+app.style.display = loading ? 'none' : 'block';
+}
 // ============================================
 // DYNAMIC FORM GENERATION
 // ============================================
@@ -1285,7 +1286,6 @@ container.querySelectorAll('.chapter-title').forEach(input => { input.addEventLi
 container.querySelectorAll('.remove-chapter').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt(e.target.dataset.index); chapters.splice(idx, 1); renderChaptersList(); }); });
 }
 function addChapter() { chapters.push({ time: '00:00', title: 'New Chapter' }); renderChaptersList(); }
-
 // ============================================
 // METADATA COLLECTION
 // ============================================
@@ -1315,7 +1315,6 @@ function collectChaptersData() {
 if (chapters.length === 0) return null;
 return chapters.map(chapter => ({ timestamp: chapter.time, title: chapter.title }));
 }
-
 // ============================================
 // PLAYLIST INTEGRATION
 // ============================================
@@ -1341,7 +1340,6 @@ await window.supabaseClient.from('collection_items').insert([{ collection_id: pl
 }
 return playlistId;
 }
-
 // ============================================
 // CONTENT RECORD CREATION
 // ============================================
@@ -1376,7 +1374,6 @@ if (!moodData) return;
 try { await window.supabaseClient.from('content_mood_tags').insert([{ content_id: contentId, primary_mood: moodData.primary_mood, mood_intensity: moodData.mood_intensity, tagged_by: moodData.tagged_by }]); console.log('✅ Mood tags added'); }
 catch (error) { console.error('Failed to add mood tags:', error); }
 }
-
 // ============================================
 // UPLOAD FUNCTIONS
 // ============================================
@@ -1447,7 +1444,6 @@ document.getElementById('upload-progress').classList.remove('active');
 if (currentXhr) { currentXhr.abort(); currentXhr = null; }
 uploadStartTime = 0; uploadStartBytes = 0; lastLoadedBytes = 0; lastUpdateTime = 0;
 }
-
 // ============================================
 // MEDIA HANDLING
 // ============================================
@@ -1565,7 +1561,6 @@ if (!isAutoGenerated) { showToast('Thumbnail image selected', 'success'); } else
 updateChecklist();
 saveDraftToLocalStorage();
 }
-
 // ============================================
 // UI UPDATES
 // ============================================
@@ -1640,7 +1635,6 @@ updateButtonsState();
 if (draft.hasMedia) { showToast(`Draft recovered: ${draft.mediaName}`, 'success'); }
 }
 }
-
 // ============================================
 // MAIN UPLOAD FLOW
 // ============================================
@@ -1705,7 +1699,6 @@ isUploading = false;
 updateButtonsState();
 } finally { isUploading = false; currentXhr = null; updateButtonsState(); }
 }
-
 // ============================================
 // EVENT LISTENERS & INITIALIZATION
 // ============================================
@@ -1750,9 +1743,108 @@ document.getElementById('auth-cancel-btn').addEventListener('click', () => { doc
 document.getElementById('back-btn').addEventListener('click', () => window.history.back());
 document.getElementById('profile-btn').addEventListener('click', () => { window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`; });
 }
-
 // ============================================
-// SEARCH & NOTIFICATIONS (FROM OLD VERSION)
+// AUTHENTICATION
+// ============================================
+async function checkAuthentication() {
+try {
+const sessionResponse = await window.supabaseClient.auth.getSession();
+const session = sessionResponse.data.session;
+const error = sessionResponse.error;
+if (error || !session?.user) { console.log('⚠️ User not authenticated'); return null; }
+currentSession = session;
+currentUserId = session.user.id;
+console.log('✅ Authenticated user ID:', currentUserId);
+await loadUserProfilePicture(session.user);
+await loadCreatorStreak();
+return session.user;
+} catch (error) { console.error('Auth check failed:', error); return null; }
+}
+async function loadCreatorStreak() {
+try {
+const streak = localStorage.getItem('creator_streak') || 0;
+const streakEl = document.getElementById('creator-streak');
+const streakCount = document.getElementById('streak-count');
+if (streakEl && streakCount) { streakCount.textContent = streak; streakEl.style.display = 'flex'; }
+} catch (error) { console.error('Error loading streak:', error); }
+}
+function getInitials(email) { if (!email) return 'U'; const parts = email.split('@')[0]; return parts.substring(0, 2).toUpperCase(); }
+function getInitialsFromName(fullName) { if (!fullName) return 'U'; const names = fullName.split(' '); if (names.length >= 2) { return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase(); } return fullName.charAt(0).toUpperCase(); }
+async function loadUserProfilePicture(user) {
+try {
+if (!user || !profileBtn) return;
+const placeholder = document.getElementById('userProfilePlaceholder');
+const displayName = user.email || 'User';
+const fallbackInitials = getInitials(user.email);
+while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
+const tempDiv = document.createElement('div');
+tempDiv.className = 'profile-placeholder';
+tempDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+tempDiv.textContent = fallbackInitials;
+placeholder.appendChild(tempDiv);
+const { data: profile, error: profileError } = await window.supabaseClient.from('user_profiles').select('*').eq('id', user.id).maybeSingle();
+if (profileError) { console.log('Profile query error:', profileError); return; }
+if (profile && profile.avatar_url) {
+let avatarUrl = profile.avatar_url;
+if (!avatarUrl.startsWith('http')) { if (avatarUrl.startsWith('avatars/')) { avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`; } else { avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`; } }
+while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
+const img = document.createElement('img');
+img.className = 'profile-img';
+img.alt = displayName;
+img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+img.src = avatarUrl;
+img.onerror = () => {
+const fallback = document.createElement('div');
+fallback.className = 'profile-placeholder';
+fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+const finalInitials = profile.full_name ? getInitialsFromName(profile.full_name) : fallbackInitials;
+fallback.textContent = finalInitials;
+while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
+placeholder.appendChild(fallback);
+};
+placeholder.appendChild(img);
+} else if (profile && profile.full_name) {
+const nameInitials = getInitialsFromName(profile.full_name);
+while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
+const nameDiv = document.createElement('div');
+nameDiv.className = 'profile-placeholder';
+nameDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+nameDiv.textContent = nameInitials;
+placeholder.appendChild(nameDiv);
+}
+} catch (error) { console.error('Error loading user profile picture:', error); }
+}
+// ============================================
+// SESSION RECOVERY
+// ============================================
+function setupSessionRecovery() {
+document.addEventListener('visibilitychange', async () => {
+if (document.visibilityState === 'visible') {
+try {
+const { data: { session } } = await window.supabaseClient.auth.getSession();
+if (session) {
+const expiresAt = session.expires_at * 1000;
+const now = Date.now();
+const fiveMinutes = 5 * 60 * 1000;
+if (expiresAt - now < fiveMinutes) { console.log('Token expiring soon, refreshing...'); const { data, error } = await window.supabaseClient.auth.refreshSession(); if (data?.session) { currentSession = data.session; console.log('Session refreshed'); } }
+}
+} catch (error) { console.error('Session check failed:', error); }
+}
+});
+setInterval(async () => {
+try {
+const { data: { session } } = await window.supabaseClient.auth.getSession();
+if (session) {
+const expiresAt = session.expires_at * 1000;
+const now = Date.now();
+const fiveMinutes = 5 * 60 * 1000;
+if (expiresAt - now < fiveMinutes) { console.log('Token expiring soon (interval check), refreshing...'); await window.supabaseClient.auth.refreshSession(); }
+}
+} catch (error) { console.error('Interval session check failed:', error); }
+}, 5 * 60 * 1000);
+}
+// ============================================
+// SEARCH & NOTIFICATIONS
 // ============================================
 function debounce(func, wait) {
 let timeout;
@@ -1798,7 +1890,7 @@ const searchModal = document.getElementById('search-modal');
 const searchInput = document.getElementById('search-input');
 const closeSearchBtn = document.getElementById('close-search-btn');
 if (!searchModal || !searchInput || !closeSearchBtn) return;
-document.getElementById('search-btn').addEventListener('click', () => { searchModal.classList.add('active'); setTimeout(() => searchInput.focus(), 300); });
+searchBtn.addEventListener('click', () => { searchModal.classList.add('active'); setTimeout(() => searchInput.focus(), 300); });
 closeSearchBtn.addEventListener('click', () => { searchModal.classList.remove('active'); searchInput.value = ''; document.getElementById('search-results-grid').innerHTML = ''; });
 searchModal.addEventListener('click', (e) => { if (e.target === searchModal) { searchModal.classList.remove('active'); searchInput.value = ''; document.getElementById('search-results-grid').innerHTML = ''; } });
 searchInput.addEventListener('input', debounce(async (e) => {
@@ -1862,110 +1954,11 @@ const notificationsPanel = document.getElementById('notifications-panel');
 const closeNotifications = document.getElementById('close-notifications');
 const markAllReadBtn = document.getElementById('mark-all-read');
 if (!notificationsPanel || !closeNotifications || !markAllReadBtn) return;
-document.getElementById('notifications-btn').addEventListener('click', () => { if (!currentUserId) { window.location.href = 'login.html?redirect=trending_screen.html'; return; } notificationsPanel.classList.add('active'); loadNotifications(); });
+notificationsBtn.addEventListener('click', () => { if (!currentUserId) { window.location.href = 'login.html?redirect=trending_screen.html'; return; } notificationsPanel.classList.add('active'); loadNotifications(); });
 closeNotifications.addEventListener('click', () => { notificationsPanel.classList.remove('active'); });
-document.addEventListener('click', (e) => { if (notificationsPanel.classList.contains('active') && !notificationsPanel.contains(e.target) && !document.getElementById('notifications-btn').contains(e.target)) { notificationsPanel.classList.remove('active'); } });
+document.addEventListener('click', (e) => { if (notificationsPanel.classList.contains('active') && !notificationsPanel.contains(e.target) && !notificationsBtn.contains(e.target)) { notificationsPanel.classList.remove('active'); } });
 markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
 }
-
-// ============================================
-// AUTH & PROFILE (FROM OLD VERSION)
-// ============================================
-function getInitials(email) { if (!email) return 'U'; const parts = email.split('@')[0]; return parts.substring(0, 2).toUpperCase(); }
-function getInitialsFromName(fullName) { if (!fullName) return 'U'; const names = fullName.split(' '); if (names.length >= 2) { return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase(); } return fullName.charAt(0).toUpperCase(); }
-async function loadUserProfilePicture(user) {
-try {
-if (!user || !document.getElementById('profile-btn')) return;
-const placeholder = document.getElementById('userProfilePlaceholder');
-const displayName = user.email || 'User';
-const fallbackInitials = getInitials(user.email);
-while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
-const tempDiv = document.createElement('div');
-tempDiv.className = 'profile-placeholder';
-tempDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-tempDiv.textContent = fallbackInitials;
-placeholder.appendChild(tempDiv);
-const { data: profile, error: profileError } = await window.supabaseClient.from('user_profiles').select('*').eq('id', user.id).maybeSingle();
-if (profileError) { console.log('Profile query error:', profileError); return; }
-if (profile && profile.avatar_url) {
-let avatarUrl = profile.avatar_url;
-if (!avatarUrl.startsWith('http')) { if (avatarUrl.startsWith('avatars/')) { avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`; } else { avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`; } }
-while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
-const img = document.createElement('img');
-img.className = 'profile-img';
-img.alt = displayName;
-img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-img.src = avatarUrl;
-img.onerror = () => {
-const fallback = document.createElement('div');
-fallback.className = 'profile-placeholder';
-fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-const finalInitials = profile.full_name ? getInitialsFromName(profile.full_name) : fallbackInitials;
-fallback.textContent = finalInitials;
-while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
-placeholder.appendChild(fallback);
-};
-placeholder.appendChild(img);
-} else if (profile && profile.full_name) {
-const nameInitials = getInitialsFromName(profile.full_name);
-while (placeholder.firstChild) { placeholder.removeChild(placeholder.firstChild); }
-const nameDiv = document.createElement('div');
-nameDiv.className = 'profile-placeholder';
-nameDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-nameDiv.textContent = nameInitials;
-placeholder.appendChild(nameDiv);
-}
-} catch (error) { console.error('Error loading user profile picture:', error); }
-}
-async function checkAuthentication() {
-try {
-const sessionResponse = await window.supabaseClient.auth.getSession();
-const session = sessionResponse.data.session;
-const error = sessionResponse.error;
-if (error || !session?.user) { console.log('⚠️ User not authenticated'); return null; }
-currentSession = session;
-currentUserId = session.user.id;
-console.log('✅ Authenticated user ID:', currentUserId);
-await loadUserProfilePicture(session.user);
-await loadCreatorStreak();
-return session.user;
-} catch (error) { console.error('Auth check failed:', error); return null; }
-}
-async function loadCreatorStreak() {
-try {
-const streak = localStorage.getItem('creator_streak') || 0;
-const streakEl = document.getElementById('creator-streak');
-const streakCount = document.getElementById('streak-count');
-if (streakEl && streakCount) { streakCount.textContent = streak; streakEl.style.display = 'flex'; }
-} catch (error) { console.error('Error loading streak:', error); }
-}
-function setupSessionRecovery() {
-document.addEventListener('visibilitychange', async () => {
-if (document.visibilityState === 'visible') {
-try {
-const { data: { session } } = await window.supabaseClient.auth.getSession();
-if (session) {
-const expiresAt = session.expires_at * 1000;
-const now = Date.now();
-const fiveMinutes = 5 * 60 * 1000;
-if (expiresAt - now < fiveMinutes) { console.log('Token expiring soon, refreshing...'); const { data, error } = await window.supabaseClient.auth.refreshSession(); if (data?.session) { currentSession = data.session; console.log('Session refreshed'); } }
-}
-} catch (error) { console.error('Session check failed:', error); }
-}
-});
-setInterval(async () => {
-try {
-const { data: { session } } = await window.supabaseClient.auth.getSession();
-if (session) {
-const expiresAt = session.expires_at * 1000;
-const now = Date.now();
-const fiveMinutes = 5 * 60 * 1000;
-if (expiresAt - now < fiveMinutes) { console.log('Token expiring soon (interval check), refreshing...'); await window.supabaseClient.auth.refreshSession(); }
-}
-} catch (error) { console.error('Interval session check failed:', error); }
-}, 5 * 60 * 1000);
-}
-
 // ============================================
 // POST-UPLOAD ACTIONS
 // ============================================
@@ -1995,37 +1988,96 @@ document.body.appendChild(confetti);
 setTimeout(() => confetti.remove(), 4000);
 }
 }
-
 // ============================================
-// INITIALIZATION
+// INITIALIZATION - CRITICAL FIX
 // ============================================
 async function initialize() {
-document.getElementById('loading').style.display = 'flex';
-document.getElementById('app').style.display = 'none';
+try {
+console.log('🚀 Starting initialization...');
+// Get DOM elements FIRST
+loadingScreen = document.getElementById('loading');
+app = document.getElementById('app');
+authModal = document.getElementById('auth-modal');
+publishBtn = document.getElementById('publish-btn');
+saveDraftBtn = document.getElementById('save-draft-btn');
+profileBtn = document.getElementById('profile-btn');
+backBtn = document.getElementById('back-btn');
+notificationsBtn = document.getElementById('notifications-btn');
+searchBtn = document.getElementById('search-btn');
+progressSection = document.getElementById('upload-progress');
+progressFill = document.getElementById('progress-fill');
+progressPercentage = document.getElementById('progress-percentage');
+progressText = document.getElementById('progress-text');
+progressSpeed = document.getElementById('progress-speed');
+progressEta = document.getElementById('progress-eta');
+uploadFormState = document.getElementById('upload-form-state');
+processingState = document.getElementById('processing-state');
+successState = document.getElementById('success-state');
+console.log('✅ DOM elements loaded');
+// Setup session recovery
 setupSessionRecovery();
+console.log('✅ Session recovery setup');
+// Check authentication
 let user = await checkAuthentication();
+console.log('✅ Auth check complete:', user ? 'logged in' : 'not logged in');
 if (!user) {
 try {
 const { data, error } = await window.supabaseClient.auth.refreshSession();
-if (!error && data.session) { user = data.session.user; currentSession = data.session; currentUserId = data.session.user.id; await loadUserProfilePicture(data.session.user); await loadCreatorStreak(); }
-} catch (refreshError) { console.error('Session refresh failed:', refreshError); }
+if (!error && data.session) {
+user = data.session.user;
+currentSession = data.session;
+currentUserId = data.session.user.id;
+await loadUserProfilePicture(data.session.user);
+await loadCreatorStreak();
 }
-if (!user) { document.getElementById('auth-modal').classList.add('active'); }
-else { const { data: { session } } = await window.supabaseClient.auth.getSession(); if (session) { currentSession = session; currentUserId = session.user.id; await loadUserProfilePicture(session.user); } }
+} catch (refreshError) {
+console.error('Session refresh failed:', refreshError);
+}
+}
+if (!user) {
+authModal.classList.add('active');
+} else {
+const { data: { session } } = await window.supabaseClient.auth.getSession();
+if (session) {
+currentSession = session;
+currentUserId = session.user.id;
+await loadUserProfilePicture(session.user);
+}
+}
+console.log('✅ User state set');
+// Setup all event listeners
 setupEventListeners();
 setupSearchModal();
 setupNotificationsPanel();
+console.log('✅ Event listeners setup');
+// Initialize form state
 updateGenreForm();
 updateButtonsState();
 updateChecklist();
+console.log('✅ Form state initialized');
+// Load draft recovery
 loadDraftFromLocalStorage();
-if (currentUserId) { loadNotifications(); }
-document.getElementById('loading').style.display = 'none';
-document.getElementById('app').style.display = 'block';
-console.log('✅ Creator Upload initialized with all features');
+console.log('✅ Draft loaded');
+// Load notifications if authenticated
+if (currentUserId) {
+loadNotifications();
+console.log('✅ Notifications loaded');
 }
+// CRITICAL: Hide loading screen
+setLoading(false);
+console.log('✅ Loading screen hidden - initialization complete');
+} catch (error) {
+console.error('❌ Initialization failed:', error);
+setLoading(false);
+showToast('Failed to load upload page', 'error');
+}
+}
+// Start initialization when DOM is ready
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', initialize);
+} else {
 initialize();
-
+}
 // ============================================
 // AUTH STATE LISTENER
 // ============================================
@@ -2038,7 +2090,7 @@ currentUserId = session.user.id;
 await loadUserProfilePicture(session.user);
 await loadNotifications();
 await loadCreatorStreak();
-document.getElementById('auth-modal').classList.remove('active');
+authModal.classList.remove('active');
 isUploading = false;
 updateButtonsState();
 showToast('Welcome back!', 'success');
@@ -2051,7 +2103,6 @@ updateNotificationBadge(0);
 showToast('Signed out successfully', 'info');
 }
 });
-
 // ============================================
 // GLOBAL FUNCTIONS
 // ============================================
