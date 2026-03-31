@@ -4,13 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Upload Content - Bantu Stream Connect</title>
-<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -341,10 +338,6 @@ display: flex; align-items: center; justify-content: center; gap: 8px;
 transition: all .3s ease;
 }
 .thumbnail-btn:hover { background: rgba(255,255,255,.1); border-color: var(--warm-gold); }
-.thumbnail-btn.primary {
-background: linear-gradient(135deg,var(--warm-gold),#f97316);
-color: var(--deep-black); border: none; font-weight: 600;
-}
 .quality-checklist {
 background: rgba(29,78,216,.1);
 border: 1px solid var(--bantu-blue);
@@ -782,45 +775,32 @@ transition: color .3s ease; font-size: 14px;
 <i class="search-icon fas fa-search"></i>
 <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
 </div>
-<button id="close-search-btn" class="close-search-btn">
-<i class="fas fa-times"></i>
-</button>
+<button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
 </div>
 <div class="search-filters">
 <div class="filter-group">
 <label class="filter-label">Category</label>
 <select id="category-filter" class="filter-select">
 <option value="">All Categories</option>
-<option value="Music">Music</option>
-<option value="STEM">STEM</option>
-<option value="Culture">Culture</option>
-<option value="News">News</option>
-<option value="Sports">Sports</option>
-<option value="Movies">Movies</option>
-<option value="Documentaries">Documentaries</option>
-<option value="Podcasts">Podcasts</option>
+<option value="Music">Music</option><option value="STEM">STEM</option><option value="Culture">Culture</option>
+<option value="News">News</option><option value="Sports">Sports</option><option value="Movies">Movies</option>
+<option value="Documentaries">Documentaries</option><option value="Podcasts">Podcasts</option>
 </select>
 </div>
 <div class="filter-group">
 <label class="filter-label">Sort By</label>
 <select id="sort-filter" class="filter-select">
-<option value="newest">Newest First</option>
-<option value="popular">Most Popular</option>
-<option value="trending">Trending</option>
+<option value="newest">Newest First</option><option value="popular">Most Popular</option><option value="trending">Trending</option>
 </select>
 </div>
 </div>
-<div class="search-results">
-<div id="search-results-grid" class="search-results-grid"></div>
-</div>
+<div class="search-results"><div id="search-results-grid" class="search-results-grid"></div></div>
 </div>
 </div>
 <div id="notifications-panel" class="notifications-panel">
 <div class="notifications-header">
 <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;margin:0;color:var(--soft-white)">Notifications</h2>
-<button id="close-notifications" class="close-search-btn">
-<i class="fas fa-times"></i>
-</button>
+<button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
 </div>
 <div class="notifications-list" id="notifications-list"></div>
 <div class="notifications-footer">
@@ -831,1914 +811,996 @@ transition: color .3s ease; font-size: 14px;
 <div id="app">
 <header class="header">
 <div class="logo" onclick="window.location.href='index.html'">
-<div class="logo-icon">
-<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-</div>
+<div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo"></div>
 <div class="logo-text">BANTU STREAM CONNECT</div>
 </div>
 <div style="display:flex;gap:10px;align-items:center">
 <button id="back-btn" class="icon-btn" title="Go Back"><i class="fas fa-arrow-left"></i></button>
 <button id="search-btn" class="icon-btn" title="Search"><i class="fas fa-search"></i></button>
-<button id="notifications-btn" class="icon-btn" title="Notifications">
-<i class="fas fa-bell"></i>
-<span class="notification-badge" id="notification-count" style="display:none">0</span>
-</button>
-<button id="profile-btn" class="profile-btn" title="Profile">
-<div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
-</button>
+<button id="notifications-btn" class="icon-btn" title="Notifications"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display:none">0</span></button>
+<button id="profile-btn" class="profile-btn" title="Profile"><div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div></button>
 </div>
 </header>
 <main>
 <div class="upload-card">
-<div class="creator-streak" id="creator-streak" style="display:none">
-<i class="fas fa-fire"></i>
-<span id="streak-count">0</span> Uploads This Week
-</div>
+<div class="creator-streak" id="creator-streak" style="display:none"><i class="fas fa-fire"></i><span id="streak-count">0</span> Uploads This Week</div>
 <h1>UPLOAD YOUR CONTENT</h1>
 <div id="upload-form-state">
 <form id="upload-form">
 <div class="form-group">
 <label class="form-label">Content Type <span>*</span></label>
 <div class="media-type-selector">
-<div class="media-type-option selected" data-type="regular">
-<i class="fas fa-video"></i>Regular Video
-</div>
-<div class="media-type-option" data-type="short">
-<i class="fas fa-bolt"></i>Short/Reel
-</div>
+<div class="media-type-option selected" data-type="regular"><i class="fas fa-video"></i>Regular Video</div>
+<div class="media-type-option" data-type="short"><i class="fas fa-bolt"></i>Short/Reel</div>
 </div>
 <div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Shorts are vertical videos under 60 seconds that appear in the Quick Bits section</div>
 </div>
 <div class="shorts-info-box" id="shorts-info">
 <h4><i class="fas fa-info-circle"></i> Shorts Guidelines</h4>
-<ul>
-<li><i class="fas fa-check"></i> Maximum duration: 60 seconds</li>
-<li><i class="fas fa-check"></i> Recommended aspect ratio: 9:16 (vertical)</li>
-<li><i class="fas fa-check"></i> Add trending audio for better discovery</li>
-<li><i class="fas fa-check"></i> Use engaging thumbnails to attract viewers</li>
-</ul>
+<ul><li><i class="fas fa-check"></i> Maximum duration: 60 seconds</li><li><i class="fas fa-check"></i> Recommended aspect ratio: 9:16 (vertical)</li><li><i class="fas fa-check"></i> Add trending audio for better discovery</li><li><i class="fas fa-check"></i> Use engaging thumbnails to attract viewers</li></ul>
 </div>
-<div class="form-group">
-<label class="form-label">Title <span>*</span></label>
-<input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required>
-</div>
-<div class="form-group">
-<label class="form-label">Description <span>*</span></label>
-<textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea>
-</div>
-<div class="form-group">
-<label class="form-label">Genre/Category <span>*</span></label>
-<select id="content-genre" class="form-input" required>
-<option value="">Select a genre (required)</option>
-<option value="Film">🎬 Film</option>
-<option value="Documentary">📽️ Documentary</option>
-<option value="Series">📺 Series</option>
-<option value="Music">🎵 Music</option>
-<option value="Podcast">🎙️ Podcast</option>
-<option value="Shorts">⚡ Shorts</option>
-<option value="STEM">🔬 STEM</option>
-<option value="Culture">🌍 Culture</option>
-<option value="News">📰 News</option>
-<option value="Sports">⚽ Sports</option>
-<option value="Skits">😂 Skits</option>
-</select>
-<div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div>
-</div>
-<div id="dynamic-fields-container" class="dynamic-fields-container">
-<div class="dynamic-fields-title">
-<i class="fas fa-layer-group"></i>
-<span id="dynamic-fields-title">Additional Details</span>
-</div>
-<div id="dynamic-fields-content"></div>
-</div>
-<div id="mood-tags-section" class="mood-tags-section">
-<div class="dynamic-fields-title">
-<i class="fas fa-smile"></i>
-<span>Mood & Energy Tags</span>
-</div>
-<p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and podcasts)</p>
-<div class="mood-grid" id="mood-grid">
-<button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button>
-<button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button>
-<button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button>
-<button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button>
-<button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button>
-<button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button>
-<button type="button" class="mood-option" data-mood="educational">📚 Educational</button>
-<button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button>
-<button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button>
-<button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button>
-</div>
-<div style="margin-top:15px">
-<label class="form-label">Mood Intensity (1-10)</label>
-<input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%">
-<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)">
-<span>Subtle</span><span>Moderate</span><span>Intense</span>
-</div>
-</div>
-</div>
-<div id="chapters-section" class="chapters-section">
-<div class="dynamic-fields-title">
-<i class="fas fa-list-ol"></i>
-<span>Chapter Markers</span>
-</div>
-<p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p>
-<div id="chapters-list"></div>
-<button type="button" id="add-chapter-btn" class="add-chapter-btn">
-<i class="fas fa-plus"></i> Add Chapter
-</button>
-</div>
-<div class="quality-checklist">
-<div class="checklist-header">
-<span>Upload Quality Score</span>
-<span class="checklist-score" id="quality-score">0%</span>
-</div>
-<div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div>
-<div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div>
-<div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div>
-<div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div>
-<div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div>
-<div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div>
-</div>
-<div class="form-group">
-<label class="form-label">Media File (Video/Audio) <span>*</span></label>
-<div id="media-upload-zone" class="upload-zone">
-<div class="upload-zone-icon"><i class="fas fa-video"></i></div>
-<div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div>
-<div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div>
-</div>
-<div class="duration-display" id="duration-display" style="display: none;">
-<i class="fas fa-clock"></i>
-<span id="duration-text">Duration: --:--</span>
-<span id="duration-status"></span>
-<span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span>
-</div>
-<div id="media-file-info" class="file-info">
-<div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div>
-<div style="flex:1">
-<div class="file-name" id="media-file-name"></div>
-<div class="file-size" id="media-file-size"></div>
-</div>
-<div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div>
-</div>
-<input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none">
-</div>
-<div class="form-group thumbnail-section">
-<label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label>
-<div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px">
-<i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.
-</div>
-<div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px">
-<div class="upload-zone-icon"><i class="fas fa-image"></i></div>
-<div class="upload-zone-text">Click or drag thumbnail image here</div>
-<div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div>
-</div>
-<div id="thumbnail-preview" class="thumbnail-preview">
-<img id="thumbnail-image" src="" alt="Thumbnail Preview">
-</div>
-<div class="thumbnail-actions">
-<button type="button" class="thumbnail-btn" onclick="window.openImagePicker()">
-<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-<circle cx="8.5" cy="8.5" r="1.5"/>
-<polyline points="21 15 16 10 5 21"/>
-</svg>
-Choose from Gallery
-</button>
-<button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()">
-<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-<circle cx="12" cy="13" r="4"/>
-</svg>
-Take Photo
-</button>
-</div>
-<input type="file" id="thumbnail-file-input" accept="image/*" style="display:none">
-<input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none">
-</div>
-<div id="upload-progress" class="upload-progress">
-<div class="progress-header">
-<span>Uploading...</span>
-<span id="progress-percentage">0%</span>
-</div>
-<div class="progress-bar">
-<div id="progress-fill" class="progress-fill"></div>
-</div>
-<div class="progress-stats">
-<span id="progress-speed">Speed: 0 MB/s</span>
-<span id="progress-eta">ETA: --:--</span>
-</div>
-<div id="progress-text" style="margin-top:10px;text-align:center">Preparing upload...</div>
-</div>
-<div class="action-buttons">
-<button type="button" id="save-draft-btn" class="action-btn draft" disabled>
-<i class="fas fa-save"></i> Save Draft
-</button>
-<button type="submit" id="publish-btn" class="action-btn publish" disabled>
-<i class="fas fa-cloud-upload-alt"></i> Publish Content
-</button>
-</div>
+<div class="form-group"><label class="form-label">Title <span>*</span></label><input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required></div>
+<div class="form-group"><label class="form-label">Description <span>*</span></label><textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea></div>
+<div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
+<div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
+<div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and podcasts)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
+<div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
+<div class="quality-checklist"><div class="checklist-header"><span>Upload Quality Score</span><span class="checklist-score" id="quality-score">0%</span></div><div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div><div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div><div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div><div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div><div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div><div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div></div>
+<div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none"></div>
+<div class="form-group thumbnail-section"><label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label><div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px"><i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.</div><div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag thumbnail image here</div><div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div></div><div id="thumbnail-preview" class="thumbnail-preview"><img id="thumbnail-image" src="" alt="Thumbnail Preview"></div><div class="thumbnail-actions"><button type="button" class="thumbnail-btn" onclick="window.openImagePicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Choose from Gallery</button><button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button></div><input type="file" id="thumbnail-file-input" accept="image/*" style="display:none"><input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none"></div>
+<div id="upload-progress" class="upload-progress"><div class="progress-header"><span>Uploading...</span><span id="progress-percentage">0%</span></div><div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div><div class="progress-stats"><span id="progress-speed">Speed: 0 MB/s</span><span id="progress-eta">ETA: --:--</span></div><div id="progress-text" style="margin-top:10px;text-align:center">Preparing upload...</div></div>
+<div class="action-buttons"><button type="button" id="save-draft-btn" class="action-btn draft" disabled><i class="fas fa-save"></i> Save Draft</button><button type="submit" id="publish-btn" class="action-btn publish" disabled><i class="fas fa-cloud-upload-alt"></i> Publish Content</button></div>
 </form>
-<div class="helper-text">
-Your content will be reviewed and published within 24 hours. Make sure to follow our community guidelines.<br>
-<span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span>
+<div class="helper-text">Your content will be reviewed and published within 24 hours. Make sure to follow our community guidelines.<br><span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span></div>
 </div>
-</div>
-<div id="processing-state" class="state-screen">
-<div class="success-icon processing-icon"><i class="fas fa-cog"></i></div>
-<h2 class="state-title">Processing Your Content</h2>
-<p class="state-message">
-🎉 Your content is now processing and will appear in feeds shortly.<br>
-Estimated processing time: 30–60 seconds
-</p>
-<div class="spinner"></div>
-</div>
-<div id="success-state" class="state-screen">
-<div class="success-icon"><i class="fas fa-check"></i></div>
-<h2 class="state-title">Upload Successful!</h2>
-<p class="state-message">
-🚀 Your content is now live!<br>
-We're starting to show it to viewers who enjoy this type of content.<br>
-Share your content with your community to boost early engagement.
-</p>
-<div class="post-upload-actions">
-<div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div>
-<div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div>
-<div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div>
-<div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div>
-</div>
-</div>
+<div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message">🎉 Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
+<div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">🚀 Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
 </div>
 </main>
-<footer class="footer">
-<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
-<div class="footer-links">
-<a href="privacy-policy.html">Privacy Policy</a>
-<a href="terms-of-service.html">Terms of Service</a>
-<a href="support.html">Support</a>
-</div>
-</footer>
+<footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
 </div>
 <div id="toast-container"></div>
-
-<!-- Initialize Supabase Client -->
 <script>
 if (!window.supabaseClient) {
-  window.supabaseClient = supabase.createClient(
-    'https://ydnxqnbjoshvxteevemc.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-  );
-  console.log('✅ Global Supabase client initialized');
+    window.supabaseClient = supabase.createClient(
+        'https://ydnxqnbjoshvxteevemc.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+    );
 }
 </script>
 
 <script>
-// ============================================
-// GENRE-SPECIFIC FORM CONFIGURATION
-// ============================================
-const genreConfig = {
-  'Film': {
-    title: '🎬 Film Details',
-    fields: [
-      { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
-      { name: 'cast', type: 'tags', label: 'Cast (comma separated)', required: false, placeholder: 'e.g., Actor 1, Actor 2' },
-      { name: 'release_year', type: 'number', label: 'Release Year', required: true, min: 1900, max: new Date().getFullYear() },
-      { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
-      { name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' },
-      { name: 'runtime', type: 'duration', label: 'Runtime', required: false, note: 'Auto-detected from video' }
-    ],
-    content_format: 'film',
-    requires_chapters: false,
-    requires_mood: false
-  },
-  'Documentary': {
-    title: '📽️ Documentary Details',
-    fields: [
-      { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
-      { name: 'subject_matter', type: 'tags', label: 'Subject Matter', required: true, placeholder: 'e.g., Nature, Politics, History' },
-      { name: 'interview_subjects', type: 'tags', label: 'Interview Subjects', required: false, placeholder: 'e.g., Person 1, Person 2' },
-      { name: 'production_year', type: 'number', label: 'Production Year', required: true, min: 1900, max: new Date().getFullYear() },
-      { name: 'research_sources', type: 'tags', label: 'Research Sources', required: false, placeholder: 'e.g., University, Archive' },
-      { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'Not Rated'] }
-    ],
-    content_format: 'documentary',
-    requires_chapters: false,
-    requires_mood: true
-  },
-  'Series': {
-    title: '📺 Series Episode Details',
-    fields: [
-      { name: 'show_title', type: 'text', label: 'Show Title', required: true, placeholder: 'e.g., Bantu Stories' },
-      { name: 'season_number', type: 'number', label: 'Season Number', required: true, min: 1, placeholder: '1' },
-      { name: 'episode_number', type: 'number', label: 'Episode Number', required: true, min: 1, placeholder: '1' },
-      { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning' },
-      { name: 'series_description', type: 'textarea', label: 'Series Description', required: false, rows: 3 }
-    ],
-    content_format: 'series_episode',
-    requires_chapters: true,
-    requires_mood: true,
-    uses_playlist: true,
-    playlist_type: 'series'
-  },
-  'Music': {
-    title: '🎵 Music Details',
-    fields: [
-      { name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up' },
-      { name: 'artist_name', type: 'text', label: 'Artist Name', required: true, placeholder: 'e.g., Bantu Artist' },
-      { name: 'album_title', type: 'text', label: 'Album Title (optional)', required: false, placeholder: 'e.g., African Dreams' },
-      { name: 'track_number', type: 'number', label: 'Track Number', required: false, min: 1, placeholder: '1' },
-      { name: 'featured_artists', type: 'tags', label: 'Featured Artists', required: false, placeholder: 'e.g., Artist 1, Artist 2' },
-      { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
-      { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
-      { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
-    ],
-    content_format: 'album_track',
-    requires_chapters: false,
-    requires_mood: true,
-    uses_playlist: true,
-    playlist_type: 'album'
-  },
-  'Podcast': {
-    title: '🎙️ Podcast Episode Details',
-    fields: [
-      { name: 'show_title', type: 'text', label: 'Podcast Show Title', required: true, placeholder: 'e.g., Bantu Voices' },
-      { name: 'season_number', type: 'number', label: 'Season Number', required: false, min: 1, placeholder: '1' },
-      { name: 'episode_number', type: 'number', label: 'Episode Number', required: false, min: 1, placeholder: '1' },
-      { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Journey Begins' },
-      { name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
-      { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false }
-    ],
-    content_format: 'podcast_episode',
-    requires_chapters: true,
-    requires_mood: true,
-    uses_playlist: true,
-    playlist_type: 'series'
-  }
-};
-
-// ============================================
-// GLOBAL VARIABLES
-// ============================================
-let selectedMediaFile = null;
-let selectedThumbnailFile = null;
-let currentUserId = null;
-let currentSession = null;
-let isUploading = false;
-let selectedMediaType = 'regular';
-let extractedDuration = null;
-let currentXhr = null;
-let selectedMood = null;
-let chapters = [];
-let currentUserEmail = null;
-let uploadStartTime = 0;
-let uploadStartBytes = 0;
-let lastLoadedBytes = 0;
-let lastUpdateTime = 0;
-
-// ============================================
-// UI HELPERS
-// ============================================
-function setLoading(loading) {
-  document.getElementById('loading').style.display = loading ? 'flex' : 'none';
-  document.getElementById('app').style.display = loading ? 'none' : 'block';
-}
-
-function showToast(message, type = 'error') {
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
-  document.getElementById('toast-container').appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function formatTime(seconds) {
-  if (!seconds && seconds !== 0) return '--:--';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function resetProgress() {
-  document.getElementById('progress-fill').style.width = '0%';
-  document.getElementById('progress-percentage').textContent = '0%';
-  document.getElementById('progress-speed').textContent = 'Speed: 0 MB/s';
-  document.getElementById('progress-eta').textContent = 'ETA: --:--';
-  document.getElementById('progress-text').textContent = 'Preparing upload...';
-  document.getElementById('upload-progress').classList.remove('active');
-  if (currentXhr) { currentXhr.abort(); currentXhr = null; }
-  uploadStartTime = 0;
-  uploadStartBytes = 0;
-  lastLoadedBytes = 0;
-  lastUpdateTime = 0;
-}
-
-function updateProgress(loaded, total) {
-  if (!total) return;
-  const percentage = (loaded / total) * 100;
-  document.getElementById('progress-fill').style.width = `${percentage}%`;
-  document.getElementById('progress-percentage').textContent = `${Math.round(percentage)}%`;
-  if (percentage > 0 && !document.getElementById('upload-progress').classList.contains('active')) {
-    document.getElementById('upload-progress').classList.add('active');
-  }
-  updateUploadStats(loaded, total);
-}
-
-function updateUploadStats(loaded, total) {
-  const now = Date.now();
-  if (uploadStartTime === 0) {
-    uploadStartTime = now;
-    uploadStartBytes = loaded;
-    lastUpdateTime = now;
-    lastLoadedBytes = loaded;
-    return;
-  }
-  const timeElapsed = (now - uploadStartTime) / 1000;
-  const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
-  if (timeSinceLastUpdate > 0.2) {
-    const avgSpeedBps = (loaded - uploadStartBytes) / timeElapsed;
-    const avgSpeedMBps = avgSpeedBps / (1024 * 1024);
-    const instantSpeedBps = (loaded - lastLoadedBytes) / timeSinceLastUpdate;
-    const instantSpeedMBps = instantSpeedBps / (1024 * 1024);
-    const displaySpeedMBps = avgSpeedMBps * 0.3 + instantSpeedMBps * 0.7;
-    const remainingBytes = total - loaded;
-    const etaSeconds = displaySpeedMBps > 0 ? remainingBytes / (displaySpeedMBps * 1024 * 1024) : 0;
-    document.getElementById('progress-speed').textContent = `Speed: ${displaySpeedMBps.toFixed(2)} MB/s`;
-    document.getElementById('progress-eta').textContent = `ETA: ${formatTime(etaSeconds)}`;
-    lastLoadedBytes = loaded;
-    lastUpdateTime = now;
-  }
-}
-
-// ============================================
-// PROFILE & AUTH HELPERS
-// ============================================
-function getInitials(email) {
-  if (!email) return 'U';
-  const parts = email.split('@')[0];
-  return parts.substring(0, 2).toUpperCase();
-}
-
-function getInitialsFromName(fullName) {
-  if (!fullName) return 'U';
-  const names = fullName.split(' ');
-  if (names.length >= 2) {
-    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-  }
-  return fullName.charAt(0).toUpperCase();
-}
-
-async function loadUserProfilePicture(user) {
-  try {
-    if (!user || !document.getElementById('profile-btn')) return;
-    const placeholder = document.getElementById('userProfilePlaceholder');
-    const displayName = user.email || 'User';
-    const fallbackInitials = getInitials(user.email);
-    while (placeholder.firstChild) placeholder.removeChild(placeholder.firstChild);
-    const tempDiv = document.createElement('div');
-    tempDiv.className = 'profile-placeholder';
-    tempDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-    tempDiv.textContent = fallbackInitials;
-    placeholder.appendChild(tempDiv);
-    const { data: profile, error: profileError } = await window.supabaseClient
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (profileError) return;
-    if (profile && profile.avatar_url) {
-      let avatarUrl = profile.avatar_url;
-      if (!avatarUrl.startsWith('http')) {
-        if (avatarUrl.startsWith('avatars/')) {
-          avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
-        } else {
-          avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+document.addEventListener('DOMContentLoaded', async () => {
+    // ============================================
+    // GENRE CONFIGURATION
+    // ============================================
+    const genreConfig = {
+        'Film': {
+            title: '🎬 Film Details',
+            fields: [
+                { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
+                { name: 'cast', type: 'tags', label: 'Cast', required: false, placeholder: 'e.g., Actor 1, Actor 2' },
+                { name: 'release_year', type: 'number', label: 'Release Year', required: true, min: 1900, max: new Date().getFullYear() },
+                { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
+                { name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' }
+            ],
+            content_format: 'film', requires_chapters: false, requires_mood: false
+        },
+        'Documentary': {
+            title: '📽️ Documentary Details',
+            fields: [
+                { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
+                { name: 'subject_matter', type: 'tags', label: 'Subject Matter', required: true, placeholder: 'e.g., Nature, Politics, History' },
+                { name: 'interview_subjects', type: 'tags', label: 'Interview Subjects', required: false, placeholder: 'e.g., Person 1, Person 2' },
+                { name: 'production_year', type: 'number', label: 'Production Year', required: true, min: 1900, max: new Date().getFullYear() },
+                { name: 'research_sources', type: 'tags', label: 'Research Sources', required: false, placeholder: 'e.g., University, Archive' },
+                { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'Not Rated'] }
+            ],
+            content_format: 'documentary', requires_chapters: false, requires_mood: true
+        },
+        'Series': {
+            title: '📺 Series Episode Details',
+            fields: [
+                { name: 'show_title', type: 'text', label: 'Show Title', required: true, placeholder: 'e.g., Bantu Stories' },
+                { name: 'season_number', type: 'number', label: 'Season Number', required: true, min: 1 },
+                { name: 'episode_number', type: 'number', label: 'Episode Number', required: true, min: 1 },
+                { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning' },
+                { name: 'series_description', type: 'textarea', label: 'Series Description', required: false, rows: 3 }
+            ],
+            content_format: 'series_episode', requires_chapters: true, requires_mood: true, uses_playlist: true, playlist_type: 'series'
+        },
+        'Music': {
+            title: '🎵 Music Details',
+            fields: [
+                { name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up' },
+                { name: 'artist_name', type: 'text', label: 'Artist Name', required: true, placeholder: 'e.g., Bantu Artist' },
+                { name: 'album_title', type: 'text', label: 'Album Title', required: false, placeholder: 'e.g., African Dreams' },
+                { name: 'track_number', type: 'number', label: 'Track Number', required: false, min: 1 },
+                { name: 'featured_artists', type: 'tags', label: 'Featured Artists', required: false, placeholder: 'e.g., Artist 1, Artist 2' },
+                { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
+                { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
+                { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
+            ],
+            content_format: 'album_track', requires_chapters: false, requires_mood: true, uses_playlist: true, playlist_type: 'album'
+        },
+        'Podcast': {
+            title: '🎙️ Podcast Episode Details',
+            fields: [
+                { name: 'show_title', type: 'text', label: 'Podcast Show Title', required: true, placeholder: 'e.g., Bantu Voices' },
+                { name: 'season_number', type: 'number', label: 'Season Number', required: false, min: 1 },
+                { name: 'episode_number', type: 'number', label: 'Episode Number', required: false, min: 1 },
+                { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Journey Begins' },
+                { name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
+                { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false }
+            ],
+            content_format: 'podcast_episode', requires_chapters: true, requires_mood: true, uses_playlist: true, playlist_type: 'series'
         }
-      }
-      while (placeholder.firstChild) placeholder.removeChild(placeholder.firstChild);
-      const img = document.createElement('img');
-      img.className = 'profile-img';
-      img.alt = displayName;
-      img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-      img.src = avatarUrl;
-      img.onerror = () => {
-        const fallback = document.createElement('div');
-        fallback.className = 'profile-placeholder';
-        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-        const finalInitials = profile.full_name ? getInitialsFromName(profile.full_name) : fallbackInitials;
-        fallback.textContent = finalInitials;
-        while (placeholder.firstChild) placeholder.removeChild(placeholder.firstChild);
-        placeholder.appendChild(fallback);
-      };
-      placeholder.appendChild(img);
-    } else if (profile && profile.full_name) {
-      const nameInitials = getInitialsFromName(profile.full_name);
-      while (placeholder.firstChild) placeholder.removeChild(placeholder.firstChild);
-      const nameDiv = document.createElement('div');
-      nameDiv.className = 'profile-placeholder';
-      nameDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-      nameDiv.textContent = nameInitials;
-      placeholder.appendChild(nameDiv);
-    }
-  } catch (error) {
-    console.error('Error loading user profile picture:', error);
-  }
-}
+    };
 
-async function checkAuthentication() {
-  try {
-    const sessionResponse = await window.supabaseClient.auth.getSession();
-    const session = sessionResponse.data.session;
-    const error = sessionResponse.error;
-    if (error || !session?.user) {
-      console.log('⚠️ User not authenticated');
-      return null;
-    }
-    currentSession = session;
-    currentUserId = session.user.id;
-    currentUserEmail = session.user.email;
-    console.log('✅ Authenticated user ID:', currentUserId);
-    await loadUserProfilePicture(session.user);
-    await loadCreatorStreak();
-    return session.user;
-  } catch (error) {
-    console.error('Auth check failed:', error);
-    return null;
-  }
-}
+    // ============================================
+    // GLOBAL VARIABLES
+    // ============================================
+    let selectedMediaFile = null, selectedThumbnailFile = null, currentUserId = null, currentSession = null;
+    let isUploading = false, selectedMediaType = 'regular', extractedDuration = null, currentXhr = null;
+    let selectedMood = null, chapters = [];
+    let uploadStartTime = 0, uploadStartBytes = 0, lastLoadedBytes = 0, lastUpdateTime = 0;
 
-async function loadCreatorStreak() {
-  try {
-    const streak = localStorage.getItem('creator_streak') || 0;
-    const streakEl = document.getElementById('creator-streak');
-    const streakCount = document.getElementById('streak-count');
-    if (streakEl && streakCount) {
-      streakCount.textContent = streak;
-      streakEl.style.display = 'flex';
-    }
-  } catch (error) {
-    console.error('Error loading streak:', error);
-  }
-}
+    // DOM Elements
+    const loadingScreen = document.getElementById('loading'), app = document.getElementById('app');
+    const authModal = document.getElementById('auth-modal');
+    const publishBtn = document.getElementById('publish-btn'), saveDraftBtn = document.getElementById('save-draft-btn');
+    const progressSection = document.getElementById('upload-progress'), progressFill = document.getElementById('progress-fill');
+    const progressPercentage = document.getElementById('progress-percentage'), progressText = document.getElementById('progress-text');
+    const progressSpeed = document.getElementById('progress-speed'), progressEta = document.getElementById('progress-eta');
+    const uploadFormState = document.getElementById('upload-form-state'), processingState = document.getElementById('processing-state');
+    const successState = document.getElementById('success-state');
 
-function setupSessionRecovery() {
-  document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible') {
-      try {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        if (session) {
-          const expiresAt = session.expires_at * 1000;
-          const now = Date.now();
-          const fiveMinutes = 5 * 60 * 1000;
-          if (expiresAt - now < fiveMinutes) {
-            console.log('Token expiring soon, refreshing...');
-            const { data, error } = await window.supabaseClient.auth.refreshSession();
-            if (data?.session) {
-              currentSession = data.session;
-              console.log('Session refreshed');
+    // Helper Functions
+    function showToast(message, type = 'error') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatTime(seconds) {
+        if (!seconds && seconds !== 0) return '--:--';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ============================================
+    // GENRE FORM HANDLERS
+    // ============================================
+    function createTagsInput(field) {
+        const container = document.createElement('div');
+        container.className = 'tags-input-container';
+        container.innerHTML = `<div class="tags-list" id="tags-list-${field.name}"></div><input type="text" class="tags-input" placeholder="${field.placeholder || 'Type and press Enter'}" id="tags-input-${field.name}">`;
+        const tagsList = container.querySelector(`#tags-list-${field.name}`);
+        const input = container.querySelector(`#tags-input-${field.name}`);
+        let tags = [];
+        
+        function addTag(value) {
+            const trimmed = value.trim();
+            if (trimmed && !tags.includes(trimmed)) {
+                tags.push(trimmed);
+                renderTags();
             }
-          }
+            input.value = '';
         }
-      } catch (error) {
-        console.error('Session check failed:', error);
-      }
+        
+        function removeTag(tag) {
+            const index = tags.indexOf(tag);
+            if (index > -1) tags.splice(index, 1);
+            renderTags();
+        }
+        
+        function renderTags() {
+            tagsList.innerHTML = tags.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
+            tagsList.querySelectorAll('.tag i').forEach(icon => {
+                icon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeTag(icon.parentElement.textContent.trim());
+                });
+            });
+            container.dataset.tags = JSON.stringify(tags);
+        }
+        
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(input.value); } });
+        input.addEventListener('blur', () => { if (input.value.trim()) addTag(input.value); });
+        return container;
     }
-  });
-  setInterval(async () => {
-    try {
-      const { data: { session } } = await window.supabaseClient.auth.getSession();
-      if (session) {
-        const expiresAt = session.expires_at * 1000;
+
+    function createFieldHTML(field) {
+        if (field.type === 'text') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><input type="text" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></div>`;
+        if (field.type === 'number') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><input type="number" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" min="${field.min || 0}" max="${field.max || ''}" ${field.required ? 'required' : ''}></div>`;
+        if (field.type === 'textarea') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><textarea id="field-${field.name}" class="form-input" rows="${field.rows || 3}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></textarea></div>`;
+        if (field.type === 'select') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label><select id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}><option value="">Select ${field.label}</option>${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}</select></div>`;
+        if (field.type === 'tags') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><div id="field-${field.name}" class="tags-input-container-placeholder"></div></div>`;
+        if (field.type === 'checkbox') return `<div class="form-group"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="field-${field.name}" style="width:20px;height:20px"><span class="form-label" style="margin:0">${field.label}</span></label></div>`;
+        if (field.type === 'radio') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label><div style="display:flex;gap:15px">${field.options.map(opt => `<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="radio" name="field-${field.name}" value="${opt}" ${field.required ? 'required' : ''}><span>${opt}</span></label>`).join('')}</div></div>`;
+        return '';
+    }
+
+    function updateGenreForm() {
+        const genre = document.getElementById('content-genre').value;
+        const config = genreConfig[genre];
+        const container = document.getElementById('dynamic-fields-container');
+        const contentDiv = document.getElementById('dynamic-fields-content');
+        const moodSection = document.getElementById('mood-tags-section');
+        const chaptersSection = document.getElementById('chapters-section');
+        
+        if (!config) {
+            container.classList.remove('active');
+            moodSection.classList.remove('active');
+            chaptersSection.classList.remove('active');
+            return;
+        }
+        
+        document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
+        contentDiv.innerHTML = '';
+        
+        config.fields.forEach(field => {
+            if (field.type === 'tags') {
+                const ph = document.createElement('div');
+                ph.id = `field-${field.name}`;
+                ph.className = 'tags-input-container-placeholder';
+                contentDiv.appendChild(ph);
+                ph.appendChild(createTagsInput(field));
+            } else {
+                contentDiv.insertAdjacentHTML('beforeend', createFieldHTML(field));
+            }
+        });
+        
+        container.classList.add('active');
+        if (config.requires_mood) moodSection.classList.add('active');
+        else moodSection.classList.remove('active');
+        if (config.requires_chapters) {
+            chaptersSection.classList.add('active');
+            renderChaptersList();
+        } else chaptersSection.classList.remove('active');
+        
+        updateChecklist();
+    }
+
+    function renderChaptersList() {
+        const container = document.getElementById('chapters-list');
+        if (!container) return;
+        
+        container.innerHTML = chapters.map((chapter, index) => `
+            <div class="chapter-item">
+                <input type="text" class="chapter-time" placeholder="MM:SS" value="${chapter.time}" data-index="${index}" data-field="time">
+                <input type="text" class="chapter-title" placeholder="Chapter title" value="${escapeHtml(chapter.title)}" data-index="${index}" data-field="title">
+                <button type="button" class="remove-chapter" data-index="${index}"><i class="fas fa-times"></i></button>
+            </div>
+        `).join('');
+        
+        container.querySelectorAll('.chapter-time').forEach(inp => {
+            inp.addEventListener('change', (e) => { chapters[parseInt(e.target.dataset.index)].time = e.target.value; });
+        });
+        container.querySelectorAll('.chapter-title').forEach(inp => {
+            inp.addEventListener('change', (e) => { chapters[parseInt(e.target.dataset.index)].title = e.target.value; });
+        });
+        container.querySelectorAll('.remove-chapter').forEach(btn => {
+            btn.addEventListener('click', (e) => { chapters.splice(parseInt(e.target.dataset.index), 1); renderChaptersList(); });
+        });
+    }
+
+    function addChapter() { chapters.push({ time: '00:00', title: 'New Chapter' }); renderChaptersList(); }
+    document.getElementById('add-chapter-btn')?.addEventListener('click', addChapter);
+
+    function collectContentMetadata() {
+        const genre = document.getElementById('content-genre').value;
+        const config = genreConfig[genre];
+        const metadata = {};
+        if (!config) return metadata;
+        
+        config.fields.forEach(field => {
+            const element = document.getElementById(`field-${field.name}`);
+            if (!element) return;
+            if (field.type === 'tags') {
+                const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
+                metadata[field.name] = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
+            } else if (field.type === 'checkbox') {
+                metadata[field.name] = element.checked;
+            } else if (field.type === 'radio') {
+                const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
+                metadata[field.name] = selected ? selected.value : null;
+            } else {
+                metadata[field.name] = element.value;
+            }
+        });
+        return metadata;
+    }
+
+    function collectMoodData() {
+        const selectedMoodElement = document.querySelector('.mood-option.selected');
+        if (!selectedMoodElement) return null;
+        const intensity = parseInt(document.getElementById('mood-intensity')?.value || 7) / 10;
+        return { primary_mood: selectedMoodElement.dataset.mood, mood_intensity: intensity, tagged_by: 'creator' };
+    }
+
+    async function handlePlaylistLinking(contentId, genre, metadata) {
+        const config = genreConfig[genre];
+        if (!config?.uses_playlist) return null;
+        
+        let playlistName = null;
+        if (genre === 'Series' || genre === 'Podcast') playlistName = metadata.show_title;
+        else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
+        else return null;
+        
+        const { data: existing } = await window.supabaseClient
+            .from('creator_playlists')
+            .select('id')
+            .eq('creator_id', currentUserId)
+            .eq('name', playlistName)
+            .eq('playlist_type', config.playlist_type)
+            .maybeSingle();
+        
+        let playlistId = existing?.id;
+        if (!playlistId) {
+            const { data: newPlaylist, error } = await window.supabaseClient
+                .from('creator_playlists')
+                .insert([{
+                    creator_id: currentUserId,
+                    name: playlistName,
+                    description: `${genre}: ${playlistName}`,
+                    playlist_type: config.playlist_type,
+                    sort_order: config.playlist_type === 'series' ? 'episode_number' : 'manual',
+                    visibility: 'public'
+                }])
+                .select()
+                .single();
+            if (!error && newPlaylist) playlistId = newPlaylist.id;
+        }
+        
+        if (playlistId) {
+            await window.supabaseClient
+                .from('collection_items')
+                .insert([{
+                    collection_id: playlistId,
+                    content_id: contentId,
+                    position: genre === 'Music' ? (metadata.track_number || 0) : 0
+                }]);
+        }
+        return playlistId;
+    }
+
+    // ============================================
+    // MEDIA FUNCTIONS
+    // ============================================
+    function extractMediaDuration(file) {
+        return new Promise((resolve, reject) => {
+            const media = document.createElement(file.type.includes('audio') ? 'audio' : 'video');
+            media.preload = 'metadata';
+            const timeout = setTimeout(() => { URL.revokeObjectURL(media.src); reject(new Error('Duration extraction timeout')); }, 10000);
+            media.onloadedmetadata = () => { clearTimeout(timeout); const duration = Math.floor(media.duration); URL.revokeObjectURL(media.src); resolve(duration); };
+            media.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(media.src); reject(new Error('Failed to load metadata')); };
+            media.src = URL.createObjectURL(file);
+        });
+    }
+
+    async function generateVideoThumbnail(file) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.includes('video')) reject(new Error('Not a video'));
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            const timeout = setTimeout(() => { URL.revokeObjectURL(video.src); reject(new Error('Timeout')); }, 10000);
+            video.onloadeddata = () => { clearTimeout(timeout); video.currentTime = Math.min(1, video.duration * 0.1); };
+            video.onseeked = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    URL.revokeObjectURL(video.src);
+                    resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg', lastModified: Date.now() }));
+                }, 'image/jpeg', 0.9);
+            };
+            video.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(video.src); reject(new Error('Failed to load')); };
+            video.src = URL.createObjectURL(file);
+        });
+    }
+
+    async function validateMediaFile(file) {
+        const durationDisplay = document.getElementById('duration-display');
+        const durationText = document.getElementById('duration-text');
+        const durationStatus = document.getElementById('duration-status');
+        const durationBadge = document.getElementById('duration-badge');
+        extractedDuration = null;
+        
+        if (file.type.includes('video') || file.type.includes('audio')) {
+            durationDisplay.style.display = 'flex';
+            durationText.textContent = `Duration: extracting...`;
+            durationStatus.textContent = '';
+            durationBadge.style.display = 'none';
+            
+            try {
+                const duration = await extractMediaDuration(file);
+                extractedDuration = duration;
+                const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
+                durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
+                durationBadge.style.display = 'inline-block';
+                
+                if (file.type.includes('audio')) {
+                    durationDisplay.classList.add('valid');
+                    durationStatus.textContent = '✓ Audio file';
+                } else if (selectedMediaType === 'short') {
+                    if (duration > 60) {
+                        durationDisplay.classList.add('invalid');
+                        durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
+                    } else {
+                        durationDisplay.classList.add('valid');
+                        durationStatus.textContent = '✓ Valid for Shorts';
+                    }
+                }
+                
+                if (file.type.includes('video') && !selectedThumbnailFile) {
+                    try {
+                        const thumb = await generateVideoThumbnail(file);
+                        handleThumbnailFile(thumb, true);
+                    } catch(e) { console.error('Auto-thumb fail', e); }
+                }
+            } catch (error) {
+                durationText.textContent = `Duration: unknown`;
+                durationStatus.textContent = '⚠️ Could not read duration';
+                durationDisplay.classList.add('invalid');
+            }
+        } else {
+            durationDisplay.style.display = 'none';
+        }
+        updateButtonsState();
+        updateChecklist();
+    }
+
+    function handleMediaFile(file) {
+        const maxSize = 800 * 1024 * 1024;
+        if (file.size > maxSize) { showToast('File size must be less than 800MB'); return; }
+        
+        const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
+        const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
+        const isValidType = [...videoTypes, ...audioTypes].some(type => file.type.includes(type.split('/')[1]) || file.type === type);
+        if (!isValidType) { showToast('Please select a valid video or audio file'); return; }
+        
+        selectedMediaFile = file;
+        const fileIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
+        document.getElementById('file-icon').innerHTML = `<i class="fas ${fileIcon}"></i>`;
+        document.getElementById('media-file-name').textContent = file.name;
+        document.getElementById('media-file-size').textContent = formatFileSize(file.size);
+        document.getElementById('media-file-info').style.display = 'flex';
+        document.getElementById('media-zone-text').textContent = 'Click to change file';
+        
+        validateMediaFile(file);
+        saveDraftToLocalStorage();
+    }
+
+    function handleThumbnailFile(file, isAutoGenerated = false) {
+        const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!imageTypes.includes(file.type)) { showToast('Please select a valid image file'); return; }
+        
+        selectedThumbnailFile = file;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('thumbnail-image').src = e.target.result;
+            document.getElementById('thumbnail-preview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        if (!isAutoGenerated) showToast('Thumbnail image selected', 'success');
+        updateChecklist();
+        saveDraftToLocalStorage();
+    }
+
+    async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                if (sessionError || !session) {
+                    const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+                    if (refreshError || !refreshData.session) { reject(new Error('Authentication failed')); return; }
+                    session = refreshData.session;
+                }
+                
+                const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                const timestamp = Date.now();
+                const random = Math.random().toString(36).substring(7);
+                const fileName = `${timestamp}_${random}_${cleanFileName}`;
+                const filePath = `${currentUserId}/${basePath}/${fileName}`;
+                const uploadUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/${bucket}/${filePath}`;
+                
+                const xhr = new XMLHttpRequest();
+                currentXhr = xhr;
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total);
+                });
+                
+                xhr.addEventListener('load', () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${filePath}`);
+                    } else {
+                        reject(new Error('Upload failed'));
+                    }
+                    currentXhr = null;
+                });
+                
+                xhr.addEventListener('error', () => { reject(new Error('Network error')); currentXhr = null; });
+                xhr.open('POST', uploadUrl, true);
+                xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+                xhr.setRequestHeader('Content-Type', file.type);
+                xhr.send(file);
+            } catch (error) { reject(error); }
+        });
+    }
+
+    function updateProgress(loaded, total) {
+        if (!total) return;
+        const percentage = (loaded / total) * 100;
+        progressFill.style.width = `${percentage}%`;
+        progressPercentage.textContent = `${Math.round(percentage)}%`;
+        if (!progressSection.classList.contains('active')) progressSection.classList.add('active');
+        
         const now = Date.now();
-        const fiveMinutes = 5 * 60 * 1000;
-        if (expiresAt - now < fiveMinutes) {
-          console.log('Token expiring soon (interval check), refreshing...');
-          await window.supabaseClient.auth.refreshSession();
+        if (uploadStartTime === 0) {
+            uploadStartTime = now;
+            uploadStartBytes = loaded;
+            lastUpdateTime = now;
+            lastLoadedBytes = loaded;
+            return;
         }
-      }
-    } catch (error) {
-      console.error('Interval session check failed:', error);
-    }
-  }, 5 * 60 * 1000);
-}
-
-// ============================================
-// DYNAMIC FORM GENERATION
-// ============================================
-function createTagsInput(field) {
-  const container = document.createElement('div');
-  container.className = 'tags-input-container';
-  container.innerHTML = `
-    <div class="tags-list" id="tags-list-${field.name}"></div>
-    <input type="text" class="tags-input" placeholder="${field.placeholder || 'Type and press Enter'}" id="tags-input-${field.name}">
-  `;
-  const tagsList = container.querySelector(`#tags-list-${field.name}`);
-  const input = container.querySelector(`#tags-input-${field.name}`);
-  const tags = [];
-  function addTag(value) {
-    const trimmed = value.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      tags.push(trimmed);
-      renderTags();
-    }
-    input.value = '';
-  }
-  function removeTag(tag) {
-    const index = tags.indexOf(tag);
-    if (index > -1) tags.splice(index, 1);
-    renderTags();
-  }
-  function renderTags() {
-    tagsList.innerHTML = tags.map(tag => `
-      <span class="tag">
-        ${escapeHtml(tag)}
-        <i class="fas fa-times" onclick="this.parentElement.remove(); window.removeTagFromField('${field.name}', '${tag}')"></i>
-      </span>
-    `).join('');
-    container.dataset.tags = JSON.stringify(tags);
-  }
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addTag(input.value); }
-  });
-  input.addEventListener('blur', () => { if (input.value.trim()) addTag(input.value); });
-  return container;
-}
-
-function createFieldHTML(field) {
-  switch (field.type) {
-    case 'text':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label>
-        <input type="text" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}>
-      </div>`;
-    case 'number':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label>
-        <input type="number" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" min="${field.min || 0}" max="${field.max || ''}" ${field.required ? 'required' : ''}>
-      </div>`;
-    case 'textarea':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label>
-        <textarea id="field-${field.name}" class="form-input" rows="${field.rows || 3}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></textarea>
-      </div>`;
-    case 'select':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label>
-        <select id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}>
-          <option value="">Select ${field.label}</option>
-          ${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-        </select>
-      </div>`;
-    case 'tags':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label>
-        <div id="field-${field.name}" class="tags-input-container-placeholder"></div>
-      </div>`;
-    case 'checkbox':
-      return `<div class="form-group">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-          <input type="checkbox" id="field-${field.name}" style="width:20px;height:20px">
-          <span class="form-label" style="margin:0">${field.label}</span>
-        </label>
-      </div>`;
-    case 'radio':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label>
-        <div style="display:flex;gap:15px">
-          ${field.options.map(opt => `
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-              <input type="radio" name="field-${field.name}" value="${opt}" ${field.required ? 'required' : ''}>
-              <span>${opt}</span>
-            </label>
-          `).join('')}
-        </div>
-      </div>`;
-    case 'duration':
-      return `<div class="form-group">
-        <label class="form-label">${field.label} <span class="optional">(Auto-detected)</span></label>
-        <div style="padding:12px;background:rgba(255,255,255,.05);border-radius:8px;color:var(--slate-grey)">
-          <i class="fas fa-clock"></i> <span id="auto-duration-display">Not detected yet</span>
-        </div>
-      </div>`;
-    default: return '';
-  }
-}
-
-function updateGenreForm() {
-  const genre = document.getElementById('content-genre').value;
-  const config = genreConfig[genre];
-  const container = document.getElementById('dynamic-fields-container');
-  const contentDiv = document.getElementById('dynamic-fields-content');
-  const moodSection = document.getElementById('mood-tags-section');
-  const chaptersSection = document.getElementById('chapters-section');
-  if (!config) {
-    container.classList.remove('active');
-    moodSection.classList.remove('active');
-    chaptersSection.classList.remove('active');
-    return;
-  }
-  document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
-  contentDiv.innerHTML = '';
-  config.fields.forEach(field => {
-    if (field.type === 'tags') {
-      const placeholder = document.createElement('div');
-      placeholder.id = `field-${field.name}`;
-      placeholder.className = 'tags-input-container-placeholder';
-      contentDiv.appendChild(placeholder);
-      const tagsInput = createTagsInput(field);
-      placeholder.appendChild(tagsInput);
-    } else {
-      contentDiv.insertAdjacentHTML('beforeend', createFieldHTML(field));
-    }
-  });
-  container.classList.add('active');
-  if (config.requires_mood) moodSection.classList.add('active');
-  else moodSection.classList.remove('active');
-  if (config.requires_chapters) {
-    chaptersSection.classList.add('active');
-    renderChaptersList();
-  } else chaptersSection.classList.remove('active');
-  updateChecklist();
-}
-
-function renderChaptersList() {
-  const container = document.getElementById('chapters-list');
-  if (!container) return;
-  container.innerHTML = chapters.map((chapter, index) => `
-    <div class="chapter-item">
-      <input type="text" class="chapter-time" placeholder="MM:SS" value="${chapter.time}" data-index="${index}" data-field="time">
-      <input type="text" class="chapter-title" placeholder="Chapter title" value="${escapeHtml(chapter.title)}" data-index="${index}" data-field="title">
-      <button type="button" class="remove-chapter" data-index="${index}"><i class="fas fa-times"></i></button>
-    </div>
-  `).join('');
-  container.querySelectorAll('.chapter-time').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const idx = parseInt(e.target.dataset.index);
-      chapters[idx].time = e.target.value;
-    });
-  });
-  container.querySelectorAll('.chapter-title').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const idx = parseInt(e.target.dataset.index);
-      chapters[idx].title = e.target.value;
-    });
-  });
-  container.querySelectorAll('.remove-chapter').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.target.dataset.index);
-      chapters.splice(idx, 1);
-      renderChaptersList();
-    });
-  });
-}
-
-function addChapter() {
-  chapters.push({ time: '00:00', title: 'New Chapter' });
-  renderChaptersList();
-}
-
-// ============================================
-// METADATA COLLECTION
-// ============================================
-function collectContentMetadata() {
-  const genre = document.getElementById('content-genre').value;
-  const config = genreConfig[genre];
-  const metadata = {};
-  if (!config) return metadata;
-  config.fields.forEach(field => {
-    const element = document.getElementById(`field-${field.name}`);
-    if (!element) return;
-    if (field.type === 'tags') {
-      const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
-      if (container && container.dataset.tags) {
-        metadata[field.name] = JSON.parse(container.dataset.tags);
-      } else metadata[field.name] = [];
-    } else if (field.type === 'checkbox') {
-      metadata[field.name] = element.checked;
-    } else if (field.type === 'radio') {
-      const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
-      metadata[field.name] = selected ? selected.value : null;
-    } else {
-      metadata[field.name] = element.value;
-    }
-  });
-  return metadata;
-}
-
-function collectMoodData() {
-  const selectedMoodElement = document.querySelector('.mood-option.selected');
-  if (!selectedMoodElement) return null;
-  const intensity = parseInt(document.getElementById('mood-intensity')?.value || 7) / 10;
-  return {
-    primary_mood: selectedMoodElement.dataset.mood,
-    mood_intensity: intensity,
-    tagged_by: 'creator'
-  };
-}
-
-function collectChaptersData() {
-  if (chapters.length === 0) return null;
-  return chapters.map(chapter => ({ timestamp: chapter.time, title: chapter.title }));
-}
-
-// ============================================
-// PLAYLIST INTEGRATION
-// ============================================
-async function handlePlaylistLinking(contentId, genre, metadata) {
-  const config = genreConfig[genre];
-  if (!config?.uses_playlist) return null;
-  let playlistId = null;
-  let playlistName = null;
-  if (genre === 'Series' || genre === 'Podcast') playlistName = metadata.show_title;
-  else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
-  else return null;
-  const { data: existingPlaylist } = await window.supabaseClient
-    .from('creator_playlists')
-    .select('id')
-    .eq('creator_id', currentUserId)
-    .eq('name', playlistName)
-    .eq('playlist_type', config.playlist_type)
-    .maybeSingle();
-  if (existingPlaylist) playlistId = existingPlaylist.id;
-  else {
-    const description = genre === 'Music'
-      ? `Album: ${playlistName} by ${metadata.artist_name || 'Artist'}`
-      : `Series: ${playlistName}`;
-    const { data: newPlaylist, error } = await window.supabaseClient
-      .from('creator_playlists')
-      .insert([{
-        creator_id: currentUserId,
-        name: playlistName,
-        description: description,
-        playlist_type: config.playlist_type,
-        sort_order: config.playlist_type === 'series' ? 'episode_number' : 'manual',
-        visibility: 'public'
-      }])
-      .select()
-      .single();
-    if (error) { console.error('Failed to create playlist:', error); return null; }
-    playlistId = newPlaylist.id;
-  }
-  if (playlistId) {
-    const position = genre === 'Music' ? (metadata.track_number || 0) : 0;
-    await window.supabaseClient
-      .from('collection_items')
-      .insert([{ collection_id: playlistId, content_id: contentId, position: position }]);
-  }
-  return playlistId;
-}
-
-// ============================================
-// DATABASE OPERATIONS
-// ============================================
-async function createContentRecordWithMetadata(data) {
-  try {
-    const insertData = {
-      title: data.title,
-      description: data.description,
-      file_url: data.media_url,
-      thumbnail_url: data.thumbnail_url || '',
-      media_type: data.media_type,
-      genre: data.genre,
-      status: data.status,
-      user_id: currentUserId,
-      created_at: new Date().toISOString(),
-      content_metadata: data.content_metadata || {},
-      content_format: data.content_format,
-      chapters: data.chapters || []
-    };
-    if (data.duration !== null && data.duration !== undefined) insertData.duration = data.duration;
-    if (data.content_format === 'series_episode') {
-      insertData.season_number = data.season_number;
-      insertData.episode_number = data.episode_number;
-    }
-    const { data: result, error } = await window.supabaseClient
-      .from('Content')
-      .insert([insertData])
-      .select();
-    if (error) throw error;
-    return result[0];
-  } catch (error) {
-    console.error('DB insert failed:', error);
-    throw error;
-  }
-}
-
-async function addMoodTags(contentId, moodData) {
-  if (!moodData) return;
-  try {
-    const { error } = await window.supabaseClient
-      .from('content_mood_tags')
-      .insert([{
-        content_id: contentId,
-        primary_mood: moodData.primary_mood,
-        mood_intensity: moodData.mood_intensity,
-        tagged_by: moodData.tagged_by
-      }]);
-    if (error) throw error;
-    console.log('✅ Mood tags added');
-  } catch (error) {
-    console.error('Failed to add mood tags:', error);
-  }
-}
-
-// ============================================
-// UPLOAD FUNCTIONS WITH ROBUST ERROR HANDLING
-// ============================================
-async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
-      if (sessionError || !session) {
-        const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
-        if (refreshError || !refreshData.session) {
-          reject(new Error('Authentication failed - please sign in again'));
-          return;
+        
+        const timeElapsed = (now - uploadStartTime) / 1000;
+        const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
+        
+        if (timeSinceLastUpdate > 0.2) {
+            const avgSpeedBps = (loaded - uploadStartBytes) / timeElapsed;
+            const avgSpeedMBps = avgSpeedBps / (1024 * 1024);
+            const instantSpeedBps = (loaded - lastLoadedBytes) / timeSinceLastUpdate;
+            const instantSpeedMBps = instantSpeedBps / (1024 * 1024);
+            const displaySpeedMBps = avgSpeedMBps * 0.3 + instantSpeedMBps * 0.7;
+            const remainingBytes = total - loaded;
+            const etaSeconds = displaySpeedMBps > 0 ? remainingBytes / (displaySpeedMBps * 1024 * 1024) : 0;
+            
+            progressSpeed.textContent = `Speed: ${displaySpeedMBps.toFixed(2)} MB/s`;
+            progressEta.textContent = `ETA: ${formatTime(etaSeconds)}`;
+            lastLoadedBytes = loaded;
+            lastUpdateTime = now;
         }
-        session = refreshData.session;
-      }
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(7);
-      const fileName = `${timestamp}_${random}_${cleanFileName}`;
-      const filePath = `${currentUserId}/${basePath}/${fileName}`;
-      const uploadUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/${bucket}/${filePath}`;
-      const xhr = new XMLHttpRequest();
-      currentXhr = xhr;
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total);
-      });
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const publicUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${filePath}`;
-          resolve(publicUrl);
-        } else {
-          let errorMessage = 'Upload failed';
-          try {
-            const response = JSON.parse(xhr.responseText);
-            errorMessage = response.message || response.error || response.error?.message || errorMessage;
-            if (xhr.status === 403 && (errorMessage.includes('exp') || errorMessage.includes('token') || errorMessage.includes('JWT'))) {
-              window.supabaseClient.auth.refreshSession().then(() => {
-                reject(new Error('Session expired - please try again'));
-              }).catch(() => {
-                reject(new Error('Authentication failed - please sign in again'));
-              });
-              return;
-            }
-          } catch (e) {}
-          reject(new Error(errorMessage));
+    }
+
+    function resetProgress() {
+        progressFill.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        progressSpeed.textContent = 'Speed: 0 MB/s';
+        progressEta.textContent = 'ETA: --:--';
+        progressText.textContent = 'Preparing upload...';
+        progressSection.classList.remove('active');
+        if (currentXhr) { currentXhr.abort(); currentXhr = null; }
+        uploadStartTime = 0;
+        uploadStartBytes = 0;
+        lastLoadedBytes = 0;
+        lastUpdateTime = 0;
+    }
+
+    async function createContentRecord(data) {
+        const insertData = {
+            title: data.title,
+            description: data.description,
+            file_url: data.media_url,
+            thumbnail_url: data.thumbnail_url || '',
+            media_type: data.media_type,
+            genre: data.genre,
+            status: data.status,
+            user_id: currentUserId,
+            created_at: new Date().toISOString(),
+            content_metadata: data.content_metadata || {},
+            content_format: data.content_format,
+            chapters: data.chapters || []
+        };
+        if (data.duration !== null && data.duration !== undefined) insertData.duration = data.duration;
+        if (data.content_format === 'series_episode') {
+            insertData.season_number = data.season_number;
+            insertData.episode_number = data.episode_number;
         }
-        currentXhr = null;
-      });
-      xhr.addEventListener('error', () => { reject(new Error('Network error during upload')); currentXhr = null; });
-      xhr.addEventListener('abort', () => { reject(new Error('Upload aborted')); currentXhr = null; });
-      xhr.open('POST', uploadUrl, true);
-      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.setRequestHeader('x-upsert', 'false');
-      xhr.setRequestHeader('Cache-Control', 'no-cache');
-      xhr.send(file);
-    } catch (error) { reject(error); }
-  });
-}
+        
+        const { data: result, error } = await window.supabaseClient.from('Content').insert([insertData]).select();
+        if (error) throw error;
+        return result[0];
+    }
 
-async function uploadThumbnailWithProgress(file, bucket, basePath) {
-  return uploadFileWithProgress(file, bucket, basePath, () => {});
-}
+    async function addMoodTags(contentId, moodData) {
+        if (!moodData) return;
+        await window.supabaseClient.from('content_mood_tags').insert([{
+            content_id: contentId,
+            primary_mood: moodData.primary_mood,
+            mood_intensity: moodData.mood_intensity,
+            tagged_by: moodData.tagged_by
+        }]);
+    }
 
-// ============================================
-// MEDIA HANDLING
-// ============================================
-function extractMediaDuration(file) {
-  return new Promise((resolve, reject) => {
-    if (file.type.includes('audio')) {
-      const audio = document.createElement('audio');
-      audio.preload = 'metadata';
-      const timeout = setTimeout(() => { URL.revokeObjectURL(audio.src); reject(new Error('Duration extraction timeout')); }, 10000);
-      audio.onloadedmetadata = () => { clearTimeout(timeout); const duration = Math.floor(audio.duration); URL.revokeObjectURL(audio.src); resolve(duration); };
-      audio.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(audio.src); reject(new Error('Failed to load audio metadata')); };
-      audio.src = URL.createObjectURL(file);
-    } else if (file.type.includes('video')) {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      const timeout = setTimeout(() => { URL.revokeObjectURL(video.src); reject(new Error('Duration extraction timeout')); }, 10000);
-      video.onloadedmetadata = () => { clearTimeout(timeout); const duration = Math.floor(video.duration); URL.revokeObjectURL(video.src); resolve(duration); };
-      video.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(video.src); reject(new Error('Failed to load video metadata')); };
-      video.src = URL.createObjectURL(file);
-    } else { reject(new Error('Unsupported file type')); }
-  });
-}
-
-async function generateVideoThumbnail(file) {
-  return new Promise((resolve, reject) => {
-    if (!file.type.includes('video')) { reject(new Error('Not a video file')); return; }
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    const timeout = setTimeout(() => { URL.revokeObjectURL(video.src); reject(new Error('Thumbnail generation timeout')); }, 10000);
-    video.onloadeddata = () => { clearTimeout(timeout); const seekTime = Math.min(1, video.duration * 0.1); video.currentTime = seekTime; };
-    video.onseeked = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(video.src);
-        const thumbnailFile = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg', lastModified: Date.now() });
-        resolve(thumbnailFile);
-      }, 'image/jpeg', 0.9);
-    };
-    video.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(video.src); reject(new Error('Failed to load video for thumbnail')); };
-    video.src = URL.createObjectURL(file);
-  });
-}
-
-async function validateMediaFile(file) {
-  const durationDisplay = document.getElementById('duration-display');
-  const durationText = document.getElementById('duration-text');
-  const durationStatus = document.getElementById('duration-status');
-  const durationBadge = document.getElementById('duration-badge');
-  extractedDuration = null;
-  if (file.type.includes('video') || file.type.includes('audio')) {
-    durationDisplay.style.display = 'flex';
-    durationText.textContent = `Duration: extracting...`;
-    durationStatus.textContent = '';
-    durationBadge.style.display = 'none';
-    try {
-      const duration = await extractMediaDuration(file);
-      extractedDuration = duration;
-      const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
-      durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
-      durationBadge.style.display = 'inline-block';
-      if (file.type.includes('audio')) {
-        durationDisplay.classList.remove('invalid');
-        durationDisplay.classList.add('valid');
-        durationStatus.textContent = '✓ Audio file';
-      } else {
-        if (selectedMediaType === 'short') {
-          if (duration > 60) {
-            durationDisplay.classList.add('invalid');
-            durationDisplay.classList.remove('valid');
-            durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
-          } else {
-            durationDisplay.classList.add('valid');
-            durationDisplay.classList.remove('invalid');
-            durationStatus.textContent = '✓ Valid for Shorts';
-          }
-        } else {
-          durationDisplay.classList.remove('valid', 'invalid');
-          durationStatus.textContent = '';
-        }
-      }
-      if (file.type.includes('video') && !selectedThumbnailFile) {
+    async function uploadContent(isDraft = false) {
+        if (!currentUserId) { showToast('Please sign in to upload content'); authModal.classList.add('active'); return; }
+        
+        const title = document.getElementById('content-title').value.trim();
+        const desc = document.getElementById('content-description').value.trim();
+        const genre = document.getElementById('content-genre').value;
+        
+        if (!title || !desc || !selectedMediaFile || !genre) { showToast('Please fill all required fields'); return; }
+        if (selectedMediaType === 'short' && (extractedDuration === null || extractedDuration > 60)) { showToast('Shorts must be under 60 seconds'); return; }
+        
+        isUploading = true;
+        updateButtonsState();
+        resetProgress();
+        uploadStartTime = Date.now();
+        lastLoadedBytes = 0;
+        lastUpdateTime = Date.now();
+        progressSection.classList.add('active');
+        progressText.textContent = 'Starting upload...';
+        
         try {
-          const thumbnail = await generateVideoThumbnail(file);
-          handleThumbnailFile(thumbnail, true);
-        } catch (thumbError) { console.error('Auto-thumbnail generation failed:', thumbError); }
-      }
-    } catch (error) {
-      console.error('Duration extraction failed:', error);
-      durationText.textContent = `Duration: unknown`;
-      durationStatus.textContent = '⚠️ Could not read duration';
-      durationDisplay.classList.add('invalid');
+            const contentMetadata = collectContentMetadata();
+            const moodData = collectMoodData();
+            const chaptersData = chapters.length ? chapters : null;
+            const config = genreConfig[genre];
+            
+            let finalMediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
+            if (selectedMediaType === 'short') finalMediaType = 'short';
+            if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
+            
+            progressText.textContent = 'Uploading media file...';
+            const mediaUrl = await uploadFileWithProgress(selectedMediaFile, 'content-media', 'media', (l, t) => updateProgress(l, t));
+            
+            let thumbnailUrl = null;
+            if (selectedThumbnailFile) {
+                progressText.textContent = 'Uploading thumbnail...';
+                thumbnailUrl = await uploadFileWithProgress(selectedThumbnailFile, 'content-thumbnails', 'thumbnails', () => {});
+            }
+            
+            progressText.textContent = 'Creating content record...';
+            const contentRecord = await createContentRecord({
+                title, description: desc, media_url: mediaUrl, thumbnail_url: thumbnailUrl,
+                media_type: finalMediaType, genre, status: isDraft ? 'draft' : 'published',
+                duration: extractedDuration, content_metadata: contentMetadata,
+                content_format: config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form'),
+                chapters: chaptersData, season_number: contentMetadata.season_number, episode_number: contentMetadata.episode_number
+            });
+            
+            if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
+            if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
+            
+            progressFill.style.width = '100%';
+            progressPercentage.textContent = '100%';
+            progressText.textContent = 'Upload complete!';
+            localStorage.removeItem(`draft_${currentUserId}`);
+            
+            uploadFormState.style.display = 'none';
+            processingState.classList.add('active');
+            progressSection.classList.remove('active');
+            
+            setTimeout(() => {
+                processingState.classList.remove('active');
+                successState.classList.add('active');
+                triggerConfetti();
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Upload failed:', error);
+            showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
+            resetProgress();
+            isUploading = false;
+            updateButtonsState();
+        } finally {
+            isUploading = false;
+            currentXhr = null;
+            updateButtonsState();
+        }
     }
-  } else {
-    durationDisplay.style.display = 'none';
-    extractedDuration = null;
-  }
-  updateButtonsState();
-  updateChecklist();
-}
 
-function handleMediaFile(file) {
-  const maxSize = 800 * 1024 * 1024;
-  if (file.size > maxSize) { showToast('File size must be less than 800MB'); return; }
-  const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-  const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
-  const isValidType = [...videoTypes, ...audioTypes].some(type => file.type.includes(type.split('/')[1]) || file.type === type);
-  if (!isValidType) { showToast('Please select a valid video or audio file'); return; }
-  selectedMediaFile = file;
-  const fileIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
-  document.getElementById('file-icon').innerHTML = `<i class="fas ${fileIcon}"></i>`;
-  document.getElementById('media-file-name').textContent = file.name;
-  document.getElementById('media-file-size').textContent = formatFileSize(file.size);
-  document.getElementById('media-file-info').style.display = 'flex';
-  document.getElementById('media-zone-text').textContent = 'Click to change file';
-  validateMediaFile(file);
-  saveDraftToLocalStorage();
-}
-
-function handleThumbnailFile(file, isAutoGenerated = false) {
-  const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  if (!imageTypes.includes(file.type)) { showToast('Please select a valid image file (JPG, PNG, GIF)'); return; }
-  selectedThumbnailFile = file;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    document.getElementById('thumbnail-image').src = e.target.result;
-    document.getElementById('thumbnail-preview').style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-  if (!isAutoGenerated) showToast('Thumbnail image selected', 'success');
-  updateChecklist();
-  saveDraftToLocalStorage();
-}
-
-// ============================================
-// CHECKLIST & UI UPDATES
-// ============================================
-function updateChecklist() {
-  const title = document.getElementById('content-title').value.trim();
-  const desc = document.getElementById('content-description').value.trim();
-  const genre = document.getElementById('content-genre').value;
-  const config = genreConfig[genre];
-  let score = 0;
-  if (title.length > 5) {
-    document.getElementById('check-title').classList.add('completed');
-    document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
-    score += 20;
-  } else {
-    document.getElementById('check-title').classList.remove('completed');
-    document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
-  }
-  if (desc.length > 20) {
-    document.getElementById('check-desc').classList.add('completed');
-    document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
-    score += 20;
-  } else {
-    document.getElementById('check-desc').classList.remove('completed');
-    document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
-  }
-  if (selectedMediaFile) {
-    document.getElementById('check-media').classList.add('completed');
-    document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
-    score += 20;
-  } else {
-    document.getElementById('check-media').classList.remove('completed');
-    document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
-  }
-  if (selectedThumbnailFile) {
-    document.getElementById('check-thumb').classList.add('completed');
-    document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-    score += 20;
-  } else {
-    document.getElementById('check-thumb').classList.remove('completed');
-    document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-  }
-  if (genre) {
-    document.getElementById('check-genre').classList.add('completed');
-    document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Genre Selected';
-    score += 20;
-  } else {
-    document.getElementById('check-genre').classList.remove('completed');
-    document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
-  }
-  const hasMetadata = config && config.fields.some(field => {
-    if (field.required) {
-      const element = document.getElementById(`field-${field.name}`);
-      if (field.type === 'tags') {
-        const container = element?.closest('.tags-input-container');
-        const tags = container?.dataset.tags;
-        return tags && JSON.parse(tags).length > 0;
-      }
-      return element && element.value;
+    function updateChecklist() {
+        const title = document.getElementById('content-title').value.trim();
+        const desc = document.getElementById('content-description').value.trim();
+        const genre = document.getElementById('content-genre').value;
+        const config = genreConfig[genre];
+        let score = 0;
+        
+        if (title.length > 5) {
+            document.getElementById('check-title').classList.add('completed');
+            document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
+            score += 15;
+        } else {
+            document.getElementById('check-title').classList.remove('completed');
+            document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
+        }
+        
+        if (desc.length > 20) {
+            document.getElementById('check-desc').classList.add('completed');
+            document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
+            score += 15;
+        } else {
+            document.getElementById('check-desc').classList.remove('completed');
+            document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
+        }
+        
+        if (selectedMediaFile) {
+            document.getElementById('check-media').classList.add('completed');
+            document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
+            score += 20;
+        } else {
+            document.getElementById('check-media').classList.remove('completed');
+            document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
+        }
+        
+        if (selectedThumbnailFile) {
+            document.getElementById('check-thumb').classList.add('completed');
+            document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
+            score += 20;
+        } else {
+            document.getElementById('check-thumb').classList.remove('completed');
+            document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
+            score += 10;
+        }
+        
+        if (genre) {
+            document.getElementById('check-genre').classList.add('completed');
+            document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Genre Selected';
+            score += 15;
+        } else {
+            document.getElementById('check-genre').classList.remove('completed');
+            document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
+        }
+        
+        const hasMetadata = config && config.fields.some(f => {
+            if (f.required) {
+                const el = document.getElementById(`field-${f.name}`);
+                if (f.type === 'tags') {
+                    const cont = el?.closest('.tags-input-container');
+                    return cont?.dataset.tags && JSON.parse(cont.dataset.tags).length > 0;
+                }
+                return el && el.value;
+            }
+            return false;
+        });
+        
+        if (hasMetadata || !config) {
+            document.getElementById('check-metadata').classList.add('completed');
+            document.getElementById('check-metadata').innerHTML = '<i class="fas fa-check-circle"></i> Genre Metadata Completed';
+            score += 15;
+        } else {
+            document.getElementById('check-metadata').classList.remove('completed');
+            document.getElementById('check-metadata').innerHTML = '<i class="far fa-circle"></i> Genre Metadata Completed';
+        }
+        
+        document.getElementById('quality-score').textContent = `${score}%`;
     }
-    return false;
-  });
-  if (hasMetadata || !config) {
-    document.getElementById('check-metadata').classList.add('completed');
-    document.getElementById('check-metadata').innerHTML = '<i class="fas fa-check-circle"></i> Genre Metadata Completed';
-    score += 20;
-  } else {
-    document.getElementById('check-metadata').classList.remove('completed');
-    document.getElementById('check-metadata').innerHTML = '<i class="far fa-circle"></i> Genre Metadata Completed';
-  }
-  document.getElementById('quality-score').textContent = `${score}%`;
-}
 
-function updateButtonsState() {
-  const title = document.getElementById('content-title').value.trim();
-  const desc = document.getElementById('content-description').value.trim();
-  const genre = document.getElementById('content-genre').value;
-  const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
-  const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
-  const saveDraftBtn = document.getElementById('save-draft-btn');
-  const publishBtn = document.getElementById('publish-btn');
-  saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-  publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre;
-  if (isUploading) {
-    publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-    saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-  } else {
-    publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
-    saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
-  }
-}
-
-function saveDraftToLocalStorage() {
-  if (!currentUserId) return;
-  const draft = {
-    title: document.getElementById('content-title').value,
-    description: document.getElementById('content-description').value,
-    genre: document.getElementById('content-genre').value,
-    mediaType: selectedMediaType,
-    hasMedia: !!selectedMediaFile,
-    mediaName: selectedMediaFile ? selectedMediaFile.name : null,
-    hasThumbnail: !!selectedThumbnailFile,
-    selectedMood: selectedMood,
-    chapters: chapters
-  };
-  localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
-}
-
-function loadDraftFromLocalStorage() {
-  if (!currentUserId) return;
-  const draftStr = localStorage.getItem(`draft_${currentUserId}`);
-  if (draftStr) {
-    const draft = JSON.parse(draftStr);
-    document.getElementById('content-title').value = draft.title || '';
-    document.getElementById('content-description').value = draft.description || '';
-    if (draft.genre) {
-      document.getElementById('content-genre').value = draft.genre;
-      updateGenreForm();
+    function updateButtonsState() {
+        const title = document.getElementById('content-title').value.trim();
+        const desc = document.getElementById('content-description').value.trim();
+        const genre = document.getElementById('content-genre').value;
+        const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
+        const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
+        
+        saveDraftBtn.disabled = !title || isUploading || !currentUserId;
+        publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre;
+        
+        if (isUploading) {
+            publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+            saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        } else {
+            publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
+            saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+        }
     }
-    if (draft.selectedMood) {
-      const moodElement = document.querySelector(`.mood-option[data-mood="${draft.selectedMood}"]`);
-      if (moodElement) moodElement.click();
+
+    function saveDraftToLocalStorage() {
+        if (!currentUserId) return;
+        const draft = {
+            title: document.getElementById('content-title').value,
+            description: document.getElementById('content-description').value,
+            genre: document.getElementById('content-genre').value,
+            mediaType: selectedMediaType,
+            hasMedia: !!selectedMediaFile,
+            mediaName: selectedMediaFile?.name || null,
+            hasThumbnail: !!selectedThumbnailFile,
+            selectedMood: selectedMood,
+            chapters: chapters
+        };
+        localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
     }
-    if (draft.chapters) {
-      chapters = draft.chapters;
-      renderChaptersList();
+
+    function loadDraftFromLocalStorage() {
+        if (!currentUserId) return;
+        const draftStr = localStorage.getItem(`draft_${currentUserId}`);
+        if (draftStr) {
+            const draft = JSON.parse(draftStr);
+            document.getElementById('content-title').value = draft.title || '';
+            document.getElementById('content-description').value = draft.description || '';
+            if (draft.genre) {
+                document.getElementById('content-genre').value = draft.genre;
+                updateGenreForm();
+            }
+            if (draft.selectedMood) {
+                const moodEl = document.querySelector(`.mood-option[data-mood="${draft.selectedMood}"]`);
+                if (moodEl) moodEl.click();
+            }
+            if (draft.chapters) {
+                chapters = draft.chapters;
+                renderChaptersList();
+            }
+            updateChecklist();
+            updateButtonsState();
+            if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
+        }
     }
-    updateChecklist();
-    updateButtonsState();
-    if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
-  }
-}
 
-// ============================================
-// MAIN UPLOAD FLOW
-// ============================================
-async function uploadContent(isDraft = false) {
-  if (!currentUserId) {
-    showToast('Please sign in to upload content');
-    document.getElementById('auth-modal').classList.add('active');
-    return;
-  }
-  const title = document.getElementById('content-title').value.trim();
-  const desc = document.getElementById('content-description').value.trim();
-  const genre = document.getElementById('content-genre').value;
-  if (!title || !desc || !selectedMediaFile || !genre) { showToast('Please fill all required fields'); return; }
-  if (selectedMediaType === 'short') {
-    if (extractedDuration === null) { showToast('Please wait for duration to be extracted', 'error'); return; }
-    if (extractedDuration > 60) { showToast('Shorts must be under 60 seconds', 'error'); return; }
-  }
-  isUploading = true;
-  updateButtonsState();
-  resetProgress();
-  uploadStartTime = Date.now();
-  lastLoadedBytes = 0;
-  lastUpdateTime = Date.now();
-  const progressSection = document.getElementById('upload-progress');
-  progressSection.classList.add('active');
-  document.getElementById('progress-text').textContent = 'Starting upload...';
-  try {
-    const contentMetadata = collectContentMetadata();
-    const moodData = collectMoodData();
-    const chaptersData = collectChaptersData();
-    const config = genreConfig[genre];
-    let finalMediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-    if (selectedMediaType === 'short') finalMediaType = 'short';
-    if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
-    document.getElementById('progress-text').textContent = 'Uploading media file...';
-    const mediaUrl = await uploadFileWithProgress(
-      selectedMediaFile,
-      'content-media',
-      'media',
-      (loaded, total) => {
-        updateProgress(loaded, total);
-        const percent = Math.round((loaded / total) * 100);
-        if (percent < 30) document.getElementById('progress-text').textContent = 'Uploading media file...';
-        else if (percent < 60) document.getElementById('progress-text').textContent = 'Still uploading, almost there...';
-        else if (percent < 90) document.getElementById('progress-text').textContent = 'Finalizing upload...';
-        else if (percent < 100) document.getElementById('progress-text').textContent = 'Almost complete...';
-        else document.getElementById('progress-text').textContent = 'Media upload complete!';
-      }
-    );
-    document.getElementById('progress-text').textContent = 'Media upload complete!';
-    let thumbnailUrl = null;
-    if (selectedThumbnailFile) {
-      document.getElementById('progress-text').textContent = 'Uploading thumbnail...';
-      thumbnailUrl = await uploadThumbnailWithProgress(
-        selectedThumbnailFile,
-        'content-thumbnails',
-        'thumbnails'
-      );
-      document.getElementById('progress-text').textContent = 'Thumbnail upload complete!';
-    } else {
-      if (finalMediaType === 'video') thumbnailUrl = 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80';
-      else thumbnailUrl = 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
+    async function checkAuthentication() {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (session?.user) {
+            currentSession = session;
+            currentUserId = session.user.id;
+            return session.user;
+        }
+        return null;
     }
-    document.getElementById('progress-text').textContent = 'Creating content record...';
-    const contentRecord = await createContentRecordWithMetadata({
-      title,
-      description: desc,
-      media_url: mediaUrl,
-      thumbnail_url: thumbnailUrl,
-      media_type: finalMediaType,
-      genre,
-      status: isDraft ? 'draft' : 'published',
-      duration: extractedDuration,
-      content_metadata: contentMetadata,
-      content_format: config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form'),
-      chapters: chaptersData,
-      season_number: contentMetadata.season_number,
-      episode_number: contentMetadata.episode_number
-    });
-    if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
-    if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
-    document.getElementById('progress-fill').style.width = '100%';
-    document.getElementById('progress-percentage').textContent = '100%';
-    document.getElementById('progress-text').textContent = 'Upload complete!';
-    localStorage.removeItem(`draft_${currentUserId}`);
-    document.getElementById('upload-form-state').style.display = 'none';
-    document.getElementById('processing-state').classList.add('active');
-    progressSection.classList.remove('active');
-    setTimeout(() => {
-      document.getElementById('processing-state').classList.remove('active');
-      document.getElementById('success-state').classList.add('active');
-      triggerConfetti();
-    }, 3000);
-  } catch (error) {
-    console.error('Upload failed:', error);
-    showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
-    resetProgress();
-    isUploading = false;
-    updateButtonsState();
-  } finally {
-    isUploading = false;
-    currentXhr = null;
-    updateButtonsState();
-  }
-}
 
-// ============================================
-// SEARCH & NOTIFICATIONS (RESTORED FROM OLD)
-// ============================================
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => { clearTimeout(timeout); func(...args); };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-async function searchContent(query, category = '', sortBy = 'newest') {
-  try {
-    let queryBuilder = window.supabaseClient
-      .from('Content')
-      .select('*, user_profiles!user_id(*)')
-      .ilike('title', `%${query}%`)
-      .eq('status', 'published');
-    if (category) queryBuilder = queryBuilder.eq('genre', category);
-    if (sortBy === 'newest') queryBuilder = queryBuilder.order('created_at', { ascending: false });
-    const { data, error } = await queryBuilder.limit(50);
-    if (error) throw error;
-    const enriched = await Promise.all((data || []).map(async (item) => {
-      const { count: viewsCount } = await window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-      const { count: likesCount } = await window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-      return { ...item, real_views: viewsCount || 0, real_likes: likesCount || 0 };
-    }));
-    if (sortBy === 'popular') enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
-    else if (sortBy === 'trending') enriched.sort((a, b) => {
-      const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
-      const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
-      return bScore - aScore;
-    });
-    return enriched;
-  } catch (error) {
-    console.error('Search error:', error);
-    return [];
-  }
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function truncateText(text, maxLength) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-}
-
-function formatNumber(num) {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-  return num.toString();
-}
-
-function renderSearchResults(results) {
-  const grid = document.getElementById('search-results-grid');
-  if (!grid) return;
-  if (!results || results.length === 0) {
-    grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
-    return;
-  }
-  grid.innerHTML = results.map(item => {
-    const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
-    const creatorId = item.user_profiles?.id || item.user_id;
-    const thumbnailUrl = item.thumbnail_url
-      ? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`
-      : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-    return `
-      <div class="content-card" data-content-id="${item.id}">
-        <div class="card-thumbnail">
-          <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-          <div class="thumbnail-overlay"></div>
-          <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-        </div>
-        <div class="card-content">
-          <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
-          <button class="creator-btn" onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
-            <i class="fas fa-user"></i> ${truncateText(escapeHtml(creator), 15)}
-          </button>
-          <div class="card-stats">
-            <div class="card-stat"><i class="fas fa-eye"></i> ${formatNumber(item.real_views || item.views_count || 0)}</div>
-            <div class="card-stat"><i class="fas fa-heart"></i> ${formatNumber(item.real_likes || 0)}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-  grid.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.creator-btn')) return;
-      const id = card.dataset.contentId;
-      if (id) window.location.href = `content-detail.html?id=${id}`;
-    });
-  });
-}
-
-function setupSearchModal() {
-  const searchModal = document.getElementById('search-modal');
-  const searchInput = document.getElementById('search-input');
-  const closeSearchBtn = document.getElementById('close-search-btn');
-  if (!searchModal || !searchInput || !closeSearchBtn) return;
-  document.getElementById('search-btn').addEventListener('click', () => {
-    searchModal.classList.add('active');
-    setTimeout(() => searchInput.focus(), 300);
-  });
-  closeSearchBtn.addEventListener('click', () => {
-    searchModal.classList.remove('active');
-    searchInput.value = '';
-    document.getElementById('search-results-grid').innerHTML = '';
-  });
-  searchModal.addEventListener('click', (e) => {
-    if (e.target === searchModal) {
-      searchModal.classList.remove('active');
-      searchInput.value = '';
-      document.getElementById('search-results-grid').innerHTML = '';
+    function setupMediaTypeSelector() {
+        document.querySelectorAll('.media-type-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedMediaType = opt.dataset.type;
+                document.getElementById('shorts-info').classList.toggle('active', selectedMediaType === 'short');
+                if (selectedMediaFile) validateMediaFile(selectedMediaFile);
+                updateButtonsState();
+                updateChecklist();
+            });
+        });
     }
-  });
-  searchInput.addEventListener('input', debounce(async (e) => {
-    const query = e.target.value.trim();
-    const category = document.getElementById('category-filter')?.value;
-    const sortBy = document.getElementById('sort-filter')?.value;
-    const resultsGrid = document.getElementById('search-results-grid');
-    if (!resultsGrid) return;
-    if (query.length < 2) {
-      resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
-      return;
+
+    function setupMediaUpload() {
+        const zone = document.getElementById('media-upload-zone');
+        const input = document.getElementById('media-file-input');
+        zone.addEventListener('click', () => input.click());
+        input.addEventListener('change', (e) => { if (e.target.files.length) handleMediaFile(e.target.files[0]); });
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--warm-gold)'; });
+        zone.addEventListener('dragleave', () => { zone.style.borderColor = 'rgba(255,255,255,.3)'; });
+        zone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleMediaFile(e.dataTransfer.files[0]); });
     }
-    resultsGrid.innerHTML = `<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>`;
-    const results = await searchContent(query, category, sortBy);
-    renderSearchResults(results);
-  }, 300));
-  document.getElementById('category-filter')?.addEventListener('change', () => {
-    if (document.getElementById('search-input').value.trim().length >= 2) {
-      document.getElementById('search-input').dispatchEvent(new Event('input'));
+
+    function setupThumbnailUpload() {
+        const zone = document.getElementById('thumbnail-upload-zone');
+        const input = document.getElementById('thumbnail-file-input');
+        zone.addEventListener('click', () => input.click());
+        input.addEventListener('change', (e) => { if (e.target.files.length) handleThumbnailFile(e.target.files[0], false); });
+        document.getElementById('camera-file-input').addEventListener('change', (e) => { if (e.target.files.length) handleThumbnailFile(e.target.files[0], false); });
     }
-  });
-  document.getElementById('sort-filter')?.addEventListener('change', () => {
-    if (document.getElementById('search-input').value.trim().length >= 2) {
-      document.getElementById('search-input').dispatchEvent(new Event('input'));
+
+    function setupListeners() {
+        document.getElementById('upload-form').addEventListener('submit', (e) => { e.preventDefault(); if (!isUploading) uploadContent(false); });
+        document.getElementById('save-draft-btn').addEventListener('click', () => { if (!isUploading) uploadContent(true); });
+        
+        ['content-title', 'content-description'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                updateButtonsState();
+                updateChecklist();
+                saveDraftToLocalStorage();
+            });
+        });
+        
+        document.getElementById('content-genre').addEventListener('change', () => {
+            updateGenreForm();
+            updateChecklist();
+            saveDraftToLocalStorage();
+        });
+        
+        document.getElementById('auth-login-btn').addEventListener('click', () => {
+            window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+        });
+        document.getElementById('auth-cancel-btn').addEventListener('click', () => authModal.classList.remove('active'));
+        document.getElementById('back-btn').addEventListener('click', () => window.history.back());
+        document.getElementById('profile-btn').addEventListener('click', () => {
+            window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+        });
+        
+        document.querySelectorAll('.mood-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.mood-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedMood = opt.dataset.mood;
+                saveDraftToLocalStorage();
+            });
+        });
     }
-  });
-}
 
-async function loadNotifications() {
-  try {
-    if (!currentUserId) { updateNotificationBadge(0); return; }
-    const { data, error } = await window.supabaseClient
-      .from('notifications')
-      .select('*')
-      .eq('user_id', currentUserId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (error) throw error;
-    const unreadCount = (data || []).filter(n => !n.is_read).length;
-    updateNotificationBadge(unreadCount);
-    const notificationsList = document.getElementById('notifications-list');
-    if (!notificationsList) return;
-    if (!data || data.length === 0) {
-      notificationsList.innerHTML = `<div class="empty-notifications"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>`;
-      return;
+    function triggerConfetti() {
+        const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EF4444'];
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 4000);
+        }
     }
-    notificationsList.innerHTML = data.map(notification => `
-      <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}" data-content-id="${notification.content_id || ''}">
-        <div class="notification-icon"><i class="${getNotificationIcon(notification.type)}"></i></div>
-        <div class="notification-content">
-          <h4>${escapeHtml(notification.title)}</h4>
-          <p>${escapeHtml(notification.message)}</p>
-          <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-        </div>
-        ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-      </div>
-    `).join('');
-    notificationsList.querySelectorAll('.notification-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        const id = item.dataset.id;
-        await markNotificationAsRead(id);
-        if (item.dataset.contentId) window.location.href = `content-detail.html?id=${item.dataset.contentId}`;
-        document.getElementById('notifications-panel').classList.remove('active');
-      });
-    });
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    updateNotificationBadge(0);
-  }
-}
 
-function getNotificationIcon(type) {
-  switch(type) {
-    case 'like': return 'fas fa-heart';
-    case 'comment': return 'fas fa-comment';
-    case 'follow': return 'fas fa-user-plus';
-    case 'view_milestone': return 'fas fa-trophy';
-    case 'system': return 'fas fa-bell';
-    default: return 'fas fa-bell';
-  }
-}
+    window.removeMediaFile = function() {
+        selectedMediaFile = null;
+        extractedDuration = null;
+        document.getElementById('media-file-info').style.display = 'none';
+        document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
+        document.getElementById('duration-display').style.display = 'none';
+        updateButtonsState();
+        updateChecklist();
+        resetProgress();
+    };
+    
+    window.openImagePicker = function() { document.getElementById('thumbnail-file-input').click(); };
+    window.captureCameraImage = function() { document.getElementById('camera-file-input').click(); };
+    window.viewContent = function() { window.location.href = 'content-library.html'; };
+    window.shareContent = function() {
+        if (navigator.share) {
+            navigator.share({ title: 'Check out my content on Bantu Stream Connect!', url: window.location.origin });
+        } else {
+            showToast('Link copied to clipboard', 'success');
+        }
+    };
+    window.uploadAnother = function() {
+        document.getElementById('upload-form').reset();
+        selectedMediaFile = null;
+        selectedThumbnailFile = null;
+        extractedDuration = null;
+        selectedMood = null;
+        chapters = [];
+        document.getElementById('media-file-info').style.display = 'none';
+        document.getElementById('thumbnail-preview').style.display = 'none';
+        document.getElementById('duration-display').style.display = 'none';
+        document.getElementById('success-state').classList.remove('active');
+        document.getElementById('upload-form-state').style.display = 'block';
+        resetProgress();
+        updateGenreForm();
+        updateChecklist();
+        updateButtonsState();
+        showToast('Ready for next upload!', 'success');
+    };
+    window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
 
-async function markNotificationAsRead(notificationId) {
-  try {
-    const { error } = await window.supabaseClient
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId);
-    if (error) throw error;
-    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-    if (item) {
-      item.classList.remove('unread');
-      item.classList.add('read');
-      const dot = item.querySelector('.notification-dot');
-      if (dot) dot.remove();
+    async function initialize() {
+        loadingScreen.style.display = 'flex';
+        app.style.display = 'none';
+        const user = await checkAuthentication();
+        if (!user) authModal.classList.add('active');
+        setupMediaTypeSelector();
+        setupMediaUpload();
+        setupThumbnailUpload();
+        setupListeners();
+        updateGenreForm();
+        updateButtonsState();
+        updateChecklist();
+        loadDraftFromLocalStorage();
+        loadingScreen.style.display = 'none';
+        app.style.display = 'block';
     }
-    await loadNotifications();
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-  }
-}
-
-async function markAllNotificationsAsRead() {
-  try {
-    if (!currentUserId) return;
-    const { error } = await window.supabaseClient
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', currentUserId)
-      .eq('is_read', false);
-    if (error) throw error;
-    document.querySelectorAll('.notification-item.unread').forEach(item => {
-      item.classList.remove('unread');
-      item.classList.add('read');
-      const dot = item.querySelector('.notification-dot');
-      if (dot) dot.remove();
-    });
-    updateNotificationBadge(0);
-    showToast('All notifications marked as read', 'success');
-  } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    showToast('Failed to mark notifications as read', 'error');
-  }
-}
-
-function updateNotificationBadge(count = null) {
-  if (count === null) count = document.querySelectorAll('.notification-item.unread').length;
-  const badge = document.getElementById('notification-count');
-  if (badge) {
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.style.display = count > 0 ? 'flex' : 'none';
-  }
-}
-
-function formatNotificationTime(timestamp) {
-  if (!timestamp) return 'Just now';
-  const diffMs = Date.now() - new Date(timestamp).getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(timestamp).toLocaleDateString();
-}
-
-function setupNotificationsPanel() {
-  const notificationsPanel = document.getElementById('notifications-panel');
-  const closeNotifications = document.getElementById('close-notifications');
-  const markAllReadBtn = document.getElementById('mark-all-read');
-  if (!notificationsPanel || !closeNotifications || !markAllReadBtn) return;
-  document.getElementById('notifications-btn').addEventListener('click', () => {
-    notificationsPanel.classList.add('active');
-    loadNotifications();
-  });
-  closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
-  document.addEventListener('click', (e) => {
-    if (notificationsPanel.classList.contains('active') &&
-        !notificationsPanel.contains(e.target) &&
-        !document.getElementById('notifications-btn').contains(e.target)) {
-      notificationsPanel.classList.remove('active');
-    }
-  });
-  markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
-}
-
-// ============================================
-// EVENT LISTENERS & INITIALIZATION
-// ============================================
-function setupEventListeners() {
-  document.querySelectorAll('.media-type-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-      selectedMediaType = opt.dataset.type;
-      const shortsInfo = document.getElementById('shorts-info');
-      if (selectedMediaType === 'short') shortsInfo.classList.add('active');
-      else shortsInfo.classList.remove('active');
-      if (selectedMediaFile) validateMediaFile(selectedMediaFile);
-      updateButtonsState();
-      updateChecklist();
-    });
-  });
-  document.getElementById('content-genre').addEventListener('change', () => {
-    updateGenreForm();
-    updateChecklist();
-    saveDraftToLocalStorage();
-  });
-  document.querySelectorAll('.mood-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      document.querySelectorAll('.mood-option').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-      selectedMood = opt.dataset.mood;
-      saveDraftToLocalStorage();
-    });
-  });
-  document.getElementById('add-chapter-btn')?.addEventListener('click', addChapter);
-  ['content-title', 'content-description'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      updateButtonsState();
-      updateChecklist();
-      saveDraftToLocalStorage();
-    });
-  });
-  document.getElementById('upload-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!isUploading) uploadContent(false);
-  });
-  document.getElementById('save-draft-btn').addEventListener('click', () => {
-    if (!isUploading) uploadContent(true);
-  });
-  const mediaZone = document.getElementById('media-upload-zone');
-  const mediaInput = document.getElementById('media-file-input');
-  mediaZone.addEventListener('click', () => mediaInput.click());
-  mediaInput.addEventListener('change', (e) => {
-    if (e.target.files.length) handleMediaFile(e.target.files[0]);
-  });
-  mediaZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    mediaZone.style.borderColor = 'var(--warm-gold)';
-    mediaZone.style.background = 'rgba(245,158,11,.05)';
-  });
-  mediaZone.addEventListener('dragleave', () => {
-    mediaZone.style.borderColor = 'rgba(255,255,255,.3)';
-    mediaZone.style.background = 'transparent';
-  });
-  mediaZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    mediaZone.style.borderColor = 'rgba(255,255,255,.3)';
-    mediaZone.style.background = 'transparent';
-    if (e.dataTransfer.files.length > 0) handleMediaFile(e.dataTransfer.files[0]);
-  });
-  const thumbZone = document.getElementById('thumbnail-upload-zone');
-  const thumbInput = document.getElementById('thumbnail-file-input');
-  thumbZone.addEventListener('click', () => thumbInput.click());
-  thumbInput.addEventListener('change', (e) => {
-    if (e.target.files.length) handleThumbnailFile(e.target.files[0], false);
-  });
-  thumbZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    thumbZone.style.borderColor = 'var(--warm-gold)';
-    thumbZone.style.background = 'rgba(245,158,11,.05)';
-  });
-  thumbZone.addEventListener('dragleave', () => {
-    thumbZone.style.borderColor = 'rgba(255,255,255,.3)';
-    thumbZone.style.background = 'transparent';
-  });
-  thumbZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    thumbZone.style.borderColor = 'rgba(255,255,255,.3)';
-    thumbZone.style.background = 'transparent';
-    if (e.dataTransfer.files.length > 0) handleThumbnailFile(e.dataTransfer.files[0], false);
-  });
-  document.getElementById('camera-file-input').addEventListener('change', (e) => {
-    if (e.target.files.length > 0) handleThumbnailFile(e.target.files[0], false);
-  });
-  document.getElementById('auth-login-btn').addEventListener('click', () => {
-    window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-  });
-  document.getElementById('auth-cancel-btn').addEventListener('click', () => {
-    document.getElementById('auth-modal').classList.remove('active');
-    window.history.back();
-  });
-  document.getElementById('back-btn').addEventListener('click', () => window.history.back());
-  document.getElementById('profile-btn').addEventListener('click', () => {
-    window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-  });
-  setupSearchModal();
-  setupNotificationsPanel();
-}
-
-async function initialize() {
-  setLoading(true);
-  setupSessionRecovery();
-  let user = await checkAuthentication();
-  if (!user) {
-    try {
-      const { data, error } = await window.supabaseClient.auth.refreshSession();
-      if (!error && data.session) {
-        user = data.session.user;
-        currentSession = data.session;
-        currentUserId = data.session.user.id;
-        currentUserEmail = data.session.user.email;
-        await loadUserProfilePicture(data.session.user);
-        await loadCreatorStreak();
-      }
-    } catch (refreshError) {
-      console.error('Session refresh failed:', refreshError);
-    }
-  }
-  if (!user) {
-    document.getElementById('auth-modal').classList.add('active');
-  } else {
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (session) {
-      currentSession = session;
-      currentUserId = session.user.id;
-      currentUserEmail = session.user.email;
-      await loadUserProfilePicture(session.user);
-    }
-  }
-  setupEventListeners();
-  updateGenreForm();
-  updateButtonsState();
-  updateChecklist();
-  loadDraftFromLocalStorage();
-  if (currentUserId) loadNotifications();
-  setLoading(false);
-  console.log('✅ Creator Upload initialized with ALL features restored');
-}
-
-// ============================================
-// GLOBAL FUNCTIONS FOR INLINE HANDLERS
-// ============================================
-window.removeMediaFile = function() {
-  selectedMediaFile = null;
-  extractedDuration = null;
-  document.getElementById('media-file-info').style.display = 'none';
-  document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
-  document.getElementById('duration-display').style.display = 'none';
-  updateButtonsState();
-  updateChecklist();
-  resetProgress();
-};
-
-window.removeTagFromField = function(fieldName, tag) {
-  const container = document.querySelector(`#field-${fieldName}`);
-  if (container && container.dataset.tags) {
-    const tags = JSON.parse(container.dataset.tags).filter(t => t !== tag);
-    container.dataset.tags = JSON.stringify(tags);
-  }
-};
-
-window.openImagePicker = function() {
-  document.getElementById('thumbnail-file-input').click();
-};
-
-window.captureCameraImage = function() {
-  document.getElementById('camera-file-input').click();
-};
-
-window.viewContent = function() {
-  window.location.href = 'content-library.html';
-};
-
-window.shareContent = function() {
-  if (navigator.share) {
-    navigator.share({
-      title: 'Check out my content on Bantu Stream Connect!',
-      url: window.location.origin
-    });
-  } else {
-    showToast('Link copied to clipboard', 'success');
-  }
-};
-
-window.uploadAnother = function() {
-  document.getElementById('upload-form').reset();
-  selectedMediaFile = null;
-  selectedThumbnailFile = null;
-  extractedDuration = null;
-  selectedMood = null;
-  chapters = [];
-  document.getElementById('media-file-info').style.display = 'none';
-  document.getElementById('thumbnail-preview').style.display = 'none';
-  document.getElementById('duration-display').style.display = 'none';
-  document.getElementById('success-state').classList.remove('active');
-  document.getElementById('upload-form-state').style.display = 'block';
-  resetProgress();
-  updateGenreForm();
-  updateChecklist();
-  updateButtonsState();
-  showToast('Ready for next upload!', 'success');
-};
-
-window.goToDashboard = function() {
-  window.location.href = 'creator-dashboard.html';
-};
-
-function triggerConfetti() {
-  const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EF4444'];
-  for (let i = 0; i < 50; i++) {
-    const confetti = document.createElement('div');
-    confetti.className = 'confetti';
-    confetti.style.left = Math.random() * 100 + 'vw';
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-    document.body.appendChild(confetti);
-    setTimeout(() => confetti.remove(), 4000);
-  }
-}
-
-// Auth state listener with enhanced events
-window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth state changed:', event);
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-    if (session?.user) {
-      currentSession = session;
-      currentUserId = session.user.id;
-      currentUserEmail = session.user.email;
-      await loadUserProfilePicture(session.user);
-      await loadNotifications();
-      await loadCreatorStreak();
-      document.getElementById('auth-modal').classList.remove('active');
-      isUploading = false;
-      updateButtonsState();
-      showToast('Welcome back!', 'success');
-    }
-  } else if (event === 'SIGNED_OUT') {
-    currentSession = null;
-    currentUserId = null;
-    currentUserEmail = null;
-    const placeholder = document.getElementById('userProfilePlaceholder');
-    while (placeholder.firstChild) placeholder.removeChild(placeholder.firstChild);
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
-    div.innerHTML = '<i class="fas fa-user"></i>';
-    placeholder.appendChild(div);
-    updateNotificationBadge(0);
-    showToast('Signed out successfully', 'info');
-  } else if (event === 'USER_UPDATED') {
-    console.log('Session updated');
-    if (session) currentSession = session;
-  }
+    
+    initialize();
 });
-
-// Start the app
-initialize();
 </script>
 </body>
 </html>
