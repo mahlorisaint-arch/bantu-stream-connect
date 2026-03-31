@@ -826,7 +826,7 @@ transition: color .3s ease; font-size: 14px;
 <div class="creator-streak" id="creator-streak" style="display:none"><i class="fas fa-fire"></i><span id="streak-count">0</span> Uploads This Week</div>
 <h1>UPLOAD YOUR CONTENT</h1>
 <div id="upload-form-state">
-<form id="upload-form">
+<form id="upload-form" novalidate>
 <div class="form-group">
 <label class="form-label">Content Type <span>*</span></label>
 <div class="media-type-selector">
@@ -860,6 +860,7 @@ transition: color .3s ease; font-size: 14px;
 <footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
 </div>
 <div id="toast-container"></div>
+
 <script>
 if (!window.supabaseClient) {
     window.supabaseClient = supabase.createClient(
@@ -955,7 +956,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const uploadFormState = document.getElementById('upload-form-state'), processingState = document.getElementById('processing-state');
     const successState = document.getElementById('success-state');
 
-    // Helper Functions
     function showToast(message, type = 'error') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -1181,6 +1181,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }]);
         }
         return playlistId;
+    }
+
+    function validateGenreMetadata() {
+        const genre = document.getElementById('content-genre').value;
+        const config = genreConfig[genre];
+        if (!config) return true;
+        
+        let isValid = true;
+        for (const field of config.fields) {
+            if (field.required) {
+                if (field.type === 'tags') {
+                    const element = document.getElementById(`field-${field.name}`);
+                    const container = element?.closest('.tags-input-container') || element?.querySelector('.tags-input-container');
+                    const tags = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
+                    if (tags.length === 0) {
+                        isValid = false;
+                        break;
+                    }
+                } else if (field.type === 'radio') {
+                    const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
+                    if (!selected) {
+                        isValid = false;
+                        break;
+                    }
+                } else {
+                    const element = document.getElementById(`field-${field.name}`);
+                    if (!element || !element.value) {
+                        isValid = false;
+                        break;
+                    }
+                }
+            }
+        }
+        return isValid;
     }
 
     // ============================================
@@ -1442,6 +1476,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const genre = document.getElementById('content-genre').value;
         
         if (!title || !desc || !selectedMediaFile || !genre) { showToast('Please fill all required fields'); return; }
+        
+        // Validate genre-specific required fields
+        if (!validateGenreMetadata()) {
+            showToast('Please fill all required fields for the selected genre', 'error');
+            return;
+        }
+        
         if (selectedMediaType === 'short' && (extractedDuration === null || extractedDuration > 60)) { showToast('Shorts must be under 60 seconds'); return; }
         
         isUploading = true;
@@ -1571,6 +1612,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (f.type === 'tags') {
                     const cont = el?.closest('.tags-input-container');
                     return cont?.dataset.tags && JSON.parse(cont.dataset.tags).length > 0;
+                } else if (f.type === 'radio') {
+                    const selected = document.querySelector(`input[name="field-${f.name}"]:checked`);
+                    return !!selected;
                 }
                 return el && el.value;
             }
@@ -1595,9 +1639,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const genre = document.getElementById('content-genre').value;
         const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
         const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
+        const metadataValid = validateGenreMetadata();
         
         saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-        publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre;
+        publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
         
         if (isUploading) {
             publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
@@ -1705,6 +1750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         document.getElementById('content-genre').addEventListener('change', () => {
             updateGenreForm();
+            updateButtonsState();
             updateChecklist();
             saveDraftToLocalStorage();
         });
@@ -1725,6 +1771,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 selectedMood = opt.dataset.mood;
                 saveDraftToLocalStorage();
             });
+        });
+        
+        // Add listener for dynamic fields to update button state when radio/select changes
+        document.addEventListener('change', (e) => {
+            if (e.target.id && e.target.id.startsWith('field-')) {
+                updateButtonsState();
+                updateChecklist();
+                saveDraftToLocalStorage();
+            }
         });
     }
 
