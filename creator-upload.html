@@ -2448,7 +2448,7 @@ function getInitialsFromName(fullName) {
 }
 
 // ============================================
-// AUTHENTICATION
+// AUTHENTICATION & INITIALIZATION (FIXED)
 // ============================================
 
 async function checkAuthentication() {
@@ -2548,28 +2548,39 @@ function setupEventListeners() {
     
     const mediaZone = document.getElementById('media-upload-zone');
     const mediaInput = document.getElementById('media-file-input');
-    mediaZone.addEventListener('click', () => mediaInput.click());
-    mediaInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleMediaFile(e.target.files[0]);
-    });
+    if (mediaZone && mediaInput) {
+        mediaZone.addEventListener('click', () => mediaInput.click());
+        mediaInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleMediaFile(e.target.files[0]);
+        });
+    }
     
     const thumbZone = document.getElementById('thumbnail-upload-zone');
     const thumbInput = document.getElementById('thumbnail-file-input');
-    thumbZone.addEventListener('click', () => thumbInput.click());
-    thumbInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleThumbnailFile(e.target.files[0], false);
-    });
+    if (thumbZone && thumbInput) {
+        thumbZone.addEventListener('click', () => thumbInput.click());
+        thumbInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleThumbnailFile(e.target.files[0], false);
+        });
+    }
     
-    document.getElementById('auth-login-btn').addEventListener('click', () => {
+    const cameraInput = document.getElementById('camera-file-input');
+    if (cameraInput) {
+        cameraInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleThumbnailFile(e.target.files[0], false);
+        });
+    }
+    
+    document.getElementById('auth-login-btn')?.addEventListener('click', () => {
         window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
     });
-    document.getElementById('auth-cancel-btn').addEventListener('click', () => {
+    document.getElementById('auth-cancel-btn')?.addEventListener('click', () => {
         document.getElementById('auth-modal').classList.remove('active');
         window.history.back();
     });
     
-    document.getElementById('back-btn').addEventListener('click', () => window.history.back());
-    document.getElementById('profile-btn').addEventListener('click', () => {
+    document.getElementById('back-btn')?.addEventListener('click', () => window.history.back());
+    document.getElementById('profile-btn')?.addEventListener('click', () => {
         if (currentUserId) {
             window.location.href = 'profile.html';
         } else {
@@ -2577,7 +2588,7 @@ function setupEventListeners() {
         }
     });
     
-    // Search and notifications setup (keep existing)
+    // Search and notifications setup
     document.getElementById('search-btn')?.addEventListener('click', () => {
         document.getElementById('search-modal').classList.add('active');
     });
@@ -2592,24 +2603,85 @@ function setupEventListeners() {
     });
 }
 
+// MAIN INITIALIZATION FUNCTION
 async function initialize() {
+    console.log('🚀 Starting initialization...');
     const loading = document.getElementById('loading');
     const app = document.getElementById('app');
-    loading.style.display = 'flex';
-    app.style.display = 'none';
     
-    await checkAuthentication();
-    setupEventListeners();
+    // Show loading
+    if (loading) loading.style.display = 'flex';
+    if (app) app.style.display = 'none';
     
-    updateGenreForm();
-    updateButtonsState();
-    updateChecklist();
-    loadDraftFromLocalStorage();
-    
-    loading.style.display = 'none';
-    app.style.display = 'block';
-    console.log('✅ Creator Upload initialized');
+    try {
+        // Check authentication
+        const user = await checkAuthentication();
+        console.log('Auth check complete, user:', user ? 'logged in' : 'not logged in');
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Initialize form UI
+        updateGenreForm();
+        updateButtonsState();
+        updateChecklist();
+        
+        // Load draft if authenticated
+        if (currentUserId) {
+            loadDraftFromLocalStorage();
+        } else {
+            // Show auth modal
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) authModal.classList.add('active');
+        }
+        
+        // Hide loading, show app
+        if (loading) loading.style.display = 'none';
+        if (app) app.style.display = 'block';
+        
+        console.log('✅ Creator Upload initialized successfully');
+    } catch (error) {
+        console.error('❌ Initialization error:', error);
+        // Still hide loading and show app to prevent stuck screen
+        if (loading) loading.style.display = 'none';
+        if (app) app.style.display = 'block';
+        showToast('Error loading page, please refresh', 'error');
+    }
 }
+
+// Auth state listener
+window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event);
+    
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+            currentSession = session;
+            currentUserId = session.user.id;
+            await loadUserProfilePicture(session.user);
+            await loadCreatorStreak();
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) authModal.classList.remove('active');
+            isUploading = false;
+            updateButtonsState();
+            updateChecklist();
+            loadDraftFromLocalStorage();
+            showToast('Welcome back!', 'success');
+        }
+    } else if (event === 'SIGNED_OUT') {
+        currentSession = null;
+        currentUserId = null;
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        if (placeholder) {
+            placeholder.innerHTML = `<div class="profile-placeholder"><i class="fas fa-user"></i></div>`;
+        }
+        const authModal = document.getElementById('auth-modal');
+        if (authModal) authModal.classList.add('active');
+        showToast('Signed out successfully', 'info');
+    }
+});
+
+// Start the app
+initialize();
 
 // Global functions for inline handlers
 window.removeMediaFile = function() {
@@ -2689,34 +2761,20 @@ function triggerConfetti() {
     }
 }
 
-// Auth state listener
-window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state changed:', event);
-    
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (session?.user) {
-            currentSession = session;
-            currentUserId = session.user.id;
-            await loadUserProfilePicture(session.user);
-            await loadCreatorStreak();
-            document.getElementById('auth-modal').classList.remove('active');
-            isUploading = false;
-            updateButtonsState();
-            showToast('Welcome back!', 'success');
-        }
-    } else if (event === 'SIGNED_OUT') {
-        currentSession = null;
-        currentUserId = null;
-        document.getElementById('userProfilePlaceholder').innerHTML = `
-            <div class="profile-placeholder">
-                <i class="fas fa-user"></i>
-            </div>
-        `;
-        showToast('Signed out successfully', 'info');
+// Ensure the initial loading screen is hidden if there's an error during script parsing
+window.addEventListener('load', () => {
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading && loading.style.display !== 'none') {
+        setTimeout(() => {
+            if (loading.style.display !== 'none') {
+                console.log('Fallback: hiding loading screen');
+                loading.style.display = 'none';
+                if (app) app.style.display = 'block';
+            }
+        }, 3000);
     }
 });
-
-initialize();
 </script>
 </body>
 </html>
