@@ -3129,11 +3129,12 @@ function setupEventListeners() {
   // LIKE BUTTON - RLS-COMPLIANT ✅ FIXED
   // ============================================
   // ============================================
-// LIKE BUTTON - JAVASCRIPT COUNT UPDATE FALLBACK ✅
+// LIKE BUTTON - RLS-COMPLIANT, TRIGGER-INDEPENDENT ✅
 // ============================================
 const likeBtn = document.getElementById('likeBtn');
 if (likeBtn) {
   likeBtn.addEventListener('click', async function() {
+    // Guard clauses
     if (!currentContent) return;
     
     if (!window.AuthHelper?.isAuthenticated?.()) {
@@ -3147,13 +3148,14 @@ if (likeBtn) {
       return;
     }
     
+    // Get current state
     const isLiked = likeBtn.classList.contains('active');
     const likesCountEl = document.getElementById('likesCount');
     const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
     const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
     
     try {
-      // Update UI optimistically
+      // ===== OPTIMISTIC UI UPDATE =====
       likeBtn.classList.toggle('active', !isLiked);
       likeBtn.innerHTML = !isLiked
         ? '<i class="fas fa-heart"></i><span>Liked</span>'
@@ -3163,6 +3165,7 @@ if (likeBtn) {
         likesCountEl.textContent = formatNumber(newLikes);
       }
       
+      // ===== DATABASE OPERATION: Insert/Delete Like =====
       if (!isLiked) {
         // LIKE: Insert new record
         const { error: insertError } = await window.supabaseClient
@@ -3174,44 +3177,52 @@ if (likeBtn) {
         
         if (insertError) throw insertError;
         
-        // ✅ MANUAL COUNT UPDATE: Increment likes_count in Content table
-        await window.supabaseClient
-          .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id);
-          
       } else {
-        // UNLIKE: Delete record
+        // UNLIKE: Delete record with BOTH WHERE clauses (RLS compliant)
         const { error: deleteError } = await window.supabaseClient
           .from('content_likes')
           .delete()
-          .eq('user_id', userProfile.id)
-          .eq('content_id', currentContent.id);
+          .eq('user_id', userProfile.id)      // ← WHERE clause #1
+          .eq('content_id', currentContent.id); // ← WHERE clause #2
         
         if (deleteError) throw deleteError;
-        
-        // ✅ MANUAL COUNT UPDATE: Decrement likes_count
-        await window.supabaseClient
-          .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id);
       }
       
+      // ===== FETCH UPDATED COUNT FROM SOURCE TABLE =====
+      // This bypasses any trigger issues by counting directly
+      const { count, error: countError } = await window.supabaseClient
+        .from('content_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('content_id', currentContent.id);
+      
+      if (countError) throw countError;
+      
+      // ===== UPDATE UI WITH ACCURATE COUNT =====
+      if (likesCountEl) {
+        likesCountEl.textContent = formatNumber(count || 0);
+      }
+      
+      // Show success message
       showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
       
-      // Refresh from source to ensure accuracy
-      await refreshCountsFromSource();
+      // Optional: Track analytics
+      if (window.track?.contentLike) {
+        window.track.contentLike(currentContent.id, !isLiked);
+      }
       
     } catch (error) {
       console.error('Like operation failed:', error);
-      // Revert UI on error
+      
+      // ===== ROLLBACK UI ON ERROR =====
       likeBtn.classList.toggle('active', isLiked);
       likeBtn.innerHTML = isLiked
         ? '<i class="fas fa-heart"></i><span>Liked</span>'
         : '<i class="far fa-heart"></i><span>Like</span>';
+      
       if (likesCountEl) {
         likesCountEl.textContent = formatNumber(currentLikes);
       }
+      
       showToast('Failed: ' + error.message, 'error');
     }
   });
