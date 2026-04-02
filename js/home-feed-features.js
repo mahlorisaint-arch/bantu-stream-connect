@@ -1,5 +1,5 @@
 // ============================================
-// HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE
+// HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE (FIXED)
 // ============================================
 
 // Check if languageMap already exists to avoid duplicate declaration errors
@@ -25,9 +25,76 @@ if (typeof window.languageMap === 'undefined') {
 // ============================================
 
 /**
+ * FIXED: Fix Media URL - Handles all Supabase storage URLs correctly
+ * @param {string} url - The URL from database
+ * @returns {string} Properly formatted URL
+ */
+function fixMediaUrl(url) {
+    if (!url) return '';
+    
+    // Already a full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Check if it's already a valid Supabase URL
+        if (url.includes('supabase.co/storage')) {
+            return url;
+        }
+        return url;
+    }
+    
+    // Remove leading slashes
+    const cleanPath = url.replace(/^\/+/, '');
+    
+    // Construct full Supabase storage URL
+    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    
+    // If path already includes storage/v1/object/public, don't duplicate
+    if (cleanPath.includes('storage/v1/object/public')) {
+        return `${SUPABASE_URL}/${cleanPath}`;
+    }
+    
+    // Standard bucket path
+    return `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
+}
+
+/**
+ * FIXED: Fix Avatar URL - Special handling for avatar images
+ * @param {string} url - The avatar URL from database
+ * @returns {string} Properly formatted URL
+ */
+function fixAvatarUrl(url) {
+    if (!url) return '';
+    
+    // Already a full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Check for valid image format
+        if (url.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i) || url.includes('supabase.co')) {
+            return url;
+        }
+        return url;
+    }
+    
+    // Remove leading slashes
+    const cleanPath = url.replace(/^\/+/, '');
+    
+    // Construct full Supabase storage URL
+    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    
+    // If path already includes storage/v1/object/public, don't duplicate
+    if (cleanPath.includes('storage/v1/object/public')) {
+        return `${SUPABASE_URL}/${cleanPath}`;
+    }
+    
+    // Check if it's a user_avatars bucket path
+    if (cleanPath.includes('user_avatars') || cleanPath.includes('avatars')) {
+        return `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
+    }
+    
+    // Default avatar bucket
+    return `${SUPABASE_URL}/storage/v1/object/public/user_avatars/${cleanPath}`;
+}
+
+/**
  * Format duration in seconds to MM:SS or HH:MM:SS format
- * @param {number} seconds - Duration in seconds
- * @returns {string} Formatted duration string
  */
 function formatDuration(seconds) {
     if (!seconds || isNaN(seconds) || seconds <= 0) return "0:00";
@@ -47,8 +114,6 @@ function formatDuration(seconds) {
 
 /**
  * Format large numbers with K/M suffixes
- * @param {number} num - Number to format
- * @returns {string} Formatted number string
  */
 function formatNumber(num) {
     if (!num && num !== 0) return '0';
@@ -59,8 +124,6 @@ function formatNumber(num) {
 
 /**
  * Get initials from a name
- * @param {string} name - Full name
- * @returns {string} Initials (max 2 characters)
  */
 function getInitials(name) {
     if (!name) return '?';
@@ -74,8 +137,6 @@ function getInitials(name) {
 
 /**
  * Escape HTML special characters
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
  */
 function escapeHtml(text) {
     if (!text) return '';
@@ -86,9 +147,6 @@ function escapeHtml(text) {
 
 /**
  * Truncate text to specified length
- * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length
- * @returns {string} Truncated text
  */
 function truncateText(text, maxLength) {
     if (!text || text.length <= maxLength) return text;
@@ -97,9 +155,6 @@ function truncateText(text, maxLength) {
 
 /**
  * Debounce function to limit function calls
- * @param {Function} func - Function to debounce
- * @param {number} wait - Wait time in milliseconds
- * @returns {Function} Debounced function
  */
 function debounce(func, wait) {
     let timeout;
@@ -115,8 +170,6 @@ function debounce(func, wait) {
 
 /**
  * Show toast notification
- * @param {string} message - Message to display
- * @param {string} type - Type of toast (success, error, warning, info)
  */
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -142,8 +195,6 @@ function showToast(message, type = 'info') {
 
 /**
  * Escape RegExp special characters for search highlighting
- * @param {string} string - String to escape
- * @returns {string} Escaped string
  */
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -151,9 +202,6 @@ function escapeRegExp(string) {
 
 /**
  * Highlight search query in text
- * @param {string} text - Text to highlight
- * @param {string} query - Search query
- * @returns {string} HTML with highlighted text
  */
 function highlightSearchQuery(text, query) {
     if (!query || !text) return text;
@@ -167,91 +215,70 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
         console.log('🚀 Home Feed Initializing (Production Mode)');
         
-        // Override loading text
         const loadingText = document.getElementById('loading-text');
         if (loadingText) loadingText.textContent = 'Building Your Feed...';
         
-        // Initialize the feed sequentially for stability
         await initializeHomeFeed();
     });
 } else {
-    // DOM is already loaded, run immediately
     console.log('🚀 Home Feed Initializing (Production Mode) - DOM already loaded');
     
-    // Override loading text
     const loadingText = document.getElementById('loading-text');
     if (loadingText) loadingText.textContent = 'Building Your Feed...';
     
-    // Initialize the feed sequentially for stability
     initializeHomeFeed().catch(err => {
         console.error("❌ Home Feed Initialization Error:", err);
     });
 }
 
 // ============================================
-// THEME FUNCTIONS - FIXED VERSION (INSTANT APPLY, NO REFRESH)
+// THEME FUNCTIONS
 // ============================================
 
-/**
- * Setup theme selector with proper event handling
- * Enhanced with better click handling and z-index management
- */
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
-    const themeToggle = document.getElementById('sidebar-theme-toggle');
     
-    console.log('🎨 Theme Setup - Selector:', !!themeSelector, 'Toggle:', !!themeToggle);
+    console.log('🎨 Theme Setup - Selector:', !!themeSelector);
     
     if (!themeSelector) {
         console.error('❌ Theme selector element not found!');
         return;
     }
     
-    // Apply saved theme IMMEDIATELY on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
-    // Theme option click handlers - Use event delegation with stopPropagation
     const themeOptions = document.querySelectorAll('.theme-option');
     console.log('🎨 Theme Options Found:', themeOptions.length);
     
     themeOptions.forEach((option, index) => {
-        // Clone to remove any existing listeners
         const newOption = option.cloneNode(true);
         option.parentNode.replaceChild(newOption, option);
         
         newOption.addEventListener('click', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Stop event from bubbling to overlay
+            e.stopPropagation();
             const theme = this.dataset.theme;
             console.log('🎨 Theme clicked:', theme);
-            
-            // Apply theme
             applyTheme(theme);
             
-            // Hide selector after selection
             setTimeout(() => {
                 themeSelector.classList.remove('active');
             }, 100);
             
             showToast(`Theme changed to ${theme}`, 'success');
         });
-        
-        console.log(`🎨 Theme option ${index + 1} listener attached`);
     });
     
-    // Close when clicking outside theme selector - Use capture phase
     document.addEventListener('click', function(e) {
         if (themeSelector.classList.contains('active') && 
             !themeSelector.contains(e.target) && 
             !e.target.closest('#sidebar-theme-toggle') &&
             !e.target.closest('.sidebar-theme-toggle')) {
             themeSelector.classList.remove('active');
-            console.log('🎨 Theme selector closed by outside click');
         }
-    }, true); // Use capture phase to ensure it runs first
+    }, true);
     
-    // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && themeSelector.classList.contains('active')) {
             themeSelector.classList.remove('active');
@@ -259,86 +286,47 @@ function setupThemeSelector() {
     });
 }
 
-/**
- * Apply theme to the document with INSTANT application (no refresh needed)
- * @param {string} theme - Theme name (dark, light, high-contrast)
- */
 function applyTheme(theme) {
     const root = document.documentElement;
     console.log('🎨 Applying theme:', theme);
     
-    // Remove all theme classes first
     root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-    
-    // Apply new theme class
     root.classList.add(`theme-${theme}`);
     
-    // Force immediate CSS reflow for instant visual update
     void root.offsetWidth;
-    
-    // Save preference
     localStorage.setItem('bantu_theme', theme);
     
-    // Update active state on theme options
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === theme);
     });
     
-    console.log('🎨 Theme applied successfully:', theme);
-    console.log('🎨 Current HTML classes:', root.className);
-    
-    // Show confirmation toast
-    if (typeof showToast === 'function') {
-        showToast(`Theme changed to ${theme}`, 'success');
-    }
-    
-    // Dispatch custom event for other components to react
     document.dispatchEvent(new CustomEvent('themeChanged', {
         detail: { theme: theme }
     }));
 }
 
-/**
- * Setup sidebar theme toggle with proper event handling
- * Enhanced with delay to ensure sidebar closes before theme selector appears
- */
 function setupSidebarThemeToggle() {
     const themeToggle = document.getElementById('sidebar-theme-toggle');
     const themeSelector = document.getElementById('theme-selector');
     const sidebarClose = document.getElementById('sidebar-close');
     
-    console.log('🎨 Sidebar Theme Toggle Setup - Toggle:', !!themeToggle, 'Selector:', !!themeSelector);
+    if (!themeToggle) return;
     
-    if (!themeToggle) {
-        console.error('❌ Sidebar theme toggle not found!');
-        return;
-    }
-    
-    // Remove existing listener by cloning to prevent duplicates
     const newToggle = themeToggle.cloneNode(true);
     themeToggle.parentNode.replaceChild(newToggle, themeToggle);
     
     newToggle.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🎨 Sidebar theme toggle clicked');
         
-        // Close sidebar first
-        if (sidebarClose) {
-            sidebarClose.click();
-        }
+        if (sidebarClose) sidebarClose.click();
         
-        // Small delay to ensure sidebar overlay is removed before showing theme selector
         setTimeout(() => {
             if (themeSelector) {
-                const isActive = themeSelector.classList.contains('active');
                 themeSelector.classList.toggle('active');
-                console.log('🎨 Theme selector active:', !isActive, 'Classes:', themeSelector.className);
-                
-                // Force reflow to ensure CSS applies
                 void themeSelector.offsetWidth;
             }
-        }, 150); // 150ms delay for smooth transition
+        }, 150);
     });
 }
 
@@ -352,42 +340,35 @@ async function initializeHomeFeed() {
     try {
         console.log("🚀 Initializing Home Feed (Production Mode)");
         
-        // ✅ 1. Check authentication FIRST
         await checkAuth();
-        
-        // Update app icon
         updateAppIcon();
         
-        // ✅ 2. Load user profiles if authenticated
         if (window.currentUser) {
             await loadUserProfiles();
-            await loadUserProfile(); // Ensure this runs
+            await loadUserProfile();
         }
         
-        // ✅ 3. Update UI profile elements AFTER auth is confirmed
-        await updateHeaderProfile();    // Header profile (FIXED)
-        await updateSidebarProfile();   // Sidebar profile (FIXED)
-        updateProfileSwitcher();        // Profile dropdown
+        await updateHeaderProfile();
+        await updateSidebarProfile();
+        updateProfileSwitcher();
         
-        // Load sections sequentially for stability
-        await loadCinematicHero();                // Hero section first
-        await loadContinueWatchingSection();      // Section 1
-        await loadForYouSection();                // Section 2
-        await loadFollowingSection();             // Section 3
-        await loadShortsSection();                // Section 4
-        await loadCommunityFavoritesSection();    // Section 5
-        await loadLiveStreamsSection();           // Live streams
-        await loadTrendingSection();              // Section 6
-        await loadNewContentSection();            // Section 7
-        await loadFeaturedCreatorsSection();      // Creators
-        await loadEventsSection();                // Events
-        await loadCommunityStats();                // Stats
+        await loadCinematicHero();
+        await loadContinueWatchingSection();
+        await loadForYouSection();
+        await loadFollowingSection();
+        await loadShortsSection();
+        await loadCommunityFavoritesSection();
+        await loadLiveStreamsSection();
+        await loadTrendingSection();
+        await loadNewContentSection();
+        await loadFeaturedCreatorsSection();
+        await loadEventsSection();
+        await loadCommunityStats();
         
-        // Initialize UI components (non-data dependent)
         setupSidebar();
-        setupThemeSelector(); // ✅ Enhanced theme selector setup
+        setupThemeSelector();
         setupLanguageFilter();
-        setupSearch(); // ✅ FIXED SEARCH
+        setupSearch();
         setupNotifications();
         setupAnalytics();
         setupVoiceSearch();
@@ -400,12 +381,10 @@ async function initializeHomeFeed() {
         renderCategoryTabs();
         setupNavigationButtons();
         
-        // Hide loading screen and show content
         setTimeout(() => {
             if (loadingScreen) loadingScreen.style.display = 'none';
             if (app) app.style.display = 'block';
             
-            // Animate cards in
             document.querySelectorAll('.content-card').forEach((card, index) => {
                 setTimeout(() => {
                     card.style.opacity = '1';
@@ -428,21 +407,17 @@ async function initializeHomeFeed() {
 }
 
 // ============================================
-// METRICS AGGREGATOR - FIXED CONNECTOR COUNTS
+// METRICS AGGREGATOR
 // ============================================
 
-// Master builder - composes complete dataset for a section
 async function buildSectionData(contentList) {
     if (!contentList || contentList.length === 0) return [];
     
     const contentIds = contentList.map(c => c.id);
     const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
     
-    console.log('📊 Fetching metrics for', contentIds.length, 'content items and', creatorIds.length, 'creators');
-    
     const metrics = await fetchAllMetrics(contentIds, creatorIds);
     
-    // Enrich content with metrics
     return contentList.map(item => ({
         ...item,
         metrics: {
@@ -450,24 +425,18 @@ async function buildSectionData(contentList) {
             likes: metrics.likes[item.id] || 0,
             shares: metrics.shares[item.id] || 0,
             favorites: item.favorites_count || 0,
-            connectors: metrics.connectors[item.user_id] || 0  // ✅ Ensure this is set
+            connectors: metrics.connectors[item.user_id] || 0
         }
     }));
 }
 
-// Fetch all metrics in parallel
 async function fetchAllMetrics(contentIds, creatorIds) {
-    console.log('📊 Fetching metrics - Content IDs:', contentIds, 'Creator IDs:', creatorIds);
-    
     const [viewsRes, likesRes, sharesRes, connectorsRes] = await Promise.all([
         fetchViewCounts(contentIds),
         fetchLikeCounts(contentIds),
         fetchShareCounts(contentIds),
         fetchConnectorCounts(creatorIds)
     ]);
-    
-    console.log('📊 Metrics fetched - Views:', Object.keys(viewsRes).length, 
-                'Connectors:', Object.keys(connectorsRes).length);
     
     return {
         views: viewsRes,
@@ -477,121 +446,76 @@ async function fetchAllMetrics(contentIds, creatorIds) {
     };
 }
 
-// View counts
 async function fetchViewCounts(contentIds) {
     if (!contentIds.length) return {};
-    
     try {
         const { data } = await supabaseAuth
             .from("content_views")
             .select("content_id")
             .in("content_id", contentIds);
-
         const counts = {};
-        data?.forEach(row => {
-            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
-        });
+        data?.forEach(row => { counts[row.content_id] = (counts[row.content_id] || 0) + 1; });
         return counts;
-    } catch (error) {
-        console.error('Error fetching view counts:', error);
-        return {};
-    }
+    } catch (error) { return {}; }
 }
 
-// Like counts
 async function fetchLikeCounts(contentIds) {
     if (!contentIds.length) return {};
-    
     try {
         const { data } = await supabaseAuth
             .from("content_likes")
             .select("content_id")
             .in("content_id", contentIds);
-
         const counts = {};
-        data?.forEach(row => {
-            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
-        });
+        data?.forEach(row => { counts[row.content_id] = (counts[row.content_id] || 0) + 1; });
         return counts;
-    } catch (error) {
-        console.error('Error fetching like counts:', error);
-        return {};
-    }
+    } catch (error) { return {}; }
 }
 
-// Share counts
 async function fetchShareCounts(contentIds) {
     if (!contentIds.length) return {};
-    
     try {
         const { data } = await supabaseAuth
             .from("content_shares")
             .select("content_id")
             .in("content_id", contentIds);
-
         const counts = {};
-        data?.forEach(row => {
-            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
-        });
+        data?.forEach(row => { counts[row.content_id] = (counts[row.content_id] || 0) + 1; });
         return counts;
-    } catch (error) {
-        console.error('Error fetching share counts:', error);
-        return {};
-    }
+    } catch (error) { return {}; }
 }
 
-// Connector counts per creator - FIXED
 async function fetchConnectorCounts(creatorIds) {
-    if (!creatorIds || creatorIds.length === 0) {
-        console.log('⚠️ No creator IDs to fetch connector counts for');
-        return {};
-    }
-    
+    if (!creatorIds || creatorIds.length === 0) return {};
     try {
-        console.log('📊 Fetching connector counts for creators:', creatorIds);
-        
         const { data, error } = await supabaseAuth
             .from("connectors")
             .select("connected_id")
             .in("connected_id", creatorIds)
-            .eq("connection_type", "creator");  // ✅ Ensure we're only counting creator connections
+            .eq("connection_type", "creator");
         
-        if (error) {
-            console.error('Error fetching connector counts:', error);
-            return {};
-        }
+        if (error) return {};
         
         const counts = {};
-        data?.forEach(row => {
-            counts[row.connected_id] = (counts[row.connected_id] || 0) + 1;
-        });
-        
-        console.log('📊 Connector counts result:', counts);
+        data?.forEach(row => { counts[row.connected_id] = (counts[row.connected_id] || 0) + 1; });
         return counts;
-    } catch (error) {
-        console.error('Error fetching connector counts:', error);
-        return {};
-    }
+    } catch (error) { return {}; }
 }
 
 // ============================================
-// SECTION 1: CONTINUE WATCHING - FIXED
+// SECTION 1: CONTINUE WATCHING
 // ============================================
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
     const container = document.getElementById('continue-watching-grid');
     if (!section || !container) return;
     
-    // Hide section if user not logged in
     if (!window.currentUser) {
         section.style.display = 'none';
         return;
     }
     
     try {
-        console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
-        
-        // ✅ 1️⃣ Fetch from watch_progress table (NOT content_views)
         const { data: watchProgress, error } = await supabaseAuth
             .from('watch_progress')
             .select(`
@@ -623,14 +547,8 @@ async function loadContinueWatchingSection() {
             .order('updated_at', { ascending: false })
             .limit(20);
         
-        if (error) {
-            console.error('❌ Continue Watching query error:', error);
-            throw error;
-        }
+        if (error) throw error;
         
-        console.log('📊 Watch progress data:', watchProgress);
-        
-        // Filter out null content
         const contentList = (watchProgress || [])
             .filter(item => item.Content !== null)
             .map(item => ({
@@ -643,48 +561,22 @@ async function loadContinueWatchingSection() {
             }));
         
         if (contentList.length === 0) {
-            console.log('ℹ️ No continue watching content found');
             section.style.display = 'none';
             return;
         }
         
-        // ✅ 2️⃣ Build complete dataset with metrics (including connectors)
-        console.log('📊 Building section data with metrics for', contentList.length, 'items');
         const sectionData = await buildSectionData(contentList);
         
-        // ✅ 3️⃣ Create progress map with ACTUAL watch times
         const progressMap = {};
         watchProgress.forEach(item => {
             if (item.content_id && item.Content) {
                 const duration = item.Content.duration || 1;
                 const position = item.last_position || 0;
                 const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
-                
-                progressMap[item.content_id] = {
-                    progress: progress,
-                    current: position,
-                    total: duration
-                };
-                
-                console.log('📍 Progress for content', item.content_id, ':', {
-                    position: position,
-                    duration: duration,
-                    progress: progress + '%'
-                });
+                progressMap[item.content_id] = { progress, current: position, total: duration };
             }
         });
         
-        // ✅ 4️⃣ Debug: Log connector counts
-        console.log('📊 Connector counts in section data:', 
-            sectionData.map(item => ({
-                id: item.id,
-                title: item.title,
-                creator: item.user_profiles?.username,
-                connectors: item.metrics?.connectors
-            }))
-        );
-        
-        // ✅ 5️⃣ Render with correct progress data
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
@@ -694,24 +586,18 @@ async function loadContinueWatchingSection() {
     }
 }
 
-// Specialized renderer for continue watching (includes progress)
 function renderContinueWatchingCards(container, contents, progressMap) {
     container.innerHTML = '';
-    
-    console.log('🎨 Rendering', contents.length, 'continue watching cards');
-    console.log('📊 Progress map:', progressMap);
     
     contents.forEach(content => {
         if (!content) return;
         
-        // ✅ Get ACTUAL progress from watch_progress table
         const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
         const connectorCount = content.metrics?.connectors || 0;
         
-        console.log('🎨 Card:', content.id, '- Connectors:', connectorCount);
-        
+        // FIXED: Use fixMediaUrl for thumbnails
         const thumbnailUrl = content.thumbnail_url
-            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            ? fixMediaUrl(content.thumbnail_url)
             : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
         
         const creatorProfile = content.user_profiles;
@@ -721,10 +607,11 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         const durationFormatted = formatDuration(progress.total || content.duration || 0);
         const currentFormatted = formatDuration(progress.current || 0);
         
+        // FIXED: Use fixAvatarUrl for avatar images
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
             const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
-            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy">`;
+            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'creator-initials-small\'>${initials}</div>';">`;
         } else {
             avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
         }
@@ -736,22 +623,18 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         card.dataset.language = content.language || 'en';
         card.dataset.category = content.genre || '';
         
-        // ✅ HTML with CORRECT progress bar and resume time
         card.innerHTML = `
             <div class="card-thumbnail">
-                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';">
                 <div class="card-badges">
                     <div class="card-badge continue-badge">
                         <i class="fas fa-play-circle"></i> CONTINUE
                     </div>
                 </div>
                 <div class="thumbnail-overlay"></div>
-                
-                <!-- ✅ PROGRESS BAR with ACTUAL width -->
                 <div class="watch-progress-container">
                     <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
                 </div>
-                
                 <div class="play-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
@@ -763,13 +646,10 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     <div class="creator-avatar-small">${avatarHtml}</div>
                     <div class="creator-name-small">${escapeHtml(creatorName)}</div>
                 </div>
-                
-                <!-- ✅ ACTUAL RESUME TIME (not 0:00) -->
                 <div class="card-meta">
                     <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
                     <span>${progress.progress}%</span>
                 </div>
-                
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
                 </div>
@@ -781,13 +661,12 @@ function renderContinueWatchingCards(container, contents, progressMap) {
 }
 
 // ============================================
-// SECTION 2: FOR YOU (Personalized) with Amplification Logic
+// SECTION 2: FOR YOU
 // ============================================
 async function loadForYouSection() {
     const container = document.getElementById('for-you-grid');
     if (!container) return;
     
-    // Show skeleton loading
     container.innerHTML = Array(4).fill().map(() => `
         <div class="skeleton-card">
             <div class="skeleton-thumbnail"></div>
@@ -801,7 +680,6 @@ async function loadForYouSection() {
         let contentList = [];
         
         if (window.currentUser) {
-            // Get user's liked content for genre preferences
             const { data: likedContent } = await supabaseAuth
                 .from('content_likes')
                 .select('content_id')
@@ -809,36 +687,27 @@ async function loadForYouSection() {
                 .limit(20);
             
             const likedIds = (likedContent || []).map(l => l.content_id);
-            
-            // Get genres from liked content
             let genres = [];
+            
             if (likedIds.length > 0) {
                 const { data: likedGenres } = await supabaseAuth
                     .from('Content')
                     .select('genre')
                     .in('id', likedIds.slice(0, 10));
-                
                 genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
             }
             
-            // Build query based on preferences - ✅ Explicitly select language
             let query = supabaseAuth
                 .from('Content')
                 .select('*, language, user_profiles!user_id(*)')
                 .eq('status', 'published');
             
-            if (genres.length > 0) {
-                query = query.in('genre', genres);
-            }
+            if (genres.length > 0) query = query.in('genre', genres);
             
-            const { data } = await query
-                .order('views_count', { ascending: false })
-                .limit(12);
-            
+            const { data } = await query.order('views_count', { ascending: false }).limit(12);
             contentList = data || [];
         }
         
-        // Fallback to trending if no personalized content
         if (contentList.length === 0) {
             const { data } = await supabaseAuth
                 .from('Content')
@@ -846,31 +715,18 @@ async function loadForYouSection() {
                 .eq('status', 'published')
                 .order('views_count', { ascending: false })
                 .limit(8);
-            
             contentList = data || [];
         }
         
         if (contentList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-magic"></i></div>
-                    <h3>No Recommendations Yet</h3>
-                    <p>Start watching and liking content to get personalized picks</p>
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon"><i class="fas fa-magic"></i></div><h3>No Recommendations Yet</h3><p>Start watching and liking content to get personalized picks</p></div>`;
             return;
         }
         
-        // Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
-        
-        // ✅ Apply Amplification Logic
         const boostedData = applyAmplificationLogic(sectionData);
-        
-        // Sort by amplification score
         boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
         
-        // Render once
         container.innerHTML = '';
         renderContentCards(container, boostedData);
         
@@ -880,44 +736,21 @@ async function loadForYouSection() {
     }
 }
 
-// ✅ Amplification Logic Implementation
 function applyAmplificationLogic(items) {
     const localLanguages = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso'];
     
     return items.map(item => {
         let score = item.metrics?.base_score || 0;
-        
-        // Use metrics for amplification if available
-        const baseScore = (item.metrics?.views || 0) + 
-                         ((item.metrics?.likes || 0) * 5) + 
-                         ((item.metrics?.shares || 0) * 10);
-        
+        const baseScore = (item.metrics?.views || 0) + ((item.metrics?.likes || 0) * 5) + ((item.metrics?.shares || 0) * 10);
         score = baseScore;
         
-        // 1. Local Language Boost (IsiZulu, IsiXhosa, etc.)
-        if (localLanguages.includes(item.language)) {
-            score = score * 1.3; 
-        }
+        if (localLanguages.includes(item.language)) score = score * 1.3;
+        if (item.metrics?.connectors < 1000) score = score * 1.2;
         
-        // 2. Emerging Creator Boost (< 1000 connectors)
-        if (item.metrics?.connectors < 1000) {
-            score = score * 1.2;
-        }
-        
-        // 3. Freshness Boost (< 7 days)
         const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
-        if (daysOld < 7) {
-            score = score * 1.4;
-        }
+        if (daysOld < 7) score = score * 1.4;
         
-        return { 
-            ...item, 
-            amplification_score: score,
-            metrics: {
-                ...item.metrics,
-                base_score: baseScore
-            }
-        };
+        return { ...item, amplification_score: score, metrics: { ...item.metrics, base_score: baseScore } };
     });
 }
 
@@ -929,28 +762,19 @@ async function loadFollowingSection() {
     const container = document.getElementById('following-grid');
     
     if (!section || !container) return;
-    
-    if (!window.currentUser) {
-        section.style.display = 'none';
-        return;
-    }
+    if (!window.currentUser) { section.style.display = 'none'; return; }
     
     try {
-        // 1️⃣ Get creators user follows
         const { data: following, error } = await supabaseAuth
             .from('connectors')
             .select('connected_id')
             .eq('connector_id', window.currentUser.id)
             .eq('connection_type', 'creator');
         
-        if (error || !following || following.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
+        if (error || !following || following.length === 0) { section.style.display = 'none'; return; }
         
         const creatorIds = following.map(f => f.connected_id);
         
-        // 2️⃣ Fetch content from followed creators - ✅ Explicitly select language
         const { data: contentList, error: contentError } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -960,23 +784,14 @@ async function loadFollowingSection() {
             .limit(8);
         
         if (contentError) throw contentError;
+        if (!contentList || contentList.length === 0) { section.style.display = 'none'; return; }
         
-        if (!contentList || contentList.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
-        
-        // 3️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
         
-        // 4️⃣ Update section title and render
         section.style.display = 'block';
         const sectionTitle = section.querySelector('.section-title');
         if (sectionTitle) {
-            sectionTitle.innerHTML = `
-                <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
-                FROM CREATORS YOU CONNECTED WITH
-            `;
+            sectionTitle.innerHTML = `<i class="fas fa-user-friends" style="color: var(--warm-gold);"></i> FROM CREATORS YOU CONNECTED WITH`;
         }
         
         container.innerHTML = '';
@@ -996,7 +811,6 @@ async function loadShortsSection() {
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch short content - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -1007,16 +821,9 @@ async function loadShortsSection() {
             .limit(10);
         
         if (error) throw error;
+        if (!contentList || contentList.length === 0) { container.style.display = 'none'; return; }
         
-        if (!contentList || contentList.length === 0) {
-            container.style.display = 'none';
-            return;
-        }
-        
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
-        
-        // 3️⃣ Render shorts
         container.style.display = 'flex';
         renderShortsCards(container, sectionData);
         
@@ -1025,13 +832,13 @@ async function loadShortsSection() {
     }
 }
 
-// Specialized renderer for shorts
 function renderShortsCards(container, contents) {
     container.innerHTML = '';
     
     contents.forEach(content => {
+        // FIXED: Use fixMediaUrl for thumbnails
         const thumbnailUrl = content.thumbnail_url
-            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            ? fixMediaUrl(content.thumbnail_url)
             : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';
         
         const creatorProfile = content.user_profiles;
@@ -1045,7 +852,7 @@ function renderShortsCards(container, contents) {
         
         card.innerHTML = `
             <div class="short-thumbnail">
-                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';">
                 <div class="short-overlay">
                     <i class="fas fa-play"></i>
                 </div>
@@ -1072,7 +879,6 @@ async function loadCommunityFavoritesSection() {
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch community favorites (by favorites_count) - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -1081,16 +887,12 @@ async function loadCommunityFavoritesSection() {
             .limit(12);
         
         if (error) throw error;
-        
         if (!contentList || contentList.length === 0) {
             container.innerHTML = '<div class="empty-state"><p>No community favorites yet</p></div>';
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
-        
-        // 3️⃣ Render
         container.innerHTML = '';
         renderContentCards(container, sectionData);
         
@@ -1109,7 +911,6 @@ async function loadLiveStreamsSection() {
     if (!container || !noLiveStreams) return;
     
     try {
-        // 1️⃣ Fetch live streams - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -1126,10 +927,7 @@ async function loadLiveStreamsSection() {
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
-        
-        // 3️⃣ Render
         container.style.display = 'grid';
         noLiveStreams.style.display = 'none';
         container.innerHTML = '';
@@ -1141,14 +939,13 @@ async function loadLiveStreamsSection() {
 }
 
 // ============================================
-// SECTION 6: TRENDING NOW with Amplification Logic
+// SECTION 6: TRENDING NOW
 // ============================================
 async function loadTrendingSection() {
     const container = document.getElementById('trending-grid');
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch trending content (by views_count) - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -1159,26 +956,14 @@ async function loadTrendingSection() {
         if (error) throw error;
         
         if (!contentList || contentList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
-                    <h3>No Trending Content</h3>
-                    <p>Popular content will appear here</p>
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon"><i class="fas fa-chart-line"></i></div><h3>No Trending Content</h3><p>Popular content will appear here</p></div>`;
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
-        
-        // ✅ Apply Amplification Logic
         const boostedData = applyAmplificationLogic(sectionData);
-        
-        // Sort by amplification score
         boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
         
-        // 3️⃣ Render
         container.innerHTML = '';
         renderContentCards(container, boostedData);
         
@@ -1188,14 +973,13 @@ async function loadTrendingSection() {
 }
 
 // ============================================
-// SECTION 7: LATEST GEMS (NEW CONTENT) with Amplification Logic
+// SECTION 7: LATEST GEMS (NEW CONTENT)
 // ============================================
 async function loadNewContentSection() {
     const container = document.getElementById('new-content-grid');
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch new content (by created_at) - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -1206,26 +990,14 @@ async function loadNewContentSection() {
         if (error) throw error;
         
         if (!contentList || contentList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-gem"></i></div>
-                    <h3>No New Content</h3>
-                    <p>Fresh content will appear here</p>
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon"><i class="fas fa-gem"></i></div><h3>No New Content</h3><p>Fresh content will appear here</p></div>`;
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
-        
-        // ✅ Apply Amplification Logic
         const boostedData = applyAmplificationLogic(sectionData);
-        
-        // Sort by amplification score
         boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
         
-        // 3️⃣ Render
         container.innerHTML = '';
         renderContentCards(container, boostedData);
         
@@ -1242,40 +1014,25 @@ async function loadFeaturedCreatorsSection() {
     if (!creatorsList) return;
     
     try {
-        // Get content counts per creator
         const { data: contentData } = await supabaseAuth
             .from('Content')
             .select('user_id')
             .eq('status', 'published');
         
         const contentCountMap = new Map();
-        contentData?.forEach(item => {
-            if (item.user_id) {
-                contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
-            }
-        });
+        contentData?.forEach(item => { if (item.user_id) contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1); });
         
-        // Get connector counts per creator
         const { data: connectorData } = await supabaseAuth
             .from('connectors')
             .select('connected_id')
             .eq('connection_type', 'creator');
         
         const connectorCountMap = new Map();
-        connectorData?.forEach(item => {
-            if (item.connected_id) {
-                connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
-            }
-        });
+        connectorData?.forEach(item => { if (item.connected_id) connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1); });
         
-        // Calculate scores and get top creators
         const creatorScores = new Map();
-        contentCountMap.forEach((count, userId) => {
-            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
-        });
-        connectorCountMap.forEach((count, userId) => {
-            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
-        });
+        contentCountMap.forEach((count, userId) => { creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2); });
+        connectorCountMap.forEach((count, userId) => { creatorScores.set(userId, (creatorScores.get(userId) || 0) + count); });
         
         const sortedCreators = Array.from(creatorScores.entries())
             .sort((a, b) => b[1] - a[1])
@@ -1283,19 +1040,10 @@ async function loadFeaturedCreatorsSection() {
             .map(([userId]) => userId);
         
         if (sortedCreators.length === 0) {
-            creatorsList.innerHTML = `
-                <div class="swiper-slide">
-                    <div class="creator-card">
-                        <div class="empty-icon"><i class="fas fa-users"></i></div>
-                        <h3>No Featured Creators</h3>
-                        <p>Top creators will appear here</p>
-                    </div>
-                </div>
-            `;
+            creatorsList.innerHTML = `<div class="swiper-slide"><div class="creator-card"><div class="empty-icon"><i class="fas fa-users"></i></div><h3>No Featured Creators</h3><p>Top creators will appear here</p></div></div>`;
             return;
         }
         
-        // Fetch creator profiles
         const { data: profiles } = await supabaseAuth
             .from('user_profiles')
             .select('*')
@@ -1307,7 +1055,6 @@ async function loadFeaturedCreatorsSection() {
             follower_count: connectorCountMap.get(profile.id) || 0
         })) || [];
         
-        // Render creators
         renderCreatorsCards(creatorsList, featuredCreators);
         
     } catch (err) {
@@ -1317,9 +1064,8 @@ async function loadFeaturedCreatorsSection() {
 
 function renderCreatorsCards(container, creators) {
     container.innerHTML = creators.map(creator => {
-        const avatarUrl = creator.avatar_url
-            ? fixAvatarUrl(creator.avatar_url)
-            : null;
+        // FIXED: Use fixAvatarUrl for creator avatars
+        const avatarUrl = creator.avatar_url ? fixAvatarUrl(creator.avatar_url) : null;
         
         const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences.';
         const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
@@ -1336,7 +1082,7 @@ function renderCreatorsCards(container, creators) {
                     ${isTopCreator ? '<div class="founder-badge">TOP CREATOR</div>' : ''}
                     <div class="creator-avatar">
                         ${avatarUrl ? `
-                            <img src="${avatarUrl}" alt="${fullName}" loading="lazy">
+                            <img src="${avatarUrl}" alt="${fullName}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'creator-initials\'>${initials}</div>';">
                         ` : `
                             <div class="creator-initials">${initials}</div>
                         `}
@@ -1367,20 +1113,13 @@ function renderCreatorsCards(container, creators) {
         `;
     }).join('');
     
-    // Initialize Swiper after render
     setTimeout(() => {
         if (typeof Swiper !== 'undefined') {
             new Swiper('#creators-swiper', {
                 slidesPerView: 1,
                 spaceBetween: 20,
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-                breakpoints: {
-                    640: { slidesPerView: 2 },
-                    1024: { slidesPerView: 3 }
-                }
+                pagination: { el: '.swiper-pagination', clickable: true },
+                breakpoints: { 640: { slidesPerView: 2 }, 1024: { slidesPerView: 3 } }
             });
         }
     }, 100);
@@ -1405,10 +1144,8 @@ async function loadEventsSection() {
                 .gte('start_time', new Date().toISOString())
                 .order('start_time', { ascending: true })
                 .limit(5);
-            
             data = result.data || [];
         } catch (e) {
-            console.warn('Events table may not exist, using mock data');
             data = getMockEvents();
         }
         
@@ -1420,12 +1157,10 @@ async function loadEventsSection() {
         
         eventsList.style.display = 'block';
         noEvents.style.display = 'none';
-        
         renderEventsCards(eventsList, data);
         
     } catch (err) {
         console.error("❌ Events Section Error:", err);
-        
         const mockEvents = getMockEvents();
         if (mockEvents.length > 0) {
             eventsList.style.display = 'block';
@@ -1442,11 +1177,7 @@ function renderEventsCards(container, events) {
     container.innerHTML = events.map(event => {
         const eventDate = new Date(event.start_time || event.time);
         const formattedDate = eventDate.toLocaleDateString('en-ZA', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
         
         return `
@@ -1462,11 +1193,7 @@ function renderEventsCards(container, events) {
                     <button class="reminder-btn" onclick="setReminder('${event.id}')">
                         <i class="fas fa-bell"></i> Set Reminder
                     </button>
-                    ${event.tags ? `
-                    <div class="event-tags">
-                        ${event.tags.map(tag => `<span class="event-tag">${tag}</span>`).join('')}
-                    </div>
-                    ` : ''}
+                    ${event.tags ? `<div class="event-tags">${event.tags.map(tag => `<span class="event-tag">${tag}</span>`).join('')}</div>` : ''}
                 </div>
             </div>
         `;
@@ -1478,7 +1205,6 @@ function renderEventsCards(container, events) {
 // ============================================
 async function loadCinematicHero() {
     try {
-        // Get trending content with highest engagement - ✅ Explicitly select language
         const { data: trendingData, error } = await supabaseAuth
             .from('Content')
             .select('*, language, user_profiles!user_id(*)')
@@ -1490,30 +1216,27 @@ async function loadCinematicHero() {
         if (error) throw error;
         
         const featuredContent = trendingData?.[0] || getMockHeroContent();
-        
         if (!featuredContent) return;
         
-        // Update hero video
         const heroVideo = document.getElementById('hero-background-video');
         const videoSource = heroVideo?.querySelector('source');
         
         if (heroVideo && videoSource && featuredContent.file_url) {
-            videoSource.src = contentSupabase.fixMediaUrl(featuredContent.file_url);
+            videoSource.src = fixMediaUrl(featuredContent.file_url);
             heroVideo.load();
-            heroVideo.play().catch(() => {
-                console.log('Video autoplay prevented');
-            });
+            heroVideo.play().catch(() => console.log('Video autoplay prevented'));
         }
         
-        // Update creator info
         const creator = featuredContent.user_profiles;
         if (creator) {
             document.getElementById('hero-creator-name').textContent = creator.full_name || creator.username || 'Featured Creator';
             
             const avatarImg = document.getElementById('hero-creator-avatar-img');
+            // FIXED: Use fixAvatarUrl for hero avatar
             if (creator.avatar_url) {
                 avatarImg.src = fixAvatarUrl(creator.avatar_url);
                 avatarImg.style.display = 'block';
+                avatarImg.onerror = () => { avatarImg.style.display = 'none'; };
             } else {
                 avatarImg.style.display = 'none';
                 const initials = getInitials(creator.full_name || creator.username);
@@ -1521,11 +1244,9 @@ async function loadCinematicHero() {
             }
         }
         
-        // Update title and description
         document.getElementById('hero-title').textContent = featuredContent.title || 'DISCOVER & CONNECT';
         document.getElementById('hero-subtitle').textContent = featuredContent.description || 'Explore amazing content, connect with creators, and join live streams from across Africa';
         
-        // Get metrics for hero
         const metrics = await fetchAllMetrics([featuredContent.id], creator ? [creator.id] : []);
         
         document.getElementById('hero-views').textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 12500);
@@ -1533,12 +1254,10 @@ async function loadCinematicHero() {
         document.getElementById('hero-connectors').textContent = formatNumber(creator ? (metrics.connectors[creator.id] || 1200) : 1200);
         document.getElementById('hero-shares').textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 856);
         
-        // Check if creator is verified
         if (creator && (metrics.connectors[creator.id] || 0) > 1000) {
             document.getElementById('hero-verified-badge').style.display = 'inline-flex';
         }
         
-        // Store content ID for watch button
         const heroWatchBtn = document.getElementById('hero-watch-btn');
         if (heroWatchBtn) {
             heroWatchBtn.dataset.contentId = featuredContent.id;
@@ -1587,7 +1306,7 @@ async function loadCommunityStats() {
 }
 
 // ============================================
-// PURE RENDER FUNCTION - NO GLOBALS, NO MUTATIONS
+// PURE RENDER FUNCTION - FIXED with proper image handling
 // ============================================
 function renderContentCards(container, contents) {
     if (!container || !contents || contents.length === 0) return;
@@ -1597,8 +1316,9 @@ function renderContentCards(container, contents) {
     contents.forEach(content => {
         if (!content) return;
         
+        // FIXED: Use fixMediaUrl for thumbnails
         const thumbnailUrl = content.thumbnail_url
-            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            ? fixMediaUrl(content.thumbnail_url)
             : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
         
         const creatorProfile = content.user_profiles;
@@ -1608,10 +1328,11 @@ function renderContentCards(container, contents) {
         const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
         const durationFormatted = formatDuration(content.duration || 0);
         
+        // FIXED: Use fixAvatarUrl for avatar images with error handling
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
             const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
-            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy">`;
+            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'creator-initials-small\'>${initials}</div>';">`;
         } else {
             avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
         }
@@ -1625,7 +1346,7 @@ function renderContentCards(container, contents) {
         
         card.innerHTML = `
             <div class="card-thumbnail">
-                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                 <div class="card-badges">
                     ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
                     <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(content.metrics?.favorites || 0)} Favorites</span></div>
@@ -1659,7 +1380,7 @@ function renderContentCards(container, contents) {
 }
 
 // ============================================
-// MOCK DATA FUNCTIONS (Fallbacks)
+// MOCK DATA FUNCTIONS
 // ============================================
 function getMockHeroContent() {
     return {
@@ -1701,33 +1422,13 @@ function loadMockHeroContent() {
 
 function getMockEvents() {
     return [
-        {
-            id: 1,
-            title: 'African Music Festival Live Stream',
-            description: 'Join us for the biggest African music festival with live performances from top artists across the continent.',
-            time: 'Tomorrow 7:00 PM SAST',
-            tags: ['Music', 'Live', 'Festival']
-        },
-        {
-            id: 2,
-            title: 'Tech Startup Pitch Competition',
-            description: 'Watch innovative African startups pitch their ideas to a panel of investors.',
-            time: 'Friday 3:00 PM WAT',
-            tags: ['Technology', 'Startups', 'Business']
-        },
-        {
-            id: 3,
-            title: 'Cooking Masterclass: Traditional Dishes',
-            description: 'Learn to cook authentic African dishes with master chefs.',
-            time: 'Saturday 2:00 PM EAT',
-            tags: ['Food', 'Cooking', 'Education']
-        }
+        { id: 1, title: 'African Music Festival Live Stream', description: 'Join us for the biggest African music festival with live performances from top artists across the continent.', time: 'Tomorrow 7:00 PM SAST', tags: ['Music', 'Live', 'Festival'] },
+        { id: 2, title: 'Tech Startup Pitch Competition', description: 'Watch innovative African startups pitch their ideas to a panel of investors.', time: 'Friday 3:00 PM WAT', tags: ['Technology', 'Startups', 'Business'] },
+        { id: 3, title: 'Cooking Masterclass: Traditional Dishes', description: 'Learn to cook authentic African dishes with master chefs.', time: 'Saturday 2:00 PM EAT', tags: ['Food', 'Cooking', 'Education'] }
     ];
 }
 
-window.setReminder = function(eventId) {
-    showToast('Reminder set for this event!', 'success');
-};
+window.setReminder = function(eventId) { showToast('Reminder set for this event!', 'success'); };
 
 function setupHeroButtons() {
     const exploreBtn = document.getElementById('hero-explore-btn');
@@ -1736,28 +1437,21 @@ function setupHeroButtons() {
     const heroVideo = document.getElementById('hero-background-video');
     
     if (exploreBtn) {
-        exploreBtn.addEventListener('click', () => {
-            window.location.href = 'https://bantustreamconnect.com/content-library';
-        });
+        exploreBtn.addEventListener('click', () => { window.location.href = 'https://bantustreamconnect.com/content-library'; });
     }
     
     if (watchBtn && heroVideo) {
         watchBtn.addEventListener('click', () => {
             const contentId = watchBtn.dataset.contentId;
-            if (contentId) {
-                window.location.href = `content-detail.html?id=${contentId}`;
-            } else {
-                window.location.href = 'https://bantustreamconnect.com/trending_screen';
-            }
+            if (contentId) { window.location.href = `content-detail.html?id=${contentId}`; }
+            else { window.location.href = 'https://bantustreamconnect.com/trending_screen'; }
         });
     }
     
     if (audioControl && heroVideo) {
         audioControl.addEventListener('click', () => {
             heroVideo.muted = !heroVideo.muted;
-            audioControl.innerHTML = heroVideo.muted ? 
-                '<i class="fas fa-volume-mute"></i>' : 
-                '<i class="fas fa-volume-up"></i>';
+            audioControl.innerHTML = heroVideo.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
             audioControl.title = heroVideo.muted ? 'Unmute' : 'Mute';
         });
     }
@@ -1774,17 +1468,11 @@ async function checkAuth() {
         const session = data?.session;
         window.currentUser = session?.user || null;
         
-        // ✅ Debug logging for mobile
-        console.log('🔐 Auth Check - Mobile:', /Mobi|Android|iPhone/i.test(navigator.userAgent));
         console.log('🔐 Auth Check - User:', window.currentUser?.email);
-        console.log('🔐 Auth Check - User ID:', window.currentUser?.id);
-        console.log('🔐 Auth Check - Metadata:', window.currentUser?.user_metadata);
         
         if (window.currentUser) {
             console.log('✅ User authenticated:', window.currentUser.email);
             await loadUserProfile();
-        } else {
-            console.log('⚠️ User not authenticated');
         }
         
         return window.currentUser;
@@ -1804,14 +1492,9 @@ async function loadUserProfile() {
             .eq('id', window.currentUser.id)
             .maybeSingle();
         
-        if (error) {
-            console.warn('Profile fetch error:', error);
-            return;
-        }
+        if (error) { console.warn('Profile fetch error:', error); return; }
         
-        if (profile) {
-            window.currentProfile = profile;
-        }
+        if (profile) { window.currentProfile = profile; }
         
         await loadNotifications();
     } catch (error) {
@@ -1829,22 +1512,13 @@ async function loadUserProfiles() {
             .eq('id', window.currentUser.id);
         
         if (error) {
-            console.warn('Error loading profiles, using default:', error);
-            window.userProfiles = [{
-                id: window.currentUser.id,
-                name: window.currentUser.user_metadata?.full_name || 'Default',
-                avatar_url: null
-            }];
+            window.userProfiles = [{ id: window.currentUser.id, name: window.currentUser.user_metadata?.full_name || 'Default', avatar_url: null }];
         } else {
             window.userProfiles = data || [];
         }
         
         if (window.userProfiles.length === 0) {
-            window.userProfiles = [{
-                id: window.currentUser.id,
-                name: window.currentUser.user_metadata?.full_name || 'Default',
-                avatar_url: null
-            }];
+            window.userProfiles = [{ id: window.currentUser.id, name: window.currentUser.user_metadata?.full_name || 'Default', avatar_url: null }];
         }
         
         const savedProfileId = localStorage.getItem('currentProfileId');
@@ -1857,174 +1531,7 @@ async function loadUserProfiles() {
 }
 
 // ============================================
-// PROFILE AVATAR HELPER FUNCTIONS (FIXED)
-// ============================================
-
-/**
- * Fix Avatar URL - Handles all edge cases for consistent loading
- * @param {string} url - The avatar URL from database
- * @returns {string} Properly formatted URL
- */
-function fixAvatarUrl(url) {
-    if (!url) return '';
-    
-    // Already a full URL
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-    }
-    
-    // Supabase storage path
-    if (url.includes('supabase.co/storage')) {
-        return url;
-    }
-    
-    // Relative path - construct full Supabase storage URL
-    const cleanPath = url.replace(/^\/+/, ''); // Remove leading slashes
-    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    
-    return `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
-}
-
-/**
- * Render initials profile (fallback when no avatar)
- * @param {HTMLElement} container - Container element
- * @param {Object} profile - Profile object with name/username
- */
-function renderInitialsProfile(container, profile) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = profile?.full_name || profile?.username || 'User';
-    const initials = getInitials(name);
-    
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-        text-transform:uppercase;
-    `;
-    div.textContent = initials;
-    container.appendChild(div);
-}
-
-/**
- * Render fallback profile (error state)
- * @param {HTMLElement} container - Container element
- * @param {HTMLElement} nameElement - Name element to update
- * @param {Object} user - User object
- */
-function renderFallbackProfile(container, nameElement, user) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-    const initials = getInitials(name);
-    
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-    `;
-    div.textContent = initials;
-    container.appendChild(div);
-    
-    if (nameElement) {
-        nameElement.textContent = name;
-    }
-}
-
-/**
- * Render guest profile
- * @param {HTMLElement} container - Container element
- * @param {HTMLElement} nameElement - Name element to update
- */
-function renderGuestProfile(container, nameElement) {
-    if (!container) return;
-    container.innerHTML = '';
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-    `;
-    div.textContent = 'G';
-    container.appendChild(div);
-    
-    if (nameElement) {
-        nameElement.textContent = 'Guest';
-    }
-}
-
-/**
- * Render sidebar initials fallback
- * @param {HTMLElement} container - Container element
- * @param {Object} profile - Profile object
- */
-function renderSidebarInitials(container, profile) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = profile?.full_name || profile?.username || 'User';
-    const initials = getInitials(name);
-    
-    const span = document.createElement('span');
-    span.style.cssText = `
-        font-size:1.2rem;
-        font-weight:bold;
-        color:var(--soft-white);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        width:100%;
-        height:100%;
-    `;
-    span.textContent = initials;
-    container.appendChild(span);
-}
-
-/**
- * Render sidebar fallback profile (error state)
- * @param {HTMLElement} avatar - Avatar container
- * @param {HTMLElement} name - Name element
- * @param {HTMLElement} email - Email element
- * @param {Object} user - User object
- */
-function renderSidebarFallback(avatar, name, email, user) {
-    if (!avatar) return;
-    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-    const initials = getInitials(displayName);
-    
-    if (name) name.textContent = displayName;
-    if (email) email.textContent = user?.email || 'Signed in';
-    
-    avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:var(--soft-white);">${initials}</span>`;
-}
-
-// ============================================
-// UPDATED HEADER PROFILE FUNCTION (FIXED)
+// FIXED: UPDATED HEADER PROFILE FUNCTION
 // ============================================
 async function updateHeaderProfile() {
     try {
@@ -2036,14 +1543,12 @@ async function updateHeaderProfile() {
             return;
         }
 
-        // Clear existing content first
         profilePlaceholder.innerHTML = '';
 
         if (window.currentUser) {
             console.log('👤 Updating header profile for:', window.currentUser.email);
             
             try {
-                // Fetch profile with explicit fields
                 const { data: profile, error } = await supabaseAuth
                     .from('user_profiles')
                     .select('id, full_name, username, avatar_url')
@@ -2057,46 +1562,33 @@ async function updateHeaderProfile() {
                 }
 
                 if (profile && profile.avatar_url) {
-                    // Fix the media URL properly
                     const avatarUrl = fixAvatarUrl(profile.avatar_url);
                     console.log('🖼️ Avatar URL:', avatarUrl);
                     
-                    // Create image with error handling
                     const img = document.createElement('img');
                     img.className = 'profile-img';
                     img.src = avatarUrl;
                     img.alt = profile.full_name || profile.username || 'Profile';
                     img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
                     
-                    // Handle image load errors
                     img.onerror = function() {
                         console.warn('⚠️ Failed to load avatar, falling back to initials');
                         renderInitialsProfile(profilePlaceholder, profile);
                     };
                     
-                    img.onload = function() {
-                        console.log('✅ Avatar loaded successfully');
-                    };
-                    
                     profilePlaceholder.appendChild(img);
                     currentProfileName.textContent = profile.full_name || profile.username || window.currentUser.email?.split('@')[0] || 'User';
-                    
                 } else {
-                    // No avatar - show initials
                     renderInitialsProfile(profilePlaceholder, profile || { full_name: window.currentUser.user_metadata?.full_name });
                     currentProfileName.textContent = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
                 }
-                
             } catch (fetchError) {
                 console.error('❌ Profile fetch exception:', fetchError);
                 renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
             }
-            
         } else {
-            // Guest user
             renderGuestProfile(profilePlaceholder, currentProfileName);
         }
-        
     } catch (error) {
         console.error('❌ updateHeaderProfile error:', error);
         const placeholder = document.getElementById('userProfilePlaceholder');
@@ -2108,7 +1600,7 @@ async function updateHeaderProfile() {
 }
 
 // ============================================
-// UPDATED SIDEBAR PROFILE FUNCTION (FIXED)
+// FIXED: UPDATED SIDEBAR PROFILE FUNCTION
 // ============================================
 async function updateSidebarProfile() {
     const avatar = document.getElementById('sidebar-profile-avatar');
@@ -2121,7 +1613,6 @@ async function updateSidebarProfile() {
         return;
     }
 
-    // Clear existing avatar content
     avatar.innerHTML = '';
 
     if (window.currentUser) {
@@ -2141,15 +1632,12 @@ async function updateSidebarProfile() {
             }
 
             if (profile) {
-                // Update name and email
                 name.textContent = profile.full_name || profile.username || 'User';
                 email.textContent = window.currentUser.email;
                 
-                // Handle avatar
                 if (profile.avatar_url) {
                     const avatarUrl = fixAvatarUrl(profile.avatar_url);
                     
-                    // Use image with error handling
                     const img = document.createElement('img');
                     img.src = avatarUrl;
                     img.alt = profile.full_name || 'Profile';
@@ -2165,7 +1653,6 @@ async function updateSidebarProfile() {
                     renderSidebarInitials(avatar, profile);
                 }
                 
-                // Make profile section clickable
                 if (profileSection) {
                     profileSection.onclick = function(e) {
                         e.preventDefault();
@@ -2173,18 +1660,14 @@ async function updateSidebarProfile() {
                         window.location.href = 'manage-profiles.html';
                     };
                 }
-                
             } else {
                 renderSidebarFallback(avatar, name, email, window.currentUser);
             }
-            
         } catch (err) {
             console.error('❌ Sidebar profile error:', err);
             renderSidebarFallback(avatar, name, email, window.currentUser);
         }
-        
     } else {
-        // Guest state
         name.textContent = 'Guest';
         email.textContent = 'Sign in to continue';
         avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
@@ -2197,6 +1680,72 @@ async function updateSidebarProfile() {
             };
         }
     }
+}
+
+// ============================================
+// PROFILE AVATAR HELPER FUNCTIONS
+// ============================================
+
+function renderInitialsProfile(container, profile) {
+    if (!container) return;
+    container.innerHTML = '';
+    const name = profile?.full_name || profile?.username || 'User';
+    const initials = getInitials(name);
+    
+    const div = document.createElement('div');
+    div.className = 'profile-placeholder';
+    div.style.cssText = `width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;text-transform:uppercase;`;
+    div.textContent = initials;
+    container.appendChild(div);
+}
+
+function renderFallbackProfile(container, nameElement, user) {
+    if (!container) return;
+    container.innerHTML = '';
+    const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const initials = getInitials(name);
+    
+    const div = document.createElement('div');
+    div.className = 'profile-placeholder';
+    div.style.cssText = `width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;`;
+    div.textContent = initials;
+    container.appendChild(div);
+    
+    if (nameElement) nameElement.textContent = name;
+}
+
+function renderGuestProfile(container, nameElement) {
+    if (!container) return;
+    container.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'profile-placeholder';
+    div.style.cssText = `width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;`;
+    div.textContent = 'G';
+    container.appendChild(div);
+    if (nameElement) nameElement.textContent = 'Guest';
+}
+
+function renderSidebarInitials(container, profile) {
+    if (!container) return;
+    container.innerHTML = '';
+    const name = profile?.full_name || profile?.username || 'User';
+    const initials = getInitials(name);
+    
+    const span = document.createElement('span');
+    span.style.cssText = `font-size:1.2rem;font-weight:bold;color:var(--soft-white);display:flex;align-items:center;justify-content:center;width:100%;height:100%;`;
+    span.textContent = initials;
+    container.appendChild(span);
+}
+
+function renderSidebarFallback(avatar, name, email, user) {
+    if (!avatar) return;
+    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const initials = getInitials(displayName);
+    
+    if (name) name.textContent = displayName;
+    if (email) email.textContent = user?.email || 'Signed in';
+    
+    avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:var(--soft-white);">${initials}</span>`;
 }
 
 // ============================================
@@ -2222,118 +1771,72 @@ function setupSidebar() {
         document.body.style.overflow = '';
     };
     
-    menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openSidebar();
-    });
-    
+    menuToggle.addEventListener('click', (e) => { e.stopPropagation(); openSidebar(); });
     sidebarClose.addEventListener('click', closeSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
     
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
-            closeSidebar();
-        }
+        if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
     });
     
-    updateSidebarProfile(); // Using the fixed version
+    updateSidebarProfile();
     setupSidebarNavigation();
-    setupSidebarThemeToggle(); // ✅ Enhanced version
+    setupSidebarThemeToggle();
     setupSidebarScaleControls();
 }
 
 function setupSidebarNavigation() {
-    // Analytics
     document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
-        if (!window.currentUser) {
-            showToast('Please sign in to view analytics', 'warning');
-            return;
-        }
+        if (!window.currentUser) { showToast('Please sign in to view analytics', 'warning'); return; }
         const analyticsModal = document.getElementById('analytics-modal');
-        if (analyticsModal) {
-            analyticsModal.classList.add('active');
-            loadPersonalAnalytics();
-        }
+        if (analyticsModal) { analyticsModal.classList.add('active'); loadPersonalAnalytics(); }
     });
     
-    // Notifications
     document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         const notificationsPanel = document.getElementById('notifications-panel');
-        if (notificationsPanel) {
-            notificationsPanel.classList.add('active');
-            renderNotifications();
-        }
+        if (notificationsPanel) { notificationsPanel.classList.add('active'); renderNotifications(); }
     });
     
-    // Badges
     document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
-        if (!window.currentUser) {
-            showToast('Please sign in to view badges', 'warning');
-            return;
-        }
+        if (!window.currentUser) { showToast('Please sign in to view badges', 'warning'); return; }
         const badgesModal = document.getElementById('badges-modal');
-        if (badgesModal) {
-            badgesModal.classList.add('active');
-            loadUserBadges();
-        }
+        if (badgesModal) { badgesModal.classList.add('active'); loadUserBadges(); }
     });
     
-    // Watch Party
     document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
-        if (!window.currentUser) {
-            showToast('Please sign in to start a watch party', 'warning');
-            return;
-        }
+        if (!window.currentUser) { showToast('Please sign in to start a watch party', 'warning'); return; }
         const watchPartyModal = document.getElementById('watch-party-modal');
-        if (watchPartyModal) {
-            watchPartyModal.classList.add('active');
-            loadWatchPartyContent();
-        }
+        if (watchPartyModal) { watchPartyModal.classList.add('active'); loadWatchPartyContent(); }
     });
     
-    // Create Content
     document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         const { data } = await supabaseAuth.auth.getSession();
-        if (!data?.session) {
-            showToast('Please sign in to upload content', 'warning');
-            window.location.href = `login.html?redirect=creator-upload.html`;
-        } else {
-            window.location.href = 'creator-upload.html';
-        }
+        if (!data?.session) { showToast('Please sign in to upload content', 'warning'); window.location.href = `login.html?redirect=creator-upload.html`; }
+        else { window.location.href = 'creator-upload.html'; }
     });
     
-    // Dashboard
     document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         const { data } = await supabaseAuth.auth.getSession();
-        if (!data?.session) {
-            showToast('Please sign in to access dashboard', 'warning');
-            window.location.href = `login.html?redirect=creator-dashboard.html`;
-        } else {
-            window.location.href = 'creator-dashboard.html';
-        }
+        if (!data?.session) { showToast('Please sign in to access dashboard', 'warning'); window.location.href = `login.html?redirect=creator-dashboard.html`; }
+        else { window.location.href = 'creator-dashboard.html'; }
     });
     
-    // ✅ NEW: Watch History
     document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
-        if (!window.currentUser) {
-            showToast('Please sign in to view watch history', 'warning');
-            window.location.href = `login.html?redirect=watch-history.html`;
-            return;
-        }
+        if (!window.currentUser) { showToast('Please sign in to view watch history', 'warning'); window.location.href = `login.html?redirect=watch-history.html`; return; }
         window.location.href = 'watch-history.html';
     });
 }
@@ -2346,32 +1849,11 @@ function setupSidebarScaleControls() {
     const resetBtn = document.getElementById('sidebar-scale-reset');
     const scaleValue = document.getElementById('sidebar-scale-value');
     
-    const updateDisplay = () => {
-        if (scaleValue) {
-            scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
-        }
-    };
+    const updateDisplay = () => { if (scaleValue) scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%'; };
     
-    if (decreaseBtn) {
-        decreaseBtn.addEventListener('click', () => {
-            window.uiScaleController.decrease();
-            updateDisplay();
-        });
-    }
-    
-    if (increaseBtn) {
-        increaseBtn.addEventListener('click', () => {
-            window.uiScaleController.increase();
-            updateDisplay();
-        });
-    }
-    
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            window.uiScaleController.reset();
-            updateDisplay();
-        });
-    }
+    if (decreaseBtn) decreaseBtn.addEventListener('click', () => { window.uiScaleController.decrease(); updateDisplay(); });
+    if (increaseBtn) increaseBtn.addEventListener('click', () => { window.uiScaleController.increase(); updateDisplay(); });
+    if (resetBtn) resetBtn.addEventListener('click', () => { window.uiScaleController.reset(); updateDisplay(); });
     
     updateDisplay();
     document.addEventListener('scaleChanged', updateDisplay);
@@ -2384,34 +1866,21 @@ function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
     const navCreateBtn = document.getElementById('nav-create-btn');
     const navMenuBtn = document.getElementById('nav-menu-btn');
-    const navHistoryBtn = document.getElementById('nav-history-btn'); // ✅ NEW
+    const navHistoryBtn = document.getElementById('nav-history-btn');
     
-    if (navHomeBtn) {
-        navHomeBtn.addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-    }
+    if (navHomeBtn) navHomeBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
     
     if (navCreateBtn) {
         navCreateBtn.addEventListener('click', async () => {
             const { data } = await supabaseAuth.auth.getSession();
-            if (data?.session) {
-                window.location.href = 'creator-upload.html';
-            } else {
-                showToast('Please sign in to create content', 'warning');
-                window.location.href = 'login.html?redirect=creator-upload.html';
-            }
+            if (data?.session) { window.location.href = 'creator-upload.html'; }
+            else { showToast('Please sign in to create content', 'warning'); window.location.href = 'login.html?redirect=creator-upload.html'; }
         });
     }
     
-    // ✅ NEW: Watch History navigation
     if (navHistoryBtn) {
         navHistoryBtn.addEventListener('click', () => {
-            if (!window.currentUser) {
-                showToast('Please sign in to view watch history', 'warning');
-                window.location.href = `login.html?redirect=watch-history.html`;
-                return;
-            }
+            if (!window.currentUser) { showToast('Please sign in to view watch history', 'warning'); window.location.href = `login.html?redirect=watch-history.html`; return; }
             window.location.href = 'watch-history.html';
         });
     }
@@ -2443,15 +1912,11 @@ function setupLanguageFilter() {
         newChip.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
             document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
             newChip.classList.add('active');
-            
             const selectedLang = newChip.dataset.lang;
             filterContentByLanguage(selectedLang);
-            
-            const langName = getLanguageName(selectedLang);
-            showToast(`Showing: ${langName}`, 'info');
+            showToast(`Showing: ${getLanguageName(selectedLang)}`, 'info');
         });
     });
     
@@ -2462,7 +1927,6 @@ function setupLanguageFilter() {
         newMoreBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
             const languageContainer = document.querySelector('.language-chips');
             const hiddenLanguages = ['nr', 'ss', 've', 'ts'];
             
@@ -2472,7 +1936,6 @@ function setupLanguageFilter() {
                     newChip.className = 'language-chip';
                     newChip.dataset.lang = lang;
                     newChip.textContent = window.languageMap[lang] || lang;
-                    
                     newChip.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -2481,25 +1944,19 @@ function setupLanguageFilter() {
                         filterContentByLanguage(lang);
                         showToast(`Showing: ${window.languageMap[lang]}`, 'info');
                     });
-                    
                     languageContainer.insertBefore(newChip, newMoreBtn);
                 }
             });
-            
             newMoreBtn.style.display = 'none';
             showToast('All languages shown', 'info');
         });
     }
     
     const defaultChip = document.querySelector('.language-chip[data-lang="all"]');
-    if (defaultChip) {
-        defaultChip.classList.add('active');
-    }
+    if (defaultChip) defaultChip.classList.add('active');
 }
 
-function getLanguageName(code) {
-    return window.languageMap[code] || code || 'All Languages';
-}
+function getLanguageName(code) { return window.languageMap[code] || code || 'All Languages'; }
 
 function filterContentByLanguage(lang) {
     const contentCards = document.querySelectorAll('.content-card');
@@ -2507,22 +1964,14 @@ function filterContentByLanguage(lang) {
     
     contentCards.forEach(card => {
         const contentLang = card.dataset.language || 'en';
-        
         if (lang === 'all' || contentLang === lang) {
             card.style.display = 'block';
-            setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 50);
+            setTimeout(() => { card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, 50);
             visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
+        } else { card.style.display = 'none'; }
     });
     
-    if (visibleCount === 0 && lang !== 'all') {
-        showToast(`No content in ${getLanguageName(lang)} yet`, 'warning');
-    }
+    if (visibleCount === 0 && lang !== 'all') showToast(`No content in ${getLanguageName(lang)} yet`, 'warning');
 }
 
 // ============================================
@@ -2535,33 +1984,21 @@ function setupSearch() {
     const searchInput = document.getElementById('search-input');
     const searchResultsGrid = document.getElementById('search-results-grid');
     
-    console.log('🔍 Search Setup - Btn:', !!searchBtn, 'Modal:', !!searchModal, 'Input:', !!searchInput, 'Grid:', !!searchResultsGrid);
+    if (!searchBtn || !searchModal || !searchInput) { console.error('❌ Search elements not found!'); return; }
     
-    if (!searchBtn || !searchModal || !searchInput) {
-        console.error('❌ Search elements not found!');
-        return;
-    }
-    
-    // Open search modal
     searchBtn.addEventListener('click', () => {
-        console.log('🔍 Search button clicked');
         searchModal.classList.add('active');
-        setTimeout(() => {
-            searchInput.focus();
-        }, 300);
+        setTimeout(() => searchInput.focus(), 300);
     });
     
-    // Close search modal
     if (closeSearchBtn) {
         closeSearchBtn.addEventListener('click', () => {
-            console.log('🔍 Search close clicked');
             searchModal.classList.remove('active');
             if (searchInput) searchInput.value = '';
             if (searchResultsGrid) searchResultsGrid.innerHTML = '';
         });
     }
     
-    // Close on backdrop click
     searchModal.addEventListener('click', (e) => {
         if (e.target === searchModal) {
             searchModal.classList.remove('active');
@@ -2570,7 +2007,6 @@ function setupSearch() {
         }
     });
     
-    // Close on Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && searchModal.classList.contains('active')) {
             searchModal.classList.remove('active');
@@ -2579,7 +2015,6 @@ function setupSearch() {
         }
     });
     
-    // Search input with debounce
     if (searchInput) {
         searchInput.addEventListener('input', debounce(async (e) => {
             const query = e.target.value.trim();
@@ -2587,186 +2022,66 @@ function setupSearch() {
             const sortBy = document.getElementById('sort-filter')?.value || 'newest';
             const language = document.getElementById('language-filter')?.value || '';
             
-            console.log('🔍 Search input:', query, 'Category:', category, 'Sort:', sortBy, 'Language:', language);
-            
             if (!searchResultsGrid) return;
             
             if (query.length < 2) {
-                searchResultsGrid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1 / -1;">
-                        <div class="empty-icon"><i class="fas fa-search"></i></div>
-                        <h3>Start Typing</h3>
-                        <p>Enter at least 2 characters to search</p>
-                    </div>
-                `;
+                searchResultsGrid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon"><i class="fas fa-search"></i></div><h3>Start Typing</h3><p>Enter at least 2 characters to search</p></div>`;
                 return;
             }
             
-            // Show loading state
-            searchResultsGrid.innerHTML = `
-                <div class="infinite-scroll-loading" style="grid-column: 1 / -1;">
-                    <div class="infinite-scroll-spinner"></div>
-                    <div>Searching...</div>
-                </div>
-            `;
+            searchResultsGrid.innerHTML = `<div class="infinite-scroll-loading" style="grid-column: 1 / -1;"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>`;
             
             try {
                 const results = await searchContent(query, category, sortBy, language);
-                console.log('🔍 Search results:', results.length);
                 renderSearchResults(results, query);
             } catch (error) {
                 console.error('❌ Search error:', error);
-                searchResultsGrid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1 / -1;">
-                        <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                        <h3>Search Error</h3>
-                        <p>Failed to load results. Please try again.</p>
-                        <button class="see-all-btn" onclick="document.getElementById('search-input').dispatchEvent(new Event('input'))">
-                            <i class="fas fa-redo"></i> Retry
-                        </button>
-                    </div>
-                `;
+                searchResultsGrid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><h3>Search Error</h3><p>Failed to load results. Please try again.</p><button class="see-all-btn" onclick="document.getElementById('search-input').dispatchEvent(new Event('input'))"><i class="fas fa-redo"></i> Retry</button></div>`;
             }
-        }, 500)); // Increased debounce to 500ms for better performance
+        }, 500));
     }
     
-    // Filter change handlers
     const categoryFilter = document.getElementById('category-filter');
     const sortFilter = document.getElementById('sort-filter');
     const languageFilter = document.getElementById('language-filter');
     
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', () => {
-            console.log('🔍 Category filter changed');
-            if (searchInput && searchInput.value.trim().length >= 2) {
-                searchInput.dispatchEvent(new Event('input'));
-            }
-        });
-    }
+    if (categoryFilter) categoryFilter.addEventListener('change', () => { if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input')); });
+    if (sortFilter) sortFilter.addEventListener('change', () => { if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input')); });
+    if (languageFilter) languageFilter.addEventListener('change', () => { if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input')); });
     
-    if (sortFilter) {
-        sortFilter.addEventListener('change', () => {
-            console.log('🔍 Sort filter changed');
-            if (searchInput && searchInput.value.trim().length >= 2) {
-                searchInput.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-    
-    if (languageFilter) {
-        languageFilter.addEventListener('change', () => {
-            console.log('🔍 Language filter changed');
-            if (searchInput && searchInput.value.trim().length >= 2) {
-                searchInput.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-    
-    // Keyboard shortcut (Ctrl+K)
-    document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-            e.preventDefault();
-            searchModal.classList.add('active');
-            setTimeout(() => searchInput?.focus(), 300);
-        }
-    });
-    
-    console.log('✅ Search setup complete');
+    document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); searchModal.classList.add('active'); setTimeout(() => searchInput?.focus(), 300); } });
 }
 
-// ============================================
-// SEARCH CONTENT - FIXED VERSION
-// ============================================
 async function searchContent(query, category = '', sortBy = 'newest', language = '') {
-    console.log('🔍 Searching:', query, 'Category:', category, 'Sort:', sortBy, 'Language:', language);
-    
     try {
-        // Build search query with proper Supabase syntax
         let queryBuilder = supabaseAuth
             .from('Content')
-            .select(`
-                *,
-                language,
-                user_profiles!user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('status', 'published');
+            .select(`*, language, user_profiles!user_id (id, full_name, username, avatar_url)`)
+            .eq('status', 'published')
+            .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
         
-        // Search by title OR description (using or condition)
-        queryBuilder = queryBuilder.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+        if (category && category !== '' && category !== 'all') queryBuilder = queryBuilder.eq('genre', category);
+        if (language && language !== '' && language !== 'all') queryBuilder = queryBuilder.eq('language', language);
         
-        // Apply category filter
-        if (category && category !== '' && category !== 'all') {
-            queryBuilder = queryBuilder.eq('genre', category);
-            console.log('🔍 Filtering by category:', category);
-        }
-        
-        // Apply language filter
-        if (language && language !== '' && language !== 'all') {
-            queryBuilder = queryBuilder.eq('language', language);
-            console.log('🔍 Filtering by language:', language);
-        }
-        
-        // Execute query
         const { data, error } = await queryBuilder.limit(50);
-        
-        if (error) {
-            console.error('❌ Search query error:', error);
-            throw error;
-        }
-        
-        console.log('🔍 Raw search results:', data?.length || 0);
+        if (error) throw error;
         
         let results = data || [];
         
-        // Enrich results with metrics if we have results
         if (results.length > 0) {
             const contentIds = results.map(r => r.id);
             const creatorIds = [...new Set(results.map(r => r.user_id).filter(Boolean))];
-            
-            console.log('🔍 Fetching metrics for', contentIds.length, 'content items');
-            
             const metrics = await fetchAllMetrics(contentIds, creatorIds);
             
-            // Enrich results with metrics
-            results = results.map(item => ({
-                ...item,
-                metrics: {
-                    views: metrics.views[item.id] || 0,
-                    likes: metrics.likes[item.id] || 0,
-                    shares: metrics.shares[item.id] || 0,
-                    connectors: metrics.connectors[item.user_id] || 0
-                }
-            }));
+            results = results.map(item => ({ ...item, metrics: { views: metrics.views[item.id] || 0, likes: metrics.likes[item.id] || 0, shares: metrics.shares[item.id] || 0, connectors: metrics.connectors[item.user_id] || 0 } }));
         }
         
-        // Apply sorting
-        if (sortBy === 'popular') {
-            results.sort((a, b) => (b.metrics?.views || 0) - (a.metrics?.views || 0));
-            console.log('🔍 Sorted by popular');
-        } else if (sortBy === 'trending') {
-            results.sort((a, b) => {
-                const scoreA = (a.metrics?.views || 0) + (a.metrics?.likes || 0) * 5;
-                const scoreB = (b.metrics?.views || 0) + (b.metrics?.likes || 0) * 5;
-                return scoreB - scoreA;
-            });
-            console.log('🔍 Sorted by trending');
-        } else if (sortBy === 'connectors') {
-            results.sort((a, b) => (b.metrics?.connectors || 0) - (a.metrics?.connectors || 0));
-            console.log('🔍 Sorted by connectors');
-        } else {
-            // Default: newest first
-            results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            console.log('🔍 Sorted by newest');
-        }
+        if (sortBy === 'popular') results.sort((a, b) => (b.metrics?.views || 0) - (a.metrics?.views || 0));
+        else if (sortBy === 'trending') results.sort((a, b) => ((b.metrics?.views || 0) + (b.metrics?.likes || 0) * 5) - ((a.metrics?.views || 0) + (a.metrics?.likes || 0) * 5));
+        else if (sortBy === 'connectors') results.sort((a, b) => (b.metrics?.connectors || 0) - (a.metrics?.connectors || 0));
+        else results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         
-        console.log('✅ Search complete:', results.length, 'results');
         return results;
-        
     } catch (error) {
         console.error('❌ Search function error:', error);
         showToast('Search failed. Please try again.', 'error');
@@ -2774,48 +2089,26 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
     }
 }
 
-// ============================================
-// RENDER SEARCH RESULTS - FIXED VERSION
-// ============================================
 function renderSearchResults(results, searchQuery = '') {
     const grid = document.getElementById('search-results-grid');
-    
-    console.log('🎨 Rendering search results:', results.length);
-    
-    if (!grid) {
-        console.error('❌ Search results grid not found!');
-        return;
-    }
+    if (!grid) { console.error('❌ Search results grid not found!'); return; }
     
     if (!results || results.length === 0) {
-        grid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-icon"><i class="fas fa-search"></i></div>
-                <h3>No Results Found</h3>
-                <p>Try different keywords or check your spelling</p>
-                <p style="color: var(--warm-gold); margin-top: 10px;">Searched for: "${escapeHtml(searchQuery)}"</p>
-            </div>
-        `;
+        grid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon"><i class="fas fa-search"></i></div><h3>No Results Found</h3><p>Try different keywords or check your spelling</p><p style="color: var(--warm-gold); margin-top: 10px;">Searched for: "${escapeHtml(searchQuery)}"</p></div>`;
         return;
     }
     
-    // Create document fragment for better performance
     const fragment = document.createDocumentFragment();
     
-    // Add results count header
     const resultsHeader = document.createElement('div');
     resultsHeader.style.cssText = 'grid-column: 1 / -1; margin-bottom: 1rem; color: var(--slate-grey); font-size: var(--font-sm);';
     resultsHeader.innerHTML = `Found ${results.length} result${results.length !== 1 ? 's' : ''} for "${escapeHtml(searchQuery)}"`;
     fragment.appendChild(resultsHeader);
     
-    // Render each result
     results.slice(0, 24).forEach((content, index) => {
         if (!content) return;
         
-        const thumbnailUrl = content.thumbnail_url
-            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-            : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-        
+        const thumbnailUrl = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
         const creatorProfile = content.user_profiles;
         const displayName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
         const username = creatorProfile?.username || 'creator';
@@ -2825,7 +2118,7 @@ function renderSearchResults(results, searchQuery = '') {
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
             const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
-            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'creator-initials-small\'>${initials}</div>';">`;
         } else {
             avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
         }
@@ -2840,22 +2133,15 @@ function renderSearchResults(results, searchQuery = '') {
         card.style.transform = 'translateY(20px)';
         card.style.transition = 'all 0.3s ease';
         
-        // Highlight search query in title
         const highlightedTitle = highlightSearchQuery(escapeHtml(content.title), searchQuery);
         
         card.innerHTML = `
             <div class="card-thumbnail">
-                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                 <div class="thumbnail-overlay"></div>
-                <div class="play-overlay">
-                    <div class="play-icon"><i class="fas fa-play"></i></div>
-                </div>
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
-                ${content.media_type === 'live' ? `
-                    <div class="card-badge badge-live" style="position:absolute;top:10px;left:10px;z-index:4;">
-                        <i class="fas fa-circle"></i> LIVE
-                    </div>
-                ` : ''}
+                ${content.media_type === 'live' ? `<div class="card-badge badge-live" style="position:absolute;top:10px;left:10px;z-index:4;"><i class="fas fa-circle"></i> LIVE</div>` : ''}
             </div>
             <div class="card-content">
                 <h3 class="card-title" title="${escapeHtml(content.title)}">${highlightedTitle}</h3>
@@ -2869,27 +2155,16 @@ function renderSearchResults(results, searchQuery = '') {
                     <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
                     ${content.language ? `<span><i class="fas fa-language"></i> ${window.languageMap[content.language] || content.language}</span>` : ''}
                 </div>
-                ${content.metrics?.connectors > 0 ? `
-                    <div class="connector-info">
-                        <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)} Connectors
-                    </div>
-                ` : ''}
+                ${content.metrics?.connectors > 0 ? `<div class="connector-info"><i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)} Connectors</div>` : ''}
             </div>
         `;
         
         fragment.appendChild(card);
-        
-        // Animate cards in with stagger
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, 50 + (index * 50));
+        setTimeout(() => { card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }, 50 + (index * 50));
     });
     
     grid.innerHTML = '';
     grid.appendChild(fragment);
-    
-    console.log('✅ Search results rendered');
 }
 
 // ============================================
@@ -2903,137 +2178,57 @@ function setupNotifications() {
     
     if (!notificationsBtn || !notificationsPanel) return;
     
-    const openNotifications = () => {
-        notificationsPanel.classList.add('active');
-        renderNotifications();
-    };
+    notificationsBtn.addEventListener('click', () => { notificationsPanel.classList.add('active'); renderNotifications(); });
     
-    notificationsBtn.addEventListener('click', openNotifications);
-    
-    if (closeNotifications) {
-        closeNotifications.addEventListener('click', () => {
-            notificationsPanel.classList.remove('active');
-        });
-    }
+    if (closeNotifications) closeNotifications.addEventListener('click', () => { notificationsPanel.classList.remove('active'); });
     
     document.addEventListener('click', (e) => {
-        if (notificationsPanel.classList.contains('active') &&
-            !notificationsPanel.contains(e.target) &&
-            !notificationsBtn.contains(e.target)) {
+        if (notificationsPanel.classList.contains('active') && !notificationsPanel.contains(e.target) && !notificationsBtn.contains(e.target))
             notificationsPanel.classList.remove('active');
-        }
     });
     
     if (markAllRead) {
         markAllRead.addEventListener('click', async () => {
             if (!window.currentUser) return;
-            
             try {
-                const { error } = await supabaseAuth
-                    .from('notifications')
-                    .update({ is_read: true })
-                    .eq('user_id', window.currentUser.id)
-                    .eq('is_read', false);
-                
+                const { error } = await supabaseAuth.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
                 if (error) throw error;
-                
-                if (window.notifications) {
-                    window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
-                }
-                
+                if (window.notifications) window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
                 renderNotifications();
                 updateNotificationBadge(0);
                 showToast('All notifications marked as read', 'success');
-            } catch (error) {
-                console.error('Error marking all as read:', error);
-                showToast('Failed to mark notifications as read', 'error');
-            }
+            } catch (error) { console.error('Error marking all as read:', error); showToast('Failed to mark notifications as read', 'error'); }
         });
     }
     
-    document.getElementById('notification-settings')?.addEventListener('click', () => {
-        window.location.href = 'notification-settings.html';
-    });
+    document.getElementById('notification-settings')?.addEventListener('click', () => { window.location.href = 'notification-settings.html'; });
 }
 
 async function loadNotifications() {
     try {
-        if (!window.currentUser) {
-            updateNotificationBadge(0);
-            return;
-        }
-        
-        const { data, error } = await supabaseAuth
-            .from('notifications')
-            .select('*')
-            .eq('user_id', window.currentUser.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
-        
-        if (error) {
-            console.warn('Error loading notifications:', error);
-            updateNotificationBadge(0);
-            return;
-        }
-        
+        if (!window.currentUser) { updateNotificationBadge(0); return; }
+        const { data, error } = await supabaseAuth.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
+        if (error) { updateNotificationBadge(0); return; }
         window.notifications = data || [];
-        const unreadCount = window.notifications.filter(n => !n.is_read).length;
-        updateNotificationBadge(unreadCount);
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-        updateNotificationBadge(0);
-    }
+        updateNotificationBadge(window.notifications.filter(n => !n.is_read).length);
+    } catch (error) { console.error('Error loading notifications:', error); updateNotificationBadge(0); }
 }
 
 function updateNotificationBadge(count) {
     const mainBadge = document.getElementById('notification-count');
     const sidebarBadge = document.getElementById('sidebar-notification-count');
-    
-    [mainBadge, sidebarBadge].forEach(badge => {
-        if (badge) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = count > 0 ? 'flex' : 'none';
-        }
-    });
+    [mainBadge, sidebarBadge].forEach(badge => { if (badge) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; } });
 }
 
 function renderNotifications() {
     const notificationsList = document.getElementById('notifications-list');
     if (!notificationsList) return;
     
-    if (!window.currentUser) {
-        notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
-                <p>Sign in to see notifications</p>
-            </div>
-        `;
-        return;
-    }
+    if (!window.currentUser) { notificationsList.innerHTML = `<div class="empty-notifications"><i class="fas fa-bell-slash"></i><p>Sign in to see notifications</p></div>`; return; }
     
-    if (!window.notifications || window.notifications.length === 0) {
-        notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
-                <p>No notifications yet</p>
-            </div>
-        `;
-        return;
-    }
+    if (!window.notifications || window.notifications.length === 0) { notificationsList.innerHTML = `<div class="empty-notifications"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>`; return; }
     
-    notificationsList.innerHTML = window.notifications.map(notification => `
-        <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-            <div class="notification-icon">
-                <i class="${getNotificationIcon(notification.type)}"></i>
-            </div>
-            <div class="notification-content">
-                <h4>${escapeHtml(notification.title)}</h4>
-                <p>${escapeHtml(notification.message)}</p>
-                <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-            </div>
-            ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-        </div>
-    `).join('');
+    notificationsList.innerHTML = window.notifications.map(notification => `<div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}"><div class="notification-icon"><i class="${getNotificationIcon(notification.type)}"></i></div><div class="notification-content"><h4>${escapeHtml(notification.title)}</h4><p>${escapeHtml(notification.message)}</p><span class="notification-time">${formatNotificationTime(notification.created_at)}</span></div>${!notification.is_read ? '<div class="notification-dot"></div>' : ''}</div>`).join('');
 }
 
 function getNotificationIcon(type) {
@@ -3054,7 +2249,6 @@ function formatNotificationTime(timestamp) {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -3074,37 +2268,19 @@ function setupAnalytics() {
     
     analyticsBtn.addEventListener('click', async () => {
         const { data } = await supabaseAuth.auth.getSession();
-        if (!data?.session) {
-            showToast('Please sign in to view analytics', 'warning');
-            return;
-        }
-        
+        if (!data?.session) { showToast('Please sign in to view analytics', 'warning'); return; }
         analyticsModal.classList.add('active');
         await loadPersonalAnalytics();
     });
     
-    if (closeAnalytics) {
-        closeAnalytics.addEventListener('click', () => {
-            analyticsModal.classList.remove('active');
-        });
-    }
-    
-    analyticsModal.addEventListener('click', (e) => {
-        if (e.target === analyticsModal) {
-            analyticsModal.classList.remove('active');
-        }
-    });
+    if (closeAnalytics) closeAnalytics.addEventListener('click', () => { analyticsModal.classList.remove('active'); });
+    analyticsModal.addEventListener('click', (e) => { if (e.target === analyticsModal) analyticsModal.classList.remove('active'); });
 }
 
 async function loadPersonalAnalytics() {
     if (!window.currentUser || !window.currentProfile) return;
-    
     try {
-        const { data: views } = await supabaseAuth
-            .from('content_views')
-            .select('*')
-            .eq('profile_id', window.currentProfile.id);
-        
+        const { data: views } = await supabaseAuth.from('content_views').select('*').eq('profile_id', window.currentProfile.id);
         const totalViews = views?.length || 0;
         const totalWatchTime = views?.reduce((acc, v) => acc + (v.view_duration || 0), 0) || 0;
         const hours = Math.floor(totalWatchTime / 3600);
@@ -3118,9 +2294,7 @@ async function loadPersonalAnalytics() {
         document.getElementById('return-rate').textContent = returnRate + '%';
         
         await loadEngagementChart();
-    } catch (error) {
-        console.error('Error loading personal analytics:', error);
-    }
+    } catch (error) { console.error('Error loading personal analytics:', error); }
 }
 
 async function loadEngagementChart() {
@@ -3128,67 +2302,25 @@ async function loadEngagementChart() {
     if (!ctx || typeof Chart === 'undefined') return;
     
     try {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        const { data: viewsData } = await supabaseAuth
-            .from('content_views')
-            .select('created_at')
-            .gte('created_at', sevenDaysAgo.toISOString());
-        
+        const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const { data: viewsData } = await supabaseAuth.from('content_views').select('created_at').gte('created_at', sevenDaysAgo.toISOString());
         const viewsByDay = new Array(7).fill(0);
         const today = new Date();
         
         viewsData?.forEach(view => {
             const viewDate = new Date(view.created_at);
             const dayDiff = Math.floor((today - viewDate) / (1000 * 60 * 60 * 24));
-            if (dayDiff >= 0 && dayDiff < 7) {
-                viewsByDay[6 - dayDiff]++;
-            }
+            if (dayDiff >= 0 && dayDiff < 7) viewsByDay[6 - dayDiff]++;
         });
         
-        if (window.engagementChart) {
-            window.engagementChart.destroy();
-        }
+        if (window.engagementChart) window.engagementChart.destroy();
         
         window.engagementChart = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: ['7 days ago', '6 days ago', '5 days ago', '4 days ago', '3 days ago', 'Yesterday', 'Today'],
-                datasets: [{
-                    label: 'Views',
-                    data: viewsByDay,
-                    borderColor: '#F59E0B',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'var(--soft-white)'
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: 'var(--slate-grey)' }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: 'var(--slate-grey)' }
-                    }
-                }
-            }
+            data: { labels: ['7 days ago', '6 days ago', '5 days ago', '4 days ago', '3 days ago', 'Yesterday', 'Today'], datasets: [{ label: 'Views', data: viewsByDay, borderColor: '#F59E0B', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.4, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'var(--soft-white)' } } }, scales: { x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--slate-grey)' } }, y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--slate-grey)' } } } }
         });
-    } catch (error) {
-        console.error('Error loading engagement chart:', error);
-    }
+    } catch (error) { console.error('Error loading engagement chart:', error); }
 }
 
 // ============================================
@@ -3213,65 +2345,29 @@ function setupVoiceSearch() {
     recognition.lang = 'en-ZA';
     
     const startVoiceSearch = () => {
-        if (!window.currentUser) {
-            showToast('Please sign in to use voice search', 'warning');
-            return;
-        }
-        
+        if (!window.currentUser) { showToast('Please sign in to use voice search', 'warning'); return; }
         recognition.start();
-        
-        if (voiceStatus) {
-            voiceStatus.classList.add('active');
-            voiceStatusText.textContent = 'Listening...';
-        }
+        if (voiceStatus) { voiceStatus.classList.add('active'); voiceStatusText.textContent = 'Listening...'; }
     };
     
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         const searchInput = document.getElementById('search-input');
-        
-        if (searchInput) {
-            searchInput.value = transcript;
-            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        
-        if (voiceStatus) {
-            voiceStatus.classList.remove('active');
-            voiceStatusText.textContent = 'Listening...';
-        }
-        
+        if (searchInput) { searchInput.value = transcript; searchInput.dispatchEvent(new Event('input', { bubbles: true })); }
+        if (voiceStatus) voiceStatus.classList.remove('active');
         showToast(`Searching: "${transcript}"`, 'info');
     };
     
     recognition.onerror = (event) => {
         console.error('Voice search error:', event.error);
-        
-        if (voiceStatus) {
-            voiceStatus.classList.remove('active');
-            voiceStatusText.textContent = 'Error';
-        }
-        
-        if (event.error === 'not-allowed') {
-            showToast('Microphone access denied', 'error');
-        }
+        if (voiceStatus) voiceStatus.classList.remove('active');
+        if (event.error === 'not-allowed') showToast('Microphone access denied', 'error');
     };
     
-    recognition.onend = () => {
-        if (voiceStatus) {
-            voiceStatus.classList.remove('active');
-        }
-    };
+    recognition.onend = () => { if (voiceStatus) voiceStatus.classList.remove('active'); };
     
-    if (voiceSearchBtn) {
-        voiceSearchBtn.addEventListener('click', startVoiceSearch);
-    }
-    
-    if (voiceSearchModalBtn) {
-        voiceSearchModalBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            startVoiceSearch();
-        });
-    }
+    if (voiceSearchBtn) voiceSearchBtn.addEventListener('click', startVoiceSearch);
+    if (voiceSearchModalBtn) voiceSearchModalBtn.addEventListener('click', (e) => { e.preventDefault(); startVoiceSearch(); });
 }
 
 // ============================================
@@ -3285,74 +2381,34 @@ function setupWatchParty() {
     
     if (!watchPartyModal) return;
     
-    if (closeWatchParty) {
-        closeWatchParty.addEventListener('click', () => {
-            watchPartyModal.classList.remove('active');
-        });
-    }
+    if (closeWatchParty) closeWatchParty.addEventListener('click', () => { watchPartyModal.classList.remove('active'); });
     
     if (startWatchParty) {
         startWatchParty.addEventListener('click', async () => {
             const selectedContent = document.querySelector('.watch-party-content-item.selected');
-            if (!selectedContent) {
-                showToast('Please select content to watch', 'warning');
-                return;
-            }
-            
+            if (!selectedContent) { showToast('Please select content to watch', 'warning'); return; }
             const contentId = selectedContent.dataset.contentId;
             const syncPlayback = document.getElementById('party-sync-playback')?.checked;
             const chatEnabled = document.getElementById('party-chat-enabled')?.checked;
             
             try {
-                const { data, error } = await supabaseAuth
-                    .from('watch_parties')
-                    .insert({
-                        host_id: window.currentUser?.id,
-                        profile_id: window.currentProfile?.id,
-                        content_id: contentId,
-                        sync_playback: syncPlayback,
-                        chat_enabled: chatEnabled,
-                        invite_code: generateInviteCode()
-                    })
-                    .select()
-                    .single();
-                
-                if (error) {
-                    console.warn('Watch party error:', error);
-                    showToast('Watch party created! (Demo mode)', 'success');
-                    watchPartyModal.classList.remove('active');
-                    return;
-                }
-                
+                const { data, error } = await supabaseAuth.from('watch_parties').insert({ host_id: window.currentUser?.id, profile_id: window.currentProfile?.id, content_id: contentId, sync_playback: syncPlayback, chat_enabled: chatEnabled, invite_code: generateInviteCode() }).select().single();
+                if (error) { showToast('Watch party created! (Demo mode)', 'success'); watchPartyModal.classList.remove('active'); return; }
                 watchPartyModal.classList.remove('active');
-                
                 const inviteLink = `${window.location.origin}/watch-party.html?code=${data.invite_code}`;
                 navigator.clipboard.writeText(inviteLink);
-                
                 showToast('Watch party created! Invite link copied to clipboard', 'success');
-            } catch (error) {
-                console.error('Error creating watch party:', error);
-                showToast('Watch party created! (Demo mode)', 'success');
-                watchPartyModal.classList.remove('active');
-            }
+            } catch (error) { showToast('Watch party created! (Demo mode)', 'success'); watchPartyModal.classList.remove('active'); }
         });
     }
     
-    if (copyPartyLink) {
-        copyPartyLink.addEventListener('click', () => {
-            showToast('Start a watch party first', 'warning');
-        });
-    }
+    if (copyPartyLink) copyPartyLink.addEventListener('click', () => { showToast('Start a watch party first', 'warning'); });
     
     const searchInput = document.getElementById('watch-party-search');
     if (searchInput) {
         searchInput.addEventListener('input', debounce(async (e) => {
             const query = e.target.value.trim();
-            if (query.length < 2) {
-                loadWatchPartyContent();
-                return;
-            }
-            
+            if (query.length < 2) { loadWatchPartyContent(); return; }
             const results = await searchContent(query);
             renderWatchPartyContentList(results);
         }, 300));
@@ -3361,19 +2417,10 @@ function setupWatchParty() {
 
 async function loadWatchPartyContent() {
     try {
-        const { data, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .limit(20);
-        
+        const { data, error } = await supabaseAuth.from('Content').select('*, language, user_profiles!user_id(*)').eq('status', 'published').order('created_at', { ascending: false }).limit(20);
         if (error) throw error;
-        
         renderWatchPartyContentList(data || []);
-    } catch (error) {
-        console.error('Error loading watch party content:', error);
-    }
+    } catch (error) { console.error('Error loading watch party content:', error); }
 }
 
 function renderWatchPartyContentList(contents) {
@@ -3381,32 +2428,16 @@ function renderWatchPartyContentList(contents) {
     if (!list) return;
     
     list.innerHTML = contents.map(content => {
-        const thumbnailUrl = content.thumbnail_url
-            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-            : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-        
-        return `
-            <div class="watch-party-content-item" data-content-id="${content.id}">
-                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}">
-                <div class="watch-party-content-info">
-                    <h4>${truncateText(escapeHtml(content.title), 40)}</h4>
-                    <p>${content.media_type || 'video'}</p>
-                </div>
-            </div>
-        `;
+        const thumbnailUrl = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+        return `<div class="watch-party-content-item" data-content-id="${content.id}"><img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';"><div class="watch-party-content-info"><h4>${truncateText(escapeHtml(content.title), 40)}</h4><p>${content.media_type || 'video'}</p></div></div>`;
     }).join('');
     
     list.querySelectorAll('.watch-party-content-item').forEach(item => {
-        item.addEventListener('click', () => {
-            list.querySelectorAll('.watch-party-content-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-        });
+        item.addEventListener('click', () => { list.querySelectorAll('.watch-party-content-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); });
     });
 }
 
-function generateInviteCode() {
-    return Math.random().toString(36).substring(2, 10).toUpperCase();
-}
+function generateInviteCode() { return Math.random().toString(36).substring(2, 10).toUpperCase(); }
 
 // ============================================
 // TIP SYSTEM
@@ -3421,86 +2452,47 @@ function setupTipSystem() {
     document.addEventListener('click', (e) => {
         if (e.target.closest('.tip-creator-btn')) {
             const btn = e.target.closest('.tip-creator-btn');
-            const creatorId = btn.dataset.creatorId;
-            const creatorName = btn.dataset.creatorName;
-            
-            openTipModal(creatorId, creatorName);
+            openTipModal(btn.dataset.creatorId, btn.dataset.creatorName);
         }
     });
     
-    if (closeTip) {
-        closeTip.addEventListener('click', () => {
-            tipModal.classList.remove('active');
-        });
-    }
+    if (closeTip) closeTip.addEventListener('click', () => { tipModal.classList.remove('active'); });
     
     document.querySelectorAll('.tip-option').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            
             const customAmount = document.getElementById('custom-amount');
-            if (btn.dataset.amount === 'custom') {
-                customAmount.style.display = 'block';
-            } else {
-                customAmount.style.display = 'none';
-            }
+            if (btn.dataset.amount === 'custom') customAmount.style.display = 'block';
+            else customAmount.style.display = 'none';
         });
     });
     
     if (sendTip) {
         sendTip.addEventListener('click', async () => {
             const selectedOption = document.querySelector('.tip-option.selected');
-            if (!selectedOption) {
-                showToast('Please select an amount', 'warning');
-                return;
-            }
+            if (!selectedOption) { showToast('Please select an amount', 'warning'); return; }
             
             let amount = selectedOption.dataset.amount;
             if (amount === 'custom') {
                 amount = document.getElementById('custom-tip-amount').value;
-                if (!amount || amount < 1) {
-                    showToast('Please enter a valid amount', 'warning');
-                    return;
-                }
+                if (!amount || amount < 1) { showToast('Please enter a valid amount', 'warning'); return; }
             }
             
             const message = document.getElementById('tip-message').value;
             const creatorId = tipModal.dataset.creatorId;
             
-            if (!window.currentUser) {
-                showToast('Please sign in to send tips', 'warning');
-                return;
-            }
+            if (!window.currentUser) { showToast('Please sign in to send tips', 'warning'); return; }
             
             try {
-                const { error } = await supabaseAuth
-                    .from('tips')
-                    .insert({
-                        sender_id: window.currentUser.id,
-                        recipient_id: creatorId,
-                        amount: parseFloat(amount),
-                        message: message,
-                        status: 'completed'
-                    });
-                
-                if (error) {
-                    console.warn('Tip error:', error);
-                    showToast(`Thank you for supporting this creator! (Demo)`, 'success');
-                } else {
-                    showToast(`Thank you for supporting this creator!`, 'success');
-                }
-                
+                const { error } = await supabaseAuth.from('tips').insert({ sender_id: window.currentUser.id, recipient_id: creatorId, amount: parseFloat(amount), message: message, status: 'completed' });
+                if (error) { showToast(`Thank you for supporting this creator! (Demo)`, 'success'); }
+                else { showToast(`Thank you for supporting this creator!`, 'success'); }
                 tipModal.classList.remove('active');
-                
                 document.getElementById('tip-message').value = '';
                 document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
                 document.getElementById('custom-amount').style.display = 'none';
-            } catch (error) {
-                console.error('Error sending tip:', error);
-                showToast('Thank you for supporting this creator! (Demo)', 'success');
-                tipModal.classList.remove('active');
-            }
+            } catch (error) { showToast('Thank you for supporting this creator! (Demo)', 'success'); tipModal.classList.remove('active'); }
         });
     }
 }
@@ -3508,14 +2500,8 @@ function setupTipSystem() {
 function openTipModal(creatorId, creatorName) {
     const tipModal = document.getElementById('tip-modal');
     const creatorInfo = document.getElementById('tip-creator-info');
-    
     tipModal.dataset.creatorId = creatorId;
-    
-    creatorInfo.innerHTML = `
-        <h3>${escapeHtml(creatorName)}</h3>
-        <p>Show your appreciation with a tip</p>
-    `;
-    
+    creatorInfo.innerHTML = `<h3>${escapeHtml(creatorName)}</h3><p>Show your appreciation with a tip</p>`;
     tipModal.classList.add('active');
 }
 
@@ -3524,18 +2510,9 @@ function openTipModal(creatorId, creatorName) {
 // ============================================
 async function loadUserBadges() {
     if (!window.currentUser) return;
-    
     try {
-        const { data, error } = await supabaseAuth
-            .from('user_badges')
-            .select('*')
-            .eq('user_id', window.currentUser.id);
-        
-        if (error) {
-            console.warn('Error loading badges:', error);
-            return;
-        }
-        
+        const { data, error } = await supabaseAuth.from('user_badges').select('*').eq('user_id', window.currentUser.id);
+        if (error) return;
         window.userBadges = data || [];
         
         const allBadges = [
@@ -3550,29 +2527,11 @@ async function loadUserBadges() {
         
         badgesGrid.innerHTML = allBadges.map(badge => {
             const earned = window.userBadges.some(b => b.badge_name === badge.name);
-            
-            return `
-                <div class="badge-item ${earned ? 'earned' : 'locked'}">
-                    <div class="badge-icon ${earned ? 'earned' : ''}">
-                        <i class="fas ${badge.icon}"></i>
-                    </div>
-                    <div class="badge-info">
-                        <h4>${badge.name}</h4>
-                        <p>${badge.description}</p>
-                        ${earned ? 
-                            `<span class="badge-earned-date">Earned!</span>` : 
-                            `<span class="badge-requirement">Keep watching</span>`
-                        }
-                    </div>
-                </div>
-            `;
+            return `<div class="badge-item ${earned ? 'earned' : 'locked'}"><div class="badge-icon ${earned ? 'earned' : ''}"><i class="fas ${badge.icon}"></i></div><div class="badge-info"><h4>${badge.name}</h4><p>${badge.description}</p>${earned ? `<span class="badge-earned-date">Earned!</span>` : `<span class="badge-requirement">Keep watching</span>`}</div></div>`;
         }).join('');
         
         badgesEarned.textContent = window.userBadges.length;
-        
-    } catch (error) {
-        console.error('Error loading badges:', error);
-    }
+    } catch (error) { console.error('Error loading badges:', error); }
 }
 
 // ============================================
@@ -3583,99 +2542,41 @@ function renderCategoryTabs() {
     if (!categoryTabs) return;
     
     const categories = ['All', 'Music', 'STEM', 'Culture', 'News', 'Sports', 'Movies', 'Documentaries', 'Podcasts'];
+    categoryTabs.innerHTML = categories.map((category, index) => `<button class="category-tab ${index === 0 ? 'active' : ''}" data-category="${category}">${escapeHtml(category)}</button>`).join('');
     
-    categoryTabs.innerHTML = categories.map((category, index) => `
-        <button class="category-tab ${index === 0 ? 'active' : ''}"
-                data-category="${category}">
-            ${escapeHtml(category)}
-        </button>
-    `).join('');
-    
-    document.querySelectorAll('.category-tab').forEach(button => {
-        button.addEventListener('click', () => {
-            const category = button.dataset.category;
-            onCategoryChanged(category);
-        });
-    });
+    document.querySelectorAll('.category-tab').forEach(button => { button.addEventListener('click', () => onCategoryChanged(button.dataset.category)); });
 }
 
 async function onCategoryChanged(category) {
-    document.querySelectorAll('.category-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.category === category);
-    });
-    
+    document.querySelectorAll('.category-tab').forEach(btn => { btn.classList.toggle('active', btn.dataset.category === category); });
     window.currentCategory = category === 'All' ? null : category;
     showToast(`Filtering by: ${category}`, 'info');
-    
     await reloadContentByCategory(category);
 }
 
 async function reloadContentByCategory(category) {
     try {
-        let query = supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published');
+        let query = supabaseAuth.from('Content').select('*, language, user_profiles!user_id(*)').eq('status', 'published');
+        if (category !== 'All') query = query.eq('genre', category);
         
-        if (category !== 'All') {
-            query = query.eq('genre', category);
-        }
-        
-        const { data: trendingData } = await query
-            .order('views_count', { ascending: false })
-            .limit(8);
-        
+        const { data: trendingData } = await query.order('views_count', { ascending: false }).limit(8);
         const trendingIds = (trendingData || []).map(c => c.id);
         const trendingCreatorIds = [...new Set((trendingData || []).map(c => c.user_id).filter(Boolean))];
-        
         const trendingMetrics = await fetchAllMetrics(trendingIds, trendingCreatorIds);
-        
-        const trendingWithMetrics = (trendingData || []).map(item => ({
-            ...item,
-            metrics: {
-                views: trendingMetrics.views[item.id] || 0,
-                likes: trendingMetrics.likes[item.id] || 0,
-                shares: trendingMetrics.shares[item.id] || 0,
-                favorites: item.favorites_count || 0,
-                connectors: trendingMetrics.connectors[item.user_id] || 0
-            }
-        }));
+        const trendingWithMetrics = (trendingData || []).map(item => ({ ...item, metrics: { views: trendingMetrics.views[item.id] || 0, likes: trendingMetrics.likes[item.id] || 0, shares: trendingMetrics.shares[item.id] || 0, favorites: item.favorites_count || 0, connectors: trendingMetrics.connectors[item.user_id] || 0 } }));
         
         const trendingGrid = document.getElementById('trending-grid');
-        if (trendingGrid && trendingWithMetrics.length > 0) {
-            trendingGrid.innerHTML = '';
-            renderContentCards(trendingGrid, trendingWithMetrics);
-        }
+        if (trendingGrid && trendingWithMetrics.length > 0) { trendingGrid.innerHTML = ''; renderContentCards(trendingGrid, trendingWithMetrics); }
         
-        const { data: newData } = await query
-            .order('created_at', { ascending: false })
-            .limit(8);
-        
+        const { data: newData } = await query.order('created_at', { ascending: false }).limit(8);
         const newIds = (newData || []).map(c => c.id);
         const newCreatorIds = [...new Set((newData || []).map(c => c.user_id).filter(Boolean))];
-        
         const newMetrics = await fetchAllMetrics(newIds, newCreatorIds);
-        
-        const newWithMetrics = (newData || []).map(item => ({
-            ...item,
-            metrics: {
-                views: newMetrics.views[item.id] || 0,
-                likes: newMetrics.likes[item.id] || 0,
-                shares: newMetrics.shares[item.id] || 0,
-                favorites: item.favorites_count || 0,
-                connectors: newMetrics.connectors[item.user_id] || 0
-            }
-        }));
+        const newWithMetrics = (newData || []).map(item => ({ ...item, metrics: { views: newMetrics.views[item.id] || 0, likes: newMetrics.likes[item.id] || 0, shares: newMetrics.shares[item.id] || 0, favorites: item.favorites_count || 0, connectors: newMetrics.connectors[item.user_id] || 0 } }));
         
         const newContentGrid = document.getElementById('new-content-grid');
-        if (newContentGrid && newWithMetrics.length > 0) {
-            newContentGrid.innerHTML = '';
-            renderContentCards(newContentGrid, newWithMetrics);
-        }
-    } catch (error) {
-        console.error('Error reloading content by category:', error);
-        showToast('Failed to filter content', 'error');
-    }
+        if (newContentGrid && newWithMetrics.length > 0) { newContentGrid.innerHTML = ''; renderContentCards(newContentGrid, newWithMetrics); }
+    } catch (error) { console.error('Error reloading content by category:', error); showToast('Failed to filter content', 'error'); }
 }
 
 // ============================================
@@ -3690,59 +2591,36 @@ function updateProfileSwitcher() {
     
     if (window.currentProfile) {
         currentProfileName.textContent = window.currentProfile.name || 'Profile';
-        
-        while (profilePlaceholder.firstChild) {
-            profilePlaceholder.removeChild(profilePlaceholder.firstChild);
-        }
-        
+        while (profilePlaceholder.firstChild) profilePlaceholder.removeChild(profilePlaceholder.firstChild);
         if (window.currentProfile.avatar_url) {
             const img = document.createElement('img');
             img.className = 'profile-img';
             img.src = fixAvatarUrl(window.currentProfile.avatar_url);
             img.alt = window.currentProfile.name;
             img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+            img.onerror = () => { profilePlaceholder.innerHTML = `<div class="profile-placeholder" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px">${getInitials(window.currentProfile.name)}</div>`; };
             profilePlaceholder.appendChild(img);
         } else {
-            const initials = getInitials(window.currentProfile.name);
-            const div = document.createElement('div');
-            div.className = 'profile-placeholder';
-            div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-            div.textContent = initials;
-            profilePlaceholder.appendChild(div);
+            profilePlaceholder.innerHTML = `<div class="profile-placeholder" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px">${getInitials(window.currentProfile.name)}</div>`;
         }
     }
     
     profileList.innerHTML = (window.userProfiles || []).map(profile => {
         const initials = getInitials(profile.name);
         const isActive = window.currentProfile?.id === profile.id;
-        
-        return `
-            <div class="profile-item ${isActive ? 'active' : ''}" data-profile-id="${profile.id}">
-                <div class="profile-avatar-small">
-                    ${profile.avatar_url 
-                        ? `<img src="${fixAvatarUrl(profile.avatar_url)}" alt="${escapeHtml(profile.name)}">`
-                        : `<div class="profile-initials">${initials}</div>`
-                    }
-                </div>
-                <span class="profile-name">${escapeHtml(profile.name)}</span>
-                ${isActive ? '<i class="fas fa-check"></i>' : ''}
-            </div>
-        `;
+        return `<div class="profile-item ${isActive ? 'active' : ''}" data-profile-id="${profile.id}"><div class="profile-avatar-small">${profile.avatar_url ? `<img src="${fixAvatarUrl(profile.avatar_url)}" alt="${escapeHtml(profile.name)}" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'profile-initials\'>${initials}</div>';">` : `<div class="profile-initials">${initials}</div>`}</div><span class="profile-name">${escapeHtml(profile.name)}</span>${isActive ? '<i class="fas fa-check"></i>' : ''}</div>`;
     }).join('');
     
     document.querySelectorAll('.profile-item').forEach(item => {
         item.addEventListener('click', async () => {
             const profileId = item.dataset.profileId;
             const profile = window.userProfiles.find(p => p.id === profileId);
-            
             if (profile) {
                 window.currentProfile = profile;
                 localStorage.setItem('currentProfileId', profileId);
-                
                 updateProfileSwitcher();
                 await loadContinueWatchingSection();
                 await loadForYouSection();
-                
                 showToast(`Switched to ${profile.name}`, 'success');
             }
         });
@@ -3750,18 +2628,9 @@ function updateProfileSwitcher() {
     
     const profileBtn = document.getElementById('current-profile-btn');
     const dropdown = document.getElementById('profile-dropdown');
-    
     if (profileBtn && dropdown) {
-        profileBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('active');
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.remove('active');
-            }
-        });
+        profileBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); });
+        document.addEventListener('click', (e) => { if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('active'); });
     }
 }
 
@@ -3771,14 +2640,8 @@ function updateProfileSwitcher() {
 function setupBackToTop() {
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (!backToTopBtn) return;
-    
-    backToTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    
-    window.addEventListener('scroll', () => {
-        backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
-    });
+    backToTopBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    window.addEventListener('scroll', () => { backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none'; });
 }
 
 // ============================================
@@ -3786,93 +2649,53 @@ function setupBackToTop() {
 // ============================================
 function setupInfiniteScroll() {
     const sentinel = document.getElementById('infinite-scroll-sentinel');
-    
     const observer = new IntersectionObserver(async (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && window.hasMoreContent && !window.isLoadingMore) {
-            await loadMoreContent();
-        }
-    }, {
-        root: null,
-        rootMargin: '100px',
-        threshold: 0.1
-    });
-    
-    if (sentinel) {
-        observer.observe(sentinel);
-    }
+        if (entry.isIntersecting && window.hasMoreContent && !window.isLoadingMore) await loadMoreContent();
+    }, { root: null, rootMargin: '100px', threshold: 0.1 });
+    if (sentinel) observer.observe(sentinel);
 }
 
 async function loadMoreContent() {
     if (window.isLoadingMore || !window.hasMoreContent) return;
-    
     window.isLoadingMore = true;
     window.currentPage++;
     
     const loadingIndicator = document.createElement('div');
     loadingIndicator.className = 'infinite-scroll-loading';
     loadingIndicator.id = 'infinite-scroll-loading';
-    loadingIndicator.innerHTML = `
-        <div class="infinite-scroll-spinner"></div>
-        <div>Loading more content...</div>
-    `;
+    loadingIndicator.innerHTML = `<div class="infinite-scroll-spinner"></div><div>Loading more content...</div>`;
     document.querySelector('.container')?.appendChild(loadingIndicator);
     
     try {
         const from = window.currentPage * window.PAGE_SIZE;
         const to = (window.currentPage + 1) * window.PAGE_SIZE - 1;
-        
-        const { data, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .range(from, to);
-        
+        const { data, error } = await supabaseAuth.from('Content').select('*, language, user_profiles!user_id(*)').eq('status', 'published').order('created_at', { ascending: false }).range(from, to);
         if (error) throw error;
-        
         document.getElementById('infinite-scroll-loading')?.remove();
         
         if (data && data.length > 0) {
             const contentIds = data.map(c => c.id);
             const creatorIds = [...new Set(data.map(c => c.user_id).filter(Boolean))];
             const metrics = await fetchAllMetrics(contentIds, creatorIds);
-            
-            const dataWithMetrics = data.map(item => ({
-                ...item,
-                metrics: {
-                    views: metrics.views[item.id] || 0,
-                    likes: metrics.likes[item.id] || 0,
-                    shares: metrics.shares[item.id] || 0,
-                    favorites: item.favorites_count || 0,
-                    connectors: metrics.connectors[item.user_id] || 0
-                }
-            }));
-            
+            const dataWithMetrics = data.map(item => ({ ...item, metrics: { views: metrics.views[item.id] || 0, likes: metrics.likes[item.id] || 0, shares: metrics.shares[item.id] || 0, favorites: item.favorites_count || 0, connectors: metrics.connectors[item.user_id] || 0 } }));
             appendMoreContent(dataWithMetrics);
             window.hasMoreContent = data.length === window.PAGE_SIZE;
         } else {
             window.hasMoreContent = false;
-            
             const endMessage = document.createElement('div');
             endMessage.className = 'infinite-scroll-end';
             endMessage.innerHTML = 'You\'ve reached the end of content';
             document.querySelector('.container')?.appendChild(endMessage);
             setTimeout(() => endMessage.remove(), 3000);
         }
-    } catch (error) {
-        console.error('Error loading more content:', error);
-        document.getElementById('infinite-scroll-loading')?.remove();
-        window.hasMoreContent = false;
-    } finally {
-        window.isLoadingMore = false;
-    }
+    } catch (error) { console.error('Error loading more content:', error); document.getElementById('infinite-scroll-loading')?.remove(); window.hasMoreContent = false; }
+    finally { window.isLoadingMore = false; }
 }
 
 function appendMoreContent(newItems) {
     const newContentGrid = document.getElementById('new-content-grid');
     if (!newContentGrid) return;
-    
     renderContentCards(newContentGrid, newItems);
 }
 
@@ -3882,54 +2705,24 @@ function appendMoreContent(newItems) {
 function setupKeyboardNavigation() {
     document.addEventListener('keydown', (e) => {
         if (e.target.matches('input, textarea, select')) return;
-        
         switch(e.key) {
-            case '?':
-                if (!e.ctrlKey && !e.altKey && !e.metaKey) {
-                    e.preventDefault();
-                    const shortcutsModal = document.getElementById('shortcuts-modal');
-                    if (shortcutsModal) {
-                        shortcutsModal.style.display = 'flex';
-                    }
-                }
-                break;
-            case '/':
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    document.getElementById('search-btn')?.click();
-                }
-                break;
-            case 'Escape':
-                closeAllModals();
-                break;
+            case '?': if (!e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); const shortcutsModal = document.getElementById('shortcuts-modal'); if (shortcutsModal) shortcutsModal.style.display = 'flex'; } break;
+            case '/': if (e.ctrlKey || e.metaKey) { e.preventDefault(); document.getElementById('search-btn')?.click(); } break;
+            case 'Escape': closeAllModals(); break;
         }
     });
     
     const closeShortcuts = document.getElementById('close-shortcuts');
-    if (closeShortcuts) {
-        closeShortcuts.addEventListener('click', () => {
-            document.getElementById('shortcuts-modal').style.display = 'none';
-        });
-    }
+    if (closeShortcuts) closeShortcuts.addEventListener('click', () => { document.getElementById('shortcuts-modal').style.display = 'none'; });
     
     const shortcutsModal = document.getElementById('shortcuts-modal');
-    if (shortcutsModal) {
-        shortcutsModal.addEventListener('click', (e) => {
-            if (e.target === shortcutsModal) {
-                shortcutsModal.style.display = 'none';
-            }
-        });
-    }
+    if (shortcutsModal) shortcutsModal.addEventListener('click', (e) => { if (e.target === shortcutsModal) shortcutsModal.style.display = 'none'; });
 }
 
 function closeAllModals() {
-    document.querySelectorAll('.analytics-modal.active, .search-modal.active, .notifications-panel.active, .watch-party-modal.active, .tip-modal.active, .badges-modal.active')
-        .forEach(el => el.classList.remove('active'));
-    
+    document.querySelectorAll('.analytics-modal.active, .search-modal.active, .notifications-panel.active, .watch-party-modal.active, .tip-modal.active, .badges-modal.active').forEach(el => el.classList.remove('active'));
     const shortcutsModal = document.getElementById('shortcuts-modal');
-    if (shortcutsModal) {
-        shortcutsModal.style.display = 'none';
-    }
+    if (shortcutsModal) shortcutsModal.style.display = 'none';
 }
 
 // ============================================
@@ -3941,29 +2734,19 @@ function updateWelcomeMessage() {
     const welcomeMessage = document.getElementById('welcome-message');
     
     if (window.currentUser && window.currentProfile) {
-        const name = window.currentProfile.name || 
-                    window.currentUser.user_metadata?.full_name || 
-                    window.currentUser.email?.split('@')[0] || 
-                    'User';
+        const name = window.currentProfile.name || window.currentUser.user_metadata?.full_name || window.currentUser.email?.split('@')[0] || 'User';
         userNameSpan.textContent = name;
-        
         const hour = new Date().getHours();
         let greeting = 'Good ';
         if (hour < 12) greeting += 'morning';
         else if (hour < 18) greeting += 'afternoon';
         else greeting += 'evening';
-        
         welcomeMessage.innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
-        
-        if (welcomeSubtitle) {
-            welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
-        }
+        if (welcomeSubtitle) welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
     } else {
         userNameSpan.textContent = 'Guest';
         welcomeMessage.innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
-        if (welcomeSubtitle) {
-            welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
-        }
+        if (welcomeSubtitle) welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
     }
 }
 
@@ -3971,35 +2754,27 @@ function updateWelcomeMessage() {
 // UPDATE APP ICON
 // ============================================
 function updateAppIcon() {
-    // Update logo icon in header
     const logoIcon = document.querySelector('.logo-icon');
     if (logoIcon) {
-        // Clear existing content
         logoIcon.innerHTML = '';
-        
-        // Add img element
         const img = document.createElement('img');
         img.src = 'assets/icon/bantu_stream_connect_icon.png';
         img.alt = 'Bantu Stream Connect';
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'contain';
-        
         logoIcon.appendChild(img);
     }
     
-    // Update sidebar logo icon
     const sidebarLogoIcon = document.querySelector('.sidebar-logo .logo-icon');
     if (sidebarLogoIcon) {
         sidebarLogoIcon.innerHTML = '';
-        
         const img = document.createElement('img');
         img.src = 'assets/icon/bantu_stream_connect_icon.png';
         img.alt = 'Bantu Stream Connect';
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'contain';
-        
         sidebarLogoIcon.appendChild(img);
     }
 }
