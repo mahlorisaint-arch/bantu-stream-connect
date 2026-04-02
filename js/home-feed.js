@@ -50,6 +50,100 @@ const languageMap = {
 };
 window.languageMap = languageMap;
 
+// ============================================
+// MEDIA URL FIXING FUNCTIONS
+// ============================================
+
+/**
+ * Robust URL fixer for all media types
+ * Handles Supabase storage, relative paths, and absolute URLs
+ */
+function fixMediaUrl(url) {
+    if (!url) return '';
+    
+    // Already a valid full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Check if it's a working Supabase URL
+        if (url.includes('supabase.co/storage/v1/object/public')) {
+            return url;
+        }
+        // If it's a different domain, return as-is
+        return url;
+    }
+    
+    // Remove leading slashes
+    let cleanPath = url.replace(/^\/+/, '');
+    
+    // Handle different path formats
+    if (cleanPath.includes('storage/v1/object/public')) {
+        // Already has storage path, just prepend domain if needed
+        return cleanPath.startsWith('http') ? cleanPath : `${SUPABASE_URL}/${cleanPath}`;
+    }
+    
+    // Determine bucket type based on path or content type
+    let bucket = 'content'; // default bucket
+    if (cleanPath.includes('avatar') || cleanPath.includes('profile')) {
+        bucket = 'avatars';
+    } else if (cleanPath.includes('thumbnail') || cleanPath.includes('thumb')) {
+        bucket = 'thumbnails';
+    } else if (cleanPath.includes('video') || cleanPath.includes('content')) {
+        bucket = 'content';
+    }
+    
+    // Construct full URL
+    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${cleanPath}`;
+}
+
+/**
+ * Fix avatar URLs with special handling
+ */
+function fixAvatarUrl(url) {
+    if (!url) return '';
+    
+    // Already a valid full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        if (url.includes('supabase.co')) return url;
+        return url;
+    }
+    
+    // Remove leading slashes and common prefixes
+    let cleanPath = url.replace(/^\/+/, '')
+                       .replace(/^avatars\//, '')
+                       .replace(/^user_avatars\//, '')
+                       .replace(/^profile_pictures\//, '');
+    
+    // Use avatars bucket
+    return `${SUPABASE_URL}/storage/v1/object/public/avatars/${cleanPath}`;
+}
+
+/**
+ * Get fallback placeholder for broken images
+ */
+function getImageFallback(type = 'thumbnail', initials = '?') {
+    const fallbacks = {
+        thumbnail: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop',
+        avatar: null, // Will use initials instead
+        profile: null
+    };
+    return fallbacks[type];
+}
+
+/**
+ * Generate initials avatar HTML
+ */
+function getInitialsAvatar(initials, size = 'small') {
+    const sizeClass = size === 'small' ? 'creator-initials-small' : 
+                     size === 'large' ? 'creator-initials-large' : 'creator-initials';
+    const fontSize = size === 'small' ? '12px' : size === 'large' ? '24px' : '16px';
+    return `<div class="${sizeClass}" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:${fontSize};">${initials}</div>`;
+}
+
+// Export functions to window
+window.fixMediaUrl = fixMediaUrl;
+window.fixAvatarUrl = fixAvatarUrl;
+window.getImageFallback = getImageFallback;
+window.getInitialsAvatar = getInitialsAvatar;
+
 // Simple Supabase REST client for content queries
 class ContentSupabaseClient {
     constructor(url, key) {
@@ -109,11 +203,56 @@ class ContentSupabaseClient {
         }
     }
 
+    /**
+     * Fix media URL - Enhanced version with proper bucket detection
+     * @param {string} url - The URL to fix
+     * @returns {string} Properly formatted URL
+     */
     fixMediaUrl(url) {
         if (!url) return '';
-        if (url.startsWith('http')) return url;
-        if (url.includes('supabase.co')) return url;
-        return `${this.url}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+        
+        // Already a full URL
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            if (url.includes('supabase.co')) return url;
+            return url;
+        }
+        
+        // Remove leading slashes
+        const cleanPath = url.replace(/^\/+/, '');
+        
+        // Handle different path formats
+        if (cleanPath.includes('storage/v1/object/public')) {
+            return cleanPath.startsWith('http') ? cleanPath : `${this.url}/${cleanPath}`;
+        }
+        
+        // Determine bucket based on path
+        let bucket = 'content';
+        if (cleanPath.includes('avatar')) bucket = 'avatars';
+        else if (cleanPath.includes('thumbnail')) bucket = 'thumbnails';
+        else if (cleanPath.includes('profile')) bucket = 'avatars';
+        
+        return `${this.url}/storage/v1/object/public/${bucket}/${cleanPath}`;
+    }
+
+    /**
+     * Fix avatar URL specifically
+     * @param {string} url - The avatar URL to fix
+     * @returns {string} Properly formatted avatar URL
+     */
+    fixAvatarUrl(url) {
+        if (!url) return '';
+        
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            if (url.includes('supabase.co')) return url;
+            return url;
+        }
+        
+        const cleanPath = url.replace(/^\/+/, '')
+                             .replace(/^avatars\//, '')
+                             .replace(/^user_avatars\//, '')
+                             .replace(/^profile_pictures\//, '');
+        
+        return `${this.url}/storage/v1/object/public/avatars/${cleanPath}`;
     }
 }
 
@@ -121,7 +260,46 @@ class ContentSupabaseClient {
 const contentSupabase = new ContentSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.contentSupabase = contentSupabase;
 
-console.log('✅ Content Supabase client initialized');
+console.log('✅ Content Supabase client initialized with enhanced media URL fixing');
 
 // Make supabaseAuth available globally
 window.supabaseAuth = supabaseAuth;
+
+// ============================================
+// GLOBAL IMAGE ERROR HANDLER
+// ============================================
+
+/**
+ * Setup global image error handler for consistent fallback behavior
+ */
+function setupGlobalImageErrorHandler() {
+    // Add global image error listener for profile images
+    document.addEventListener('error', function(e) {
+        const target = e.target;
+        if (target.tagName === 'IMG') {
+            // Check if it's a profile/avatar image
+            if (target.classList.contains('profile-img') || 
+                target.closest('.creator-avatar-small') ||
+                target.closest('.profile-avatar-small') ||
+                target.classList.contains('avatar-img')) {
+                console.warn('🖼️ Profile image failed:', target.src);
+                const container = target.parentElement;
+                if (container) {
+                    const initials = target.alt?.charAt(0)?.toUpperCase() || 'U';
+                    const size = container.classList.contains('creator-avatar-small') ? 'small' : 
+                                container.classList.contains('creator-avatar-large') ? 'large' : 'medium';
+                    container.innerHTML = getInitialsAvatar(initials, size);
+                }
+            }
+        }
+    }, true);
+}
+
+// Run global error handler setup when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupGlobalImageErrorHandler);
+} else {
+    setupGlobalImageErrorHandler();
+}
+
+console.log('✅ Global image error handler initialized');
