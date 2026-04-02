@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Bantu Connect Pulse</title>
+    <title>Login - Bantu Stream Connect</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -408,7 +408,7 @@
                     </defs>
                 </svg>
             </div>
-            <div class="logo-text">PULSE</div>
+            <div class="logo-text">STREAM CONNECT</div>
         </div>
         
         <p class="tagline">"No DNA, just RSA"</p>
@@ -503,6 +503,9 @@
         // Initialize Supabase client
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // TARGET REDIRECT URL - Updated to bantustreamconnect.com
+        const TARGET_REDIRECT_URL = 'https://bantustreamconnect.com/';
+
         // State variables
         let isLoginMode = true;
 
@@ -514,7 +517,13 @@
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
 
-        // Check if user is already logged in
+        // Helper: Perform final redirect to bantustreamconnect.com
+        function redirectToTarget() {
+            console.log('Redirecting to:', TARGET_REDIRECT_URL);
+            window.location.href = TARGET_REDIRECT_URL;
+        }
+
+        // Check if user is already logged in and redirect to target
         async function checkSession() {
             try {
                 const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -525,8 +534,8 @@
                 }
                 
                 if (session) {
-                    console.log('User already logged in, redirecting to profile...');
-                    window.location.href = 'profile.html';
+                    console.log('User already logged in, redirecting to bantustreamconnect.com');
+                    redirectToTarget();
                 }
             } catch (error) {
                 console.error('Error checking session:', error);
@@ -590,7 +599,7 @@
             });
         }
 
-        // Handle login form submission
+        // Handle login form submission -> redirect to bantustreamconnect.com
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -616,15 +625,15 @@
                 if (error) throw error;
                 
                 // Show success message
-                successMessage.textContent = 'Login successful! Redirecting...';
+                successMessage.textContent = 'Login successful! Redirecting to Bantu Stream Connect...';
                 successMessage.style.display = 'block';
                 
                 // Update button text
                 loginSubmitBtn.innerHTML = '<div class="loading-spinner"></div> Redirecting...';
                 
-                // Redirect to profile page after a short delay
+                // Redirect to the target URL after a short delay
                 setTimeout(() => {
-                    window.location.href = 'profile.html';
+                    redirectToTarget();
                 }, 1500);
                 
             } catch (error) {
@@ -653,7 +662,7 @@
             }
         });
 
-        // Handle signup form submission
+        // Handle signup form submission -> after signup success, optionally redirect (but user needs email verification)
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -688,11 +697,12 @@
             signupSubmitBtn.disabled = true;
             
             try {
+                // Important: redirectTo after email confirmation should go to bantustreamconnect.com
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
                     options: {
-                        emailRedirectTo: `${window.location.origin}/profile.html`
+                        emailRedirectTo: TARGET_REDIRECT_URL
                     }
                 });
                 
@@ -702,7 +712,7 @@
                 successMessage.innerHTML = `
                     <i class="fas fa-check-circle"></i> 
                     Account created successfully!<br>
-                    <small>Please check your email to verify your account.</small>
+                    <small>Please check your email to verify your account. After verification, you'll be redirected to Bantu Stream Connect.</small>
                 `;
                 successMessage.style.display = 'block';
                 
@@ -747,7 +757,7 @@
             }
         });
 
-        // Google login/signup
+        // Google login/signup -> redirect to bantustreamconnect.com
         document.getElementById('googleLogin').addEventListener('click', async () => {
             const googleBtn = document.getElementById('googleLogin');
             const originalText = googleBtn.innerHTML;
@@ -759,12 +769,13 @@
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.origin + '/profile.html'
+                        redirectTo: TARGET_REDIRECT_URL
                     }
                 });
                 
                 if (error) throw error;
                 
+                // OAuth redirect will happen automatically, no extra action needed
             } catch (error) {
                 console.error('Google login error:', error);
                 
@@ -778,7 +789,7 @@
             }
         });
 
-        // GitHub login/signup
+        // GitHub login/signup -> redirect to bantustreamconnect.com
         document.getElementById('githubLogin').addEventListener('click', async () => {
             const githubBtn = document.getElementById('githubLogin');
             const originalText = githubBtn.innerHTML;
@@ -790,7 +801,7 @@
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'github',
                     options: {
-                        redirectTo: window.location.origin + '/profile.html'
+                        redirectTo: TARGET_REDIRECT_URL
                     }
                 });
                 
@@ -846,18 +857,26 @@
             // Focus on email field
             document.getElementById('loginEmail').focus();
             
-            // Check session
+            // Check session - will redirect if already logged in
             checkSession();
         });
 
-        // Listen for auth state changes
+        // Listen for auth state changes - when user signs in via any method, redirect to target
         supabaseClient.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event);
             
             if (event === 'SIGNED_IN' && session) {
-                // User just signed in, redirect to profile
-                console.log('User signed in, redirecting to profile...');
-                window.location.href = 'profile.html';
+                // User just signed in, redirect to bantustreamconnect.com
+                console.log('User signed in, redirecting to bantustreamconnect.com');
+                redirectToTarget();
+            }
+            
+            // Handle sign out edge case (clear messages if needed)
+            if (event === 'SIGNED_OUT') {
+                console.log('User signed out');
+                // Optionally reset UI messages
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
             }
         });
     </script>
