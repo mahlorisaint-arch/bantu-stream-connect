@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Login - Bantu Stream Connect</title>
     
     <!-- Google Fonts -->
@@ -46,10 +46,31 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            padding: 40px 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
         
-        /* Animated Background */
+        /* Make body scrollable */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        body::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 10px;
+        }
+        
+        body::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 10px;
+        }
+        
+        body::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
+        }
+        
+        /* Animated Background - fixed to stay behind content while scrolling */
         .animated-bg {
             position: fixed;
             top: 0;
@@ -58,6 +79,7 @@
             height: 100%;
             z-index: 1;
             overflow: hidden;
+            pointer-events: none;
         }
         
         .glow-cycle {
@@ -112,14 +134,20 @@
         .login-container {
             position: relative;
             z-index: 2;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(20px);
-            border-radius: 24px;
+            border-radius: 32px;
             padding: 40px;
-            width: 90%;
-            max-width: 400px;
+            width: 100%;
+            max-width: 450px;
             border: 1px solid rgba(148, 163, 184, 0.2);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            margin: 20px auto;
+            transition: transform 0.3s ease;
+        }
+        
+        .login-container:hover {
+            transform: translateY(-5px);
         }
         
         .logo {
@@ -128,25 +156,47 @@
         }
         
         .logo-icon {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             margin: 0 auto 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(4px);
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-icon:hover {
+            transform: scale(1.05);
+        }
+        
+        .logo-icon img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(29, 78, 216, 0.3));
         }
         
         .logo-text {
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
             font-size: 28px;
-            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            background: linear-gradient(135deg, var(--soft-white) 0%, var(--bantu-blue) 50%, var(--warm-gold) 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            margin-top: 8px;
+        }
+        
+        .logo-sub {
+            font-size: 12px;
+            color: var(--slate-grey);
+            letter-spacing: 2px;
+            margin-top: 5px;
+            font-weight: 300;
         }
         
         .tagline {
@@ -155,6 +205,8 @@
             margin-bottom: 30px;
             font-size: 14px;
             font-style: italic;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            padding-top: 20px;
         }
         
         .mode-toggle {
@@ -182,6 +234,7 @@
         .mode-btn.active {
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             color: var(--soft-white);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
         }
         
         .form-group {
@@ -213,6 +266,7 @@
             outline: none;
             border-color: var(--bantu-blue);
             background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
         }
         
         .input-icon {
@@ -222,6 +276,11 @@
             transform: translateY(-50%);
             color: var(--slate-grey);
             cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .input-icon:hover {
+            color: var(--bantu-blue);
         }
         
         .btn {
@@ -240,11 +299,17 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             color: var(--soft-white);
+            position: relative;
+            overflow: hidden;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
         }
         
         .btn-secondary {
@@ -277,7 +342,7 @@
         }
         
         .divider span {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.85);
             padding: 0 20px;
             position: relative;
         }
@@ -307,6 +372,7 @@
         .social-btn:hover {
             border-color: var(--bantu-blue);
             background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
         }
         
         .social-note {
@@ -318,23 +384,27 @@
         }
         
         .error-message {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
             color: var(--error-color);
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 20px;
             display: none;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
         }
         
         .success-message {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
             color: var(--success-color);
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 20px;
             display: none;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
         }
         
         .loading-spinner {
@@ -346,6 +416,7 @@
             border-top-color: var(--soft-white);
             animation: spin 1s ease-in-out infinite;
             margin-right: 8px;
+            vertical-align: middle;
         }
         
         @keyframes spin {
@@ -353,7 +424,7 @@
         }
         
         .password-requirements {
-            margin-top: 5px;
+            margin-top: 8px;
             font-size: 12px;
             color: var(--slate-grey);
         }
@@ -361,8 +432,13 @@
         .requirement {
             display: flex;
             align-items: center;
-            gap: 5px;
-            margin-bottom: 3px;
+            gap: 6px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .requirement i {
+            font-size: 8px;
         }
         
         .requirement.valid {
@@ -373,14 +449,59 @@
             color: var(--slate-grey);
         }
         
+        /* Responsive adjustments */
         @media (max-width: 480px) {
+            body {
+                padding: 20px 16px;
+            }
+            
             .login-container {
-                padding: 30px 20px;
+                padding: 28px 20px;
+                margin: 10px auto;
+            }
+            
+            .logo-icon {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .logo-icon img {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .logo-text {
+                font-size: 24px;
             }
             
             .social-login {
                 grid-template-columns: 1fr;
             }
+            
+            .btn {
+                padding: 14px;
+            }
+        }
+        
+        /* Animation for form switching */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        form {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* Custom focus styles */
+        .form-input:focus + .input-icon {
+            color: var(--bantu-blue);
         }
     </style>
 </head>
@@ -396,19 +517,11 @@
     <div class="login-container">
         <div class="logo">
             <div class="logo-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                    <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                    <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-                    <defs>
-                        <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#1D4ED8"/>
-                            <stop offset="1" stop-color="#F59E0B"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
+                <!-- Custom Logo Image from assets path -->
+                <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" onerror="this.onerror=null; this.parentElement.innerHTML='<svg width=\'50\' height=\'50\' viewBox=\'0 0 40 40\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'><rect width=\'40\' height=\'40\' rx=\'8\' fill=\'#0F172A\'/><path d=\'M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26\' stroke=\'url(#pulse-gradient)\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/><circle cx=\'32\' cy=\'26\' r=\'3\' fill=\'#F59E0B\'/><defs><linearGradient id=\'pulse-gradient\' x1=\'8\' y1=\'20\' x2=\'32\' y2=\'26\'><stop stop-color=\'#1D4ED8\'/><stop offset=\'1\' stop-color=\'#F59E0B\'/></linearGradient></defs></svg>';">
             </div>
-            <div class="logo-text">STREAM CONNECT</div>
+            <div class="logo-text">BANTU STREAM CONNECT</div>
+            <div class="logo-sub">PULSE • CONNECT • STREAM</div>
         </div>
         
         <p class="tagline">"No DNA, just RSA"</p>
@@ -425,46 +538,46 @@
         <!-- Login Form -->
         <form id="loginForm">
             <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" required>
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
                 <i class="fas fa-envelope input-icon"></i>
             </div>
             
             <div class="form-group">
                 <label class="form-label">Password</label>
-                <input type="password" class="form-input" id="loginPassword" placeholder="Your password" required>
+                <input type="password" class="form-input" id="loginPassword" placeholder="Your password" required autocomplete="current-password">
                 <i class="fas fa-eye input-icon" id="toggleLoginPassword"></i>
             </div>
             
             <button type="submit" class="btn btn-primary" id="loginSubmitBtn">
-                <span>Sign In</span>
+                <span>Sign In to Bantu Stream Connect</span>
             </button>
         </form>
         
         <!-- Sign Up Form -->
         <form id="signupForm" style="display: none;">
             <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-input" id="signupEmail" placeholder="you@example.com" required>
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="signupEmail" placeholder="you@example.com" required autocomplete="email">
                 <i class="fas fa-envelope input-icon"></i>
             </div>
             
             <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-input" id="signupPassword" placeholder="Create a strong password" required>
+                <label class="form-label">Create Password</label>
+                <input type="password" class="form-input" id="signupPassword" placeholder="Create a strong password" required autocomplete="new-password">
                 <i class="fas fa-eye input-icon" id="toggleSignupPassword"></i>
                 
                 <div class="password-requirements">
                     <div class="requirement invalid" id="reqLength">
-                        <i class="fas fa-circle" style="font-size: 6px;"></i>
+                        <i class="fas fa-circle"></i>
                         At least 6 characters
                     </div>
                     <div class="requirement invalid" id="reqUppercase">
-                        <i class="fas fa-circle" style="font-size: 6px;"></i>
+                        <i class="fas fa-circle"></i>
                         One uppercase letter
                     </div>
                     <div class="requirement invalid" id="reqNumber">
-                        <i class="fas fa-circle" style="font-size: 6px;"></i>
+                        <i class="fas fa-circle"></i>
                         One number
                     </div>
                 </div>
@@ -472,12 +585,12 @@
             
             <div class="form-group">
                 <label class="form-label">Confirm Password</label>
-                <input type="password" class="form-input" id="signupConfirmPassword" placeholder="Confirm your password" required>
+                <input type="password" class="form-input" id="signupConfirmPassword" placeholder="Confirm your password" required autocomplete="off">
                 <i class="fas fa-eye input-icon" id="toggleConfirmPassword"></i>
             </div>
             
             <button type="submit" class="btn btn-primary" id="signupSubmitBtn">
-                <span>Create Account</span>
+                <span>Create Bantu Stream Connect Account</span>
             </button>
         </form>
         
@@ -492,7 +605,7 @@
             </button>
         </div>
         
-        <p class="social-note">⭐ Quick sign-up: Click Google/GitHub icons for instant account creation</p>
+        <p class="social-note">⭐ Quick access: Use Google or GitHub for instant connection to Bantu Stream Connect</p>
     </div>
 
     <script>
@@ -503,7 +616,7 @@
         // Initialize Supabase client
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // TARGET REDIRECT URL - Updated to bantustreamconnect.com
+        // TARGET REDIRECT URL - Bantu Stream Connect main site
         const TARGET_REDIRECT_URL = 'https://bantustreamconnect.com/';
 
         // State variables
@@ -519,7 +632,7 @@
 
         // Helper: Perform final redirect to bantustreamconnect.com
         function redirectToTarget() {
-            console.log('Redirecting to:', TARGET_REDIRECT_URL);
+            console.log('Redirecting to Bantu Stream Connect:', TARGET_REDIRECT_URL);
             window.location.href = TARGET_REDIRECT_URL;
         }
 
@@ -534,7 +647,7 @@
                 }
                 
                 if (session) {
-                    console.log('User already logged in, redirecting to bantustreamconnect.com');
+                    console.log('User already logged in, redirecting to Bantu Stream Connect');
                     redirectToTarget();
                 }
             } catch (error) {
@@ -574,9 +687,13 @@
             };
             
             // Update UI
-            document.getElementById('reqLength').className = requirements.length ? 'requirement valid' : 'requirement invalid';
-            document.getElementById('reqUppercase').className = requirements.uppercase ? 'requirement valid' : 'requirement invalid';
-            document.getElementById('reqNumber').className = requirements.number ? 'requirement valid' : 'requirement invalid';
+            const reqLength = document.getElementById('reqLength');
+            const reqUppercase = document.getElementById('reqUppercase');
+            const reqNumber = document.getElementById('reqNumber');
+            
+            if (reqLength) reqLength.className = requirements.length ? 'requirement valid' : 'requirement invalid';
+            if (reqUppercase) reqUppercase.className = requirements.uppercase ? 'requirement valid' : 'requirement invalid';
+            if (reqNumber) reqNumber.className = requirements.number ? 'requirement valid' : 'requirement invalid';
             
             return requirements.length && requirements.uppercase && requirements.number;
         }
@@ -599,7 +716,7 @@
             });
         }
 
-        // Handle login form submission -> redirect to bantustreamconnect.com
+        // Handle login form submission
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -607,11 +724,9 @@
             const password = document.getElementById('loginPassword').value;
             const loginSubmitBtn = document.getElementById('loginSubmitBtn');
             
-            // Reset messages
             errorMessage.style.display = 'none';
             successMessage.style.display = 'none';
             
-            // Show loading state
             const originalText = loginSubmitBtn.innerHTML;
             loginSubmitBtn.innerHTML = '<div class="loading-spinner"></div> Signing in...';
             loginSubmitBtn.disabled = true;
@@ -624,24 +739,17 @@
                 
                 if (error) throw error;
                 
-                // Show success message
-                successMessage.textContent = 'Login successful! Redirecting to Bantu Stream Connect...';
+                successMessage.textContent = '✨ Login successful! Redirecting to Bantu Stream Connect...';
                 successMessage.style.display = 'block';
-                
-                // Update button text
                 loginSubmitBtn.innerHTML = '<div class="loading-spinner"></div> Redirecting...';
                 
-                // Redirect to the target URL after a short delay
                 setTimeout(() => {
                     redirectToTarget();
                 }, 1500);
                 
             } catch (error) {
                 console.error('Login error:', error);
-                
-                // Show appropriate error message
                 let errorMsg = 'Failed to sign in. Please check your credentials.';
-                
                 if (error.message.includes('Invalid login credentials')) {
                     errorMsg = 'Invalid email or password. Please try again.';
                 } else if (error.message.includes('Email not confirmed')) {
@@ -652,17 +760,13 @@
                 
                 errorMessage.textContent = errorMsg;
                 errorMessage.style.display = 'block';
-                
-                // Reset button
                 loginSubmitBtn.innerHTML = originalText;
                 loginSubmitBtn.disabled = false;
-                
-                // Focus on email field
                 document.getElementById('loginEmail').focus();
             }
         });
 
-        // Handle signup form submission -> after signup success, optionally redirect (but user needs email verification)
+        // Handle signup form submission
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -671,11 +775,9 @@
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
             const signupSubmitBtn = document.getElementById('signupSubmitBtn');
             
-            // Reset messages
             errorMessage.style.display = 'none';
             successMessage.style.display = 'none';
             
-            // Validate passwords match
             if (password !== confirmPassword) {
                 errorMessage.textContent = 'Passwords do not match. Please try again.';
                 errorMessage.style.display = 'block';
@@ -683,7 +785,6 @@
                 return;
             }
             
-            // Validate password strength
             if (!validatePassword(password)) {
                 errorMessage.textContent = 'Password does not meet requirements. Please check the requirements above.';
                 errorMessage.style.display = 'block';
@@ -691,13 +792,11 @@
                 return;
             }
             
-            // Show loading state
             const originalText = signupSubmitBtn.innerHTML;
             signupSubmitBtn.innerHTML = '<div class="loading-spinner"></div> Creating account...';
             signupSubmitBtn.disabled = true;
             
             try {
-                // Important: redirectTo after email confirmation should go to bantustreamconnect.com
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
@@ -708,23 +807,18 @@
                 
                 if (error) throw error;
                 
-                // Show success message
                 successMessage.innerHTML = `
                     <i class="fas fa-check-circle"></i> 
                     Account created successfully!<br>
                     <small>Please check your email to verify your account. After verification, you'll be redirected to Bantu Stream Connect.</small>
                 `;
                 successMessage.style.display = 'block';
-                
-                // Update button text
                 signupSubmitBtn.innerHTML = '<div class="loading-spinner"></div> Check your email...';
                 
-                // Clear form
                 document.getElementById('signupEmail').value = '';
                 document.getElementById('signupPassword').value = '';
                 document.getElementById('signupConfirmPassword').value = '';
                 
-                // Switch back to login form after delay
                 setTimeout(() => {
                     toggleFormMode();
                     signupSubmitBtn.innerHTML = originalText;
@@ -733,10 +827,7 @@
                 
             } catch (error) {
                 console.error('Signup error:', error);
-                
-                // Show appropriate error message
                 let errorMsg = 'Failed to create account. Please try again.';
-                
                 if (error.message.includes('User already registered')) {
                     errorMsg = 'An account with this email already exists. Please sign in instead.';
                 } else if (error.message.includes('password')) {
@@ -747,21 +838,16 @@
                 
                 errorMessage.textContent = errorMsg;
                 errorMessage.style.display = 'block';
-                
-                // Reset button
                 signupSubmitBtn.innerHTML = originalText;
                 signupSubmitBtn.disabled = false;
-                
-                // Focus on email field
                 document.getElementById('signupEmail').focus();
             }
         });
 
-        // Google login/signup -> redirect to bantustreamconnect.com
+        // Google login
         document.getElementById('googleLogin').addEventListener('click', async () => {
             const googleBtn = document.getElementById('googleLogin');
             const originalText = googleBtn.innerHTML;
-            
             googleBtn.innerHTML = '<div class="loading-spinner"></div> Connecting...';
             googleBtn.disabled = true;
             
@@ -772,28 +858,20 @@
                         redirectTo: TARGET_REDIRECT_URL
                     }
                 });
-                
                 if (error) throw error;
-                
-                // OAuth redirect will happen automatically, no extra action needed
             } catch (error) {
                 console.error('Google login error:', error);
-                
-                // Show error
                 errorMessage.textContent = 'Google login failed. Please try again.';
                 errorMessage.style.display = 'block';
-                
-                // Reset button
                 googleBtn.innerHTML = originalText;
                 googleBtn.disabled = false;
             }
         });
 
-        // GitHub login/signup -> redirect to bantustreamconnect.com
+        // GitHub login
         document.getElementById('githubLogin').addEventListener('click', async () => {
             const githubBtn = document.getElementById('githubLogin');
             const originalText = githubBtn.innerHTML;
-            
             githubBtn.innerHTML = '<div class="loading-spinner"></div> Connecting...';
             githubBtn.disabled = true;
             
@@ -804,27 +882,19 @@
                         redirectTo: TARGET_REDIRECT_URL
                     }
                 });
-                
                 if (error) throw error;
-                
             } catch (error) {
                 console.error('GitHub login error:', error);
-                
-                // Show error
                 errorMessage.textContent = 'GitHub login failed. Please try again.';
                 errorMessage.style.display = 'block';
-                
-                // Reset button
                 githubBtn.innerHTML = originalText;
                 githubBtn.disabled = false;
             }
         });
 
-        // Real-time password validation for signup
+        // Real-time password validation
         document.getElementById('signupPassword')?.addEventListener('input', function(e) {
             validatePassword(e.target.value);
-            
-            // Check if passwords match
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
             if (confirmPassword && e.target.value !== confirmPassword) {
                 document.getElementById('signupConfirmPassword').style.borderColor = 'var(--error-color)';
@@ -833,7 +903,6 @@
             }
         });
 
-        // Check password match on confirm password input
         document.getElementById('signupConfirmPassword')?.addEventListener('input', function(e) {
             const password = document.getElementById('signupPassword').value;
             if (password && e.target.value !== password) {
@@ -845,38 +914,20 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Setup mode toggle
             loginBtnTab.addEventListener('click', toggleFormMode);
             signupBtnTab.addEventListener('click', toggleFormMode);
-            
-            // Setup password toggles
             setupPasswordToggle('loginPassword', 'toggleLoginPassword');
             setupPasswordToggle('signupPassword', 'toggleSignupPassword');
             setupPasswordToggle('signupConfirmPassword', 'toggleConfirmPassword');
-            
-            // Focus on email field
             document.getElementById('loginEmail').focus();
-            
-            // Check session - will redirect if already logged in
             checkSession();
         });
 
-        // Listen for auth state changes - when user signs in via any method, redirect to target
+        // Auth state change listener
         supabaseClient.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event);
-            
             if (event === 'SIGNED_IN' && session) {
-                // User just signed in, redirect to bantustreamconnect.com
-                console.log('User signed in, redirecting to bantustreamconnect.com');
                 redirectToTarget();
-            }
-            
-            // Handle sign out edge case (clear messages if needed)
-            if (event === 'SIGNED_OUT') {
-                console.log('User signed out');
-                // Optionally reset UI messages
-                errorMessage.style.display = 'none';
-                successMessage.style.display = 'none';
             }
         });
     </script>
