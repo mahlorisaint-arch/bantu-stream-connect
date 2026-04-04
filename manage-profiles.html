@@ -496,7 +496,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 <header class="header">
 <div class="logo" onclick="window.location.href='index.html'">
 <div class="logo-icon">
-<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-film\' style=\'color: var(--warm-gold); font-size: 20px;\'></i>'">
 </div>
 <div class="logo-text">BANTU STREAM CONNECT</div>
 </div>
@@ -572,7 +572,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 <div id="profile-modal" class="profile-modal">
 <div class="modal-content">
 <div class="modal-header">
-<h2 id="modal-title">Create New Profile</h2>
+<h2 id="modal-title">Edit Profile</h2>
 <button class="close-modal-btn" id="close-modal-btn"><i class="fas fa-times"></i></button>
 </div>
 <div class="modal-body">
@@ -623,7 +623,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 <span>Adult</span>
 </label>
 <label class="profile-type-option">
-<input type="radio"name="profile-type" value="teen">
+<input type="radio" name="profile-type" value="teen">
 <i class="fas fa-user-graduate"></i>
 <span>Teen (13-17)</span>
 </label>
@@ -767,7 +767,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
         const icons = {error:'fa-exclamation-triangle', success:'fa-check-circle', warning:'fa-exclamation-circle', info:'fa-info-circle'};
         toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
         container.appendChild(toast);
-        setTimeout(() => { toast.remove(); }, 3000);
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
     function escapeHtml(text) {
@@ -796,25 +796,37 @@ animation: spin 1s linear infinite; margin: 10px auto;
             return null;
         }
         currentUser = session.user;
+        console.log('✅ User authenticated:', currentUser.email);
         return currentUser;
     }
 
     async function loadUserProfiles() {
         if (!currentUser) return;
         
+        console.log('📋 Loading profile for user:', currentUser.id);
+        
         const { data, error } = await supabase
             .from('user_profiles')
             .select('*')
-            .eq('id', currentUser.id);
+            .eq('id', currentUser.id)
+            .maybeSingle();
         
         if (error) {
-            console.error('Error loading profiles:', error);
-            showToast('Failed to load profiles', 'error');
+            console.error('Error loading profile:', error);
+            showToast('Failed to load profile', 'error');
             return;
         }
         
-        userProfiles = data || [];
+        if (data) {
+            userProfiles = [data];
+            console.log('✅ Profile loaded:', data.full_name);
+        } else {
+            userProfiles = [];
+            console.log('ℹ️ No profile found, user can create one');
+        }
+        
         renderProfilesGrid();
+        updateDefaultProfileSelect();
     }
 
     function renderProfilesGrid() {
@@ -822,33 +834,96 @@ animation: spin 1s linear infinite; margin: 10px auto;
         if (!grid) return;
         
         if (userProfiles.length === 0) {
-            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
-                <i class="fas fa-user-slash" style="font-size:48px;margin-bottom:20px;opacity:0.5;"></i>
-                <h3>No Profiles Yet</h3>
-                <p>Create your first profile to get started</p>
-            </div>`;
+            grid.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
+                    <i class="fas fa-user-plus" style="font-size:48px;margin-bottom:20px;opacity:0.5;"></i>
+                    <h3>No Profile Yet</h3>
+                    <p>Click "Add New Profile" to create your profile</p>
+                    <p style="font-size:12px;color:var(--slate-grey);margin-top:10px;">Your profile will be linked to your account</p>
+                </div>
+            `;
             return;
         }
         
         grid.innerHTML = userProfiles.map(profile => {
             const avatarUrl = profile.avatar_url ? getProfilePictureUrl(profile.avatar_url) : null;
+            const isDefault = profile.is_default;
+            
             return `
-                <div class="profile-card ${profile.is_default ? 'active' : ''}">
+                <div class="profile-card ${isDefault ? 'active' : ''}">
                     <div class="profile-avatar">
-                        ${avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name)}" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>';">` : `<i class="fas fa-user"></i>`}
+                        ${avatarUrl 
+                            ? `<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name)}" 
+                                 onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>';">`
+                            : `<i class="fas fa-user"></i>`
+                        }
                     </div>
-                    <div class="profile-name">${escapeHtml(profile.full_name)}</div>
-                    <div class="profile-email">${escapeHtml(profile.email)}</div>
-                    <div class="profile-username">@${escapeHtml(profile.username)}</div>
+                    <div class="profile-name">${escapeHtml(profile.full_name || 'User')}</div>
+                    <div class="profile-email">${escapeHtml(profile.email || 'No email')}</div>
+                    <div class="profile-username">@${escapeHtml(profile.username || 'username')}</div>
                     <div class="profile-type">${profile.profile_type || 'Adult'}</div>
                     <div class="profile-actions">
-                        <button class="profile-action-btn edit" onclick="editProfile('${profile.id}')"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="profile-action-btn delete" onclick="deleteProfile('${profile.id}')"><i class="fas fa-trash"></i> Delete</button>
+                        <button class="profile-action-btn edit" onclick="editProfile()"><i class="fas fa-edit"></i> Edit</button>
                     </div>
                 </div>
             `;
         }).join('');
     }
+
+    function updateDefaultProfileSelect() {
+        const select = document.getElementById('default-profile-select');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">Select default profile</option>';
+        
+        userProfiles.forEach(profile => {
+            const option = document.createElement('option');
+            option.value = profile.id;
+            option.textContent = profile.full_name || profile.username || 'User';
+            if (profile.is_default) option.selected = true;
+            select.appendChild(option);
+        });
+    }
+
+    window.editProfile = async function() {
+        if (userProfiles.length === 0) {
+            // No profile exists, create new
+            document.getElementById('profile-id').value = '';
+            document.getElementById('profile-name').value = '';
+            document.getElementById('profile-username').value = '';
+            document.getElementById('profile-email').value = currentUser?.email || '';
+            document.getElementById('profile-bio').value = '';
+            document.getElementById('modal-title').textContent = 'Create Profile';
+        } else {
+            // Edit existing profile
+            const profile = userProfiles[0];
+            document.getElementById('profile-id').value = profile.id;
+            document.getElementById('profile-name').value = profile.full_name || '';
+            document.getElementById('profile-username').value = profile.username || '';
+            document.getElementById('profile-email').value = profile.email || '';
+            document.getElementById('profile-bio').value = profile.bio || '';
+            document.getElementById('maturity-rating').value = profile.maturity_rating || 'all';
+            document.getElementById('private-profile-toggle').checked = profile.is_private || false;
+            document.getElementById('show-history-toggle').checked = profile.show_history !== false;
+            document.getElementById('autoplay-toggle').checked = profile.autoplay !== false;
+            document.getElementById('modal-title').textContent = 'Edit Profile';
+            
+            const typeRadio = document.querySelector(`input[name="profile-type"][value="${profile.profile_type || 'adult'}"]`);
+            if (typeRadio) typeRadio.checked = true;
+            
+            if (profile.avatar_url) {
+                const avatarUrl = getProfilePictureUrl(profile.avatar_url);
+                document.getElementById('avatar-image').src = avatarUrl;
+                document.getElementById('avatar-image').style.display = 'block';
+                document.getElementById('avatar-placeholder').style.display = 'none';
+                document.getElementById('avatar-url').value = profile.avatar_url;
+            }
+        }
+        
+        document.getElementById('name-count').textContent = document.getElementById('profile-name').value.length;
+        document.getElementById('bio-count').textContent = document.getElementById('profile-bio').value.length;
+        document.getElementById('profile-modal').classList.add('active');
+    };
 
     async function uploadAvatar(file) {
         if (!file) return null;
@@ -878,44 +953,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
         return fileName;
     }
 
-    window.editProfile = async function(profileId) {
-        const profile = userProfiles.find(p => p.id === profileId);
-        if (!profile) return;
-        
-        document.getElementById('profile-id').value = profile.id;
-        document.getElementById('profile-name').value = profile.full_name || '';
-        document.getElementById('profile-username').value = profile.username || '';
-        document.getElementById('profile-email').value = profile.email || '';
-        document.getElementById('profile-bio').value = profile.bio || '';
-        document.getElementById('maturity-rating').value = profile.maturity_rating || 'all';
-        document.getElementById('private-profile-toggle').checked = profile.is_private || false;
-        document.getElementById('show-history-toggle').checked = profile.show_history !== false;
-        document.getElementById('autoplay-toggle').checked = profile.autoplay !== false;
-        
-        const typeRadio = document.querySelector(`input[name="profile-type"][value="${profile.profile_type || 'adult'}"]`);
-        if (typeRadio) typeRadio.checked = true;
-        
-        if (profile.avatar_url) {
-            const avatarUrl = getProfilePictureUrl(profile.avatar_url);
-            document.getElementById('avatar-image').src = avatarUrl;
-            document.getElementById('avatar-image').style.display = 'block';
-            document.getElementById('avatar-placeholder').style.display = 'none';
-            document.getElementById('avatar-url').value = profile.avatar_url;
-        }
-        
-        document.getElementById('modal-title').textContent = 'Edit Profile';
-        document.getElementById('profile-modal').classList.add('active');
-    };
-
-    window.deleteProfile = function(profileId) {
-        window.profileToDelete = profileId;
-        const profile = userProfiles.find(p => p.id === profileId);
-        if (profile) {
-            document.getElementById('delete-profile-name').textContent = profile.full_name;
-        }
-        document.getElementById('delete-modal').classList.add('active');
-    };
-
     async function saveProfile() {
         const profileId = document.getElementById('profile-id').value;
         const fullName = document.getElementById('profile-name').value.trim();
@@ -930,7 +967,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
         const preferences = Array.from(document.querySelectorAll('.preference-checkbox input:checked')).map(cb => cb.value);
         
         const data = {
-            id: currentUser.id,
             full_name: fullName,
             username: username,
             email: email,
@@ -950,25 +986,38 @@ animation: spin 1s linear infinite; margin: 10px auto;
         }
         
         let result;
+        
         if (profileId) {
-            result = await supabase.from('user_profiles').update(data).eq('id', profileId);
+            // UPDATE existing profile
+            console.log('Updating profile:', profileId);
+            result = await supabase
+                .from('user_profiles')
+                .update(data)
+                .eq('id', profileId);
         } else {
+            // INSERT new profile
+            console.log('Creating new profile for user:', currentUser.id);
+            data.id = currentUser.id;
             data.created_at = new Date().toISOString();
-            result = await supabase.from('user_profiles').insert(data);
+            data.role = 'creator';
+            
+            result = await supabase
+                .from('user_profiles')
+                .insert(data);
         }
         
         if (result.error) {
             console.error('Save error:', result.error);
             if (result.error.message.includes('duplicate key')) {
                 if (result.error.message.includes('username')) {
-                    showToast('Username already taken', 'error');
+                    showToast('Username already taken. Please choose another.', 'error');
                 } else if (result.error.message.includes('email')) {
-                    showToast('Email already registered', 'error');
+                    showToast('Email already registered. Please use another.', 'error');
                 } else {
-                    showToast('Duplicate entry', 'error');
+                    showToast('Duplicate entry. Please check your information.', 'error');
                 }
             } else if (result.error.message.includes('violates row-level security')) {
-                showToast('Please run the RLS policy SQL fix in Supabase', 'error');
+                showToast('Permission denied. Please contact support.', 'error');
             } else {
                 showToast('Failed to save: ' + result.error.message, 'error');
             }
@@ -979,31 +1028,12 @@ animation: spin 1s linear infinite; margin: 10px auto;
         await loadUserProfiles();
         showToast(profileId ? 'Profile updated!' : 'Profile created!', 'success');
         
+        // Reset form for next use
         document.getElementById('profile-form').reset();
         document.getElementById('profile-id').value = '';
-        document.getElementById('modal-title').textContent = 'Create New Profile';
         document.getElementById('avatar-image').style.display = 'none';
         document.getElementById('avatar-placeholder').style.display = 'flex';
         document.getElementById('avatar-url').value = '';
-    }
-
-    async function confirmDeleteProfile() {
-        if (!window.profileToDelete) return;
-        
-        const { error } = await supabase
-            .from('user_profiles')
-            .delete()
-            .eq('id', window.profileToDelete);
-        
-        if (error) {
-            showToast('Failed to delete profile', 'error');
-            return;
-        }
-        
-        document.getElementById('delete-modal').classList.remove('active');
-        await loadUserProfiles();
-        showToast('Profile deleted', 'info');
-        window.profileToDelete = null;
     }
 
     function setupAvatarUpload() {
@@ -1032,9 +1062,15 @@ animation: spin 1s linear infinite; margin: 10px auto;
         });
         
         document.getElementById('generate-avatar-btn')?.addEventListener('click', () => {
+            const name = document.getElementById('profile-name').value.trim();
+            if (!name) {
+                showToast('Enter a name first', 'warning');
+                return;
+            }
             avatarImage.style.display = 'none';
             avatarPlaceholder.style.display = 'flex';
             avatarUrlInput.value = '';
+            showToast('Will use default avatar', 'info');
         });
     }
 
@@ -1042,7 +1078,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
         document.getElementById('add-profile-btn')?.addEventListener('click', () => {
             document.getElementById('profile-form').reset();
             document.getElementById('profile-id').value = '';
-            document.getElementById('modal-title').textContent = 'Create New Profile';
+            document.getElementById('profile-email').value = currentUser?.email || '';
+            document.getElementById('modal-title').textContent = 'Create Profile';
             document.getElementById('avatar-image').style.display = 'none';
             document.getElementById('avatar-placeholder').style.display = 'flex';
             document.getElementById('avatar-url').value = '';
@@ -1058,23 +1095,11 @@ animation: spin 1s linear infinite; margin: 10px auto;
         });
         
         document.getElementById('save-profile-btn')?.addEventListener('click', saveProfile);
-        document.getElementById('confirm-delete-btn')?.addEventListener('click', confirmDeleteProfile);
-        document.getElementById('cancel-delete-btn')?.addEventListener('click', () => {
-            document.getElementById('delete-modal').classList.remove('active');
-        });
-        
-        document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
-        document.getElementById('nav-create-btn')?.addEventListener('click', () => {
-            window.location.href = 'creator-upload.html';
-        });
-        document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
-            document.getElementById('sidebar-menu')?.classList.add('active');
-            document.getElementById('sidebar-overlay')?.classList.add('active');
-        });
         
         document.getElementById('profile-name')?.addEventListener('input', (e) => {
             document.getElementById('name-count').textContent = e.target.value.length;
         });
+        
         document.getElementById('profile-bio')?.addEventListener('input', (e) => {
             document.getElementById('bio-count').textContent = e.target.value.length;
         });
@@ -1084,10 +1109,16 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 document.getElementById('profile-modal').classList.remove('active');
             }
         });
-        document.getElementById('delete-modal')?.addEventListener('click', (e) => {
-            if (e.target === document.getElementById('delete-modal')) {
-                document.getElementById('delete-modal').classList.remove('active');
-            }
+        
+        document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('nav-create-btn')?.addEventListener('click', () => {
+            window.location.href = 'creator-upload.html';
+        });
+        document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar-menu');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.add('active');
+            if (overlay) overlay.classList.add('active');
         });
         
         const backToTopBtn = document.getElementById('backToTopBtn');
@@ -1097,6 +1128,19 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
             });
         }
+        
+        document.getElementById('default-profile-select')?.addEventListener('change', async (e) => {
+            const profileId = e.target.value;
+            if (!profileId || !currentUser) return;
+            
+            await supabase
+                .from('user_profiles')
+                .update({ is_default: true })
+                .eq('id', profileId);
+            
+            await loadUserProfiles();
+            showToast('Default profile updated', 'success');
+        });
         
         setupAvatarUpload();
     }
@@ -1115,6 +1159,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
             document.getElementById('loading').style.display = 'none';
             document.getElementById('app').style.display = 'block';
         }, 500);
+        
+        console.log('✅ Manage Profiles initialized');
     }
     
     document.addEventListener('DOMContentLoaded', initialize);
