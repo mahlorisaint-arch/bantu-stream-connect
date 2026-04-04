@@ -744,7 +744,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 <button type="button" class="avatar-btn" id="upload-avatar-btn"><i class="fas fa-upload"></i> Upload Photo</button>
 <button type="button" class="avatar-btn" id="generate-avatar-btn"><i class="fas fa-magic"></i> Use Initials</button>
 </div>
-<p class="avatar-hint">Recommended: Square image, max 2MB (JPG, PNG, WEBP)</p>
+<p class="avatar-hint">Recommended: Square image, max 2MB (JPG, PNG, GIF)</p>
 <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
 <input type="hidden" id="avatar-url">
 </div>
@@ -836,19 +836,19 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
 <!-- Privacy Settings -->
 <div class="form-group">
-<h3 style="font-size:14px; margin-bottom:10px; color:var(--soft-white);">Privacy & Security</h3>
-<label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+<h3 class="settings-subtitle">Privacy & Security</h3>
+<label class="toggle-label">
 <span>Private Profile</span>
 <label class="toggle-switch">
 <input type="checkbox" id="private-profile-toggle">
 <span class="toggle-slider"></span>
 </label>
 </label>
-<p class="avatar-hint">When enabled, your profile won't appear in search results</p>
+<p class="field-hint">When enabled, your profile won't appear in search results</p>
 </div>
 
 <div class="form-group">
-<label style="display:flex; justify-content:space-between; align-items:center;">
+<label class="toggle-label">
 <span>Show Watch History</span>
 <label class="toggle-switch">
 <input type="checkbox" id="show-history-toggle" checked>
@@ -859,8 +859,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
 <!-- Playback Settings -->
 <div class="form-group">
-<h3 style="font-size:14px; margin-bottom:10px; color:var(--soft-white);">Playback Settings</h3>
-<label style="display:flex; justify-content:space-between; align-items:center;">
+<h3 class="settings-subtitle">Playback Settings</h3>
+<label class="toggle-label">
 <span>Auto-play next episode</span>
 <label class="toggle-switch">
 <input type="checkbox" id="autoplay-toggle" checked>
@@ -943,7 +943,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
     // Initialize Supabase client
     if (!window.bantuSupabase) {
-        window.bantuSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.bantuSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log('✅ Supabase client initialized');
     }
     const supabase = window.bantuSupabase;
@@ -985,27 +985,13 @@ animation: spin 1s linear infinite; margin: 10px auto;
         return name[0].toUpperCase();
     }
 
-    // ✅ PRODUCTION READY: Returns FULL public URL from stored path
-    // ✅ Database stores FULL public URL, so no reconstruction needed
-    function getFullAvatarUrl(storedUrl) {
-        if (!storedUrl) return '';
-        // If it's already a full URL (starts with http), return as-is
-        if (storedUrl.startsWith('http')) return storedUrl;
-        // Fallback for legacy data (should not happen with new system)
-        const cleanPath = storedUrl.replace(/^\/+/, '');
-        return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${cleanPath}`;
-    }
-
+    // ✅ SIMPLIFIED: Just return the URL as-is (database stores FULL public URL)
     function fixMediaUrl(url) {
         if (!url) return '';
-        if (url.startsWith('http')) {
-            if (url.includes('supabase.co')) return url;
-            return url;
-        }
+        // If it's already a full http(s) URL, return it directly
+        if (url.startsWith('http')) return url;
+        // Fallback for legacy relative paths (will be cleaned up over time)
         const cleanPath = url.replace(/^\/+/, '');
-        if (cleanPath.includes('profile-pictures')) {
-            return `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
-        }
         return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${cleanPath}`;
     }
 
@@ -1041,31 +1027,29 @@ animation: spin 1s linear infinite; margin: 10px auto;
         }
     }
 
-    // ===== PRODUCTION READY UPLOAD FUNCTION =====
-    // ✅ Returns FULL public URL (not relative path)
-    // ✅ Structured path: {user_id}/avatar_{timestamp}.{ext}
-    // ✅ No manual URL building anywhere else
+    // ===== AVATAR UPLOAD FUNCTION - PRODUCTION READY =====
     async function uploadAvatar(file) {
         if (!file) return null;
-        
+
         // Validate file type
         if (!file.type.startsWith('image/')) {
             showToast('Please select an image file (JPG, PNG, WEBP)', 'error');
             return null;
         }
-        
+
         // Validate file size (2MB max)
         if (file.size > 2 * 1024 * 1024) {
             showToast('Image must be less than 2MB', 'error');
             return null;
         }
-        
+
         // Ensure user exists
-        if (!window.currentUser?.id) {
+        const user = window.currentUser;
+        if (!user?.id) {
             showToast('User not authenticated', 'error');
             return null;
         }
-        
+
         const progressDiv = document.createElement('div');
         progressDiv.className = 'upload-progress';
         progressDiv.innerHTML = `
@@ -1073,41 +1057,41 @@ animation: spin 1s linear infinite; margin: 10px auto;
             <div class="spinner-small"></div>
         `;
         document.body.appendChild(progressDiv);
-        
+
         try {
             const fileExt = file.name.split('.').pop()?.toLowerCase();
             if (!fileExt) throw new Error('Invalid file extension');
-            
+
             // 🔥 Clean structured path: {user_id}/avatar_{timestamp}.{ext}
-            const filePath = `${window.currentUser.id}/avatar_${Date.now()}.${fileExt}`;
-            
+            const filePath = `${user.id}/avatar_${Date.now()}.${fileExt}`;
+
             console.log('📤 Uploading:', filePath);
-            
-            // Upload with upsert enabled
+
+            // Upload (overwrite allowed)
             const { error: uploadError } = await supabase.storage
-                .from(STORAGE_BUCKET)
+                .from('profile-pictures')
                 .upload(filePath, file, {
                     cacheControl: '3600',
                     upsert: true
                 });
-            
+
             if (uploadError) throw uploadError;
-            
+
             // ✅ Get FULL public URL
             const { data } = supabase.storage
-                .from(STORAGE_BUCKET)
+                .from('profile-pictures')
                 .getPublicUrl(filePath);
-            
+
             const publicUrl = data.publicUrl;
-            
+
             console.log('✅ Uploaded URL:', publicUrl);
-            
+
             progressDiv.remove();
             showToast('Profile picture uploaded!', 'success');
-            
+
             // 🔥 RETURN FULL URL (IMPORTANT CHANGE)
             return publicUrl;
-            
+
         } catch (error) {
             console.error('❌ Upload failed:', error);
             progressDiv.remove();
@@ -1164,16 +1148,16 @@ animation: spin 1s linear infinite; margin: 10px auto;
         }
 
         grid.innerHTML = window.userProfiles.map(profile => {
-            // ✅ Use FULL URL directly from database - no helper function needed
-            const avatarUrl = profile.avatar_url || '';
+            // ✅ SUPER SIMPLE: Use avatar_url directly (no helper function needed)
+            const avatarUrl = profile.avatar_url;
             const initials = getInitials(profile.full_name || profile.username);
             const isDefault = profile.is_default;
 
             return `
                 <div class="profile-card ${isDefault ? 'active' : ''}" data-profile-id="${profile.id}">
                     <div class="profile-avatar">
-                        ${avatarUrl && avatarUrl.startsWith('http')
-                            ? `<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name || profile.username || 'User')}" 
+                        ${avatarUrl 
+                            ? `<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name || profile.username)}" 
                                  onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>';">`
                             : `<i class="fas fa-user"></i>`
                         }
@@ -1244,28 +1228,25 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 cb.checked = preferences.includes(cb.value);
             });
 
-            // ✅ Handle avatar URL - stored as FULL URL in database
-            const avatarUrl = profile.avatar_url || '';
-            const avatarImage = document.getElementById('avatar-image');
-            const avatarPlaceholder = document.getElementById('avatar-placeholder');
-            const avatarUrlInput = document.getElementById('avatar-url');
-            
-            if (avatarUrl && avatarUrl.startsWith('http')) {
-                avatarImage.src = avatarUrl;
+            // ✅ SUPER SIMPLE: Use avatar_url directly
+            if (profile.avatar_url) {
+                const avatarImage = document.getElementById('avatar-image');
+                const avatarPlaceholder = document.getElementById('avatar-placeholder');
+                
+                avatarImage.src = profile.avatar_url; // Direct URL, no transformation
                 avatarImage.style.display = 'block';
                 avatarPlaceholder.style.display = 'none';
-                avatarUrlInput.value = avatarUrl;
+                document.getElementById('avatar-url').value = profile.avatar_url;
                 
                 avatarImage.onerror = function() {
                     console.warn('Avatar failed to load, using placeholder');
                     avatarImage.style.display = 'none';
                     avatarPlaceholder.style.display = 'flex';
-                    avatarUrlInput.value = '';
                 };
             } else {
-                avatarImage.style.display = 'none';
-                avatarPlaceholder.style.display = 'flex';
-                avatarUrlInput.value = '';
+                document.getElementById('avatar-image').style.display = 'none';
+                document.getElementById('avatar-placeholder').style.display = 'flex';
+                document.getElementById('avatar-url').value = '';
             }
 
             document.getElementById('modal-title').textContent = 'Edit Profile';
@@ -1313,8 +1294,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 updated_at: new Date().toISOString()
             };
 
+            // ✅ IMPORTANT CHANGE: Only save if it's a real http URL (no base64 junk)
             const avatarUrlInput = document.getElementById('avatar-url').value;
-            // ✅ Only save if it's a valid HTTP URL (no base64 junk, no relative paths)
             if (avatarUrlInput && avatarUrlInput.startsWith('http')) {
                 updates.avatar_url = avatarUrlInput;
             }
@@ -1341,7 +1322,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             await loadUserProfiles();
             showToast(profileId ? 'Profile updated!' : 'Profile created!', 'success');
 
-            // Reset form
             document.getElementById('profile-form').reset();
             document.getElementById('profile-id').value = '';
             document.getElementById('modal-title').textContent = 'Create New Profile';
@@ -1381,7 +1361,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
         const confirmBtn = document.getElementById('confirm-delete-btn');
         const spinner = confirmBtn.querySelector('.fa-spinner');
         const originalText = confirmBtn.innerHTML;
-        if (spinner) spinner.style.display = 'inline-block';
+        spinner.style.display = 'inline-block';
         confirmBtn.disabled = true;
 
         try {
@@ -1402,7 +1382,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
             console.error('Error deleting profile:', error);
             showToast('Failed to delete profile', 'error');
         } finally {
-            if (spinner) spinner.style.display = 'none';
+            spinner.style.display = 'none';
             confirmBtn.disabled = false;
         }
     }
@@ -1605,7 +1585,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             const file = e.target.files[0];
             if (!file) return;
 
-            // Show preview immediately
             const reader = new FileReader();
             reader.onload = (event) => {
                 avatarImage.src = event.target.result;
@@ -1614,13 +1593,12 @@ animation: spin 1s linear infinite; margin: 10px auto;
             };
             reader.readAsDataURL(file);
 
-            // 🔥 Upload and get FULL URL
-            const fullUrl = await uploadAvatar(file);
-            
-            // ✅ Store FULL URL (starts with http)
-            if (fullUrl) {
-                avatarUrlInput.value = fullUrl;
-                console.log('✅ Avatar FULL URL saved:', fullUrl);
+            // ✅ UPDATED: Now receives FULL URL from uploadAvatar
+            const avatarUrl = await uploadAvatar(file);
+
+            if (avatarUrl) {
+                avatarUrlInput.value = avatarUrl; // FULL URL now
+                console.log('✅ Avatar URL saved:', avatarUrl);
             } else {
                 avatarImage.style.display = 'none';
                 avatarPlaceholder.style.display = 'flex';
@@ -1690,7 +1668,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
             const btn = document.getElementById('confirm-delete-all-btn');
             const spinner = btn.querySelector('.fa-spinner');
-            if (spinner) spinner.style.display = 'inline-block';
+            spinner.style.display = 'inline-block';
             btn.disabled = true;
 
             try {
@@ -1710,7 +1688,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 console.error('Error deleting all profiles:', error);
                 showToast('Failed to delete profiles', 'error');
             } finally {
-                if (spinner) spinner.style.display = 'none';
+                spinner.style.display = 'none';
                 btn.disabled = false;
             }
         });
@@ -1748,8 +1726,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
             session ? window.location.href = 'creator-upload.html' : window.location.href = `login.html?redirect=creator-upload.html`;
         });
         document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
-            // Sidebar menu functionality can be added later
-            showToast('Menu coming soon', 'info');
+            document.getElementById('sidebar-menu')?.classList.add('active');
+            document.getElementById('sidebar-overlay')?.classList.add('active');
         });
 
         const backToTopBtn = document.getElementById('backToTopBtn');
@@ -1786,25 +1764,15 @@ animation: spin 1s linear infinite; margin: 10px auto;
             }
         });
 
-        const profileSwitchingToggle = document.getElementById('profile-switching-toggle');
-        if (profileSwitchingToggle) {
-            const saved = localStorage.getItem('bantu_profile_switching');
-            if (saved !== null) profileSwitchingToggle.checked = saved === 'true';
-            profileSwitchingToggle.addEventListener('change', (e) => {
-                localStorage.setItem('bantu_profile_switching', e.target.checked);
-                showToast(e.target.checked ? 'Profile switching enabled' : 'Profile switching disabled', 'info');
-            });
-        }
+        document.getElementById('profile-switching-toggle')?.addEventListener('change', (e) => {
+            localStorage.setItem('bantu_profile_switching', e.target.checked);
+            showToast(e.target.checked ? 'Profile switching enabled' : 'Profile switching disabled', 'info');
+        });
 
-        const autoLoadToggle = document.getElementById('auto-load-toggle');
-        if (autoLoadToggle) {
-            const saved = localStorage.getItem('bantu_auto_load_continue');
-            if (saved !== null) autoLoadToggle.checked = saved === 'true';
-            autoLoadToggle.addEventListener('change', (e) => {
-                localStorage.setItem('bantu_auto_load_continue', e.target.checked);
-                showToast(e.target.checked ? 'Auto-load enabled' : 'Auto-load disabled', 'info');
-            });
-        }
+        document.getElementById('auto-load-toggle')?.addEventListener('change', (e) => {
+            localStorage.setItem('bantu_auto_load_continue', e.target.checked);
+            showToast(e.target.checked ? 'Auto-load enabled' : 'Auto-load disabled', 'info');
+        });
     }
 
     // ===== INITIALIZE =====
