@@ -939,7 +939,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 (function() {
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-    const STORAGE_BUCKET = 'profile-pictures'; // ✅ Your correct bucket name
+    const STORAGE_BUCKET = 'profile-pictures';
 
     // Initialize Supabase client
     if (!window.bantuSupabase) {
@@ -1042,29 +1042,22 @@ animation: spin 1s linear infinite; margin: 10px auto;
     async function uploadAvatar(file) {
         if (!file) return null;
         
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             showToast('Please select an image file (JPG, PNG, GIF, WEBP)', 'error');
             return null;
         }
         
-        // Validate file size (max 2MB)
         if (file.size > 2 * 1024 * 1024) {
             showToast('Image must be less than 2MB', 'error');
             return null;
         }
         
-        // Create upload progress indicator
         const progressDiv = document.createElement('div');
         progressDiv.className = 'upload-progress';
-        progressDiv.innerHTML = `
-            <div>Uploading profile picture...</div>
-            <div class="spinner-small"></div>
-        `;
+        progressDiv.innerHTML = `<div>Uploading profile picture...</div><div class="spinner-small"></div>`;
         document.body.appendChild(progressDiv);
         
         try {
-            // Generate unique filename
             const fileExt = file.name.split('.').pop();
             const fileName = `${window.currentUser.id}_${Date.now()}.${fileExt}`;
             const filePath = fileName;
@@ -1072,7 +1065,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             console.log('📤 Uploading to bucket:', STORAGE_BUCKET);
             console.log('📤 File path:', filePath);
             
-            // Upload to Supabase Storage
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from(STORAGE_BUCKET)
                 .upload(filePath, file, {
@@ -1082,8 +1074,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             
             if (uploadError) {
                 console.error('Upload error:', uploadError);
-                
-                // Check if bucket needs to be created
                 if (uploadError.message.includes('bucket not found')) {
                     showToast('Storage bucket not configured. Please contact support.', 'error');
                     progressDiv.remove();
@@ -1094,17 +1084,16 @@ animation: spin 1s linear infinite; margin: 10px auto;
             
             console.log('✅ Upload successful:', uploadData);
             
-            // Get public URL
             const { data: { publicUrl } } = supabase.storage
                 .from(STORAGE_BUCKET)
                 .getPublicUrl(filePath);
             
             console.log('📸 Public URL:', publicUrl);
-            
             progressDiv.remove();
             showToast('Profile picture uploaded successfully!', 'success');
             
-            return publicUrl;
+            // Return the file path (not the full URL) to store in DB
+            return filePath;
             
         } catch (error) {
             console.error('❌ Upload error:', error);
@@ -1233,17 +1222,14 @@ animation: spin 1s linear infinite; margin: 10px auto;
             document.getElementById('show-history-toggle').checked = profile.show_history !== false;
             document.getElementById('autoplay-toggle').checked = profile.autoplay !== false;
 
-            // Set profile type
             const typeRadio = document.querySelector(`input[name="profile-type"][value="${profile.profile_type || 'adult'}"]`);
             if (typeRadio) typeRadio.checked = true;
 
-            // Set content preferences
             const preferences = profile.content_preferences || ['music', 'culture'];
             document.querySelectorAll('.preference-checkbox input').forEach(cb => {
                 cb.checked = preferences.includes(cb.value);
             });
 
-            // Set avatar
             if (profile.avatar_url) {
                 const avatarUrl = getProfilePictureUrl(profile.avatar_url);
                 const avatarImage = document.getElementById('avatar-image');
@@ -1254,7 +1240,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 avatarPlaceholder.style.display = 'none';
                 document.getElementById('avatar-url').value = profile.avatar_url;
                 
-                // Add error handler
                 avatarImage.onerror = function() {
                     console.warn('Avatar failed to load, using placeholder');
                     avatarImage.style.display = 'none';
@@ -1266,13 +1251,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 document.getElementById('avatar-url').value = '';
             }
 
-            // Update modal title
             document.getElementById('modal-title').textContent = 'Edit Profile';
-
-            // Show modal
             document.getElementById('profile-modal').classList.add('active');
-
-            // Update character counts
             document.getElementById('name-count').textContent = (profile.full_name || '').length;
             document.getElementById('bio-count').textContent = (profile.bio || '').length;
 
@@ -1298,10 +1278,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
         saveBtn.disabled = true;
 
         try {
-            // Get selected profile type
             const profileType = document.querySelector('input[name="profile-type"]:checked')?.value || 'adult';
-
-            // Get content preferences
             const preferences = [];
             document.querySelectorAll('.preference-checkbox input:checked').forEach(cb => {
                 preferences.push(cb.value);
@@ -1319,7 +1296,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 updated_at: new Date().toISOString()
             };
 
-            // Only include avatar_url if it's a storage path (not a data URL)
             const avatarUrlInput = document.getElementById('avatar-url').value;
             if (avatarUrlInput && !avatarUrlInput.startsWith('data:')) {
                 updates.avatar_url = avatarUrlInput;
@@ -1327,7 +1303,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
             let result;
             if (profileId) {
-                // Update existing profile
                 result = await supabase
                     .from('user_profiles')
                     .update(updates)
@@ -1335,7 +1310,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
                     .select()
                     .single();
             } else {
-                // Create new profile
                 result = await supabase
                     .from('user_profiles')
                     .insert({ ...updates, id: window.currentUser.id })
@@ -1345,17 +1319,13 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
             if (result.error) throw result.error;
 
-            // Close modal and refresh
             document.getElementById('profile-modal').classList.remove('active');
             await loadUserProfiles();
             showToast(profileId ? 'Profile updated!' : 'Profile created!', 'success');
 
-            // Reset form
             document.getElementById('profile-form').reset();
             document.getElementById('profile-id').value = '';
             document.getElementById('modal-title').textContent = 'Create New Profile';
-            
-            // Reset avatar
             document.getElementById('avatar-image').style.display = 'none';
             document.getElementById('avatar-placeholder').style.display = 'flex';
             document.getElementById('avatar-url').value = '';
@@ -1616,7 +1586,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             const file = e.target.files[0];
             if (!file) return;
 
-            // Show preview immediately
             const reader = new FileReader();
             reader.onload = (event) => {
                 avatarImage.src = event.target.result;
@@ -1625,28 +1594,17 @@ animation: spin 1s linear infinite; margin: 10px auto;
             };
             reader.readAsDataURL(file);
 
-            // Upload to Supabase
-            const publicUrl = await uploadAvatar(file);
-            if (publicUrl) {
-                // Extract the path from the public URL
-                const urlParts = publicUrl.split('/');
-                const pathIndex = urlParts.indexOf('profile-pictures');
-                if (pathIndex !== -1) {
-                    const filePath = urlParts.slice(pathIndex + 1).join('/');
-                    avatarUrlInput.value = filePath;
-                    console.log('✅ Avatar saved with path:', filePath);
-                } else {
-                    avatarUrlInput.value = publicUrl;
-                }
+            const storedPath = await uploadAvatar(file);
+            if (storedPath) {
+                avatarUrlInput.value = storedPath;
+                console.log('✅ Avatar saved with path:', storedPath);
             } else {
-                // Upload failed, clear preview
                 avatarImage.style.display = 'none';
                 avatarPlaceholder.style.display = 'flex';
                 avatarUrlInput.value = '';
             }
         });
 
-        // Generate initials avatar
         document.getElementById('generate-avatar-btn')?.addEventListener('click', () => {
             const name = document.getElementById('profile-name').value.trim();
             if (!name) {
@@ -1662,62 +1620,47 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
     // ===== EVENT LISTENERS =====
     function setupEventListeners() {
-        // Add Profile Button
         document.getElementById('add-profile-btn')?.addEventListener('click', () => {
             document.getElementById('profile-form').reset();
             document.getElementById('profile-id').value = '';
             document.getElementById('modal-title').textContent = 'Create New Profile';
             document.getElementById('profile-modal').classList.add('active');
-            
-            // Reset avatar
             document.getElementById('avatar-image').style.display = 'none';
             document.getElementById('avatar-placeholder').style.display = 'flex';
             document.getElementById('avatar-url').value = '';
-            
-            // Reset character counts
             document.getElementById('name-count').textContent = '0';
             document.getElementById('bio-count').textContent = '0';
         });
 
-        // Close Modal Button
         document.getElementById('close-modal-btn')?.addEventListener('click', () => {
             document.getElementById('profile-modal').classList.remove('active');
         });
 
-        // Cancel Modal Button
         document.getElementById('cancel-modal-btn')?.addEventListener('click', () => {
             document.getElementById('profile-modal').classList.remove('active');
         });
 
-        // Save Profile Button
         document.getElementById('save-profile-btn')?.addEventListener('click', saveProfile);
-
-        // Delete Profile Confirmation
         document.getElementById('confirm-delete-btn')?.addEventListener('click', confirmDeleteProfile);
 
-        // Cancel Delete Button
         document.getElementById('cancel-delete-btn')?.addEventListener('click', () => {
             document.getElementById('delete-modal').classList.remove('active');
         });
 
-        // Delete All Profiles Button
         document.getElementById('delete-all-profiles-btn')?.addEventListener('click', () => {
             document.getElementById('delete-all-modal').classList.add('active');
         });
 
-        // Cancel Delete All Button
         document.getElementById('cancel-delete-all-btn')?.addEventListener('click', () => {
             document.getElementById('delete-all-modal').classList.remove('active');
             document.getElementById('delete-confirmation').value = '';
         });
 
-        // Delete All Confirmation Input
         document.getElementById('delete-confirmation')?.addEventListener('input', (e) => {
             const btn = document.getElementById('confirm-delete-all-btn');
             if (btn) btn.disabled = e.target.value !== 'DELETE';
         });
 
-        // Delete All Confirmation Button
         document.getElementById('confirm-delete-all-btn')?.addEventListener('click', async () => {
             const confirmation = document.getElementById('delete-confirmation').value;
             if (confirmation !== 'DELETE') return;
@@ -1749,7 +1692,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             }
         });
 
-        // Character Count
         document.getElementById('profile-name')?.addEventListener('input', (e) => {
             document.getElementById('name-count').textContent = e.target.value.length;
         });
@@ -1758,7 +1700,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             document.getElementById('bio-count').textContent = e.target.value.length;
         });
 
-        // Modal Background Click
         document.getElementById('profile-modal')?.addEventListener('click', (e) => {
             if (e.target === document.getElementById('profile-modal')) {
                 document.getElementById('profile-modal').classList.remove('active');
@@ -1778,7 +1719,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             }
         });
 
-        // Navigation
         document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
         document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -1789,7 +1729,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             document.getElementById('sidebar-overlay')?.classList.add('active');
         });
 
-        // Back to Top
         const backToTopBtn = document.getElementById('backToTopBtn');
         if (backToTopBtn) {
             backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
@@ -1798,10 +1737,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
             });
         }
 
-        // Setup Avatar Upload
         setupAvatarUpload();
 
-        // Default Profile Select
         document.getElementById('default-profile-select')?.addEventListener('change', async (e) => {
             const profileId = e.target.value;
             if (!profileId || !window.currentUser) return;
@@ -1826,13 +1763,11 @@ animation: spin 1s linear infinite; margin: 10px auto;
             }
         });
 
-        // Profile Switching Toggle
         document.getElementById('profile-switching-toggle')?.addEventListener('change', (e) => {
             localStorage.setItem('bantu_profile_switching', e.target.checked);
             showToast(e.target.checked ? 'Profile switching enabled' : 'Profile switching disabled', 'info');
         });
 
-        // Auto-load Toggle
         document.getElementById('auto-load-toggle')?.addEventListener('change', (e) => {
             localStorage.setItem('bantu_auto_load_continue', e.target.checked);
             showToast(e.target.checked ? 'Auto-load enabled' : 'Auto-load disabled', 'info');
