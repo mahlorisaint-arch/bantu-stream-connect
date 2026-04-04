@@ -594,6 +594,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 
 <!-- Main App -->
 <div id="app" style="display: none;">
+<!-- Header -->
 <header class="header">
 <div class="logo" onclick="window.location.href='index.html'">
 <div class="logo-icon">
@@ -603,231 +604,703 @@ animation: spin 1s linear infinite; margin: 10px auto;
 </div>
 <div class="header-actions">
 <button id="search-btn" class="icon-btn"><i class="fas fa-search"></i></button>
-<button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i></button>
-<button id="profile-btn" class="profile-btn"><i class="fas fa-user"></i></button>
+<button id="notifications-btn" class="icon-btn">
+<i class="fas fa-bell"></i>
+<span class="notification-badge" id="notification-count" style="display: none;">0</span>
+</button>
+<button id="profile-btn" class="profile-btn">
+<div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
+</button>
 </div>
 </header>
 
+<!-- Page Header -->
 <div class="page-header">
 <h1 class="page-title"><i class="fas fa-user-cog"></i> Manage Profiles</h1>
 <p class="page-subtitle">Create and manage profiles for personalized experiences</p>
 </div>
 
 <main class="container">
+<!-- Profiles Grid -->
 <div class="profiles-grid" id="profiles-grid"></div>
+
+<!-- Add Profile Button -->
 <div class="add-profile-container">
-<button class="add-profile-btn" id="add-profile-btn"><i class="fas fa-plus-circle"></i><span>Add New Profile</span></button>
+<button class="add-profile-btn" id="add-profile-btn">
+<i class="fas fa-plus-circle"></i>
+<span>Add New Profile</span>
+</button>
 </div>
 
+<!-- Profile Settings Section -->
 <div class="profile-settings-section">
 <h2 class="settings-title"><i class="fas fa-cog"></i> Profile Settings</h2>
 <div class="settings-card">
-<div class="setting-item"><div class="setting-info"><h3>Default Profile</h3><p>Choose which profile loads by default</p></div><select id="default-profile-select" class="setting-select"><option value="">Select default profile</option></select></div>
-<div class="setting-item"><div class="setting-info"><h3>Profile Switching</h3><p>Allow quick profile switching from the header</p></div><label class="toggle-switch"><input type="checkbox" id="profile-switching-toggle" checked><span class="toggle-slider"></span></label></div>
-<div class="setting-item"><div class="setting-info"><h3>Auto-load Continue Watching</h3><p>Automatically load continue watching section</p></div><label class="toggle-switch"><input type="checkbox" id="auto-load-toggle" checked><span class="toggle-slider"></span></label></div>
+<div class="setting-item">
+<div class="setting-info">
+<h3>Default Profile</h3>
+<p>Choose which profile loads by default when you sign in</p>
+</div>
+<div class="setting-control">
+<select id="default-profile-select" class="setting-select">
+<option value="">Select default profile</option>
+</select>
+</div>
+</div>
+<div class="setting-item">
+<div class="setting-info">
+<h3>Profile Switching</h3>
+<p>Allow quick profile switching from the header</p>
+</div>
+<div class="setting-control">
+<label class="toggle-switch">
+<input type="checkbox" id="profile-switching-toggle" checked>
+<span class="toggle-slider"></span>
+</label>
+</div>
+</div>
+<div class="setting-item">
+<div class="setting-info">
+<h3>Auto-load Continue Watching</h3>
+<p>Automatically load continue watching section when switching profiles</p>
+</div>
+<div class="setting-control">
+<label class="toggle-switch">
+<input type="checkbox" id="auto-load-toggle" checked>
+<span class="toggle-slider"></span>
+</label>
+</div>
+</div>
 </div>
 </div>
 
-<div class="profile-content-section"><h3 class="content-section-title"><i class="fas fa-history"></i> Watch History</h3><div class="horizontal-scroll" id="profile-history"></div></div>
-<div class="profile-content-section"><h3 class="content-section-title"><i class="fas fa-list"></i> My Playlists</h3><div class="horizontal-scroll" id="profile-playlists"></div></div>
-<div class="profile-content-section"><h3 class="content-section-title"><i class="fas fa-heart"></i> Favorite Content</h3><div class="horizontal-scroll" id="profile-favorites"></div></div>
+<!-- Watch History Section -->
+<div class="profile-content-section" id="profile-history-section">
+<h3 class="content-section-title"><i class="fas fa-history"></i> Watch History</h3>
+<div class="horizontal-scroll" id="profile-history"></div>
+</div>
 
+<!-- User Playlists Section -->
+<div class="profile-content-section" id="profile-playlists-section">
+<h3 class="content-section-title"><i class="fas fa-list"></i> My Playlists</h3>
+<div class="horizontal-scroll" id="profile-playlists"></div>
+</div>
+
+<!-- Favorite Content Section -->
+<div class="profile-content-section" id="profile-favorites-section">
+<h3 class="content-section-title"><i class="fas fa-heart"></i> Favorite Content</h3>
+<div class="horizontal-scroll" id="profile-favorites"></div>
+</div>
+
+<!-- Danger Zone Section -->
 <div class="danger-zone-section">
 <h2 class="danger-title"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
-<div class="danger-card"><div class="danger-item"><div class="danger-info"><h3>Delete All Profiles</h3><p>Permanently delete all profiles except your main account.</p></div><button class="danger-btn" id="delete-all-profiles-btn"><i class="fas fa-trash-alt"></i><span>Delete All</span></button></div></div>
+<div class="danger-card">
+<div class="danger-item">
+<div class="danger-info">
+<h3>Delete All Profiles</h3>
+<p>Permanently delete all profiles except your main account. This action cannot be undone.</p>
+</div>
+<button class="danger-btn" id="delete-all-profiles-btn">
+<i class="fas fa-trash-alt"></i>
+<span>Delete All</span>
+</button>
+</div>
+</div>
 </div>
 </main>
 
-<div class="navigation-button-container"><div class="navigation-button"><div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div><div class="nav-icon" id="nav-create-btn" title="Create"><i class="fas fa-plus-circle"></i></div><div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div></div></div>
+<!-- Navigation -->
+<div class="navigation-button-container">
+<div class="navigation-button">
+<div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div>
+<div class="nav-icon" id="nav-create-btn" title="Create"><i class="fas fa-plus-circle"></i></div>
+<div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div>
+</div>
+</div>
+
+<!-- Toast Container -->
 <div id="toast-container"></div>
+
+<!-- Back to Top -->
 <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 
-<!-- Profile Modal -->
+<!-- Create/Edit Profile Modal -->
 <div id="profile-modal" class="profile-modal">
-<div class="modal-content"><div class="modal-header"><h2 id="modal-title">Create New Profile</h2><button class="close-modal-btn" id="close-modal-btn"><i class="fas fa-times"></i></button></div>
-<div class="modal-body"><form id="profile-form">
-<div class="avatar-section"><div class="avatar-preview" id="avatar-preview"><div class="avatar-placeholder" id="avatar-placeholder"><i class="fas fa-user"></i></div><img id="avatar-image" src="" alt="Profile Avatar" style="display: none;"></div>
-<div class="avatar-actions"><button type="button" class="avatar-btn" id="upload-avatar-btn"><i class="fas fa-upload"></i> Upload Photo</button><button type="button" class="avatar-btn" id="generate-avatar-btn"><i class="fas fa-magic"></i> Use Initials</button></div>
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="modal-title">Create New Profile</h2>
+<button class="close-modal-btn" id="close-modal-btn"><i class="fas fa-times"></i></button>
+</div>
+<div class="modal-body">
+<form id="profile-form">
+<!-- Avatar Selection -->
+<div class="avatar-section">
+<div class="avatar-preview" id="avatar-preview">
+<div class="avatar-placeholder" id="avatar-placeholder"><i class="fas fa-user"></i></div>
+<img id="avatar-image" src="" alt="Profile Avatar" style="display: none;">
+</div>
+<div class="avatar-actions">
+<button type="button" class="avatar-btn" id="upload-avatar-btn"><i class="fas fa-upload"></i> Upload Photo</button>
+<button type="button" class="avatar-btn" id="generate-avatar-btn"><i class="fas fa-magic"></i> Use Initials</button>
+</div>
 <p class="avatar-hint">Recommended: Square image, max 2MB (JPG, PNG, WEBP)</p>
 <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
 <input type="hidden" id="avatar-url">
 </div>
-<div class="form-group"><label>Profile Name <span class="required">*</span></label><input type="text" id="profile-name" class="form-input" maxlength="50" required><div class="character-count"><span id="name-count">0</span>/50</div></div>
-<div class="form-group"><label>Bio</label><textarea id="profile-bio" class="form-textarea" maxlength="500" rows="3"></textarea><div class="character-count"><span id="bio-count">0</span>/500</div></div>
-<div class="form-group"><label>Profile Type</label><div class="profile-type-options"><label class="profile-type-option"><input type="radio" name="profile-type" value="adult" checked><i class="fas fa-user"></i><span>Adult</span></label><label class="profile-type-option"><input type="radio" name="profile-type" value="teen"><i class="fas fa-user-graduate"></i><span>Teen</span></label><label class="profile-type-option"><input type="radio" name="profile-type" value="child"><i class="fas fa-child"></i><span>Child</span></label></div></div>
-<div class="form-group"><label>Content Preferences</label><div class="preferences-grid"><label class="preference-checkbox"><input type="checkbox" value="music" checked><i class="fas fa-music"></i><span>Music</span></label><label class="preference-checkbox"><input type="checkbox" value="stem"><i class="fas fa-microscope"></i><span>STEM</span></label><label class="preference-checkbox"><input type="checkbox" value="culture" checked><i class="fas fa-drum"></i><span>Culture</span></label><label class="preference-checkbox"><input type="checkbox" value="news"><i class="fas fa-newspaper"></i><span>News</span></label><label class="preference-checkbox"><input type="checkbox" value="sports"><i class="fas fa-futbol"></i><span>Sports</span></label><label class="preference-checkbox"><input type="checkbox" value="movies"><i class="fas fa-film"></i><span>Movies</span></label></div></div>
-<div class="form-group"><label>Maturity Rating</label><select class="form-select" id="maturity-rating"><option value="all">All Content</option><option value="pg">PG</option><option value="13">13+</option><option value="16">16+</option><option value="18">18+</option></select></div>
-<div class="form-group"><label class="toggle-label"><span>Private Profile</span><label class="toggle-switch"><input type="checkbox" id="private-profile-toggle"><span class="toggle-slider"></span></label></label></div>
-<div class="form-group"><label class="toggle-label"><span>Show Watch History</span><label class="toggle-switch"><input type="checkbox" id="show-history-toggle" checked><span class="toggle-slider"></span></label></label></div>
-<div class="form-group"><label class="toggle-label"><span>Auto-play next episode</span><label class="toggle-switch"><input type="checkbox" id="autoplay-toggle" checked><span class="toggle-slider"></span></label></label></div>
-<input type="hidden" id="profile-id" value="">
-</form></div>
-<div class="modal-footer"><button class="cancel-btn" id="cancel-modal-btn">Cancel</button><button class="save-btn" id="save-profile-btn">Save Profile</button></div>
+
+<!-- Profile Name -->
+<div class="form-group">
+<label for="profile-name">Profile Name <span class="required">*</span></label>
+<input type="text" id="profile-name" class="form-input" placeholder="e.g., John, Family, Kids" maxlength="50" required>
+<div class="character-count"><span id="name-count">0</span>/50</div>
+</div>
+
+<!-- Profile Bio -->
+<div class="form-group">
+<label for="profile-bio">Bio</label>
+<textarea id="profile-bio" class="form-textarea" placeholder="Tell us about yourself..." maxlength="500" rows="3"></textarea>
+<div class="character-count"><span id="bio-count">0</span>/500</div>
+</div>
+
+<!-- Profile Type -->
+<div class="form-group">
+<label>Profile Type</label>
+<div class="profile-type-options">
+<label class="profile-type-option">
+<input type="radio" name="profile-type" value="adult" checked>
+<i class="fas fa-user"></i>
+<span>Adult</span>
+</label>
+<label class="profile-type-option">
+<input type="radio" name="profile-type" value="teen">
+<i class="fas fa-user-graduate"></i>
+<span>Teen (13-17)</span>
+</label>
+<label class="profile-type-option">
+<input type="radio" name="profile-type" value="child">
+<i class="fas fa-child"></i>
+<span>Child (Under 13)</span>
+</label>
 </div>
 </div>
 
-<!-- Delete Modals -->
-<div id="delete-modal" class="delete-modal"><div class="delete-content"><div class="delete-header"><i class="fas fa-exclamation-triangle"></i><h2>Delete Profile</h2></div><div class="delete-body"><p>Are you sure you want to delete <strong id="delete-profile-name">this profile</strong>?</div><div class="delete-footer"><button class="cancel-delete-btn" id="cancel-delete-btn">Cancel</button><button class="confirm-delete-btn" id="confirm-delete-btn">Delete Permanently</button></div></div></div>
-<div id="delete-all-modal" class="delete-modal"><div class="delete-content"><div class="delete-header"><i class="fas fa-exclamation-triangle"></i><h2>Delete All Profiles</h2></div><div class="delete-body"><p>Type 'DELETE' to confirm</p><input type="text" id="delete-confirmation" class="form-input" placeholder="Type 'DELETE' to confirm"></div><div class="delete-footer"><button class="cancel-delete-btn" id="cancel-delete-all-btn">Cancel</button><button class="confirm-delete-all-btn" id="confirm-delete-all-btn" disabled>Delete All</button></div></div></div>
+<!-- Content Preferences -->
+<div class="form-group">
+<label>Content Preferences</label>
+<div class="preferences-grid">
+<label class="preference-checkbox">
+<input type="checkbox" value="music" checked>
+<i class="fas fa-music"></i>
+<span>Music</span>
+</label>
+<label class="preference-checkbox">
+<input type="checkbox" value="stem">
+<i class="fas fa-microscope"></i>
+<span>STEM</span>
+</label>
+<label class="preference-checkbox">
+<input type="checkbox" value="culture" checked>
+<i class="fas fa-drum"></i>
+<span>Culture</span>
+</label>
+<label class="preference-checkbox">
+<input type="checkbox" value="news">
+<i class="fas fa-newspaper"></i>
+<span>News</span>
+</label>
+<label class="preference-checkbox">
+<input type="checkbox" value="sports">
+<i class="fas fa-futbol"></i>
+<span>Sports</span>
+</label>
+<label class="preference-checkbox">
+<input type="checkbox" value="movies">
+<i class="fas fa-film"></i>
+<span>Movies</span>
+</label>
+</div>
+</div>
+
+<!-- Maturity Rating -->
+<div class="form-group">
+<label>Maturity Rating</label>
+<select class="form-select" id="maturity-rating">
+<option value="all">All Content</option>
+<option value="pg">PG (Parental Guidance)</option>
+<option value="13">13+</option>
+<option value="16">16+</option>
+<option value="18">18+</option>
+</select>
+</div>
+
+<!-- Privacy Settings -->
+<div class="form-group">
+<h3 style="font-size:14px; margin-bottom:10px; color:var(--soft-white);">Privacy & Security</h3>
+<label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+<span>Private Profile</span>
+<label class="toggle-switch">
+<input type="checkbox" id="private-profile-toggle">
+<span class="toggle-slider"></span>
+</label>
+</label>
+<p class="avatar-hint">When enabled, your profile won't appear in search results</p>
+</div>
+
+<div class="form-group">
+<label style="display:flex; justify-content:space-between; align-items:center;">
+<span>Show Watch History</span>
+<label class="toggle-switch">
+<input type="checkbox" id="show-history-toggle" checked>
+<span class="toggle-slider"></span>
+</label>
+</label>
+</div>
+
+<!-- Playback Settings -->
+<div class="form-group">
+<h3 style="font-size:14px; margin-bottom:10px; color:var(--soft-white);">Playback Settings</h3>
+<label style="display:flex; justify-content:space-between; align-items:center;">
+<span>Auto-play next episode</span>
+<label class="toggle-switch">
+<input type="checkbox" id="autoplay-toggle" checked>
+<span class="toggle-slider"></span>
+</label>
+</label>
+</div>
+
+<input type="hidden" id="profile-id" value="">
+</form>
+</div>
+<div class="modal-footer">
+<button class="cancel-btn" id="cancel-modal-btn">Cancel</button>
+<button class="save-btn" id="save-profile-btn">Save Profile</button>
+</div>
+</div>
+</div>
+
+<!-- Delete Profile Confirmation Modal -->
+<div id="delete-modal" class="delete-modal">
+<div class="delete-content">
+<div class="delete-header">
+<i class="fas fa-exclamation-triangle"></i>
+<h2>Delete Profile</h2>
+</div>
+<div class="delete-body">
+<p>Are you sure you want to delete <strong id="delete-profile-name">this profile</strong>?</p>
+<div class="warning-list">
+<p><i class="fas fa-times-circle"></i> All watch history will be permanently deleted</p>
+<p><i class="fas fa-times-circle"></i> All preferences and settings will be lost</p>
+<p><i class="fas fa-times-circle"></i> Saved content and favorites will be removed</p>
+</div>
+<p class="delete-warning">This action cannot be undone.</p>
+<p class="support-contact">For support, contact: support@bantustreamconnect.co.za</p>
+</div>
+<div class="delete-footer">
+<button class="cancel-delete-btn" id="cancel-delete-btn">Cancel</button>
+<button class="confirm-delete-btn" id="confirm-delete-btn">
+<i class="fas fa-spinner fa-spin" style="display: none;"></i>
+<span>Delete Permanently</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- Delete All Profiles Confirmation Modal -->
+<div id="delete-all-modal" class="delete-modal">
+<div class="delete-content">
+<div class="delete-header">
+<i class="fas fa-exclamation-triangle"></i>
+<h2>Delete All Profiles</h2>
+</div>
+<div class="delete-body">
+<p>Are you sure you want to delete <strong>ALL profiles</strong> except your main account?</p>
+<div class="warning-list">
+<p><i class="fas fa-times-circle"></i> All watch history will be permanently deleted</p>
+<p><i class="fas fa-times-circle"></i> All preferences and settings will be lost</p>
+<p><i class="fas fa-times-circle"></i> Saved content and favorites will be removed</p>
+</div>
+<p class="delete-warning">This action cannot be undone.</p>
+<input type="text" id="delete-confirmation" class="form-input" placeholder="Type 'DELETE' to confirm">
+</div>
+<div class="delete-footer">
+<button class="cancel-delete-btn" id="cancel-delete-all-btn">Cancel</button>
+<button class="confirm-delete-all-btn" id="confirm-delete-all-btn" disabled>
+<i class="fas fa-spinner fa-spin" style="display: none;"></i>
+<span>Delete All</span>
+</button>
+</div>
+</div>
+</div>
 </div>
 
 <script>
+// ===== SUPABASE CONFIGURATION =====
 (function() {
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     const STORAGE_BUCKET = 'profile-pictures';
-    
+
+    // Initialize Supabase client
     if (!window.bantuSupabase) {
         window.bantuSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ Supabase client initialized');
     }
     const supabase = window.bantuSupabase;
-    
+
+    // Global State
     window.currentUser = null;
     window.userProfiles = [];
-    
-    function showToast(msg, type='info') {
-        const c = document.getElementById('toast-container');
-        if(!c) return;
-        const t = document.createElement('div');
-        t.className = `toast ${type}`;
+    window.currentProfile = null;
+
+    // ===== UTILITY FUNCTIONS =====
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
         const icons = {error:'fa-exclamation-triangle', success:'fa-check-circle', warning:'fa-exclamation-circle', info:'fa-info-circle'};
-        t.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${msg.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;})}</span>`;
-        c.appendChild(t);
-        setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(100%)'; setTimeout(()=>t.remove(),300); }, 3000);
+        toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => { 
+            toast.style.opacity = '0'; 
+            toast.style.transform = 'translateX(100%)'; 
+            setTimeout(() => toast.remove(), 300); 
+        }, 3000);
     }
-    
-    function getInitials(name) { if(!name) return '?'; const parts = name.trim().split(' '); if(parts.length>=2) return (parts[0][0]+parts[parts.length-1][0]).toUpperCase(); return name[0].toUpperCase(); }
-    
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function getInitials(name) {
+        if (!name || name.trim() === '') return '?';
+        const names = name.trim().split(' ');
+        if (names.length >= 2) {
+            return (names[0][0] + names[names.length-1][0]).toUpperCase();
+        }
+        return name[0].toUpperCase();
+    }
+
     // ✅ PRODUCTION READY: Returns FULL public URL from stored path
-    function getFullAvatarUrl(storedPath) {
-        if(!storedPath) return '';
-        if(storedPath.startsWith('http')) return storedPath;
-        const cleanPath = storedPath.replace(/^\/+/, '');
+    // ✅ Database stores FULL public URL, so no reconstruction needed
+    function getFullAvatarUrl(storedUrl) {
+        if (!storedUrl) return '';
+        // If it's already a full URL (starts with http), return as-is
+        if (storedUrl.startsWith('http')) return storedUrl;
+        // Fallback for legacy data (should not happen with new system)
+        const cleanPath = storedUrl.replace(/^\/+/, '');
         return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${cleanPath}`;
     }
-    
-    // ✅ PRODUCTION READY UPLOAD - Returns FULL public URL
+
+    function fixMediaUrl(url) {
+        if (!url) return '';
+        if (url.startsWith('http')) {
+            if (url.includes('supabase.co')) return url;
+            return url;
+        }
+        const cleanPath = url.replace(/^\/+/, '');
+        if (cleanPath.includes('profile-pictures')) {
+            return `${SUPABASE_URL}/storage/v1/object/public/${cleanPath}`;
+        }
+        return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${cleanPath}`;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffDays = Math.floor((now - date) / (1000*60*60*24));
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+        } catch { return ''; }
+    }
+
+    // ===== AUTHENTICATION =====
+    async function checkAuth() {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+            window.currentUser = session?.user || null;
+            if (!window.currentUser) {
+                showToast('Please sign in to manage profiles', 'warning');
+                setTimeout(() => window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`, 2000);
+                return null;
+            }
+            console.log('✅ User authenticated:', window.currentUser.email);
+            return window.currentUser;
+        } catch (error) {
+            console.error('Auth check error:', error);
+            return null;
+        }
+    }
+
+    // ===== PRODUCTION READY UPLOAD FUNCTION =====
+    // ✅ Returns FULL public URL (not relative path)
+    // ✅ Structured path: {user_id}/avatar_{timestamp}.{ext}
+    // ✅ No manual URL building anywhere else
     async function uploadAvatar(file) {
-        if(!file) return null;
-        if(!file.type.startsWith('image/')) { showToast('Please select an image file (JPG, PNG, WEBP)', 'error'); return null; }
-        if(file.size > 2*1024*1024) { showToast('Image must be less than 2MB', 'error'); return null; }
-        if(!window.currentUser?.id) { showToast('User not authenticated', 'error'); return null; }
+        if (!file) return null;
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showToast('Please select an image file (JPG, PNG, WEBP)', 'error');
+            return null;
+        }
+        
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('Image must be less than 2MB', 'error');
+            return null;
+        }
+        
+        // Ensure user exists
+        if (!window.currentUser?.id) {
+            showToast('User not authenticated', 'error');
+            return null;
+        }
         
         const progressDiv = document.createElement('div');
         progressDiv.className = 'upload-progress';
-        progressDiv.innerHTML = `<div>Uploading profile picture...</div><div class="spinner-small"></div>`;
+        progressDiv.innerHTML = `
+            <div>Uploading profile picture...</div>
+            <div class="spinner-small"></div>
+        `;
         document.body.appendChild(progressDiv);
         
         try {
             const fileExt = file.name.split('.').pop()?.toLowerCase();
-            if(!fileExt) throw new Error('Invalid file extension');
-            // 🔥 Structured path: {user_id}/avatar_{timestamp}.{ext}
+            if (!fileExt) throw new Error('Invalid file extension');
+            
+            // 🔥 Clean structured path: {user_id}/avatar_{timestamp}.{ext}
             const filePath = `${window.currentUser.id}/avatar_${Date.now()}.${fileExt}`;
+            
             console.log('📤 Uploading:', filePath);
             
+            // Upload with upsert enabled
             const { error: uploadError } = await supabase.storage
                 .from(STORAGE_BUCKET)
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if(uploadError) throw uploadError;
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+            
+            if (uploadError) throw uploadError;
             
             // ✅ Get FULL public URL
-            const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+            const { data } = supabase.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(filePath);
+            
             const publicUrl = data.publicUrl;
+            
             console.log('✅ Uploaded URL:', publicUrl);
+            
             progressDiv.remove();
             showToast('Profile picture uploaded!', 'success');
-            return publicUrl; // 🔥 RETURN FULL URL
-        } catch(err) {
-            console.error('Upload error:', err);
+            
+            // 🔥 RETURN FULL URL (IMPORTANT CHANGE)
+            return publicUrl;
+            
+        } catch (error) {
+            console.error('❌ Upload failed:', error);
             progressDiv.remove();
-            showToast(err.message || 'Upload failed', 'error');
+            showToast(error.message || 'Upload failed', 'error');
             return null;
         }
     }
-    
-    async function checkAuth() {
-        const { data: { session } } = await supabase.auth.getSession();
-        window.currentUser = session?.user || null;
-        if(!window.currentUser) { showToast('Please sign in', 'warning'); setTimeout(()=>window.location.href='login.html', 2000); return null; }
-        return window.currentUser;
-    }
-    
+
+    // ===== PROFILE FUNCTIONS =====
     async function loadUserProfiles() {
-        if(!window.currentUser) return;
-        const { data, error } = await supabase.from('user_profiles').select('*').eq('id', window.currentUser.id);
-        if(!error) window.userProfiles = data || [];
-        renderProfilesGrid();
-        updateDefaultProfileSelect();
+        try {
+            if (!window.currentUser) return;
+
+            console.log('📋 Loading profiles for user:', window.currentUser.id);
+
+            const { data: profiles, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', window.currentUser.id);
+
+            if (error) {
+                console.error('Profile load error:', error);
+                window.userProfiles = [];
+                renderProfilesGrid();
+                return;
+            }
+
+            window.userProfiles = profiles || [];
+            console.log('✅ Profiles loaded:', window.userProfiles.length);
+
+            renderProfilesGrid();
+            updateDefaultProfileSelect();
+
+        } catch (error) {
+            console.error('Error loading profiles:', error);
+            showToast('Failed to load profiles', 'error');
+            window.userProfiles = [];
+        }
     }
-    
+
     function renderProfilesGrid() {
         const grid = document.getElementById('profiles-grid');
-        if(!grid) return;
-        if(window.userProfiles.length===0) { grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px"><i class="fas fa-user-slash" style="font-size:48px"></i><h3>No Profiles Yet</h3></div>'; return; }
-        grid.innerHTML = window.userProfiles.map(p => {
-            // ✅ Direct URL usage - no helper function needed
-            const avatarUrl = p.avatar_url || '';
-            return `<div class="profile-card ${p.is_default?'active':''}" data-profile-id="${p.id}">
-                <div class="profile-avatar">${avatarUrl ? `<img src="${avatarUrl}" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>';">` : '<i class="fas fa-user"></i>'}</div>
-                <div class="profile-name">${escapeHtml(p.full_name||p.username||'User')}</div>
-                <div class="profile-type">${p.profile_type||'Adult'}</div>
-                <div class="profile-actions"><button class="profile-action-btn edit" onclick="window.editProfile('${p.id}')"><i class="fas fa-edit"></i> Edit</button><button class="profile-action-btn delete" onclick="window.deleteProfile('${p.id}')"><i class="fas fa-trash"></i> Delete</button></div>
-            </div>`;
+        if (!grid) return;
+
+        if (window.userProfiles.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--slate-grey);">
+                    <i class="fas fa-user-slash" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
+                    <h3>No Profiles Yet</h3>
+                    <p>Create your first profile to get started</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = window.userProfiles.map(profile => {
+            // ✅ Use FULL URL directly from database - no helper function needed
+            const avatarUrl = profile.avatar_url || '';
+            const initials = getInitials(profile.full_name || profile.username);
+            const isDefault = profile.is_default;
+
+            return `
+                <div class="profile-card ${isDefault ? 'active' : ''}" data-profile-id="${profile.id}">
+                    <div class="profile-avatar">
+                        ${avatarUrl && avatarUrl.startsWith('http')
+                            ? `<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name || profile.username || 'User')}" 
+                                 onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>';">`
+                            : `<i class="fas fa-user"></i>`
+                        }
+                    </div>
+                    <div class="profile-name">${escapeHtml(profile.full_name || profile.username || 'User')}</div>
+                    <div class="profile-type">${profile.profile_type || 'Adult'}</div>
+                    <div class="profile-actions">
+                        <button class="profile-action-btn edit" onclick="window.editProfile('${profile.id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="profile-action-btn delete" onclick="window.deleteProfile('${profile.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
         }).join('');
     }
-    
+
     function updateDefaultProfileSelect() {
         const select = document.getElementById('default-profile-select');
-        if(!select) return;
+        if (!select) return;
+
         select.innerHTML = '<option value="">Select default profile</option>';
-        window.userProfiles.forEach(p => { const opt = document.createElement('option'); opt.value=p.id; opt.textContent=p.full_name||p.username||'User'; if(p.is_default) opt.selected=true; select.appendChild(opt); });
+
+        window.userProfiles.forEach(profile => {
+            const option = document.createElement('option');
+            option.value = profile.id;
+            option.textContent = profile.full_name || profile.username || 'User';
+            if (profile.is_default) option.selected = true;
+            select.appendChild(option);
+        });
     }
-    
+
+    // Edit Profile Function
     window.editProfile = async function(profileId) {
-        const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', profileId).maybeSingle();
-        if(!profile) return;
-        document.getElementById('profile-id').value = profile.id;
-        document.getElementById('profile-name').value = profile.full_name||'';
-        document.getElementById('profile-bio').value = profile.bio||'';
-        document.getElementById('maturity-rating').value = profile.maturity_rating||'all';
-        document.getElementById('private-profile-toggle').checked = profile.is_private||false;
-        document.getElementById('show-history-toggle').checked = profile.show_history!==false;
-        document.getElementById('autoplay-toggle').checked = profile.autoplay!==false;
-        const radio = document.querySelector(`input[name="profile-type"][value="${profile.profile_type||'adult'}"]`);
-        if(radio) radio.checked=true;
-        const prefs = profile.content_preferences||['music','culture'];
-        document.querySelectorAll('.preference-checkbox input').forEach(cb => { cb.checked = prefs.includes(cb.value); });
-        
-        const avatarUrlInput = document.getElementById('avatar-url');
-        const avatarImage = document.getElementById('avatar-image');
-        const avatarPlaceholder = document.getElementById('avatar-placeholder');
-        if(profile.avatar_url && profile.avatar_url.startsWith('http')) {
-            avatarImage.src = profile.avatar_url;
-            avatarImage.style.display = 'block';
-            avatarPlaceholder.style.display = 'none';
-            avatarUrlInput.value = profile.avatar_url;
-        } else {
-            avatarImage.style.display = 'none';
-            avatarPlaceholder.style.display = 'flex';
-            avatarUrlInput.value = '';
+        if (!profileId) {
+            showToast('Profile ID not found', 'error');
+            return;
         }
-        document.getElementById('modal-title').textContent = 'Edit Profile';
-        document.getElementById('profile-modal').classList.add('active');
-        document.getElementById('name-count').textContent = (profile.full_name||'').length;
-        document.getElementById('bio-count').textContent = (profile.bio||'').length;
+
+        try {
+            const { data: profile, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', profileId)
+                .maybeSingle();
+
+            if (error || !profile) {
+                showToast('Profile not found', 'error');
+                return;
+            }
+
+            // Populate form
+            document.getElementById('profile-id').value = profile.id;
+            document.getElementById('profile-name').value = profile.full_name || '';
+            document.getElementById('profile-bio').value = profile.bio || '';
+            document.getElementById('maturity-rating').value = profile.maturity_rating || 'all';
+            document.getElementById('private-profile-toggle').checked = profile.is_private || false;
+            document.getElementById('show-history-toggle').checked = profile.show_history !== false;
+            document.getElementById('autoplay-toggle').checked = profile.autoplay !== false;
+
+            const typeRadio = document.querySelector(`input[name="profile-type"][value="${profile.profile_type || 'adult'}"]`);
+            if (typeRadio) typeRadio.checked = true;
+
+            const preferences = profile.content_preferences || ['music', 'culture'];
+            document.querySelectorAll('.preference-checkbox input').forEach(cb => {
+                cb.checked = preferences.includes(cb.value);
+            });
+
+            // ✅ Handle avatar URL - stored as FULL URL in database
+            const avatarUrl = profile.avatar_url || '';
+            const avatarImage = document.getElementById('avatar-image');
+            const avatarPlaceholder = document.getElementById('avatar-placeholder');
+            const avatarUrlInput = document.getElementById('avatar-url');
+            
+            if (avatarUrl && avatarUrl.startsWith('http')) {
+                avatarImage.src = avatarUrl;
+                avatarImage.style.display = 'block';
+                avatarPlaceholder.style.display = 'none';
+                avatarUrlInput.value = avatarUrl;
+                
+                avatarImage.onerror = function() {
+                    console.warn('Avatar failed to load, using placeholder');
+                    avatarImage.style.display = 'none';
+                    avatarPlaceholder.style.display = 'flex';
+                    avatarUrlInput.value = '';
+                };
+            } else {
+                avatarImage.style.display = 'none';
+                avatarPlaceholder.style.display = 'flex';
+                avatarUrlInput.value = '';
+            }
+
+            document.getElementById('modal-title').textContent = 'Edit Profile';
+            document.getElementById('profile-modal').classList.add('active');
+            document.getElementById('name-count').textContent = (profile.full_name || '').length;
+            document.getElementById('bio-count').textContent = (profile.bio || '').length;
+
+        } catch (error) {
+            console.error('Error loading profile for edit:', error);
+            showToast('Failed to load profile', 'error');
+        }
     };
-    
+
+    // Save Profile Function
     async function saveProfile() {
         const profileId = document.getElementById('profile-id').value;
         const name = document.getElementById('profile-name').value.trim();
-        if(!name) { showToast('Profile name required', 'warning'); return; }
+
+        if (!name) {
+            showToast('Profile name is required', 'warning');
+            return;
+        }
+
         const saveBtn = document.getElementById('save-profile-btn');
         const originalText = saveBtn.innerHTML;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         saveBtn.disabled = true;
+
         try {
-            const profileType = document.querySelector('input[name="profile-type"]:checked')?.value||'adult';
-            const preferences = Array.from(document.querySelectorAll('.preference-checkbox input:checked')).map(cb=>cb.value);
+            const profileType = document.querySelector('input[name="profile-type"]:checked')?.value || 'adult';
+            const preferences = [];
+            document.querySelectorAll('.preference-checkbox input:checked').forEach(cb => {
+                preferences.push(cb.value);
+            });
+
             const updates = {
                 full_name: name,
                 bio: document.getElementById('profile-bio').value.trim(),
@@ -839,66 +1312,313 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 autoplay: document.getElementById('autoplay-toggle').checked,
                 updated_at: new Date().toISOString()
             };
-            const avatarUrlInputVal = document.getElementById('avatar-url').value;
-            // ✅ Only save if it's a valid HTTP URL (no base64 junk)
-            if(avatarUrlInputVal && avatarUrlInputVal.startsWith('http')) {
-                updates.avatar_url = avatarUrlInputVal;
+
+            const avatarUrlInput = document.getElementById('avatar-url').value;
+            // ✅ Only save if it's a valid HTTP URL (no base64 junk, no relative paths)
+            if (avatarUrlInput && avatarUrlInput.startsWith('http')) {
+                updates.avatar_url = avatarUrlInput;
             }
+
             let result;
-            if(profileId) {
-                result = await supabase.from('user_profiles').update(updates).eq('id', profileId).select().single();
+            if (profileId) {
+                result = await supabase
+                    .from('user_profiles')
+                    .update(updates)
+                    .eq('id', profileId)
+                    .select()
+                    .single();
             } else {
-                result = await supabase.from('user_profiles').insert({ ...updates, id: window.currentUser.id }).select().single();
+                result = await supabase
+                    .from('user_profiles')
+                    .insert({ ...updates, id: window.currentUser.id })
+                    .select()
+                    .single();
             }
-            if(result.error) throw result.error;
+
+            if (result.error) throw result.error;
+
             document.getElementById('profile-modal').classList.remove('active');
             await loadUserProfiles();
             showToast(profileId ? 'Profile updated!' : 'Profile created!', 'success');
+
+            // Reset form
             document.getElementById('profile-form').reset();
             document.getElementById('profile-id').value = '';
             document.getElementById('modal-title').textContent = 'Create New Profile';
             document.getElementById('avatar-image').style.display = 'none';
             document.getElementById('avatar-placeholder').style.display = 'flex';
             document.getElementById('avatar-url').value = '';
-        } catch(err) { showToast('Failed to save: '+err.message, 'error'); }
-        finally { saveBtn.innerHTML = originalText; saveBtn.disabled = false; }
+
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            showToast('Failed to save: ' + (error.message || 'Unknown error'), 'error');
+        } finally {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
     }
-    
+
+    // Delete Profile Function
     window.deleteProfile = async function(profileId) {
+        if (!profileId) {
+            showToast('Profile ID not found', 'error');
+            return;
+        }
+
         window.profileToDelete = profileId;
-        const profile = window.userProfiles.find(p=>p.id===profileId);
-        document.getElementById('delete-profile-name').textContent = profile?.full_name||'this profile';
+
+        const profile = window.userProfiles.find(p => p.id === profileId);
+        if (profile) {
+            document.getElementById('delete-profile-name').textContent = profile.full_name || profile.username || 'this profile';
+        }
+
         document.getElementById('delete-modal').classList.add('active');
-    };
-    
-    async function confirmDeleteProfile() {
-        if(!window.profileToDelete) return;
-        const btn = document.getElementById('confirm-delete-btn');
-        btn.disabled = true;
-        const { error } = await supabase.from('user_profiles').delete().eq('id', window.profileToDelete);
-        if(!error) { document.getElementById('delete-modal').classList.remove('active'); await loadUserProfiles(); showToast('Profile deleted', 'info'); window.profileToDelete=null; }
-        btn.disabled = false;
     }
-    
-    // Avatar upload handler with FULL URL storage
+
+    async function confirmDeleteProfile() {
+        if (!window.profileToDelete) return;
+
+        const confirmBtn = document.getElementById('confirm-delete-btn');
+        const spinner = confirmBtn.querySelector('.fa-spinner');
+        const originalText = confirmBtn.innerHTML;
+        if (spinner) spinner.style.display = 'inline-block';
+        confirmBtn.disabled = true;
+
+        try {
+            const { error } = await supabase
+                .from('user_profiles')
+                .delete()
+                .eq('id', window.profileToDelete);
+
+            if (error) throw error;
+
+            document.getElementById('delete-modal').classList.remove('active');
+            await loadUserProfiles();
+            showToast('Profile deleted', 'info');
+
+            window.profileToDelete = null;
+
+        } catch (error) {
+            console.error('Error deleting profile:', error);
+            showToast('Failed to delete profile', 'error');
+        } finally {
+            if (spinner) spinner.style.display = 'none';
+            confirmBtn.disabled = false;
+        }
+    }
+
+    // ===== WATCH HISTORY, PLAYLISTS, FAVORITES =====
+    async function loadWatchHistory() {
+        try {
+            if (!window.currentUser) return;
+            console.log('📺 Loading watch history...');
+
+            const { data: history, error } = await supabase
+                .from('watch_progress')
+                .select(`
+                    *,
+                    Content (
+                        id,
+                        title,
+                        thumbnail_url,
+                        media_type,
+                        duration
+                    )
+                `)
+                .eq('user_id', window.currentUser.id)
+                .order('updated_at', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                console.error('Watch history error:', error);
+                document.getElementById('profile-history').innerHTML = '<p style="color:var(--slate-grey);">No watch history yet</p>';
+                return;
+            }
+
+            renderWatchHistory(history || []);
+        } catch (error) {
+            console.error('Error loading watch history:', error);
+            document.getElementById('profile-history').innerHTML = '<p style="color:var(--slate-grey);">No watch history yet</p>';
+        }
+    }
+
+    function renderWatchHistory(history) {
+        const container = document.getElementById('profile-history');
+        if (!container) return;
+
+        if (history.length === 0) {
+            container.innerHTML = '<p style="color:var(--slate-grey);">No watch history yet</p>';
+            return;
+        }
+
+        container.innerHTML = history.map(item => {
+            const content = item.Content;
+            const thumbnail = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+            const progress = item.progress || 0;
+
+            return `
+                <div class="content-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
+                    <div class="content-thumbnail">
+                        <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}" 
+                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
+                        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(0,0,0,0.5);">
+                            <div style="width:${progress}%;height:100%;background:var(--warm-gold);"></div>
+                        </div>
+                    </div>
+                    <div class="content-info">
+                        <div class="content-title">${escapeHtml(content?.title || 'Unknown')}</div>
+                        <div class="content-meta">${formatDate(item.updated_at)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function loadUserPlaylists() {
+        try {
+            if (!window.currentUser) return;
+            console.log('📋 Loading user playlists...');
+
+            const { data: playlists, error } = await supabase
+                .from('playlists')
+                .select('*')
+                .eq('user_id', window.currentUser.id)
+                .order('updated_at', { ascending: false })
+                .limit(10);
+
+            if (error) {
+                console.error('Playlists error:', error);
+                document.getElementById('profile-playlists').innerHTML = '<p style="color:var(--slate-grey);">No playlists yet</p>';
+                return;
+            }
+
+            renderUserPlaylists(playlists || []);
+        } catch (error) {
+            console.error('Error loading playlists:', error);
+            document.getElementById('profile-playlists').innerHTML = '<p style="color:var(--slate-grey);">No playlists yet</p>';
+        }
+    }
+
+    function renderUserPlaylists(playlists) {
+        const container = document.getElementById('profile-playlists');
+        if (!container) return;
+
+        if (playlists.length === 0) {
+            container.innerHTML = '<p style="color:var(--slate-grey);">No playlists yet</p>';
+            return;
+        }
+
+        container.innerHTML = playlists.map(playlist => {
+            const thumbnail = 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop';
+
+            return `
+                <div class="content-card" onclick="window.location.href='playlist.html?id=${playlist.id}'">
+                    <div class="content-thumbnail">
+                        <img src="${thumbnail}" alt="${escapeHtml(playlist.name || '')}">
+                        <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:white;padding:4px 10px;border-radius:20px;font-size:11px;">
+                            <i class="fas fa-list"></i> ${playlist.video_count || 0}
+                        </div>
+                    </div>
+                    <div class="content-info">
+                        <div class="content-title">${escapeHtml(playlist.name || 'Untitled')}</div>
+                        <div class="content-meta">${playlist.video_count || 0} videos</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function loadFavoriteContent() {
+        try {
+            if (!window.currentUser) return;
+            console.log('❤️ Loading favorites...');
+
+            const { data: favorites, error } = await supabase
+                .from('favorites')
+                .select(`
+                    *,
+                    Content (
+                        id,
+                        title,
+                        thumbnail_url,
+                        media_type
+                    )
+                `)
+                .eq('user_id', window.currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                console.error('Favorites error:', error);
+                document.getElementById('profile-favorites').innerHTML = '<p style="color:var(--slate-grey);">No favorites yet</p>';
+                return;
+            }
+
+            renderFavoriteContent(favorites || []);
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+            document.getElementById('profile-favorites').innerHTML = '<p style="color:var(--slate-grey);">No favorites yet</p>';
+        }
+    }
+
+    function renderFavoriteContent(favorites) {
+        const container = document.getElementById('profile-favorites');
+        if (!container) return;
+
+        if (favorites.length === 0) {
+            container.innerHTML = '<p style="color:var(--slate-grey);">No favorites yet</p>';
+            return;
+        }
+
+        container.innerHTML = favorites.map(fav => {
+            const content = fav.Content;
+            const thumbnail = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+
+            return `
+                <div class="content-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
+                    <div class="content-thumbnail">
+                        <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}"
+                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
+                    </div>
+                    <div class="content-info">
+                        <div class="content-title">${escapeHtml(content?.title || 'Unknown')}</div>
+                        <div class="content-meta">${content?.media_type || 'video'}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ===== AVATAR UPLOAD SETUP =====
     function setupAvatarUpload() {
         const uploadBtn = document.getElementById('upload-avatar-btn');
         const fileInput = document.getElementById('avatar-file-input');
         const avatarImage = document.getElementById('avatar-image');
         const avatarPlaceholder = document.getElementById('avatar-placeholder');
         const avatarUrlInput = document.getElementById('avatar-url');
-        
-        uploadBtn?.addEventListener('click', ()=>fileInput.click());
+
+        uploadBtn?.addEventListener('click', () => {
+            fileInput.click();
+        });
+
         fileInput?.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if(!file) return;
+            if (!file) return;
+
             // Show preview immediately
             const reader = new FileReader();
-            reader.onload = (ev) => { avatarImage.src = ev.target.result; avatarImage.style.display='block'; avatarPlaceholder.style.display='none'; };
+            reader.onload = (event) => {
+                avatarImage.src = event.target.result;
+                avatarImage.style.display = 'block';
+                avatarPlaceholder.style.display = 'none';
+            };
             reader.readAsDataURL(file);
+
             // 🔥 Upload and get FULL URL
             const fullUrl = await uploadAvatar(file);
-            if(fullUrl) {
+            
+            // ✅ Store FULL URL (starts with http)
+            if (fullUrl) {
                 avatarUrlInput.value = fullUrl;
                 console.log('✅ Avatar FULL URL saved:', fullUrl);
             } else {
@@ -907,72 +1627,219 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 avatarUrlInput.value = '';
             }
         });
+
         document.getElementById('generate-avatar-btn')?.addEventListener('click', () => {
             const name = document.getElementById('profile-name').value.trim();
-            if(!name) { showToast('Enter a name first', 'warning'); return; }
+            if (!name) {
+                showToast('Enter a name first', 'warning');
+                return;
+            }
             avatarImage.style.display = 'none';
             avatarPlaceholder.style.display = 'flex';
             avatarUrlInput.value = '';
             showToast('Will use initials for profile picture', 'info');
         });
     }
-    
-    async function loadWatchHistory() { /* simplified mock */ document.getElementById('profile-history').innerHTML='<p style="color:var(--slate-grey);">No watch history yet</p>'; }
-    async function loadUserPlaylists() { document.getElementById('profile-playlists').innerHTML='<p style="color:var(--slate-grey);">No playlists yet</p>'; }
-    async function loadFavoriteContent() { document.getElementById('profile-favorites').innerHTML='<p style="color:var(--slate-grey);">No favorites yet</p>'; }
-    
+
+    // ===== EVENT LISTENERS =====
     function setupEventListeners() {
-        document.getElementById('add-profile-btn')?.addEventListener('click', ()=>{
+        document.getElementById('add-profile-btn')?.addEventListener('click', () => {
             document.getElementById('profile-form').reset();
-            document.getElementById('profile-id').value='';
-            document.getElementById('modal-title').textContent='Create New Profile';
-            document.getElementById('avatar-image').style.display='none';
-            document.getElementById('avatar-placeholder').style.display='flex';
-            document.getElementById('avatar-url').value='';
+            document.getElementById('profile-id').value = '';
+            document.getElementById('modal-title').textContent = 'Create New Profile';
             document.getElementById('profile-modal').classList.add('active');
+            document.getElementById('avatar-image').style.display = 'none';
+            document.getElementById('avatar-placeholder').style.display = 'flex';
+            document.getElementById('avatar-url').value = '';
+            document.getElementById('name-count').textContent = '0';
+            document.getElementById('bio-count').textContent = '0';
         });
-        document.getElementById('close-modal-btn')?.addEventListener('click', ()=>document.getElementById('profile-modal').classList.remove('active'));
-        document.getElementById('cancel-modal-btn')?.addEventListener('click', ()=>document.getElementById('profile-modal').classList.remove('active'));
+
+        document.getElementById('close-modal-btn')?.addEventListener('click', () => {
+            document.getElementById('profile-modal').classList.remove('active');
+        });
+
+        document.getElementById('cancel-modal-btn')?.addEventListener('click', () => {
+            document.getElementById('profile-modal').classList.remove('active');
+        });
+
         document.getElementById('save-profile-btn')?.addEventListener('click', saveProfile);
         document.getElementById('confirm-delete-btn')?.addEventListener('click', confirmDeleteProfile);
-        document.getElementById('cancel-delete-btn')?.addEventListener('click', ()=>document.getElementById('delete-modal').classList.remove('active'));
-        document.getElementById('delete-all-profiles-btn')?.addEventListener('click', ()=>document.getElementById('delete-all-modal').classList.add('active'));
-        document.getElementById('cancel-delete-all-btn')?.addEventListener('click', ()=>{ document.getElementById('delete-all-modal').classList.remove('active'); document.getElementById('delete-confirmation').value=''; });
-        document.getElementById('delete-confirmation')?.addEventListener('input', (e)=>{ document.getElementById('confirm-delete-all-btn').disabled = e.target.value !== 'DELETE'; });
-        document.getElementById('confirm-delete-all-btn')?.addEventListener('click', async ()=>{
-            if(document.getElementById('delete-confirmation').value !== 'DELETE') return;
-            await supabase.from('user_profiles').delete().eq('id', window.currentUser.id);
+
+        document.getElementById('cancel-delete-btn')?.addEventListener('click', () => {
+            document.getElementById('delete-modal').classList.remove('active');
+        });
+
+        document.getElementById('delete-all-profiles-btn')?.addEventListener('click', () => {
+            document.getElementById('delete-all-modal').classList.add('active');
+        });
+
+        document.getElementById('cancel-delete-all-btn')?.addEventListener('click', () => {
             document.getElementById('delete-all-modal').classList.remove('active');
-            await loadUserProfiles();
-            showToast('All profiles deleted', 'info');
+            document.getElementById('delete-confirmation').value = '';
         });
-        document.getElementById('profile-name')?.addEventListener('input', (e)=>document.getElementById('name-count').textContent=e.target.value.length);
-        document.getElementById('profile-bio')?.addEventListener('input', (e)=>document.getElementById('bio-count').textContent=e.target.value.length);
-        document.getElementById('nav-home-btn')?.addEventListener('click', ()=>window.location.href='index.html');
-        document.getElementById('nav-create-btn')?.addEventListener('click', async ()=>{ const {data:{session}} = await supabase.auth.getSession(); session?window.location.href='creator-upload.html':window.location.href='login.html?redirect=creator-upload.html'; });
-        document.getElementById('default-profile-select')?.addEventListener('change', async (e)=>{
-            if(!e.target.value) return;
-            await supabase.from('user_profiles').update({is_default:false}).eq('id', window.currentUser.id);
-            await supabase.from('user_profiles').update({is_default:true}).eq('id', e.target.value);
-            await loadUserProfiles();
-            showToast('Default profile updated', 'success');
+
+        document.getElementById('delete-confirmation')?.addEventListener('input', (e) => {
+            const btn = document.getElementById('confirm-delete-all-btn');
+            if (btn) btn.disabled = e.target.value !== 'DELETE';
         });
+
+        document.getElementById('confirm-delete-all-btn')?.addEventListener('click', async () => {
+            const confirmation = document.getElementById('delete-confirmation').value;
+            if (confirmation !== 'DELETE') return;
+
+            const btn = document.getElementById('confirm-delete-all-btn');
+            const spinner = btn.querySelector('.fa-spinner');
+            if (spinner) spinner.style.display = 'inline-block';
+            btn.disabled = true;
+
+            try {
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .delete()
+                    .eq('id', window.currentUser.id);
+
+                if (error) throw error;
+
+                document.getElementById('delete-all-modal').classList.remove('active');
+                document.getElementById('delete-confirmation').value = '';
+                await loadUserProfiles();
+                showToast('All profiles deleted', 'info');
+
+            } catch (error) {
+                console.error('Error deleting all profiles:', error);
+                showToast('Failed to delete profiles', 'error');
+            } finally {
+                if (spinner) spinner.style.display = 'none';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('profile-name')?.addEventListener('input', (e) => {
+            document.getElementById('name-count').textContent = e.target.value.length;
+        });
+
+        document.getElementById('profile-bio')?.addEventListener('input', (e) => {
+            document.getElementById('bio-count').textContent = e.target.value.length;
+        });
+
+        document.getElementById('profile-modal')?.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('profile-modal')) {
+                document.getElementById('profile-modal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('delete-modal')?.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('delete-modal')) {
+                document.getElementById('delete-modal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('delete-all-modal')?.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('delete-all-modal')) {
+                document.getElementById('delete-all-modal').classList.remove('active');
+                document.getElementById('delete-confirmation').value = '';
+            }
+        });
+
+        document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            session ? window.location.href = 'creator-upload.html' : window.location.href = `login.html?redirect=creator-upload.html`;
+        });
+        document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+            // Sidebar menu functionality can be added later
+            showToast('Menu coming soon', 'info');
+        });
+
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        if (backToTopBtn) {
+            backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            window.addEventListener('scroll', () => {
+                backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+            });
+        }
+
         setupAvatarUpload();
+
+        document.getElementById('default-profile-select')?.addEventListener('change', async (e) => {
+            const profileId = e.target.value;
+            if (!profileId || !window.currentUser) return;
+
+            try {
+                await supabase
+                    .from('user_profiles')
+                    .update({ is_default: false })
+                    .eq('id', window.currentUser.id);
+
+                await supabase
+                    .from('user_profiles')
+                    .update({ is_default: true })
+                    .eq('id', profileId);
+
+                showToast('Default profile updated', 'success');
+                await loadUserProfiles();
+
+            } catch (error) {
+                console.error('Error updating default profile:', error);
+                showToast('Failed to update default profile', 'error');
+            }
+        });
+
+        const profileSwitchingToggle = document.getElementById('profile-switching-toggle');
+        if (profileSwitchingToggle) {
+            const saved = localStorage.getItem('bantu_profile_switching');
+            if (saved !== null) profileSwitchingToggle.checked = saved === 'true';
+            profileSwitchingToggle.addEventListener('change', (e) => {
+                localStorage.setItem('bantu_profile_switching', e.target.checked);
+                showToast(e.target.checked ? 'Profile switching enabled' : 'Profile switching disabled', 'info');
+            });
+        }
+
+        const autoLoadToggle = document.getElementById('auto-load-toggle');
+        if (autoLoadToggle) {
+            const saved = localStorage.getItem('bantu_auto_load_continue');
+            if (saved !== null) autoLoadToggle.checked = saved === 'true';
+            autoLoadToggle.addEventListener('change', (e) => {
+                localStorage.setItem('bantu_auto_load_continue', e.target.checked);
+                showToast(e.target.checked ? 'Auto-load enabled' : 'Auto-load disabled', 'info');
+            });
+        }
     }
-    
-    async function init() {
-        document.getElementById('loading').style.display='flex';
-        await checkAuth();
-        if(window.currentUser) {
+
+    // ===== INITIALIZE =====
+    async function initializeManageProfiles() {
+        try {
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+
+            await checkAuth();
+            if (!window.currentUser) return;
+
             await loadUserProfiles();
             await loadWatchHistory();
             await loadUserPlaylists();
             await loadFavoriteContent();
             setupEventListeners();
+
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            }, 500);
+
+            console.log('✅ Manage Profiles initialized');
+
+        } catch (error) {
+            console.error('❌ Error initializing manage profiles:', error);
+            showToast('Failed to load profiles', 'error');
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            }, 1000);
         }
-        setTimeout(()=>{ document.getElementById('loading').style.display='none'; document.getElementById('app').style.display='block'; }, 500);
     }
-    document.addEventListener('DOMContentLoaded', init);
+
+    document.addEventListener('DOMContentLoaded', initializeManageProfiles);
 })();
 </script>
 </body>
