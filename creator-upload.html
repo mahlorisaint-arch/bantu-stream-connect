@@ -854,7 +854,7 @@ transition: color .3s ease; font-size: 14px;
 <div class="helper-text">Your content will be reviewed and published within 24 hours. Make sure to follow our community guidelines.<br><span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span></div>
 </div>
 <div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message">🎉 Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
-<div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">🚀 Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
+<div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">🚀 Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div><div class="action-card" onclick="window.createPulsePost()"><i class="fas fa-bolt"></i><span>Post to Community Pulse</span></div></div></div>
 </div>
 </main>
 <footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
@@ -951,7 +951,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
     let selectedMediaFile = null, selectedThumbnailFile = null, currentUserId = null, currentSession = null;
     let isUploading = false, selectedMediaType = 'regular', extractedDuration = null, currentXhr = null;
-    let selectedMood = null, chapters = [];
+    let selectedMood = null, chapters = [], uploadedContentId = null;
     let uploadStartTime = 0, uploadStartBytes = 0, lastLoadedBytes = 0, lastUpdateTime = 0;
 
     // DOM Elements
@@ -1226,6 +1226,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
+    // COMMUNITY PULSE POST CREATION (NEW FEATURE)
+    // ============================================
+    async function createPulsePost(contentId, title, description, mediaUrl, thumbnailUrl, genre) {
+        try {
+            // Determine post type and smart link type based on content genre
+            let postType = 'text';
+            let linkType = 'video';
+            let ctaText = 'Watch now';
+            
+            if (genre === 'Music') {
+                linkType = 'music';
+                ctaText = '🎧 Listen while you browse';
+                postType = 'text';
+            } else if (genre === 'Podcast') {
+                linkType = 'podcast';
+                ctaText = '🎙️ Listen to episode';
+                postType = 'text';
+            } else if (genre === 'Shorts') {
+                linkType = 'video';
+                ctaText = '⚡ Watch Short';
+                postType = 'text';
+            }
+            
+            // Get user profile info
+            const { data: profile } = await window.supabaseClient
+                .from('user_profiles')
+                .select('username, full_name, avatar_url')
+                .eq('id', currentUserId)
+                .single();
+            
+            const displayName = profile?.full_name || profile?.username || 'Creator';
+            
+            // Create the post content
+            const postContent = `🎬 NEW RELEASE: ${title}\n\n${description.substring(0, 150)}${description.length > 150 ? '...' : ''}\n\nCheck it out on Bantu Stream Connect! 🔥`;
+            
+            // Insert into pulse_posts
+            const { data: post, error: postError } = await window.supabaseClient
+                .from('pulse_posts')
+                .insert([{
+                    creator_id: currentUserId,
+                    content: postContent,
+                    post_type: postType,
+                    visibility: 'public',
+                    is_pinned: false,
+                    created_at: new Date().toISOString()
+                }])
+                .select()
+                .single();
+            
+            if (postError) {
+                console.error('Failed to create pulse post:', postError);
+                return null;
+            }
+            
+            // Add smart link to the content
+            const { error: linkError } = await window.supabaseClient
+                .from('pulse_smart_links')
+                .insert([{
+                    post_id: post.id,
+                    link_type: linkType,
+                    target_content_id: contentId,
+                    cta_text: ctaText
+                }]);
+            
+            if (linkError) {
+                console.error('Failed to add smart link:', linkError);
+            }
+            
+            // Add media if thumbnail exists
+            if (thumbnailUrl) {
+                await window.supabaseClient
+                    .from('pulse_post_media')
+                    .insert([{
+                        post_id: post.id,
+                        media_url: thumbnailUrl,
+                        media_type: 'image',
+                        order_index: 0
+                    }]);
+            }
+            
+            return post;
+        } catch (error) {
+            console.error('Error creating pulse post:', error);
+            return null;
+        }
+    }
+
+    // ============================================
     // MEDIA FUNCTIONS
     // ============================================
     function extractMediaDuration(file) {
@@ -1441,7 +1529,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function createContentRecord(data) {
-        // CRITICAL FIX: content_format must match the database constraint
         const insertData = {
             title: data.title,
             description: data.description,
@@ -1453,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             user_id: currentUserId,
             created_at: new Date().toISOString(),
             content_metadata: data.content_metadata || {},
-            content_format: data.content_format,  // KEY FIX: This resolves the 400 error
+            content_format: data.content_format,
             chapters: data.chapters || []
         };
         if (data.duration !== null && data.duration !== undefined) insertData.duration = data.duration;
@@ -1514,7 +1601,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (selectedMediaType === 'short') finalMediaType = 'short';
             if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
             
-            // CRITICAL: Set content_format based on genre config
             let contentFormat = config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
             
             progressText.textContent = 'Uploading media file...';
@@ -1535,8 +1621,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 chapters: chaptersData, season_number: contentMetadata.season_number, episode_number: contentMetadata.episode_number
             });
             
+            uploadedContentId = contentRecord.id;
+            
             if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
             if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
+            
+            // Create Community Pulse post automatically for published content
+            if (!isDraft && contentRecord.id) {
+                progressText.textContent = 'Creating Community Pulse post...';
+                await createPulsePost(contentRecord.id, title, desc, mediaUrl, thumbnailUrl, genre);
+            }
             
             progressFill.style.width = '100%';
             progressPercentage.textContent = '100%';
@@ -1551,6 +1645,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 processingState.classList.remove('active');
                 successState.classList.add('active');
                 triggerConfetti();
+                if (!isDraft) {
+                    showToast('🎉 Content published and shared to Community Pulse!', 'success');
+                }
             }, 3000);
             
         } catch (error) {
@@ -1856,6 +1953,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         extractedDuration = null;
         selectedMood = null;
         chapters = [];
+        uploadedContentId = null;
         document.getElementById('media-file-info').style.display = 'none';
         document.getElementById('thumbnail-preview').style.display = 'none';
         document.getElementById('duration-display').style.display = 'none';
@@ -1868,6 +1966,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('Ready for next upload!', 'success');
     };
     window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
+    window.createPulsePost = function() {
+        if (uploadedContentId) {
+            window.location.href = `index.html?highlight=pulse&content=${uploadedContentId}`;
+        } else {
+            window.location.href = 'index.html#community-pulse-section';
+        }
+    };
 
     async function initialize() {
         loadingScreen.style.display = 'flex';
