@@ -559,6 +559,31 @@
                 </div>
             </section>
 
+            <!-- ============================================ -->
+            <!-- 1. COMMUNITY PULSE SECTION (Inserted after Hero and before Continue Watching) -->
+            <!-- ============================================ -->
+            <section class="section" id="community-pulse-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-bolt" style="color: var(--warm-gold);"></i>
+                        COMMUNITY PULSE
+                    </h2>
+                    <button class="see-all-btn" id="create-post-btn">
+                        <i class="fas fa-pen"></i> Post Update
+                    </button>
+                </div>
+                <div class="pulse-grid" id="pulse-feed">
+                    <!-- Posts will be injected here -->
+                    <div class="pulse-skeleton">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-content">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Continue Watching Row (Priority 1 - Personal) -->
             <section class="section" id="continue-watching-section">
                 <div class="section-header">
@@ -1201,6 +1226,27 @@
         </div>
     </div>
 
+    <!-- ============================================ -->
+    <!-- 2. GLOBAL MINI PLAYER (Added near bottom before body close) -->
+    <!-- ============================================ -->
+    <div id="global-audio-player" class="audio-player hidden">
+        <div class="player-track-info">
+            <img id="player-art" src="" alt="Art">
+            <div>
+                <h4 id="player-title">Track Title</h4>
+                <p id="player-creator">Creator</p>
+            </div>
+        </div>
+        <div class="player-controls">
+            <button id="player-prev"><i class="fas fa-backward"></i></button>
+            <button id="player-play-pause"><i class="fas fa-play"></i></button>
+            <button id="player-next"><i class="fas fa-forward"></i></button>
+        </div>
+        <div class="player-progress">
+            <div id="player-bar"></div>
+        </div>
+    </div>
+
     <!-- =================================================================== -->
     <!-- JAVASCRIPT FILES - ORDER MATTERS!                                   -->
     <!-- =================================================================== -->
@@ -1221,6 +1267,12 @@
     
     <!-- 6. Features (All section loaders and UI components) -->
     <script src="js/home-feed-features.js" defer></script>
+
+    <!-- 7. NEW: Community Pulse and Audio Player scripts (order matters) -->
+    <link rel="stylesheet" href="css/community-pulse.css">
+    <link rel="stylesheet" href="css/audio-player.css">
+    <script src="js/audio-player.js" defer></script>
+    <script src="js/community-pulse.js" defer></script>
     
     <!-- Initialization Script -->
     <script>
