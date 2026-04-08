@@ -17,7 +17,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- Supabase JS SDK - Load before any scripts that use it -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="css/home-feed.css">
   <link rel="stylesheet" href="css/community-pulse.css">
   <style>
@@ -207,17 +208,24 @@
 
   <script>
     // ==========================================
-    // SUPABASE INIT (Match your env.js or inline)
+    // SUPABASE INIT - MATCH TRENDING SCREEN PATTERN
     // ==========================================
-    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Replace with your actual key or load from env.js
-    const supabase = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    
+    // Create supabase client and attach to window for global access (consistent with trending_screen)
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabaseClient;
+    
+    // For backward compatibility in this file
+    const supabase = supabaseClient;
 
     // ==========================================
     // UTILITIES
     // ==========================================
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
+      if (!container) return;
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
       const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
@@ -238,9 +246,18 @@
       return name.split(' ').map(p => p[0]).join('').toUpperCase().substring(0, 2);
     }
 
+    function buildThumbnailUrl(thumbnailPath) {
+      if (!thumbnailPath || thumbnailPath.trim() === '') return null;
+      if (thumbnailPath.startsWith('http')) return thumbnailPath;
+      const cleanPath = thumbnailPath.replace(/^\/+/, '');
+      return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`;
+    }
+
     // ==========================================
     // STATE & DOM
     // ==========================================
+    let currentUser = null;
+    let currentProfile = null;
     const state = { type: 'text', mediaFiles: [], visibility: 'public' };
     const els = {
       form: document.getElementById('pulse-form'),
@@ -273,23 +290,62 @@
     };
 
     // ==========================================
-    // INIT & AUTH
+    // AUTH & PROFILE - FIXED (NO DESTRUCTURING ERROR)
     // ==========================================
-    async function init() {
-      const { data: { user } } = await supabase?.auth.getUser();
-      if (!user) {
-        showToast('Please sign in to create posts', 'error');
-        setTimeout(() => window.location.href = 'login.html?redirect=create-communitypulse.html', 1500);
-        return;
-      }
-      const { data: profile } = await supabase.from('user_profiles').select('full_name, username, avatar_url').eq('id', user.id).maybeSingle();
-      if (profile) {
-        els.previewCreator.textContent = profile.full_name || profile.username;
-        els.previewCreator.dataset.username = profile.username || 'creator';
-        els.previewAvatar.textContent = getInitials(profile.full_name || profile.username);
-        if (profile.avatar_url) {
-          els.previewAvatar.innerHTML = `<img src="${profile.avatar_url}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
+    async function checkAuthAndLoadProfile() {
+      try {
+        // Get current session - using the client directly
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          showToast('Authentication error. Please sign in.', 'error');
+          setTimeout(() => window.location.href = 'login.html?redirect=create-communitypulse.html', 1500);
+          return false;
         }
+        
+        const session = sessionData?.session;
+        if (!session || !session.user) {
+          showToast('Please sign in to create posts', 'error');
+          setTimeout(() => window.location.href = 'login.html?redirect=create-communitypulse.html', 1500);
+          return false;
+        }
+        
+        currentUser = session.user;
+        
+        // Fetch user profile
+        const { data: profile, error: profileError } = await supabaseClient
+          .from('user_profiles')
+          .select('full_name, username, avatar_url')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+        
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+        }
+        
+        currentProfile = profile || {};
+        const displayName = currentProfile.full_name || currentProfile.username || currentUser.email?.split('@')[0] || 'Creator';
+        const username = currentProfile.username || 'creator';
+        
+        // Update preview
+        els.previewCreator.textContent = displayName;
+        els.previewCreator.dataset.username = username;
+        els.previewAvatar.textContent = getInitials(displayName);
+        
+        if (currentProfile.avatar_url) {
+          const avatarUrl = buildThumbnailUrl(currentProfile.avatar_url);
+          if (avatarUrl) {
+            els.previewAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+          }
+        }
+        
+        return true;
+      } catch (err) {
+        console.error('Auth check error:', err);
+        showToast('Authentication error. Please sign in again.', 'error');
+        setTimeout(() => window.location.href = 'login.html?redirect=create-communitypulse.html', 1500);
+        return false;
       }
     }
 
@@ -371,10 +427,16 @@
       div.querySelector('input').addEventListener('input', updatePreview);
     }
     els.addOptBtn.addEventListener('click', addPollOption);
-    els.pollOptions.querySelectorAll('.remove-opt').forEach(btn => {
-      btn.onclick = () => { if (els.pollOptions.children.length > 2) btn.parentElement.remove(); else showToast('Need at least 2 options', 'warning'); updatePreview(); };
-    });
-    els.pollOptions.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updatePreview));
+    
+    // Initialize remove buttons for initial poll options
+    function initPollRemoveButtons() {
+      els.pollOptions.querySelectorAll('.remove-opt').forEach(btn => {
+        btn.onclick = () => { if (els.pollOptions.children.length > 2) btn.parentElement.remove(); else showToast('Need at least 2 options', 'warning'); updatePreview(); };
+      });
+      els.pollOptions.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updatePreview));
+    }
+    initPollRemoveButtons();
+    
     els.pollQuestion.addEventListener('input', updatePreview);
     els.multiVote.addEventListener('change', updatePreview);
 
@@ -392,54 +454,75 @@
     // LIVE PREVIEW
     // ==========================================
     function updatePreview() {
-      els.previewContent.textContent = els.content.value || 'Your post will appear here...';
+      els.previewContent.textContent = els.content.value.trim() || 'Your post will appear here...';
       
-      // Media
+      // Media preview
       els.previewMedia.innerHTML = '';
       if (state.mediaFiles.length > 0) {
         els.previewMedia.classList.remove('hidden');
         const url = URL.createObjectURL(state.mediaFiles[0]);
         const isVideo = state.mediaFiles[0].type.startsWith('video');
-        els.previewMedia.innerHTML = isVideo ? `<video src="${url}" controls style="width:100%;border-radius:8px;"></video>` : `<img src="${url}" style="width:100%;border-radius:8px;">`;
-      } else { els.previewMedia.classList.add('hidden'); }
+        els.previewMedia.innerHTML = isVideo ? `<video src="${url}" controls style="width:100%;border-radius:8px;max-height:300px;"></video>` : `<img src="${url}" style="width:100%;border-radius:8px;max-height:300px;object-fit:cover;">`;
+      } else {
+        els.previewMedia.classList.add('hidden');
+      }
 
-      // Poll
-      if (state.type === 'poll' && els.pollQuestion.value) {
+      // Poll preview
+      if (state.type === 'poll' && els.pollQuestion.value.trim()) {
         els.previewPoll.classList.remove('hidden');
         els.previewPollQ.textContent = els.pollQuestion.value;
         els.previewPollOpts.innerHTML = '';
         Array.from(els.pollOptions.querySelectorAll('input')).forEach(inp => {
-          if (inp.value) els.previewPollOpts.innerHTML += `<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;margin-bottom:4px;color:var(--slate-grey);font-size:14px;">${escapeHtml(inp.value)}</div>`;
+          if (inp.value.trim()) {
+            els.previewPollOpts.innerHTML += `<div style="padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;margin-bottom:4px;color:var(--slate-grey);font-size:14px;">${escapeHtml(inp.value)}</div>`;
+          }
         });
-      } else { els.previewPoll.classList.add('hidden'); }
+      } else {
+        els.previewPoll.classList.add('hidden');
+      }
 
-      // Smart Link
+      // Smart Link Preview
       if (els.linkType.value) {
         const icons = { music: 'fa-music', video: 'fa-video', podcast: 'fa-podcast', playlist: 'fa-list-ul', article: 'fa-newspaper' };
         els.previewSmartLink.innerHTML = `
-          <div class="smart-link-card">
-            <div class="smart-link-icon"><i class="fas ${icons[els.linkType.value] || 'fa-link'}"></i></div>
-            <div class="smart-link-info">
-              <h5>🔗 ${els.linkType.value.toUpperCase()} LINK</h5>
-              <p>${escapeHtml(els.linkCta.value) || 'Tap to explore'}</p>
+          <div style="margin-top:12px;padding:12px;background:rgba(245,158,11,0.1);border-radius:8px;border-left:3px solid var(--warm-gold);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <i class="fas ${icons[els.linkType.value] || 'fa-link'}" style="color:var(--warm-gold);"></i>
+              <div>
+                <strong style="font-size:12px;text-transform:uppercase;">${els.linkType.value.toUpperCase()}</strong>
+                <p style="font-size:13px;margin:0;">${escapeHtml(els.linkCta.value) || 'Tap to explore'}</p>
+              </div>
             </div>
           </div>
         `;
-      } else { els.previewSmartLink.innerHTML = ''; }
+      } else {
+        els.previewSmartLink.innerHTML = '';
+      }
     }
 
     // ==========================================
-    // PUBLISH LOGIC
+    // PUBLISH LOGIC - FIXED (USES correct auth)
     // ==========================================
     els.form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { showToast('Please sign in', 'error'); return; }
+      
+      // Re-check authentication before publishing (in case session expired)
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session || !session.user) {
+        showToast('Please sign in to publish', 'error');
+        setTimeout(() => window.location.href = 'login.html?redirect=create-communitypulse.html', 1500);
+        return;
+      }
+      
+      const user = session.user;
+      
       if (!els.content.value.trim() && state.mediaFiles.length === 0 && state.type !== 'poll') {
-        showToast('Content or media required', 'warning'); return;
+        showToast('Content or media required', 'warning');
+        return;
       }
       if (state.type === 'poll' && !els.pollQuestion.value.trim()) {
-        showToast('Poll question required', 'warning'); return;
+        showToast('Poll question required', 'warning');
+        return;
       }
 
       els.publishBtn.disabled = true;
@@ -447,52 +530,99 @@
 
       try {
         // 1. Insert Post
-        const { data: post, error: postErr } = await supabase.from('pulse_posts').insert({
-          creator_id: user.id,
-          content: els.content.value.trim(),
-          post_type: state.type,
-          visibility: state.visibility,
-          is_pinned: false
-        }).select().single();
+        const { data: post, error: postErr } = await supabaseClient
+          .from('pulse_posts')
+          .insert({
+            creator_id: user.id,
+            content: els.content.value.trim(),
+            post_type: state.type,
+            visibility: state.visibility,
+            is_pinned: false
+          })
+          .select()
+          .single();
+          
         if (postErr) throw postErr;
 
-        // 2. Upload Media
+        // 2. Upload Media if any
         const mediaUrls = [];
-        for (const file of state.mediaFiles) {
-          const path = `${user.id}/${Date.now()}_${file.name}`;
-          const { data, error: uploadErr } = await supabase.storage.from('pulse-media').upload(path, file);
+        for (let i = 0; i < state.mediaFiles.length; i++) {
+          const file = state.mediaFiles[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}_${i}.${fileExt}`;
+          const filePath = `${user.id}/pulse/${fileName}`;
+          
+          const { error: uploadErr } = await supabaseClient.storage
+            .from('pulse-media')
+            .upload(filePath, file);
+            
           if (uploadErr) throw uploadErr;
-          const { data: { publicUrl } } = supabase.storage.from('pulse-media').getPublicUrl(data.path);
-          mediaUrls.push({ post_id: post.id, media_url: publicUrl, media_type: file.type.startsWith('video') ? 'video' : 'image', order_index: state.mediaFiles.indexOf(file) });
+          
+          const { data: { publicUrl } } = supabaseClient.storage
+            .from('pulse-media')
+            .getPublicUrl(filePath);
+            
+          mediaUrls.push({
+            post_id: post.id,
+            media_url: publicUrl,
+            media_type: file.type.startsWith('video') ? 'video' : 'image',
+            order_index: i
+          });
         }
-        if (mediaUrls.length > 0) await supabase.from('pulse_post_media').insert(mediaUrls);
+        
+        if (mediaUrls.length > 0) {
+          const { error: mediaErr } = await supabaseClient
+            .from('pulse_post_media')
+            .insert(mediaUrls);
+          if (mediaErr) throw mediaErr;
+        }
 
         // 3. Insert Poll (if applicable)
         if (state.type === 'poll') {
-          const options = Array.from(els.pollOptions.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean);
+          const options = Array.from(els.pollOptions.querySelectorAll('input'))
+            .map(i => i.value.trim())
+            .filter(Boolean);
           if (options.length < 2) throw new Error('Poll needs at least 2 options');
-          await supabase.from('pulse_post_polls').insert({
-            post_id: post.id,
-            question: els.pollQuestion.value.trim(),
-            options: options,
-            allow_multiple_votes: els.multiVote.checked
-          });
+          
+          const { error: pollErr } = await supabaseClient
+            .from('pulse_post_polls')
+            .insert({
+              post_id: post.id,
+              question: els.pollQuestion.value.trim(),
+              options: options,
+              allow_multiple_votes: els.multiVote.checked
+            });
+          if (pollErr) throw pollErr;
         }
 
         // 4. Insert Smart Link (if applicable)
-        if (els.linkType.value) {
+        if (els.linkType.value && els.linkTarget.value) {
           const isInternal = !els.linkTarget.value.startsWith('http');
-          await supabase.from('pulse_smart_links').insert({
-            post_id: post.id,
-            link_type: els.linkType.value,
-            target_content_id: isInternal ? parseInt(els.linkTarget.value) || null : null,
-            external_url: !isInternal ? els.linkTarget.value : null,
-            cta_text: els.linkCta.value || 'Tap to explore'
-          });
+          let targetId = null;
+          let externalUrl = null;
+          
+          if (isInternal) {
+            targetId = parseInt(els.linkTarget.value) || null;
+          } else {
+            externalUrl = els.linkTarget.value;
+          }
+          
+          const { error: linkErr } = await supabaseClient
+            .from('pulse_smart_links')
+            .insert({
+              post_id: post.id,
+              link_type: els.linkType.value,
+              target_content_id: targetId,
+              external_url: externalUrl,
+              cta_text: els.linkCta.value || 'Tap to explore'
+            });
+          if (linkErr) throw linkErr;
         }
 
         showToast('Post published successfully!', 'success');
-        setTimeout(() => window.location.href = 'index.html#community-pulse-section', 1200);
+        setTimeout(() => {
+          window.location.href = 'index.html#community-pulse-section';
+        }, 1200);
 
       } catch (err) {
         console.error('Publish error:', err);
@@ -502,7 +632,33 @@
       }
     });
 
-    // Run
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
+    async function init() {
+      // Check authentication first
+      const isAuthed = await checkAuthAndLoadProfile();
+      if (!isAuthed) return;
+      
+      // Set up remaining UI
+      updatePreview();
+      
+      // Add a listener for auth state changes (in case user logs out while on page)
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          currentProfile = null;
+          showToast('You have been signed out', 'warning');
+          setTimeout(() => window.location.href = 'login.html?redirect=create-communitypulse.html', 1500);
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          currentUser = session.user;
+          await checkAuthAndLoadProfile();
+          showToast('Signed in! You can now publish.', 'success');
+        }
+      });
+    }
+    
+    // Start the app
     document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
