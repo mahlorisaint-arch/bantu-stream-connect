@@ -3,815 +3,1369 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>Bantu Radar · Discover Creators | Bantu Stream Connect</title>
+<title>Discover Creators - Bantu Stream Connect</title>
 <script>
 (function() {
 const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
 document.documentElement.classList.add(`theme-${savedTheme}`);
 })();
 </script>
+<link rel="preload" href="css/home-feed.css" as="style">
+<link rel="preload" href="css/discover-creators.css" as="style">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<link rel="stylesheet" href="css/home-feed.css">
 <style>
 /* ==========================================
-   DISCOVER CREATORS PAGE STYLES (v2 - Pulse Score)
-   ========================================== */
+DISCOVER CREATORS PAGE STYLES
+========================================== */
 :root {
-    --deep-black: #0a0a0f;
-    --card-bg: rgba(20, 20, 30, 0.95);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --card-radius: 24px;
-    --soft-white: #ffffff;
-    --slate-grey: #a0a0b0;
-    --warm-gold: #ffd700;
-    --bantu-blue: #3b82f6;
-    --success-color: #10b981;
-    --error-color: #ef4444;
-    --warning-color: #f59e0b;
-    --purple-glow: #a855f7;
+--ui-scale: 1;
+--deep-black: #0a0a0f;
+--card-bg: rgba(20, 20, 30, 0.95);
+--card-border: rgba(255, 255, 255, 0.08);
+--card-radius: 20px;
+--soft-white: #ffffff;
+--slate-grey: #a0a0b0;
+--warm-gold: #ffd700;
+--bantu-blue: #3b82f6;
+--success-color: #10b981;
+--error-color: #ef4444;
+--warning-color: #f59e0b;
+--font-xs: 11px;
+--font-sm: 13px;
+--font-base: 15px;
+--font-lg: 18px;
+--font-xl: 24px;
+--font-2xl: 32px;
 }
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
-    background: var(--deep-black);
-    color: var(--soft-white);
-    font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
+background: var(--deep-black);
+color: var(--soft-white);
+font-family: 'Inter', sans-serif;
+min-height: 100vh;
+overflow-x: hidden;
 }
-
 /* Header */
 .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    background: rgba(10, 10, 15, 0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--card-border);
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+z-index: 100;
+background: rgba(10, 10, 15, 0.95);
+backdrop-filter: blur(20px);
+border-bottom: 1px solid var(--card-border);
+padding: 12px 24px;
+display: flex;
+justify-content: space-between;
+align-items: center;
 }
-
 .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
+display: flex;
+align-items: center;
+gap: 10px;
+cursor: pointer;
 }
-
 .logo-icon {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, var(--warm-gold), #f97316);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+width: 36px;
+height: 36px;
+background: linear-gradient(135deg, var(--warm-gold), #f97316);
+border-radius: 10px;
+display: flex;
+align-items: center;
+justify-content: center;
 }
-
 .logo-text {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 1px;
+font-family: 'Orbitron', sans-serif;
+font-weight: 700;
+font-size: 14px;
+letter-spacing: 1px;
 }
-
 .header-actions {
-    display: flex;
-    gap: 12px;
+display: flex;
+gap: 12px;
 }
-
 .icon-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--card-border);
-    color: var(--soft-white);
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
+background: rgba(255, 255, 255, 0.05);
+border: 1px solid var(--card-border);
+color: var(--soft-white);
+width: 40px;
+height: 40px;
+border-radius: 12px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s;
 }
-
 .icon-btn:hover {
-    background: rgba(255, 215, 0, 0.15);
-    border-color: var(--warm-gold);
+background: rgba(255, 215, 0, 0.1);
+border-color: var(--warm-gold);
 }
-
-/* Main container */
+/* Main Container */
 .discover-container {
-    max-width: 1600px;
-    margin: 80px auto 60px;
-    padding: 20px;
+max-width: 1600px;
+margin: 80px auto 60px;
+padding: 20px;
 }
-
-/* Hero */
+/* Hero Section */
 .hero-section {
-    position: relative;
-    height: 60vh;
-    min-height: 450px;
-    border-radius: var(--card-radius);
-    overflow: hidden;
-    margin-bottom: 48px;
-    background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+position: relative;
+height: 60vh;
+min-height: 450px;
+max-height: 600px;
+border-radius: var(--card-radius);
+overflow: hidden;
+margin-bottom: 40px;
+background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
 }
-
 .hero-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 0;
+width: 100%;
+height: 100%;
+object-fit: cover;
+position: absolute;
+top: 0;
+left: 0;
+z-index: 0;
 }
-
 .hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%);
-    z-index: 1;
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%);
+z-index: 1;
 }
-
 .hero-content {
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 48px;
+position: relative;
+z-index: 2;
+height: 100%;
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+padding: 48px;
 }
-
 .hero-badge {
-    background: rgba(255, 215, 0, 0.9);
-    color: var(--deep-black);
-    padding: 6px 14px;
-    border-radius: 40px;
-    font-size: 12px;
-    font-weight: 700;
-    width: fit-content;
-    margin-bottom: 16px;
+display: inline-block;
+background: rgba(255, 215, 0, 0.9);
+color: var(--deep-black);
+padding: 6px 14px;
+border-radius: 20px;
+font-size: var(--font-xs);
+font-weight: 700;
+margin-bottom: 16px;
+width: fit-content;
 }
-
 .hero-title {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 12px;
+font-size: var(--font-2xl);
+font-weight: 800;
+margin-bottom: 12px;
+max-width: 600px;
 }
-
 .hero-description {
-    font-size: 1rem;
-    color: rgba(255,255,255,0.9);
-    max-width: 500px;
-    margin-bottom: 24px;
+font-size: var(--font-base);
+color: rgba(255,255,255,0.9);
+max-width: 500px;
+margin-bottom: 24px;
 }
-
-/* Intent switcher */
+.hero-stats {
+display: flex;
+gap: 32px;
+}
+.hero-stat {
+display: flex;
+flex-direction: column;
+}
+.hero-stat-value {
+font-size: 28px;
+font-weight: 700;
+}
+.hero-stat-label {
+font-size: var(--font-xs);
+color: rgba(255,255,255,0.7);
+}
+/* Intent Switcher */
 .intent-switcher {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 32px;
-    background: rgba(255,255,255,0.05);
-    padding: 6px;
-    border-radius: 60px;
-    width: fit-content;
+display: flex;
+gap: 12px;
+margin-bottom: 32px;
+background: rgba(255,255,255,0.05);
+padding: 6px;
+border-radius: 60px;
+width: fit-content;
 }
-
 .intent-btn {
-    padding: 10px 24px;
-    border-radius: 40px;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.6);
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
+padding: 10px 24px;
+border-radius: 40px;
+background: transparent;
+border: none;
+color: rgba(255,255,255,0.6);
+font-family: 'Inter', sans-serif;
+font-weight: 600;
+font-size: var(--font-sm);
+cursor: pointer;
+transition: all 0.2s;
 }
-
 .intent-btn.active {
-    background: var(--warm-gold);
-    color: var(--deep-black);
+background: var(--warm-gold);
+color: var(--deep-black);
 }
-
-/* Filters */
+.intent-btn:hover:not(.active) {
+background: rgba(255,255,255,0.1);
+color: white;
+}
+/* Filters Bar */
 .filters-bar {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 32px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--card-border);
+display: flex;
+gap: 16px;
+flex-wrap: wrap;
+margin-bottom: 32px;
+padding-bottom: 16px;
+border-bottom: 1px solid var(--card-border);
 }
-
 .filter-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    background: rgba(255,255,255,0.05);
-    padding: 8px 16px;
-    border-radius: 40px;
+display: flex;
+gap: 8px;
+align-items: center;
+background: rgba(255,255,255,0.05);
+padding: 8px 16px;
+border-radius: 40px;
 }
-
 .filter-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.6);
+font-size: var(--font-xs);
+font-weight: 500;
+color: rgba(255,255,255,0.6);
 }
-
 .filter-select {
-    background: transparent;
-    border: none;
-    color: white;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    outline: none;
+background: transparent;
+border: none;
+color: white;
+font-family: 'Inter', sans-serif;
+font-size: var(--font-xs);
+font-weight: 500;
+cursor: pointer;
+outline: none;
 }
-
-/* Radar map */
+.filter-select option {
+background: var(--card-bg);
+color: var(--soft-white);
+}
+/* Section Headers */
+.section-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 24px;
+}
+.section-title {
+font-size: var(--font-xl);
+font-weight: 700;
+font-family: 'Orbitron', sans-serif;
+}
+.section-subtitle {
+color: var(--slate-grey);
+font-size: var(--font-sm);
+margin-top: 4px;
+}
+/* Radar Map */
 .radar-section {
-    margin-bottom: 48px;
+margin-bottom: 48px;
 }
-
 .radar-map {
-    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-    border-radius: var(--card-radius);
-    padding: 24px;
-    border: 1px solid rgba(255,215,0,0.2);
+background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+border-radius: var(--card-radius);
+padding: 24px;
+position: relative;
+min-height: 450px;
+border: 1px solid rgba(255,215,0,0.2);
 }
-
 .map-container {
-    width: 100%;
-    height: 400px;
-    background: repeating-linear-gradient(45deg, rgba(255,215,0,0.02) 0px, rgba(255,215,0,0.02) 2px, transparent 2px, transparent 8px);
-    border-radius: 16px;
-    overflow: hidden;
+position: relative;
+width: 100%;
+height: 400px;
+background: repeating-linear-gradient(
+45deg,
+rgba(255,215,0,0.02) 0px,
+rgba(255,215,0,0.02) 2px,
+transparent 2px,
+transparent 8px
+);
+border-radius: 16px;
+overflow: hidden;
 }
-
 .map-svg {
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 10, 20, 0.5);
+width: 100%;
+height: 100%;
+background: rgba(10, 10, 20, 0.5);
 }
-
 .city-marker {
-    cursor: pointer;
-    transition: all 0.2s;
+cursor: pointer;
+transition: all 0.3s;
 }
-
+.city-marker:hover circle {
+stroke: var(--warm-gold);
+stroke-width: 3;
+filter: drop-shadow(0 0 8px rgba(255,215,0,0.6));
+}
+.city-label {
+font-size: 10px;
+fill: rgba(255,255,255,0.8);
+font-weight: 500;
+cursor: pointer;
+}
+.city-label:hover {
+fill: var(--warm-gold);
+}
+.pulse-ring {
+animation: pulse-ring 2s infinite;
+}
+@keyframes pulse-ring {
+0% {
+r: 8;
+opacity: 0.8;
+}
+100% {
+r: 20;
+opacity: 0;
+}
+}
+/* City Panel */
 .city-panel {
-    background: rgba(26, 26, 36, 0.98);
-    backdrop-filter: blur(20px);
-    border-radius: 24px;
-    padding: 24px;
-    margin-top: 24px;
-    border: 1px solid rgba(255,215,0,0.3);
-    display: none;
+background: rgba(26, 26, 36, 0.95);
+backdrop-filter: blur(20px);
+border-radius: 20px;
+padding: 24px;
+margin-top: 24px;
+border: 1px solid rgba(255,215,0,0.2);
+display: none;
 }
-
 .city-panel.active {
-    display: block;
-    animation: fadeUp 0.3s ease;
+display: block;
+animation: slideUp 0.3s ease;
 }
-
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px);}
-    to { opacity: 1; transform: translateY(0);}
+@keyframes slideUp {
+from {
+opacity: 0;
+transform: translateY(20px);
 }
-
-/* Creator grid */
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+.city-panel-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 20px;
+}
+.city-name {
+font-size: var(--font-lg);
+font-weight: 700;
+color: var(--warm-gold);
+}
+.close-panel {
+background: none;
+border: none;
+color: white;
+font-size: 20px;
+cursor: pointer;
+width: 32px;
+height: 32px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.close-panel:hover {
+background: rgba(255,255,255,0.1);
+}
+/* Creator Grid */
 .creator-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 24px;
-    margin-top: 24px;
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+gap: 24px;
+margin-top: 24px;
 }
-
-/* Creator card */
+/* Creator Card */
 .creator-card {
-    background: linear-gradient(135deg, #14141e 0%, #1a1a24 100%);
-    border-radius: var(--card-radius);
-    overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    border: 1px solid var(--card-border);
+background: linear-gradient(135deg, #14141e 0%, #1a1a24 100%);
+border-radius: var(--card-radius);
+overflow: hidden;
+transition: transform 0.2s, box-shadow 0.2s;
+cursor: pointer;
+border: 1px solid var(--card-border);
+position: relative;
 }
-
 .creator-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 35px rgba(0,0,0,0.4);
-    border-color: rgba(255,215,0,0.4);
+transform: translateY(-4px);
+box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+border-color: rgba(255,215,0,0.3);
 }
-
 .card-media {
-    position: relative;
-    height: 200px;
-    overflow: hidden;
+position: relative;
+height: 200px;
+overflow: hidden;
 }
-
 .card-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
+width: 100%;
+height: 100%;
+object-fit: cover;
+transition: transform 0.3s;
 }
-
 .creator-card:hover .card-thumbnail {
-    transform: scale(1.05);
+transform: scale(1.05);
 }
-
 .pulse-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(255,215,0,0.95);
-    color: #0a0a0f;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-weight: 800;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+position: absolute;
+top: 12px;
+right: 12px;
+background: rgba(255,215,0,0.95);
+color: var(--deep-black);
+padding: 4px 12px;
+border-radius: 20px;
+font-size: var(--font-xs);
+font-weight: 700;
+display: flex;
+align-items: center;
+gap: 6px;
 }
-
 .trend-badge {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(8px);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
+position: absolute;
+bottom: 12px;
+left: 12px;
+background: rgba(0,0,0,0.8);
+backdrop-filter: blur(10px);
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 10px;
+font-weight: 600;
+display: flex;
+align-items: center;
+gap: 6px;
 }
-
 .card-info {
-    padding: 16px;
+padding: 16px;
 }
-
 .creator-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 12px;
 }
-
 .creator-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--warm-gold);
+width: 48px;
+height: 48px;
+border-radius: 50%;
+object-fit: cover;
+border: 2px solid var(--warm-gold);
 }
-
+.creator-details {
+flex: 1;
+}
 .creator-name {
-    font-weight: 700;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+font-weight: 700;
+font-size: var(--font-base);
+display: flex;
+align-items: center;
+gap: 6px;
 }
-
 .verified-badge {
-    color: var(--warm-gold);
-    font-size: 14px;
+color: var(--warm-gold);
+font-size: 14px;
 }
-
 .creator-craft {
-    font-size: 11px;
-    color: var(--slate-grey);
+font-size: var(--font-xs);
+color: var(--slate-grey);
 }
-
 .momentum-bar {
-    height: 4px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
-    overflow: hidden;
-    margin: 12px 0;
+height: 4px;
+background: rgba(255,255,255,0.1);
+border-radius: 2px;
+overflow: hidden;
+margin: 12px 0;
 }
-
 .momentum-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--warm-gold), #f97316);
-    border-radius: 4px;
+height: 100%;
+background: linear-gradient(90deg, var(--warm-gold), #f97316);
+border-radius: 2px;
+transition: width 0.3s;
 }
-
+.momentum-label {
+font-size: 10px;
+color: var(--slate-grey);
+margin-top: 4px;
+display: flex;
+justify-content: space-between;
+}
 .card-stats {
-    display: flex;
-    gap: 12px;
-    margin: 12px 0;
-    padding: 12px 0;
-    border-top: 1px solid var(--card-border);
-    border-bottom: 1px solid var(--card-border);
+display: flex;
+gap: 16px;
+margin: 12px 0;
+padding: 12px 0;
+border-top: 1px solid var(--card-border);
+border-bottom: 1px solid var(--card-border);
 }
-
 .card-stat {
-    flex: 1;
-    text-align: center;
+flex: 1;
+text-align: center;
 }
-
 .card-stat-value {
-    font-weight: 800;
-    font-size: 14px;
+font-weight: 700;
+font-size: var(--font-sm);
 }
-
 .card-stat-label {
-    font-size: 10px;
-    color: var(--slate-grey);
-    margin-top: 4px;
+font-size: 9px;
+color: var(--slate-grey);
+margin-top: 4px;
 }
-
 .card-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 12px;
+display: flex;
+gap: 12px;
+margin-top: 12px;
 }
-
 .connect-btn, .collab-btn {
-    flex: 1;
-    padding: 10px;
-    border-radius: 14px;
-    font-weight: 600;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-family: inherit;
+flex: 1;
+padding: 10px;
+border-radius: 12px;
+font-weight: 600;
+font-size: var(--font-xs);
+cursor: pointer;
+transition: all 0.2s;
+font-family: 'Inter', sans-serif;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 6px;
 }
-
 .connect-btn {
-    background: var(--warm-gold);
-    border: none;
-    color: #0a0a0f;
+background: var(--warm-gold);
+border: none;
+color: var(--deep-black);
 }
-
+.connect-btn:hover {
+background: #ffed4a;
+transform: scale(1.02);
+}
 .collab-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid var(--card-border);
-    color: white;
+background: rgba(255,255,255,0.1);
+border: 1px solid var(--card-border);
+color: white;
 }
-
-/* toast */
-.toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+.collab-btn:hover {
+background: rgba(255,255,255,0.2);
 }
-
-.toast {
-    background: #1e1e2a;
-    border-left: 4px solid var(--warm-gold);
-    padding: 12px 18px;
-    border-radius: 12px;
-    font-size: 13px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    animation: slideIn 0.2s ease;
-}
-
+/* Loading & Empty States */
 .loading {
-    text-align: center;
-    padding: 60px;
-    color: var(--slate-grey);
+text-align: center;
+padding: 60px;
+color: var(--slate-grey);
 }
-
 .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255,215,0,0.2);
-    border-top-color: var(--warm-gold);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
+width: 40px;
+height: 40px;
+border: 3px solid rgba(255,215,0,0.2);
+border-top-color: var(--warm-gold);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+margin: 0 auto 16px;
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
+@keyframes spin {
+to { transform: rotate(360deg); }
+}
+.empty-state {
+text-align: center;
+padding: 60px;
+color: var(--slate-grey);
+}
+/* Toast Container */
+.toast-container {
+position: fixed;
+bottom: 20px;
+right: 20px;
+z-index: 10000;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+.toast {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+padding: 12px 16px;
+border-radius: 8px;
+color: var(--soft-white);
+font-size: var(--font-sm);
+display: flex;
+align-items: center;
+gap: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+animation: slideIn 0.3s ease;
+}
+.toast i { font-size: 16px; }
+.toast.success i { color: var(--success-color); }
+.toast.error i { color: var(--error-color); }
+.toast.warning i { color: var(--warning-color); }
+@keyframes slideIn {
+from { transform: translateX(100%); opacity: 0; }
+to { transform: translateX(0); opacity: 1; }
+}
+/* Responsive */
 @media (max-width: 768px) {
-    .creator-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: 1.8rem; }
-    .filters-bar { flex-direction: column; }
+.discover-container {
+padding: 16px;
+margin-top: 70px;
+}
+.hero-title {
+font-size: 24px;
+}
+.hero-content {
+padding: 24px;
+}
+.creator-grid {
+grid-template-columns: 1fr;
+}
+.filters-bar {
+flex-direction: column;
+}
+.filter-group {
+width: 100%;
+justify-content: space-between;
+}
+.intent-switcher {
+width: 100%;
+overflow-x: auto;
+}
+.hero-stats {
+gap: 16px;
+}
+.hero-stat-value {
+font-size: 20px;
+}
+}
+@media (max-width: 480px) {
+.card-stats {
+gap: 8px;
+}
+.card-actions {
+flex-direction: column;
+}
 }
 </style>
 </head>
 <body>
-
 <header class="header">
-    <div class="logo" onclick="window.location.href='index.html'">
-        <div class="logo-icon"><i class="fas fa-film" style="color: var(--warm-gold);"></i></div>
-        <div class="logo-text">BANTU STREAM CONNECT</div>
-    </div>
-    <div class="header-actions">
-        <button onclick="history.back()" class="icon-btn"><i class="fas fa-arrow-left"></i></button>
-        <button onclick="location.reload()" class="icon-btn"><i class="fas fa-sync-alt"></i></button>
-    </div>
+<div class="logo" onclick="window.location.href='index.html'">
+<div class="logo-icon"><i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i></div>
+<div class="logo-text">BANTU STREAM CONNECT</div>
+</div>
+<div class="header-actions">
+<button onclick="history.back()" class="icon-btn" title="Go Back"><i class="fas fa-arrow-left"></i></button>
+<button onclick="location.reload()" class="icon-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+</div>
 </header>
-
 <main class="discover-container">
-    <!-- Hero -->
-    <div class="hero-section">
-        <video class="hero-video" autoplay muted loop poster="https://picsum.photos/1920/1080?random=99">
-            <source src="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
-        </video>
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <div class="hero-badge"><i class="fas fa-crown"></i> Creator Pulse Leader</div>
-            <div class="hero-title">Pulse Radar · Live Discovery</div>
-            <div class="hero-description">Powered by real-time momentum scores, collaboration signals & city energy.</div>
-        </div>
-    </div>
-
-    <!-- Intent switcher -->
-    <div class="intent-switcher">
-        <button class="intent-btn active" data-intent="discover"><i class="fas fa-compass"></i> Discover Talent</button>
-        <button class="intent-btn" data-intent="collaborate"><i class="fas fa-handshake"></i> Find Collaborators</button>
-        <button class="intent-btn" data-intent="inspire"><i class="fas fa-lightbulb"></i> Get Inspired</button>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters-bar">
-        <div class="filter-group"><span class="filter-label"><i class="fas fa-map-marker-alt"></i> Region</span>
-            <select id="locationFilter" class="filter-select"><option value="">All</option><option value="NG">Nigeria</option><option value="ZA">South Africa</option><option value="KE">Kenya</option><option value="GH">Ghana</option><option value="SN">Senegal</option></select>
-        </div>
-        <div class="filter-group"><span class="filter-label"><i class="fas fa-tag"></i> Craft</span>
-            <select id="craftFilter" class="filter-select"><option value="">All Crafts</option><option value="Music Producer">🎵 Music Producer</option><option value="Filmmaker">🎬 Filmmaker</option><option value="Street Artist">🎨 Artist</option><option value="Athlete">⚽ Athlete</option><option value="Podcaster">🎙️ Podcaster</option></select>
-        </div>
-        <div class="filter-group"><span class="filter-label"><i class="fas fa-bolt"></i> Energy</span>
-            <select id="energyFilter" class="filter-select"><option value="">All Vibes</option><option value="Chill">😌 Chill</option><option value="Hype">🔥 Hype</option><option value="Soulful">💜 Soulful</option></select>
-        </div>
-        <div class="filter-group"><span class="filter-label"><i class="fas fa-chart-line"></i> Sort</span>
-            <select id="sortFilter" class="filter-select"><option value="pulse">Pulse Score</option><option value="trending">Momentum</option><option value="connections">Connections</option></select>
-        </div>
-    </div>
-
-    <!-- Bantu Radar Map -->
-    <div class="radar-section">
-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 class="section-title" style="font-family: Orbitron;">🌍 Bantu Radar · Live Pulse</h2>
-            <button id="toggleMapView" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.4); padding: 6px 14px; border-radius: 40px; color: var(--warm-gold); cursor: pointer; font-size: 12px;"><i class="fas fa-globe"></i> Pulse Mode</button>
-        </div>
-        <div class="radar-map">
-            <div id="mapContainer" class="map-container">
-                <svg viewBox="0 0 800 500" class="map-svg" id="africaSvg">
-                    <path d="M350,80 L400,60 L450,70 L480,100 L500,150 L520,200 L540,250 L550,300 L540,350 L520,380 L500,400 L470,420 L440,430 L410,435 L380,430 L360,420 L340,400 L330,370 L320,340 L315,300 L320,260 L330,220 L340,180 L345,140 L350,110 Z" fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="2"/>
-                </svg>
-            </div>
-        </div>
-        <div id="cityPanel" class="city-panel"></div>
-    </div>
-
-    <!-- Creators Grid -->
-    <div class="section-header" style="margin-top: 16px;">
-        <div><h2 class="section-title">🔥 Featured Pulse Creators</h2><div class="section-subtitle">Based on final_pulse_score + trend stage</div></div>
-        <span id="resultCount" style="color: var(--slate-grey); font-size: 13px;"></span>
-    </div>
-    <div id="creatorsGrid" class="creator-grid"><div class="loading"><div class="loading-spinner"></div><p>Loading pulse-driven creators...</p></div></div>
+<!-- Hero Section -->
+<div class="hero-section">
+<video class="hero-video" autoplay muted loop poster="https://picsum.photos/1920/1080?random=1">
+<source src="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
+</video>
+<div class="hero-overlay"></div>
+<div class="hero-content">
+<div class="hero-badge">
+<i class="fas fa-crown"></i> Creator of the Week
+</div>
+<div class="hero-title">Ayanda S. — Afro-House Producer</div>
+<div class="hero-description">
+Redefining South African house music with soulful beats and cultural depth
+</div>
+<div class="hero-stats">
+<div class="hero-stat">
+<div class="hero-stat-value">2.3M</div>
+<div class="hero-stat-label">Total Views</div>
+</div>
+<div class="hero-stat">
+<div class="hero-stat-value">45K</div>
+<div class="hero-stat-label">Connections</div>
+</div>
+<div class="hero-stat">
+<div class="hero-stat-value">892</div>
+<div class="hero-stat-label">Collaborations</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Intent Switcher -->
+<div class="intent-switcher">
+<button class="intent-btn active" data-intent="discover">
+<i class="fas fa-compass"></i> Discover Talent
+</button>
+<button class="intent-btn" data-intent="collaborate">
+<i class="fas fa-handshake"></i> Find Collaborators
+</button>
+<button class="intent-btn" data-intent="inspire">
+<i class="fas fa-lightbulb"></i> Get Inspired
+</button>
+<button class="intent-btn" data-intent="hire">
+<i class="fas fa-briefcase"></i> Hire / Work With
+</button>
+</div>
+<!-- Filters Bar -->
+<div class="filters-bar">
+<div class="filter-group">
+<span class="filter-label"><i class="fas fa-map-marker-alt"></i> Location</span>
+<select id="locationFilter" class="filter-select">
+<option value="">All Locations</option>
+<option value="NG">Nigeria</option>
+<option value="ZA">South Africa</option>
+<option value="KE">Kenya</option>
+<option value="GH">Ghana</option>
+<option value="SN">Senegal</option>
+<option value="EG">Egypt</option>
+<option value="MA">Morocco</option>
+</select>
+</div>
+<div class="filter-group">
+<span class="filter-label"><i class="fas fa-tag"></i> Craft</span>
+<select id="craftFilter" class="filter-select">
+<option value="">All Crafts</option>
+<option value="Music Producer">🎵 Music Producer</option>
+<option value="Filmmaker">🎬 Filmmaker</option>
+<option value="Street Artist">🎨 Street Artist</option>
+<option value="Athlete">⚽ Athlete</option>
+<option value="Cinematographer">📸 Cinematographer</option>
+<option value="Podcaster">🎙️ Podcaster</option>
+<option value="Dancer">💃 Dancer</option>
+</select>
+</div>
+<div class="filter-group">
+<span class="filter-label"><i class="fas fa-bolt"></i> Energy</span>
+<select id="energyFilter" class="filter-select">
+<option value="">All Vibes</option>
+<option value="Chill">😌 Chill</option>
+<option value="Hype">🔥 Hype</option>
+<option value="Soulful">💜 Soulful</option>
+<option value="Intense">⚡ Intense</option>
+</select>
+</div>
+<div class="filter-group">
+<span class="filter-label"><i class="fas fa-chart-line"></i> Sort By</span>
+<select id="sortFilter" class="filter-select">
+<option value="pulse">Pulse Score</option>
+<option value="trending">Trending</option>
+<option value="connections">Most Connected</option>
+<option value="recent">Recently Active</option>
+</select>
+</div>
+</div>
+<!-- Bantu Radar Map -->
+<div class="radar-section">
+<div class="section-header">
+<div>
+<h2 class="section-title">Bantu Radar</h2>
+<div class="section-subtitle">Explore creative hubs across the continent</div>
+</div>
+<button id="toggleMapView" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 8px 16px; border-radius: 20px; color: var(--warm-gold); cursor: pointer;">
+<i class="fas fa-globe"></i> Live Pulse Mode
+</button>
+</div>
+<div class="radar-map">
+<div id="mapContainer" class="map-container">
+<svg viewBox="0 0 800 500" class="map-svg">
+<!-- Africa outline (simplified) -->
+<path d="M350,80 L400,60 L450,70 L480,100 L500,150 L520,200 L540,250 L550,300 L540,350 L520,380 L500,400 L470,420 L440,430 L410,435 L380,430 L360,420 L340,400 L330,370 L320,340 L315,300 L320,260 L330,220 L340,180 L345,140 L350,110 Z"
+fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="2"/>
+<!-- City markers will be added by JS -->
+</svg>
+</div>
+</div>
+<div id="cityPanel" class="city-panel">
+<!-- Dynamic city panel content -->
+</div>
+</div>
+<!-- Creators Grid Section -->
+<div class="section-header">
+<div>
+<h2 class="section-title">Featured Creators</h2>
+<div class="section-subtitle">Discover emerging and top talent</div>
+</div>
+<div>
+<span id="resultCount" style="color: var(--slate-grey); font-size: var(--font-sm);"></span>
+</div>
+</div>
+<div id="creatorsGrid" class="creator-grid">
+<div class="loading">
+<div class="loading-spinner"></div>
+<p>Loading creators...</p>
+</div>
+</div>
 </main>
 <div id="toast-container" class="toast-container"></div>
-
 <script>
 // ==========================================
-// SUPABASE + PULSE SCHEMA (mv_discover_feed)
+// SUPABASE CONFIGURATION
 // ==========================================
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 let supabaseClient = null;
 let currentUser = null;
 let currentIntent = 'discover';
-
-let filters = { location: '', craft: '', energy: '', sort: 'pulse' };
-
-function showToast(msg, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}" style="margin-right: 8px;"></i> ${msg}`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.remove(); }, 2800);
-}
-
-function formatNumber(n) { if (!n) return '0'; if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n>=1000) return (n/1000).toFixed(1)+'K'; return n.toString(); }
-
-function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-
-async function initSupabase() {
-    return new Promise((resolve) => {
-        if (typeof supabase !== 'undefined') {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            resolve(true);
-        } else setTimeout(() => resolve(initSupabase()), 50);
-    });
-}
-
-// LOAD CREATORS FROM MATERIALIZED VIEW mv_discover_feed (Pulse ready)
-async function loadCreators() {
-    const grid = document.getElementById('creatorsGrid');
-    grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Scanning pulse radar ...</p></div>';
-    try {
-        if (!supabaseClient) await initSupabase();
-        let query = supabaseClient.from('mv_discover_feed').select('*');
-        if (filters.location) query = query.eq('country_code', filters.location);
-        if (filters.craft) query = query.eq('primary_craft', filters.craft);
-        if (filters.energy) query = query.eq('energy_level', filters.energy);
-        
-        switch(filters.sort) {
-            case 'pulse': query = query.order('final_pulse_score', { ascending: false }); break;
-            case 'trending': query = query.order('momentum_score', { ascending: false }); break;
-            case 'connections': query = query.order('total_connections', { ascending: false }); break;
-            default: query = query.order('final_pulse_score', { ascending: false });
-        }
-        const { data, error } = await query.limit(48);
-        if (error) throw error;
-        document.getElementById('resultCount').innerText = `${data?.length || 0} creators · pulse active`;
-        if (!data || data.length === 0) {
-            grid.innerHTML = `<div class="empty-state" style="text-align:center;padding:60px;"><i class="fas fa-map-marked-alt" style="font-size:48px;margin-bottom:16px;"></i><p>No creators match these filters. Broaden your vibe.</p><button onclick="resetFilters()" style="background:var(--warm-gold);border:none;padding:8px 20px;border-radius:40px;margin-top:16px;cursor:pointer;">Reset</button></div>`;
-            return;
-        }
-        grid.innerHTML = data.map(creator => renderCreatorCard(creator)).join('');
-        // attach event listeners dynamically
-        document.querySelectorAll('.connect-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleConnect(btn.dataset.creatorId); }));
-        document.querySelectorAll('.collab-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleCollabRequest(btn.dataset.creatorId); }));
-        document.querySelectorAll('.creator-card').forEach(card => card.addEventListener('click', () => { window.location.href = `/creator/${card.dataset.creatorId}`; }));
-    } catch(err) {
-        console.error(err);
-        grid.innerHTML = `<div class="empty-state"><p>⚠️ Error loading pulse feed. Refresh or try later.</p></div>`;
-    }
-}
-
-function renderCreatorCard(c) {
-    const pulseScore = Math.round(c.final_pulse_score || 0);
-    const momentumPercent = Math.min((c.momentum_score || 0) / 12, 100);
-    let trendIcon = '✨', trendLabel = c.trend_label || 'Active';
-    if (c.trend_stage === 'rising') { trendIcon = '🔥'; trendLabel = trendLabel || 'Rising Fast'; }
-    else if (c.trend_stage === 'peak') { trendIcon = '⚡'; trendLabel = trendLabel || 'Peak Momentum'; }
-    else if (c.trend_stage === 'steady') trendIcon = '📈';
-    
-    const thumb = c.latest_content_preview?.thumbnail_url || `https://picsum.photos/400/200?random=${c.creator_id}`;
-    const avatar = c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name || c.username)}&background=ffd700&color=000`;
-    const seekingBadge = c.seeking_collaboration ? '<span style="margin-left:8px;background:rgba(255,215,0,0.2);padding:2px 10px;border-radius:20px;font-size:9px;">🤝 Open to Collab</span>' : '';
-    return `
-    <div class="creator-card" data-creator-id="${c.creator_id}">
-        <div class="card-media">
-            <img class="card-thumbnail" src="${thumb}" alt="${escapeHtml(c.full_name)}">
-            <div class="pulse-badge"><i class="fas fa-chart-line"></i> ${pulseScore}</div>
-            <div class="trend-badge">${trendIcon} ${escapeHtml(trendLabel)}</div>
-        </div>
-        <div class="card-info">
-            <div class="creator-header">
-                <img class="creator-avatar" src="${avatar}">
-                <div class="creator-details">
-                    <div class="creator-name">${escapeHtml(c.full_name || c.username)} ${c.is_verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</div>
-                    <div class="creator-craft"><i class="fas fa-tag"></i> ${escapeHtml(c.primary_craft || 'Creator')} ${seekingBadge}</div>
-                </div>
-            </div>
-            <div class="momentum-bar"><div class="momentum-fill" style="width:${momentumPercent}%"></div></div>
-            <div class="card-stats">
-                <div class="card-stat"><div class="card-stat-value">${formatNumber(c.content_views_24h || 0)}</div><div class="card-stat-label">24h Views</div></div>
-                <div class="card-stat"><div class="card-stat-value">${formatNumber(c.total_connections || 0)}</div><div class="card-stat-label">Connections</div></div>
-                <div class="card-stat"><div class="card-stat-value">+${c.connections_growth_24h || 0}</div><div class="card-stat-label">Growth</div></div>
-            </div>
-            <div class="card-actions">
-                <button class="connect-btn" data-creator-id="${c.creator_id}"><i class="fas fa-link"></i> Connect</button>
-                <button class="collab-btn" data-creator-id="${c.creator_id}"><i class="fas fa-handshake"></i> Collab</button>
-            </div>
-        </div>
-    </div>`;
-}
-
-// Radar map: city pulse (static enhanced)
-function buildRadarMap() {
-    const svg = document.getElementById('africaSvg');
-    if(!svg) return;
-    const cities = [
-        { name: 'Lagos', country: 'NG', x: 580, y: 320, pulse: 892 },
-        { name: 'Johannesburg', country: 'ZA', x: 520, y: 420, pulse: 756 },
-        { name: 'Nairobi', country: 'KE', x: 600, y: 340, pulse: 634 },
-        { name: 'Accra', country: 'GH', x: 530, y: 310, pulse: 578 },
-        { name: 'Cape Town', country: 'ZA', x: 490, y: 440, pulse: 512 },
-        { name: 'Dakar', country: 'SN', x: 420, y: 250, pulse: 445 }
-    ];
-    cities.forEach(city => {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', city.x); circle.setAttribute('cy', city.y); circle.setAttribute('r', '12');
-        circle.setAttribute('fill', 'rgba(255,215,0,0.85)'); circle.setAttribute('stroke', '#ffd700'); circle.setAttribute('stroke-width', '2');
-        circle.classList.add('city-marker'); circle.onclick = () => showCityPanel(city);
-        svg.appendChild(circle);
-        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        ring.setAttribute('cx', city.x); ring.setAttribute('cy', city.y); ring.setAttribute('r', '8');
-        ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', 'rgba(255,215,0,0.7)'); ring.setAttribute('stroke-width', '2');
-        ring.style.animation = 'pulse-ring 1.8s infinite';
-        svg.appendChild(ring);
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', city.x + 12); text.setAttribute('y', city.y - 6); text.setAttribute('fill', '#fff'); text.setAttribute('font-size', '10'); text.setAttribute('font-weight', 'bold');
-        text.textContent = city.name; text.onclick = () => showCityPanel(city);
-        svg.appendChild(text);
-    });
-}
-
-async function showCityPanel(city) {
-    const panel = document.getElementById('cityPanel');
-    panel.innerHTML = `<div class="loading" style="padding:20px;"><div class="loading-spinner" style="width:30px;height:30px;"></div><p>Loading ${city.name} pulse ...</p></div>`;
-    panel.classList.add('active');
-    try {
-        if(!supabaseClient) await initSupabase();
-        const { data, error } = await supabaseClient.from('mv_discover_feed').select('*').eq('country_code', city.country).order('final_pulse_score', { ascending: false }).limit(8);
-        if(error) throw error;
-        if(data && data.length) {
-            panel.innerHTML = `<div class="city-panel-header" style="display:flex;justify-content:space-between;"><div class="city-name"><i class="fas fa-city"></i> ${city.name} · Pulse ${city.pulse}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')" style="background:none;border:none;color:white;font-size:20px;">&times;</button></div>
-            <div class="creator-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px,1fr));margin-top:12px;">${data.map(c => `
-                <div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${c.creator_id}'">
-                    <div class="card-info" style="padding:12px;"><div class="creator-header"><img class="creator-avatar" src="${c.avatar_url || 'https://ui-avatars.com/api/?name='+encodeURIComponent(c.full_name)}" style="width:40px;height:40px;"><div><div style="font-weight:700;">${escapeHtml(c.full_name || c.username)}</div><div style="font-size:10px;">${escapeHtml(c.primary_craft)}</div></div></div><div class="momentum-bar"><div class="momentum-fill" style="width:${Math.min((c.momentum_score||0)/10,100)}%"></div></div></div>
-                </div>`).join('')}</div>`;
-        } else {
-            panel.innerHTML = `<div class="city-panel-header"><div>${city.name}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">✕</button></div><p style="padding:24px;text-align:center;">No pulse creators yet in this city.</p>`;
-        }
-    } catch(e) { panel.innerHTML = `<div><p>Error loading city feed</p><button onclick="document.getElementById('cityPanel').classList.remove('active')">Close</button></div>`; }
-}
-
-async function handleConnect(creatorId) {
-    if(!supabaseClient) await initSupabase();
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if(!user) { showToast('Sign in to connect', 'warning'); window.location.href='login.html'; return; }
-    try {
-        await supabaseClient.from('connectors').insert({ connector_id: user.id, connected_id: creatorId, connection_type: 'creator' });
-        showToast('Connection request sent!', 'success');
-        await supabaseClient.from('discovery_impressions').insert({ user_id: user.id, creator_id: creatorId, surface: 'infinite_stream', action: 'connect', user_intent: currentIntent });
-    } catch(e) { showToast('Already connected or error', 'error'); }
-}
-
-async function handleCollabRequest(creatorId) {
-    if(!supabaseClient) await initSupabase();
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if(!user) { showToast('Login to request collab', 'warning'); return; }
-    const msg = prompt('Propose collaboration idea:');
-    if(!msg) return;
-    try {
-        await supabaseClient.from('creator_collaboration_requests').insert({ from_creator_id: user.id, to_creator_id: creatorId, collaboration_type: 'creative', message: msg, status: 'pending', expires_at: new Date(Date.now()+30*86400000).toISOString() });
-        showToast('Collaboration request sent!', 'success');
-        await supabaseClient.from('discovery_impressions').insert({ user_id: user.id, creator_id: creatorId, surface: 'infinite_stream', action: 'collab_request', user_intent: currentIntent });
-    } catch(e) { showToast('Failed to send request', 'error'); }
-}
-
-function applyFilters() {
-    filters.location = document.getElementById('locationFilter').value;
-    filters.craft = document.getElementById('craftFilter').value;
-    filters.energy = document.getElementById('energyFilter').value;
-    filters.sort = document.getElementById('sortFilter').value;
-    loadCreators();
-}
-window.resetFilters = function() {
-    document.getElementById('locationFilter').value = '';
-    document.getElementById('craftFilter').value = '';
-    document.getElementById('energyFilter').value = '';
-    document.getElementById('sortFilter').value = 'pulse';
-    applyFilters();
+let currentFilters = {
+location: '',
+craft: '',
+energy: '',
+sort: 'pulse'
 };
-
-// Event binding
+// ==========================================
+// UTILITIES
+// ==========================================
+function showToast(message, type = 'info') {
+const container = document.getElementById('toast-container');
+const toast = document.createElement('div');
+toast.className = `toast ${type}`;
+const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+toast.innerHTML = `<i class="fas ${icons[type]}"></i> <span>${message}</span>`;
+container.appendChild(toast);
+setTimeout(() => {
+toast.style.animation = 'slideIn 0.3s ease reverse forwards';
+setTimeout(() => toast.remove(), 300);
+}, 3000);
+}
+function formatNumber(num) {
+if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+return num.toString();
+}
+function escapeHtml(text) {
+if (!text) return '';
+const div = document.createElement('div');
+div.textContent = text;
+return div.innerHTML;
+}
+// ==========================================
+// INITIALIZE SUPABASE
+// ==========================================
+async function initSupabase() {
+if (typeof supabase === 'undefined') {
+await new Promise(resolve => setTimeout(resolve, 50));
+return initSupabase();
+}
+supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+return true;
+}
+// ==========================================
+// LOAD CREATORS - FIXED QUERY
+// ==========================================
+async function loadCreators() {
+const grid = document.getElementById('creatorsGrid');
+grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading creators...</p></div>';
+try {
+await initSupabase();
+// Build query with proper filters for mv_discover_feed
+let query = supabaseClient
+.from('mv_discover_feed')
+.select(`
+creator_id,
+username,
+full_name,
+avatar_url,
+bio,
+location,
+primary_craft,
+secondary_crafts,
+seeking_collaboration,
+collaboration_crafts,
+city,
+region,
+country_code,
+energy_level,
+primary_mood,
+is_verified,
+verification_badge_type,
+final_pulse_score,
+trend_stage,
+trend_label,
+momentum_score,
+velocity_score,
+connections_growth_24h,
+content_views_24h,
+latest_content_preview,
+total_connections,
+snapshot_time
+`);
+// Apply filters
+if (currentFilters.location) {
+query = query.eq('country_code', currentFilters.location);
+}
+if (currentFilters.craft) {
+query = query.eq('primary_craft', currentFilters.craft);
+}
+if (currentFilters.energy) {
+query = query.eq('energy_level', currentFilters.energy);
+}
+// Apply sorting
+switch (currentFilters.sort) {
+case 'pulse':
+query = query.order('final_pulse_score', { ascending: false, nullsFirst: false });
+break;
+case 'trending':
+query = query.order('momentum_score', { ascending: false, nullsFirst: false });
+break;
+case 'connections':
+query = query.order('total_connections', { ascending: false, nullsFirst: false });
+break;
+case 'recent':
+query = query.order('snapshot_time', { ascending: false, nullsFirst: false });
+break;
+default:
+query = query.order('final_pulse_score', { ascending: false, nullsFirst: false });
+}
+query = query.limit(50);
+const { data: creators, error } = await query;
+if (error) {
+console.error('Supabase query error:', error);
+throw error;
+}
+document.getElementById('resultCount').innerText = `${creators?.length || 0} creators found`;
+if (!creators || creators.length === 0) {
+grid.innerHTML = `
+<div class="empty-state">
+<i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+<p>No creators found with current filters</p>
+<button onclick="resetFilters()" style="margin-top: 16px; background: var(--warm-gold); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; color: var(--deep-black); font-weight: 600;">Reset Filters</button>
+</div>
+`;
+return;
+}
+grid.innerHTML = creators.map(creator => renderCreatorCard(creator)).join('');
+// Add event listeners after rendering
+document.querySelectorAll('.connect-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+handleConnect(btn.dataset.creatorId);
+});
+});
+document.querySelectorAll('.collab-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+handleCollabRequest(btn.dataset.creatorId);
+});
+});
+document.querySelectorAll('.creator-card').forEach(card => {
+card.addEventListener('click', () => {
+const creatorId = card.dataset.creatorId;
+if (creatorId) {
+window.location.href = `/creator/${creatorId}`;
+}
+});
+});
+} catch (error) {
+console.error('Error loading creators:', error);
+grid.innerHTML = `
+<div class="empty-state">
+<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block; color: var(--error-color);"></i>
+<p style="color: var(--error-color); margin-bottom: 8px;">Error loading creators</p>
+<p style="font-size: var(--font-xs); color: var(--slate-grey); margin-bottom: 16px;">${error.message || 'Please check your connection and try again'}</p>
+<button onclick="loadCreators()" style="background: var(--warm-gold); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; color: var(--deep-black); font-weight: 600;">Retry</button>
+</div>
+`;
+}
+}
+// ==========================================
+// RENDER CREATOR CARD
+// ==========================================
+function renderCreatorCard(creator) {
+if (!creator) return '';
+const pulseScore = Math.round(creator.final_pulse_score || 0);
+const momentumPercent = Math.min((creator.momentum_score || 0) / 10, 100);
+let trendIcon = '✨';
+let trendColor = '#3b82f6';
+switch (creator.trend_stage) {
+case 'rising': trendIcon = '🔥'; trendColor = '#f97316'; break;
+case 'peak': trendIcon = '⚡'; trendColor = '#ffd700'; break;
+case 'steady': trendIcon = '📈'; trendColor = '#10b981'; break;
+case 'declining': trendIcon = '💤'; trendColor = '#6b7280'; break;
+case 'new': trendIcon = '🆕'; trendColor = '#8b5cf6'; break;
+}
+const trendLabel = creator.trend_label || (creator.trend_stage ? creator.trend_stage.charAt(0).toUpperCase() + creator.trend_stage.slice(1) : 'Active');
+const thumbnailUrl = creator.latest_content_preview?.thumbnail_url || 
+`https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username || 'Creator')}&background=1a1a2e&color=ffd700&size=400`;
+const avatarUrl = creator.avatar_url || 
+`https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username || 'C')}&background=ffd700&color=000&size=96`;
+return `
+<div class="creator-card" data-creator-id="${creator.creator_id}">
+<div class="card-media">
+<img class="card-thumbnail" src="${escapeHtml(thumbnailUrl)}" alt="${escapeHtml(creator.full_name || creator.username)}" onerror="this.src='https://picsum.photos/400/200?random=${creator.creator_id}'">
+<div class="pulse-badge">
+<i class="fas fa-chart-line"></i> ${pulseScore}
+</div>
+<div class="trend-badge" style="border-left: 3px solid ${trendColor}">
+${trendIcon} ${escapeHtml(trendLabel)}
+</div>
+</div>
+<div class="card-info">
+<div class="creator-header">
+<img class="creator-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(creator.full_name || creator.username)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username || 'C')}&background=ffd700&color=000'">
+<div class="creator-details">
+<div class="creator-name">
+${escapeHtml(creator.full_name || creator.username || 'Unknown Creator')}
+${creator.is_verified ? '<i class="fas fa-check-circle verified-badge" title="Verified Creator"></i>' : ''}
+</div>
+<div class="creator-craft">
+<i class="fas fa-tag"></i> ${escapeHtml(creator.primary_craft || 'Creator')}
+${creator.seeking_collaboration ? '<span style="margin-left: 8px; background: rgba(255,215,0,0.2); padding: 2px 8px; border-radius: 12px; font-size: 9px; color: var(--warm-gold);">Seeking Collab</span>' : ''}
+</div>
+</div>
+</div>
+<div class="momentum-bar">
+<div class="momentum-fill" style="width: ${momentumPercent}%"></div>
+</div>
+<div class="momentum-label">
+<span>Momentum Score</span>
+<span>${Math.round(creator.momentum_score || 0)}</span>
+</div>
+<div class="card-stats">
+<div class="card-stat">
+<div class="card-stat-value">${formatNumber(creator.content_views_24h || 0)}</div>
+<div class="card-stat-label">Views (24h)</div>
+</div>
+<div class="card-stat">
+<div class="card-stat-value">${formatNumber(creator.total_connections || 0)}</div>
+<div class="card-stat-label">Connections</div>
+</div>
+<div class="card-stat">
+<div class="card-stat-value">+${creator.connections_growth_24h || 0}</div>
+<div class="card-stat-label">Growth</div>
+</div>
+</div>
+<div class="card-actions">
+<button class="connect-btn" data-creator-id="${creator.creator_id}">
+<i class="fas fa-link"></i> Connect
+</button>
+<button class="collab-btn" data-creator-id="${creator.creator_id}">
+<i class="fas fa-handshake"></i> Collab
+</button>
+</div>
+</div>
+</div>
+`;
+}
+// ==========================================
+// INITIALIZE MAP
+// ==========================================
+function initMap() {
+const svg = document.querySelector('.map-svg');
+if (!svg) return;
+const cities = [
+{ name: 'Lagos', country: 'NG', x: 580, y: 320, pulse: 892 },
+{ name: 'Johannesburg', country: 'ZA', x: 520, y: 420, pulse: 756 },
+{ name: 'Nairobi', country: 'KE', x: 600, y: 340, pulse: 634 },
+{ name: 'Accra', country: 'GH', x: 530, y: 310, pulse: 578 },
+{ name: 'Cape Town', country: 'ZA', x: 490, y: 440, pulse: 512 },
+{ name: 'Dakar', country: 'SN', x: 420, y: 250, pulse: 445 },
+{ name: 'Cairo', country: 'EG', x: 550, y: 120, pulse: 398 },
+{ name: 'Casablanca', country: 'MA', x: 420, y: 160, pulse: 356 }
+];
+cities.forEach(city => {
+// Marker circle
+const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+circle.setAttribute('cx', city.x);
+circle.setAttribute('cy', city.y);
+circle.setAttribute('r', '10');
+circle.setAttribute('fill', 'rgba(255,215,0,0.8)');
+circle.setAttribute('stroke', '#ffd700');
+circle.setAttribute('stroke-width', '2');
+circle.classList.add('city-marker');
+circle.onclick = () => showCityPanel(city);
+svg.appendChild(circle);
+// Pulse ring
+const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+ring.setAttribute('cx', city.x);
+ring.setAttribute('cy', city.y);
+ring.setAttribute('r', '8');
+ring.setAttribute('fill', 'none');
+ring.setAttribute('stroke', 'rgba(255,215,0,0.6)');
+ring.setAttribute('stroke-width', '2');
+ring.classList.add('pulse-ring');
+svg.appendChild(ring);
+// Label
+const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+text.setAttribute('x', city.x + 12);
+text.setAttribute('y', city.y - 5);
+text.setAttribute('fill', 'rgba(255,255,255,0.8)');
+text.setAttribute('font-size', '10');
+text.setAttribute('font-weight', '500');
+text.textContent = city.name;
+text.classList.add('city-label');
+text.onclick = () => showCityPanel(city);
+svg.appendChild(text);
+});
+}
+// ==========================================
+// SHOW CITY PANEL
+// ==========================================
+async function showCityPanel(city) {
+const panel = document.getElementById('cityPanel');
+panel.innerHTML = `
+<div class="city-panel-header">
+<div class="city-name">
+<i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+</div>
+<button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<div class="loading" style="padding: 20px;">
+<div class="loading-spinner" style="width: 30px; height: 30px;"></div>
+<p>Loading local creators...</p>
+</div>
+`;
+panel.classList.add('active');
+try {
+await initSupabase();
+const { data: creators, error } = await supabaseClient
+.from('mv_discover_feed')
+.select(`
+creator_id,
+username,
+full_name,
+avatar_url,
+primary_craft,
+final_pulse_score,
+trend_label,
+seeking_collaboration,
+momentum_score
+`)
+.eq('country_code', city.country)
+.order('final_pulse_score', { ascending: false, nullsFirst: false })
+.limit(10);
+if (error) throw error;
+if (creators && creators.length > 0) {
+panel.innerHTML = `
+<div class="city-panel-header">
+<div class="city-name">
+<i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+</div>
+<button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<div style="margin-bottom: 16px;">
+<p><i class="fas fa-chart-line"></i> City Pulse Score: ${city.pulse}</p>
+<p><i class="fas fa-users"></i> ${creators.length} top creators in ${city.name}</p>
+</div>
+<div class="creator-grid" style="margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+${creators.map(creator => renderCompactCreatorCard(creator)).join('')}
+</div>
+`;
+} else {
+panel.innerHTML = `
+<div class="city-panel-header">
+<div class="city-name">
+<i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+</div>
+<button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<p style="text-align: center; padding: 40px; color: var(--slate-grey);">No active creators found in this city yet.</p>
+`;
+}
+} catch (error) {
+console.error('Error loading city creators:', error);
+panel.innerHTML = `
+<div class="city-panel-header">
+<div class="city-name">
+<i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+</div>
+<button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<p style="text-align: center; padding: 40px; color: var(--error-color);">Error loading creators</p>
+<p style="text-align: center; font-size: var(--font-xs); color: var(--slate-grey);">${error.message || 'Please try again'}</p>
+`;
+}
+}
+// ==========================================
+// COMPACT CREATOR CARD
+// ==========================================
+function renderCompactCreatorCard(creator) {
+if (!creator) return '';
+const avatarUrl = creator.avatar_url || 
+`https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username || 'C')}&background=ffd700&color=000&size=96`;
+return `
+<div class="creator-card" style="cursor: pointer;" onclick="window.location.href='/creator/${creator.creator_id}'">
+<div class="card-info">
+<div class="creator-header">
+<img class="creator-avatar" src="${escapeHtml(avatarUrl)}" style="width: 40px; height: 40px;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username || 'C')}&background=ffd700&color=000'">
+<div class="creator-details">
+<div class="creator-name" style="font-size: 14px;">${escapeHtml(creator.full_name || creator.username)}</div>
+<div class="creator-craft" style="font-size: 11px;">${escapeHtml(creator.primary_craft || 'Creator')}</div>
+</div>
+</div>
+<div class="momentum-bar" style="margin-top: 8px;">
+<div class="momentum-fill" style="width: ${Math.min((creator.momentum_score || 0) / 10, 100)}%"></div>
+</div>
+</div>
+</div>
+`;
+}
+// ==========================================
+// HANDLE CONNECT
+// ==========================================
+async function handleConnect(creatorId) {
+if (!creatorId) {
+showToast('Invalid creator ID', 'error');
+return;
+}
+await initSupabase();
+const { data: { user } } = await supabaseClient.auth.getUser();
+if (!user) {
+showToast('Please sign in to connect with creators', 'warning');
+window.location.href = 'login.html?redirect=discover-creator.html';
+return;
+}
+try {
+const { error } = await supabaseClient
+.from('connectors')
+.insert({
+connector_id: user.id,
+connected_id: creatorId,
+connection_type: 'creator'
+});
+if (error) {
+if (error.code === '23505') {
+showToast('Already connected!', 'info');
+} else {
+throw error;
+}
+} else {
+showToast('Connection request sent!', 'success');
+}
+// Track impression
+await supabaseClient
+.from('discovery_impressions')
+.insert({
+user_id: user.id,
+creator_id: creatorId,
+surface: 'infinite_stream',
+action: 'connect',
+user_intent: currentIntent
+}).catch(() => {}); // Don't fail if tracking fails
+} catch (error) {
+console.error('Error connecting:', error);
+showToast('Unable to connect. Please try again.', 'error');
+}
+}
+// ==========================================
+// HANDLE COLLAB REQUEST
+// ==========================================
+async function handleCollabRequest(creatorId) {
+if (!creatorId) {
+showToast('Invalid creator ID', 'error');
+return;
+}
+await initSupabase();
+const { data: { user } } = await supabaseClient.auth.getUser();
+if (!user) {
+showToast('Please sign in to request collaborations', 'warning');
+window.location.href = 'login.html?redirect=discover-creator.html';
+return;
+}
+const message = prompt('What collaboration opportunity would you like to propose?');
+if (!message || message.trim() === '') return;
+try {
+const { error } = await supabaseClient
+.from('creator_collaboration_requests')
+.insert({
+from_creator_id: user.id,
+to_creator_id: creatorId,
+collaboration_type: 'creative_partnership',
+message: message.trim(),
+status: 'pending',
+expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+});
+if (error) throw error;
+showToast('Collaboration request sent!', 'success');
+// Track impression
+await supabaseClient
+.from('discovery_impressions')
+.insert({
+user_id: user.id,
+creator_id: creatorId,
+surface: 'infinite_stream',
+action: 'collab_request',
+user_intent: currentIntent
+}).catch(() => {});
+} catch (error) {
+console.error('Error sending collab request:', error);
+showToast('Unable to send collaboration request. Please try again.', 'error');
+}
+}
+// ==========================================
+// RESET & APPLY FILTERS
+// ==========================================
+window.resetFilters = function() {
+document.getElementById('locationFilter').value = '';
+document.getElementById('craftFilter').value = '';
+document.getElementById('energyFilter').value = '';
+document.getElementById('sortFilter').value = 'pulse';
+applyFilters();
+};
+function applyFilters() {
+currentFilters = {
+location: document.getElementById('locationFilter').value,
+craft: document.getElementById('craftFilter').value,
+energy: document.getElementById('energyFilter').value,
+sort: document.getElementById('sortFilter').value
+};
+loadCreators();
+}
+// ==========================================
+// EVENT LISTENERS
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
 document.querySelectorAll('.intent-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        currentIntent = btn.dataset.intent;
-        loadCreators();
-    });
+btn.addEventListener('click', () => {
+document.querySelectorAll('.intent-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+currentIntent = btn.dataset.intent;
+loadCreators();
+});
 });
 document.getElementById('locationFilter').addEventListener('change', applyFilters);
 document.getElementById('craftFilter').addEventListener('change', applyFilters);
 document.getElementById('energyFilter').addEventListener('change', applyFilters);
 document.getElementById('sortFilter').addEventListener('change', applyFilters);
-document.getElementById('toggleMapView').addEventListener('click', () => showToast('Live Pulse: map shows cities with highest final_pulse_score', 'info'));
-
-async function init() {
-    await initSupabase();
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    currentUser = user;
-    buildRadarMap();
-    await loadCreators();
-}
+document.getElementById('toggleMapView').addEventListener('click', () => {
+showToast('Live Pulse Mode: Real-time collaboration activity appears on the map', 'info');
+});
+// Initialize page
 init();
+});
+// ==========================================
+// INITIALIZE PAGE
+// ==========================================
+async function init() {
+await initSupabase();
+// Check if user is logged in
+if (supabaseClient) {
+try {
+const { data: { user } } = await supabaseClient.auth.getUser();
+currentUser = user;
+} catch (e) {
+console.log('Auth check skipped:', e.message);
+}
+}
+initMap();
+await loadCreators();
+}
 </script>
 </body>
 </html>
