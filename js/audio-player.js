@@ -2,6 +2,7 @@
  * Bantu Audio Player
  * Handles global playback for music/podcasts across the platform.
  * FIXED: Player now properly appears when triggered by Smart Link icons
+ * FIXED: Added preload='none' to prevent unnecessary video/audio preloading
  */
 const BantuAudio = {
   audio: new Audio(),
@@ -41,6 +42,17 @@ const BantuAudio = {
       this.ui.nextBtn.addEventListener('click', () => this.next());
     }
 
+    // ============================================
+    // CRITICAL PERFORMANCE FIX: Prevent auto-preloading
+    // ============================================
+    // This prevents the browser from downloading audio/video until needed
+    this.audio.preload = 'none';
+    
+    // Also set crossOrigin for CORS support if needed
+    this.audio.crossOrigin = 'anonymous';
+    
+    console.log('🎵 Audio Player initialized with preload="none" (performance optimized)');
+
     this.audio.addEventListener('timeupdate', () => {
       if (this.audio.duration && this.ui.bar) {
         const pct = (this.audio.currentTime / this.audio.duration) * 100;
@@ -66,17 +78,33 @@ const BantuAudio = {
       }
     }
     
+    // Add error handling for audio loading issues
+    this.audio.addEventListener('error', (e) => {
+      console.warn('🎵 Audio error:', e);
+      this.pause();
+      if (typeof window.showToast === 'function') {
+        window.showToast('Unable to play audio. Please try again.', 'error');
+      }
+    });
+    
+    // Add canplay event to ensure smooth playback
+    this.audio.addEventListener('canplay', () => {
+      console.log('🎵 Audio ready to play');
+    });
+    
     // Expose to global window for Smart Links to trigger
     window.playSmartLink = (url, title, creator, art = '') => this.play(url, title, creator, art);
     window.showAudioPlayer = () => this.show();
     window.hideAudioPlayer = () => this.hide();
     
-    console.log('🎵 Audio Player initialized');
+    console.log('🎵 Audio Player initialization complete');
   },
 
   show() {
     if (this.ui.container) {
       this.ui.container.classList.remove('hidden');
+      // Add slide-in animation class for better UX
+      this.ui.container.style.animation = 'slideUp 0.3s ease';
     }
   },
 
@@ -95,25 +123,59 @@ const BantuAudio = {
       return;
     }
 
-    // Set audio source and play
+    // Set audio source - preload is already 'none' from init
     this.audio.src = url;
-    this.audio.play().catch(e => {
-      console.warn('Autoplay blocked:', e);
-      // Still show player but in paused state
-      this.state.playing = false;
-    });
     
-    this.state = { playing: true, track: { url, title, creator, art } };
+    // Load metadata only (not full preload)
+    this.audio.load(); // This respects preload='none' - only loads metadata
     
-    // Update UI and SHOW the player
+    // Attempt to play
+    const playPromise = this.audio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        this.state = { playing: true, track: { url, title, creator, art } };
+        this.updateUI();
+      }).catch(e => {
+        console.warn('Autoplay blocked or play failed:', e);
+        // Still show player but in paused state
+        this.state = { playing: false, track: { url, title, creator, art } };
+        this.updateUI();
+        // User will need to click play manually
+        if (typeof window.showToast === 'function') {
+          window.showToast('Click play to start audio', 'info');
+        }
+      });
+    } else {
+      // Fallback for older browsers
+      this.state = { playing: true, track: { url, title, creator, art } };
+      this.updateUI();
+    }
+    
+    // Always show the player
     this.show();
-    if (this.ui.title) this.ui.title.textContent = title || 'Track Title';
-    if (this.ui.creator) this.ui.creator.textContent = creator || 'Creator';
-    if (this.ui.art) this.ui.art.src = art || 'https://via.placeholder.com/40?text=🎵';
-    if (this.ui.playBtn) this.ui.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+  },
+  
+  updateUI() {
+    // Update UI with track info
+    if (this.ui.title && this.state.track) {
+      this.ui.title.textContent = this.state.track.title || 'Track Title';
+    }
+    if (this.ui.creator && this.state.track) {
+      this.ui.creator.textContent = this.state.track.creator || 'Creator';
+    }
+    if (this.ui.art && this.state.track) {
+      this.ui.art.src = this.state.track.art || 'https://via.placeholder.com/40?text=🎵';
+      this.ui.art.alt = this.state.track.title || 'Album art';
+    }
+    if (this.ui.playBtn) {
+      this.ui.playBtn.innerHTML = this.state.playing ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    }
     
     // Reset progress bar
-    if (this.ui.bar) this.ui.bar.style.width = '0%';
+    if (this.ui.bar) {
+      this.ui.bar.style.width = '0%';
+    }
   },
 
   pause() {
@@ -126,27 +188,99 @@ const BantuAudio = {
     if (this.state.playing) {
       this.pause();
     } else {
-      this.audio.play().then(() => {
+      const playPromise = this.audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          this.state.playing = true;
+          if (this.ui.playBtn) this.ui.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        }).catch(e => {
+          console.warn('Play failed:', e);
+          if (typeof window.showToast === 'function') {
+            window.showToast('Unable to play audio', 'error');
+          }
+        });
+      } else {
+        // Fallback for older browsers
+        this.audio.play();
         this.state.playing = true;
         if (this.ui.playBtn) this.ui.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      }).catch(e => console.warn('Play failed:', e));
+      }
     }
   },
 
   previous() {
     // For future playlist functionality
     console.log('Previous track - to be implemented');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Playlist feature coming soon', 'info');
+    }
   },
 
   next() {
     // For future playlist functionality
     console.log('Next track - to be implemented');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Playlist feature coming soon', 'info');
+    }
+  },
+  
+  // Helper method to check if player is currently showing
+  isVisible() {
+    return this.ui.container && !this.ui.container.classList.contains('hidden');
+  },
+  
+  // Helper method to get current track info
+  getCurrentTrack() {
+    return this.state.track;
+  },
+  
+  // Helper method to set volume
+  setVolume(volume) {
+    if (volume >= 0 && volume <= 1) {
+      this.audio.volume = volume;
+      console.log('🎵 Volume set to:', volume);
+    }
+  },
+  
+  // Helper method to get current volume
+  getVolume() {
+    return this.audio.volume;
+  },
+  
+  // Helper method to mute/unmute
+  setMuted(muted) {
+    this.audio.muted = muted;
+    console.log('🎵 Muted:', muted);
   }
 };
+
+// Add CSS animation keyframes if not already present
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+`;
+if (!document.querySelector('#audio-player-styles')) {
+  style.id = 'audio-player-styles';
+  document.head.appendChild(style);
+}
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => BantuAudio.init());
 } else {
   BantuAudio.init();
+}
+
+// Export for module use (if needed)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = BantuAudio;
 }
