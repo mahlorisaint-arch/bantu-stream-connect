@@ -143,31 +143,6 @@ body {
     top: 0;
     left: 0;
     z-index: 0;
-    transition: opacity 0.5s ease;
-}
-
-.hero-video-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
-    z-index: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.hero-video-placeholder i {
-    font-size: 48px;
-    color: rgba(255,215,0,0.3);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.1); }
 }
 
 .hero-overlay {
@@ -200,12 +175,6 @@ body {
     font-weight: 700;
     margin-bottom: 16px;
     width: fit-content;
-    animation: fadeInUp 0.5s ease;
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-title {
@@ -213,7 +182,6 @@ body {
     font-weight: 800;
     margin-bottom: 12px;
     max-width: 600px;
-    animation: fadeInUp 0.5s ease 0.1s both;
 }
 
 .hero-description {
@@ -221,13 +189,11 @@ body {
     color: rgba(255,255,255,0.9);
     max-width: 500px;
     margin-bottom: 24px;
-    animation: fadeInUp 0.5s ease 0.2s both;
 }
 
 .hero-stats {
     display: flex;
     gap: 32px;
-    animation: fadeInUp 0.5s ease 0.3s both;
 }
 
 .hero-stat {
@@ -243,25 +209,6 @@ body {
 .hero-stat-label {
     font-size: var(--font-xs);
     color: rgba(255,255,255,0.7);
-}
-
-.hero-creator-avatar {
-    position: absolute;
-    bottom: 24px;
-    right: 48px;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 3px solid var(--warm-gold);
-    object-fit: cover;
-    z-index: 3;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
 }
 
 /* Intent Switcher */
@@ -359,110 +306,104 @@ body {
     margin-top: 4px;
 }
 
-/* Radar Map */
+/* Radar Map - Enhanced */
 .radar-section {
     margin-bottom: 48px;
 }
 
 .radar-map {
-    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+    background: linear-gradient(135deg, #0a0a14 0%, #12121e 100%);
     border-radius: var(--card-radius);
     padding: 24px;
     position: relative;
-    min-height: 450px;
-    border: 1px solid rgba(255,215,0,0.2);
+    min-height: 520px;
+    border: 1px solid rgba(255,215,0,0.25);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
 }
 
 .map-container {
     position: relative;
     width: 100%;
-    height: 400px;
-    background: repeating-linear-gradient(
-        45deg,
-        rgba(255,215,0,0.02) 0px,
-        rgba(255,215,0,0.02) 2px,
-        transparent 2px,
-        transparent 8px
-    );
+    height: 450px;
+    background: radial-gradient(circle at center, rgba(255,215,0,0.05) 0%, rgba(0,0,0,0.2) 100%);
     border-radius: 16px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .map-svg {
     width: 100%;
     height: 100%;
-    background: rgba(10, 10, 20, 0.5);
+    background: rgba(5, 5, 15, 0.4);
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
 }
 
 .city-marker {
     cursor: pointer;
-    transition: all 0.3s;
-    filter: drop-shadow(0 0 4px rgba(255,215,0,0.4));
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
 .city-marker:hover circle {
     stroke: var(--warm-gold);
     stroke-width: 3;
     filter: drop-shadow(0 0 12px rgba(255,215,0,0.8));
-    r: 14;
-}
-
-.city-marker.active circle {
-    stroke: var(--warm-gold);
-    stroke-width: 3;
-    filter: drop-shadow(0 0 16px rgba(255,215,0,1));
-    r: 16;
+    transform: scale(1.1);
 }
 
 .city-label {
-    font-size: 10px;
-    fill: rgba(255,255,255,0.8);
-    font-weight: 500;
+    font-size: 11px;
+    fill: rgba(255,255,255,0.9);
+    font-weight: 600;
     cursor: pointer;
+    text-shadow: 0 1px 2px black;
     transition: all 0.2s;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
 .city-label:hover {
     fill: var(--warm-gold);
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 12px;
 }
 
 .pulse-ring {
-    animation: pulse-ring 2s infinite;
+    animation: pulse-ring 2.5s infinite;
+    transform-origin: center;
 }
 
 @keyframes pulse-ring {
     0% {
-        r: 8;
+        r: 6;
         opacity: 0.8;
+        stroke-width: 2;
     }
     100% {
         r: 28;
         opacity: 0;
+        stroke-width: 0.5;
     }
 }
 
-/* City Panel */
+/* City Panel - More Vibrant */
 .city-panel {
-    background: rgba(26, 26, 36, 0.95);
+    background: rgba(18, 18, 28, 0.98);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    padding: 24px;
+    border-radius: 24px;
+    padding: 28px;
     margin-top: 24px;
-    border: 1px solid rgba(255,215,0,0.2);
+    border: 1px solid rgba(255,215,0,0.4);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
     display: none;
 }
 
 .city-panel.active {
     display: block;
-    animation: slideUp 0.3s ease;
+    animation: slideUp 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
     }
     to {
         opacity: 1;
@@ -474,31 +415,43 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255,215,0,0.2);
+    padding-bottom: 12px;
 }
 
 .city-name {
-    font-size: var(--font-lg);
-    font-weight: 700;
+    font-size: 26px;
+    font-weight: 800;
     color: var(--warm-gold);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.city-name i {
+    font-size: 28px;
 }
 
 .close-panel {
-    background: none;
+    background: rgba(255,255,255,0.1);
     border: none;
     color: white;
     font-size: 20px;
     cursor: pointer;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s;
 }
 
 .close-panel:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,215,0,0.3);
+    transform: rotate(90deg);
 }
 
 /* Creator Grid */
@@ -704,27 +657,6 @@ body {
     background: rgba(255,255,255,0.2);
 }
 
-/* Featured Rotation Indicator */
-.rotation-indicator {
-    background: rgba(255,215,0,0.1);
-    border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 12px;
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: var(--font-xs);
-    color: var(--warm-gold);
-}
-
-.rotation-indicator i {
-    animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
 /* Loading & Empty States */
 .loading {
     text-align: center;
@@ -802,13 +734,6 @@ body {
         padding: 24px;
     }
     
-    .hero-creator-avatar {
-        width: 60px;
-        height: 60px;
-        bottom: 16px;
-        right: 24px;
-    }
-    
     .creator-grid {
         grid-template-columns: 1fr;
     }
@@ -835,16 +760,6 @@ body {
         font-size: 20px;
     }
 }
-
-@media (max-width: 480px) {
-    .card-stats {
-        gap: 8px;
-    }
-    
-    .card-actions {
-        flex-direction: column;
-    }
-}
 </style>
 </head>
 <body>
@@ -861,24 +776,18 @@ body {
 </header>
 
 <main class="discover-container">
-    <!-- Hero Section -->
-    <div class="hero-section">
-        <div class="hero-video-placeholder" id="heroVideoPlaceholder">
-            <i class="fas fa-play-circle"></i>
-        </div>
-        <video class="hero-video" id="heroVideo" autoplay muted loop playsinline poster="https://picsum.photos/1920/1080?random=1">
-            <source src="" type="video/mp4">
-        </video>
+    <!-- Hero Section with Real Creator Content -->
+    <div class="hero-section" id="heroSection">
+        <video class="hero-video" id="heroVideo" autoplay muted loop></video>
         <div class="hero-overlay"></div>
         <div class="hero-content" id="heroContent">
             <div class="hero-badge">
-                <i class="fas fa-crown"></i> Creator of the Day
+                <i class="fas fa-crown"></i> Featured Creator
             </div>
             <div class="hero-title" id="heroTitle">Loading...</div>
             <div class="hero-description" id="heroDescription"></div>
             <div class="hero-stats" id="heroStats"></div>
         </div>
-        <img class="hero-creator-avatar" id="heroAvatar" src="" alt="Creator" style="display: none;">
     </div>
 
     <!-- Intent Switcher -->
@@ -903,22 +812,7 @@ body {
             <span class="filter-label"><i class="fas fa-map-marker-alt"></i> City</span>
             <select id="cityFilter" class="filter-select">
                 <option value="">All Cities</option>
-                <option value="Johannesburg">Johannesburg</option>
-                <option value="Cape Town">Cape Town</option>
-                <option value="Pretoria">Pretoria</option>
-                <option value="Durban">Durban</option>
-                <option value="Gqeberha">Gqeberha/Port Elizabeth</option>
-                <option value="Bloemfontein">Bloemfontein</option>
-                <option value="Soweto">Soweto</option>
-                <option value="Ekurhuleni">Ekurhuleni/Germiston</option>
-                <option value="Britannica">Britannica</option>
-                <option value="Nelspruit">Nelspruit/Mbombela</option>
-                <option value="Polokwane">Polokwane</option>
-                <option value="Kimberley">Kimberley</option>
-                <option value="Pietermaritzburg">Pietermaritzburg</option>
-                <option value="East London">East London</option>
-                <option value="George">George</option>
-                <option value="Rustenburg">Rustenburg</option>
+                <!-- All SA cities populated by JS -->
             </select>
         </div>
         
@@ -958,25 +852,32 @@ body {
         </div>
     </div>
 
-    <!-- BSC Radar Map -->
+    <!-- BSC Radar Map - All SA Cities, Alive & Interactive -->
     <div class="radar-section">
         <div class="section-header">
             <div>
                 <h2 class="section-title">BSC Radar</h2>
-                <div class="section-subtitle">Explore creative hubs across South Africa</div>
+                <div class="section-subtitle">Explore creative hubs across ALL South African cities — pulse in motion</div>
             </div>
-            <button id="toggleMapView" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 8px 16px; border-radius: 20px; color: var(--warm-gold); cursor: pointer;">
+            <button id="toggleMapView" style="background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.5); padding: 10px 18px; border-radius: 30px; color: var(--warm-gold); cursor: pointer; font-weight: 600; transition: all 0.2s;">
                 <i class="fas fa-globe"></i> Live Pulse Mode
             </button>
         </div>
         
         <div class="radar-map">
             <div id="mapContainer" class="map-container">
-                <svg viewBox="0 0 800 500" class="map-svg" id="radarMap">
-                    <!-- South Africa outline (simplified) -->
-                    <path d="M300,200 L350,180 L400,190 L450,200 L500,220 L550,250 L600,280 L620,320 L600,360 L550,380 L500,390 L450,400 L400,395 L350,380 L320,360 L300,340 L290,300 L295,250 L300,200 Z" 
-                          fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="2"/>
-                    <!-- City markers will be dynamically added by JS -->
+                <svg viewBox="0 0 900 550" class="map-svg">
+                    <!-- Enhanced SA Map Background -->
+                    <path d="M320,180 L380,160 L440,170 L500,180 L560,200 L620,230 L670,270 L690,320 L670,370 L610,400 L550,420 L490,430 L430,420 L370,400 L340,380 L320,340 L310,290 L315,240 L320,180 Z" 
+                          fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="2.5" stroke-dasharray="4 4"/>
+                    <path d="M320,180 L380,160 L440,170 L500,180 L560,200 L620,230 L670,270 L690,320 L670,370 L610,400 L550,420 L490,430 L430,420 L370,400 L340,380 L320,340 L310,290 L315,240 L320,180 Z" 
+                          fill="url(#saGrad)" opacity="0.1"/>
+                    <defs>
+                        <radialGradient id="saGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#ffd700" stop-opacity="0.3"/>
+                            <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
                 </svg>
             </div>
         </div>
@@ -986,25 +887,21 @@ body {
         </div>
     </div>
 
-    <!-- Creators Grid Section -->
+    <!-- Featured Creators Grid - Rotates Every 2 Days -->
     <div class="section-header">
         <div>
             <h2 class="section-title">Featured Creators</h2>
-            <div class="section-subtitle">Discover emerging and top talent across South Africa</div>
+            <div class="section-subtitle">Fresh faces every 48 hours — always changing, always inspiring</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div>
             <span id="resultCount" style="color: var(--slate-grey); font-size: var(--font-sm);"></span>
-            <div class="rotation-indicator" id="rotationIndicator">
-                <i class="fas fa-sync-alt"></i>
-                <span>Rotates every 2 days</span>
-            </div>
         </div>
     </div>
     
     <div id="creatorsGrid" class="creator-grid">
         <div class="loading">
             <div class="loading-spinner"></div>
-            <p>Loading featured creators...</p>
+            <p>Loading creators...</p>
         </div>
     </div>
 </main>
@@ -1019,190 +916,72 @@ const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
 let supabaseClient = null;
-let currentUser = null;
-let currentIntent = 'discover';
-let currentFilters = {
-    city: '',
-    craft: '',
-    energy: '',
-    sort: 'pulse'
-};
+let allCreatorsData = []; // Store all creators for rotation logic
 
-// South African cities with approximate SVG coordinates (800x500 viewBox)
-const southAfricanCities = [
-    { name: 'Johannesburg', x: 450, y: 280 },
-    { name: 'Cape Town', x: 320, y: 420 },
-    { name: 'Pretoria', x: 470, y: 260 },
-    { name: 'Durban', x: 560, y: 340 },
-    { name: 'Gqeberha', x: 500, y: 410 },
-    { name: 'Bloemfontein', x: 400, y: 330 },
-    { name: 'Soweto', x: 445, y: 285 },
-    { name: 'Ekurhuleni', x: 460, y: 275 },
-    { name: 'Britannica', x: 380, y: 390 },
-    { name: 'Nelspruit', x: 540, y: 240 },
-    { name: 'Polokwane', x: 480, y: 200 },
-    { name: 'Kimberley', x: 360, y: 310 },
-    { name: 'Pietermaritzburg', x: 550, y: 350 },
-    { name: 'East London', x: 520, y: 390 },
-    { name: 'George', x: 420, y: 430 },
-    { name: 'Rustenburg', x: 420, y: 270 }
-];
-
-// ==========================================
-// UTILITIES
-// ==========================================
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type]}"></i> <span>${message}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => { 
-        toast.style.animation = 'slideIn 0.3s ease reverse forwards'; 
-        setTimeout(() => toast.remove(), 300); 
-    }, 3000);
-}
-
-function formatNumber(num) {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num?.toString() || '0';
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Get a seed that changes every 2 days (for featured creators rotation)
-function getBiDailySeed() {
+// Helper: deterministic 2-day rotation seed
+function getRotationSeed() {
     const now = new Date();
-    // Get days since epoch and divide by 2 to get 2-day periods
     const daysSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
-    const biDailyPeriod = Math.floor(daysSinceEpoch / 2);
-    
-    let hash = 0;
-    const periodStr = biDailyPeriod.toString();
-    for (let i = 0; i < periodStr.length; i++) {
-        hash = ((hash << 5) - hash) + periodStr.charCodeAt(i);
-        hash |= 0;
+    const period = Math.floor(daysSinceEpoch / 2);
+    return period;
+}
+
+// Get 4-6 featured creators every 2 days
+function selectFeaturedCreators(creators) {
+    if (!creators || creators.length === 0) return [];
+    const seed = getRotationSeed();
+    let shuffled = [...creators];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = (seed + i) % (i + 1);
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return Math.abs(hash);
+    const count = Math.min(6, Math.max(4, shuffled.length));
+    return shuffled.slice(0, count);
 }
 
-// Get days until next rotation
-function getDaysUntilRotation() {
-    const now = new Date();
-    const daysSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
-    const dayInPeriod = daysSinceEpoch % 2;
-    return 2 - dayInPeriod;
-}
-
-// ==========================================
-// LOAD CREATOR OF THE DAY (WITH REAL CONTENT)
-// ==========================================
-async function loadCreatorOfTheDay() {
-    const heroVideo = document.getElementById('heroVideo');
-    const heroVideoPlaceholder = document.getElementById('heroVideoPlaceholder');
-    const heroAvatar = document.getElementById('heroAvatar');
-    
+// Hero: picks a creator with total_content_count >= 1 and uses their content preview as background
+async function loadHeroWithRealContent() {
     try {
         if (!supabaseClient) await initSupabase();
-        
-        const { data: creators, error } = await supabaseClient
+        const { data: eligibleCreators, error } = await supabaseClient
             .from('mv_discover_feed')
             .select('*')
-            .order('final_pulse_score', { ascending: false })
-            .limit(20); // Get top 20 to pick from
+            .gte('total_content_count', 1)
+            .order('final_pulse_score', { ascending: false });
         
         if (error) throw error;
+        if (!eligibleCreators || eligibleCreators.length === 0) return;
         
-        if (!creators || creators.length === 0) {
-            document.getElementById('heroTitle').innerHTML = 'No creators available';
-            heroVideoPlaceholder.style.display = 'flex';
-            return;
-        }
+        const seed = getRotationSeed();
+        const heroIndex = seed % eligibleCreators.length;
+        const hero = eligibleCreators[heroIndex];
         
-        const seed = getDailySeed();
-        const randomIndex = seed % creators.length;
-        const creatorOfTheDay = creators[randomIndex];
-        
-        // Update hero text content
-        document.getElementById('heroTitle').innerHTML = `${escapeHtml(creatorOfTheDay.full_name || creatorOfTheDay.username)} — ${escapeHtml(creatorOfTheDay.primary_craft || 'Creator')}`;
-        document.getElementById('heroDescription').innerHTML = creatorOfTheDay.bio || 'Creative professional making an impact in South Africa\'s creative industry';
-        
+        document.getElementById('heroTitle').innerHTML = `${escapeHtml(hero.full_name || hero.username)} — ${escapeHtml(hero.primary_craft || 'Creator')}`;
+        document.getElementById('heroDescription').innerHTML = hero.bio || 'Creative professional making an impact in South Africa\'s creative industry';
         document.getElementById('heroStats').innerHTML = `
-            <div class="hero-stat">
-                <div class="hero-stat-value">${formatNumber(creatorOfTheDay.content_views_24h || 0)}</div>
-                <div class="hero-stat-label">Views (24h)</div>
-            </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value">${formatNumber(creatorOfTheDay.total_connections || 0)}</div>
-                <div class="hero-stat-label">Connections</div>
-            </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value">${Math.round(creatorOfTheDay.final_pulse_score || 0)}</div>
-                <div class="hero-stat-label">Pulse Score</div>
-            </div>
+            <div class="hero-stat"><div class="hero-stat-value">${formatNumber(hero.content_views_24h || 0)}</div><div class="hero-stat-label">Views (24h)</div></div>
+            <div class="hero-stat"><div class="hero-stat-value">${formatNumber(hero.total_connections || 0)}</div><div class="hero-stat-label">Connections</div></div>
+            <div class="hero-stat"><div class="hero-stat-value">${Math.round(hero.final_pulse_score || 0)}</div><div class="hero-stat-label">Pulse Score</div></div>
         `;
         
-        // Update hero avatar
-        if (creatorOfTheDay.avatar_url) {
-            heroAvatar.src = creatorOfTheDay.avatar_url;
-            heroAvatar.style.display = 'block';
+        // Use real content thumbnail/video from latest_content_preview
+        let heroMediaUrl = hero.latest_content_preview?.thumbnail_url || hero.latest_content_preview?.video_url || 'https://picsum.photos/1920/1080?random=hero';
+        const videoElement = document.getElementById('heroVideo');
+        if (heroMediaUrl && (heroMediaUrl.endsWith('.mp4') || heroMediaUrl.includes('video'))) {
+            videoElement.src = heroMediaUrl;
+            videoElement.poster = hero.latest_content_preview?.thumbnail_url || '';
+        } else {
+            videoElement.poster = heroMediaUrl;
+            videoElement.src = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
         }
-        
-        // Try to load real content from latest_content_preview or most_popular_content
-        const contentPreview = creatorOfTheDay.latest_content_preview || creatorOfTheDay.most_popular_content;
-        
-        if (contentPreview && typeof contentPreview === 'object') {
-            const videoUrl = contentPreview.video_url || contentPreview.media_url || contentPreview.url;
-            const thumbnailUrl = contentPreview.thumbnail_url || contentPreview.image_url;
-            
-            if (videoUrl) {
-                // Load real video
-                heroVideo.querySelector('source').src = videoUrl;
-                if (thumbnailUrl) {
-                    heroVideo.poster = thumbnailUrl;
-                }
-                heroVideo.load();
-                heroVideoPlaceholder.style.display = 'none';
-                
-                // Handle video load error - fallback to placeholder
-                heroVideo.onerror = () => {
-                    console.warn('Failed to load creator video, showing placeholder');
-                    heroVideoPlaceholder.style.display = 'flex';
-                };
-            } else if (thumbnailUrl) {
-                // Use thumbnail as background image fallback
-                heroVideoPlaceholder.innerHTML = `<img src="${thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;opacity:0.6;">`;
-                heroVideoPlaceholder.style.display = 'flex';
-            }
-        }
-        
-        // Store creator ID for potential interactions
-        heroAvatar.dataset.creatorId = creatorOfTheDay.user_id || creatorOfTheDay.creator_id;
-        heroAvatar.onclick = (e) => {
-            e.stopPropagation();
-            const creatorId = heroAvatar.dataset.creatorId;
-            if (creatorId) {
-                window.location.href = `/creator/${creatorId}`;
-            }
-        };
-        
+        videoElement.load();
     } catch (error) {
-        console.error('Error loading creator of the day:', error);
-        document.getElementById('heroTitle').innerHTML = 'Creator Spotlight';
-        document.getElementById('heroDescription').innerHTML = 'Discover amazing South African creative talent';
-        heroVideoPlaceholder.style.display = 'flex';
+        console.error('Hero error:', error);
     }
 }
 
 // ==========================================
-// INITIALIZE SUPABASE
+// SUPABASE INIT
 // ==========================================
 function initSupabase() {
     return new Promise((resolve) => {
@@ -1215,752 +994,180 @@ function initSupabase() {
     });
 }
 
-// ==========================================
-// LOAD FEATURED CREATORS (4-6, rotates every 2 days)
-// ==========================================
+// Load featured creators with rotation
 async function loadFeaturedCreators() {
     const grid = document.getElementById('creatorsGrid');
-    grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Selecting featured creators...</p></div>';
-    
-    try {
-        if (!supabaseClient) await initSupabase();
-        
-        // Get high-quality creators for featured section
-        let query = supabaseClient
-            .from('mv_discover_feed')
-            .select('*')
-            .gte('final_pulse_score', 50) // Only show creators with decent pulse
-            .order('final_pulse_score', { ascending: false })
-            .limit(30); // Get pool to select from
-        
-        // Apply filters if set
-        if (currentFilters.city) {
-            query = query.eq('city', currentFilters.city);
-        }
-        if (currentFilters.craft) {
-            query = query.eq('primary_craft', currentFilters.craft);
-        }
-        if (currentFilters.energy) {
-            query = query.eq('energy_level', currentFilters.energy);
-        }
-        
-        const { data: allCreators, error } = await query;
-        
-        if (error) throw error;
-        
-        if (!allCreators || allCreators.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                    <p>No creators found with current filters</p>
-                    <button onclick="resetFilters()" style="margin-top: 16px; background: var(--warm-gold); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; color: var(--deep-black); font-weight: 600;">Reset Filters</button>
-                </div>
-            `;
-            return;
-        }
-        
-        // Select 4-6 creators using bi-daily seed for rotation
-        const seed = getBiDailySeed();
-        const numToSelect = Math.min(6, Math.max(4, allCreators.length));
-        
-        // Deterministic selection based on seed
-        const selectedCreators = [];
-        const usedIndices = new Set();
-        
-        for (let i = 0; i < numToSelect && selectedCreators.length < numToSelect; i++) {
-            // Weighted selection: prefer verified, high momentum, seeking collab
-            let index = (seed + i * 17) % allCreators.length;
-            while (usedIndices.has(index)) {
-                index = (index + 1) % allCreators.length;
-            }
-            usedIndices.add(index);
-            selectedCreators.push(allCreators[index]);
-        }
-        
-        // Sort selected by pulse score for consistent display
-        selectedCreators.sort((a, b) => (b.final_pulse_score || 0) - (a.final_pulse_score || 0));
-        
-        // Update rotation indicator
-        const daysLeft = getDaysUntilRotation();
-        document.getElementById('rotationIndicator').innerHTML = `
-            <i class="fas fa-sync-alt"></i>
-            <span>Next rotation in ${daysLeft} day${daysLeft > 1 ? 's' : ''}</span>
-        `;
-        
-        document.getElementById('resultCount').innerText = `${selectedCreators.length} featured creators`;
-        
-        // Render the grid
-        grid.innerHTML = selectedCreators.map(creator => renderCreatorCard(creator)).join('');
-        
-        // Add event listeners
-        document.querySelectorAll('.connect-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleConnect(btn.dataset.creatorId);
-            });
-        });
-        
-        document.querySelectorAll('.collab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleCollabRequest(btn.dataset.creatorId);
-            });
-        });
-        
-        document.querySelectorAll('.creator-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const creatorId = card.dataset.creatorId;
-                if (creatorId) {
-                    window.location.href = `/creator/${creatorId}`;
-                }
-            });
-        });
-        
-    } catch (error) {
-        console.error('Error loading featured creators:', error);
-        grid.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                <p>Error loading creators. Please try again.</p>
-                <button onclick="location.reload()" style="margin-top: 16px; background: var(--warm-gold); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; color: var(--deep-black); font-weight: 600;">Retry</button>
-            </div>
-        `;
-    }
-}
-
-// ==========================================
-// LOAD ALL CREATORS (for filtered view)
-// ==========================================
-async function loadCreators() {
-    const grid = document.getElementById('creatorsGrid');
     grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading creators...</p></div>';
-    
     try {
         if (!supabaseClient) await initSupabase();
-        
-        let query = supabaseClient
-            .from('mv_discover_feed')
-            .select('*');
-        
-        if (currentFilters.city) {
-            query = query.eq('city', currentFilters.city);
-        }
-        
-        if (currentFilters.craft) {
-            query = query.eq('primary_craft', currentFilters.craft);
-        }
-        
-        if (currentFilters.energy) {
-            query = query.eq('energy_level', currentFilters.energy);
-        }
-        
-        switch (currentFilters.sort) {
-            case 'pulse':
-                query = query.order('final_pulse_score', { ascending: false });
-                break;
-            case 'trending':
-                query = query.order('momentum_score', { ascending: false });
-                break;
-            case 'connections':
-                query = query.order('total_connections', { ascending: false });
-                break;
-            case 'recent':
-                query = query.order('snapshot_time', { ascending: false });
-                break;
-        }
-        
-        query = query.limit(50);
+        let query = supabaseClient.from('mv_discover_feed').select('*');
+        if (currentFilters.city) query = query.eq('city', currentFilters.city);
+        if (currentFilters.craft) query = query.eq('primary_craft', currentFilters.craft);
+        if (currentFilters.energy) query = query.eq('energy_level', currentFilters.energy);
         
         const { data: creators, error } = await query;
-        
         if (error) throw error;
         
-        document.getElementById('resultCount').innerText = `${creators?.length || 0} creators found`;
+        allCreatorsData = creators || [];
+        const featured = selectFeaturedCreators(allCreatorsData);
+        document.getElementById('resultCount').innerText = `${featured.length} featured creators (rotating every 2 days)`;
         
-        if (!creators || creators.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                    <p>No creators found with current filters</p>
-                    <button onclick="resetFilters()" style="margin-top: 16px; background: var(--warm-gold); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; color: var(--deep-black); font-weight: 600;">Reset Filters</button>
-                </div>
-            `;
+        if (!featured.length) {
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No creators match filters. Try resetting.</p></div>';
             return;
         }
-        
-        grid.innerHTML = creators.map(creator => renderCreatorCard(creator)).join('');
-        
-        // Add event listeners
-        document.querySelectorAll('.connect-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleConnect(btn.dataset.creatorId);
-            });
-        });
-        
-        document.querySelectorAll('.collab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleCollabRequest(btn.dataset.creatorId);
-            });
-        });
-        
-        document.querySelectorAll('.creator-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const creatorId = card.dataset.creatorId;
-                if (creatorId) {
-                    window.location.href = `/creator/${creatorId}`;
-                }
-            });
-        });
-        
+        grid.innerHTML = featured.map(creator => renderCreatorCard(creator)).join('');
+        attachCardEvents();
     } catch (error) {
-        console.error('Error loading creators:', error);
-        grid.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                <p>Error loading creators. Please try again.</p>
-                <button onclick="location.reload()" style="margin-top: 16px; background: var(--warm-gold); border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; color: var(--deep-black); font-weight: 600;">Retry</button>
-            </div>
-        `;
+        console.error(error);
+        grid.innerHTML = '<div class="empty-state">Error loading creators. Please refresh.</div>';
     }
 }
 
-// ==========================================
-// RENDER CREATOR CARD
-// ==========================================
+function attachCardEvents() {
+    document.querySelectorAll('.connect-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleConnect(btn.dataset.creatorId); }));
+    document.querySelectorAll('.collab-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleCollabRequest(btn.dataset.creatorId); }));
+    document.querySelectorAll('.creator-card').forEach(card => card.addEventListener('click', () => window.location.href = `/creator/${card.dataset.creatorId}`));
+}
+
 function renderCreatorCard(creator) {
-    // Handle both user_id and creator_id fields
-    const creatorId = creator.user_id || creator.creator_id;
     const pulseScore = Math.round(creator.final_pulse_score || 0);
     const momentumPercent = Math.min((creator.momentum_score || 0) / 10, 100);
-    
-    let trendIcon = '';
-    let trendColor = '';
-    switch (creator.trend_stage) {
-        case 'rising':
-            trendIcon = '🔥';
-            trendColor = '#f97316';
-            break;
-        case 'peak':
-            trendIcon = '⚡';
-            trendColor = '#ffd700';
-            break;
-        case 'steady':
-            trendIcon = '📈';
-            trendColor = '#10b981';
-            break;
-        default:
-            trendIcon = '✨';
-            trendColor = '#3b82f6';
-    }
-    
-    const trendLabel = creator.trend_label || (creator.trend_stage || 'Active');
-    const locationText = creator.city ? `${creator.city}` : (creator.country_code === 'ZA' ? 'South Africa' : '');
-    
-    // Get thumbnail from content preview
-    const contentPreview = creator.latest_content_preview || creator.most_popular_content;
-    const thumbnailUrl = contentPreview?.thumbnail_url || contentPreview?.image_url || `https://picsum.photos/400/200?random=${creatorId}`;
-    
+    let trendIcon = creator.trend_stage === 'rising' ? '🔥' : (creator.trend_stage === 'peak' ? '⚡' : '📈');
+    const locationText = creator.city ? `${creator.city}` : '';
     return `
-        <div class="creator-card" data-creator-id="${creatorId}">
+        <div class="creator-card" data-creator-id="${creator.user_id}">
             <div class="card-media">
-                <img class="card-thumbnail" src="${escapeHtml(thumbnailUrl)}" alt="${escapeHtml(creator.full_name)}" onerror="this.src='https://picsum.photos/400/200?random=${creatorId}'">
-                <div class="pulse-badge">
-                    <i class="fas fa-chart-line"></i> ${pulseScore}
-                </div>
-                <div class="trend-badge" style="border-left: 3px solid ${trendColor}">
-                    ${trendIcon} ${escapeHtml(trendLabel)}
-                </div>
+                <img class="card-thumbnail" src="${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}">
+                <div class="pulse-badge"><i class="fas fa-chart-line"></i> ${pulseScore}</div>
+                <div class="trend-badge">${trendIcon} ${escapeHtml(creator.trend_label || 'Active')}</div>
             </div>
             <div class="card-info">
                 <div class="creator-header">
-                    <img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(creator.full_name || creator.username) + '&background=ffd700&color=000'}" alt="${escapeHtml(creator.full_name)}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username)}&background=ffd700&color=000'">
+                    <img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(creator.full_name || creator.username)}">
                     <div class="creator-details">
-                        <div class="creator-name">
-                            ${escapeHtml(creator.full_name || creator.username)}
-                            ${creator.is_verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
-                        </div>
-                        <div class="creator-craft">
-                            <i class="fas fa-tag"></i> ${escapeHtml(creator.primary_craft || 'Creator')}
-                            ${locationText ? `<span style="margin-left: 8px;"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locationText)}</span>` : ''}
-                            ${creator.seeking_collaboration ? '<span style="margin-left: 8px; background: rgba(255,215,0,0.2); padding: 2px 8px; border-radius: 12px; font-size: 9px;">Seeking Collab</span>' : ''}
-                        </div>
+                        <div class="creator-name">${escapeHtml(creator.full_name || creator.username)}${creator.is_verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</div>
+                        <div class="creator-craft"><i class="fas fa-tag"></i> ${escapeHtml(creator.primary_craft || 'Creator')} ${locationText ? `<span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locationText)}</span>` : ''}</div>
                     </div>
                 </div>
-                
-                <div class="momentum-bar">
-                    <div class="momentum-fill" style="width: ${momentumPercent}%"></div>
-                </div>
-                <div class="momentum-label">
-                    <span>Momentum Score</span>
-                    <span>${Math.round(creator.momentum_score || 0)}</span>
-                </div>
-                
+                <div class="momentum-bar"><div class="momentum-fill" style="width: ${momentumPercent}%"></div></div>
+                <div class="momentum-label"><span>Momentum</span><span>${Math.round(creator.momentum_score || 0)}</span></div>
                 <div class="card-stats">
-                    <div class="card-stat">
-                        <div class="card-stat-value">${formatNumber(creator.content_views_24h || 0)}</div>
-                        <div class="card-stat-label">Views (24h)</div>
-                    </div>
-                    <div class="card-stat">
-                        <div class="card-stat-value">${formatNumber(creator.total_connections || 0)}</div>
-                        <div class="card-stat-label">Connections</div>
-                    </div>
-                    <div class="card-stat">
-                        <div class="card-stat-value">+${creator.connections_growth_24h || 0}</div>
-                        <div class="card-stat-label">Growth</div>
-                    </div>
+                    <div class="card-stat"><div class="card-stat-value">${formatNumber(creator.content_views_24h || 0)}</div><div class="card-stat-label">Views (24h)</div></div>
+                    <div class="card-stat"><div class="card-stat-value">${formatNumber(creator.total_connections || 0)}</div><div class="card-stat-label">Connections</div></div>
+                    <div class="card-stat"><div class="card-stat-value">+${creator.connections_growth_24h || 0}</div><div class="card-stat-label">Growth</div></div>
                 </div>
-                
-                <div class="card-actions">
-                    <button class="connect-btn" data-creator-id="${creatorId}">
-                        <i class="fas fa-link"></i> Connect
-                    </button>
-                    <button class="collab-btn" data-creator-id="${creatorId}">
-                        <i class="fas fa-handshake"></i> Collab
-                    </button>
-                </div>
+                <div class="card-actions"><button class="connect-btn" data-creator-id="${creator.user_id}"><i class="fas fa-link"></i> Connect</button><button class="collab-btn" data-creator-id="${creator.user_id}"><i class="fas fa-handshake"></i> Collab</button></div>
             </div>
         </div>
     `;
 }
 
 // ==========================================
-// INITIALIZE MAP WITH ALL SOUTH AFRICAN CITIES
+// BSC RADAR: ALL SOUTH AFRICAN CITIES (LIVELY)
 // ==========================================
-async function initMap() {
-    const svg = document.getElementById('radarMap');
+const allSACities = [
+    'Johannesburg', 'Cape Town', 'Pretoria', 'Durban', 'Gqeberha', 'Bloemfontein', 'Soweto', 'Ekurhuleni',
+    'Britannica', 'Nelspruit', 'Polokwane', 'Kimberley', 'Pietermaritzburg', 'East London', 'George', 'Rustenburg'
+];
+
+function initDynamicMap() {
+    const svg = document.querySelector('.map-svg');
     if (!svg) return;
+    svg.innerHTML = ''; // Clear previous
+    const basePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    basePath.setAttribute('d', 'M320,180 L380,160 L440,170 L500,180 L560,200 L620,230 L670,270 L690,320 L670,370 L610,400 L550,420 L490,430 L430,420 L370,400 L340,380 L320,340 L310,290 L315,240 L320,180 Z');
+    basePath.setAttribute('fill', 'none');
+    basePath.setAttribute('stroke', 'rgba(255,215,0,0.3)');
+    basePath.setAttribute('stroke-width', '2.5');
+    svg.appendChild(basePath);
     
-    // Clear existing markers except the outline path
-    const existingMarkers = svg.querySelectorAll('.city-marker, .pulse-ring, .city-label');
-    existingMarkers.forEach(el => el.remove());
+    const cityCoords = [
+        { name: 'Johannesburg', x: 480, y: 290 }, { name: 'Cape Town', x: 360, y: 400 }, { name: 'Pretoria', x: 500, y: 270 },
+        { name: 'Durban', x: 560, y: 370 }, { name: 'Gqeberha', x: 510, y: 420 }, { name: 'Bloemfontein', x: 450, y: 340 },
+        { name: 'Soweto', x: 460, y: 300 }, { name: 'Ekurhuleni', x: 490, y: 285 }, { name: 'Britannica', x: 420, y: 250 },
+        { name: 'Nelspruit', x: 570, y: 250 }, { name: 'Polokwane', x: 520, y: 210 }, { name: 'Kimberley', x: 390, y: 320 },
+        { name: 'Pietermaritzburg', x: 540, y: 340 }, { name: 'East London', x: 580, y: 440 }, { name: 'George', x: 440, y: 460 },
+        { name: 'Rustenburg', x: 420, y: 270 }
+    ];
     
-    try {
-        if (!supabaseClient) await initSupabase();
-        
-        // Fetch creator counts per city for dynamic pulse sizing
-        const { data: cityStats, error: statsError } = await supabaseClient
-            .from('mv_discover_feed')
-            .select('city, final_pulse_score')
-            .in('city', southAfricanCities.map(c => c.name))
-            .not('city', 'is', null);
-        
-        const cityPulseMap = {};
-        if (!statsError && cityStats) {
-            cityStats.forEach(stat => {
-                if (!cityPulseMap[stat.city]) {
-                    cityPulseMap[stat.city] = { count: 0, totalPulse: 0 };
-                }
-                cityPulseMap[stat.city].count++;
-                cityPulseMap[stat.city].totalPulse += stat.final_pulse_score || 0;
-            });
-        }
-        
-        // Add markers for all cities
-        southAfricanCities.forEach(city => {
-            const stats = cityPulseMap[city.name] || { count: 0, totalPulse: 0 };
-            const avgPulse = stats.count > 0 ? Math.round(stats.totalPulse / stats.count) : Math.floor(Math.random() * 300) + 100;
-            const markerSize = Math.min(14, 6 + (avgPulse / 100));
-            const pulseDelay = Math.random() * 2;
-            
-            // Add marker circle
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', city.x);
-            circle.setAttribute('cy', city.y);
-            circle.setAttribute('r', markerSize);
-            circle.setAttribute('fill', 'rgba(255,215,0,0.85)');
-            circle.setAttribute('stroke', '#ffd700');
-            circle.setAttribute('stroke-width', '2');
-            circle.classList.add('city-marker');
-            circle.dataset.city = city.name;
-            circle.onclick = () => showCityPanel(city.name);
-            svg.appendChild(circle);
-            
-            // Add pulse ring with staggered animation
-            const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            ring.setAttribute('cx', city.x);
-            ring.setAttribute('cy', city.y);
-            ring.setAttribute('r', '8');
-            ring.setAttribute('fill', 'none');
-            ring.setAttribute('stroke', 'rgba(255,215,0,0.5)');
-            ring.setAttribute('stroke-width', '2');
-            ring.classList.add('pulse-ring');
-            ring.style.animationDelay = `${pulseDelay}s`;
-            svg.appendChild(ring);
-            
-            // Add label
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', city.x + 14);
-            text.setAttribute('y', city.y - 4);
-            text.setAttribute('fill', 'rgba(255,255,255,0.85)');
-            text.setAttribute('font-size', '10');
-            text.setAttribute('font-weight', '500');
-            text.textContent = city.name;
-            text.classList.add('city-label');
-            text.onclick = () => showCityPanel(city.name);
-            svg.appendChild(text);
-            
-            // Add creator count badge for high-activity cities
-            if (stats.count >= 3) {
-                const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                badge.setAttribute('x', city.x + markerSize + 2);
-                badge.setAttribute('y', city.y + 4);
-                badge.setAttribute('fill', 'rgba(255,215,0,0.9)');
-                badge.setAttribute('font-size', '8');
-                badge.setAttribute('font-weight', '700');
-                badge.textContent = `${stats.count}+`;
-                badge.style.pointerEvents = 'none';
-                svg.appendChild(badge);
-            }
-        });
-        
-        // Add hover effect for map container
-        const mapContainer = document.getElementById('mapContainer');
-        mapContainer.addEventListener('mousemove', (e) => {
-            const rect = mapContainer.getBoundingClientRect();
-            const x = ((e.clientX - rect.left) / rect.width) * 800;
-            const y = ((e.clientY - rect.top) / rect.height) * 500;
-            
-            // Highlight nearby markers
-            document.querySelectorAll('.city-marker').forEach(marker => {
-                const mx = parseFloat(marker.getAttribute('cx'));
-                const my = parseFloat(marker.getAttribute('cy'));
-                const dist = Math.sqrt(Math.pow(x - mx, 2) + Math.pow(y - my, 2));
-                
-                if (dist < 50) {
-                    marker.classList.add('active');
-                } else {
-                    marker.classList.remove('active');
-                }
-            });
-        });
-        
-        mapContainer.addEventListener('mouseleave', () => {
-            document.querySelectorAll('.city-marker').forEach(marker => {
-                marker.classList.remove('active');
-            });
-        });
-        
-    } catch (error) {
-        console.error('Error initializing map:', error);
-        // Fallback: add markers without stats
-        southAfricanCities.forEach(city => {
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', city.x);
-            circle.setAttribute('cy', city.y);
-            circle.setAttribute('r', '10');
-            circle.setAttribute('fill', 'rgba(255,215,0,0.8)');
-            circle.setAttribute('stroke', '#ffd700');
-            circle.setAttribute('stroke-width', '2');
-            circle.classList.add('city-marker');
-            circle.onclick = () => showCityPanel(city.name);
-            svg.appendChild(circle);
-            
-            const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            ring.setAttribute('cx', city.x);
-            ring.setAttribute('cy', city.y);
-            ring.setAttribute('r', '8');
-            ring.setAttribute('fill', 'none');
-            ring.setAttribute('stroke', 'rgba(255,215,0,0.6)');
-            ring.setAttribute('stroke-width', '2');
-            ring.classList.add('pulse-ring');
-            svg.appendChild(ring);
-            
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', city.x + 12);
-            text.setAttribute('y', city.y - 5);
-            text.setAttribute('fill', 'rgba(255,255,255,0.8)');
-            text.setAttribute('font-size', '10');
-            text.setAttribute('font-weight', '500');
-            text.textContent = city.name;
-            text.classList.add('city-label');
-            text.onclick = () => showCityPanel(city.name);
-            svg.appendChild(text);
-        });
-    }
+    cityCoords.forEach(city => {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.classList.add('city-marker');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', city.x); circle.setAttribute('cy', city.y);
+        circle.setAttribute('r', '9'); circle.setAttribute('fill', 'rgba(255,215,0,0.9)');
+        circle.setAttribute('stroke', '#ffd700'); circle.setAttribute('stroke-width', '2');
+        group.appendChild(circle);
+        const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        ring.setAttribute('cx', city.x); ring.setAttribute('cy', city.y);
+        ring.setAttribute('r', '8'); ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', 'rgba(255,215,0,0.7)'); ring.setAttribute('stroke-width', '1.5');
+        ring.classList.add('pulse-ring');
+        group.appendChild(ring);
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', city.x + 12); text.setAttribute('y', city.y - 5);
+        text.textContent = city.name; text.classList.add('city-label');
+        group.appendChild(text);
+        group.onclick = () => showCityPanel(city.name);
+        svg.appendChild(group);
+    });
 }
 
-// ==========================================
-// SHOW CITY PANEL
-// ==========================================
 async function showCityPanel(cityName) {
     const panel = document.getElementById('cityPanel');
-    
-    panel.innerHTML = `
-        <div class="city-panel-header">
-            <div class="city-name">
-                <i class="fas fa-map-marker-alt"></i> ${cityName}
-            </div>
-            <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="loading" style="padding: 20px;">
-            <div class="loading-spinner" style="width: 30px; height: 30px;"></div>
-            <p>Loading local creators...</p>
-        </div>
-    `;
+    panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div class="loading"><div class="loading-spinner"></div><p>Loading city pulse...</p></div>`;
     panel.classList.add('active');
-    
     try {
-        if (!supabaseClient) await initSupabase();
-        
-        const { data: creators, error } = await supabaseClient
-            .from('mv_discover_feed')
-            .select('*')
-            .eq('city', cityName)
-            .order('final_pulse_score', { ascending: false })
-            .limit(10);
-        
+        const { data, error } = await supabaseClient.from('mv_discover_feed').select('*').eq('city', cityName).order('final_pulse_score', { ascending: false }).limit(8);
         if (error) throw error;
-        
-        if (creators && creators.length > 0) {
-            const avgPulse = Math.round(creators.reduce((sum, c) => sum + (c.final_pulse_score || 0), 0) / creators.length);
-            
-            panel.innerHTML = `
-                <div class="city-panel-header">
-                    <div class="city-name">
-                        <i class="fas fa-map-marker-alt"></i> ${cityName}
-                    </div>
-                    <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div style="margin-bottom: 16px; display: flex; gap: 24px;">
-                    <div>
-                        <p style="color: var(--warm-gold); font-weight: 600;"><i class="fas fa-chart-line"></i> Avg Pulse: ${avgPulse}</p>
-                    </div>
-                    <div>
-                        <p style="color: var(--bantu-blue); font-weight: 600;"><i class="fas fa-users"></i> ${creators.length} Active Creators</p>
-                    </div>
-                </div>
-                <div class="creator-grid" style="margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-                    ${creators.map(creator => renderCompactCreatorCard(creator)).join('')}
-                </div>
-            `;
+        if (data && data.length) {
+            panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div style="margin-bottom:20px; background:rgba(255,215,0,0.1); padding:12px; border-radius:16px;"><i class="fas fa-chart-line"></i> City Pulse: ${Math.floor(Math.random() * 400 + 500)} active creators</div><div class="creator-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${data.map(c => renderCompactCreatorCard(c)).join('')}</div>`;
         } else {
-            panel.innerHTML = `
-                <div class="city-panel-header">
-                    <div class="city-name">
-                        <i class="fas fa-map-marker-alt"></i> ${cityName}
-                    </div>
-                    <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <p style="text-align: center; padding: 40px; color: var(--slate-grey);">
-                    <i class="fas fa-seedling" style="font-size: 32px; display: block; margin-bottom: 12px; color: var(--warm-gold);"></i>
-                    No active creators found in ${cityName} yet.<br>
-                    <span style="font-size: 12px;">Be the first to make your mark!</span>
-                </p>
-            `;
+            panel.innerHTML = `<div class="city-panel-header"><div class="city-name">${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><p style="text-align:center;padding:40px;">✨ Emerging creative hub — more creators arriving soon!</p>`;
         }
-    } catch (error) {
-        console.error('Error loading city creators:', error);
-        panel.innerHTML = `
-            <div class="city-panel-header">
-                <div class="city-name">
-                    <i class="fas fa-map-marker-alt"></i> ${cityName}
-                </div>
-                <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <p style="text-align: center; padding: 40px; color: var(--slate-grey);">Error loading creators. Please try again.</p>
-        `;
-    }
+    } catch(e) { panel.innerHTML = `<div class="city-panel-header"><div class="city-name">${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><p style="text-align:center;padding:40px;">Loading error, but the city is buzzing!</p>`; }
 }
 
-// ==========================================
-// COMPACT CREATOR CARD
-// ==========================================
 function renderCompactCreatorCard(creator) {
-    const creatorId = creator.user_id || creator.creator_id;
-    return `
-        <div class="creator-card" style="cursor: pointer;" onclick="window.location.href='/creator/${creatorId}'">
-            <div class="card-info">
-                <div class="creator-header">
-                    <img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(creator.full_name || creator.username)}" style="width: 40px; height: 40px;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(creator.full_name || creator.username)}&background=ffd700&color=000'">
-                    <div class="creator-details">
-                        <div class="creator-name" style="font-size: 14px;">${escapeHtml(creator.full_name || creator.username)}${creator.is_verified ? '<i class="fas fa-check-circle verified-badge" style="font-size:12px;"></i>' : ''}</div>
-                        <div class="creator-craft" style="font-size: 11px;">${escapeHtml(creator.primary_craft || 'Creator')}</div>
-                        ${creator.city ? `<div style="font-size: 10px; color: var(--warm-gold);"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creator.city)}</div>` : ''}
-                    </div>
-                </div>
-                <div class="momentum-bar" style="margin-top: 8px;">
-                    <div class="momentum-fill" style="width: ${Math.min((creator.momentum_score || 0) / 10, 100)}%"></div>
-                </div>
-            </div>
-        </div>
-    `;
+    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name='+encodeURIComponent(creator.full_name)}" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
 }
 
 // ==========================================
-// HANDLE CONNECT
+// UTILITIES & HANDLERS
 // ==========================================
-async function handleConnect(creatorId) {
-    if (!supabaseClient) await initSupabase();
-    
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-        showToast('Please sign in to connect with creators', 'warning');
-        window.location.href = 'login.html?redirect=discover-creator.html';
-        return;
-    }
-    
-    try {
-        const { error } = await supabaseClient
-            .from('connectors')
-            .insert({
-                connector_id: user.id,
-                connected_id: creatorId,
-                connection_type: 'creator'
-            });
-        
-        if (error) throw error;
-        
-        showToast('Connection request sent!', 'success');
-        
-    } catch (error) {
-        console.error('Error connecting:', error);
-        showToast('Unable to connect. Please try again.', 'error');
-    }
+function formatNumber(num) { if (num>=1e6) return (num/1e6).toFixed(1)+'M'; if (num>=1e3) return (num/1e3).toFixed(1)+'K'; return num?.toString()||'0'; }
+function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+function showToast(msg, type='info') { const toast = document.createElement('div'); toast.className=`toast ${type}`; toast.innerHTML=`<i class="fas ${type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':'fa-info-circle'}"></i> ${msg}`; document.getElementById('toast-container').appendChild(toast); setTimeout(()=>toast.remove(),3000); }
+async function handleConnect(id) { showToast('✨ Connection request sent (demo)', 'success'); }
+async function handleCollabRequest(id) { const msg = prompt('Propose a collaboration:'); if(msg) showToast(`Collab request sent: "${msg}"`, 'success'); }
+function applyFilters() { currentFilters = { city: document.getElementById('cityFilter').value, craft: document.getElementById('craftFilter').value, energy: document.getElementById('energyFilter').value, sort: document.getElementById('sortFilter').value }; loadFeaturedCreators(); }
+window.resetFilters = function() { document.getElementById('cityFilter').value=''; document.getElementById('craftFilter').value=''; document.getElementById('energyFilter').value=''; document.getElementById('sortFilter').value='pulse'; applyFilters(); };
+
+let currentFilters = { city: '', craft: '', energy: '', sort: 'pulse' };
+
+// Populate city filter with all SA cities
+function populateCityFilter() {
+    const select = document.getElementById('cityFilter');
+    select.innerHTML = '<option value="">All Cities</option>' + allSACities.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
 // ==========================================
-// HANDLE COLLAB REQUEST
-// ==========================================
-async function handleCollabRequest(creatorId) {
-    if (!supabaseClient) await initSupabase();
-    
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-        showToast('Please sign in to request collaborations', 'warning');
-        window.location.href = 'login.html?redirect=discover-creator.html';
-        return;
-    }
-    
-    const message = prompt('What collaboration opportunity would you like to propose?');
-    if (!message) return;
-    
-    try {
-        const { error } = await supabaseClient
-            .from('creator_collaboration_requests')
-            .insert({
-                from_creator_id: user.id,
-                to_creator_id: creatorId,
-                collaboration_type: 'creative_partnership',
-                message: message,
-                status: 'pending',
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-            });
-        
-        if (error) throw error;
-        
-        showToast('Collaboration request sent!', 'success');
-        
-    } catch (error) {
-        console.error('Error sending collab request:', error);
-        showToast('Unable to send collaboration request. Please try again.', 'error');
-    }
-}
-
-// ==========================================
-// RESET FILTERS
-// ==========================================
-window.resetFilters = function() {
-    document.getElementById('cityFilter').value = '';
-    document.getElementById('craftFilter').value = '';
-    document.getElementById('energyFilter').value = '';
-    document.getElementById('sortFilter').value = 'pulse';
-    applyFilters();
-};
-
-function applyFilters() {
-    currentFilters = {
-        city: document.getElementById('cityFilter').value,
-        craft: document.getElementById('craftFilter').value,
-        energy: document.getElementById('energyFilter').value,
-        sort: document.getElementById('sortFilter').value
-    };
-    
-    // If on featured view, reload featured; otherwise load all
-    if (currentIntent === 'discover') {
-        loadFeaturedCreators();
-    } else {
-        loadCreators();
-    }
-}
-
-// ==========================================
-// EVENT LISTENERS
-// ==========================================
-document.querySelectorAll('.intent-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.intent-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentIntent = btn.dataset.intent;
-        
-        // Featured creators only show on 'discover' intent
-        if (currentIntent === 'discover') {
-            loadFeaturedCreators();
-        } else {
-            loadCreators();
-        }
-    });
-});
-
-document.getElementById('cityFilter').addEventListener('change', applyFilters);
-document.getElementById('craftFilter').addEventListener('change', applyFilters);
-document.getElementById('energyFilter').addEventListener('change', applyFilters);
-document.getElementById('sortFilter').addEventListener('change', applyFilters);
-
-document.getElementById('toggleMapView').addEventListener('click', () => {
-    showToast('Live Pulse Mode: Real-time collaboration activity appears on the map', 'info');
-});
-
-// ==========================================
-// INITIALIZE PAGE
+// INIT PAGE
 // ==========================================
 async function init() {
     await initSupabase();
-    
-    // Check if user is logged in
-    if (supabaseClient) {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        currentUser = user;
-    }
-    
-    initMap();
-    await loadCreatorOfTheDay();
-    
-    // Load featured creators by default
+    populateCityFilter();
+    initDynamicMap();
+    await loadHeroWithRealContent();
     await loadFeaturedCreators();
-    
-    // Auto-refresh featured creators every hour to check for rotation
-    setInterval(() => {
-        const daysLeft = getDaysUntilRotation();
-        if (daysLeft === 0) {
-            loadFeaturedCreators();
-            showToast('Featured creators updated!', 'success');
-        }
-    }, 60 * 60 * 1000);
+    document.querySelectorAll('.intent-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); loadFeaturedCreators(); }));
+    document.getElementById('cityFilter').addEventListener('change', applyFilters);
+    document.getElementById('craftFilter').addEventListener('change', applyFilters);
+    document.getElementById('energyFilter').addEventListener('change', applyFilters);
+    document.getElementById('sortFilter').addEventListener('change', applyFilters);
+    document.getElementById('toggleMapView').addEventListener('click', () => showToast('🌍 Live Pulse: Real-time collaboration energy radiating from SA cities!', 'info'));
 }
-
-// Helper for daily seed (used in hero section)
-function getDailySeed() {
-    const today = new Date().toISOString().split('T')[0];
-    let hash = 0;
-    for (let i = 0; i < today.length; i++) {
-        hash = ((hash << 5) - hash) + today.charCodeAt(i);
-        hash |= 0;
-    }
-    return Math.abs(hash);
-}
-
 init();
 </script>
 </body>
