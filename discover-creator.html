@@ -774,28 +774,13 @@ body {
             <source src="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
         </video>
         <div class="hero-overlay"></div>
-        <div class="hero-content">
+        <div class="hero-content" id="heroContent">
             <div class="hero-badge">
-                <i class="fas fa-crown"></i> Creator of the Week
+                <i class="fas fa-crown"></i> Creator of the Day
             </div>
-            <div class="hero-title">Ayanda S. — Afro-House Producer</div>
-            <div class="hero-description">
-                Redefining South African house music with soulful beats and cultural depth
-            </div>
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <div class="hero-stat-value">2.3M</div>
-                    <div class="hero-stat-label">Total Views</div>
-                </div>
-                <div class="hero-stat">
-                    <div class="hero-stat-value">45K</div>
-                    <div class="hero-stat-label">Connections</div>
-                </div>
-                <div class="hero-stat">
-                    <div class="hero-stat-value">892</div>
-                    <div class="hero-stat-label">Collaborations</div>
-                </div>
-            </div>
+            <div class="hero-title" id="heroTitle">Loading...</div>
+            <div class="hero-description" id="heroDescription"></div>
+            <div class="hero-stats" id="heroStats"></div>
         </div>
     </div>
 
@@ -818,16 +803,25 @@ body {
     <!-- Filters Bar -->
     <div class="filters-bar">
         <div class="filter-group">
-            <span class="filter-label"><i class="fas fa-map-marker-alt"></i> Location</span>
-            <select id="locationFilter" class="filter-select">
-                <option value="">All Locations</option>
-                <option value="NG">Nigeria</option>
-                <option value="ZA">South Africa</option>
-                <option value="KE">Kenya</option>
-                <option value="GH">Ghana</option>
-                <option value="SN">Senegal</option>
-                <option value="EG">Egypt</option>
-                <option value="MA">Morocco</option>
+            <span class="filter-label"><i class="fas fa-map-marker-alt"></i> City</span>
+            <select id="cityFilter" class="filter-select">
+                <option value="">All Cities</option>
+                <option value="Johannesburg">Johannesburg</option>
+                <option value="Cape Town">Cape Town</option>
+                <option value="Pretoria">Pretoria</option>
+                <option value="Durban">Durban</option>
+                <option value="Gqeberha">Gqeberha/Port Elizabeth</option>
+                <option value="Bloemfontein">Bloemfontein</option>
+                <option value="Soweto">Soweto</option>
+                <option value="Ekurhuleni">Ekurhuleni/Germiston</option>
+                <option value="Britannica">Britannica</option>
+                <option value="Nelspruit">Nelspruit/Mbombela</option>
+                <option value="Polokwane">Polokwane</option>
+                <option value="Kimberley">Kimberley</option>
+                <option value="Pietermaritzburg">Pietermaritzburg</option>
+                <option value="East London">East London</option>
+                <option value="George">George</option>
+                <option value="Rustenburg">Rustenburg</option>
             </select>
         </div>
         
@@ -867,12 +861,12 @@ body {
         </div>
     </div>
 
-    <!-- Bantu Radar Map -->
+    <!-- BSC Radar Map -->
     <div class="radar-section">
         <div class="section-header">
             <div>
-                <h2 class="section-title">Bantu Radar</h2>
-                <div class="section-subtitle">Explore creative hubs across the continent</div>
+                <h2 class="section-title">BSC Radar</h2>
+                <div class="section-subtitle">Explore creative hubs across South Africa</div>
             </div>
             <button id="toggleMapView" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 8px 16px; border-radius: 20px; color: var(--warm-gold); cursor: pointer;">
                 <i class="fas fa-globe"></i> Live Pulse Mode
@@ -882,8 +876,8 @@ body {
         <div class="radar-map">
             <div id="mapContainer" class="map-container">
                 <svg viewBox="0 0 800 500" class="map-svg">
-                    <!-- Africa outline (simplified) -->
-                    <path d="M350,80 L400,60 L450,70 L480,100 L500,150 L520,200 L540,250 L550,300 L540,350 L520,380 L500,400 L470,420 L440,430 L410,435 L380,430 L360,420 L340,400 L330,370 L320,340 L315,300 L320,260 L330,220 L340,180 L345,140 L350,110 Z" 
+                    <!-- South Africa outline (simplified) -->
+                    <path d="M300,200 L350,180 L400,190 L450,200 L500,220 L550,250 L600,280 L620,320 L600,360 L550,380 L500,390 L450,400 L400,395 L350,380 L320,360 L300,340 L290,300 L295,250 L300,200 Z" 
                           fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="2"/>
                     
                     <!-- City markers will be added by JS -->
@@ -900,7 +894,7 @@ body {
     <div class="section-header">
         <div>
             <h2 class="section-title">Featured Creators</h2>
-            <div class="section-subtitle">Discover emerging and top talent</div>
+            <div class="section-subtitle">Discover emerging and top talent across South Africa</div>
         </div>
         <div>
             <span id="resultCount" style="color: var(--slate-grey); font-size: var(--font-sm);"></span>
@@ -928,11 +922,18 @@ let supabaseClient = null;
 let currentUser = null;
 let currentIntent = 'discover';
 let currentFilters = {
-    location: '',
+    city: '',
     craft: '',
     energy: '',
     sort: 'pulse'
 };
+
+// South African cities list
+const southAfricanCities = [
+    'Johannesburg', 'Cape Town', 'Pretoria', 'Durban', 'Gqeberha', 'Bloemfontein', 
+    'Soweto', 'Ekurhuleni', 'Britannica', 'Nelspruit', 'Polokwane', 'Kimberley', 
+    'Pietermaritzburg', 'East London', 'George', 'Rustenburg'
+];
 
 // ==========================================
 // UTILITIES
@@ -963,6 +964,64 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function getDailySeed() {
+    const today = new Date().toISOString().split('T')[0];
+    let hash = 0;
+    for (let i = 0; i < today.length; i++) {
+        hash = ((hash << 5) - hash) + today.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+// ==========================================
+// LOAD CREATOR OF THE DAY
+// ==========================================
+async function loadCreatorOfTheDay() {
+    try {
+        if (!supabaseClient) await initSupabase();
+        
+        const { data: creators, error } = await supabaseClient
+            .from('mv_discover_feed')
+            .select('*')
+            .order('final_pulse_score', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!creators || creators.length === 0) {
+            document.getElementById('heroTitle').innerHTML = 'No creators available';
+            return;
+        }
+        
+        const seed = getDailySeed();
+        const randomIndex = seed % creators.length;
+        const creatorOfTheDay = creators[randomIndex];
+        
+        document.getElementById('heroTitle').innerHTML = `${escapeHtml(creatorOfTheDay.full_name || creatorOfTheDay.username)} — ${escapeHtml(creatorOfTheDay.primary_craft || 'Creator')}`;
+        document.getElementById('heroDescription').innerHTML = creatorOfTheDay.bio || 'Creative professional making an impact in South Africa\'s creative industry';
+        
+        document.getElementById('heroStats').innerHTML = `
+            <div class="hero-stat">
+                <div class="hero-stat-value">${formatNumber(creatorOfTheDay.content_views_24h || 0)}</div>
+                <div class="hero-stat-label">Views (24h)</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">${formatNumber(creatorOfTheDay.total_connections || 0)}</div>
+                <div class="hero-stat-label">Connections</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">${Math.round(creatorOfTheDay.final_pulse_score || 0)}</div>
+                <div class="hero-stat-label">Pulse Score</div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading creator of the day:', error);
+        document.getElementById('heroTitle').innerHTML = 'Creator Spotlight';
+        document.getElementById('heroDescription').innerHTML = 'Discover amazing South African creative talent';
+    }
+}
+
 // ==========================================
 // INITIALIZE SUPABASE
 // ==========================================
@@ -991,8 +1050,8 @@ async function loadCreators() {
             .from('mv_discover_feed')
             .select('*');
         
-        if (currentFilters.location) {
-            query = query.eq('country_code', currentFilters.location);
+        if (currentFilters.city) {
+            query = query.eq('city', currentFilters.city);
         }
         
         if (currentFilters.craft) {
@@ -1101,6 +1160,7 @@ function renderCreatorCard(creator) {
     }
     
     const trendLabel = creator.trend_label || (creator.trend_stage || 'Active');
+    const locationText = creator.city ? `${creator.city}` : (creator.country_code === 'ZA' ? 'South Africa' : '');
     
     return `
         <div class="creator-card" data-creator-id="${creator.creator_id}">
@@ -1123,6 +1183,7 @@ function renderCreatorCard(creator) {
                         </div>
                         <div class="creator-craft">
                             <i class="fas fa-tag"></i> ${escapeHtml(creator.primary_craft || 'Creator')}
+                            ${locationText ? `<span style="margin-left: 8px;"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locationText)}</span>` : ''}
                             ${creator.seeking_collaboration ? '<span style="margin-left: 8px; background: rgba(255,215,0,0.2); padding: 2px 8px; border-radius: 12px; font-size: 9px;">Seeking Collab</span>' : ''}
                         </div>
                     </div>
@@ -1165,21 +1226,21 @@ function renderCreatorCard(creator) {
 }
 
 // ==========================================
-// INITIALIZE MAP
+// INITIALIZE MAP WITH SOUTH AFRICAN CITIES
 // ==========================================
 function initMap() {
     const svg = document.querySelector('.map-svg');
     if (!svg) return;
     
     const cities = [
-        { name: 'Lagos', country: 'NG', x: 580, y: 320, pulse: 892 },
-        { name: 'Johannesburg', country: 'ZA', x: 520, y: 420, pulse: 756 },
-        { name: 'Nairobi', country: 'KE', x: 600, y: 340, pulse: 634 },
-        { name: 'Accra', country: 'GH', x: 530, y: 310, pulse: 578 },
-        { name: 'Cape Town', country: 'ZA', x: 490, y: 440, pulse: 512 },
-        { name: 'Dakar', country: 'SN', x: 420, y: 250, pulse: 445 },
-        { name: 'Cairo', country: 'EG', x: 550, y: 120, pulse: 398 },
-        { name: 'Casablanca', country: 'MA', x: 420, y: 160, pulse: 356 }
+        { name: 'Johannesburg', x: 450, y: 280, pulse: 892 },
+        { name: 'Cape Town', x: 350, y: 380, pulse: 756 },
+        { name: 'Pretoria', x: 470, y: 260, pulse: 634 },
+        { name: 'Durban', x: 530, y: 350, pulse: 578 },
+        { name: 'Gqeberha', x: 480, y: 400, pulse: 445 },
+        { name: 'Bloemfontein', x: 430, y: 320, pulse: 398 },
+        { name: 'Soweto', x: 440, y: 285, pulse: 512 },
+        { name: 'Polokwane', x: 500, y: 220, pulse: 356 }
     ];
     
     cities.forEach(city => {
@@ -1229,7 +1290,7 @@ async function showCityPanel(city) {
     panel.innerHTML = `
         <div class="city-panel-header">
             <div class="city-name">
-                <i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+                <i class="fas fa-map-marker-alt"></i> ${city.name}
             </div>
             <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
                 <i class="fas fa-times"></i>
@@ -1248,7 +1309,7 @@ async function showCityPanel(city) {
         const { data: creators, error } = await supabaseClient
             .from('mv_discover_feed')
             .select('*')
-            .eq('country_code', city.country)
+            .eq('city', city.name)
             .order('final_pulse_score', { ascending: false })
             .limit(10);
         
@@ -1258,7 +1319,7 @@ async function showCityPanel(city) {
             panel.innerHTML = `
                 <div class="city-panel-header">
                     <div class="city-name">
-                        <i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+                        <i class="fas fa-map-marker-alt"></i> ${city.name}
                     </div>
                     <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
                         <i class="fas fa-times"></i>
@@ -1276,13 +1337,13 @@ async function showCityPanel(city) {
             panel.innerHTML = `
                 <div class="city-panel-header">
                     <div class="city-name">
-                        <i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+                        <i class="fas fa-map-marker-alt"></i> ${city.name}
                     </div>
                     <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <p style="text-align: center; padding: 40px; color: var(--slate-grey);">No active creators found in this city yet.</p>
+                <p style="text-align: center; padding: 40px; color: var(--slate-grey);">No active creators found in ${city.name} yet.</p>
             `;
         }
     } catch (error) {
@@ -1290,7 +1351,7 @@ async function showCityPanel(city) {
         panel.innerHTML = `
             <div class="city-panel-header">
                 <div class="city-name">
-                    <i class="fas fa-map-marker-alt"></i> ${city.name}, ${city.country}
+                    <i class="fas fa-map-marker-alt"></i> ${city.name}
                 </div>
                 <button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')">
                     <i class="fas fa-times"></i>
@@ -1313,6 +1374,7 @@ function renderCompactCreatorCard(creator) {
                     <div class="creator-details">
                         <div class="creator-name" style="font-size: 14px;">${escapeHtml(creator.full_name || creator.username)}</div>
                         <div class="creator-craft" style="font-size: 11px;">${escapeHtml(creator.primary_craft || 'Creator')}</div>
+                        ${creator.city ? `<div style="font-size: 10px; color: var(--warm-gold);"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creator.city)}</div>` : ''}
                     </div>
                 </div>
                 <div class="momentum-bar" style="margin-top: 8px;">
@@ -1349,17 +1411,6 @@ async function handleConnect(creatorId) {
         if (error) throw error;
         
         showToast('Connection request sent!', 'success');
-        
-        // Track impression
-        await supabaseClient
-            .from('discovery_impressions')
-            .insert({
-                user_id: user.id,
-                creator_id: creatorId,
-                surface: 'infinite_stream',
-                action: 'connect',
-                user_intent: currentIntent
-            });
         
     } catch (error) {
         console.error('Error connecting:', error);
@@ -1400,17 +1451,6 @@ async function handleCollabRequest(creatorId) {
         
         showToast('Collaboration request sent!', 'success');
         
-        // Track impression
-        await supabaseClient
-            .from('discovery_impressions')
-            .insert({
-                user_id: user.id,
-                creator_id: creatorId,
-                surface: 'infinite_stream',
-                action: 'collab_request',
-                user_intent: currentIntent
-            });
-        
     } catch (error) {
         console.error('Error sending collab request:', error);
         showToast('Unable to send collaboration request. Please try again.', 'error');
@@ -1421,7 +1461,7 @@ async function handleCollabRequest(creatorId) {
 // RESET FILTERS
 // ==========================================
 window.resetFilters = function() {
-    document.getElementById('locationFilter').value = '';
+    document.getElementById('cityFilter').value = '';
     document.getElementById('craftFilter').value = '';
     document.getElementById('energyFilter').value = '';
     document.getElementById('sortFilter').value = 'pulse';
@@ -1430,7 +1470,7 @@ window.resetFilters = function() {
 
 function applyFilters() {
     currentFilters = {
-        location: document.getElementById('locationFilter').value,
+        city: document.getElementById('cityFilter').value,
         craft: document.getElementById('craftFilter').value,
         energy: document.getElementById('energyFilter').value,
         sort: document.getElementById('sortFilter').value
@@ -1450,7 +1490,7 @@ document.querySelectorAll('.intent-btn').forEach(btn => {
     });
 });
 
-document.getElementById('locationFilter').addEventListener('change', applyFilters);
+document.getElementById('cityFilter').addEventListener('change', applyFilters);
 document.getElementById('craftFilter').addEventListener('change', applyFilters);
 document.getElementById('energyFilter').addEventListener('change', applyFilters);
 document.getElementById('sortFilter').addEventListener('change', applyFilters);
@@ -1472,6 +1512,7 @@ async function init() {
     }
     
     initMap();
+    await loadCreatorOfTheDay();
     await loadCreators();
 }
 
