@@ -806,22 +806,6 @@ body {
             <span class="filter-label"><i class="fas fa-map-marker-alt"></i> City</span>
             <select id="cityFilter" class="filter-select">
                 <option value="">All Cities</option>
-                <option value="Johannesburg">Johannesburg</option>
-                <option value="Cape Town">Cape Town</option>
-                <option value="Pretoria">Pretoria</option>
-                <option value="Durban">Durban</option>
-                <option value="Gqeberha">Gqeberha/Port Elizabeth</option>
-                <option value="Bloemfontein">Bloemfontein</option>
-                <option value="Soweto">Soweto</option>
-                <option value="Ekurhuleni">Ekurhuleni/Germiston</option>
-                <option value="Britannica">Britannica</option>
-                <option value="Nelspruit">Nelspruit/Mbombela</option>
-                <option value="Polokwane">Polokwane</option>
-                <option value="Kimberley">Kimberley</option>
-                <option value="Pietermaritzburg">Pietermaritzburg</option>
-                <option value="East London">East London</option>
-                <option value="George">George</option>
-                <option value="Rustenburg">Rustenburg</option>
             </select>
         </div>
         
@@ -829,13 +813,6 @@ body {
             <span class="filter-label"><i class="fas fa-tag"></i> Craft</span>
             <select id="craftFilter" class="filter-select">
                 <option value="">All Crafts</option>
-                <option value="Music Producer">🎵 Music Producer</option>
-                <option value="Filmmaker">🎬 Filmmaker</option>
-                <option value="Street Artist">🎨 Street Artist</option>
-                <option value="Athlete">⚽ Athlete</option>
-                <option value="Cinematographer">📸 Cinematographer</option>
-                <option value="Podcaster">🎙️ Podcaster</option>
-                <option value="Dancer">💃 Dancer</option>
             </select>
         </div>
         
@@ -843,10 +820,6 @@ body {
             <span class="filter-label"><i class="fas fa-bolt"></i> Energy</span>
             <select id="energyFilter" class="filter-select">
                 <option value="">All Vibes</option>
-                <option value="Chill">😌 Chill</option>
-                <option value="Hype">🔥 Hype</option>
-                <option value="Soulful">💜 Soulful</option>
-                <option value="Intense">⚡ Intense</option>
             </select>
         </div>
         
@@ -875,12 +848,10 @@ body {
         
         <div class="radar-map">
             <div id="mapContainer" class="map-container">
-                <svg viewBox="0 0 800 500" class="map-svg">
+                <svg viewBox="0 0 800 500" class="map-svg" id="radarSvg">
                     <!-- South Africa outline (simplified) -->
                     <path d="M300,200 L350,180 L400,190 L450,200 L500,220 L550,250 L600,280 L620,320 L600,360 L550,380 L500,390 L450,400 L400,395 L350,380 L320,360 L300,340 L290,300 L295,250 L300,200 Z" 
                           fill="none" stroke="rgba(255,215,0,0.3)" stroke-width="2"/>
-                    
-                    <!-- City markers will be added by JS -->
                 </svg>
             </div>
         </div>
@@ -935,6 +906,18 @@ const southAfricanCities = [
     'Pietermaritzburg', 'East London', 'George', 'Rustenburg'
 ];
 
+// Radar cities with coordinates
+const radarCities = [
+    { name: 'Johannesburg', x: 450, y: 280, pulse: 0 },
+    { name: 'Cape Town', x: 350, y: 380, pulse: 0 },
+    { name: 'Pretoria', x: 470, y: 260, pulse: 0 },
+    { name: 'Durban', x: 530, y: 350, pulse: 0 },
+    { name: 'Gqeberha', x: 480, y: 400, pulse: 0 },
+    { name: 'Bloemfontein', x: 430, y: 320, pulse: 0 },
+    { name: 'Soweto', x: 440, y: 285, pulse: 0 },
+    { name: 'Polokwane', x: 500, y: 220, pulse: 0 }
+];
+
 // ==========================================
 // UTILITIES
 // ==========================================
@@ -954,7 +937,7 @@ function showToast(message, type = 'info') {
 function formatNumber(num) {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
+    return num?.toString() || '0';
 }
 
 function escapeHtml(text) {
@@ -972,6 +955,20 @@ function getDailySeed() {
         hash |= 0;
     }
     return Math.abs(hash);
+}
+
+// ==========================================
+// INITIALIZE SUPABASE
+// ==========================================
+function initSupabase() {
+    return new Promise((resolve) => {
+        if (typeof supabase !== 'undefined' && supabase.createClient) {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            resolve(true);
+        } else {
+            setTimeout(() => resolve(initSupabase()), 50);
+        }
+    });
 }
 
 // ==========================================
@@ -1023,17 +1020,32 @@ async function loadCreatorOfTheDay() {
 }
 
 // ==========================================
-// INITIALIZE SUPABASE
+// LOAD FILTER OPTIONS
 // ==========================================
-function initSupabase() {
-    return new Promise((resolve) => {
-        if (typeof supabase !== 'undefined') {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            resolve(true);
-        } else {
-            setTimeout(() => resolve(initSupabase()), 50);
-        }
-    });
+async function loadFilterOptions() {
+    if (!supabaseClient) await initSupabase();
+    
+    const { data: creators, error } = await supabaseClient
+        .from('mv_discover_feed')
+        .select('city, primary_craft, energy_level');
+    
+    if (error || !creators) return;
+    
+    const cities = [...new Set(creators.map(c => c.city).filter(Boolean))];
+    const crafts = [...new Set(creators.map(c => c.primary_craft).filter(Boolean))];
+    const energies = [...new Set(creators.map(c => c.energy_level).filter(Boolean))];
+    
+    const citySelect = document.getElementById('cityFilter');
+    citySelect.innerHTML = '<option value="">All Cities</option>' + 
+        cities.map(city => `<option value="${escapeHtml(city)}">${escapeHtml(city)}</option>`).join('');
+    
+    const craftSelect = document.getElementById('craftFilter');
+    craftSelect.innerHTML = '<option value="">All Crafts</option>' + 
+        crafts.map(craft => `<option value="${escapeHtml(craft)}">${escapeHtml(craft)}</option>`).join('');
+    
+    const energySelect = document.getElementById('energyFilter');
+    energySelect.innerHTML = '<option value="">All Vibes</option>' + 
+        energies.map(energy => `<option value="${escapeHtml(energy)}">${escapeHtml(energy)}</option>`).join('');
 }
 
 // ==========================================
@@ -1163,9 +1175,9 @@ function renderCreatorCard(creator) {
     const locationText = creator.city ? `${creator.city}` : (creator.country_code === 'ZA' ? 'South Africa' : '');
     
     return `
-        <div class="creator-card" data-creator-id="${creator.creator_id}">
+        <div class="creator-card" data-creator-id="${creator.user_id}">
             <div class="card-media">
-                <img class="card-thumbnail" src="${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.creator_id}" alt="${escapeHtml(creator.full_name)}">
+                <img class="card-thumbnail" src="${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}">
                 <div class="pulse-badge">
                     <i class="fas fa-chart-line"></i> ${pulseScore}
                 </div>
@@ -1213,10 +1225,10 @@ function renderCreatorCard(creator) {
                 </div>
                 
                 <div class="card-actions">
-                    <button class="connect-btn" data-creator-id="${creator.creator_id}">
+                    <button class="connect-btn" data-creator-id="${creator.user_id}">
                         <i class="fas fa-link"></i> Connect
                     </button>
-                    <button class="collab-btn" data-creator-id="${creator.creator_id}">
+                    <button class="collab-btn" data-creator-id="${creator.user_id}">
                         <i class="fas fa-handshake"></i> Collab
                     </button>
                 </div>
@@ -1226,30 +1238,57 @@ function renderCreatorCard(creator) {
 }
 
 // ==========================================
-// INITIALIZE MAP WITH SOUTH AFRICAN CITIES
+// RENDER COMPACT CREATOR CARD FOR CITY PANEL
 // ==========================================
-function initMap() {
-    const svg = document.querySelector('.map-svg');
+function renderCompactCreatorCard(creator) {
+    return `
+        <div class="creator-card" style="cursor: pointer;" onclick="window.location.href='/creator/${creator.user_id}'">
+            <div class="card-info">
+                <div class="creator-header">
+                    <img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(creator.full_name || creator.username)}" style="width: 40px; height: 40px;">
+                    <div class="creator-details">
+                        <div class="creator-name" style="font-size: 14px;">${escapeHtml(creator.full_name || creator.username)}</div>
+                        <div class="creator-craft" style="font-size: 11px;">${escapeHtml(creator.primary_craft || 'Creator')}</div>
+                        ${creator.city ? `<div style="font-size: 10px; color: var(--warm-gold);"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creator.city)}</div>` : ''}
+                    </div>
+                </div>
+                <div class="momentum-bar" style="margin-top: 8px;">
+                    <div class="momentum-fill" style="width: ${Math.min((creator.momentum_score || 0) / 10, 100)}%"></div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ==========================================
+// INITIALIZE MAP WITH REAL PULSE DATA
+// ==========================================
+async function initMap() {
+    if (!supabaseClient) await initSupabase();
+    
+    // Get real pulse data for each city
+    for (let city of radarCities) {
+        const { data: cityCreators, error } = await supabaseClient
+            .from('mv_discover_feed')
+            .select('final_pulse_score')
+            .eq('city', city.name);
+        
+        if (!error && cityCreators && cityCreators.length > 0) {
+            const avgPulse = cityCreators.reduce((sum, c) => sum + (c.final_pulse_score || 0), 0) / cityCreators.length;
+            city.pulse = Math.round(avgPulse);
+        }
+    }
+    
+    const svg = document.getElementById('radarSvg');
     if (!svg) return;
     
-    const cities = [
-        { name: 'Johannesburg', x: 450, y: 280, pulse: 892 },
-        { name: 'Cape Town', x: 350, y: 380, pulse: 756 },
-        { name: 'Pretoria', x: 470, y: 260, pulse: 634 },
-        { name: 'Durban', x: 530, y: 350, pulse: 578 },
-        { name: 'Gqeberha', x: 480, y: 400, pulse: 445 },
-        { name: 'Bloemfontein', x: 430, y: 320, pulse: 398 },
-        { name: 'Soweto', x: 440, y: 285, pulse: 512 },
-        { name: 'Polokwane', x: 500, y: 220, pulse: 356 }
-    ];
-    
-    cities.forEach(city => {
+    radarCities.forEach(city => {
         // Add marker circle
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', city.x);
         circle.setAttribute('cy', city.y);
-        circle.setAttribute('r', '10');
-        circle.setAttribute('fill', 'rgba(255,215,0,0.8)');
+        circle.setAttribute('r', '12');
+        circle.setAttribute('fill', `rgba(255,215,0,${0.3 + (city.pulse / 2000)})`);
         circle.setAttribute('stroke', '#ffd700');
         circle.setAttribute('stroke-width', '2');
         circle.classList.add('city-marker');
@@ -1274,7 +1313,7 @@ function initMap() {
         text.setAttribute('fill', 'rgba(255,255,255,0.8)');
         text.setAttribute('font-size', '10');
         text.setAttribute('font-weight', '500');
-        text.textContent = city.name;
+        text.textContent = `${city.name} (${city.pulse})`;
         text.classList.add('city-label');
         text.onclick = () => showCityPanel(city);
         svg.appendChild(text);
@@ -1360,29 +1399,6 @@ async function showCityPanel(city) {
             <p style="text-align: center; padding: 40px; color: var(--slate-grey);">Error loading creators. Please try again.</p>
         `;
     }
-}
-
-// ==========================================
-// COMPACT CREATOR CARD
-// ==========================================
-function renderCompactCreatorCard(creator) {
-    return `
-        <div class="creator-card" style="cursor: pointer;" onclick="window.location.href='/creator/${creator.creator_id}'">
-            <div class="card-info">
-                <div class="creator-header">
-                    <img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(creator.full_name || creator.username)}" style="width: 40px; height: 40px;">
-                    <div class="creator-details">
-                        <div class="creator-name" style="font-size: 14px;">${escapeHtml(creator.full_name || creator.username)}</div>
-                        <div class="creator-craft" style="font-size: 11px;">${escapeHtml(creator.primary_craft || 'Creator')}</div>
-                        ${creator.city ? `<div style="font-size: 10px; color: var(--warm-gold);"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creator.city)}</div>` : ''}
-                    </div>
-                </div>
-                <div class="momentum-bar" style="margin-top: 8px;">
-                    <div class="momentum-fill" style="width: ${Math.min((creator.momentum_score || 0) / 10, 100)}%"></div>
-                </div>
-            </div>
-        </div>
-    `;
 }
 
 // ==========================================
@@ -1511,8 +1527,9 @@ async function init() {
         currentUser = user;
     }
     
-    initMap();
+    await loadFilterOptions();
     await loadCreatorOfTheDay();
+    await initMap();
     await loadCreators();
 }
 
