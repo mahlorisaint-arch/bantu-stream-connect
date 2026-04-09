@@ -153,7 +153,82 @@ class ContentSupabaseClient {
             throw error;
         }
     }
-    
+
+    /**
+     * Query with enhanced caching - YouTube-style progressive loading
+     * Checks memory cache first, then localStorage, then fetches fresh
+     * @param {string} table - Table name to query
+     * @param {object} options - Query options
+     * @returns {Promise<any>} Query results
+     */
+    async queryWithCache(table, options = {}) {
+        const cacheKey = this.generateCacheKey(table, options);
+        
+        // Check memory cache first (fastest)
+        if (this.cache.has(cacheKey)) {
+            const cached = this.cache.get(cacheKey);
+            if (Date.now() - cached.timestamp < this.cacheTTL) {
+                console.log('📦 Memory cache hit:', cacheKey.substring(0, 30));
+                return cached.data;
+            }
+            // Expired, delete from memory
+            this.cache.delete(cacheKey);
+        }
+        
+        // Check localStorage cache (persistent across page reloads)
+        try {
+            const stored = localStorage.getItem(`cache_${cacheKey}`);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Date.now() - parsed.timestamp < this.cacheTTL) {
+                    console.log('💾 LocalStorage cache hit:', cacheKey.substring(0, 30));
+                    // Restore to memory cache for faster subsequent access
+                    this.cache.set(cacheKey, parsed);
+                    return parsed.data;
+                } else {
+                    // Expired, remove from localStorage
+                    localStorage.removeItem(`cache_${cacheKey}`);
+                }
+            }
+        } catch (e) {
+            console.warn('LocalStorage cache read error:', e);
+        }
+        
+        // Fetch fresh data
+        console.log('🌐 Fetching fresh data:', cacheKey.substring(0, 30));
+        const data = await this.query(table, options);
+        
+        // Store in both caches
+        const cacheEntry = { data, timestamp: Date.now() };
+        this.cache.set(cacheKey, cacheEntry);
+        
+        try {
+            localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheEntry));
+        } catch (e) {
+            // localStorage might be full or disabled
+            console.warn('LocalStorage cache write error:', e);
+        }
+        
+        return data;
+    }
+
+    /**
+     * Clear all caches (memory and localStorage)
+     */
+    clearAllCaches() {
+        this.cache.clear();
+        try {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('cache_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            console.log('🗑️ All caches cleared');
+        } catch (e) {
+            console.warn('Error clearing localStorage caches:', e);
+        }
+    }
+
     generateCacheKey(table, options) {
         // Create stable cache key by sorting object keys
         const whereStr = JSON.stringify(Object.keys(options.where || {}).sort().reduce((obj, key) => {
@@ -732,6 +807,7 @@ window.StateManager = StateManager;
 console.log('✅ Home Feed Core exported to window');
 console.log('📦 Cache Manager version:', cacheManager.currentVersion);
 console.log('🔧 Service Worker cleanup enabled');
+console.log('📦 ContentSupabaseClient.queryWithCache() method available');
 
 // ============================================
 // INITIALIZE CORE SYSTEMS
@@ -780,6 +856,7 @@ window.dispatchEvent(new CustomEvent('coreReady', {
     detail: { 
         cacheManager: !!window.cacheManager,
         supabaseAuth: !!window.supabaseAuth,
+        contentSupabase: !!window.contentSupabase,
         currentUser: window.currentUser
     } 
 }));
