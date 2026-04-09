@@ -162,30 +162,195 @@ function highlightSearchQuery(text, query) {
     return text.replace(regex, '<mark style="background:rgba(245,158,11,0.3);color:var(--soft-white);padding:0 2px;border-radius:3px;">$1</mark>');
 }
 
-// Only run DOMContentLoaded if document is still loading
+// Initialize performance loader immediately (overwrites old initialization)
+if (typeof window.PerformanceLoader === 'undefined') {
+    window.PerformanceLoader = class PerformanceLoader {
+        constructor() {
+            this.loadingScreen = document.getElementById('loading');
+            this.app = document.getElementById('app');
+            this.loadStartTime = performance.now();
+            this.sectionLoadStatus = {};
+        }
+
+        async init() {
+            console.log('🚀 Performance Loader starting...');
+            
+            // Phase 1: Show skeleton UI IMMEDIATELY (0-100ms)
+            this.showSkeletonUI();
+            
+            // Phase 2: Load critical data in PARALLEL (100-500ms)
+            await this.loadCriticalData();
+            
+            // Phase 3: Lazy load non-critical sections (after render)
+            this.lazyLoadNonCritical();
+            
+            // Phase 4: Hide loading screen and show content
+            this.showContent();
+        }
+
+        showSkeletonUI() {
+            // Hide loading screen, show skeleton immediately
+            if (this.loadingScreen) {
+                this.loadingScreen.style.display = 'none';
+            }
+            if (this.app) {
+                this.app.style.display = 'block';
+            }
+            
+            // Inject skeleton cards if grid is empty
+            const grids = ['continue-watching-grid', 'for-you-grid', 'trending-grid', 'new-content-grid'];
+            grids.forEach(gridId => {
+                const grid = document.getElementById(gridId);
+                if (grid && grid.children.length === 0) {
+                    grid.innerHTML = Array(4).fill().map(() => `
+                        <div class="skeleton-card">
+                            <div class="skeleton-thumbnail"></div>
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-creator"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        async loadCriticalData() {
+            // Load ONLY the first 2 sections in parallel
+            console.log('📡 Loading critical data in parallel...');
+            
+            const criticalTasks = [
+                this.loadWithTimeout(() => loadContinueWatchingSection(), 3000),
+                this.loadWithTimeout(() => loadForYouSection(), 3000)
+            ];
+            
+            // Also load user data in parallel
+            if (window.currentUser) {
+                criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 2000));
+                criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 2000));
+            }
+            
+            // Load trending and new content with reduced limits (8 items)
+            criticalTasks.push(this.loadWithTimeout(() => loadTrendingSection(true), 3000));
+            criticalTasks.push(this.loadWithTimeout(() => loadNewContentSection(true), 3000));
+            
+            await Promise.all(criticalTasks);
+            console.log('✅ Critical data loaded');
+        }
+
+        lazyLoadNonCritical() {
+            // Use requestIdleCallback or setTimeout to load remaining sections
+            const nonCriticalSections = [
+                { name: 'Cinematic Hero', fn: () => loadCinematicHero(), delay: 50 },
+                { name: 'Following', fn: () => loadFollowingSection(), delay: 100 },
+                { name: 'Shorts', fn: () => loadShortsSection(), delay: 150 },
+                { name: 'Community Favorites', fn: () => loadCommunityFavoritesSection(), delay: 200 },
+                { name: 'Live Streams', fn: () => loadLiveStreamsSection(), delay: 250 },
+                { name: 'Featured Creators', fn: () => loadFeaturedCreatorsSection(), delay: 300 },
+                { name: 'Events', fn: () => loadEventsSection(), delay: 350 },
+                { name: 'Community Stats', fn: () => loadCommunityStats(), delay: 400 }
+            ];
+            
+            // Use requestIdleCallback if available
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    nonCriticalSections.forEach(section => {
+                        setTimeout(() => {
+                            section.fn().catch(console.warn);
+                            console.log(`🔄 Lazy loading: ${section.name}`);
+                        }, section.delay);
+                    });
+                }, { timeout: 2000 });
+            } else {
+                // Fallback to setTimeout
+                nonCriticalSections.forEach(section => {
+                    setTimeout(() => {
+                        section.fn().catch(console.warn);
+                    }, section.delay);
+                });
+            }
+        }
+
+        async loadWithTimeout(fn, timeoutMs = 5000) {
+            return Promise.race([
+                fn(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+                )
+            ]).catch(err => {
+                console.warn('⏱️ Function timed out:', err);
+                return null;
+            });
+        }
+
+        showContent() {
+            // Animate cards in with stagger
+            const cards = document.querySelectorAll('.content-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 50 + (index * 20));
+            });
+            
+            const loadTime = performance.now() - this.loadStartTime;
+            console.log(`🎉 Page ready in ${loadTime.toFixed(0)}ms`);
+            
+            // Report to analytics
+            if (window.gtag) {
+                window.gtag('event', 'performance', {
+                    'event_category': 'page_load',
+                    'event_label': 'home_feed',
+                    'value': Math.round(loadTime)
+                });
+            }
+        }
+    };
+}
+
+// Override initializeHomeFeed with performance loader
+window.performanceLoader = new window.PerformanceLoader();
+
+// Replace the old initialization - run immediately
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🚀 Home Feed Initializing (Production Mode)');
-        
-        // Override loading text
-        const loadingText = document.getElementById('loading-text');
-        if (loadingText) loadingText.textContent = 'Building Your Feed...';
-        
-        // Initialize the feed sequentially for stability
-        await initializeHomeFeed();
+    document.addEventListener('DOMContentLoaded', () => {
+        window.performanceLoader.init();
+        // Also run legacy setup functions that aren't covered
+        setupSidebar();
+        setupThemeSelector();
+        setupLanguageFilter();
+        setupSearch();
+        setupNotifications();
+        setupAnalytics();
+        setupVoiceSearch();
+        setupWatchParty();
+        setupTipSystem();
+        setupBackToTop();
+        setupInfiniteScroll();
+        setupKeyboardNavigation();
+        updateWelcomeMessage();
+        renderCategoryTabs();
+        setupNavigationButtons();
+        updateAppIcon();
     });
 } else {
     // DOM is already loaded, run immediately
-    console.log('🚀 Home Feed Initializing (Production Mode) - DOM already loaded');
-    
-    // Override loading text
-    const loadingText = document.getElementById('loading-text');
-    if (loadingText) loadingText.textContent = 'Building Your Feed...';
-    
-    // Initialize the feed sequentially for stability
-    initializeHomeFeed().catch(err => {
-        console.error("❌ Home Feed Initialization Error:", err);
-    });
+    window.performanceLoader.init();
+    setupSidebar();
+    setupThemeSelector();
+    setupLanguageFilter();
+    setupSearch();
+    setupNotifications();
+    setupAnalytics();
+    setupVoiceSearch();
+    setupWatchParty();
+    setupTipSystem();
+    setupBackToTop();
+    setupInfiniteScroll();
+    setupKeyboardNavigation();
+    updateWelcomeMessage();
+    renderCategoryTabs();
+    setupNavigationButtons();
+    updateAppIcon();
 }
 
 // ============================================
@@ -340,94 +505,6 @@ function setupSidebarThemeToggle() {
             }
         }, 150); // 150ms delay for smooth transition
     });
-}
-
-// ============================================
-// HOME FEED CONTROLLER
-// ============================================
-async function initializeHomeFeed() {
-    const loadingScreen = document.getElementById('loading');
-    const app = document.getElementById('app');
-    
-    try {
-        console.log("🚀 Initializing Home Feed (Production Mode)");
-        
-        // ✅ 1. Check authentication FIRST
-        await checkAuth();
-        
-        // Update app icon
-        updateAppIcon();
-        
-        // ✅ 2. Load user profiles if authenticated
-        if (window.currentUser) {
-            await loadUserProfiles();
-            await loadUserProfile(); // Ensure this runs
-        }
-        
-        // ✅ 3. Update UI profile elements AFTER auth is confirmed
-        await updateHeaderProfile();    // Header profile (FIXED)
-        await updateSidebarProfile();   // Sidebar profile (FIXED)
-        updateProfileSwitcher();        // Profile dropdown
-        
-        // ✅ 4. Add global image error handler
-        setupGlobalImageErrorHandler();
-        
-        // Load sections sequentially for stability
-        await loadCinematicHero();                // Hero section first
-        await loadContinueWatchingSection();      // Section 1
-        await loadForYouSection();                // Section 2
-        await loadFollowingSection();             // Section 3
-        await loadShortsSection();                // Section 4
-        await loadCommunityFavoritesSection();    // Section 5
-        await loadLiveStreamsSection();           // Live streams
-        await loadTrendingSection();              // Section 6
-        await loadNewContentSection();            // Section 7
-        await loadFeaturedCreatorsSection();      // Creators
-        await loadEventsSection();                // Events
-        await loadCommunityStats();                // Stats
-        
-        // Initialize UI components (non-data dependent)
-        setupSidebar();
-        setupThemeSelector(); // ✅ Enhanced theme selector setup
-        setupLanguageFilter();
-        setupSearch(); // ✅ FIXED SEARCH
-        setupNotifications();
-        setupAnalytics();
-        setupVoiceSearch();
-        setupWatchParty();
-        setupTipSystem();
-        setupBackToTop();
-        setupInfiniteScroll();
-        setupKeyboardNavigation();
-        updateWelcomeMessage();
-        renderCategoryTabs();
-        setupNavigationButtons();
-        
-        // Hide loading screen and show content
-        setTimeout(() => {
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            if (app) app.style.display = 'block';
-            
-            // Animate cards in
-            document.querySelectorAll('.content-card').forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 50 + (index * 30));
-            });
-        }, 500);
-        
-        console.log("✅ Home Feed Loaded Successfully");
-        
-    } catch (err) {
-        console.error("❌ Home Feed Initialization Error:", err);
-        showToast('Failed to load home feed', 'error');
-        
-        setTimeout(() => {
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            if (app) app.style.display = 'block';
-        }, 1000);
-    }
 }
 
 // ============================================
@@ -1173,11 +1250,13 @@ async function loadLiveStreamsSection() {
 }
 
 // ============================================
-// SECTION 6: TRENDING NOW with Amplification Logic
+// SECTION 6: TRENDING NOW with Amplification Logic (Optimized)
 // ============================================
-async function loadTrendingSection() {
+async function loadTrendingSection(isInitial = false) {
     const container = document.getElementById('trending-grid');
     if (!container) return;
+    
+    const limit = isInitial ? 8 : 12;
     
     try {
         // 1️⃣ Fetch trending content (by views_count) - ✅ Explicitly select language
@@ -1186,7 +1265,7 @@ async function loadTrendingSection() {
             .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('views_count', { ascending: false })
-            .limit(12);
+            .limit(limit);
         
         if (error) throw error;
         
@@ -1202,7 +1281,7 @@ async function loadTrendingSection() {
         }
         
         // 2️⃣ Build complete dataset with metrics
-        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        const sectionData = await buildSectionData(contentList);
         
         // ✅ Apply Amplification Logic
         const boostedData = applyAmplificationLogic(sectionData);
@@ -1220,11 +1299,13 @@ async function loadTrendingSection() {
 }
 
 // ============================================
-// SECTION 7: LATEST GEMS (NEW CONTENT) with Amplification Logic
+// SECTION 7: LATEST GEMS (NEW CONTENT) with Amplification Logic (Optimized)
 // ============================================
-async function loadNewContentSection() {
+async function loadNewContentSection(isInitial = false) {
     const container = document.getElementById('new-content-grid');
     if (!container) return;
+    
+    const limit = isInitial ? 8 : 12;
     
     try {
         // 1️⃣ Fetch new content (by created_at) - ✅ Explicitly select language
@@ -1233,7 +1314,7 @@ async function loadNewContentSection() {
             .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
-            .limit(12);
+            .limit(limit);
         
         if (error) throw error;
         
@@ -1249,7 +1330,7 @@ async function loadNewContentSection() {
         }
         
         // 2️⃣ Build complete dataset with metrics
-        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        const sectionData = await buildSectionData(contentList);
         
         // ✅ Apply Amplification Logic
         const boostedData = applyAmplificationLogic(sectionData);
@@ -3909,7 +3990,7 @@ async function loadMoreContent() {
     if (window.isLoadingMore || !window.hasMoreContent) return;
     
     window.isLoadingMore = true;
-    window.currentPage++;
+    window.currentPage = (window.currentPage || 0) + 1;
     
     const loadingIndicator = document.createElement('div');
     loadingIndicator.className = 'infinite-scroll-loading';
@@ -3921,8 +4002,8 @@ async function loadMoreContent() {
     document.querySelector('.container')?.appendChild(loadingIndicator);
     
     try {
-        const from = window.currentPage * window.PAGE_SIZE;
-        const to = (window.currentPage + 1) * window.PAGE_SIZE - 1;
+        const from = (window.currentPage || 0) * 12;
+        const to = from + 11;
         
         const { data, error } = await supabaseAuth
             .from('Content')
@@ -3952,7 +4033,7 @@ async function loadMoreContent() {
             }));
             
             appendMoreContent(dataWithMetrics);
-            window.hasMoreContent = data.length === window.PAGE_SIZE;
+            window.hasMoreContent = data.length === 12;
         } else {
             window.hasMoreContent = false;
             
@@ -4105,3 +4186,9 @@ function updateAppIcon() {
         sidebarLogoIcon.appendChild(img);
     }
 }
+
+// Initialize global pagination state
+window.hasMoreContent = true;
+window.isLoadingMore = false;
+window.currentPage = 0;
+window.PAGE_SIZE = 12;
