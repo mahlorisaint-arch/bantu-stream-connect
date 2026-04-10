@@ -1,8 +1,8 @@
 // Bantu Stream Connect Service Worker
-// Version: 5.0.0 - EMERGENCY CACHE CLEAR with Safe Caching
-// Last updated: 2026-04-10 - Force clear all old caches
+// Version: 5.0.0 - EMERGENCY CACHE CLEAR with NO AUTO-RELOAD
+// Last updated: 2026-04-10 - Fixed infinite reload loop
 
-const CACHE_NAME = 'bantu-stream-connect-v5';  // Incremented to v5 for emergency clear
+const CACHE_NAME = 'bantu-stream-connect-v5';
 const STATIC_CACHE = 'bantu-static-v5';
 const DYNAMIC_CACHE = 'bantu-dynamic-v5';
 const IMAGE_CACHE = 'bantu-images-v5';
@@ -27,7 +27,11 @@ const STATIC_ASSETS = [
     '/js/rate-limiter.js',
     '/manifest.json',
     '/assets/icon/bantu_stream_connect_icon_192x192.png',
-    '/assets/icon/bantu_stream_connect_icon_512x512.png',
+    '/assets/icon/bantu_stream_connect_icon_512x512.png'
+];
+
+// External assets (CORS-enabled)
+const EXTERNAL_ASSETS = [
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
@@ -43,7 +47,7 @@ const API_ENDPOINTS = [
 ];
 
 // ============================================
-// EMERGENCY: Force clear ALL old caches on install
+// INSTALL: Force clear ALL old caches with NO auto-reload
 // ============================================
 self.addEventListener('install', event => {
     console.log('🚀 Service Worker: Installing v5 - EMERGENCY CACHE CLEAR...');
@@ -59,110 +63,107 @@ self.addEventListener('install', event => {
             await Promise.all(deletePromises);
             console.log('✅ All old caches cleared');
             
-            // Now install new caches
-            return caches.open(CACHE_NAME);
+            // Now open new caches
+            await caches.open(CACHE_NAME);
+            await caches.open(STATIC_CACHE);
+            await caches.open(DYNAMIC_CACHE);
+            await caches.open(IMAGE_CACHE);
+            await caches.open(API_CACHE);
+            
+            return true;
         })
-        .then(async (cache) => {
-            try {
-                // Only cache critical assets that exist
-                const validAssets = [];
-                
-                // Use Promise.allSettled to handle individual failures gracefully
-                const results = await Promise.allSettled(
-                    STATIC_ASSETS.map(async (url) => {
-                        try {
-                            // Skip external URLs for HEAD requests (CORS issues)
-                            if (url.startsWith('http') && !url.startsWith(self.location.origin)) {
-                                // For external resources, just try to cache them directly
-                                validAssets.push(url);
-                                console.log(`📦 Will cache external: ${url}`);
-                                return { url, status: 'added' };
-                            }
-                            
-                            // For local assets, check if they exist
-                            const response = await fetch(url, { 
-                                method: 'HEAD',
-                                cache: 'no-cache'
-                            });
-                            
-                            if (response.ok) {
-                                validAssets.push(url);
-                                console.log(`✅ Asset found: ${url}`);
-                                return { url, status: 'ok' };
-                            } else {
-                                console.log(`⚠️ Skipping non-existent: ${url} (${response.status})`);
-                                return { url, status: 'not-found' };
-                            }
-                        } catch (error) {
-                            // If HEAD fails but it's a local asset, try to add it anyway
-                            if (!url.startsWith('http') || url.startsWith(self.location.origin)) {
-                                validAssets.push(url);
-                                console.log(`⚠️ Adding fallback for: ${url}`);
-                                return { url, status: 'added-fallback' };
-                            }
-                            console.log(`❌ Skipping unreachable: ${url} (${error.message})`);
-                            return { url, status: 'error' };
-                        }
-                    })
-                );
-                
-                // Count successful additions
-                const successCount = results.filter(r => 
-                    r.status === 'fulfilled' && 
-                    (r.value.status === 'ok' || r.value.status === 'added' || r.value.status === 'added-fallback')
-                ).length;
-                
-                console.log(`📊 Asset check: ${successCount}/${STATIC_ASSETS.length} assets will be cached`);
-                
-                // Cache only valid assets
-                if (validAssets.length > 0) {
+        .then(async () => {
+            // Cache critical assets
+            const cache = await caches.open(STATIC_CACHE);
+            
+            // Cache local assets
+            const validAssets = [];
+            
+            for (const url of STATIC_ASSETS) {
+                try {
+                    // Skip external URLs for HEAD checks
+                    if (url.startsWith('http') && !url.startsWith(self.location.origin)) {
+                        validAssets.push(url);
+                        console.log(`📦 Will cache external: ${url}`);
+                        continue;
+                    }
+                    
+                    // For local assets, check if they exist
+                    const response = await fetch(url, { 
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    
+                    if (response.ok) {
+                        validAssets.push(url);
+                        console.log(`✅ Asset found: ${url}`);
+                    } else {
+                        console.log(`⚠️ Skipping non-existent: ${url} (${response.status})`);
+                    }
+                } catch (error) {
+                    // If HEAD fails but it's a local asset, try to add it anyway
+                    if (!url.startsWith('http') || url.startsWith(self.location.origin)) {
+                        validAssets.push(url);
+                        console.log(`⚠️ Adding fallback for: ${url}`);
+                    } else {
+                        console.log(`❌ Skipping unreachable: ${url}`);
+                    }
+                }
+            }
+            
+            // Cache external assets
+            for (const url of EXTERNAL_ASSETS) {
+                validAssets.push(url);
+                console.log(`📦 Will cache external: ${url}`);
+            }
+            
+            // Cache valid assets
+            if (validAssets.length > 0) {
+                try {
                     await cache.addAll(validAssets);
                     console.log(`✅ Cached ${validAssets.length} critical assets`);
-                } else {
-                    console.log('⚠️ No valid assets to cache, continuing anyway');
+                } catch (error) {
+                    console.log('⚠️ Some assets failed to cache:', error);
+                    // Try individually for failed assets
+                    for (const url of validAssets) {
+                        try {
+                            await cache.add(url);
+                        } catch (e) {
+                            console.log(`⚠️ Failed to cache: ${url}`);
+                        }
+                    }
                 }
-            } catch (error) {
-                console.log('⚠️ Precaching failed (non-critical):', error);
-                // Don't fail install - app can still work
+            } else {
+                console.log('⚠️ No valid assets to cache, continuing anyway');
             }
         })
         .then(() => {
-            // Also try to pre-cache API endpoints (don't block on failure)
-            return caches.open(API_CACHE).then(cache => {
-                return Promise.allSettled(
-                    API_ENDPOINTS.map(endpoint => 
-                        fetch(endpoint, { cache: 'no-cache' })
-                            .then(response => {
-                                if (response.ok) {
-                                    cache.put(endpoint, response);
-                                    console.log(`✅ Cached API endpoint: ${endpoint}`);
-                                }
-                            })
-                            .catch(() => {})
-                    )
-                );
-            });
-        })
-        .then(() => {
             console.log('✅ Service Worker: Install completed - v5 ready');
-            return self.skipWaiting();
+            // CRITICAL FIX: Do NOT call skipWaiting() automatically
+            // This prevents the infinite reload loop
+            // self.skipWaiting() - REMOVED to prevent auto-reload
         })
     );
 });
 
 // ============================================
-// ACTIVATE: Take control immediately and clean up
+// ACTIVATE: Clean up but DO NOT claim clients immediately
 // ============================================
 self.addEventListener('activate', event => {
-    console.log('🚀 Service Worker: Activating v5 - Taking control...');
+    console.log('🚀 Service Worker: Activating v5...');
     
     event.waitUntil(
         caches.keys().then(cacheNames => {
             console.log('🗑️ Final cache cleanup during activation...');
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    // Delete any caches that don't match our current version
-                    if (!cacheName.includes('v5')) {
+                    // Delete any caches that don't match our current versions
+                    if (!cacheName.includes('v5') && 
+                        cacheName !== CACHE_NAME && 
+                        cacheName !== STATIC_CACHE && 
+                        cacheName !== DYNAMIC_CACHE && 
+                        cacheName !== IMAGE_CACHE && 
+                        cacheName !== API_CACHE) {
                         console.log('🗑️ Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
@@ -170,14 +171,16 @@ self.addEventListener('activate', event => {
             );
         }).then(() => {
             console.log('✅ Service Worker: Activation completed - v5 active');
-            // Take control of all clients immediately
-            return self.clients.claim();
+            // CRITICAL FIX: Do NOT call clients.claim() automatically
+            // This prevents the service worker from taking control immediately
+            // and causing potential reload loops
+            // return self.clients.claim(); - REMOVED to prevent reload loop
         })
     );
 });
 
 // ============================================
-// FETCH: Optimized caching strategies
+// FETCH: Optimized caching strategies with CORRUPTED PATH BLOCKING
 // ============================================
 self.addEventListener('fetch', event => {
     const requestUrl = new URL(event.request.url);
@@ -197,11 +200,14 @@ self.addEventListener('fetch', event => {
     
     // ============================================
     // EMERGENCY FIX: Block any requests with corrupted paths
+    // This prevents the infinite loop from corrupted asset paths
     // ============================================
     if (requestUrl.pathname.includes('css/js/js/') || 
         requestUrl.pathname.includes('js/js/js/') ||
-        requestUrl.pathname.match(/\/js\/css\//) ||
-        requestUrl.pathname.match(/\/css\/js\//)) {
+        requestUrl.pathname.includes('/js/css/') ||
+        requestUrl.pathname.includes('/css/js/') ||
+        requestUrl.pathname.match(/\/js\/[^/]*\.css/) ||
+        requestUrl.pathname.match(/\/css\/[^/]*\.js/)) {
         console.error('🚨 BLOCKED corrupted path request:', requestUrl.pathname);
         event.respondWith(
             new Response('', { status: 404, statusText: 'Not Found - Corrupted Path' })
@@ -243,6 +249,7 @@ self.addEventListener('fetch', event => {
     
     // ============================================
     // Strategy 1: Cache First for static assets (CSS, JS, fonts)
+    // With stale-while-revalidate but NO forced refresh
     // ============================================
     if (requestUrl.pathname.match(/\.(css|js|json|woff2?|ttf|eot)$/) ||
         requestUrl.hostname.includes('fonts.googleapis.com') ||
@@ -252,6 +259,7 @@ self.addEventListener('fetch', event => {
             caches.match(event.request).then(cachedResponse => {
                 if (cachedResponse) {
                     // Return cached response and update in background (stale-while-revalidate)
+                    // But DON'T trigger any page reload
                     fetch(event.request)
                         .then(networkResponse => {
                             if (networkResponse && networkResponse.ok) {
@@ -398,11 +406,14 @@ self.addEventListener('fetch', event => {
 
 // ============================================
 // MESSAGE HANDLER: Allow client to trigger cache clearing
+// CRITICAL: NO auto-reload on messages
 // ============================================
 self.addEventListener('message', event => {
     console.log('Service Worker: Message received', event.data);
     
     if (event.data.type === 'SKIP_WAITING') {
+        // Only skip waiting if explicitly requested by user action
+        // This prevents automatic reload loops
         self.skipWaiting();
     }
     
@@ -431,6 +442,13 @@ self.addEventListener('message', event => {
     
     if (event.data.type === 'PREFETCH_CONTENT') {
         prefetchContent(event.data.contentIds);
+    }
+    
+    if (event.data.type === 'FORCE_RELOAD') {
+        // Only reload if explicitly requested by user
+        if (event.source) {
+            event.source.postMessage({ type: 'RELOAD_REQUESTED' });
+        }
     }
 });
 
@@ -859,4 +877,4 @@ async function cleanupExpiredCache() {
 // Run cleanup every hour
 setInterval(cleanupExpiredCache, 60 * 60 * 1000);
 
-console.log('✅ Service Worker v5 loaded - EMERGENCY CACHE CLEARED - Home Feed Ready');
+console.log('✅ Service Worker v5 loaded - NO AUTO-RELOAD - Home Feed Ready');
