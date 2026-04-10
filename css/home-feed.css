@@ -479,6 +479,134 @@ body {
     background: var(--warm-gold);
 }
 
+/* Fade in animation for main content */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Performance: Content cards start invisible then fade in */
+.content-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.content-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Critical CSS for immediate header rendering */
+.header, .category-tabs-container, .language-filter-bar {
+    will-change: transform;
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================ */
+
+/* Performance optimizations for smoother rendering */
+.content-card, .short-card, .creator-card {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Optimize animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.content-card.visible {
+    animation: fadeInUp 0.3s ease forwards;
+}
+
+/* Skeleton Card Styles */
+.skeleton-card {
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+}
+
+.skeleton-thumbnail {
+    width: 100%;
+    height: var(--card-thumbnail-height);
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-title {
+    height: calc(1.25rem * var(--ui-scale));
+    width: 80%;
+    margin: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-creator {
+    height: calc(0.75rem * var(--ui-scale));
+    width: 60%;
+    margin: 0 var(--spacing-md) var(--spacing-sm);
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-stats {
+    height: calc(0.625rem * var(--ui-scale));
+    width: 70%;
+    margin: 0 var(--spacing-md) var(--spacing-md);
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Reduce motion if user prefers */
+@media (prefers-reduced-motion: reduce) {
+    .content-card, .short-card, .creator-card {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .skeleton-thumbnail,
+    .skeleton-title,
+    .skeleton-creator,
+    .skeleton-stats {
+        animation: none !important;
+    }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     :root { --base-font-size: 14px; }
