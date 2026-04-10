@@ -1,19 +1,22 @@
 // ============================================
-// HOME FEED CORE MODULE
+// HOME FEED CORE MODULE - OPTIMIZED FOR SPEED
 // ============================================
 // This file contains all core systems for the Bantu platform home feed
 // Includes: Enhanced Supabase Client, Cache Manager, Error Handler, 
 // Performance Monitor, State Manager, and Supabase Auth
 // ============================================
 
-// Enhanced Supabase client with caching and timeout handling
+// ============================================
+// OPTIMIZED CONTENT SUPABASE CLIENT
+// ============================================
 class ContentSupabaseClient {
     constructor(url, key) {
         this.url = url;
         this.key = key;
         this.cache = new Map();
         this.cacheTTL = 5 * 60 * 1000; // 5 minutes cache TTL
-        this.requestTimeout = 15000; // 15 second timeout (increased from 8000ms)
+        this.requestTimeout = 15000; // 15 second timeout
+        this.defaultLimit = 15; // Reduced from 100 for performance
     }
     
     async query(table, options = {}, retryCount = 0) {
@@ -22,37 +25,41 @@ class ContentSupabaseClient {
             where = {},
             orderBy = 'created_at',
             order = 'desc',
-            limit = 100,
+            limit = this.defaultLimit,
             offset = 0,
             timeout = this.requestTimeout
         } = options;
 
-        // Generate cache key (excluding volatile params)
+        // Generate cache key
         const cacheKey = this.generateCacheKey(table, { select, where, orderBy, order, limit, offset });
         
-        // Check cache first
+        // Check memory cache first
         if (this.cache.has(cacheKey)) {
             const cached = this.cache.get(cacheKey);
             if (Date.now() - cached.timestamp < this.cacheTTL) {
-                console.log('✅ Serving from cache:', cacheKey);
+                console.log('✅ Serving from memory cache:', cacheKey);
                 return cached.data;
             }
             this.cache.delete(cacheKey);
+        }
+        
+        // Check localStorage cache
+        const localStorageCache = this.getFromLocalStorage(cacheKey);
+        if (localStorageCache) {
+            console.log('✅ Serving from localStorage cache:', cacheKey);
+            return localStorageCache;
         }
 
         // Build query URL with CORRECT Supabase syntax
         let queryUrl = `${this.url}/rest/v1/${table}?select=${encodeURIComponent(select)}`;
 
-        // Add filters - FIXED: Properly handles different operators
+        // Add filters - handles different operators
         Object.keys(where).forEach(key => {
             const value = where[key];
             
-            // Check if value already has an operator prefix (like "in.")
             if (typeof value === 'string' && (value.startsWith('in.') || value.startsWith('gte.') || value.startsWith('lte.'))) {
-                // Use the operator as-is
                 queryUrl += `&${key}=${encodeURIComponent(value)}`;
             } else {
-                // Default to eq. operator
                 queryUrl += `&${key}=eq.${encodeURIComponent(value)}`;
             }
         });
@@ -82,7 +89,6 @@ class ContentSupabaseClient {
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                // Handle specific error cases
                 if (response.status === 408) {
                     throw new Error(`Request timeout after ${timeout}ms. Server is overloaded.`);
                 }
@@ -91,21 +97,14 @@ class ContentSupabaseClient {
             
             const data = await response.json();
 
-            // Store in cache
+            // Store in memory cache
             this.cache.set(cacheKey, {
                 data: data,
                 timestamp: Date.now()
             });
 
-            // Also store in localStorage for offline use
-            try {
-                localStorage.setItem(`cache_${cacheKey}`, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
-            } catch (e) {
-                console.log('Could not cache in localStorage:', e);
-            }
+            // Store in localStorage for offline/persistence
+            this.saveToLocalStorage(cacheKey, data);
             
             return data;
         } catch (error) {
@@ -119,7 +118,7 @@ class ContentSupabaseClient {
                 const backoffTime = Math.pow(2, retryCount) * 1000;
                 await new Promise(resolve => setTimeout(resolve, backoffTime));
                 
-                // Simplify query on retry (remove complex filters)
+                // Simplify query on retry
                 const simplifiedWhere = {};
                 Object.keys(where).forEach(key => {
                     if (!where[key].toString().startsWith('in.') && key !== 'id') {
@@ -131,106 +130,23 @@ class ContentSupabaseClient {
                     return this.query(table, {
                         ...options,
                         where: simplifiedWhere,
-                        timeout: timeout * 1.5 // Increase timeout for retry
+                        timeout: timeout * 1.5
                     }, retryCount + 1);
                 }
             }
 
-            // Fallback to localStorage cache
-            try {
-                const offlineCache = localStorage.getItem(`cache_${cacheKey}`);
-                if (offlineCache) {
-                    const parsed = JSON.parse(offlineCache);
-                    if (Date.now() - parsed.timestamp < this.cacheTTL * 2) {
-                        console.log('⚠️ Using offline cache fallback');
-                        return parsed.data;
-                    }
-                }
-            } catch (e) {
-                console.log('Could not read localStorage cache:', e);
+            // Fallback to localStorage cache on error
+            const fallbackCache = this.getFromLocalStorage(cacheKey);
+            if (fallbackCache) {
+                console.log('⚠️ Using localStorage fallback cache');
+                return fallbackCache;
             }
             
             throw error;
         }
     }
-
-    /**
-     * Query with enhanced caching - YouTube-style progressive loading
-     * Checks memory cache first, then localStorage, then fetches fresh
-     * @param {string} table - Table name to query
-     * @param {object} options - Query options
-     * @returns {Promise<any>} Query results
-     */
-    async queryWithCache(table, options = {}) {
-        const cacheKey = this.generateCacheKey(table, options);
-        
-        // Check memory cache first (fastest)
-        if (this.cache.has(cacheKey)) {
-            const cached = this.cache.get(cacheKey);
-            if (Date.now() - cached.timestamp < this.cacheTTL) {
-                console.log('📦 Memory cache hit:', cacheKey.substring(0, 30));
-                return cached.data;
-            }
-            // Expired, delete from memory
-            this.cache.delete(cacheKey);
-        }
-        
-        // Check localStorage cache (persistent across page reloads)
-        try {
-            const stored = localStorage.getItem(`cache_${cacheKey}`);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Date.now() - parsed.timestamp < this.cacheTTL) {
-                    console.log('💾 LocalStorage cache hit:', cacheKey.substring(0, 30));
-                    // Restore to memory cache for faster subsequent access
-                    this.cache.set(cacheKey, parsed);
-                    return parsed.data;
-                } else {
-                    // Expired, remove from localStorage
-                    localStorage.removeItem(`cache_${cacheKey}`);
-                }
-            }
-        } catch (e) {
-            console.warn('LocalStorage cache read error:', e);
-        }
-        
-        // Fetch fresh data
-        console.log('🌐 Fetching fresh data:', cacheKey.substring(0, 30));
-        const data = await this.query(table, options);
-        
-        // Store in both caches
-        const cacheEntry = { data, timestamp: Date.now() };
-        this.cache.set(cacheKey, cacheEntry);
-        
-        try {
-            localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(cacheEntry));
-        } catch (e) {
-            // localStorage might be full or disabled
-            console.warn('LocalStorage cache write error:', e);
-        }
-        
-        return data;
-    }
-
-    /**
-     * Clear all caches (memory and localStorage)
-     */
-    clearAllCaches() {
-        this.cache.clear();
-        try {
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('cache_')) {
-                    localStorage.removeItem(key);
-                }
-            });
-            console.log('🗑️ All caches cleared');
-        } catch (e) {
-            console.warn('Error clearing localStorage caches:', e);
-        }
-    }
-
+    
     generateCacheKey(table, options) {
-        // Create stable cache key by sorting object keys
         const whereStr = JSON.stringify(Object.keys(options.where || {}).sort().reduce((obj, key) => {
             obj[key] = options.where[key];
             return obj;
@@ -238,20 +154,53 @@ class ContentSupabaseClient {
         return `${table}_${options.select || '*'}_${whereStr}_${options.orderBy || ''}_${options.order || ''}_${options.limit || ''}_${options.offset || ''}`;
     }
     
+    getFromLocalStorage(cacheKey) {
+        try {
+            const cached = localStorage.getItem(`bantu_cache_${cacheKey}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.timestamp < this.cacheTTL) {
+                    return parsed.data;
+                }
+                localStorage.removeItem(`bantu_cache_${cacheKey}`);
+            }
+        } catch (e) {
+            console.log('Could not read from localStorage:', e);
+        }
+        return null;
+    }
+    
+    saveToLocalStorage(cacheKey, data) {
+        try {
+            localStorage.setItem(`bantu_cache_${cacheKey}`, JSON.stringify({
+                data: data,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.log('Could not save to localStorage:', e);
+        }
+    }
+    
     clearCache() {
         this.cache.clear();
+        // Clear localStorage cache as well
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('bantu_cache_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        console.log('🗑️ Cache cleared');
     }
     
     async preloadContent() {
-        // Preload trending content with timeout safety
         try {
             await this.query('Content', {
-                select: '*',
+                select: 'id,title,thumbnail_url,duration,user_id,language,created_at',
                 where: { status: 'published' },
-                orderBy: 'views',
+                orderBy: 'views_count',
                 order: 'desc',
                 limit: 10,
-                timeout: 5000 // Shorter timeout for preloading
+                timeout: 5000
             });
             console.log('✅ Preloaded trending content');
         } catch (error) {
@@ -260,12 +209,14 @@ class ContentSupabaseClient {
     }
 }
 
-// Cache Manager
+// ============================================
+// OPTIMIZED CACHE MANAGER
+// ============================================
 class CacheManager {
     constructor() {
-        this.cacheName = 'bantu-stream-connect-v4'; // Incremented version to force fresh cache
-        this.cacheTTL = 60 * 60 * 1000; // 1 hour
-        this.currentVersion = 'v4'; // Updated to match cache name
+        this.cacheName = 'bantu-stream-connect-v5';
+        this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+        this.currentVersion = 'v5';
     }
     
     async init() {
@@ -277,32 +228,25 @@ class CacheManager {
     async setupServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                // First, clear any old service workers (version mismatch)
                 await this.clearOldServiceWorkers();
                 
-                // Register the current service worker
                 const registration = await navigator.serviceWorker.register('/sw.js');
                 console.log('✅ ServiceWorker registered:', registration);
                 
-                // Check for updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
                     console.log('🔄 New service worker installing...');
                     
                     newWorker.addEventListener('statechange', () => {
                         console.log('📱 Service worker state:', newWorker.state);
-                        
-                        // If new worker is activated, reload to ensure fresh content
                         if (newWorker.state === 'activated') {
-                            console.log('🔄 New service worker activated - reloading for fresh content');
-                            window.location.reload();
+                            console.log('🔄 New service worker activated');
                         }
                     });
                 });
                 
-                // Listen for controller change (new SW activated)
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('🔄 Service worker controller changed - new version activated');
+                    console.log('🔄 Service worker controller changed');
                 });
                 
             } catch (error) {
@@ -318,21 +262,13 @@ class CacheManager {
             const registrations = await navigator.serviceWorker.getRegistrations();
             
             for (const registration of registrations) {
-                // Check if this is an old version
-                // We consider any service worker with 'v3' in the URL as old (since we're on v4)
                 if (registration.active && registration.active.scriptURL.includes('sw.js')) {
                     console.log('📱 Found service worker registration:', registration.active.scriptURL);
                     
-                    // Check if this is likely an old version (you can customize this logic)
-                    // For example, if the registration scope includes 'bantustreamconnect' but version mismatches
                     if (registration.scope.includes('bantustreamconnect')) {
-                        // Unregister old service workers on version mismatch
-                        // This ensures we're always running the latest version
                         const unregistered = await registration.unregister();
                         if (unregistered) {
                             console.log('🔄 Unregistered old service worker');
-                            
-                            // Clear all caches associated with this registration
                             await this.clearOldCaches();
                         }
                     }
@@ -372,7 +308,6 @@ class CacheManager {
             this.updateCacheStatus('online');
             this.showToast('Back online', 'success');
             
-            // When coming back online, check for service worker updates
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(registration => {
                     registration.update();
@@ -398,26 +333,23 @@ class CacheManager {
             '/',
             '/index.html',
             '/css/home-feed.css',
-            '/css/home-feed-themes.css',
-            '/css/home-feed-components.css',
-            '/css/home-feed-utilities.css',
+            '/css/home-feed-ui.css',
             '/css/home-feed-features.css',
             '/js/home-feed-core.js',
             '/js/home-feed-features.js',
             '/js/home-feed-ui.js',
-            '/js/home-feed-utils.js',
-            '/js/home-feed.js'
+            '/js/home-feed.js',
+            '/js/rate-limiter.js',
+            '/js/image-fix.js'
         ];
         
         if ('caches' in window) {
             try {
                 const cache = await caches.open(this.cacheName);
                 
-                // Filter out non-existent URLs before caching
                 const validAssets = [];
                 for (const url of criticalAssets) {
                     try {
-                        // Use HEAD request to check if asset exists
                         const response = await fetch(url, { method: 'HEAD' });
                         if (response.ok) {
                             validAssets.push(url);
@@ -425,13 +357,14 @@ class CacheManager {
                             console.log(`Skipping non-existent: ${url}`);
                         }
                     } catch (e) {
-                        console.log(`Skipping non-existent: ${url} (error: ${e.message})`);
+                        console.log(`Skipping non-existent: ${url}`);
                     }
                 }
                 
-                // Cache only valid assets
-                await cache.addAll(validAssets);
-                console.log('✅ Precached critical assets:', validAssets.length);
+                if (validAssets.length > 0) {
+                    await cache.addAll(validAssets);
+                    console.log('✅ Precached critical assets:', validAssets.length);
+                }
             } catch (error) {
                 console.log('⚠️ Precaching failed:', error);
             }
@@ -465,7 +398,6 @@ class CacheManager {
     }
     
     showToast(message, type) {
-        // Implementation in utils
         if (typeof window.showToast === 'function') {
             window.showToast(message, type);
         } else {
@@ -473,11 +405,9 @@ class CacheManager {
         }
     }
     
-    // New method to handle version mismatches
     handleVersionMismatch() {
         console.log('🔄 Version mismatch detected - clearing caches and reloading');
         
-        // Clear all caches
         if ('caches' in window) {
             caches.keys().then(keys => {
                 keys.forEach(key => {
@@ -488,14 +418,12 @@ class CacheManager {
             });
         }
         
-        // Clear service worker registrations
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 registrations.forEach(registration => {
                     registration.unregister();
                 });
             }).then(() => {
-                // Reload the page after cleaning up
                 window.location.reload();
             });
         } else {
@@ -503,10 +431,9 @@ class CacheManager {
         }
     }
     
-    // Safe get method for external use
     get(key) {
         try {
-            const cached = localStorage.getItem(`cache_${key}`);
+            const cached = localStorage.getItem(`bantu_cache_${key}`);
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Date.now() - parsed.timestamp < this.cacheTTL) {
@@ -519,10 +446,9 @@ class CacheManager {
         return null;
     }
     
-    // Safe set method for external use
     set(key, data, ttl = this.cacheTTL) {
         try {
-            localStorage.setItem(`cache_${key}`, JSON.stringify({
+            localStorage.setItem(`bantu_cache_${key}`, JSON.stringify({
                 data: data,
                 timestamp: Date.now()
             }));
@@ -531,22 +457,23 @@ class CacheManager {
         }
     }
     
-    // Clear cache method
     clear() {
         try {
-            // Clear only our cache keys
             Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('cache_')) {
+                if (key.startsWith('bantu_cache_')) {
                     localStorage.removeItem(key);
                 }
             });
+            console.log('🗑️ Cache cleared');
         } catch (error) {
             console.error('Error clearing cache:', error);
         }
     }
 }
 
-// Error Handler
+// ============================================
+// ERROR HANDLER
+// ============================================
 class ErrorHandler {
     constructor() {
         this.errors = [];
@@ -593,9 +520,9 @@ class ErrorHandler {
     isCriticalError(error) {
         const criticalErrors = ['NetworkError', 'TypeError', 'SyntaxError', 'ReferenceError'];
         return criticalErrors.includes(error.name) || 
-               error.message.includes('network') ||
-               error.message.includes('connection') ||
-               error.message.includes('timeout');
+               error.message?.includes('network') ||
+               error.message?.includes('connection') ||
+               error.message?.includes('timeout');
     }
     
     showErrorModal(error) {
@@ -608,13 +535,26 @@ class ErrorHandler {
         }
         
         modal.style.display = 'flex';
+        
+        const closeBtn = document.getElementById('close-error-modal');
+        if (closeBtn) {
+            closeBtn.onclick = () => modal.style.display = 'none';
+        }
+        
+        const retryBtn = document.getElementById('retry-recovery-btn');
+        if (retryBtn) {
+            retryBtn.onclick = () => {
+                modal.style.display = 'none';
+                window.location.reload();
+            };
+        }
     }
     
     getUserFriendlyMessage(error) {
-        if (error.message.includes('network') || error.message.includes('connection')) {
+        if (error.message?.includes('network') || error.message?.includes('connection')) {
             return 'We\'re having trouble connecting to the server. You can continue using cached content.';
         }
-        if (error.message.includes('timeout')) {
+        if (error.message?.includes('timeout')) {
             return 'The request is taking too long. Please check your connection and try again.';
         }
         return 'Something went wrong. Please try again.';
@@ -629,7 +569,9 @@ class ErrorHandler {
     }
 }
 
-// Performance Monitor
+// ============================================
+// PERFORMANCE MONITOR
+// ============================================
 class PerformanceMonitor {
     constructor() {
         this.metrics = {
@@ -643,41 +585,56 @@ class PerformanceMonitor {
     
     setupObservers() {
         if ('PerformanceObserver' in window) {
-            // FCP Observer
             try {
                 const fcpObserver = new PerformanceObserver((entryList) => {
                     const entries = entryList.getEntries();
                     if (entries.length > 0) {
                         this.metrics.fcp = entries[entries.length - 1].startTime;
                         this.updateMetricDisplay('fcp', this.metrics.fcp);
+                        this.logMetric('FCP', this.metrics.fcp);
                     }
                 });
                 fcpObserver.observe({ entryTypes: ['paint'] });
             } catch (e) {}
             
-            // LCP Observer
             try {
                 const lcpObserver = new PerformanceObserver((entryList) => {
                     const entries = entryList.getEntries();
                     if (entries.length > 0) {
                         this.metrics.lcp = entries[entries.length - 1].startTime;
                         this.updateMetricDisplay('lcp', this.metrics.lcp);
+                        this.logMetric('LCP', this.metrics.lcp);
                     }
                 });
                 lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
             } catch (e) {}
             
-            // CLS Observer
             try {
+                let clsValue = 0;
                 const clsObserver = new PerformanceObserver((entryList) => {
                     for (const entry of entryList.getEntries()) {
                         if (!entry.hadRecentInput) {
-                            this.metrics.cls += entry.value;
+                            clsValue += entry.value;
+                            this.metrics.cls = clsValue;
                         }
                     }
                     this.updateMetricDisplay('cls', this.metrics.cls);
+                    this.logMetric('CLS', this.metrics.cls);
                 });
                 clsObserver.observe({ entryTypes: ['layout-shift'] });
+            } catch (e) {}
+        }
+        
+        // Measure TTI (Time to Interactive)
+        if ('PerformanceLongTaskTiming' in window) {
+            try {
+                const longTaskObserver = new PerformanceObserver((entryList) => {
+                    const entries = entryList.getEntries();
+                    if (entries.length > 0) {
+                        console.warn(`⚠️ Long task detected: ${entries[0].duration}ms`);
+                    }
+                });
+                longTaskObserver.observe({ entryTypes: ['longtask'] });
             } catch (e) {}
         }
     }
@@ -693,6 +650,11 @@ class PerformanceMonitor {
         }
     }
     
+    logMetric(name, value) {
+        const formattedValue = name === 'CLS' ? value.toFixed(3) : `${(value / 1000).toFixed(2)}s`;
+        console.log(`📊 Performance Metric - ${name}: ${formattedValue}`);
+    }
+    
     reportMetrics() {
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -702,20 +664,29 @@ class PerformanceMonitor {
     }
     
     checkPerformanceTargets() {
-        // FCP < 1.5s, LCP < 2.5s, CLS < 0.1
-        if (this.metrics.fcp > 1500) {
-            console.warn(`⚠️ FCP ${this.metrics.fcp}ms exceeds target 1500ms`);
+        const warnings = [];
+        if (this.metrics.fcp > 1500) warnings.push(`FCP ${this.metrics.fcp}ms > 1500ms`);
+        if (this.metrics.lcp > 2500) warnings.push(`LCP ${this.metrics.lcp}ms > 2500ms`);
+        if (this.metrics.cls > 0.1) warnings.push(`CLS ${this.metrics.cls} > 0.1`);
+        
+        if (warnings.length > 0) {
+            console.warn('⚠️ Performance targets not met:', warnings.join(', '));
+        } else {
+            console.log('✅ All performance targets met!');
         }
-        if (this.metrics.lcp > 2500) {
-            console.warn(`⚠️ LCP ${this.metrics.lcp}ms exceeds target 2500ms`);
-        }
-        if (this.metrics.cls > 0.1) {
-            console.warn(`⚠️ CLS ${this.metrics.cls} exceeds target 0.1`);
-        }
+    }
+    
+    getLoadTime() {
+        const perfData = performance.timing;
+        const loadTime = perfData.loadEventEnd - perfData.navigationStart;
+        console.log(`📊 Page load time: ${loadTime}ms`);
+        return loadTime;
     }
 }
 
-// State Manager
+// ============================================
+// STATE MANAGER
+// ============================================
 class StateManager {
     constructor() {
         this.state = {
@@ -756,58 +727,74 @@ class StateManager {
         this.notify();
     }
     
+    getState() {
+        return { ...this.state };
+    }
+    
     subscribe(callback) {
         this.subscribers.push(callback);
+        return () => {
+            this.subscribers = this.subscribers.filter(cb => cb !== callback);
+        };
     }
     
     notify() {
         this.subscribers.forEach(callback => callback(this.state));
     }
+    
+    clearState() {
+        this.state = {
+            content: [],
+            filtered: [],
+            loading: false,
+            error: null,
+            user: null,
+            theme: 'dark',
+            notifications: []
+        };
+        this.saveState();
+        this.notify();
+    }
 }
 
-// Initialize global instances
-const contentSupabase = new ContentSupabaseClient(
-    'https://ydnxqnbjoshvxteevemc.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-);
+// ============================================
+// INITIALIZE GLOBAL INSTANCES
+// ============================================
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
+// Create optimized instances
+const contentSupabase = new ContentSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const cacheManager = new CacheManager();
 const errorHandler = new ErrorHandler();
 const performanceMonitor = new PerformanceMonitor();
 const stateManager = new StateManager();
 
-// Supabase Auth configuration
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+// Create Supabase Auth client
 const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================
-// GLOBAL EXPORTS (MUST BE LAST)
+// GLOBAL EXPORTS
 // ============================================
-
-// Export instances to window for other scripts
 window.contentSupabase = contentSupabase;
-window.cacheManager = cacheManager;  // ← THIS IS THE KEY FIX
+window.cacheManager = cacheManager;
 window.errorHandler = errorHandler;
 window.performanceMonitor = performanceMonitor;
 window.stateManager = stateManager;
 window.supabaseAuth = supabaseAuth;
-
-// Export Supabase config for reuse
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
-// Also export individual methods for backward compatibility
-window.CacheManager = CacheManager;
+// Export classes for backward compatibility
 window.ContentSupabaseClient = ContentSupabaseClient;
+window.CacheManager = CacheManager;
 window.ErrorHandler = ErrorHandler;
 window.PerformanceMonitor = PerformanceMonitor;
 window.StateManager = StateManager;
 
 console.log('✅ Home Feed Core exported to window');
 console.log('📦 Cache Manager version:', cacheManager.currentVersion);
-console.log('🔧 Service Worker cleanup enabled');
-console.log('📦 ContentSupabaseClient.queryWithCache() method available');
+console.log('📊 Default query limit:', contentSupabase.defaultLimit);
 
 // ============================================
 // INITIALIZE CORE SYSTEMS
@@ -815,20 +802,22 @@ console.log('📦 ContentSupabaseClient.queryWithCache() method available');
 (async function initializeCore() {
     console.log('🚀 Initializing Core Systems...');
     
+    const startTime = performance.now();
+    
     // Initialize cache manager
-    if (typeof cacheManager !== 'undefined' && cacheManager.init) {
+    if (cacheManager && cacheManager.init) {
         await cacheManager.init();
         console.log('✅ Cache Manager initialized');
     }
     
     // Initialize performance monitoring
-    if (typeof performanceMonitor !== 'undefined') {
+    if (performanceMonitor) {
         performanceMonitor.reportMetrics();
         console.log('✅ Performance Monitor initialized');
     }
     
     // Check authentication status
-    if (typeof supabaseAuth !== 'undefined') {
+    if (supabaseAuth) {
         try {
             const { data: { session } } = await supabaseAuth.auth.getSession();
             if (session?.user) {
@@ -844,19 +833,38 @@ console.log('📦 ContentSupabaseClient.queryWithCache() method available');
         }
     }
     
-    console.log('✅ Core Systems ready');
+    const initTime = performance.now() - startTime;
+    console.log(`✅ Core Systems ready in ${initTime.toFixed(2)}ms`);
+    
+    // Dispatch event that core is ready
+    window.dispatchEvent(new CustomEvent('coreReady', { 
+        detail: { 
+            cacheManager: !!window.cacheManager,
+            supabaseAuth: !!window.supabaseAuth,
+            currentUser: window.currentUser,
+            initTime: initTime
+        } 
+    }));
 })();
 
 // ============================================
-// EXPORT FOR OTHER SCRIPTS
+// HELPER: CLEAR ALL CACHES (for debugging)
 // ============================================
-// Ensure all core systems are available globally before any other scripts run
-// This ensures home-feed-features.js and home-feed.js can access them
-window.dispatchEvent(new CustomEvent('coreReady', { 
-    detail: { 
-        cacheManager: !!window.cacheManager,
-        supabaseAuth: !!window.supabaseAuth,
-        contentSupabase: !!window.contentSupabase,
-        currentUser: window.currentUser
-    } 
-}));
+window.clearAllCaches = function() {
+    if (cacheManager) cacheManager.clear();
+    if (contentSupabase) contentSupabase.clearCache();
+    console.log('🗑️ All caches cleared');
+    showToast('Caches cleared', 'success');
+};
+
+// ============================================
+// HELPER: GET CACHE STATS
+// ============================================
+window.getCacheStats = function() {
+    let cacheCount = 0;
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('bantu_cache_')) cacheCount++;
+    });
+    console.log(`📦 Cache stats: ${cacheCount} items in localStorage`);
+    return { cacheCount };
+};
