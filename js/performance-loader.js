@@ -1,5 +1,5 @@
 // ============================================
-// PERFORMANCE LOADER - YouTube-style progressive loading
+// PERFORMANCE LOADER - Fixed version
 // ============================================
 
 class PerformanceLoader {
@@ -55,31 +55,59 @@ class PerformanceLoader {
         // Load ONLY the first 2 sections in parallel
         console.log('📡 Loading critical data in parallel...');
         
-        const criticalTasks = [
-            this.loadWithTimeout(() => loadContinueWatchingSection(), 3000),
-            this.loadWithTimeout(() => loadForYouSection(), 3000)
-        ];
+        // Define critical tasks - check if functions exist before calling
+        const criticalTasks = [];
+        
+        if (typeof loadContinueWatchingSection === 'function') {
+            criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
+        } else {
+            console.warn('⚠️ loadContinueWatchingSection not defined yet, waiting...');
+            // Wait for it to be defined (from home-feed-features.js)
+            await new Promise(resolve => {
+                const checkInterval = setInterval(() => {
+                    if (typeof loadContinueWatchingSection === 'function') {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 100);
+                setTimeout(resolve, 2000); // Fallback after 2 seconds
+            });
+            if (typeof loadContinueWatchingSection === 'function') {
+                criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
+            }
+        }
+        
+        if (typeof loadForYouSection === 'function') {
+            criticalTasks.push(this.loadWithTimeout(() => loadForYouSection(), 3000));
+        }
         
         // Also load user data in parallel
         if (window.currentUser) {
-            criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 2000));
-            criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 2000));
+            if (typeof loadUserProfiles === 'function') {
+                criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 2000));
+            }
+            if (typeof updateHeaderProfile === 'function') {
+                criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 2000));
+            }
         }
         
-        await Promise.all(criticalTasks);
+        if (criticalTasks.length > 0) {
+            await Promise.all(criticalTasks);
+        }
         console.log('✅ Critical data loaded');
     }
 
     lazyLoadNonCritical() {
         // Use requestIdleCallback or setTimeout to load remaining sections
         const nonCriticalSections = [
-            { name: 'Trending', fn: () => loadTrendingSection(), delay: 100 },
-            { name: 'New Content', fn: () => loadNewContentSection(), delay: 200 },
-            { name: 'Community Favorites', fn: () => loadCommunityFavoritesSection(), delay: 300 },
-            { name: 'Live Streams', fn: () => loadLiveStreamsSection(), delay: 400 },
-            { name: 'Featured Creators', fn: () => loadFeaturedCreatorsSection(), delay: 500 },
-            { name: 'Events', fn: () => loadEventsSection(), delay: 600 },
-            { name: 'Community Stats', fn: () => loadCommunityStats(), delay: 700 }
+            { name: 'Cinematic Hero', fn: () => typeof loadCinematicHero === 'function' ? loadCinematicHero() : Promise.resolve(), delay: 100 },
+            { name: 'Following', fn: () => typeof loadFollowingSection === 'function' ? loadFollowingSection() : Promise.resolve(), delay: 200 },
+            { name: 'Shorts', fn: () => typeof loadShortsSection === 'function' ? loadShortsSection() : Promise.resolve(), delay: 300 },
+            { name: 'Community Favorites', fn: () => typeof loadCommunityFavoritesSection === 'function' ? loadCommunityFavoritesSection() : Promise.resolve(), delay: 400 },
+            { name: 'Live Streams', fn: () => typeof loadLiveStreamsSection === 'function' ? loadLiveStreamsSection() : Promise.resolve(), delay: 500 },
+            { name: 'Featured Creators', fn: () => typeof loadFeaturedCreatorsSection === 'function' ? loadFeaturedCreatorsSection() : Promise.resolve(), delay: 600 },
+            { name: 'Events', fn: () => typeof loadEventsSection === 'function' ? loadEventsSection() : Promise.resolve(), delay: 700 },
+            { name: 'Community Stats', fn: () => typeof loadCommunityStats === 'function' ? loadCommunityStats() : Promise.resolve(), delay: 800 }
         ];
         
         // Use requestIdleCallback if available
@@ -138,14 +166,21 @@ class PerformanceLoader {
     }
 }
 
-// Override initializeHomeFeed with performance loader
-window.performanceLoader = new PerformanceLoader();
-
-// Replace the old initialization
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.performanceLoader.init();
-    });
-} else {
-    window.performanceLoader.init();
+// Initialize ONLY if not already initialized by home-feed-features.js
+if (!window.performanceLoader) {
+    window.performanceLoader = new PerformanceLoader();
+    
+    // Wait for DOM and dependencies
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            // Small delay to ensure home-feed-features.js has loaded
+            setTimeout(() => {
+                window.performanceLoader.init();
+            }, 100);
+        });
+    } else {
+        setTimeout(() => {
+            window.performanceLoader.init();
+        }, 100);
+    }
 }
