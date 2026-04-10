@@ -1,5 +1,5 @@
 // ============================================
-// HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE
+// HOME FEED INITIALIZATION - OPTIMIZED FOR SPEED
 // ============================================
 
 // Check if languageMap already exists to avoid duplicate declaration errors
@@ -21,14 +21,181 @@ if (typeof window.languageMap === 'undefined') {
 }
 
 // ============================================
+// PERFORMANCE: CACHE MANAGER
+// ============================================
+const SECTION_CACHE = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getCachedSection(key, fetchFn) {
+    if (SECTION_CACHE[key] && Date.now() - SECTION_CACHE[key].timestamp < CACHE_TTL) {
+        console.log(`📦 Cache hit for: ${key}`);
+        return SECTION_CACHE[key].data;
+    }
+    console.log(`🔄 Cache miss for: ${key}, fetching fresh data`);
+    const freshData = await fetchFn();
+    SECTION_CACHE[key] = { data: freshData, timestamp: Date.now() };
+    return freshData;
+}
+
+function clearSectionCache() {
+    Object.keys(SECTION_CACHE).forEach(key => delete SECTION_CACHE[key]);
+    console.log('🗑️ Section cache cleared');
+}
+
+// ============================================
+// PERFORMANCE: SKELETON UI
+// ============================================
+function showSkeletons() {
+    const grids = [
+        'continue-watching-grid',
+        'for-you-grid',
+        'following-grid',
+        'community-favorites-grid',
+        'trending-grid',
+        'new-content-grid',
+        'shorts-container',
+        'live-streams-grid'
+    ];
+    
+    grids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.children.length === 0) {
+            el.innerHTML = Array(6).fill(`
+                <div class="skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-creator"></div>
+                    <div class="skeleton-stats"></div>
+                </div>
+            `).join('');
+        }
+    });
+    console.log('🎨 Skeletons rendered');
+}
+
+function hideLoadingShowApp() {
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading) loading.style.display = 'none';
+    if (app) {
+        app.style.display = 'block';
+        setTimeout(() => app.style.opacity = '1', 50);
+    }
+    console.log('✅ App visible, loading hidden');
+}
+
+// ============================================
+// PERFORMANCE: DEFER NON-CRITICAL SECTIONS
+// ============================================
+function loadRemainingSections() {
+    const sections = [
+        { fn: loadFollowingSection, name: 'Following' },
+        { fn: loadShortsSection, name: 'Shorts' },
+        { fn: loadCommunityFavoritesSection, name: 'Community Favorites' },
+        { fn: loadLiveStreamsSection, name: 'Live Streams' },
+        { fn: loadTrendingSection, name: 'Trending' },
+        { fn: loadNewContentSection, name: 'New Content' },
+        { fn: loadFeaturedCreatorsSection, name: 'Featured Creators' },
+        { fn: loadEventsSection, name: 'Events' },
+        { fn: loadCommunityStats, name: 'Community Stats' }
+    ];
+    
+    sections.forEach((section, i) => {
+        const loadFn = () => {
+            console.log(`⏳ Loading deferred section: ${section.name}`);
+            section.fn().catch(err => console.error(`❌ Error loading ${section.name}:`, err));
+        };
+        
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadFn, { timeout: 2000 });
+        } else {
+            setTimeout(loadFn, i * 150);
+        }
+    });
+}
+
+// ============================================
+// OPTIMIZED INITIALIZATION
+// ============================================
+async function initializeHomeFeed() {
+    const loadingScreen = document.getElementById('loading');
+    const app = document.getElementById('app');
+    
+    try {
+        console.log("🚀 Initializing Home Feed (Optimized Mode)");
+        
+        // Show skeletons immediately
+        showSkeletons();
+        
+        // Override loading text
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) loadingText.textContent = 'Loading Your Feed...';
+        
+        // 1. Auth Check (Fast)
+        await checkAuth();
+        updateAppIcon();
+        if (window.currentUser) {
+            await loadUserProfiles();
+            await updateHeaderProfile();
+            await updateSidebarProfile();
+            updateProfileSwitcher();
+        }
+        
+        // 2. CRITICAL PATH: Parallel Load Top Sections
+        console.log('⚡ Loading critical sections in parallel...');
+        await Promise.all([
+            loadCinematicHero(),
+            loadContinueWatchingSection(),
+            loadForYouSection()
+        ]);
+        
+        // 3. Show UI Immediately
+        hideLoadingShowApp();
+        
+        // 4. Load Rest in Background
+        loadRemainingSections();
+        
+        // 5. Initialize UI Components (non-blocking)
+        setupSidebar();
+        setupThemeSelector();
+        setupLanguageFilter();
+        setupSearch();
+        setupNotifications();
+        setupAnalytics();
+        setupVoiceSearch();
+        setupWatchParty();
+        setupTipSystem();
+        setupBackToTop();
+        setupInfiniteScroll();
+        setupKeyboardNavigation();
+        updateWelcomeMessage();
+        renderCategoryTabs();
+        setupNavigationButtons();
+        
+        console.log("✅ Home Feed Loaded Successfully (Optimized)");
+        
+    } catch (err) {
+        console.error("❌ Home Feed Initialization Error:", err);
+        showToast('Failed to load feed', 'error');
+        
+        setTimeout(() => {
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            if (app) app.style.display = 'block';
+        }, 1000);
+    }
+}
+
+// Initialize on DOM ready - WITH performance optimization
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeHomeFeed);
+} else {
+    initializeHomeFeed();
+}
+
+// ============================================
 // UTILITY FUNCTIONS (MUST BE DEFINED FIRST)
 // ============================================
 
-/**
- * Format duration in seconds to MM:SS or HH:MM:SS format
- * @param {number} seconds - Duration in seconds
- * @returns {string} Formatted duration string
- */
 function formatDuration(seconds) {
     if (!seconds || isNaN(seconds) || seconds <= 0) return "0:00";
 
@@ -37,19 +204,12 @@ function formatDuration(seconds) {
     const secs = Math.floor(seconds % 60);
 
     if (hrs > 0) {
-        return `${hrs}:${mins.toString().padStart(2, "0")}:${secs
-            .toString()
-            .padStart(2, "0")}`;
+        return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     }
 
     return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-/**
- * Format large numbers with K/M suffixes
- * @param {number} num - Number to format
- * @returns {string} Formatted number string
- */
 function formatNumber(num) {
     if (!num && num !== 0) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -57,11 +217,6 @@ function formatNumber(num) {
     return num.toString();
 }
 
-/**
- * Get initials from a name
- * @param {string} name - Full name
- * @returns {string} Initials (max 2 characters)
- */
 function getInitials(name) {
     if (!name) return '?';
     return name
@@ -72,11 +227,6 @@ function getInitials(name) {
         .substring(0, 2);
 }
 
-/**
- * Escape HTML special characters
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -84,23 +234,11 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-/**
- * Truncate text to specified length
- * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length
- * @returns {string} Truncated text
- */
 function truncateText(text, maxLength) {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
 }
 
-/**
- * Debounce function to limit function calls
- * @param {Function} func - Function to debounce
- * @param {number} wait - Wait time in milliseconds
- * @returns {Function} Debounced function
- */
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -113,11 +251,6 @@ function debounce(func, wait) {
     };
 }
 
-/**
- * Show toast notification
- * @param {string} message - Message to display
- * @param {string} type - Type of toast (success, error, warning, info)
- */
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -140,21 +273,10 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-/**
- * Escape RegExp special characters for search highlighting
- * @param {string} string - String to escape
- * @returns {string} Escaped string
- */
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/**
- * Highlight search query in text
- * @param {string} text - Text to highlight
- * @param {string} query - Search query
- * @returns {string} HTML with highlighted text
- */
 function highlightSearchQuery(text, query) {
     if (!query || !text) return text;
     
@@ -163,190 +285,9 @@ function highlightSearchQuery(text, query) {
 }
 
 // ============================================
-// PERFORMANCE LOADER - Integrated version
+// THEME FUNCTIONS - FIXED VERSION
 // ============================================
 
-class PerformanceLoader {
-    constructor() {
-        this.loadingScreen = document.getElementById('loading');
-        this.app = document.getElementById('app');
-        this.loadStartTime = performance.now();
-        this.sectionLoadStatus = {};
-    }
-
-    async init() {
-        console.log('🚀 Performance Loader starting...');
-        
-        // Phase 1: Show skeleton UI IMMEDIATELY (0-100ms)
-        this.showSkeletonUI();
-        
-        // Phase 2: Load critical data in PARALLEL (100-500ms)
-        await this.loadCriticalData();
-        
-        // Phase 3: Lazy load non-critical sections (after render)
-        this.lazyLoadNonCritical();
-        
-        // Phase 4: Hide loading screen and show content
-        this.showContent();
-    }
-
-    showSkeletonUI() {
-        // Hide loading screen, show skeleton immediately
-        if (this.loadingScreen) {
-            this.loadingScreen.style.display = 'none';
-        }
-        if (this.app) {
-            this.app.style.display = 'block';
-        }
-        
-        // Inject skeleton cards if grid is empty
-        const grids = ['continue-watching-grid', 'for-you-grid', 'trending-grid', 'new-content-grid'];
-        grids.forEach(gridId => {
-            const grid = document.getElementById(gridId);
-            if (grid && grid.children.length === 0) {
-                grid.innerHTML = Array(4).fill().map(() => `
-                    <div class="skeleton-card">
-                        <div class="skeleton-thumbnail"></div>
-                        <div class="skeleton-title"></div>
-                        <div class="skeleton-creator"></div>
-                        <div class="skeleton-stats"></div>
-                    </div>
-                `).join('');
-            }
-        });
-    }
-
-    async loadCriticalData() {
-        // Load ONLY the first 2 sections in parallel
-        console.log('📡 Loading critical data in parallel...');
-        
-        // Define critical tasks - check if functions exist before calling
-        const criticalTasks = [];
-        
-        if (typeof loadContinueWatchingSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
-        } else {
-            console.warn('⚠️ loadContinueWatchingSection not defined yet, waiting...');
-            // Wait for it to be defined
-            await new Promise(resolve => {
-                const checkInterval = setInterval(() => {
-                    if (typeof loadContinueWatchingSection === 'function') {
-                        clearInterval(checkInterval);
-                        resolve();
-                    }
-                }, 100);
-                setTimeout(resolve, 2000); // Fallback after 2 seconds
-            });
-            if (typeof loadContinueWatchingSection === 'function') {
-                criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
-            }
-        }
-        
-        if (typeof loadForYouSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadForYouSection(), 3000));
-        }
-        
-        // Also load user data in parallel
-        if (window.currentUser) {
-            if (typeof loadUserProfiles === 'function') {
-                criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 2000));
-            }
-            if (typeof updateHeaderProfile === 'function') {
-                criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 2000));
-            }
-        }
-        
-        // Load trending and new content with reduced limits (8 items)
-        if (typeof loadTrendingSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadTrendingSection(true), 3000));
-        }
-        if (typeof loadNewContentSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadNewContentSection(true), 3000));
-        }
-        
-        if (criticalTasks.length > 0) {
-            await Promise.all(criticalTasks);
-        }
-        console.log('✅ Critical data loaded');
-    }
-
-    lazyLoadNonCritical() {
-        // Use requestIdleCallback or setTimeout to load remaining sections
-        const nonCriticalSections = [
-            { name: 'Cinematic Hero', fn: () => typeof loadCinematicHero === 'function' ? loadCinematicHero() : Promise.resolve(), delay: 100 },
-            { name: 'Following', fn: () => typeof loadFollowingSection === 'function' ? loadFollowingSection() : Promise.resolve(), delay: 200 },
-            { name: 'Shorts', fn: () => typeof loadShortsSection === 'function' ? loadShortsSection() : Promise.resolve(), delay: 300 },
-            { name: 'Community Favorites', fn: () => typeof loadCommunityFavoritesSection === 'function' ? loadCommunityFavoritesSection() : Promise.resolve(), delay: 400 },
-            { name: 'Live Streams', fn: () => typeof loadLiveStreamsSection === 'function' ? loadLiveStreamsSection() : Promise.resolve(), delay: 500 },
-            { name: 'Featured Creators', fn: () => typeof loadFeaturedCreatorsSection === 'function' ? loadFeaturedCreatorsSection() : Promise.resolve(), delay: 600 },
-            { name: 'Events', fn: () => typeof loadEventsSection === 'function' ? loadEventsSection() : Promise.resolve(), delay: 700 },
-            { name: 'Community Stats', fn: () => typeof loadCommunityStats === 'function' ? loadCommunityStats() : Promise.resolve(), delay: 800 }
-        ];
-        
-        // Use requestIdleCallback if available
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                nonCriticalSections.forEach(section => {
-                    setTimeout(() => {
-                        section.fn().catch(console.warn);
-                        console.log(`🔄 Lazy loading: ${section.name}`);
-                    }, section.delay);
-                });
-            }, { timeout: 2000 });
-        } else {
-            // Fallback to setTimeout
-            nonCriticalSections.forEach(section => {
-                setTimeout(() => {
-                    section.fn().catch(console.warn);
-                }, section.delay);
-            });
-        }
-    }
-
-    async loadWithTimeout(fn, timeoutMs = 5000) {
-        return Promise.race([
-            fn(),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout')), timeoutMs)
-            )
-        ]).catch(err => {
-            console.warn('⏱️ Function timed out:', err);
-            return null;
-        });
-    }
-
-    showContent() {
-        // Animate cards in with stagger
-        const cards = document.querySelectorAll('.content-card');
-        cards.forEach((card, index) => {
-            setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 50 + (index * 20));
-        });
-        
-        const loadTime = performance.now() - this.loadStartTime;
-        console.log(`🎉 Page ready in ${loadTime.toFixed(0)}ms`);
-        
-        // Report to analytics
-        if (window.gtag) {
-            window.gtag('event', 'performance', {
-                'event_category': 'page_load',
-                'event_label': 'home_feed',
-                'value': Math.round(loadTime)
-            });
-        }
-    }
-}
-
-// ============================================
-// THEME FUNCTIONS - FIXED VERSION (INSTANT APPLY, NO REFRESH)
-// ============================================
-
-/**
- * Setup theme selector with proper event handling
- * Enhanced with better click handling and z-index management
- */
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
     const themeToggle = document.getElementById('sidebar-theme-toggle');
@@ -358,29 +299,24 @@ function setupThemeSelector() {
         return;
     }
     
-    // Apply saved theme IMMEDIATELY on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
-    // Theme option click handlers - Use event delegation with stopPropagation
     const themeOptions = document.querySelectorAll('.theme-option');
     console.log('🎨 Theme Options Found:', themeOptions.length);
     
     themeOptions.forEach((option, index) => {
-        // Clone to remove any existing listeners
         const newOption = option.cloneNode(true);
         option.parentNode.replaceChild(newOption, option);
         
         newOption.addEventListener('click', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Stop event from bubbling to overlay
+            e.stopPropagation();
             const theme = this.dataset.theme;
             console.log('🎨 Theme clicked:', theme);
             
-            // Apply theme
             applyTheme(theme);
             
-            // Hide selector after selection
             setTimeout(() => {
                 themeSelector.classList.remove('active');
             }, 100);
@@ -391,7 +327,6 @@ function setupThemeSelector() {
         console.log(`🎨 Theme option ${index + 1} listener attached`);
     });
     
-    // Close when clicking outside theme selector - Use capture phase
     document.addEventListener('click', function(e) {
         if (themeSelector.classList.contains('active') && 
             !themeSelector.contains(e.target) && 
@@ -400,9 +335,8 @@ function setupThemeSelector() {
             themeSelector.classList.remove('active');
             console.log('🎨 Theme selector closed by outside click');
         }
-    }, true); // Use capture phase to ensure it runs first
+    }, true);
     
-    // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && themeSelector.classList.contains('active')) {
             themeSelector.classList.remove('active');
@@ -410,49 +344,30 @@ function setupThemeSelector() {
     });
 }
 
-/**
- * Apply theme to the document with INSTANT application (no refresh needed)
- * @param {string} theme - Theme name (dark, light, high-contrast)
- */
 function applyTheme(theme) {
     const root = document.documentElement;
     console.log('🎨 Applying theme:', theme);
     
-    // Remove all theme classes first
     root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-    
-    // Apply new theme class
     root.classList.add(`theme-${theme}`);
-    
-    // Force immediate CSS reflow for instant visual update
     void root.offsetWidth;
-    
-    // Save preference
     localStorage.setItem('bantu_theme', theme);
     
-    // Update active state on theme options
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === theme);
     });
     
     console.log('🎨 Theme applied successfully:', theme);
-    console.log('🎨 Current HTML classes:', root.className);
     
-    // Show confirmation toast
     if (typeof showToast === 'function') {
         showToast(`Theme changed to ${theme}`, 'success');
     }
     
-    // Dispatch custom event for other components to react
     document.dispatchEvent(new CustomEvent('themeChanged', {
         detail: { theme: theme }
     }));
 }
 
-/**
- * Setup sidebar theme toggle with proper event handling
- * Enhanced with delay to ensure sidebar closes before theme selector appears
- */
 function setupSidebarThemeToggle() {
     const themeToggle = document.getElementById('sidebar-theme-toggle');
     const themeSelector = document.getElementById('theme-selector');
@@ -465,7 +380,6 @@ function setupSidebarThemeToggle() {
         return;
     }
     
-    // Remove existing listener by cloning to prevent duplicates
     const newToggle = themeToggle.cloneNode(true);
     themeToggle.parentNode.replaceChild(newToggle, themeToggle);
     
@@ -474,34 +388,25 @@ function setupSidebarThemeToggle() {
         e.stopPropagation();
         console.log('🎨 Sidebar theme toggle clicked');
         
-        // Close sidebar first
         if (sidebarClose) {
             sidebarClose.click();
         }
         
-        // Small delay to ensure sidebar overlay is removed before showing theme selector
         setTimeout(() => {
             if (themeSelector) {
                 const isActive = themeSelector.classList.contains('active');
                 themeSelector.classList.toggle('active');
                 console.log('🎨 Theme selector active:', !isActive, 'Classes:', themeSelector.className);
-                
-                // Force reflow to ensure CSS applies
                 void themeSelector.offsetWidth;
             }
-        }, 150); // 150ms delay for smooth transition
+        }, 150);
     });
 }
 
-// ============================================
-// GLOBAL IMAGE ERROR HANDLER (NEW)
-// ============================================
 function setupGlobalImageErrorHandler() {
-    // Add global image error listener for profile images
     document.addEventListener('error', function(e) {
         const target = e.target;
         if (target.tagName === 'IMG') {
-            // Check if it's a profile/avatar image
             if (target.classList.contains('profile-img') || 
                 target.closest('.creator-avatar-small') ||
                 target.closest('.profile-avatar-small')) {
@@ -513,7 +418,6 @@ function setupGlobalImageErrorHandler() {
                     if (typeof getInitialsAvatar !== 'undefined') {
                         container.innerHTML = getInitialsAvatar(initials, size);
                     } else {
-                        // Fallback if image-fix.js not loaded
                         container.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
                     }
                 }
@@ -523,36 +427,37 @@ function setupGlobalImageErrorHandler() {
 }
 
 // ============================================
-// METRICS AGGREGATOR - FIXED CONNECTOR COUNTS
+// METRICS AGGREGATOR - OPTIMIZED WITH LIMITS
 // ============================================
 
-// Master builder - composes complete dataset for a section
 async function buildSectionData(contentList) {
     if (!contentList || contentList.length === 0) return [];
     
-    const contentIds = contentList.map(c => c.id);
-    const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
+    // Limit to 15 items for performance
+    const limitedList = contentList.slice(0, 15);
+    const contentIds = limitedList.map(c => c.id);
+    const creatorIds = [...new Set(limitedList.map(c => c.user_id).filter(Boolean))];
     
     console.log('📊 Fetching metrics for', contentIds.length, 'content items and', creatorIds.length, 'creators');
     
     const metrics = await fetchAllMetrics(contentIds, creatorIds);
     
-    // Enrich content with metrics
-    return contentList.map(item => ({
+    return limitedList.map(item => ({
         ...item,
         metrics: {
             views: metrics.views[item.id] || 0,
             likes: metrics.likes[item.id] || 0,
             shares: metrics.shares[item.id] || 0,
             favorites: item.favorites_count || 0,
-            connectors: metrics.connectors[item.user_id] || 0  // ✅ Ensure this is set
+            connectors: metrics.connectors[item.user_id] || 0
         }
     }));
 }
 
-// Fetch all metrics in parallel
 async function fetchAllMetrics(contentIds, creatorIds) {
-    console.log('📊 Fetching metrics - Content IDs:', contentIds, 'Creator IDs:', creatorIds);
+    if (!contentIds.length) return { views: {}, likes: {}, shares: {}, connectors: {} };
+    
+    console.log('📊 Fetching metrics in parallel');
     
     const [viewsRes, likesRes, sharesRes, connectorsRes] = await Promise.all([
         fetchViewCounts(contentIds),
@@ -572,10 +477,8 @@ async function fetchAllMetrics(contentIds, creatorIds) {
     };
 }
 
-// View counts
 async function fetchViewCounts(contentIds) {
     if (!contentIds.length) return {};
-    
     try {
         const { data } = await supabaseAuth
             .from("content_views")
@@ -593,10 +496,8 @@ async function fetchViewCounts(contentIds) {
     }
 }
 
-// Like counts
 async function fetchLikeCounts(contentIds) {
     if (!contentIds.length) return {};
-    
     try {
         const { data } = await supabaseAuth
             .from("content_likes")
@@ -614,10 +515,8 @@ async function fetchLikeCounts(contentIds) {
     }
 }
 
-// Share counts
 async function fetchShareCounts(contentIds) {
     if (!contentIds.length) return {};
-    
     try {
         const { data } = await supabaseAuth
             .from("content_shares")
@@ -635,7 +534,6 @@ async function fetchShareCounts(contentIds) {
     }
 }
 
-// Connector counts per creator - FIXED
 async function fetchConnectorCounts(creatorIds) {
     if (!creatorIds || creatorIds.length === 0) {
         console.log('⚠️ No creator IDs to fetch connector counts for');
@@ -643,13 +541,13 @@ async function fetchConnectorCounts(creatorIds) {
     }
     
     try {
-        console.log('📊 Fetching connector counts for creators:', creatorIds);
+        console.log('📊 Fetching connector counts for creators:', creatorIds.slice(0, 5));
         
         const { data, error } = await supabaseAuth
             .from("connectors")
             .select("connected_id")
             .in("connected_id", creatorIds)
-            .eq("connection_type", "creator");  // ✅ Ensure we're only counting creator connections
+            .eq("connection_type", "creator");
         
         if (error) {
             console.error('Error fetching connector counts:', error);
@@ -670,14 +568,13 @@ async function fetchConnectorCounts(creatorIds) {
 }
 
 // ============================================
-// SECTION 1: CONTINUE WATCHING - FIXED
+// SECTION 1: CONTINUE WATCHING - OPTIMIZED WITH CACHE
 // ============================================
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
     const container = document.getElementById('continue-watching-grid');
     if (!section || !container) return;
     
-    // Hide section if user not logged in
     if (!window.currentUser) {
         section.style.display = 'none';
         return;
@@ -686,100 +583,79 @@ async function loadContinueWatchingSection() {
     try {
         console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
         
-        // ✅ 1️⃣ Fetch from watch_progress table (NOT content_views)
-        const { data: watchProgress, error } = await supabaseAuth
-            .from('watch_progress')
-            .select(`
-                content_id,
-                last_position,
-                total_watch_time,
-                is_completed,
-                updated_at,
-                Content (
-                    id,
-                    title,
-                    thumbnail_url,
-                    duration,
-                    genre,
-                    language,
-                    status,
-                    user_profiles!user_id (
+        const cacheKey = `cw_${window.currentUser.id}`;
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data: watchProgress, error } = await supabaseAuth
+                .from('watch_progress')
+                .select(`
+                    content_id,
+                    last_position,
+                    total_watch_time,
+                    is_completed,
+                    updated_at,
+                    Content (
                         id,
-                        full_name,
-                        username,
-                        avatar_url
+                        title,
+                        thumbnail_url,
+                        duration,
+                        genre,
+                        language,
+                        status,
+                        user_profiles!user_id (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url
+                        )
                     )
-                )
-            `)
-            .eq('user_id', window.currentUser.id)
-            .eq('is_completed', false)
-            .neq('last_position', 0)
-            .eq('Content.status', 'published')
-            .order('updated_at', { ascending: false })
-            .limit(20);
+                `)
+                .eq('user_id', window.currentUser.id)
+                .eq('is_completed', false)
+                .neq('last_position', 0)
+                .eq('Content.status', 'published')
+                .order('updated_at', { ascending: false })
+                .limit(10); // Limit for performance
+            
+            if (error) {
+                console.error('❌ Continue Watching query error:', error);
+                return [];
+            }
+            
+            return (watchProgress || [])
+                .filter(item => item.Content !== null)
+                .map(item => ({
+                    ...item.Content,
+                    watch_progress: {
+                        last_position: item.last_position,
+                        total_watch_time: item.total_watch_time,
+                        updated_at: item.updated_at
+                    }
+                }));
+        });
         
-        if (error) {
-            console.error('❌ Continue Watching query error:', error);
-            throw error;
-        }
-        
-        console.log('📊 Watch progress data:', watchProgress);
-        
-        // Filter out null content
-        const contentList = (watchProgress || [])
-            .filter(item => item.Content !== null)
-            .map(item => ({
-                ...item.Content,
-                watch_progress: {
-                    last_position: item.last_position,
-                    total_watch_time: item.total_watch_time,
-                    updated_at: item.updated_at
-                }
-            }));
-        
-        if (contentList.length === 0) {
-            console.log('ℹ️ No continue watching content found');
+        if (!contentList.length) {
             section.style.display = 'none';
             return;
         }
         
-        // ✅ 2️⃣ Build complete dataset with metrics (including connectors)
         console.log('📊 Building section data with metrics for', contentList.length, 'items');
         const sectionData = await buildSectionData(contentList);
         
-        // ✅ 3️⃣ Create progress map with ACTUAL watch times
         const progressMap = {};
-        watchProgress.forEach(item => {
-            if (item.content_id && item.Content) {
-                const duration = item.Content.duration || 1;
-                const position = item.last_position || 0;
+        contentList.forEach(item => {
+            if (item.id && item.watch_progress) {
+                const duration = item.duration || 1;
+                const position = item.watch_progress.last_position || 0;
                 const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
                 
-                progressMap[item.content_id] = {
+                progressMap[item.id] = {
                     progress: progress,
                     current: position,
                     total: duration
                 };
-                
-                console.log('📍 Progress for content', item.content_id, ':', {
-                    position: position,
-                    duration: duration,
-                    progress: progress + '%'
-                });
             }
         });
         
-        // ✅ 4️⃣ Debug: Log connector counts
-        console.log('📊 Connector counts in section data:', 
-            sectionData.map(item => ({
-                id: item.id,
-                title: item.title,
-                creator: item.user_profiles?.username,
-                connectors: item.metrics?.connectors
-            }))
-        );
-        
-        // ✅ 5️⃣ Render with correct progress data
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
@@ -789,21 +665,16 @@ async function loadContinueWatchingSection() {
     }
 }
 
-// Specialized renderer for continue watching (includes progress)
 function renderContinueWatchingCards(container, contents, progressMap) {
     container.innerHTML = '';
     
     console.log('🎨 Rendering', contents.length, 'continue watching cards');
-    console.log('📊 Progress map:', progressMap);
     
     contents.forEach(content => {
         if (!content) return;
         
-        // ✅ Get ACTUAL progress from watch_progress table
         const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
         const connectorCount = content.metrics?.connectors || 0;
-        
-        console.log('🎨 Card:', content.id, '- Connectors:', connectorCount);
         
         const thumbnailUrl = content.thumbnail_url
             ? fixMediaUrl(content.thumbnail_url)
@@ -831,7 +702,6 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         card.dataset.language = content.language || 'en';
         card.dataset.category = content.genre || '';
         
-        // ✅ HTML with CORRECT progress bar and resume time
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';">
@@ -841,12 +711,9 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     </div>
                 </div>
                 <div class="thumbnail-overlay"></div>
-                
-                <!-- ✅ PROGRESS BAR with ACTUAL width -->
                 <div class="watch-progress-container">
                     <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
                 </div>
-                
                 <div class="play-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
@@ -858,13 +725,10 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     <div class="creator-avatar-small" style="width:28px;height:28px;border-radius:50%;overflow:hidden;">${avatarHtml}</div>
                     <div class="creator-name-small">${escapeHtml(creatorName)}</div>
                 </div>
-                
-                <!-- ✅ ACTUAL RESUME TIME (not 0:00) -->
                 <div class="card-meta">
                     <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
                     <span>${progress.progress}%</span>
                 </div>
-                
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
                 </div>
@@ -876,65 +740,50 @@ function renderContinueWatchingCards(container, contents, progressMap) {
 }
 
 // ============================================
-// SECTION 2: FOR YOU (Personalized) with Amplification Logic
+// SECTION 2: FOR YOU - OPTIMIZED WITH CACHE
 // ============================================
 async function loadForYouSection() {
     const container = document.getElementById('for-you-grid');
     if (!container) return;
     
-    // Show skeleton loading
-    container.innerHTML = Array(4).fill().map(() => `
-        <div class="skeleton-card">
-            <div class="skeleton-thumbnail"></div>
-            <div class="skeleton-title"></div>
-            <div class="skeleton-creator"></div>
-            <div class="skeleton-stats"></div>
-        </div>
-    `).join('');
-    
     try {
-        let contentList = [];
-        
-        if (window.currentUser) {
-            // Get user's liked content for genre preferences
-            const { data: likedContent } = await supabaseAuth
-                .from('content_likes')
-                .select('content_id')
-                .eq('user_id', window.currentUser.id)
-                .limit(20);
-            
-            const likedIds = (likedContent || []).map(l => l.content_id);
-            
-            // Get genres from liked content
-            let genres = [];
-            if (likedIds.length > 0) {
-                const { data: likedGenres } = await supabaseAuth
-                    .from('Content')
-                    .select('genre')
-                    .in('id', likedIds.slice(0, 10));
+        const cacheKey = 'for_you_' + (window.currentUser?.id || 'guest');
+        let contentList = await getCachedSection(cacheKey, async () => {
+            if (window.currentUser) {
+                const { data: likedContent } = await supabaseAuth
+                    .from('content_likes')
+                    .select('content_id')
+                    .eq('user_id', window.currentUser.id)
+                    .limit(20);
                 
-                genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
+                const likedIds = (likedContent || []).map(l => l.content_id);
+                
+                let genres = [];
+                if (likedIds.length > 0) {
+                    const { data: likedGenres } = await supabaseAuth
+                        .from('Content')
+                        .select('genre')
+                        .in('id', likedIds.slice(0, 10));
+                    
+                    genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
+                }
+                
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, language, user_profiles!user_id(*)')
+                    .eq('status', 'published');
+                
+                if (genres.length > 0) {
+                    query = query.in('genre', genres);
+                }
+                
+                const { data } = await query
+                    .order('views_count', { ascending: false })
+                    .limit(12);
+                
+                return data || [];
             }
             
-            // Build query based on preferences - ✅ Explicitly select language
-            let query = supabaseAuth
-                .from('Content')
-                .select('*, language, user_profiles!user_id(*)')
-                .eq('status', 'published');
-            
-            if (genres.length > 0) {
-                query = query.in('genre', genres);
-            }
-            
-            const { data } = await query
-                .order('views_count', { ascending: false })
-                .limit(12);
-            
-            contentList = data || [];
-        }
-        
-        // Fallback to trending if no personalized content
-        if (contentList.length === 0) {
             const { data } = await supabaseAuth
                 .from('Content')
                 .select('*, language, user_profiles!user_id(*)')
@@ -942,30 +791,18 @@ async function loadForYouSection() {
                 .order('views_count', { ascending: false })
                 .limit(8);
             
-            contentList = data || [];
-        }
+            return data || [];
+        });
         
-        if (contentList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-magic"></i></div>
-                    <h3>No Recommendations Yet</h3>
-                    <p>Start watching and liking content to get personalized picks</p>
-                </div>
-            `;
+        if (!contentList.length) {
+            container.innerHTML = `<div class="empty-state"><h3>No Recommendations Yet</h3></div>`;
             return;
         }
         
-        // Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
-        
-        // ✅ Apply Amplification Logic
         const boostedData = applyAmplificationLogic(sectionData);
-        
-        // Sort by amplification score
         boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
         
-        // Render once
         container.innerHTML = '';
         renderContentCards(container, boostedData);
         
@@ -975,31 +812,26 @@ async function loadForYouSection() {
     }
 }
 
-// ✅ Amplification Logic Implementation
 function applyAmplificationLogic(items) {
     const localLanguages = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso'];
     
     return items.map(item => {
         let score = item.metrics?.base_score || 0;
         
-        // Use metrics for amplification if available
         const baseScore = (item.metrics?.views || 0) + 
                          ((item.metrics?.likes || 0) * 5) + 
                          ((item.metrics?.shares || 0) * 10);
         
         score = baseScore;
         
-        // 1. Local Language Boost (IsiZulu, IsiXhosa, etc.)
         if (localLanguages.includes(item.language)) {
             score = score * 1.3; 
         }
         
-        // 2. Emerging Creator Boost (< 1000 connectors)
         if (item.metrics?.connectors < 1000) {
             score = score * 1.2;
         }
         
-        // 3. Freshness Boost (< 7 days)
         const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
         if (daysOld < 7) {
             score = score * 1.4;
@@ -1017,54 +849,50 @@ function applyAmplificationLogic(items) {
 }
 
 // ============================================
-// SECTION 3: FROM CREATORS YOU CONNECTED WITH
+// SECTION 3: FOLLOWING - OPTIMIZED WITH CACHE
 // ============================================
 async function loadFollowingSection() {
     const section = document.getElementById('following-section');
     const container = document.getElementById('following-grid');
     
     if (!section || !container) return;
-    
     if (!window.currentUser) {
         section.style.display = 'none';
         return;
     }
     
     try {
-        // 1️⃣ Get creators user follows
-        const { data: following, error } = await supabaseAuth
-            .from('connectors')
-            .select('connected_id')
-            .eq('connector_id', window.currentUser.id)
-            .eq('connection_type', 'creator');
+        const cacheKey = `following_${window.currentUser.id}`;
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data: following, error } = await supabaseAuth
+                .from('connectors')
+                .select('connected_id')
+                .eq('connector_id', window.currentUser.id)
+                .eq('connection_type', 'creator');
+            
+            if (error || !following || following.length === 0) return [];
+            
+            const creatorIds = following.map(f => f.connected_id);
+            
+            const { data: contentList, error: contentError } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .in('user_id', creatorIds)
+                .order('created_at', { ascending: false })
+                .limit(8);
+            
+            if (contentError) throw contentError;
+            return contentList || [];
+        });
         
-        if (error || !following || following.length === 0) {
+        if (!contentList.length) {
             section.style.display = 'none';
             return;
         }
         
-        const creatorIds = following.map(f => f.connected_id);
-        
-        // 2️⃣ Fetch content from followed creators - ✅ Explicitly select language
-        const { data: contentList, error: contentError } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .in('user_id', creatorIds)
-            .order('created_at', { ascending: false })
-            .limit(8);
-        
-        if (contentError) throw contentError;
-        
-        if (!contentList || contentList.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
-        
-        // 3️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
         
-        // 4️⃣ Update section title and render
         section.style.display = 'block';
         const sectionTitle = section.querySelector('.section-title');
         if (sectionTitle) {
@@ -1084,34 +912,34 @@ async function loadFollowingSection() {
 }
 
 // ============================================
-// SECTION 4: QUICK BITS (SHORTS)
+// SECTION 4: SHORTS - OPTIMIZED WITH CACHE
 // ============================================
 async function loadShortsSection() {
     const container = document.getElementById('shorts-container');
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch short content - ✅ Explicitly select language
-        const { data: contentList, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .eq('media_type', 'short')
-            .or('media_type.eq.short,duration.lte.60')
-            .order('views_count', { ascending: false })
-            .limit(10);
+        const cacheKey = 'shorts_section';
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .eq('media_type', 'short')
+                .or('media_type.eq.short,duration.lte.60')
+                .order('views_count', { ascending: false })
+                .limit(10);
+            
+            if (error) throw error;
+            return data || [];
+        });
         
-        if (error) throw error;
-        
-        if (!contentList || contentList.length === 0) {
+        if (!contentList.length) {
             container.style.display = 'none';
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
-        
-        // 3️⃣ Render shorts
         container.style.display = 'flex';
         renderShortsCards(container, sectionData);
         
@@ -1120,7 +948,6 @@ async function loadShortsSection() {
     }
 }
 
-// Specialized renderer for shorts
 function renderShortsCards(container, contents) {
     container.innerHTML = '';
     
@@ -1160,32 +987,32 @@ function renderShortsCards(container, contents) {
 }
 
 // ============================================
-// SECTION 5: COMMUNITY FAVORITES
+// SECTION 5: COMMUNITY FAVORITES - OPTIMIZED WITH CACHE
 // ============================================
 async function loadCommunityFavoritesSection() {
     const container = document.getElementById('community-favorites-grid');
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch community favorites (by favorites_count) - ✅ Explicitly select language
-        const { data: contentList, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('favorites_count', { ascending: false })
-            .limit(12);
+        const cacheKey = 'community_favorites';
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('favorites_count', { ascending: false })
+                .limit(12);
+            
+            if (error) throw error;
+            return data || [];
+        });
         
-        if (error) throw error;
-        
-        if (!contentList || contentList.length === 0) {
+        if (!contentList.length) {
             container.innerHTML = '<div class="empty-state"><p>No community favorites yet</p></div>';
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
-        
-        // 3️⃣ Render
         container.innerHTML = '';
         renderContentCards(container, sectionData);
         
@@ -1195,7 +1022,7 @@ async function loadCommunityFavoritesSection() {
 }
 
 // ============================================
-// LIVE STREAMS SECTION
+// LIVE STREAMS SECTION - OPTIMIZED WITH CACHE
 // ============================================
 async function loadLiveStreamsSection() {
     const container = document.getElementById('live-streams-grid');
@@ -1204,27 +1031,27 @@ async function loadLiveStreamsSection() {
     if (!container || !noLiveStreams) return;
     
     try {
-        // 1️⃣ Fetch live streams - ✅ Explicitly select language
-        const { data: contentList, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('media_type', 'live')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .limit(10);
+        const cacheKey = 'live_streams';
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('media_type', 'live')
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .limit(10);
+            
+            if (error) throw error;
+            return data || [];
+        });
         
-        if (error) throw error;
-        
-        if (!contentList || contentList.length === 0) {
+        if (!contentList.length) {
             container.style.display = 'none';
             noLiveStreams.style.display = 'block';
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
-        
-        // 3️⃣ Render
         container.style.display = 'grid';
         noLiveStreams.style.display = 'none';
         container.innerHTML = '';
@@ -1236,46 +1063,35 @@ async function loadLiveStreamsSection() {
 }
 
 // ============================================
-// SECTION 6: TRENDING NOW with Amplification Logic (Optimized)
+// SECTION 6: TRENDING NOW - OPTIMIZED WITH CACHE
 // ============================================
-async function loadTrendingSection(isInitial = false) {
+async function loadTrendingSection() {
     const container = document.getElementById('trending-grid');
     if (!container) return;
     
-    const limit = isInitial ? 8 : 12;
-    
     try {
-        // 1️⃣ Fetch trending content (by views_count) - ✅ Explicitly select language
-        const { data: contentList, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('views_count', { ascending: false })
-            .limit(limit);
+        const cacheKey = 'trending_section';
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(12);
+            
+            if (error) throw error;
+            return data || [];
+        });
         
-        if (error) throw error;
-        
-        if (!contentList || contentList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
-                    <h3>No Trending Content</h3>
-                    <p>Popular content will appear here</p>
-                </div>
-            `;
+        if (!contentList.length) {
+            container.innerHTML = `<div class="empty-state"><h3>No Trending Content</h3></div>`;
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
-        const sectionData = await buildSectionData(contentList);
-        
-        // ✅ Apply Amplification Logic
+        const sectionData = await buildSectionData(contentList.slice(0, 8));
         const boostedData = applyAmplificationLogic(sectionData);
-        
-        // Sort by amplification score
         boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
         
-        // 3️⃣ Render
         container.innerHTML = '';
         renderContentCards(container, boostedData);
         
@@ -1285,46 +1101,35 @@ async function loadTrendingSection(isInitial = false) {
 }
 
 // ============================================
-// SECTION 7: LATEST GEMS (NEW CONTENT) with Amplification Logic (Optimized)
+// SECTION 7: NEW CONTENT - OPTIMIZED WITH CACHE
 // ============================================
-async function loadNewContentSection(isInitial = false) {
+async function loadNewContentSection() {
     const container = document.getElementById('new-content-grid');
     if (!container) return;
     
-    const limit = isInitial ? 8 : 12;
-    
     try {
-        // 1️⃣ Fetch new content (by created_at) - ✅ Explicitly select language
-        const { data: contentList, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .limit(limit);
+        const cacheKey = 'new_content_section';
+        const contentList = await getCachedSection(cacheKey, async () => {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .limit(12);
+            
+            if (error) throw error;
+            return data || [];
+        });
         
-        if (error) throw error;
-        
-        if (!contentList || contentList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-gem"></i></div>
-                    <h3>No New Content</h3>
-                    <p>Fresh content will appear here</p>
-                </div>
-            `;
+        if (!contentList.length) {
+            container.innerHTML = `<div class="empty-state"><h3>No New Content</h3></div>`;
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
-        const sectionData = await buildSectionData(contentList);
-        
-        // ✅ Apply Amplification Logic
+        const sectionData = await buildSectionData(contentList.slice(0, 8));
         const boostedData = applyAmplificationLogic(sectionData);
-        
-        // Sort by amplification score
         boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
         
-        // 3️⃣ Render
         container.innerHTML = '';
         renderContentCards(container, boostedData);
         
@@ -1334,79 +1139,71 @@ async function loadNewContentSection(isInitial = false) {
 }
 
 // ============================================
-// FEATURED CREATORS SECTION
+// FEATURED CREATORS SECTION - OPTIMIZED WITH CACHE
 // ============================================
 async function loadFeaturedCreatorsSection() {
     const creatorsList = document.getElementById('creators-list');
     if (!creatorsList) return;
     
     try {
-        // Get content counts per creator
-        const { data: contentData } = await supabaseAuth
-            .from('Content')
-            .select('user_id')
-            .eq('status', 'published');
-        
-        const contentCountMap = new Map();
-        contentData?.forEach(item => {
-            if (item.user_id) {
-                contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
-            }
+        const cacheKey = 'featured_creators';
+        const featuredCreators = await getCachedSection(cacheKey, async () => {
+            const { data: contentData } = await supabaseAuth
+                .from('Content')
+                .select('user_id')
+                .eq('status', 'published');
+            
+            const contentCountMap = new Map();
+            contentData?.forEach(item => {
+                if (item.user_id) {
+                    contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
+                }
+            });
+            
+            const { data: connectorData } = await supabaseAuth
+                .from('connectors')
+                .select('connected_id')
+                .eq('connection_type', 'creator');
+            
+            const connectorCountMap = new Map();
+            connectorData?.forEach(item => {
+                if (item.connected_id) {
+                    connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
+                }
+            });
+            
+            const creatorScores = new Map();
+            contentCountMap.forEach((count, userId) => {
+                creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
+            });
+            connectorCountMap.forEach((count, userId) => {
+                creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
+            });
+            
+            const sortedCreators = Array.from(creatorScores.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([userId]) => userId);
+            
+            if (sortedCreators.length === 0) return [];
+            
+            const { data: profiles } = await supabaseAuth
+                .from('user_profiles')
+                .select('*')
+                .in('id', sortedCreators);
+            
+            return profiles?.map(profile => ({
+                ...profile,
+                video_count: contentCountMap.get(profile.id) || 0,
+                follower_count: connectorCountMap.get(profile.id) || 0
+            })) || [];
         });
         
-        // Get connector counts per creator
-        const { data: connectorData } = await supabaseAuth
-            .from('connectors')
-            .select('connected_id')
-            .eq('connection_type', 'creator');
-        
-        const connectorCountMap = new Map();
-        connectorData?.forEach(item => {
-            if (item.connected_id) {
-                connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
-            }
-        });
-        
-        // Calculate scores and get top creators
-        const creatorScores = new Map();
-        contentCountMap.forEach((count, userId) => {
-            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
-        });
-        connectorCountMap.forEach((count, userId) => {
-            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
-        });
-        
-        const sortedCreators = Array.from(creatorScores.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 6)
-            .map(([userId]) => userId);
-        
-        if (sortedCreators.length === 0) {
-            creatorsList.innerHTML = `
-                <div class="swiper-slide">
-                    <div class="creator-card">
-                        <div class="empty-icon"><i class="fas fa-users"></i></div>
-                        <h3>No Featured Creators</h3>
-                        <p>Top creators will appear here</p>
-                    </div>
-                </div>
-            `;
+        if (!featuredCreators.length) {
+            creatorsList.innerHTML = `<div class="empty-state"><h3>No Featured Creators</h3></div>`;
             return;
         }
         
-        // Fetch creator profiles
-        const { data: profiles } = await supabaseAuth
-            .from('user_profiles')
-            .select('*')
-            .in('id', sortedCreators);
-        
-        const featuredCreators = profiles?.map(profile => ({
-            ...profile,
-            video_count: contentCountMap.get(profile.id) || 0,
-            follower_count: connectorCountMap.get(profile.id) || 0
-        })) || [];
-        
-        // Render creators
         renderCreatorsCards(creatorsList, featuredCreators);
         
     } catch (err) {
@@ -1466,7 +1263,6 @@ function renderCreatorsCards(container, creators) {
         `;
     }).join('');
     
-    // Initialize Swiper after render
     setTimeout(() => {
         if (typeof Swiper !== 'undefined') {
             new Swiper('#creators-swiper', {
@@ -1486,7 +1282,7 @@ function renderCreatorsCards(container, creators) {
 }
 
 // ============================================
-// EVENTS SECTION
+// EVENTS SECTION - OPTIMIZED WITH CACHE
 // ============================================
 async function loadEventsSection() {
     const eventsList = document.getElementById('events-list');
@@ -1495,21 +1291,22 @@ async function loadEventsSection() {
     if (!eventsList || !noEvents) return;
     
     try {
-        let data = [];
-        
-        try {
-            const result = await supabaseAuth
-                .from('events')
-                .select('*')
-                .gte('start_time', new Date().toISOString())
-                .order('start_time', { ascending: true })
-                .limit(5);
-            
-            data = result.data || [];
-        } catch (e) {
-            console.warn('Events table may not exist, using mock data');
-            data = getMockEvents();
-        }
+        const cacheKey = 'events_section';
+        let data = await getCachedSection(cacheKey, async () => {
+            try {
+                const result = await supabaseAuth
+                    .from('events')
+                    .select('*')
+                    .gte('start_time', new Date().toISOString())
+                    .order('start_time', { ascending: true })
+                    .limit(5);
+                
+                return result.data || [];
+            } catch (e) {
+                console.warn('Events table may not exist, using mock data');
+                return getMockEvents();
+            }
+        });
         
         if (!data || data.length === 0) {
             eventsList.style.display = 'none';
@@ -1519,12 +1316,10 @@ async function loadEventsSection() {
         
         eventsList.style.display = 'block';
         noEvents.style.display = 'none';
-        
         renderEventsCards(eventsList, data);
         
     } catch (err) {
         console.error("❌ Events Section Error:", err);
-        
         const mockEvents = getMockEvents();
         if (mockEvents.length > 0) {
             eventsList.style.display = 'block';
@@ -1573,26 +1368,26 @@ function renderEventsCards(container, events) {
 }
 
 // ============================================
-// CINEMATIC HERO SECTION
+// CINEMATIC HERO SECTION - OPTIMIZED
 // ============================================
 async function loadCinematicHero() {
     try {
-        // Get trending content with highest engagement - ✅ Explicitly select language
-        const { data: trendingData, error } = await supabaseAuth
-            .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('views_count', { ascending: false })
-            .order('favorites_count', { ascending: false })
-            .limit(5);
-        
-        if (error) throw error;
-        
-        const featuredContent = trendingData?.[0] || getMockHeroContent();
+        const cacheKey = 'cinematic_hero';
+        const featuredContent = await getCachedSection(cacheKey, async () => {
+            const { data: trendingData, error } = await supabaseAuth
+                .from('Content')
+                .select('*, language, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .order('favorites_count', { ascending: false })
+                .limit(5);
+            
+            if (error) throw error;
+            return trendingData?.[0] || getMockHeroContent();
+        });
         
         if (!featuredContent) return;
         
-        // Update hero video
         const heroVideo = document.getElementById('hero-background-video');
         const videoSource = heroVideo?.querySelector('source');
         
@@ -1604,7 +1399,6 @@ async function loadCinematicHero() {
             });
         }
         
-        // Update creator info
         const creator = featuredContent.user_profiles;
         if (creator) {
             document.getElementById('hero-creator-name').textContent = creator.full_name || creator.username || 'Featured Creator';
@@ -1625,11 +1419,9 @@ async function loadCinematicHero() {
             }
         }
         
-        // Update title and description
         document.getElementById('hero-title').textContent = featuredContent.title || 'DISCOVER & CONNECT';
         document.getElementById('hero-subtitle').textContent = featuredContent.description || 'Explore amazing content, connect with creators, and join live streams from across Africa';
         
-        // Get metrics for hero
         const metrics = await fetchAllMetrics([featuredContent.id], creator ? [creator.id] : []);
         
         document.getElementById('hero-views').textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 12500);
@@ -1637,12 +1429,10 @@ async function loadCinematicHero() {
         document.getElementById('hero-connectors').textContent = formatNumber(creator ? (metrics.connectors[creator.id] || 1200) : 1200);
         document.getElementById('hero-shares').textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 856);
         
-        // Check if creator is verified
         if (creator && (metrics.connectors[creator.id] || 0) > 1000) {
             document.getElementById('hero-verified-badge').style.display = 'inline-flex';
         }
         
-        // Store content ID for watch button
         const heroWatchBtn = document.getElementById('hero-watch-btn');
         if (heroWatchBtn) {
             heroWatchBtn.dataset.contentId = featuredContent.id;
@@ -1658,30 +1448,39 @@ async function loadCinematicHero() {
 }
 
 // ============================================
-// COMMUNITY STATS
+// COMMUNITY STATS - OPTIMIZED WITH CACHE
 // ============================================
 async function loadCommunityStats() {
     try {
-        const { count: connectorsCount } = await supabaseAuth
-            .from('connectors')
-            .select('*', { count: 'exact', head: true });
+        const cacheKey = 'community_stats';
+        const stats = await getCachedSection(cacheKey, async () => {
+            const { count: connectorsCount } = await supabaseAuth
+                .from('connectors')
+                .select('*', { count: 'exact', head: true });
+            
+            const { count: contentCount } = await supabaseAuth
+                .from('Content')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'published');
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const { count: newConnectors } = await supabaseAuth
+                .from('connectors')
+                .select('*', { count: 'exact', head: true })
+                .gte('created_at', today.toISOString());
+            
+            return {
+                connectors: connectorsCount || 12500,
+                content: contentCount || 2300,
+                newConnectors: newConnectors || 342
+            };
+        });
         
-        const { count: contentCount } = await supabaseAuth
-            .from('Content')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'published');
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const { count: newConnectors } = await supabaseAuth
-            .from('connectors')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', today.toISOString());
-        
-        document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 12500);
-        document.getElementById('total-content').textContent = formatNumber(contentCount || 2300);
-        document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 342)}`;
+        document.getElementById('total-connectors').textContent = formatNumber(stats.connectors);
+        document.getElementById('total-content').textContent = formatNumber(stats.content);
+        document.getElementById('new-connectors').textContent = `+${formatNumber(stats.newConnectors)}`;
     } catch (error) {
         console.error('Error loading community stats:', error);
         document.getElementById('total-connectors').textContent = '12.5K';
@@ -1691,7 +1490,7 @@ async function loadCommunityStats() {
 }
 
 // ============================================
-// PURE RENDER FUNCTION - WITH ENHANCED IMAGE HANDLING
+// PURE RENDER FUNCTION - OPTIMIZED
 // ============================================
 function renderContentCards(container, contents) {
     if (!container || !contents || contents.length === 0) return;
@@ -1712,7 +1511,6 @@ function renderContentCards(container, contents) {
         const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
         const durationFormatted = formatDuration(content.duration || 0);
         
-        // Generate avatar HTML with error handling
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
             const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
@@ -1890,11 +1688,9 @@ async function checkAuth() {
         const session = data?.session;
         window.currentUser = session?.user || null;
         
-        // ✅ Debug logging for mobile
         console.log('🔐 Auth Check - Mobile:', /Mobi|Android|iPhone/i.test(navigator.userAgent));
         console.log('🔐 Auth Check - User:', window.currentUser?.email);
         console.log('🔐 Auth Check - User ID:', window.currentUser?.id);
-        console.log('🔐 Auth Check - Metadata:', window.currentUser?.user_metadata);
         
         if (window.currentUser) {
             console.log('✅ User authenticated:', window.currentUser.email);
@@ -1973,40 +1769,27 @@ async function loadUserProfiles() {
 }
 
 // ============================================
-// PROFILE AVATAR HELPER FUNCTIONS (FIXED)
+// PROFILE AVATAR HELPER FUNCTIONS
 // ============================================
 
-/**
- * Fix Media URL - Handles all Supabase storage paths
- * @param {string} url - The URL from database
- * @returns {string} Properly formatted URL
- */
 function fixMediaUrl(url) {
     if (!url) return '';
     
-    // Already a valid full URL
     if (url.startsWith('http://') || url.startsWith('https://')) {
-        // Check if it's a working Supabase URL
         if (url.includes('supabase.co/storage/v1/object/public')) {
             return url;
         }
-        // If it's a different domain, return as-is
         return url;
     }
     
     const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    
-    // Remove leading slashes
     let cleanPath = url.replace(/^\/+/, '');
     
-    // Handle different path formats
     if (cleanPath.includes('storage/v1/object/public')) {
-        // Already has storage path, just prepend domain if needed
         return cleanPath.startsWith('http') ? cleanPath : `${SUPABASE_URL}/${cleanPath}`;
     }
     
-    // Determine bucket type based on path or content type
-    let bucket = 'content'; // default bucket
+    let bucket = 'content';
     if (cleanPath.includes('avatar') || cleanPath.includes('profile')) {
         bucket = 'avatars';
     } else if (cleanPath.includes('thumbnail') || cleanPath.includes('thumb')) {
@@ -2015,41 +1798,26 @@ function fixMediaUrl(url) {
         bucket = 'content';
     }
     
-    // Construct full URL
     return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${cleanPath}`;
 }
 
-/**
- * Fix Avatar URL - Handles all edge cases for consistent loading
- * @param {string} url - The avatar URL from database
- * @returns {string} Properly formatted URL
- */
 function fixAvatarUrl(url) {
     if (!url) return '';
     
-    // Already a full URL
     if (url.startsWith('http://') || url.startsWith('https://')) {
         if (url.includes('supabase.co')) return url;
         return url;
     }
     
     const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    
-    // Remove leading slashes and common prefixes
     let cleanPath = url.replace(/^\/+/, '')
                        .replace(/^avatars\//, '')
                        .replace(/^user_avatars\//, '')
                        .replace(/^profile_pictures\//, '');
     
-    // Use avatars bucket
     return `${SUPABASE_URL}/storage/v1/object/public/avatars/${cleanPath}`;
 }
 
-/**
- * Render initials profile (fallback when no avatar)
- * @param {HTMLElement} container - Container element
- * @param {Object} profile - Profile object with name/username
- */
 function renderInitialsProfile(container, profile) {
     if (!container) return;
     container.innerHTML = '';
@@ -2075,12 +1843,6 @@ function renderInitialsProfile(container, profile) {
     container.appendChild(div);
 }
 
-/**
- * Render fallback profile (error state)
- * @param {HTMLElement} container - Container element
- * @param {HTMLElement} nameElement - Name element to update
- * @param {Object} user - User object
- */
 function renderFallbackProfile(container, nameElement, user) {
     if (!container) return;
     container.innerHTML = '';
@@ -2109,11 +1871,6 @@ function renderFallbackProfile(container, nameElement, user) {
     }
 }
 
-/**
- * Render guest profile
- * @param {HTMLElement} container - Container element
- * @param {HTMLElement} nameElement - Name element to update
- */
 function renderGuestProfile(container, nameElement) {
     if (!container) return;
     container.innerHTML = '';
@@ -2139,11 +1896,6 @@ function renderGuestProfile(container, nameElement) {
     }
 }
 
-/**
- * Render sidebar initials fallback
- * @param {HTMLElement} container - Container element
- * @param {Object} profile - Profile object
- */
 function renderSidebarInitials(container, profile) {
     if (!container) return;
     container.innerHTML = '';
@@ -2165,13 +1917,6 @@ function renderSidebarInitials(container, profile) {
     container.appendChild(span);
 }
 
-/**
- * Render sidebar fallback profile (error state)
- * @param {HTMLElement} avatar - Avatar container
- * @param {HTMLElement} name - Name element
- * @param {HTMLElement} email - Email element
- * @param {Object} user - User object
- */
 function renderSidebarFallback(avatar, name, email, user) {
     if (!avatar) return;
     const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -2184,7 +1929,7 @@ function renderSidebarFallback(avatar, name, email, user) {
 }
 
 // ============================================
-// UPDATED HEADER PROFILE FUNCTION (FIXED)
+// HEADER PROFILE FUNCTION
 // ============================================
 async function updateHeaderProfile() {
     try {
@@ -2196,14 +1941,12 @@ async function updateHeaderProfile() {
             return;
         }
 
-        // Clear existing content first
         profilePlaceholder.innerHTML = '';
 
         if (window.currentUser) {
             console.log('👤 Updating header profile for:', window.currentUser.email);
             
             try {
-                // Fetch profile with explicit fields
                 const { data: profile, error } = await supabaseAuth
                     .from('user_profiles')
                     .select('id, full_name, username, avatar_url')
@@ -2217,18 +1960,15 @@ async function updateHeaderProfile() {
                 }
 
                 if (profile && profile.avatar_url) {
-                    // Fix the media URL properly
                     const avatarUrl = fixAvatarUrl(profile.avatar_url);
                     console.log('🖼️ Avatar URL:', avatarUrl);
                     
-                    // Create image with error handling
                     const img = document.createElement('img');
                     img.className = 'profile-img';
                     img.src = avatarUrl;
                     img.alt = profile.full_name || profile.username || 'Profile';
                     img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
                     
-                    // Handle image load errors
                     img.onerror = function() {
                         console.warn('⚠️ Failed to load avatar, falling back to initials');
                         renderInitialsProfile(profilePlaceholder, profile);
@@ -2242,7 +1982,6 @@ async function updateHeaderProfile() {
                     currentProfileName.textContent = profile.full_name || profile.username || window.currentUser.email?.split('@')[0] || 'User';
                     
                 } else {
-                    // No avatar - show initials
                     renderInitialsProfile(profilePlaceholder, profile || { full_name: window.currentUser.user_metadata?.full_name });
                     currentProfileName.textContent = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
                 }
@@ -2253,7 +1992,6 @@ async function updateHeaderProfile() {
             }
             
         } else {
-            // Guest user
             renderGuestProfile(profilePlaceholder, currentProfileName);
         }
         
@@ -2268,7 +2006,7 @@ async function updateHeaderProfile() {
 }
 
 // ============================================
-// UPDATED SIDEBAR PROFILE FUNCTION (FIXED)
+// SIDEBAR PROFILE FUNCTION
 // ============================================
 async function updateSidebarProfile() {
     const avatar = document.getElementById('sidebar-profile-avatar');
@@ -2281,7 +2019,6 @@ async function updateSidebarProfile() {
         return;
     }
 
-    // Clear existing avatar content
     avatar.innerHTML = '';
 
     if (window.currentUser) {
@@ -2301,15 +2038,12 @@ async function updateSidebarProfile() {
             }
 
             if (profile) {
-                // Update name and email
                 name.textContent = profile.full_name || profile.username || 'User';
                 email.textContent = window.currentUser.email;
                 
-                // Handle avatar
                 if (profile.avatar_url) {
                     const avatarUrl = fixAvatarUrl(profile.avatar_url);
                     
-                    // Use image with error handling
                     const img = document.createElement('img');
                     img.src = avatarUrl;
                     img.alt = profile.full_name || 'Profile';
@@ -2325,7 +2059,6 @@ async function updateSidebarProfile() {
                     renderSidebarInitials(avatar, profile);
                 }
                 
-                // Make profile section clickable
                 if (profileSection) {
                     profileSection.onclick = function(e) {
                         e.preventDefault();
@@ -2344,7 +2077,6 @@ async function updateSidebarProfile() {
         }
         
     } else {
-        // Guest state
         name.textContent = 'Guest';
         email.textContent = 'Sign in to continue';
         avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
@@ -2396,14 +2128,13 @@ function setupSidebar() {
         }
     });
     
-    updateSidebarProfile(); // Using the fixed version
+    updateSidebarProfile();
     setupSidebarNavigation();
-    setupSidebarThemeToggle(); // ✅ Enhanced version
+    setupSidebarThemeToggle();
     setupSidebarScaleControls();
 }
 
 function setupSidebarNavigation() {
-    // Analytics
     document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2418,7 +2149,6 @@ function setupSidebarNavigation() {
         }
     });
     
-    // Notifications
     document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2429,7 +2159,6 @@ function setupSidebarNavigation() {
         }
     });
     
-    // Badges
     document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2444,7 +2173,6 @@ function setupSidebarNavigation() {
         }
     });
     
-    // Watch Party
     document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2459,7 +2187,6 @@ function setupSidebarNavigation() {
         }
     });
     
-    // Create Content
     document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2472,7 +2199,6 @@ function setupSidebarNavigation() {
         }
     });
     
-    // Dashboard
     document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2485,7 +2211,6 @@ function setupSidebarNavigation() {
         }
     });
     
-    // ✅ NEW: Watch History
     document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -2544,7 +2269,7 @@ function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
     const navCreateBtn = document.getElementById('nav-create-btn');
     const navMenuBtn = document.getElementById('nav-menu-btn');
-    const navHistoryBtn = document.getElementById('nav-history-btn'); // ✅ NEW
+    const navHistoryBtn = document.getElementById('nav-history-btn');
     
     if (navHomeBtn) {
         navHomeBtn.addEventListener('click', () => {
@@ -2564,7 +2289,6 @@ function setupNavigationButtons() {
         });
     }
     
-    // ✅ NEW: Watch History navigation
     if (navHistoryBtn) {
         navHistoryBtn.addEventListener('click', () => {
             if (!window.currentUser) {
@@ -2702,7 +2426,6 @@ function setupSearch() {
         return;
     }
     
-    // Open search modal
     searchBtn.addEventListener('click', () => {
         console.log('🔍 Search button clicked');
         searchModal.classList.add('active');
@@ -2711,7 +2434,6 @@ function setupSearch() {
         }, 300);
     });
     
-    // Close search modal
     if (closeSearchBtn) {
         closeSearchBtn.addEventListener('click', () => {
             console.log('🔍 Search close clicked');
@@ -2721,7 +2443,6 @@ function setupSearch() {
         });
     }
     
-    // Close on backdrop click
     searchModal.addEventListener('click', (e) => {
         if (e.target === searchModal) {
             searchModal.classList.remove('active');
@@ -2730,7 +2451,6 @@ function setupSearch() {
         }
     });
     
-    // Close on Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && searchModal.classList.contains('active')) {
             searchModal.classList.remove('active');
@@ -2739,7 +2459,6 @@ function setupSearch() {
         }
     });
     
-    // Search input with debounce
     if (searchInput) {
         searchInput.addEventListener('input', debounce(async (e) => {
             const query = e.target.value.trim();
@@ -2762,7 +2481,6 @@ function setupSearch() {
                 return;
             }
             
-            // Show loading state
             searchResultsGrid.innerHTML = `
                 <div class="infinite-scroll-loading" style="grid-column: 1 / -1;">
                     <div class="infinite-scroll-spinner"></div>
@@ -2787,10 +2505,9 @@ function setupSearch() {
                     </div>
                 `;
             }
-        }, 500)); // Increased debounce to 500ms for better performance
+        }, 500));
     }
     
-    // Filter change handlers
     const categoryFilter = document.getElementById('category-filter');
     const sortFilter = document.getElementById('sort-filter');
     const languageFilter = document.getElementById('language-filter');
@@ -2822,7 +2539,6 @@ function setupSearch() {
         });
     }
     
-    // Keyboard shortcut (Ctrl+K)
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
@@ -2841,7 +2557,6 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
     console.log('🔍 Searching:', query, 'Category:', category, 'Sort:', sortBy, 'Language:', language);
     
     try {
-        // Build search query with proper Supabase syntax
         let queryBuilder = supabaseAuth
             .from('Content')
             .select(`
@@ -2856,22 +2571,18 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
             `)
             .eq('status', 'published');
         
-        // Search by title OR description (using or condition)
         queryBuilder = queryBuilder.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
         
-        // Apply category filter
         if (category && category !== '' && category !== 'all') {
             queryBuilder = queryBuilder.eq('genre', category);
             console.log('🔍 Filtering by category:', category);
         }
         
-        // Apply language filter
         if (language && language !== '' && language !== 'all') {
             queryBuilder = queryBuilder.eq('language', language);
             console.log('🔍 Filtering by language:', language);
         }
         
-        // Execute query
         const { data, error } = await queryBuilder.limit(50);
         
         if (error) {
@@ -2883,7 +2594,6 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
         
         let results = data || [];
         
-        // Enrich results with metrics if we have results
         if (results.length > 0) {
             const contentIds = results.map(r => r.id);
             const creatorIds = [...new Set(results.map(r => r.user_id).filter(Boolean))];
@@ -2892,7 +2602,6 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
             
             const metrics = await fetchAllMetrics(contentIds, creatorIds);
             
-            // Enrich results with metrics
             results = results.map(item => ({
                 ...item,
                 metrics: {
@@ -2904,7 +2613,6 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
             }));
         }
         
-        // Apply sorting
         if (sortBy === 'popular') {
             results.sort((a, b) => (b.metrics?.views || 0) - (a.metrics?.views || 0));
             console.log('🔍 Sorted by popular');
@@ -2919,7 +2627,6 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
             results.sort((a, b) => (b.metrics?.connectors || 0) - (a.metrics?.connectors || 0));
             console.log('🔍 Sorted by connectors');
         } else {
-            // Default: newest first
             results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             console.log('🔍 Sorted by newest');
         }
@@ -2959,16 +2666,13 @@ function renderSearchResults(results, searchQuery = '') {
         return;
     }
     
-    // Create document fragment for better performance
     const fragment = document.createDocumentFragment();
     
-    // Add results count header
     const resultsHeader = document.createElement('div');
     resultsHeader.style.cssText = 'grid-column: 1 / -1; margin-bottom: 1rem; color: var(--slate-grey); font-size: var(--font-sm);';
     resultsHeader.innerHTML = `Found ${results.length} result${results.length !== 1 ? 's' : ''} for "${escapeHtml(searchQuery)}"`;
     fragment.appendChild(resultsHeader);
     
-    // Render each result
     results.slice(0, 24).forEach((content, index) => {
         if (!content) return;
         
@@ -3000,7 +2704,6 @@ function renderSearchResults(results, searchQuery = '') {
         card.style.transform = 'translateY(20px)';
         card.style.transition = 'all 0.3s ease';
         
-        // Highlight search query in title
         const highlightedTitle = highlightSearchQuery(escapeHtml(content.title), searchQuery);
         
         card.innerHTML = `
@@ -3039,7 +2742,6 @@ function renderSearchResults(results, searchQuery = '') {
         
         fragment.appendChild(card);
         
-        // Animate cards in with stagger
         setTimeout(() => {
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
@@ -3976,7 +3678,7 @@ async function loadMoreContent() {
     if (window.isLoadingMore || !window.hasMoreContent) return;
     
     window.isLoadingMore = true;
-    window.currentPage = (window.currentPage || 0) + 1;
+    window.currentPage++;
     
     const loadingIndicator = document.createElement('div');
     loadingIndicator.className = 'infinite-scroll-loading';
@@ -3988,8 +3690,8 @@ async function loadMoreContent() {
     document.querySelector('.container')?.appendChild(loadingIndicator);
     
     try {
-        const from = (window.currentPage || 0) * 12;
-        const to = from + 11;
+        const from = window.currentPage * window.PAGE_SIZE;
+        const to = (window.currentPage + 1) * window.PAGE_SIZE - 1;
         
         const { data, error } = await supabaseAuth
             .from('Content')
@@ -4019,7 +3721,7 @@ async function loadMoreContent() {
             }));
             
             appendMoreContent(dataWithMetrics);
-            window.hasMoreContent = data.length === 12;
+            window.hasMoreContent = data.length === window.PAGE_SIZE;
         } else {
             window.hasMoreContent = false;
             
@@ -4140,13 +3842,10 @@ function updateWelcomeMessage() {
 // UPDATE APP ICON
 // ============================================
 function updateAppIcon() {
-    // Update logo icon in header
     const logoIcon = document.querySelector('.logo-icon');
     if (logoIcon) {
-        // Clear existing content
         logoIcon.innerHTML = '';
         
-        // Add img element
         const img = document.createElement('img');
         img.src = 'assets/icon/bantu_stream_connect_icon.png';
         img.alt = 'Bantu Stream Connect';
@@ -4157,7 +3856,6 @@ function updateAppIcon() {
         logoIcon.appendChild(img);
     }
     
-    // Update sidebar logo icon
     const sidebarLogoIcon = document.querySelector('.sidebar-logo .logo-icon');
     if (sidebarLogoIcon) {
         sidebarLogoIcon.innerHTML = '';
@@ -4173,50 +3871,8 @@ function updateAppIcon() {
     }
 }
 
-// ============================================
-// EXPORT FUNCTIONS TO GLOBAL SCOPE FOR PERFORMANCE LOADER
-// ============================================
+// Export functions to window for external access
+window.initializeHomeFeed = initializeHomeFeed;
 window.loadContinueWatchingSection = loadContinueWatchingSection;
 window.loadForYouSection = loadForYouSection;
-window.loadFollowingSection = loadFollowingSection;
-window.loadShortsSection = loadShortsSection;
-window.loadCommunityFavoritesSection = loadCommunityFavoritesSection;
-window.loadLiveStreamsSection = loadLiveStreamsSection;
-window.loadTrendingSection = loadTrendingSection;
-window.loadNewContentSection = loadNewContentSection;
-window.loadFeaturedCreatorsSection = loadFeaturedCreatorsSection;
-window.loadEventsSection = loadEventsSection;
-window.loadCommunityStats = loadCommunityStats;
-window.loadCinematicHero = loadCinematicHero;
-window.loadUserProfiles = loadUserProfiles;
-window.updateHeaderProfile = updateHeaderProfile;
-
-// ============================================
-// INITIALIZE PERFORMANCE LOADER
-// ============================================
-// Create and initialize performance loader (but don't run twice)
-if (!window.performanceLoaderInitialized) {
-    window.performanceLoaderInitialized = true;
-    
-    // Wait for DOM and dependencies
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            // Small delay to ensure all scripts are loaded
-            setTimeout(() => {
-                const loader = new PerformanceLoader();
-                loader.init();
-            }, 100);
-        });
-    } else {
-        setTimeout(() => {
-            const loader = new PerformanceLoader();
-            loader.init();
-        }, 100);
-    }
-}
-
-// Initialize global pagination state
-window.hasMoreContent = true;
-window.isLoadingMore = false;
-window.currentPage = 0;
-window.PAGE_SIZE = 12;
+window.clearSectionCache = clearSectionCache;
