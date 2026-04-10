@@ -295,6 +295,183 @@ function setupGlobalImageErrorHandler() {
     }, true);
 }
 
+// ============================================
+// AUTHENTICATION FUNCTIONS (WITH PERFORMANCE TIMING)
+// ============================================
+
+/**
+ * Check authentication status with performance logging
+ * This is the key function with added performance timing
+ */
+async function checkAuth() {
+    const startTime = performance.now();
+    try {
+        const { data, error } = await supabaseAuth.auth.getSession();
+        if (error) throw error;
+        
+        const session = data?.session;
+        window.currentUser = session?.user || null;
+        
+        const authTime = performance.now() - startTime;
+        console.log(`🔐 Auth check completed in ${authTime.toFixed(0)}ms`);
+        
+        if (window.currentUser) {
+            console.log('✅ User authenticated:', window.currentUser.email);
+            // Don't await profile load - do it in background
+            loadUserProfile().catch(console.warn);
+        } else {
+            console.log('⚠️ User not authenticated');
+        }
+        
+        return window.currentUser;
+    } catch (error) {
+        console.error('Auth check error:', error);
+        return null;
+    }
+}
+
+/**
+ * Load user profile from database
+ */
+async function loadUserProfile() {
+    try {
+        if (!window.currentUser) return;
+        
+        const { data: profile, error } = await supabaseAuth
+            .from('user_profiles')
+            .select('*')
+            .eq('id', window.currentUser.id)
+            .maybeSingle();
+        
+        if (error) {
+            console.warn('Profile fetch error:', error);
+            return;
+        }
+        
+        if (profile) {
+            window.currentProfile = profile;
+            console.log('✅ Profile loaded:', profile.full_name || profile.username);
+        }
+        
+        await loadNotifications();
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+/**
+ * Load user notifications
+ */
+async function loadNotifications() {
+    try {
+        if (!window.currentUser) {
+            updateNotificationBadge(0);
+            return;
+        }
+        
+        const { data, error } = await supabaseAuth
+            .from('notifications')
+            .select('*')
+            .eq('user_id', window.currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+        
+        if (error) {
+            console.warn('Error loading notifications:', error);
+            updateNotificationBadge(0);
+            return;
+        }
+        
+        window.notifications = data || [];
+        const unreadCount = window.notifications.filter(n => !n.is_read).length;
+        updateNotificationBadge(unreadCount);
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        updateNotificationBadge(0);
+    }
+}
+
+/**
+ * Update notification badge count
+ */
+function updateNotificationBadge(count) {
+    const mainBadge = document.getElementById('notification-count');
+    const sidebarBadge = document.getElementById('sidebar-notification-count');
+    
+    [mainBadge, sidebarBadge].forEach(badge => {
+        if (badge) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+    });
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+/**
+ * Show toast notification
+ */
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-exclamation-circle' : 
+                        type === 'warning' ? 'fa-exclamation-triangle' : 
+                        'fa-info-circle'}"></i>
+        <span>${escapeHtml(message)}</span>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Format large numbers with K/M suffixes
+ */
+function formatNumber(num) {
+    if (!num && num !== 0) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
+
+/**
+ * Get initials from a name
+ */
+function getInitials(name) {
+    if (!name) return '?';
+    return name
+        .split(' ')
+        .map(part => part[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
 // Run global error handler setup when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupGlobalImageErrorHandler);
@@ -303,3 +480,14 @@ if (document.readyState === 'loading') {
 }
 
 console.log('✅ Global image error handler initialized');
+console.log('✅ home-feed.js loaded with performance timing for auth check');
+
+// Export checkAuth to window for other scripts
+window.checkAuth = checkAuth;
+window.showToast = showToast;
+window.escapeHtml = escapeHtml;
+window.formatNumber = formatNumber;
+window.getInitials = getInitials;
+window.loadUserProfile = loadUserProfile;
+window.loadNotifications = loadNotifications;
+window.updateNotificationBadge = updateNotificationBadge;
