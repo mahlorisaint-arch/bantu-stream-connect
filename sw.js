@@ -1,27 +1,30 @@
 // Bantu Stream Connect Service Worker
-// Version: 4.0.0 - Optimized for Home Feed Performance with Safe Caching
+// Version: 5.0.0 - EMERGENCY CACHE CLEAR with Safe Caching
+// Last updated: 2026-04-10 - Force clear all old caches
 
-const CACHE_NAME = 'bantu-stream-connect-v4';  // Incremented to v4
-const STATIC_CACHE = 'bantu-static-v4';
-const DYNAMIC_CACHE = 'bantu-dynamic-v4';
-const IMAGE_CACHE = 'bantu-images-v4';
-const API_CACHE = 'bantu-api-v4';
+const CACHE_NAME = 'bantu-stream-connect-v5';  // Incremented to v5 for emergency clear
+const STATIC_CACHE = 'bantu-static-v5';
+const DYNAMIC_CACHE = 'bantu-dynamic-v5';
+const IMAGE_CACHE = 'bantu-images-v5';
+const API_CACHE = 'bantu-api-v5';
 
-// Assets to cache on install - verified to exist
+// Assets to cache on install - verified to exist (WITHOUT nested js/js paths)
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
     '/css/home-feed.css',
-    '/css/home-feed-themes.css',
-    '/css/home-feed-components.css',
-    '/css/home-feed-utilities.css',
+    '/css/home-feed-ui.css',
     '/css/home-feed-features.css',
+    '/css/community-pulse.css',
+    '/css/audio-player.css',
+    '/js/image-fix.js',
     '/js/home-feed-core.js',
-    '/js/home-feed-features.js',
     '/js/home-feed-ui.js',
-    '/js/home-feed-utils.js',
-    '/js/home-feed.js',
+    '/js/home-feed-features.js',
+    '/js/audio-player.js',
+    '/js/community-pulse.js',
+    '/js/rate-limiter.js',
     '/manifest.json',
     '/assets/icon/bantu_stream_connect_icon_192x192.png',
     '/assets/icon/bantu_stream_connect_icon_512x512.png',
@@ -39,121 +42,143 @@ const API_ENDPOINTS = [
     '/api/stats/community'
 ];
 
-// Install event - cache static assets with safety checks
+// ============================================
+// EMERGENCY: Force clear ALL old caches on install
+// ============================================
 self.addEventListener('install', event => {
-    console.log('Service Worker: Installing v4...');
+    console.log('🚀 Service Worker: Installing v5 - EMERGENCY CACHE CLEAR...');
     
+    // Force clear ALL existing caches before installing
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(async (cache) => {
-                try {
-                    // Only cache critical assets that exist
-                    const validAssets = [];
-                    
-                    // Use Promise.allSettled to handle individual failures gracefully
-                    const results = await Promise.allSettled(
-                        STATIC_ASSETS.map(async (url) => {
-                            try {
-                                // Skip external URLs for HEAD requests (CORS issues)
-                                if (url.startsWith('http') && !url.startsWith(self.location.origin)) {
-                                    // For external resources, just try to cache them directly
-                                    validAssets.push(url);
-                                    return { url, status: 'added' };
-                                }
-                                
-                                // For local assets, check if they exist
-                                const response = await fetch(url, { 
-                                    method: 'HEAD',
-                                    cache: 'no-cache'
-                                });
-                                
-                                if (response.ok) {
-                                    validAssets.push(url);
-                                    return { url, status: 'ok' };
-                                } else {
-                                    console.log(`Skipping non-existent: ${url} (${response.status})`);
-                                    return { url, status: 'not-found' };
-                                }
-                            } catch (error) {
-                                // If HEAD fails but it's a local asset, try to add it anyway
-                                // The browser might have it cached or it might be an HTML file that needs to be fetched
-                                if (!url.startsWith('http') || url.startsWith(self.location.origin)) {
-                                    validAssets.push(url);
-                                    return { url, status: 'added-fallback' };
-                                }
-                                console.log(`Skipping unreachable: ${url} (${error.message})`);
-                                return { url, status: 'error' };
+        caches.keys().then(async cacheNames => {
+            console.log('🗑️ Clearing all existing caches...');
+            const deletePromises = cacheNames.map(cacheName => {
+                console.log(`🗑️ Deleting cache: ${cacheName}`);
+                return caches.delete(cacheName);
+            });
+            await Promise.all(deletePromises);
+            console.log('✅ All old caches cleared');
+            
+            // Now install new caches
+            return caches.open(CACHE_NAME);
+        })
+        .then(async (cache) => {
+            try {
+                // Only cache critical assets that exist
+                const validAssets = [];
+                
+                // Use Promise.allSettled to handle individual failures gracefully
+                const results = await Promise.allSettled(
+                    STATIC_ASSETS.map(async (url) => {
+                        try {
+                            // Skip external URLs for HEAD requests (CORS issues)
+                            if (url.startsWith('http') && !url.startsWith(self.location.origin)) {
+                                // For external resources, just try to cache them directly
+                                validAssets.push(url);
+                                console.log(`📦 Will cache external: ${url}`);
+                                return { url, status: 'added' };
                             }
-                        })
-                    );
-                    
-                    // Count successful additions
-                    const successCount = results.filter(r => 
-                        r.status === 'fulfilled' && 
-                        (r.value.status === 'ok' || r.value.status === 'added' || r.value.status === 'added-fallback')
-                    ).length;
-                    
-                    console.log(`📊 Asset check: ${successCount}/${STATIC_ASSETS.length} assets will be cached`);
-                    
-                    // Cache only valid assets
-                    if (validAssets.length > 0) {
-                        await cache.addAll(validAssets);
-                        console.log(`✅ Cached ${validAssets.length} critical assets`);
-                    } else {
-                        console.log('⚠️ No valid assets to cache, continuing anyway');
-                    }
-                } catch (error) {
-                    console.log('⚠️ Precaching failed (non-critical):', error);
-                    // Don't fail install - app can still work
+                            
+                            // For local assets, check if they exist
+                            const response = await fetch(url, { 
+                                method: 'HEAD',
+                                cache: 'no-cache'
+                            });
+                            
+                            if (response.ok) {
+                                validAssets.push(url);
+                                console.log(`✅ Asset found: ${url}`);
+                                return { url, status: 'ok' };
+                            } else {
+                                console.log(`⚠️ Skipping non-existent: ${url} (${response.status})`);
+                                return { url, status: 'not-found' };
+                            }
+                        } catch (error) {
+                            // If HEAD fails but it's a local asset, try to add it anyway
+                            if (!url.startsWith('http') || url.startsWith(self.location.origin)) {
+                                validAssets.push(url);
+                                console.log(`⚠️ Adding fallback for: ${url}`);
+                                return { url, status: 'added-fallback' };
+                            }
+                            console.log(`❌ Skipping unreachable: ${url} (${error.message})`);
+                            return { url, status: 'error' };
+                        }
+                    })
+                );
+                
+                // Count successful additions
+                const successCount = results.filter(r => 
+                    r.status === 'fulfilled' && 
+                    (r.value.status === 'ok' || r.value.status === 'added' || r.value.status === 'added-fallback')
+                ).length;
+                
+                console.log(`📊 Asset check: ${successCount}/${STATIC_ASSETS.length} assets will be cached`);
+                
+                // Cache only valid assets
+                if (validAssets.length > 0) {
+                    await cache.addAll(validAssets);
+                    console.log(`✅ Cached ${validAssets.length} critical assets`);
+                } else {
+                    console.log('⚠️ No valid assets to cache, continuing anyway');
                 }
-            })
-            .then(() => {
-                // Also try to pre-cache API endpoints (don't block on failure)
-                return caches.open(API_CACHE).then(cache => {
-                    return Promise.allSettled(
-                        API_ENDPOINTS.map(endpoint => 
-                            fetch(endpoint, { cache: 'no-cache' })
-                                .then(response => {
-                                    if (response.ok) {
-                                        cache.put(endpoint, response);
-                                        console.log(`✅ Cached API endpoint: ${endpoint}`);
-                                    }
-                                })
-                                .catch(() => {})
-                        )
-                    );
-                });
-            })
-            .then(() => {
-                console.log('✅ Service Worker: Install completed');
-                return self.skipWaiting();
-            })
+            } catch (error) {
+                console.log('⚠️ Precaching failed (non-critical):', error);
+                // Don't fail install - app can still work
+            }
+        })
+        .then(() => {
+            // Also try to pre-cache API endpoints (don't block on failure)
+            return caches.open(API_CACHE).then(cache => {
+                return Promise.allSettled(
+                    API_ENDPOINTS.map(endpoint => 
+                        fetch(endpoint, { cache: 'no-cache' })
+                            .then(response => {
+                                if (response.ok) {
+                                    cache.put(endpoint, response);
+                                    console.log(`✅ Cached API endpoint: ${endpoint}`);
+                                }
+                            })
+                            .catch(() => {})
+                    )
+                );
+            });
+        })
+        .then(() => {
+            console.log('✅ Service Worker: Install completed - v5 ready');
+            return self.skipWaiting();
+        })
     );
 });
 
-// Activate event - clean up old caches
+// ============================================
+// ACTIVATE: Take control immediately and clean up
+// ============================================
 self.addEventListener('activate', event => {
-    console.log('Service Worker: Activating v4...');
+    console.log('🚀 Service Worker: Activating v5 - Taking control...');
     
     event.waitUntil(
         caches.keys().then(cacheNames => {
+            console.log('🗑️ Final cache cleanup during activation...');
             return Promise.all(
                 cacheNames.map(cacheName => {
                     // Delete any caches that don't match our current version
-                    if (!cacheName.includes('v4')) {
+                    if (!cacheName.includes('v5')) {
                         console.log('🗑️ Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
-            console.log('✅ Service Worker: Activation completed - old caches cleared');
+            console.log('✅ Service Worker: Activation completed - v5 active');
+            // Take control of all clients immediately
             return self.clients.claim();
         })
     );
 });
 
-// Fetch event - optimized caching strategies with error handling
+// ============================================
+// FETCH: Optimized caching strategies
+// ============================================
 self.addEventListener('fetch', event => {
     const requestUrl = new URL(event.request.url);
     
@@ -170,15 +195,28 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // Skip Supabase REST API calls from being cached by service worker
-    // Let them go directly to network for real-time data
+    // ============================================
+    // EMERGENCY FIX: Block any requests with corrupted paths
+    // ============================================
+    if (requestUrl.pathname.includes('css/js/js/') || 
+        requestUrl.pathname.includes('js/js/js/') ||
+        requestUrl.pathname.match(/\/js\/css\//) ||
+        requestUrl.pathname.match(/\/css\/js\//)) {
+        console.error('🚨 BLOCKED corrupted path request:', requestUrl.pathname);
+        event.respondWith(
+            new Response('', { status: 404, statusText: 'Not Found - Corrupted Path' })
+        );
+        return;
+    }
+    
+    // ============================================
+    // Supabase API calls - Network First with cache fallback
+    // ============================================
     if (requestUrl.hostname.includes('supabase.co')) {
-        // For Supabase API calls, use network first with cache fallback
         if (requestUrl.pathname.includes('/rest/v1/')) {
             event.respondWith(
                 fetch(event.request)
                     .then(response => {
-                        // Cache successful responses for offline fallback
                         if (response && response.ok) {
                             const responseClone = response.clone();
                             caches.open(API_CACHE).then(cache => {
@@ -188,13 +226,11 @@ self.addEventListener('fetch', event => {
                         return response;
                     })
                     .catch(async () => {
-                        // Try to serve from cache on failure
                         const cached = await caches.match(event.request);
                         if (cached) {
                             console.log('📦 Serving cached Supabase response for:', requestUrl.pathname);
                             return cached;
                         }
-                        // If no cache, return a fallback response
                         return new Response(
                             JSON.stringify({ error: 'You are offline and this data is not cached' }),
                             { status: 503, headers: { 'Content-Type': 'application/json' } }
@@ -205,7 +241,9 @@ self.addEventListener('fetch', event => {
         }
     }
     
+    // ============================================
     // Strategy 1: Cache First for static assets (CSS, JS, fonts)
+    // ============================================
     if (requestUrl.pathname.match(/\.(css|js|json|woff2?|ttf|eot)$/) ||
         requestUrl.hostname.includes('fonts.googleapis.com') ||
         requestUrl.hostname.includes('cdnjs.cloudflare.com')) {
@@ -244,7 +282,9 @@ self.addEventListener('fetch', event => {
         return;
     }
     
+    // ============================================
     // Strategy 2: Network First for HTML documents
+    // ============================================
     if (event.request.destination === 'document' || 
         requestUrl.pathname === '/' || 
         requestUrl.pathname.endsWith('.html')) {
@@ -261,17 +301,14 @@ self.addEventListener('fetch', event => {
                     return networkResponse;
                 })
                 .catch(async () => {
-                    // Try to serve from cache on failure
                     const cached = await caches.match(event.request);
                     if (cached) {
                         return cached;
                     }
-                    // Return offline page
                     const offlinePage = await caches.match('/offline.html');
                     if (offlinePage) {
                         return offlinePage;
                     }
-                    // Ultimate fallback
                     return new Response(
                         '<html><body><h1>Offline</h1><p>You are offline and the offline page is not cached.</p></body></html>',
                         { headers: { 'Content-Type': 'text/html' } }
@@ -281,7 +318,9 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // Strategy 3: Stale-While-Revalidate for API calls (except Supabase)
+    // ============================================
+    // Strategy 3: Stale-While-Revalidate for API calls
+    // ============================================
     if (requestUrl.pathname.includes('/api/')) {
         
         event.respondWith(
@@ -296,18 +335,15 @@ self.addEventListener('fetch', event => {
                         })
                         .catch(error => {
                             console.log('API fetch failed:', error);
-                            // If fetch fails and we have cached response, return it
                             if (cachedResponse) {
                                 return cachedResponse;
                             }
-                            // Otherwise return a fallback
                             return new Response(
                                 JSON.stringify({ error: 'Failed to fetch data' }),
                                 { status: 503, headers: { 'Content-Type': 'application/json' } }
                             );
                         });
                     
-                    // Return cached response immediately if available
                     return cachedResponse || fetchPromise;
                 });
             })
@@ -315,7 +351,9 @@ self.addEventListener('fetch', event => {
         return;
     }
     
+    // ============================================
     // Strategy 4: Cache with Network Fallback for images
+    // ============================================
     if (event.request.destination === 'image') {
         event.respondWith(
             caches.open(IMAGE_CACHE).then(cache => {
@@ -339,7 +377,6 @@ self.addEventListener('fetch', event => {
                         }
                         return networkResponse;
                     }).catch(() => {
-                        // Return a placeholder image if fetch fails
                         return new Response('', { status: 404 });
                     });
                 });
@@ -348,7 +385,9 @@ self.addEventListener('fetch', event => {
         return;
     }
     
+    // ============================================
     // Strategy 5: Network Only for everything else
+    // ============================================
     event.respondWith(
         fetch(event.request).catch(error => {
             console.log('Fetch failed:', error);
@@ -357,7 +396,47 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// Background sync for offline actions
+// ============================================
+// MESSAGE HANDLER: Allow client to trigger cache clearing
+// ============================================
+self.addEventListener('message', event => {
+    console.log('Service Worker: Message received', event.data);
+    
+    if (event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+    
+    if (event.data.type === 'CLEAR_CACHE') {
+        event.waitUntil(
+            caches.keys().then(cacheNames => {
+                console.log('🗑️ Clearing all caches by client request...');
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        console.log(`🗑️ Deleting cache: ${cacheName}`);
+                        return caches.delete(cacheName);
+                    })
+                );
+            }).then(() => {
+                console.log('✅ All caches cleared');
+                if (event.source) {
+                    event.source.postMessage({ type: 'CACHE_CLEARED' });
+                }
+            })
+        );
+    }
+    
+    if (event.data.type === 'UPDATE_CONTENT') {
+        updateCachedContent();
+    }
+    
+    if (event.data.type === 'PREFETCH_CONTENT') {
+        prefetchContent(event.data.contentIds);
+    }
+});
+
+// ============================================
+// BACKGROUND SYNC: For offline actions
+// ============================================
 self.addEventListener('sync', event => {
     console.log('Background sync:', event.tag);
     
@@ -374,7 +453,9 @@ self.addEventListener('sync', event => {
     }
 });
 
-// Push notifications
+// ============================================
+// PUSH NOTIFICATIONS
+// ============================================
 self.addEventListener('push', event => {
     console.log('Push notification received:', event);
     
@@ -426,7 +507,9 @@ self.addEventListener('push', event => {
     );
 });
 
-// Notification click handler
+// ============================================
+// NOTIFICATION CLICK HANDLER
+// ============================================
 self.addEventListener('notificationclick', event => {
     console.log('Notification clicked:', event);
     
@@ -438,14 +521,11 @@ self.addEventListener('notificationclick', event => {
         event.waitUntil(
             clients.matchAll({ type: 'window', includeUncontrolled: true })
                 .then(clientList => {
-                    // Try to focus existing window
                     for (const client of clientList) {
                         if (client.url.includes(urlToOpen) && 'focus' in client) {
                             return client.focus();
                         }
                     }
-                    
-                    // Open new window
                     if (clients.openWindow) {
                         return clients.openWindow(urlToOpen);
                     }
@@ -454,7 +534,9 @@ self.addEventListener('notificationclick', event => {
     }
 });
 
-// Periodic sync for background updates
+// ============================================
+// PERIODIC SYNC (if supported)
+// ============================================
 self.addEventListener('periodicsync', event => {
     if (event.tag === 'update-content') {
         event.waitUntil(updateCachedContent());
@@ -465,150 +547,10 @@ self.addEventListener('periodicsync', event => {
     }
 });
 
-// Message handler for communication with client
-self.addEventListener('message', event => {
-    console.log('Service Worker: Message received', event.data);
-    
-    if (event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-    
-    if (event.data.type === 'CLEAR_CACHE') {
-        Promise.all([
-            caches.delete(STATIC_CACHE),
-            caches.delete(DYNAMIC_CACHE),
-            caches.delete(IMAGE_CACHE),
-            caches.delete(API_CACHE),
-            caches.delete(CACHE_NAME)
-        ]).then(() => {
-            console.log('All caches cleared');
-        });
-    }
-    
-    if (event.data.type === 'UPDATE_CONTENT') {
-        updateCachedContent();
-    }
-    
-    if (event.data.type === 'PREFETCH_CONTENT') {
-        prefetchContent(event.data.contentIds);
-    }
-});
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 
-// Background sync functions
-async function syncContentViews() {
-    try {
-        const db = await openDatabase();
-        const views = await getAllFromStore(db, 'pending_views');
-        
-        if (views.length === 0) return;
-        
-        const syncPromises = views.map(view => 
-            fetch('/api/analytics/event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    event: 'content_view',
-                    properties: {
-                        content_id: view.content_id,
-                        duration: view.duration,
-                        timestamp: view.timestamp
-                    },
-                    userId: view.user_id
-                })
-            }).then(response => {
-                if (response.ok) {
-                    return deleteFromStore(db, 'pending_views', view.id);
-                }
-                throw new Error('Sync failed');
-            }).catch(error => {
-                console.error('View sync failed:', error);
-                // Keep in store for retry
-            })
-        );
-        
-        await Promise.allSettled(syncPromises);
-        console.log('Content views sync completed');
-        
-    } catch (error) {
-        console.error('Content views sync failed:', error);
-        throw error;
-    }
-}
-
-async function syncAnalytics() {
-    try {
-        const db = await openDatabase();
-        const events = await getAllFromStore(db, 'pending_analytics');
-        
-        if (events.length === 0) return;
-        
-        const syncPromises = events.map(event =>
-            fetch('/api/analytics/event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(event.data)
-            }).then(response => {
-                if (response.ok) {
-                    return deleteFromStore(db, 'pending_analytics', event.id);
-                }
-                throw new Error('Sync failed');
-            }).catch(error => {
-                console.error('Analytics sync failed:', error);
-            })
-        );
-        
-        await Promise.allSettled(syncPromises);
-        console.log('Analytics sync completed');
-        
-    } catch (error) {
-        console.error('Analytics sync failed:', error);
-        throw error;
-    }
-}
-
-async function syncConnectors() {
-    try {
-        const db = await openDatabase();
-        const connectors = await getAllFromStore(db, 'pending_connectors');
-        
-        if (connectors.length === 0) return;
-        
-        const syncPromises = connectors.map(connector =>
-            fetch('/api/connectors/sync', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: connector.action,
-                    creator_id: connector.creator_id,
-                    user_id: connector.user_id,
-                    timestamp: connector.timestamp
-                })
-            }).then(response => {
-                if (response.ok) {
-                    return deleteFromStore(db, 'pending_connectors', connector.id);
-                }
-                throw new Error('Sync failed');
-            }).catch(error => {
-                console.error('Connector sync failed:', error);
-            })
-        );
-        
-        await Promise.allSettled(syncPromises);
-        console.log('Connectors sync completed');
-        
-    } catch (error) {
-        console.error('Connectors sync failed:', error);
-        throw error;
-    }
-}
-
-// Content update functions
 async function updateCachedContent() {
     try {
         const endpoints = [
@@ -626,7 +568,6 @@ async function updateCachedContent() {
                 if (response.ok) {
                     await cache.put(endpoint, response.clone());
                     
-                    // Store in IndexedDB for offline access
                     const data = await response.json();
                     await storeContentInDB(endpoint, data);
                 }
@@ -638,7 +579,6 @@ async function updateCachedContent() {
         await Promise.allSettled(updatePromises);
         console.log('Cached content updated');
         
-        // Notify clients
         const clients = await self.clients.matchAll();
         clients.forEach(client => {
             client.postMessage({
@@ -661,7 +601,6 @@ async function updateCommunityStats() {
             
             const stats = await response.json();
             
-            // Notify clients
             const clients = await self.clients.matchAll();
             clients.forEach(client => {
                 client.postMessage({
@@ -719,7 +658,9 @@ async function storeContentInDB(endpoint, data) {
     }
 }
 
+// ============================================
 // IndexedDB helper functions
+// ============================================
 function openDatabase() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('BantuOfflineDB', 2);
@@ -730,7 +671,6 @@ function openDatabase() {
         request.onupgradeneeded = event => {
             const db = event.target.result;
             
-            // Create object stores if they don't exist
             if (!db.objectStoreNames.contains('pending_views')) {
                 const viewStore = db.createObjectStore('pending_views', { keyPath: 'id', autoIncrement: true });
                 viewStore.createIndex('timestamp', 'timestamp', { unique: false });
@@ -759,6 +699,115 @@ function openDatabase() {
     });
 }
 
+async function syncContentViews() {
+    try {
+        const db = await openDatabase();
+        const views = await getAllFromStore(db, 'pending_views');
+        
+        if (views.length === 0) return;
+        
+        const syncPromises = views.map(view => 
+            fetch('/api/analytics/event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event: 'content_view',
+                    properties: {
+                        content_id: view.content_id,
+                        duration: view.duration,
+                        timestamp: view.timestamp
+                    },
+                    userId: view.user_id
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return deleteFromStore(db, 'pending_views', view.id);
+                }
+                throw new Error('Sync failed');
+            }).catch(error => {
+                console.error('View sync failed:', error);
+            })
+        );
+        
+        await Promise.allSettled(syncPromises);
+        console.log('Content views sync completed');
+        
+    } catch (error) {
+        console.error('Content views sync failed:', error);
+    }
+}
+
+async function syncAnalytics() {
+    try {
+        const db = await openDatabase();
+        const events = await getAllFromStore(db, 'pending_analytics');
+        
+        if (events.length === 0) return;
+        
+        const syncPromises = events.map(event =>
+            fetch('/api/analytics/event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(event.data)
+            }).then(response => {
+                if (response.ok) {
+                    return deleteFromStore(db, 'pending_analytics', event.id);
+                }
+                throw new Error('Sync failed');
+            }).catch(error => {
+                console.error('Analytics sync failed:', error);
+            })
+        );
+        
+        await Promise.allSettled(syncPromises);
+        console.log('Analytics sync completed');
+        
+    } catch (error) {
+        console.error('Analytics sync failed:', error);
+    }
+}
+
+async function syncConnectors() {
+    try {
+        const db = await openDatabase();
+        const connectors = await getAllFromStore(db, 'pending_connectors');
+        
+        if (connectors.length === 0) return;
+        
+        const syncPromises = connectors.map(connector =>
+            fetch('/api/connectors/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: connector.action,
+                    creator_id: connector.creator_id,
+                    user_id: connector.user_id,
+                    timestamp: connector.timestamp
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return deleteFromStore(db, 'pending_connectors', connector.id);
+                }
+                throw new Error('Sync failed');
+            }).catch(error => {
+                console.error('Connector sync failed:', error);
+            })
+        );
+        
+        await Promise.allSettled(syncPromises);
+        console.log('Connectors sync completed');
+        
+    } catch (error) {
+        console.error('Connectors sync failed:', error);
+    }
+}
+
 function getAllFromStore(db, storeName) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([storeName], 'readonly');
@@ -781,7 +830,9 @@ function deleteFromStore(db, storeName, id) {
     });
 }
 
+// ============================================
 // Clean up expired cache entries periodically
+// ============================================
 async function cleanupExpiredCache() {
     try {
         const db = await openDatabase();
@@ -808,4 +859,4 @@ async function cleanupExpiredCache() {
 // Run cleanup every hour
 setInterval(cleanupExpiredCache, 60 * 60 * 1000);
 
-console.log('✅ Service Worker v4 loaded successfully - Optimized for Home Feed with Safe Caching');
+console.log('✅ Service Worker v5 loaded - EMERGENCY CACHE CLEARED - Home Feed Ready');
