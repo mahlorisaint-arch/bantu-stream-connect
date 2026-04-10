@@ -163,7 +163,7 @@ function highlightSearchQuery(text, query) {
 }
 
 // ============================================
-// PERFORMANCE LOADER - Integrated version
+// PERFORMANCE LOADER - Integrated version (FIXED TIMEOUTS)
 // ============================================
 
 class PerformanceLoader {
@@ -224,7 +224,7 @@ class PerformanceLoader {
         const criticalTasks = [];
         
         if (typeof loadContinueWatchingSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
+            criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 10000));
         } else {
             console.warn('⚠️ loadContinueWatchingSection not defined yet, waiting...');
             // Wait for it to be defined
@@ -238,30 +238,30 @@ class PerformanceLoader {
                 setTimeout(resolve, 2000); // Fallback after 2 seconds
             });
             if (typeof loadContinueWatchingSection === 'function') {
-                criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
+                criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 10000));
             }
         }
         
         if (typeof loadForYouSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadForYouSection(), 3000));
+            criticalTasks.push(this.loadWithTimeout(() => loadForYouSection(), 10000));
         }
         
         // Also load user data in parallel
         if (window.currentUser) {
             if (typeof loadUserProfiles === 'function') {
-                criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 2000));
+                criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 5000));
             }
             if (typeof updateHeaderProfile === 'function') {
-                criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 2000));
+                criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 5000));
             }
         }
         
         // Load trending and new content with reduced limits (8 items)
         if (typeof loadTrendingSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadTrendingSection(true), 3000));
+            criticalTasks.push(this.loadWithTimeout(() => loadTrendingSection(true), 10000));
         }
         if (typeof loadNewContentSection === 'function') {
-            criticalTasks.push(this.loadWithTimeout(() => loadNewContentSection(true), 3000));
+            criticalTasks.push(this.loadWithTimeout(() => loadNewContentSection(true), 10000));
         }
         
         if (criticalTasks.length > 0) {
@@ -303,7 +303,8 @@ class PerformanceLoader {
         }
     }
 
-    async loadWithTimeout(fn, timeoutMs = 5000) {
+    // FIX: Increased timeout from 3000/5000 to 10000ms to prevent timeout errors
+    async loadWithTimeout(fn, timeoutMs = 10000) {
         return Promise.race([
             fn(),
             new Promise((_, reject) => 
@@ -666,6 +667,502 @@ async function fetchConnectorCounts(creatorIds) {
     } catch (error) {
         console.error('Error fetching connector counts:', error);
         return {};
+    }
+}
+
+// ============================================
+// AUTHENTICATION & PROFILE FUNCTIONS (FIXED - Added Session Recovery)
+// ============================================
+async function checkAuth() {
+    try {
+        const { data, error } = await supabaseAuth.auth.getSession();
+        if (error) throw error;
+        
+        // CRITICAL: Force refresh session on desktop to fix authentication issues
+        if (!data?.session && localStorage.getItem('supabase-auth-token')) {
+            console.log('🔄 Session missing, attempting to recover...');
+            const { data: refreshData, error: refreshError } = await supabaseAuth.auth.refreshSession();
+            if (!refreshError && refreshData.session) {
+                console.log('✅ Session recovered via refresh');
+                window.currentUser = refreshData.session.user;
+                // Update the data object with the recovered session
+                data.session = refreshData.session;
+            }
+        }
+        
+        const session = data?.session;
+        window.currentUser = session?.user || null;
+        
+        // ✅ Debug logging for auth issues
+        console.log('🔐 Auth Check - User Agent:', navigator.userAgent);
+        console.log('🔐 Auth Check - Is Mobile:', /Mobi|Android|iPhone/i.test(navigator.userAgent));
+        console.log('🔐 Auth Check - User:', window.currentUser?.email);
+        console.log('🔐 Auth Check - User ID:', window.currentUser?.id);
+        console.log('🔐 Auth Check - Has Session:', !!session);
+        console.log('🔐 Auth Check - Storage:', localStorage.getItem('supabase-auth-token') ? 'Present' : 'Missing');
+        console.log('🔐 Auth Check - Metadata:', window.currentUser?.user_metadata);
+        
+        if (window.currentUser) {
+            console.log('✅ User authenticated:', window.currentUser.email);
+            await loadUserProfile();
+        } else {
+            console.log('⚠️ User not authenticated');
+            // Don't redirect, just show guest view
+        }
+        
+        return window.currentUser;
+    } catch (error) {
+        console.error('Auth check error:', error);
+        return null;
+    }
+}
+
+async function loadUserProfile() {
+    try {
+        if (!window.currentUser) return;
+        
+        const { data: profile, error } = await supabaseAuth
+            .from('user_profiles')
+            .select('*')
+            .eq('id', window.currentUser.id)
+            .maybeSingle();
+        
+        if (error) {
+            console.warn('Profile fetch error:', error);
+            return;
+        }
+        
+        if (profile) {
+            window.currentProfile = profile;
+        }
+        
+        await loadNotifications();
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+async function loadUserProfiles() {
+    if (!window.currentUser) return;
+    
+    try {
+        const { data, error } = await supabaseAuth
+            .from('user_profiles')
+            .select('*')
+            .eq('id', window.currentUser.id);
+        
+        if (error) {
+            console.warn('Error loading profiles, using default:', error);
+            window.userProfiles = [{
+                id: window.currentUser.id,
+                name: window.currentUser.user_metadata?.full_name || 'Default',
+                avatar_url: null
+            }];
+        } else {
+            window.userProfiles = data || [];
+        }
+        
+        if (window.userProfiles.length === 0) {
+            window.userProfiles = [{
+                id: window.currentUser.id,
+                name: window.currentUser.user_metadata?.full_name || 'Default',
+                avatar_url: null
+            }];
+        }
+        
+        const savedProfileId = localStorage.getItem('currentProfileId');
+        window.currentProfile = window.userProfiles.find(p => p.id === savedProfileId) || window.userProfiles[0];
+        
+        updateProfileSwitcher();
+    } catch (error) {
+        console.error('Error loading profiles:', error);
+    }
+}
+
+// ============================================
+// PROFILE AVATAR HELPER FUNCTIONS (FIXED)
+// ============================================
+
+/**
+ * Fix Media URL - Handles all Supabase storage paths
+ * @param {string} url - The URL from database
+ * @returns {string} Properly formatted URL
+ */
+function fixMediaUrl(url) {
+    if (!url) return '';
+    
+    // Already a valid full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Check if it's a working Supabase URL
+        if (url.includes('supabase.co/storage/v1/object/public')) {
+            return url;
+        }
+        // If it's a different domain, return as-is
+        return url;
+    }
+    
+    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    
+    // Remove leading slashes
+    let cleanPath = url.replace(/^\/+/, '');
+    
+    // Handle different path formats
+    if (cleanPath.includes('storage/v1/object/public')) {
+        // Already has storage path, just prepend domain if needed
+        return cleanPath.startsWith('http') ? cleanPath : `${SUPABASE_URL}/${cleanPath}`;
+    }
+    
+    // Determine bucket type based on path or content type
+    let bucket = 'content'; // default bucket
+    if (cleanPath.includes('avatar') || cleanPath.includes('profile')) {
+        bucket = 'avatars';
+    } else if (cleanPath.includes('thumbnail') || cleanPath.includes('thumb')) {
+        bucket = 'thumbnails';
+    } else if (cleanPath.includes('video') || cleanPath.includes('content')) {
+        bucket = 'content';
+    }
+    
+    // Construct full URL
+    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${cleanPath}`;
+}
+
+/**
+ * Fix Avatar URL - Handles all edge cases for consistent loading
+ * @param {string} url - The avatar URL from database
+ * @returns {string} Properly formatted URL
+ */
+function fixAvatarUrl(url) {
+    if (!url) return '';
+    
+    // Already a full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        if (url.includes('supabase.co')) return url;
+        return url;
+    }
+    
+    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    
+    // Remove leading slashes and common prefixes
+    let cleanPath = url.replace(/^\/+/, '')
+                       .replace(/^avatars\//, '')
+                       .replace(/^user_avatars\//, '')
+                       .replace(/^profile_pictures\//, '');
+    
+    // Use avatars bucket
+    return `${SUPABASE_URL}/storage/v1/object/public/avatars/${cleanPath}`;
+}
+
+/**
+ * Render initials profile (fallback when no avatar)
+ * @param {HTMLElement} container - Container element
+ * @param {Object} profile - Profile object with name/username
+ */
+function renderInitialsProfile(container, profile) {
+    if (!container) return;
+    container.innerHTML = '';
+    const name = profile?.full_name || profile?.username || 'User';
+    const initials = getInitials(name);
+    
+    const div = document.createElement('div');
+    div.className = 'profile-placeholder';
+    div.style.cssText = `
+        width:100%;
+        height:100%;
+        border-radius:50%;
+        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:white;
+        font-weight:bold;
+        font-size:16px;
+        text-transform:uppercase;
+    `;
+    div.textContent = initials;
+    container.appendChild(div);
+}
+
+/**
+ * Render fallback profile (error state)
+ * @param {HTMLElement} container - Container element
+ * @param {HTMLElement} nameElement - Name element to update
+ * @param {Object} user - User object
+ */
+function renderFallbackProfile(container, nameElement, user) {
+    if (!container) return;
+    container.innerHTML = '';
+    const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const initials = getInitials(name);
+    
+    const div = document.createElement('div');
+    div.className = 'profile-placeholder';
+    div.style.cssText = `
+        width:100%;
+        height:100%;
+        border-radius:50%;
+        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:white;
+        font-weight:bold;
+        font-size:16px;
+    `;
+    div.textContent = initials;
+    container.appendChild(div);
+    
+    if (nameElement) {
+        nameElement.textContent = name;
+    }
+}
+
+/**
+ * Render guest profile
+ * @param {HTMLElement} container - Container element
+ * @param {HTMLElement} nameElement - Name element to update
+ */
+function renderGuestProfile(container, nameElement) {
+    if (!container) return;
+    container.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'profile-placeholder';
+    div.style.cssText = `
+        width:100%;
+        height:100%;
+        border-radius:50%;
+        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:white;
+        font-weight:bold;
+        font-size:16px;
+    `;
+    div.textContent = 'G';
+    container.appendChild(div);
+    
+    if (nameElement) {
+        nameElement.textContent = 'Guest';
+    }
+}
+
+/**
+ * Render sidebar initials fallback
+ * @param {HTMLElement} container - Container element
+ * @param {Object} profile - Profile object
+ */
+function renderSidebarInitials(container, profile) {
+    if (!container) return;
+    container.innerHTML = '';
+    const name = profile?.full_name || profile?.username || 'User';
+    const initials = getInitials(name);
+    
+    const span = document.createElement('span');
+    span.style.cssText = `
+        font-size:1.2rem;
+        font-weight:bold;
+        color:var(--soft-white);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:100%;
+        height:100%;
+    `;
+    span.textContent = initials;
+    container.appendChild(span);
+}
+
+/**
+ * Render sidebar fallback profile (error state)
+ * @param {HTMLElement} avatar - Avatar container
+ * @param {HTMLElement} name - Name element
+ * @param {HTMLElement} email - Email element
+ * @param {Object} user - User object
+ */
+function renderSidebarFallback(avatar, name, email, user) {
+    if (!avatar) return;
+    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const initials = getInitials(displayName);
+    
+    if (name) name.textContent = displayName;
+    if (email) email.textContent = user?.email || 'Signed in';
+    
+    avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:var(--soft-white);">${initials}</span>`;
+}
+
+// ============================================
+// UPDATED HEADER PROFILE FUNCTION (FIXED)
+// ============================================
+async function updateHeaderProfile() {
+    try {
+        const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+        const currentProfileName = document.getElementById('current-profile-name');
+        
+        if (!profilePlaceholder || !currentProfileName) {
+            console.warn('⚠️ Profile elements not found in header');
+            return;
+        }
+
+        // Clear existing content first
+        profilePlaceholder.innerHTML = '';
+
+        if (window.currentUser) {
+            console.log('👤 Updating header profile for:', window.currentUser.email);
+            
+            try {
+                // Fetch profile with explicit fields
+                const { data: profile, error } = await supabaseAuth
+                    .from('user_profiles')
+                    .select('id, full_name, username, avatar_url')
+                    .eq('id', window.currentUser.id)
+                    .maybeSingle();
+                
+                if (error) {
+                    console.warn('⚠️ Profile fetch error:', error.message);
+                    renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
+                    return;
+                }
+
+                if (profile && profile.avatar_url) {
+                    // Fix the media URL properly
+                    const avatarUrl = fixAvatarUrl(profile.avatar_url);
+                    console.log('🖼️ Avatar URL:', avatarUrl);
+                    
+                    // Create image with error handling
+                    const img = document.createElement('img');
+                    img.className = 'profile-img';
+                    img.src = avatarUrl;
+                    img.alt = profile.full_name || profile.username || 'Profile';
+                    img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
+                    
+                    // Handle image load errors
+                    img.onerror = function() {
+                        console.warn('⚠️ Failed to load avatar, falling back to initials');
+                        renderInitialsProfile(profilePlaceholder, profile);
+                    };
+                    
+                    img.onload = function() {
+                        console.log('✅ Avatar loaded successfully');
+                    };
+                    
+                    profilePlaceholder.appendChild(img);
+                    currentProfileName.textContent = profile.full_name || profile.username || window.currentUser.email?.split('@')[0] || 'User';
+                    
+                } else {
+                    // No avatar - show initials
+                    renderInitialsProfile(profilePlaceholder, profile || { full_name: window.currentUser.user_metadata?.full_name });
+                    currentProfileName.textContent = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
+                }
+                
+            } catch (fetchError) {
+                console.error('❌ Profile fetch exception:', fetchError);
+                renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
+            }
+            
+        } else {
+            // Guest user
+            renderGuestProfile(profilePlaceholder, currentProfileName);
+        }
+        
+    } catch (error) {
+        console.error('❌ updateHeaderProfile error:', error);
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        const nameEl = document.getElementById('current-profile-name');
+        if (placeholder && nameEl) {
+            renderFallbackProfile(placeholder, nameEl, window.currentUser);
+        }
+    }
+}
+
+// ============================================
+// UPDATED SIDEBAR PROFILE FUNCTION (FIXED)
+// ============================================
+async function updateSidebarProfile() {
+    const avatar = document.getElementById('sidebar-profile-avatar');
+    const name = document.getElementById('sidebar-profile-name');
+    const email = document.getElementById('sidebar-profile-email');
+    const profileSection = document.getElementById('sidebar-profile');
+    
+    if (!avatar || !name || !email) {
+        console.warn('⚠️ Sidebar profile elements not found');
+        return;
+    }
+
+    // Clear existing avatar content
+    avatar.innerHTML = '';
+
+    if (window.currentUser) {
+        console.log('👤 Updating sidebar profile for:', window.currentUser.email);
+        
+        try {
+            const { data: profile, error } = await supabaseAuth
+                .from('user_profiles')
+                .select('id, full_name, username, avatar_url')
+                .eq('id', window.currentUser.id)
+                .maybeSingle();
+            
+            if (error) {
+                console.warn('⚠️ Sidebar profile fetch error:', error.message);
+                renderSidebarFallback(avatar, name, email, window.currentUser);
+                return;
+            }
+
+            if (profile) {
+                // Update name and email
+                name.textContent = profile.full_name || profile.username || 'User';
+                email.textContent = window.currentUser.email;
+                
+                // Handle avatar
+                if (profile.avatar_url) {
+                    const avatarUrl = fixAvatarUrl(profile.avatar_url);
+                    
+                    // Use image with error handling
+                    const img = document.createElement('img');
+                    img.src = avatarUrl;
+                    img.alt = profile.full_name || 'Profile';
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+                    
+                    img.onerror = function() {
+                        console.warn('⚠️ Sidebar avatar failed to load');
+                        renderSidebarInitials(avatar, profile);
+                    };
+                    
+                    avatar.appendChild(img);
+                } else {
+                    renderSidebarInitials(avatar, profile);
+                }
+                
+                // Make profile section clickable
+                if (profileSection) {
+                    profileSection.onclick = function(e) {
+                        e.preventDefault();
+                        document.getElementById('sidebar-close')?.click();
+                        window.location.href = 'manage-profiles.html';
+                    };
+                }
+                
+            } else {
+                renderSidebarFallback(avatar, name, email, window.currentUser);
+            }
+            
+        } catch (err) {
+            console.error('❌ Sidebar profile error:', err);
+            renderSidebarFallback(avatar, name, email, window.currentUser);
+        }
+        
+    } else {
+        // Guest state
+        name.textContent = 'Guest';
+        email.textContent = 'Sign in to continue';
+        avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
+        
+        if (profileSection) {
+            profileSection.onclick = function(e) {
+                e.preventDefault();
+                document.getElementById('sidebar-close')?.click();
+                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+            };
+        }
     }
 }
 
@@ -1876,486 +2373,6 @@ function setupHeroButtons() {
                 '<i class="fas fa-volume-up"></i>';
             audioControl.title = heroVideo.muted ? 'Unmute' : 'Mute';
         });
-    }
-}
-
-// ============================================
-// AUTHENTICATION & PROFILE FUNCTIONS
-// ============================================
-async function checkAuth() {
-    try {
-        const { data, error } = await supabaseAuth.auth.getSession();
-        if (error) throw error;
-        
-        const session = data?.session;
-        window.currentUser = session?.user || null;
-        
-        // ✅ Debug logging for mobile
-        console.log('🔐 Auth Check - Mobile:', /Mobi|Android|iPhone/i.test(navigator.userAgent));
-        console.log('🔐 Auth Check - User:', window.currentUser?.email);
-        console.log('🔐 Auth Check - User ID:', window.currentUser?.id);
-        console.log('🔐 Auth Check - Metadata:', window.currentUser?.user_metadata);
-        
-        if (window.currentUser) {
-            console.log('✅ User authenticated:', window.currentUser.email);
-            await loadUserProfile();
-        } else {
-            console.log('⚠️ User not authenticated');
-        }
-        
-        return window.currentUser;
-    } catch (error) {
-        console.error('Auth check error:', error);
-        return null;
-    }
-}
-
-async function loadUserProfile() {
-    try {
-        if (!window.currentUser) return;
-        
-        const { data: profile, error } = await supabaseAuth
-            .from('user_profiles')
-            .select('*')
-            .eq('id', window.currentUser.id)
-            .maybeSingle();
-        
-        if (error) {
-            console.warn('Profile fetch error:', error);
-            return;
-        }
-        
-        if (profile) {
-            window.currentProfile = profile;
-        }
-        
-        await loadNotifications();
-    } catch (error) {
-        console.error('Error loading profile:', error);
-    }
-}
-
-async function loadUserProfiles() {
-    if (!window.currentUser) return;
-    
-    try {
-        const { data, error } = await supabaseAuth
-            .from('user_profiles')
-            .select('*')
-            .eq('id', window.currentUser.id);
-        
-        if (error) {
-            console.warn('Error loading profiles, using default:', error);
-            window.userProfiles = [{
-                id: window.currentUser.id,
-                name: window.currentUser.user_metadata?.full_name || 'Default',
-                avatar_url: null
-            }];
-        } else {
-            window.userProfiles = data || [];
-        }
-        
-        if (window.userProfiles.length === 0) {
-            window.userProfiles = [{
-                id: window.currentUser.id,
-                name: window.currentUser.user_metadata?.full_name || 'Default',
-                avatar_url: null
-            }];
-        }
-        
-        const savedProfileId = localStorage.getItem('currentProfileId');
-        window.currentProfile = window.userProfiles.find(p => p.id === savedProfileId) || window.userProfiles[0];
-        
-        updateProfileSwitcher();
-    } catch (error) {
-        console.error('Error loading profiles:', error);
-    }
-}
-
-// ============================================
-// PROFILE AVATAR HELPER FUNCTIONS (FIXED)
-// ============================================
-
-/**
- * Fix Media URL - Handles all Supabase storage paths
- * @param {string} url - The URL from database
- * @returns {string} Properly formatted URL
- */
-function fixMediaUrl(url) {
-    if (!url) return '';
-    
-    // Already a valid full URL
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-        // Check if it's a working Supabase URL
-        if (url.includes('supabase.co/storage/v1/object/public')) {
-            return url;
-        }
-        // If it's a different domain, return as-is
-        return url;
-    }
-    
-    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    
-    // Remove leading slashes
-    let cleanPath = url.replace(/^\/+/, '');
-    
-    // Handle different path formats
-    if (cleanPath.includes('storage/v1/object/public')) {
-        // Already has storage path, just prepend domain if needed
-        return cleanPath.startsWith('http') ? cleanPath : `${SUPABASE_URL}/${cleanPath}`;
-    }
-    
-    // Determine bucket type based on path or content type
-    let bucket = 'content'; // default bucket
-    if (cleanPath.includes('avatar') || cleanPath.includes('profile')) {
-        bucket = 'avatars';
-    } else if (cleanPath.includes('thumbnail') || cleanPath.includes('thumb')) {
-        bucket = 'thumbnails';
-    } else if (cleanPath.includes('video') || cleanPath.includes('content')) {
-        bucket = 'content';
-    }
-    
-    // Construct full URL
-    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${cleanPath}`;
-}
-
-/**
- * Fix Avatar URL - Handles all edge cases for consistent loading
- * @param {string} url - The avatar URL from database
- * @returns {string} Properly formatted URL
- */
-function fixAvatarUrl(url) {
-    if (!url) return '';
-    
-    // Already a full URL
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-        if (url.includes('supabase.co')) return url;
-        return url;
-    }
-    
-    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    
-    // Remove leading slashes and common prefixes
-    let cleanPath = url.replace(/^\/+/, '')
-                       .replace(/^avatars\//, '')
-                       .replace(/^user_avatars\//, '')
-                       .replace(/^profile_pictures\//, '');
-    
-    // Use avatars bucket
-    return `${SUPABASE_URL}/storage/v1/object/public/avatars/${cleanPath}`;
-}
-
-/**
- * Render initials profile (fallback when no avatar)
- * @param {HTMLElement} container - Container element
- * @param {Object} profile - Profile object with name/username
- */
-function renderInitialsProfile(container, profile) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = profile?.full_name || profile?.username || 'User';
-    const initials = getInitials(name);
-    
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-        text-transform:uppercase;
-    `;
-    div.textContent = initials;
-    container.appendChild(div);
-}
-
-/**
- * Render fallback profile (error state)
- * @param {HTMLElement} container - Container element
- * @param {HTMLElement} nameElement - Name element to update
- * @param {Object} user - User object
- */
-function renderFallbackProfile(container, nameElement, user) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-    const initials = getInitials(name);
-    
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-    `;
-    div.textContent = initials;
-    container.appendChild(div);
-    
-    if (nameElement) {
-        nameElement.textContent = name;
-    }
-}
-
-/**
- * Render guest profile
- * @param {HTMLElement} container - Container element
- * @param {HTMLElement} nameElement - Name element to update
- */
-function renderGuestProfile(container, nameElement) {
-    if (!container) return;
-    container.innerHTML = '';
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-    `;
-    div.textContent = 'G';
-    container.appendChild(div);
-    
-    if (nameElement) {
-        nameElement.textContent = 'Guest';
-    }
-}
-
-/**
- * Render sidebar initials fallback
- * @param {HTMLElement} container - Container element
- * @param {Object} profile - Profile object
- */
-function renderSidebarInitials(container, profile) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = profile?.full_name || profile?.username || 'User';
-    const initials = getInitials(name);
-    
-    const span = document.createElement('span');
-    span.style.cssText = `
-        font-size:1.2rem;
-        font-weight:bold;
-        color:var(--soft-white);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        width:100%;
-        height:100%;
-    `;
-    span.textContent = initials;
-    container.appendChild(span);
-}
-
-/**
- * Render sidebar fallback profile (error state)
- * @param {HTMLElement} avatar - Avatar container
- * @param {HTMLElement} name - Name element
- * @param {HTMLElement} email - Email element
- * @param {Object} user - User object
- */
-function renderSidebarFallback(avatar, name, email, user) {
-    if (!avatar) return;
-    const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-    const initials = getInitials(displayName);
-    
-    if (name) name.textContent = displayName;
-    if (email) email.textContent = user?.email || 'Signed in';
-    
-    avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:var(--soft-white);">${initials}</span>`;
-}
-
-// ============================================
-// UPDATED HEADER PROFILE FUNCTION (FIXED)
-// ============================================
-async function updateHeaderProfile() {
-    try {
-        const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-        const currentProfileName = document.getElementById('current-profile-name');
-        
-        if (!profilePlaceholder || !currentProfileName) {
-            console.warn('⚠️ Profile elements not found in header');
-            return;
-        }
-
-        // Clear existing content first
-        profilePlaceholder.innerHTML = '';
-
-        if (window.currentUser) {
-            console.log('👤 Updating header profile for:', window.currentUser.email);
-            
-            try {
-                // Fetch profile with explicit fields
-                const { data: profile, error } = await supabaseAuth
-                    .from('user_profiles')
-                    .select('id, full_name, username, avatar_url')
-                    .eq('id', window.currentUser.id)
-                    .maybeSingle();
-                
-                if (error) {
-                    console.warn('⚠️ Profile fetch error:', error.message);
-                    renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
-                    return;
-                }
-
-                if (profile && profile.avatar_url) {
-                    // Fix the media URL properly
-                    const avatarUrl = fixAvatarUrl(profile.avatar_url);
-                    console.log('🖼️ Avatar URL:', avatarUrl);
-                    
-                    // Create image with error handling
-                    const img = document.createElement('img');
-                    img.className = 'profile-img';
-                    img.src = avatarUrl;
-                    img.alt = profile.full_name || profile.username || 'Profile';
-                    img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
-                    
-                    // Handle image load errors
-                    img.onerror = function() {
-                        console.warn('⚠️ Failed to load avatar, falling back to initials');
-                        renderInitialsProfile(profilePlaceholder, profile);
-                    };
-                    
-                    img.onload = function() {
-                        console.log('✅ Avatar loaded successfully');
-                    };
-                    
-                    profilePlaceholder.appendChild(img);
-                    currentProfileName.textContent = profile.full_name || profile.username || window.currentUser.email?.split('@')[0] || 'User';
-                    
-                } else {
-                    // No avatar - show initials
-                    renderInitialsProfile(profilePlaceholder, profile || { full_name: window.currentUser.user_metadata?.full_name });
-                    currentProfileName.textContent = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
-                }
-                
-            } catch (fetchError) {
-                console.error('❌ Profile fetch exception:', fetchError);
-                renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
-            }
-            
-        } else {
-            // Guest user
-            renderGuestProfile(profilePlaceholder, currentProfileName);
-        }
-        
-    } catch (error) {
-        console.error('❌ updateHeaderProfile error:', error);
-        const placeholder = document.getElementById('userProfilePlaceholder');
-        const nameEl = document.getElementById('current-profile-name');
-        if (placeholder && nameEl) {
-            renderFallbackProfile(placeholder, nameEl, window.currentUser);
-        }
-    }
-}
-
-// ============================================
-// UPDATED SIDEBAR PROFILE FUNCTION (FIXED)
-// ============================================
-async function updateSidebarProfile() {
-    const avatar = document.getElementById('sidebar-profile-avatar');
-    const name = document.getElementById('sidebar-profile-name');
-    const email = document.getElementById('sidebar-profile-email');
-    const profileSection = document.getElementById('sidebar-profile');
-    
-    if (!avatar || !name || !email) {
-        console.warn('⚠️ Sidebar profile elements not found');
-        return;
-    }
-
-    // Clear existing avatar content
-    avatar.innerHTML = '';
-
-    if (window.currentUser) {
-        console.log('👤 Updating sidebar profile for:', window.currentUser.email);
-        
-        try {
-            const { data: profile, error } = await supabaseAuth
-                .from('user_profiles')
-                .select('id, full_name, username, avatar_url')
-                .eq('id', window.currentUser.id)
-                .maybeSingle();
-            
-            if (error) {
-                console.warn('⚠️ Sidebar profile fetch error:', error.message);
-                renderSidebarFallback(avatar, name, email, window.currentUser);
-                return;
-            }
-
-            if (profile) {
-                // Update name and email
-                name.textContent = profile.full_name || profile.username || 'User';
-                email.textContent = window.currentUser.email;
-                
-                // Handle avatar
-                if (profile.avatar_url) {
-                    const avatarUrl = fixAvatarUrl(profile.avatar_url);
-                    
-                    // Use image with error handling
-                    const img = document.createElement('img');
-                    img.src = avatarUrl;
-                    img.alt = profile.full_name || 'Profile';
-                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
-                    
-                    img.onerror = function() {
-                        console.warn('⚠️ Sidebar avatar failed to load');
-                        renderSidebarInitials(avatar, profile);
-                    };
-                    
-                    avatar.appendChild(img);
-                } else {
-                    renderSidebarInitials(avatar, profile);
-                }
-                
-                // Make profile section clickable
-                if (profileSection) {
-                    profileSection.onclick = function(e) {
-                        e.preventDefault();
-                        document.getElementById('sidebar-close')?.click();
-                        window.location.href = 'manage-profiles.html';
-                    };
-                }
-                
-            } else {
-                renderSidebarFallback(avatar, name, email, window.currentUser);
-            }
-            
-        } catch (err) {
-            console.error('❌ Sidebar profile error:', err);
-            renderSidebarFallback(avatar, name, email, window.currentUser);
-        }
-        
-    } else {
-        // Guest state
-        name.textContent = 'Guest';
-        email.textContent = 'Sign in to continue';
-        avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
-        
-        if (profileSection) {
-            profileSection.onclick = function(e) {
-                e.preventDefault();
-                document.getElementById('sidebar-close')?.click();
-                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            };
-        }
     }
 }
 
