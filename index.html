@@ -13,12 +13,12 @@
         })();
     </script>
     
-    <!-- PERFORMANCE: Preload Critical Resources -->
+    <!-- PERFORMANCE: Preload Critical Resources - FIXED PATHS -->
     <link rel="preload" href="css/home-feed.css" as="style">
     <link rel="preload" href="css/home-feed-ui.css" as="style">
     <link rel="preload" href="css/home-feed-features.css" as="style">
     <link rel="preload" href="js/image-fix.js" as="script">
-    <link rel="preload" href="js/home-feed.js" as="script">
+    <link rel="preload" href="js/home-feed-core.js" as="script">
     <link rel="preload" href="js/home-feed-ui.js" as="script">
     <link rel="preload" href="js/home-feed-features.js" as="script">
     <link rel="preload" href="js/performance-loader.js" as="script">
@@ -1242,18 +1242,15 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- JAVASCRIPT FILES - ORDER MATTERS!                                   -->
+    <!-- JAVASCRIPT FILES - CORRECT ORDER MATTERS!                           -->
     <!-- =================================================================== -->
-    <!-- 0. PERFORMANCE LOADER - MUST BE FIRST (YouTube-style progressive loading) -->
-    <script src="js/performance-loader.js" defer></script>
-    
     <!-- 1. Environment Configuration -->
     <script src="env.js" defer></script>
     
     <!-- 2. Rate Limiter for API calls -->
     <script src="js/rate-limiter.js" defer></script>
     
-    <!-- 3. IMAGE FIX UTILITIES - MUST load BEFORE home-feed.js -->
+    <!-- 3. IMAGE FIX UTILITIES - MUST load BEFORE home-feed features -->
     <script src="js/image-fix.js" defer></script>
     
     <!-- 4. Core Home Feed (Supabase clients & utilities) -->
@@ -1265,11 +1262,16 @@
     <!-- 6. Features (All section loaders and UI components) -->
     <script src="js/home-feed-features.js" defer></script>
 
-    <!-- 7. NEW: Community Pulse and Audio Player scripts (order matters) -->
+    <!-- 7. Community Pulse and Audio Player scripts (order matters) -->
     <link rel="stylesheet" href="css/community-pulse.css">
     <link rel="stylesheet" href="css/audio-player.css">
     <script src="js/audio-player.js" defer></script>
     <script src="js/community-pulse.js" defer></script>
+    
+    <!-- 8. PERFORMANCE LOADER - MUST BE LAST (YouTube-style progressive loading) -->
+    <!-- Note: PerformanceLoader is now integrated into home-feed-features.js, 
+         so we don't need a separate file. The initialization is handled inside 
+         home-feed-features.js -->
     
     <!-- Initialization Script -->
     <script>
@@ -1293,7 +1295,6 @@
 
         // Debug logging - verify all scripts loaded
         console.log('🔍 Debug: Home feed initialization');
-        console.log('- performance-loader.js loaded:', typeof window.PerformanceLoader !== 'undefined');
         console.log('- image-fix.js loaded:', typeof window.fixMediaUrl !== 'undefined');
         console.log('- home-feed-core.js loaded:', typeof window.supabaseAuth !== 'undefined');
         console.log('- home-feed-ui.js loaded:', typeof window.UIScaleController !== 'undefined');
