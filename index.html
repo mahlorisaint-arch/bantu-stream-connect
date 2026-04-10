@@ -13,15 +13,17 @@
         })();
     </script>
     
-    <!-- PERFORMANCE: Preload Critical Resources -->
+    <!-- ============================================ -->
+    <!-- PERFORMANCE: Preload Critical Resources      -->
+    <!-- ============================================ -->
     <link rel="preload" href="css/home-feed.css" as="style">
     <link rel="preload" href="css/home-feed-ui.css" as="style">
     <link rel="preload" href="css/home-feed-features.css" as="style">
-    <link rel="preload" href="js/image-fix.js" as="script">
-    <link rel="preload" href="js/home-feed.js" as="script">
-    <link rel="preload" href="js/home-feed-ui.js" as="script">
+    <link rel="preload" href="js/home-feed-core.js" as="script">
     <link rel="preload" href="js/home-feed-features.js" as="script">
-    <link rel="preload" href="js/performance-loader.js" as="script">
+    <link rel="preload" href="js/image-fix.js" as="script">
+    
+    <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://ydnxqnbjoshvxteevemc.supabase.co">
@@ -32,7 +34,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome -->
+    <!-- Font Awesome - Load with media="print" for lazy loading -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     
@@ -42,7 +44,7 @@
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Swiper JS for carousels -->
+    <!-- Swiper JS for carousels - Defer loading -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
@@ -52,7 +54,9 @@
     <link rel="stylesheet" href="css/home-feed-ui.css">
     <link rel="stylesheet" href="css/home-feed-features.css">
     
-    <!-- Inline critical CSS for skeleton loading and theme variables -->
+    <!-- ============================================ -->
+    <!-- CRITICAL INLINE CSS - Paints instantly       -->
+    <!-- ============================================ -->
     <style>
         /* Theme CSS Variables - Default Dark Theme */
         :root {
@@ -109,7 +113,19 @@
             --card-border: #ffffff;
         }
         
-        /* Critical skeleton loading styles */
+        /* ============================================ */
+        /* CRITICAL SKELETON LOADING STYLES             */
+        /* ============================================ */
+        #app {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        #app[style*="display: block"] {
+            opacity: 1;
+        }
+        
+        /* Skeleton Card Styles - Paint immediately */
         .skeleton-card {
             background: rgba(30, 30, 40, 0.5);
             border-radius: 12px;
@@ -167,12 +183,6 @@
             0% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
             50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.3); }
             100% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
-        }
-        
-        /* Ensure main content is visible after performance loader */
-        #app {
-            opacity: 1;
-            transition: opacity 0.3s ease;
         }
         
         /* Toast Container Styles */
@@ -235,7 +245,7 @@
             }
         }
         
-        /* Loading Screen - Will be hidden by performance loader */
+        /* Loading Screen */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -328,11 +338,6 @@
             33% { transform: translate(50px, -50px) scale(1.1); }
             66% { transform: translate(-30px, 30px) scale(0.9); }
         }
-        
-        /* CRITICAL EMERGENCY FIX: Hide loading screen immediately and show skeleton */
-        #loading { display: none !important; }
-        #app { display: block !important; opacity: 1 !important; }
-        .skeleton-card { display: flex; flex-direction: column; }
     </style>
 </head>
 <body>
@@ -342,12 +347,19 @@
         <div id="loading-text">Loading Your Personalized Feed...</div>
     </div>
 
-    <!-- Main Content (visible immediately due to emergency fix) -->
-    <div id="app" style="display: block;">
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
+    <!-- Main Content (hidden until loaded) -->
+    <div id="app" style="display: none;">
         <!-- Enhanced Header with Sidebar Toggle -->
         <header class="header">
             <div class="logo" onclick="window.location.href='index.html'">
-                <!-- Hamburger Menu Button -->
                 <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
                     <i class="fas fa-bars"></i>
                 </button>
@@ -358,28 +370,20 @@
             </div>
             
             <div class="header-actions">
-                <!-- Voice Search Button -->
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search">
                     <i class="fas fa-microphone"></i>
                 </button>
-                
-                <!-- Analytics Button -->
                 <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
                     <i class="fas fa-chart-line"></i>
                 </button>
-                
-                <!-- Search Button -->
                 <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                     <i class="fas fa-search"></i>
                 </button>
-                
-                <!-- Notifications Button -->
                 <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notification-count" style="display: none;">0</span>
                 </button>
                 
-                <!-- Profile Button with Dropdown -->
                 <div class="profile-switcher">
                     <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
                         <div class="profile-placeholder" id="userProfilePlaceholder">
@@ -401,7 +405,6 @@
                     </div>
                 </div>
                 
-                <!-- "Built in South Africa" Badge -->
                 <div class="rsa-badge" title="Proudly South African">
                     <i class="fas fa-map-marker-alt"></i>
                     <span>RSA</span>
@@ -409,7 +412,7 @@
             </div>
         </header>
 
-        <!-- Welcome Banner (Personalized Greeting) -->
+        <!-- Welcome Banner -->
         <div class="welcome-banner" id="welcome-banner">
             <h2 id="welcome-message">Welcome back, <span id="user-name">Guest</span>! 👋</h2>
             <p id="welcome-subtitle">Discover new content tailored just for you</p>
@@ -442,9 +445,7 @@
 
         <!-- Category Tabs -->
         <div class="category-tabs-container">
-            <div id="category-tabs" class="category-tabs">
-                <!-- Categories will be loaded here -->
-            </div>
+            <div id="category-tabs" class="category-tabs"></div>
         </div>
 
         <!-- Main Content -->
@@ -473,9 +474,7 @@
                 </div>
             </div>
 
-            <!-- ============================================ -->
-            <!-- NEW: Cinematic Creator Spotlight (Hero Section) -->
-            <!-- ============================================ -->
+            <!-- Cinematic Hero Section -->
             <section class="cinematic-hero" id="cinematic-hero">
                 <div class="hero-video-container">
                     <video class="hero-background-video" id="hero-background-video" muted loop playsinline poster="">
@@ -485,7 +484,6 @@
                 </div>
                 
                 <div class="hero-content-container">
-                    <!-- Dynamic Creator Recognition Layer -->
                     <div class="hero-creator-badge" id="hero-creator-badge">
                         <div class="hero-creator-avatar" id="hero-creator-avatar">
                             <img src="" alt="Creator" id="hero-creator-avatar-img">
@@ -506,7 +504,6 @@
                     <h1 class="hero-title" id="hero-title">DISCOVER & CONNECT</h1>
                     <p class="hero-subtitle" id="hero-subtitle">Explore amazing content, connect with creators, and join live streams from across Africa</p>
                     
-                    <!-- Social Proof Signals -->
                     <div class="hero-metrics" id="hero-metrics">
                         <div class="hero-metric">
                             <i class="fas fa-eye"></i>
@@ -530,7 +527,6 @@
                         </div>
                     </div>
                     
-                    <!-- Primary Actions -->
                     <div class="hero-actions">
                         <button class="hero-primary-btn" id="hero-explore-btn">
                             <span>EXPLORE ALL CONTENT</span>
@@ -542,20 +538,16 @@
                     </div>
                 </div>
                 
-                <!-- Audio Control -->
                 <button class="hero-audio-control" id="hero-audio-control" title="Unmute">
                     <i class="fas fa-volume-mute"></i>
                 </button>
                 
-                <!-- Featured Badge (if creator is featured) -->
                 <div class="hero-featured-badge" id="hero-featured-badge">
                     <i class="fas fa-crown"></i> FEATURED CREATOR OF THE DAY
                 </div>
             </section>
 
-            <!-- ============================================ -->
-            <!-- 1. COMMUNITY PULSE SECTION (Inserted after Hero and before Continue Watching) -->
-            <!-- ============================================ -->
+            <!-- Community Pulse Section -->
             <section class="section" id="community-pulse-section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -567,7 +559,6 @@
                     </button>
                 </div>
                 <div class="pulse-grid" id="pulse-feed">
-                    <!-- Posts will be injected here -->
                     <div class="pulse-skeleton">
                         <div class="skeleton-avatar"></div>
                         <div class="skeleton-content">
@@ -578,7 +569,9 @@
                 </div>
             </section>
 
-            <!-- Continue Watching Row (Priority 1 - Personal) -->
+            <!-- ============================================ -->
+            <!-- CONTINUE WATCHING SECTION - Pre-filled with skeletons -->
+            <!-- ============================================ -->
             <section class="section" id="continue-watching-section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -586,16 +579,21 @@
                         CONTINUE WATCHING
                     </h2>
                     <a href="watch-history.html" class="see-all-btn" id="see-all-continue">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
                 <div class="content-grid" id="continue-watching-grid">
-                    <!-- Continue watching content will be loaded here -->
+                    <!-- Instant skeleton cards -->
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
                 </div>
             </section>
 
-            <!-- For You (Personalized Recommendations - Priority 2) -->
+            <!-- ============================================ -->
+            <!-- FOR YOU SECTION - Pre-filled with skeletons  -->
+            <!-- ============================================ -->
             <section class="section" id="for-you-section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -603,16 +601,19 @@
                         FOR YOU
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-for-you">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
                 <div class="content-grid" id="for-you-grid">
-                    <!-- Personalized recommendations will be loaded here -->
+                    <!-- Instant skeleton cards -->
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
                 </div>
             </section>
 
-            <!-- From Creators You Follow (Priority 3 - Social) -->
+            <!-- Following Section -->
             <section class="section" id="following-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -620,16 +621,13 @@
                         FROM CREATORS YOU CONNECTED WITH
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-following">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="following-grid">
-                    <!-- Content from followed creators will be loaded here -->
-                </div>
+                <div class="content-grid" id="following-grid"></div>
             </section>
 
-            <!-- Shorts / Quick Bits Section -->
+            <!-- Shorts Section -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -637,16 +635,13 @@
                         QUICK BITS
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-shorts">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="shorts-container" id="shorts-container">
-                    <!-- Shorts will be loaded here -->
-                </div>
+                <div class="shorts-container" id="shorts-container"></div>
             </section>
 
-            <!-- Community Favorites (Popular in Your Region) -->
+            <!-- Community Favorites -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -654,13 +649,10 @@
                         COMMUNITY FAVORITES
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-community">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="community-favorites-grid">
-                    <!-- Community favorites will be loaded here -->
-                </div>
+                <div class="content-grid" id="community-favorites-grid"></div>
             </section>
 
             <!-- Live Streams -->
@@ -671,18 +663,12 @@
                         LIVE NOW
                     </h2>
                     <button class="see-all-btn" id="see-all-live">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
-                <div class="content-grid" id="live-streams-grid">
-                    <!-- Live streams will be loaded here -->
-                </div>
-                <!-- Empty State (initially hidden) -->
+                <div class="content-grid" id="live-streams-grid"></div>
                 <div id="no-live-streams" class="empty-state" style="display: none;">
-                    <div class="empty-icon">
-                        <i class="fas fa-broadcast-tower"></i>
-                    </div>
+                    <div class="empty-icon"><i class="fas fa-broadcast-tower"></i></div>
                     <h3>No Live Streams</h3>
                     <p>Check back later for live content</p>
                 </div>
@@ -696,13 +682,10 @@
                         TRENDING NOW
                     </h2>
                     <a href="https://bantustreamconnect.com/trending_screen" class="see-all-btn">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="trending-grid">
-                    <!-- Trending content skeleton will be replaced -->
-                </div>
+                <div class="content-grid" id="trending-grid"></div>
             </section>
 
             <!-- New Content -->
@@ -713,13 +696,10 @@
                         LATEST GEMS
                     </h2>
                     <a href="https://bantustreamconnect.com/content-library" class="see-all-btn">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="new-content-grid">
-                    <!-- New content skeleton will be replaced -->
-                </div>
+                <div class="content-grid" id="new-content-grid"></div>
             </section>
 
             <!-- Featured Creators -->
@@ -730,15 +710,12 @@
                         CREATOR OF THE WEEK
                     </h2>
                     <a href="https://bantustreamconnect.com/creators" class="see-all-btn">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
+                        See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
                 <div class="featured-creators">
                     <div class="swiper" id="creators-swiper">
-                        <div class="swiper-wrapper" id="creators-list">
-                            <!-- Creators will be loaded here -->
-                        </div>
+                        <div class="swiper-wrapper" id="creators-list"></div>
                         <div class="swiper-pagination"></div>
                     </div>
                 </div>
@@ -752,14 +729,9 @@
                         UPCOMING EVENTS
                     </h2>
                 </div>
-                <div id="events-list">
-                    <!-- Events will be loaded here -->
-                </div>
-                <!-- Empty State (initially hidden) -->
+                <div id="events-list"></div>
                 <div id="no-events" class="empty-state" style="display: none;">
-                    <div class="empty-icon">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
+                    <div class="empty-icon"><i class="fas fa-calendar-alt"></i></div>
                     <h3>No Upcoming Events</h3>
                     <p>Check back soon for scheduled events</p>
                 </div>
@@ -787,7 +759,7 @@
             </div>
         </footer>
 
-        <!-- Enhanced Bottom Navigation with Watch History -->
+        <!-- Bottom Navigation -->
         <div class="navigation-button-container">
             <div class="navigation-button">
                 <div class="nav-icon" id="nav-home-btn" title="Home">
@@ -814,9 +786,9 @@
         </button>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- SIDEBAR MENU (Enhanced with proper overflow handling)               -->
-    <!-- =================================================================== -->
+    <!-- ============================================ -->
+    <!-- SIDEBAR MENU                                 -->
+    <!-- ============================================ -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
         <div class="sidebar-header">
@@ -831,7 +803,6 @@
             </button>
         </div>
         
-        <!-- Profile Section - Fixed with text truncation -->
         <div class="sidebar-profile" id="sidebar-profile">
             <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
                 <i class="fas fa-user"></i>
@@ -843,7 +814,6 @@
             <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
         </div>
         
-        <!-- Navigation Items - Scrollable area -->
         <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-nav-item active">
                 <i class="fas fa-home"></i>
@@ -853,7 +823,6 @@
                 <i class="fas fa-compass"></i>
                 <span>Explore</span>
             </a>
-            <!-- Watch History in Sidebar -->
             <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
                 <i class="fas fa-history"></i>
                 <span>Watch History</span>
@@ -889,7 +858,6 @@
             </a>
         </nav>
         
-        <!-- Footer: Theme & Scale (Fixed at bottom with safe area support) -->
         <div class="sidebar-footer" id="sidebar-footer">
             <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
                 <span><i class="fas fa-palette"></i> Theme</span>
@@ -918,9 +886,9 @@
         </div>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- MODALS & PANELS                                                     -->
-    <!-- =================================================================== -->
+    <!-- ============================================ -->
+    <!-- MODALS & PANELS                              -->
+    <!-- ============================================ -->
 
     <!-- Analytics Modal -->
     <div id="analytics-modal" class="analytics-modal">
@@ -961,7 +929,7 @@
         </div>
     </div>
 
-    <!-- Search Modal (Enhanced with Voice Search and Filters) -->
+    <!-- Search Modal -->
     <div id="search-modal" class="search-modal">
         <div class="search-modal-header">
             <div class="search-input-container">
@@ -978,7 +946,6 @@
             </button>
         </div>
         
-        <!-- Search Filters -->
         <div class="search-filters">
             <div class="filter-group">
                 <label class="filter-label">Category</label>
@@ -1022,11 +989,8 @@
             </div>
         </div>
         
-        <!-- Search Results -->
         <div id="search-results" class="search-results">
-            <div id="search-results-grid" class="search-results-grid">
-                <!-- Results will be loaded here -->
-            </div>
+            <div id="search-results-grid" class="search-results-grid"></div>
         </div>
     </div>
 
@@ -1038,16 +1002,14 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="notifications-list" id="notifications-list">
-            <!-- Notifications loaded here -->
-        </div>
+        <div class="notifications-list" id="notifications-list"></div>
         <div class="notifications-footer">
             <button id="mark-all-read" class="text-btn">Mark all as read</button>
             <button id="notification-settings" class="text-btn">Settings</button>
         </div>
     </div>
 
-    <!-- Theme Selector - FIXED with proper positioning -->
+    <!-- Theme Selector -->
     <div id="theme-selector" class="theme-selector">
         <button class="theme-option" data-theme="dark">
             <i class="fas fa-moon"></i> Dark
@@ -1075,9 +1037,7 @@
                     <div class="watch-party-search">
                         <input type="text" id="watch-party-search" placeholder="Search content...">
                     </div>
-                    <div class="watch-party-content-list" id="watch-party-content-list">
-                        <!-- Content list loaded here -->
-                    </div>
+                    <div class="watch-party-content-list" id="watch-party-content-list"></div>
                 </div>
                 <div class="watch-party-settings">
                     <h3>Party Settings</h3>
@@ -1123,9 +1083,7 @@
                 </button>
             </div>
             <div class="tip-body">
-                <div class="creator-info-tip" id="tip-creator-info">
-                    <!-- Creator info loaded here -->
-                </div>
+                <div class="creator-info-tip" id="tip-creator-info"></div>
                 <div class="tip-amounts">
                     <h3>Select Amount</h3>
                     <div class="tip-options">
@@ -1155,7 +1113,7 @@
         </div>
     </div>
 
-    <!-- Badges Modal (Gamification Feature) -->
+    <!-- Badges Modal -->
     <div id="badges-modal" class="badges-modal">
         <div class="badges-content">
             <div class="badges-header">
@@ -1179,9 +1137,7 @@
                         <span class="badge-stat-label">Exploration Score</span>
                     </div>
                 </div>
-                <div class="badges-grid" id="badges-grid">
-                    <!-- Badges will be loaded here -->
-                </div>
+                <div class="badges-grid" id="badges-grid"></div>
             </div>
         </div>
     </div>
@@ -1220,9 +1176,7 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- 2. GLOBAL MINI PLAYER (Added near bottom before body close) -->
-    <!-- ============================================ -->
+    <!-- Global Mini Player -->
     <div id="global-audio-player" class="audio-player hidden">
         <div class="player-track-info">
             <img id="player-art" src="" alt="Art">
@@ -1241,31 +1195,15 @@
         </div>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- JAVASCRIPT FILES - ORDER MATTERS!                                   -->
-    <!-- =================================================================== -->
-    <!-- 0. PERFORMANCE LOADER - MUST BE FIRST (YouTube-style progressive loading) -->
-    <script src="js/performance-loader.js" defer></script>
-    
-    <!-- 1. Environment Configuration -->
+    <!-- ============================================ -->
+    <!-- JAVASCRIPT FILES - ALL WITH DEFER FOR SPEED  -->
+    <!-- ============================================ -->
     <script src="env.js" defer></script>
-    
-    <!-- 2. Rate Limiter for API calls -->
     <script src="js/rate-limiter.js" defer></script>
-    
-    <!-- 3. IMAGE FIX UTILITIES - MUST load BEFORE home-feed.js -->
     <script src="js/image-fix.js" defer></script>
-    
-    <!-- 4. Core Home Feed (Supabase clients & utilities) -->
     <script src="js/home-feed-core.js" defer></script>
-    
-    <!-- 5. UI Controller (Scale management) -->
     <script src="js/home-feed-ui.js" defer></script>
-    
-    <!-- 6. Features (All section loaders and UI components) -->
     <script src="js/home-feed-features.js" defer></script>
-
-    <!-- 7. NEW: Community Pulse and Audio Player scripts (order matters) -->
     <link rel="stylesheet" href="css/community-pulse.css">
     <link rel="stylesheet" href="css/audio-player.css">
     <script src="js/audio-player.js" defer></script>
@@ -1291,13 +1229,12 @@
             }
         });
 
-        // Debug logging - verify all scripts loaded
+        // Debug logging
         console.log('🔍 Debug: Home feed initialization');
-        console.log('- performance-loader.js loaded:', typeof window.PerformanceLoader !== 'undefined');
         console.log('- image-fix.js loaded:', typeof window.fixMediaUrl !== 'undefined');
-        console.log('- home-feed-core.js loaded:', typeof window.supabaseAuth !== 'undefined');
+        console.log('- home-feed-core.js loaded:', typeof window.contentSupabase !== 'undefined');
         console.log('- home-feed-ui.js loaded:', typeof window.UIScaleController !== 'undefined');
-        console.log('- home-feed-features.js loaded:', typeof window.applyAmplificationLogic !== 'undefined');
+        console.log('- home-feed-features.js loaded:', typeof window.initializeHomeFeed !== 'undefined');
         
         // Dispatch event when home feed UI is ready
         document.addEventListener('homeFeedUIReady', () => {
@@ -1306,92 +1243,45 @@
         
         // Update scale display on scale change
         document.addEventListener('scaleChanged', function(e) {
-            const scaleValue = document.getElementById('scale-value');
             const sidebarScaleValue = document.getElementById('sidebar-scale-value');
             const percentage = Math.round(e.detail.scale * 100) + '%';
-            
-            if (scaleValue) scaleValue.textContent = percentage;
             if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
         });
 
-        // Keyboard shortcuts for scaling (global)
+        // Keyboard shortcuts for scaling
         document.addEventListener('keydown', function(e) {
-            // Ctrl+Plus for increase
             if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
                 e.preventDefault();
-                if (window.uiScaleController) {
-                    window.uiScaleController.increase();
-                }
+                if (window.uiScaleController) window.uiScaleController.increase();
             }
-            
-            // Ctrl+Minus for decrease
             if ((e.ctrlKey || e.metaKey) && e.key === '-') {
                 e.preventDefault();
-                if (window.uiScaleController) {
-                    window.uiScaleController.decrease();
-                }
+                if (window.uiScaleController) window.uiScaleController.decrease();
             }
-            
-            // Ctrl+0 for reset
             if ((e.ctrlKey || e.metaKey) && e.key === '0') {
                 e.preventDefault();
-                if (window.uiScaleController) {
-                    window.uiScaleController.reset();
-                }
+                if (window.uiScaleController) window.uiScaleController.reset();
             }
-            
-            // Alt+T for theme toggle
             if (e.altKey && e.key === 't') {
                 e.preventDefault();
                 const themeSelector = document.getElementById('theme-selector');
-                if (themeSelector) {
-                    themeSelector.classList.toggle('active');
-                }
+                if (themeSelector) themeSelector.classList.toggle('active');
             }
         });
 
-        // Initialize UI Scale Controller if not already initialized
+        // Initialize UI Scale Controller
         if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
             window.uiScaleController = new UIScaleController();
             window.uiScaleController.init();
         }
         
-        // Apply saved theme on page load (fallback - already applied in head)
+        // Apply saved theme fallback
         (function applySavedThemeFallback() {
             const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
             const root = document.documentElement;
-            
-            // Only apply if not already applied by the head script
             if (!root.classList.contains(`theme-${savedTheme}`)) {
                 root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
                 root.classList.add(`theme-${savedTheme}`);
-                
-                // Apply CSS variables based on theme
-                if (savedTheme === 'light') {
-                    root.style.setProperty('--deep-black', '#ffffff');
-                    root.style.setProperty('--soft-white', '#1a1a1a');
-                    root.style.setProperty('--slate-grey', '#666666');
-                    root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
-                    root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
-                } else if (savedTheme === 'high-contrast') {
-                    root.style.setProperty('--deep-black', '#000000');
-                    root.style.setProperty('--soft-white', '#ffffff');
-                    root.style.setProperty('--slate-grey', '#ffff00');
-                    root.style.setProperty('--warm-gold', '#ff0000');
-                    root.style.setProperty('--bantu-blue', '#00ff00');
-                    root.style.setProperty('--card-bg', '#000000');
-                    root.style.setProperty('--card-border', '#ffffff');
-                } else {
-                    // Dark theme (default)
-                    root.style.setProperty('--deep-black', '#0A0A0A');
-                    root.style.setProperty('--soft-white', '#F5F5F5');
-                    root.style.setProperty('--slate-grey', '#A0A0A0');
-                    root.style.setProperty('--warm-gold', '#F59E0B');
-                    root.style.setProperty('--bantu-blue', '#1D4ED8');
-                    root.style.setProperty('--card-bg', 'rgba(18, 18, 18, 0.95)');
-                    root.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.1)');
-                }
-                
                 console.log('🎨 Initial theme applied (fallback):', savedTheme);
             }
         })();
@@ -1400,10 +1290,8 @@
         window.addEventListener('load', function() {
             if (typeof window.fixMediaUrl !== 'undefined') {
                 console.log('✅ Image fix utilities loaded successfully');
-                console.log('📸 Test fixMediaUrl:', window.fixMediaUrl('videos/test.mp4'));
-                console.log('📸 Test fixAvatarUrl:', window.fixAvatarUrl('user123.png'));
             } else {
-                console.warn('⚠️ Image fix utilities NOT loaded - check js/image-fix.js');
+                console.warn('⚠️ Image fix utilities NOT loaded');
             }
         });
     </script>
