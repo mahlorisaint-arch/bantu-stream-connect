@@ -260,12 +260,12 @@ class ContentSupabaseClient {
     }
 }
 
-// Cache Manager - FIXED: NO AUTO-RELOAD LOOP
+// Cache Manager
 class CacheManager {
     constructor() {
-        this.cacheName = 'bantu-stream-connect-v5'; // Updated to v5
+        this.cacheName = 'bantu-stream-connect-v4'; // Incremented version to force fresh cache
         this.cacheTTL = 60 * 60 * 1000; // 1 hour
-        this.currentVersion = 'v5'; // Updated to match cache name
+        this.currentVersion = 'v4'; // Updated to match cache name
     }
     
     async init() {
@@ -284,29 +284,26 @@ class CacheManager {
                 const registration = await navigator.serviceWorker.register('/sw.js');
                 console.log('✅ ServiceWorker registered:', registration);
                 
-                // FIX: REMOVED the auto-reload code that was causing infinite loop
-                // The old code would reload on 'updatefound' and 'controllerchange'
-                // This was causing the infinite reload loop on laptop
-                
-                // Listen for updates but DO NOT auto-reload
+                // Check for updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
-                    console.log('🔄 New service worker found (will not auto-reload)');
+                    console.log('🔄 New service worker installing...');
                     
                     newWorker.addEventListener('statechange', () => {
                         console.log('📱 Service worker state:', newWorker.state);
-                        // DO NOT reload on state change - that was the problem!
-                        // Just log the state change for debugging
+                        
+                        // If new worker is activated, reload to ensure fresh content
+                        if (newWorker.state === 'activated') {
+                            console.log('🔄 New service worker activated - reloading for fresh content');
+                            window.location.reload();
+                        }
                     });
                 });
                 
-                // FIX: REMOVED controllerchange listener - this was causing reload loops
-                // navigator.serviceWorker.addEventListener('controllerchange', () => {
-                //     console.log('🔄 Service worker controller changed - reloading...'); // REMOVED
-                //     // window.location.reload(); // REMOVED - causes infinite loop
-                // });
-                
-                console.log('✅ ServiceWorker registered (auto-reload disabled)');
+                // Listen for controller change (new SW activated)
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service worker controller changed - new version activated');
+                });
                 
             } catch (error) {
                 console.log('❌ ServiceWorker registration failed:', error);
@@ -322,14 +319,20 @@ class CacheManager {
             
             for (const registration of registrations) {
                 // Check if this is an old version
+                // We consider any service worker with 'v3' in the URL as old (since we're on v4)
                 if (registration.active && registration.active.scriptURL.includes('sw.js')) {
                     console.log('📱 Found service worker registration:', registration.active.scriptURL);
                     
+                    // Check if this is likely an old version (you can customize this logic)
+                    // For example, if the registration scope includes 'bantustreamconnect' but version mismatches
                     if (registration.scope.includes('bantustreamconnect')) {
                         // Unregister old service workers on version mismatch
+                        // This ensures we're always running the latest version
                         const unregistered = await registration.unregister();
                         if (unregistered) {
                             console.log('🔄 Unregistered old service worker');
+                            
+                            // Clear all caches associated with this registration
                             await this.clearOldCaches();
                         }
                     }
@@ -369,10 +372,10 @@ class CacheManager {
             this.updateCacheStatus('online');
             this.showToast('Back online', 'success');
             
-            // When coming back online, check for service worker updates but DON'T reload
+            // When coming back online, check for service worker updates
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(registration => {
-                    registration.update().catch(console.warn);
+                    registration.update();
                 });
             }
         });
@@ -394,15 +397,16 @@ class CacheManager {
         const criticalAssets = [
             '/',
             '/index.html',
-            '/offline.html',
             '/css/home-feed.css',
-            '/css/home-feed-ui.css',
+            '/css/home-feed-themes.css',
+            '/css/home-feed-components.css',
+            '/css/home-feed-utilities.css',
             '/css/home-feed-features.css',
-            '/js/image-fix.js',
             '/js/home-feed-core.js',
-            '/js/home-feed-ui.js',
             '/js/home-feed-features.js',
-            '/js/rate-limiter.js'
+            '/js/home-feed-ui.js',
+            '/js/home-feed-utils.js',
+            '/js/home-feed.js'
         ];
         
         if ('caches' in window) {
@@ -426,10 +430,8 @@ class CacheManager {
                 }
                 
                 // Cache only valid assets
-                if (validAssets.length > 0) {
-                    await cache.addAll(validAssets);
-                    console.log('✅ Precached critical assets:', validAssets.length);
-                }
+                await cache.addAll(validAssets);
+                console.log('✅ Precached critical assets:', validAssets.length);
             } catch (error) {
                 console.log('⚠️ Precaching failed:', error);
             }
@@ -463,6 +465,7 @@ class CacheManager {
     }
     
     showToast(message, type) {
+        // Implementation in utils
         if (typeof window.showToast === 'function') {
             window.showToast(message, type);
         } else {
@@ -470,10 +473,11 @@ class CacheManager {
         }
     }
     
+    // New method to handle version mismatches
     handleVersionMismatch() {
-        console.log('🔄 Version mismatch detected - clearing caches');
+        console.log('🔄 Version mismatch detected - clearing caches and reloading');
         
-        // Clear all caches but DON'T auto-reload
+        // Clear all caches
         if ('caches' in window) {
             caches.keys().then(keys => {
                 keys.forEach(key => {
@@ -484,8 +488,19 @@ class CacheManager {
             });
         }
         
-        // FIX: Removed auto-reload - just notify user
-        this.showToast('New version available. Please refresh manually.', 'info');
+        // Clear service worker registrations
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    registration.unregister();
+                });
+            }).then(() => {
+                // Reload the page after cleaning up
+                window.location.reload();
+            });
+        } else {
+            window.location.reload();
+        }
     }
     
     // Safe get method for external use
@@ -519,6 +534,7 @@ class CacheManager {
     // Clear cache method
     clear() {
         try {
+            // Clear only our cache keys
             Object.keys(localStorage).forEach(key => {
                 if (key.startsWith('cache_')) {
                     localStorage.removeItem(key);
@@ -686,6 +702,7 @@ class PerformanceMonitor {
     }
     
     checkPerformanceTargets() {
+        // FCP < 1.5s, LCP < 2.5s, CLS < 0.1
         if (this.metrics.fcp > 1500) {
             console.warn(`⚠️ FCP ${this.metrics.fcp}ms exceeds target 1500ms`);
         }
@@ -770,7 +787,7 @@ const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 
 // Export instances to window for other scripts
 window.contentSupabase = contentSupabase;
-window.cacheManager = cacheManager;
+window.cacheManager = cacheManager;  // ← THIS IS THE KEY FIX
 window.errorHandler = errorHandler;
 window.performanceMonitor = performanceMonitor;
 window.stateManager = stateManager;
@@ -789,7 +806,7 @@ window.StateManager = StateManager;
 
 console.log('✅ Home Feed Core exported to window');
 console.log('📦 Cache Manager version:', cacheManager.currentVersion);
-console.log('🔧 Service Worker auto-reload DISABLED');
+console.log('🔧 Service Worker cleanup enabled');
 console.log('📦 ContentSupabaseClient.queryWithCache() method available');
 
 // ============================================
@@ -810,23 +827,11 @@ console.log('📦 ContentSupabaseClient.queryWithCache() method available');
         console.log('✅ Performance Monitor initialized');
     }
     
-    // Check authentication status with session recovery
+    // Check authentication status
     if (typeof supabaseAuth !== 'undefined') {
         try {
             const { data: { session } } = await supabaseAuth.auth.getSession();
-            
-            // FIX: Session recovery for laptop authentication issues
-            if (!session && localStorage.getItem('supabase-auth-token')) {
-                console.log('🔄 Session missing, attempting to recover...');
-                const { data: refreshData, error: refreshError } = await supabaseAuth.auth.refreshSession();
-                if (!refreshError && refreshData.session) {
-                    console.log('✅ Session recovered via refresh');
-                    window.currentUser = refreshData.session.user;
-                } else if (refreshError) {
-                    console.log('⚠️ Session recovery failed:', refreshError.message);
-                    window.currentUser = null;
-                }
-            } else if (session?.user) {
+            if (session?.user) {
                 window.currentUser = session.user;
                 console.log('✅ User authenticated:', session.user.email);
             } else {
@@ -840,7 +845,6 @@ console.log('📦 ContentSupabaseClient.queryWithCache() method available');
     }
     
     console.log('✅ Core Systems ready');
-    console.log('👤 Current user:', window.currentUser?.email || 'Guest');
 })();
 
 // ============================================
@@ -856,35 +860,3 @@ window.dispatchEvent(new CustomEvent('coreReady', {
         currentUser: window.currentUser
     } 
 }));
-
-// ============================================
-// EMERGENCY CLEANUP (for debugging infinite reload loops)
-// ============================================
-// This can be triggered from console with: window.emergencyCleanup()
-window.emergencyCleanup = async function() {
-    console.log('🚨 Emergency cleanup initiated...');
-    
-    // Unregister all service workers
-    if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-            await registration.unregister();
-            console.log('🗑️ Unregistered service worker');
-        }
-    }
-    
-    // Clear all caches
-    if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        for (const name of cacheNames) {
-            await caches.delete(name);
-            console.log('🗑️ Deleted cache:', name);
-        }
-    }
-    
-    // Clear localStorage auth tokens (optional)
-    // localStorage.removeItem('supabase-auth-token');
-    
-    console.log('✅ Emergency cleanup complete. Please refresh the page manually.');
-    return 'Cleanup complete. Refresh the page.';
-};
