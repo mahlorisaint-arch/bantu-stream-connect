@@ -162,195 +162,181 @@ function highlightSearchQuery(text, query) {
     return text.replace(regex, '<mark style="background:rgba(245,158,11,0.3);color:var(--soft-white);padding:0 2px;border-radius:3px;">$1</mark>');
 }
 
-// Initialize performance loader immediately (overwrites old initialization)
-if (typeof window.PerformanceLoader === 'undefined') {
-    window.PerformanceLoader = class PerformanceLoader {
-        constructor() {
-            this.loadingScreen = document.getElementById('loading');
-            this.app = document.getElementById('app');
-            this.loadStartTime = performance.now();
-            this.sectionLoadStatus = {};
-        }
+// ============================================
+// PERFORMANCE LOADER - Integrated version
+// ============================================
 
-        async init() {
-            console.log('🚀 Performance Loader starting...');
-            
-            // Phase 1: Show skeleton UI IMMEDIATELY (0-100ms)
-            this.showSkeletonUI();
-            
-            // Phase 2: Load critical data in PARALLEL (100-500ms)
-            await this.loadCriticalData();
-            
-            // Phase 3: Lazy load non-critical sections (after render)
-            this.lazyLoadNonCritical();
-            
-            // Phase 4: Hide loading screen and show content
-            this.showContent();
-        }
+class PerformanceLoader {
+    constructor() {
+        this.loadingScreen = document.getElementById('loading');
+        this.app = document.getElementById('app');
+        this.loadStartTime = performance.now();
+        this.sectionLoadStatus = {};
+    }
 
-        showSkeletonUI() {
-            // Hide loading screen, show skeleton immediately
-            if (this.loadingScreen) {
-                this.loadingScreen.style.display = 'none';
+    async init() {
+        console.log('🚀 Performance Loader starting...');
+        
+        // Phase 1: Show skeleton UI IMMEDIATELY (0-100ms)
+        this.showSkeletonUI();
+        
+        // Phase 2: Load critical data in PARALLEL (100-500ms)
+        await this.loadCriticalData();
+        
+        // Phase 3: Lazy load non-critical sections (after render)
+        this.lazyLoadNonCritical();
+        
+        // Phase 4: Hide loading screen and show content
+        this.showContent();
+    }
+
+    showSkeletonUI() {
+        // Hide loading screen, show skeleton immediately
+        if (this.loadingScreen) {
+            this.loadingScreen.style.display = 'none';
+        }
+        if (this.app) {
+            this.app.style.display = 'block';
+        }
+        
+        // Inject skeleton cards if grid is empty
+        const grids = ['continue-watching-grid', 'for-you-grid', 'trending-grid', 'new-content-grid'];
+        grids.forEach(gridId => {
+            const grid = document.getElementById(gridId);
+            if (grid && grid.children.length === 0) {
+                grid.innerHTML = Array(4).fill().map(() => `
+                    <div class="skeleton-card">
+                        <div class="skeleton-thumbnail"></div>
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-creator"></div>
+                        <div class="skeleton-stats"></div>
+                    </div>
+                `).join('');
             }
-            if (this.app) {
-                this.app.style.display = 'block';
-            }
-            
-            // Inject skeleton cards if grid is empty
-            const grids = ['continue-watching-grid', 'for-you-grid', 'trending-grid', 'new-content-grid'];
-            grids.forEach(gridId => {
-                const grid = document.getElementById(gridId);
-                if (grid && grid.children.length === 0) {
-                    grid.innerHTML = Array(4).fill().map(() => `
-                        <div class="skeleton-card">
-                            <div class="skeleton-thumbnail"></div>
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-creator"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
-                    `).join('');
-                }
+        });
+    }
+
+    async loadCriticalData() {
+        // Load ONLY the first 2 sections in parallel
+        console.log('📡 Loading critical data in parallel...');
+        
+        // Define critical tasks - check if functions exist before calling
+        const criticalTasks = [];
+        
+        if (typeof loadContinueWatchingSection === 'function') {
+            criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
+        } else {
+            console.warn('⚠️ loadContinueWatchingSection not defined yet, waiting...');
+            // Wait for it to be defined
+            await new Promise(resolve => {
+                const checkInterval = setInterval(() => {
+                    if (typeof loadContinueWatchingSection === 'function') {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 100);
+                setTimeout(resolve, 2000); // Fallback after 2 seconds
             });
+            if (typeof loadContinueWatchingSection === 'function') {
+                criticalTasks.push(this.loadWithTimeout(() => loadContinueWatchingSection(), 3000));
+            }
         }
-
-        async loadCriticalData() {
-            // Load ONLY the first 2 sections in parallel
-            console.log('📡 Loading critical data in parallel...');
-            
-            const criticalTasks = [
-                this.loadWithTimeout(() => loadContinueWatchingSection(), 3000),
-                this.loadWithTimeout(() => loadForYouSection(), 3000)
-            ];
-            
-            // Also load user data in parallel
-            if (window.currentUser) {
+        
+        if (typeof loadForYouSection === 'function') {
+            criticalTasks.push(this.loadWithTimeout(() => loadForYouSection(), 3000));
+        }
+        
+        // Also load user data in parallel
+        if (window.currentUser) {
+            if (typeof loadUserProfiles === 'function') {
                 criticalTasks.push(this.loadWithTimeout(() => loadUserProfiles(), 2000));
+            }
+            if (typeof updateHeaderProfile === 'function') {
                 criticalTasks.push(this.loadWithTimeout(() => updateHeaderProfile(), 2000));
             }
-            
-            // Load trending and new content with reduced limits (8 items)
-            criticalTasks.push(this.loadWithTimeout(() => loadTrendingSection(true), 3000));
-            criticalTasks.push(this.loadWithTimeout(() => loadNewContentSection(true), 3000));
-            
-            await Promise.all(criticalTasks);
-            console.log('✅ Critical data loaded');
         }
+        
+        // Load trending and new content with reduced limits (8 items)
+        if (typeof loadTrendingSection === 'function') {
+            criticalTasks.push(this.loadWithTimeout(() => loadTrendingSection(true), 3000));
+        }
+        if (typeof loadNewContentSection === 'function') {
+            criticalTasks.push(this.loadWithTimeout(() => loadNewContentSection(true), 3000));
+        }
+        
+        if (criticalTasks.length > 0) {
+            await Promise.all(criticalTasks);
+        }
+        console.log('✅ Critical data loaded');
+    }
 
-        lazyLoadNonCritical() {
-            // Use requestIdleCallback or setTimeout to load remaining sections
-            const nonCriticalSections = [
-                { name: 'Cinematic Hero', fn: () => loadCinematicHero(), delay: 50 },
-                { name: 'Following', fn: () => loadFollowingSection(), delay: 100 },
-                { name: 'Shorts', fn: () => loadShortsSection(), delay: 150 },
-                { name: 'Community Favorites', fn: () => loadCommunityFavoritesSection(), delay: 200 },
-                { name: 'Live Streams', fn: () => loadLiveStreamsSection(), delay: 250 },
-                { name: 'Featured Creators', fn: () => loadFeaturedCreatorsSection(), delay: 300 },
-                { name: 'Events', fn: () => loadEventsSection(), delay: 350 },
-                { name: 'Community Stats', fn: () => loadCommunityStats(), delay: 400 }
-            ];
-            
-            // Use requestIdleCallback if available
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(() => {
-                    nonCriticalSections.forEach(section => {
-                        setTimeout(() => {
-                            section.fn().catch(console.warn);
-                            console.log(`🔄 Lazy loading: ${section.name}`);
-                        }, section.delay);
-                    });
-                }, { timeout: 2000 });
-            } else {
-                // Fallback to setTimeout
+    lazyLoadNonCritical() {
+        // Use requestIdleCallback or setTimeout to load remaining sections
+        const nonCriticalSections = [
+            { name: 'Cinematic Hero', fn: () => typeof loadCinematicHero === 'function' ? loadCinematicHero() : Promise.resolve(), delay: 100 },
+            { name: 'Following', fn: () => typeof loadFollowingSection === 'function' ? loadFollowingSection() : Promise.resolve(), delay: 200 },
+            { name: 'Shorts', fn: () => typeof loadShortsSection === 'function' ? loadShortsSection() : Promise.resolve(), delay: 300 },
+            { name: 'Community Favorites', fn: () => typeof loadCommunityFavoritesSection === 'function' ? loadCommunityFavoritesSection() : Promise.resolve(), delay: 400 },
+            { name: 'Live Streams', fn: () => typeof loadLiveStreamsSection === 'function' ? loadLiveStreamsSection() : Promise.resolve(), delay: 500 },
+            { name: 'Featured Creators', fn: () => typeof loadFeaturedCreatorsSection === 'function' ? loadFeaturedCreatorsSection() : Promise.resolve(), delay: 600 },
+            { name: 'Events', fn: () => typeof loadEventsSection === 'function' ? loadEventsSection() : Promise.resolve(), delay: 700 },
+            { name: 'Community Stats', fn: () => typeof loadCommunityStats === 'function' ? loadCommunityStats() : Promise.resolve(), delay: 800 }
+        ];
+        
+        // Use requestIdleCallback if available
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
                 nonCriticalSections.forEach(section => {
                     setTimeout(() => {
                         section.fn().catch(console.warn);
+                        console.log(`🔄 Lazy loading: ${section.name}`);
                     }, section.delay);
                 });
-            }
-        }
-
-        async loadWithTimeout(fn, timeoutMs = 5000) {
-            return Promise.race([
-                fn(),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), timeoutMs)
-                )
-            ]).catch(err => {
-                console.warn('⏱️ Function timed out:', err);
-                return null;
-            });
-        }
-
-        showContent() {
-            // Animate cards in with stagger
-            const cards = document.querySelectorAll('.content-card');
-            cards.forEach((card, index) => {
+            }, { timeout: 2000 });
+        } else {
+            // Fallback to setTimeout
+            nonCriticalSections.forEach(section => {
                 setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 50 + (index * 20));
+                    section.fn().catch(console.warn);
+                }, section.delay);
             });
-            
-            const loadTime = performance.now() - this.loadStartTime;
-            console.log(`🎉 Page ready in ${loadTime.toFixed(0)}ms`);
-            
-            // Report to analytics
-            if (window.gtag) {
-                window.gtag('event', 'performance', {
-                    'event_category': 'page_load',
-                    'event_label': 'home_feed',
-                    'value': Math.round(loadTime)
-                });
-            }
         }
-    };
-}
+    }
 
-// Override initializeHomeFeed with performance loader
-window.performanceLoader = new window.PerformanceLoader();
+    async loadWithTimeout(fn, timeoutMs = 5000) {
+        return Promise.race([
+            fn(),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+            )
+        ]).catch(err => {
+            console.warn('⏱️ Function timed out:', err);
+            return null;
+        });
+    }
 
-// Replace the old initialization - run immediately
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.performanceLoader.init();
-        // Also run legacy setup functions that aren't covered
-        setupSidebar();
-        setupThemeSelector();
-        setupLanguageFilter();
-        setupSearch();
-        setupNotifications();
-        setupAnalytics();
-        setupVoiceSearch();
-        setupWatchParty();
-        setupTipSystem();
-        setupBackToTop();
-        setupInfiniteScroll();
-        setupKeyboardNavigation();
-        updateWelcomeMessage();
-        renderCategoryTabs();
-        setupNavigationButtons();
-        updateAppIcon();
-    });
-} else {
-    // DOM is already loaded, run immediately
-    window.performanceLoader.init();
-    setupSidebar();
-    setupThemeSelector();
-    setupLanguageFilter();
-    setupSearch();
-    setupNotifications();
-    setupAnalytics();
-    setupVoiceSearch();
-    setupWatchParty();
-    setupTipSystem();
-    setupBackToTop();
-    setupInfiniteScroll();
-    setupKeyboardNavigation();
-    updateWelcomeMessage();
-    renderCategoryTabs();
-    setupNavigationButtons();
-    updateAppIcon();
+    showContent() {
+        // Animate cards in with stagger
+        const cards = document.querySelectorAll('.content-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 50 + (index * 20));
+        });
+        
+        const loadTime = performance.now() - this.loadStartTime;
+        console.log(`🎉 Page ready in ${loadTime.toFixed(0)}ms`);
+        
+        // Report to analytics
+        if (window.gtag) {
+            window.gtag('event', 'performance', {
+                'event_category': 'page_load',
+                'event_label': 'home_feed',
+                'value': Math.round(loadTime)
+            });
+        }
+    }
 }
 
 // ============================================
@@ -4184,6 +4170,48 @@ function updateAppIcon() {
         img.style.objectFit = 'contain';
         
         sidebarLogoIcon.appendChild(img);
+    }
+}
+
+// ============================================
+// EXPORT FUNCTIONS TO GLOBAL SCOPE FOR PERFORMANCE LOADER
+// ============================================
+window.loadContinueWatchingSection = loadContinueWatchingSection;
+window.loadForYouSection = loadForYouSection;
+window.loadFollowingSection = loadFollowingSection;
+window.loadShortsSection = loadShortsSection;
+window.loadCommunityFavoritesSection = loadCommunityFavoritesSection;
+window.loadLiveStreamsSection = loadLiveStreamsSection;
+window.loadTrendingSection = loadTrendingSection;
+window.loadNewContentSection = loadNewContentSection;
+window.loadFeaturedCreatorsSection = loadFeaturedCreatorsSection;
+window.loadEventsSection = loadEventsSection;
+window.loadCommunityStats = loadCommunityStats;
+window.loadCinematicHero = loadCinematicHero;
+window.loadUserProfiles = loadUserProfiles;
+window.updateHeaderProfile = updateHeaderProfile;
+
+// ============================================
+// INITIALIZE PERFORMANCE LOADER
+// ============================================
+// Create and initialize performance loader (but don't run twice)
+if (!window.performanceLoaderInitialized) {
+    window.performanceLoaderInitialized = true;
+    
+    // Wait for DOM and dependencies
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            // Small delay to ensure all scripts are loaded
+            setTimeout(() => {
+                const loader = new PerformanceLoader();
+                loader.init();
+            }, 100);
+        });
+    } else {
+        setTimeout(() => {
+            const loader = new PerformanceLoader();
+            loader.init();
+        }, 100);
     }
 }
 
