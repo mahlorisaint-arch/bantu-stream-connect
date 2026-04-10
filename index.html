@@ -5,29 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Home - Bantu Stream Connect</title>
     
-    <!-- EMERGENCY CACHE BUSTING - Force no caching -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
     <!-- Apply saved theme BEFORE page renders (prevents flash) -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
             document.documentElement.classList.add(`theme-${savedTheme}`);
-            console.log('🎨 Theme applied:', savedTheme);
         })();
     </script>
     
-    <!-- PERFORMANCE: Preload Critical Resources - USE ROOT-RELATIVE PATHS with version -->
-    <link rel="preload" href="/css/home-feed.css?v=5" as="style">
-    <link rel="preload" href="/css/home-feed-ui.css?v=5" as="style">
-    <link rel="preload" href="/css/home-feed-features.css?v=5" as="style">
-    <link rel="preload" href="/js/image-fix.js?v=5" as="script">
-    <link rel="preload" href="/js/home-feed-core.js?v=5" as="script">
-    <link rel="preload" href="/js/home-feed-ui.js?v=5" as="script">
-    <link rel="preload" href="/js/home-feed-features.js?v=5" as="script">
-    
+    <!-- PERFORMANCE: Preload Critical Resources -->
+    <link rel="preload" href="css/home-feed.css" as="style">
+    <link rel="preload" href="css/home-feed-ui.css" as="style">
+    <link rel="preload" href="css/home-feed-features.css" as="style">
+    <link rel="preload" href="js/image-fix.js" as="script">
+    <link rel="preload" href="js/home-feed.js" as="script">
+    <link rel="preload" href="js/home-feed-ui.js" as="script">
+    <link rel="preload" href="js/home-feed-features.js" as="script">
+    <link rel="preload" href="js/performance-loader.js" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://ydnxqnbjoshvxteevemc.supabase.co">
@@ -53,10 +47,10 @@
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
     
-    <!-- CSS Files with version busting -->
-    <link rel="stylesheet" href="/css/home-feed.css?v=5">
-    <link rel="stylesheet" href="/css/home-feed-ui.css?v=5">
-    <link rel="stylesheet" href="/css/home-feed-features.css?v=5">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/home-feed.css">
+    <link rel="stylesheet" href="css/home-feed-ui.css">
+    <link rel="stylesheet" href="css/home-feed-features.css">
     
     <!-- Inline critical CSS for skeleton loading and theme variables -->
     <style>
@@ -339,12 +333,6 @@
         #loading { display: none !important; }
         #app { display: block !important; opacity: 1 !important; }
         .skeleton-card { display: flex; flex-direction: column; }
-        
-        /* Emergency debug styles - helps identify cache issues */
-        body::before {
-            content: "v5";
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -1254,76 +1242,42 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- JAVASCRIPT FILES - CORRECT ORDER MATTERS! WITH VERSION BUSTING      -->
+    <!-- JAVASCRIPT FILES - ORDER MATTERS!                                   -->
     <!-- =================================================================== -->
+    <!-- 0. PERFORMANCE LOADER - MUST BE FIRST (YouTube-style progressive loading) -->
+    <script src="js/performance-loader.js" defer></script>
+    
     <!-- 1. Environment Configuration -->
-    <script src="/env.js?v=5" defer></script>
+    <script src="env.js" defer></script>
     
     <!-- 2. Rate Limiter for API calls -->
-    <script src="/js/rate-limiter.js?v=5" defer></script>
+    <script src="js/rate-limiter.js" defer></script>
     
-    <!-- 3. IMAGE FIX UTILITIES - MUST load BEFORE home-feed features -->
-    <script src="/js/image-fix.js?v=5" defer></script>
+    <!-- 3. IMAGE FIX UTILITIES - MUST load BEFORE home-feed.js -->
+    <script src="js/image-fix.js" defer></script>
     
     <!-- 4. Core Home Feed (Supabase clients & utilities) -->
-    <script src="/js/home-feed-core.js?v=5" defer></script>
+    <script src="js/home-feed-core.js" defer></script>
     
     <!-- 5. UI Controller (Scale management) -->
-    <script src="/js/home-feed-ui.js?v=5" defer></script>
+    <script src="js/home-feed-ui.js" defer></script>
     
-    <!-- 6. Features (All section loaders and UI components - includes PerformanceLoader) -->
-    <script src="/js/home-feed-features.js?v=5" defer></script>
+    <!-- 6. Features (All section loaders and UI components) -->
+    <script src="js/home-feed-features.js" defer></script>
 
-    <!-- 7. Community Pulse and Audio Player scripts (order matters) -->
-    <link rel="stylesheet" href="/css/community-pulse.css?v=5">
-    <link rel="stylesheet" href="/css/audio-player.css?v=5">
-    <script src="/js/audio-player.js?v=5" defer></script>
-    <script src="/js/community-pulse.js?v=5" defer></script>
+    <!-- 7. NEW: Community Pulse and Audio Player scripts (order matters) -->
+    <link rel="stylesheet" href="css/community-pulse.css">
+    <link rel="stylesheet" href="css/audio-player.css">
+    <script src="js/audio-player.js" defer></script>
+    <script src="js/community-pulse.js" defer></script>
     
     <!-- Initialization Script -->
     <script>
-        // EMERGENCY FIX: FORCE CLEAR ALL SERVICE WORKERS ON PAGE LOAD
-        // This stops the infinite reload loop immediately
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    console.log('🗑️ Emergency unregistering service worker:', registration);
-                    registration.unregister();
-                }
-            });
-        }
-        
-        // Clear any corrupted caches
-        if ('caches' in window) {
-            caches.keys().then(function(cacheNames) {
-                cacheNames.forEach(function(cacheName) {
-                    console.log('🗑️ Deleting cache:', cacheName);
-                    caches.delete(cacheName);
-                });
-            });
-        }
-        
-        // Clear localStorage corrupted auth tokens if needed (optional)
-        // localStorage.removeItem('supabase-auth-token');
-        
-        // Service Worker Registration (fresh, with NO auto-reload)
+        // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=5').then(registration => {
-                    console.log('✅ ServiceWorker registered (auto-reload disabled)');
-                    
-                    // Listen for updates but DO NOT auto-reload
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        console.log('🔄 New service worker found (will not auto-reload)');
-                        
-                        newWorker.addEventListener('statechange', () => {
-                            console.log('📱 Service worker state:', newWorker.state);
-                            // NO window.location.reload() here - that caused infinite loop!
-                        });
-                    });
-                }).catch(error => {
-                    console.log('❌ ServiceWorker registration failed:', error);
+                navigator.serviceWorker.register('/sw.js').catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
                 });
             });
         }
@@ -1334,12 +1288,12 @@
                 const perfData = performance.timing;
                 const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
                 console.log(`📊 Home feed load time: ${pageLoadTime}ms`);
-                console.log(`🔄 Page version: v5 - Cache cleared - Auto-reload disabled`);
             }
         });
 
         // Debug logging - verify all scripts loaded
-        console.log('🔍 Debug: Home feed initialization v5');
+        console.log('🔍 Debug: Home feed initialization');
+        console.log('- performance-loader.js loaded:', typeof window.PerformanceLoader !== 'undefined');
         console.log('- image-fix.js loaded:', typeof window.fixMediaUrl !== 'undefined');
         console.log('- home-feed-core.js loaded:', typeof window.supabaseAuth !== 'undefined');
         console.log('- home-feed-ui.js loaded:', typeof window.UIScaleController !== 'undefined');
@@ -1451,54 +1405,7 @@
             } else {
                 console.warn('⚠️ Image fix utilities NOT loaded - check js/image-fix.js');
             }
-            
-            // Force reload if we detect corrupted paths in console
-            const links = document.querySelectorAll('link[rel="stylesheet"]');
-            links.forEach(link => {
-                if (link.href && link.href.includes('css/js/js')) {
-                    console.error('🚨 CORRUPTED PATH DETECTED! Force reloading...');
-                    localStorage.setItem('force_reload', Date.now());
-                    window.location.reload(true);
-                }
-            });
-            
-            // Log authentication status for debugging
-            setTimeout(() => {
-                if (window.currentUser) {
-                    console.log('✅ User authenticated on page load:', window.currentUser.email);
-                } else {
-                    console.log('ℹ️ No user session on page load - guest mode');
-                }
-            }, 1000);
         });
-        
-        // Emergency cache buster - if page loaded with corrupted paths, force reload
-        if (localStorage.getItem('force_reload')) {
-            const reloadTime = parseInt(localStorage.getItem('force_reload'));
-            if (Date.now() - reloadTime < 5000) {
-                localStorage.removeItem('force_reload');
-                console.log('✅ Cache cleared, page should load correctly');
-            }
-        }
-        
-        // Expose emergency cleanup to console for debugging
-        window.emergencyReload = function() {
-            console.log('🚨 Emergency reload initiated');
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    registrations.forEach(r => r.unregister());
-                }).then(() => {
-                    if ('caches' in window) {
-                        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-                    }
-                    setTimeout(() => window.location.reload(true), 500);
-                });
-            } else {
-                window.location.reload(true);
-            }
-        };
-        
-        console.log('✅ Home feed v5 initialized - Auto-reload disabled, session recovery active');
     </script>
 </body>
 </html>
