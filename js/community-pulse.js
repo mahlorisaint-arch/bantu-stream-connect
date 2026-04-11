@@ -5,9 +5,17 @@
  */
 const CommunityPulse = {
   feedContainer: document.getElementById('pulse-feed'),
-  createBtn: document.getElementById('create-post-btn'),
   currentUser: null,
-  discoverBtn: null, // For the new discover creators button
+  discoverBtn: null,
+  postUpdateBtn: null,
+  
+  // Store real data from database
+  realReactionCounts: {},
+  realRepostCounts: {},
+  realCommentCounts: {},
+  userReactions: {},
+  userReposts: {},
+  commentsData: {},
 
   async init() {
     if (!this.feedContainer) return;
@@ -15,9 +23,10 @@ const CommunityPulse = {
     // Get current user
     await this.getCurrentUser();
     
-    // Setup the enhanced button bar
+    // Setup the enhanced button bar (only once)
     this.setupButtonBar();
     
+    // Load real feed data
     await this.loadFeed();
   },
 
@@ -43,26 +52,34 @@ const CommunityPulse = {
     }
   },
 
-  // ✅ NEW: Setup button bar with Post Update and Discover Creators
+  // Setup button bar - ONLY creates buttons once
   setupButtonBar() {
+    // Check if buttons already exist to avoid duplicates
+    if (document.querySelector('.pulse-button-container')) {
+      console.log('✅ Pulse buttons already exist, skipping creation');
+      return;
+    }
+    
     const sectionHeader = document.querySelector('#community-pulse-section .section-header');
     if (!sectionHeader) return;
     
-    // Clear existing buttons
-    const existingButtons = sectionHeader.querySelectorAll('.pulse-btn');
-    existingButtons.forEach(btn => btn.remove());
+    // Remove any existing old create-post-btn
+    const oldCreateBtn = document.getElementById('create-post-btn');
+    if (oldCreateBtn && !oldCreateBtn.classList.contains('pulse-post-btn')) {
+      oldCreateBtn.remove();
+    }
     
     // Create button container
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'pulse-button-container';
     buttonContainer.style.cssText = 'display: flex; gap: 8px; align-items: center;';
     
-    // 1. Create "Post Update" button (REDUCED SIZE - quarter of original)
-    const postUpdateBtn = document.createElement('button');
-    postUpdateBtn.id = 'create-post-btn';
-    postUpdateBtn.className = 'pulse-btn pulse-post-btn';
-    postUpdateBtn.innerHTML = '<i class="fas fa-pen"></i> Post Update';
-    postUpdateBtn.style.cssText = `
+    // 1. Create "Post Update" button
+    this.postUpdateBtn = document.createElement('button');
+    this.postUpdateBtn.id = 'create-post-btn';
+    this.postUpdateBtn.className = 'pulse-btn pulse-post-btn';
+    this.postUpdateBtn.innerHTML = '<i class="fas fa-pen"></i> Post Update';
+    this.postUpdateBtn.style.cssText = `
       background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
       border: none;
       padding: 6px 12px;
@@ -78,12 +95,12 @@ const CommunityPulse = {
       white-space: nowrap;
     `;
     
-    // 2. Create "Discover Creators" button (REDUCED SIZE - quarter of original)
-    const discoverBtn = document.createElement('button');
-    discoverBtn.id = 'discover-creators-btn';
-    discoverBtn.className = 'pulse-btn pulse-discover-btn';
-    discoverBtn.innerHTML = '<i class="fas fa-user-plus"></i> Discover Creators';
-    discoverBtn.style.cssText = `
+    // 2. Create "Discover Creators" button
+    this.discoverBtn = document.createElement('button');
+    this.discoverBtn.id = 'discover-creators-btn';
+    this.discoverBtn.className = 'pulse-btn pulse-discover-btn';
+    this.discoverBtn.innerHTML = '<i class="fas fa-user-plus"></i> Discover Creators';
+    this.discoverBtn.style.cssText = `
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid var(--card-border, rgba(255, 255, 255, 0.2));
       padding: 6px 12px;
@@ -100,69 +117,54 @@ const CommunityPulse = {
     `;
     
     // Hover effects
-    postUpdateBtn.onmouseenter = () => {
-      postUpdateBtn.style.transform = 'translateY(-1px)';
-      postUpdateBtn.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
+    this.postUpdateBtn.onmouseenter = () => {
+      this.postUpdateBtn.style.transform = 'translateY(-1px)';
+      this.postUpdateBtn.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
     };
-    postUpdateBtn.onmouseleave = () => {
-      postUpdateBtn.style.transform = 'translateY(0)';
-      postUpdateBtn.style.boxShadow = 'none';
-    };
-    
-    discoverBtn.onmouseenter = () => {
-      discoverBtn.style.transform = 'translateY(-1px)';
-      discoverBtn.style.background = 'rgba(255, 255, 255, 0.2)';
-    };
-    discoverBtn.onmouseleave = () => {
-      discoverBtn.style.transform = 'translateY(0)';
-      discoverBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+    this.postUpdateBtn.onmouseleave = () => {
+      this.postUpdateBtn.style.transform = 'translateY(0)';
+      this.postUpdateBtn.style.boxShadow = 'none';
     };
     
-    // ✅ FIX 1: Post Update button - Redirect to create-communitypulse page
-    postUpdateBtn.addEventListener('click', (e) => {
+    this.discoverBtn.onmouseenter = () => {
+      this.discoverBtn.style.transform = 'translateY(-1px)';
+      this.discoverBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+    };
+    this.discoverBtn.onmouseleave = () => {
+      this.discoverBtn.style.transform = 'translateY(0)';
+      this.discoverBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+    };
+    
+    // Post Update button - redirect to create-communitypulse page
+    this.postUpdateBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('📝 Post Update clicked, user:', this.currentUser?.full_name);
-      
-      // Always redirect to the create-communitypulse page
-      // The target page will handle authentication
       window.location.href = 'https://bantustreamconnect.com/create-communitypulse';
     });
     
-    // ✅ FIX 2: Discover Creators button - Redirect to discover-creator page
-    discoverBtn.addEventListener('click', (e) => {
+    // Discover Creators button - redirect to discover-creator page
+    this.discoverBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('🔍 Discover Creators clicked');
       window.location.href = 'https://bantustreamconnect.com/discover-creator';
     });
     
-    buttonContainer.appendChild(postUpdateBtn);
-    buttonContainer.appendChild(discoverBtn);
+    buttonContainer.appendChild(this.postUpdateBtn);
+    buttonContainer.appendChild(this.discoverBtn);
     
-    // Replace or append the button container
-    const existingContainer = sectionHeader.querySelector('.pulse-button-container');
-    if (existingContainer) {
-      existingContainer.replaceWith(buttonContainer);
-    } else {
-      sectionHeader.appendChild(buttonContainer);
-    }
-    
-    // Store reference
-    this.createBtn = postUpdateBtn;
-    this.discoverBtn = discoverBtn;
+    // Append button container to section header
+    sectionHeader.appendChild(buttonContainer);
   },
 
   async loadFeed() {
     try {
-      // Check if supabase is available
       if (!window.supabaseAuth) {
-        console.warn('Supabase not initialized, using mock data');
-        this.loadMockData();
+        console.warn('Supabase not initialized');
+        this.showEmptyState();
         return;
       }
 
-      // Fetch posts with connected creator info and smart links
+      // Fetch real posts from database
       const { data: posts, error } = await window.supabaseAuth
         .from('pulse_posts')
         .select(`
@@ -178,104 +180,146 @@ const CommunityPulse = {
 
       if (error) throw error;
 
-      this.renderFeed(posts || []);
+      if (!posts || posts.length === 0) {
+        this.showEmptyState();
+        return;
+      }
+
+      // Load real counts for each post
+      await this.loadRealCounts(posts);
+      
+      // Render with real data
+      this.renderFeed(posts);
       
     } catch (err) {
       console.error('Failed to load Pulse:', err);
-      this.loadMockData();
+      this.showEmptyState();
     }
   },
 
-  loadMockData() {
-    // Mock data for demo when Supabase tables aren't ready yet
-    const mockPosts = [
-      {
-        id: '1',
-        content: 'Just dropped a new Amapiano mix! 🎧🔥 Link in the smart card below to listen while you browse.',
-        post_type: 'text',
-        created_at: new Date().toISOString(),
-        user_profiles: {
-          username: 'dj_khaya',
-          full_name: 'DJ Khaya',
-          avatar_url: null
-        },
-        pulse_smart_links: [{
-          link_type: 'music',
-          target_content_id: 101,
-          external_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-          cta_text: '🎧 Listen to Amapiano Mix 2025'
-        }],
-        pulse_post_media: []
-      },
-      {
-        id: '2',
-        content: 'Behind the scenes of our latest short film "Soweto Rising". Coming this Friday!',
-        post_type: 'image',
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        user_profiles: {
-          username: 'thando_films',
-          full_name: 'Thando Productions',
-          avatar_url: null
-        },
-        pulse_smart_links: [{
-          link_type: 'video',
-          target_content_id: 102,
-          external_url: null,
-          cta_text: '🎬 Watch the trailer'
-        }],
-        pulse_post_media: [{
-          media_url: 'https://picsum.photos/id/20/600/400',
-          media_type: 'image'
-        }]
-      },
-      {
-        id: '3',
-        content: 'New podcast episode: "The Future of African Music" with special guest. Link to listen!',
-        post_type: 'text',
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-        user_profiles: {
-          username: 'podcast_africa',
-          full_name: 'Africa Podcast Network',
-          avatar_url: null
-        },
-        pulse_smart_links: [{
-          link_type: 'podcast',
-          target_content_id: 103,
-          external_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-          cta_text: '🎙️ Listen to Episode 45'
-        }],
-        pulse_post_media: []
+  // ✅ NEW: Load real counts from database
+  async loadRealCounts(posts) {
+    for (const post of posts) {
+      const postId = post.id;
+      
+      // Fetch real reaction counts from reactions table
+      try {
+        const { data: reactions, error: reactionError } = await window.supabaseAuth
+          .from('pulse_reactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('post_id', postId)
+          .eq('type', 'fire');
+        
+        if (!reactionError) {
+          this.realReactionCounts[postId] = reactions?.length || 0;
+        } else {
+          this.realReactionCounts[postId] = 0;
+        }
+        
+        // Check if current user reacted
+        if (this.currentUser) {
+          const { data: userReaction, error: userReactError } = await window.supabaseAuth
+            .from('pulse_reactions')
+            .select('id')
+            .eq('post_id', postId)
+            .eq('user_id', this.currentUser.id)
+            .eq('type', 'fire')
+            .maybeSingle();
+          
+          this.userReactions[postId] = !userReactError && userReaction !== null;
+        }
+        
+      } catch (e) {
+        this.realReactionCounts[postId] = 0;
+        this.userReactions[postId] = false;
       }
-    ];
+      
+      // Fetch real repost counts
+      try {
+        const { data: reposts, error: repostError } = await window.supabaseAuth
+          .from('pulse_reposts')
+          .select('id', { count: 'exact', head: true })
+          .eq('post_id', postId);
+        
+        if (!repostError) {
+          this.realRepostCounts[postId] = reposts?.length || 0;
+        } else {
+          this.realRepostCounts[postId] = 0;
+        }
+        
+        // Check if current user reposted
+        if (this.currentUser) {
+          const { data: userRepost, error: userRepostError } = await window.supabaseAuth
+            .from('pulse_reposts')
+            .select('id')
+            .eq('post_id', postId)
+            .eq('user_id', this.currentUser.id)
+            .maybeSingle();
+          
+          this.userReposts[postId] = !userRepostError && userRepost !== null;
+        }
+        
+      } catch (e) {
+        this.realRepostCounts[postId] = 0;
+        this.userReposts[postId] = false;
+      }
+      
+      // Fetch real comment counts
+      try {
+        const { data: comments, error: commentError } = await window.supabaseAuth
+          .from('pulse_comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('post_id', postId);
+        
+        if (!commentError) {
+          this.realCommentCounts[postId] = comments?.length || 0;
+        } else {
+          this.realCommentCounts[postId] = 0;
+        }
+        
+        // Load actual comments data
+        const { data: commentsData, error: commentsDataError } = await window.supabaseAuth
+          .from('pulse_comments')
+          .select('id, content, user_id, created_at, user_profiles!user_id(full_name, username, avatar_url)')
+          .eq('post_id', postId)
+          .order('created_at', { ascending: false });
+        
+        if (!commentsDataError && commentsData) {
+          this.commentsData[postId] = commentsData;
+        } else {
+          this.commentsData[postId] = [];
+        }
+        
+      } catch (e) {
+        this.realCommentCounts[postId] = 0;
+        this.commentsData[postId] = [];
+      }
+    }
+  },
+
+  showEmptyState() {
+    if (!this.feedContainer) return;
+    this.feedContainer.innerHTML = `
+      <div class="empty-pulse">
+        <i class="fas fa-newspaper" style="font-size: 48px; color: var(--slate-grey);"></i>
+        <p style="color: var(--slate-grey); margin-top: 16px;">No updates yet. Connect with creators to see their posts!</p>
+        <button class="see-all-btn" id="empty-connect-btn" style="margin-top: 16px;">
+          <i class="fas fa-user-plus"></i> Discover Creators
+        </button>
+      </div>
+    `;
     
-    this.renderFeed(mockPosts);
+    const connectBtn = document.getElementById('empty-connect-btn');
+    if (connectBtn) {
+      connectBtn.addEventListener('click', () => {
+        window.location.href = 'https://bantustreamconnect.com/discover-creator';
+      });
+    }
   },
 
   renderFeed(posts) {
     if (!this.feedContainer) return;
-    
     this.feedContainer.innerHTML = '';
-    
-    if (!posts || posts.length === 0) {
-      this.feedContainer.innerHTML = `
-        <div class="empty-pulse">
-          <i class="fas fa-newspaper" style="font-size: 48px; color: var(--slate-grey);"></i>
-          <p style="color: var(--slate-grey); margin-top: 16px;">No updates yet. Connect with creators to see their posts!</p>
-          <button class="see-all-btn" id="empty-connect-btn" style="margin-top: 16px;">
-            <i class="fas fa-user-plus"></i> Discover Creators
-          </button>
-        </div>
-      `;
-      
-      const connectBtn = document.getElementById('empty-connect-btn');
-      if (connectBtn) {
-        connectBtn.addEventListener('click', () => {
-          window.location.href = 'https://bantustreamconnect.com/discover-creator';
-        });
-      }
-      return;
-    }
-
     posts.forEach(post => this.renderPost(post));
   },
 
@@ -284,22 +328,23 @@ const CommunityPulse = {
     const displayName = creator.full_name || creator.username || 'Creator';
     const username = creator.username || 'creator';
     const avatarUrl = creator.avatar_url;
+    const postId = post.id;
     
     const initials = displayName.charAt(0).toUpperCase();
     const avatarHtml = avatarUrl 
       ? `<img src="${this.fixImageUrl(avatarUrl)}" alt="${displayName}" onerror="this.src='';this.parentElement.innerHTML='${initials}';">` 
       : initials;
 
+    // Get REAL counts from loaded data
+    const reactionCount = this.realReactionCounts[postId] || 0;
+    const repostCount = this.realRepostCounts[postId] || 0;
+    const commentCount = this.realCommentCounts[postId] || 0;
+    const userReacted = this.userReactions[postId] || false;
+    const userReposted = this.userReposts[postId] || false;
+
     const card = document.createElement('div');
     card.className = 'pulse-card';
-    card.dataset.postId = post.id;
-    
-    // Load reaction counts from localStorage or start at 0
-    const reactionCount = this.getReactionCount(post.id, 'fire');
-    const repostCount = this.getRepostCount(post.id);
-    const commentCount = this.getCommentCount(post.id);
-    const userReacted = this.userReacted(post.id);
-    const userReposted = this.userReposted(post.id);
+    card.dataset.postId = postId;
     
     card.innerHTML = `
       <div class="pulse-header">
@@ -311,18 +356,18 @@ const CommunityPulse = {
       </div>
       <div class="pulse-content">${this.escapeHtml(post.content)}</div>
       ${this.renderMedia(post.pulse_post_media)}
-      ${this.renderSmartLink(post.pulse_smart_links?.[0], post.id)}
+      ${this.renderSmartLink(post.pulse_smart_links?.[0], postId)}
       <div class="pulse-actions">
-        <button class="action-btn fire-btn ${userReacted ? 'active' : ''}" data-id="${post.id}">
+        <button class="action-btn fire-btn ${userReacted ? 'active' : ''}" data-id="${postId}">
           <i class="fas fa-fire"></i> <span class="reaction-count">${reactionCount}</span>
         </button>
-        <button class="action-btn comment-btn" data-id="${post.id}">
+        <button class="action-btn comment-btn" data-id="${postId}">
           <i class="fas fa-comment"></i> <span class="comment-count">${commentCount}</span>
         </button>
-        <button class="action-btn repost-btn ${userReposted ? 'active' : ''}" data-id="${post.id}">
+        <button class="action-btn repost-btn ${userReposted ? 'active' : ''}" data-id="${postId}">
           <i class="fas fa-retweet"></i> <span class="repost-count">${repostCount}</span>
         </button>
-        <button class="action-btn share-btn" data-id="${post.id}">
+        <button class="action-btn share-btn" data-id="${postId}">
           <i class="fas fa-share"></i>
         </button>
       </div>
@@ -339,33 +384,33 @@ const CommunityPulse = {
       });
     }
     
-    // ✅ FIX 3: Attach action button handlers with working functionality
+    // ✅ FIX 3: Attach action button handlers with preventDefault to stop page reload
     const fireBtn = card.querySelector('.fire-btn');
     const commentBtn = card.querySelector('.comment-btn');
     const repostBtn = card.querySelector('.repost-btn');
     const shareBtn = card.querySelector('.share-btn');
     
     if (fireBtn) {
-      fireBtn.addEventListener('click', (e) => {
+      fireBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.handleReaction(post.id, 'fire');
+        await this.handleReaction(postId);
       });
     }
     
     if (commentBtn) {
-      commentBtn.addEventListener('click', (e) => {
+      commentBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.handleComment(post.id);
+        await this.handleComment(postId);
       });
     }
     
     if (repostBtn) {
-      repostBtn.addEventListener('click', (e) => {
+      repostBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.handleRepost(post.id);
+        await this.handleRepost(postId);
       });
     }
     
@@ -373,56 +418,265 @@ const CommunityPulse = {
       shareBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.handleShare(post.id);
+        this.handleShare(postId);
       });
     }
 
     this.feedContainer.appendChild(card);
   },
 
-  // ✅ NEW: Get reaction count from localStorage
-  getReactionCount(postId, type) {
-    const key = `pulse_${type}_${postId}`;
-    const data = localStorage.getItem(key);
-    if (data) {
-      const parsed = JSON.parse(data);
-      return parsed.count || 0;
+  // ✅ FIX 2 & 3: Working reaction handler with real data
+  async handleReaction(postId) {
+    if (!this.currentUser) {
+      this.showToast('Please sign in to react', 'warning');
+      return;
     }
-    return Math.floor(Math.random() * 50); // Mock count for demo
-  },
-  
-  // ✅ NEW: Get repost count from localStorage
-  getRepostCount(postId) {
-    const key = `pulse_repost_${postId}`;
-    const data = localStorage.getItem(key);
-    if (data) {
-      const parsed = JSON.parse(data);
-      return parsed.count || 0;
+    
+    const btn = document.querySelector(`.fire-btn[data-id="${postId}"]`);
+    if (!btn) return;
+    
+    const wasActive = btn.classList.contains('active');
+    const countSpan = btn.querySelector('.reaction-count');
+    let currentCount = parseInt(countSpan.textContent) || 0;
+    
+    try {
+      if (wasActive) {
+        // Remove reaction
+        const { error } = await window.supabaseAuth
+          .from('pulse_reactions')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', this.currentUser.id)
+          .eq('type', 'fire');
+        
+        if (!error) {
+          btn.classList.remove('active');
+          currentCount--;
+          countSpan.textContent = currentCount;
+          this.realReactionCounts[postId] = currentCount;
+          this.userReactions[postId] = false;
+          this.showToast('Reaction removed', 'info');
+        }
+      } else {
+        // Add reaction
+        const { error } = await window.supabaseAuth
+          .from('pulse_reactions')
+          .insert({
+            post_id: postId,
+            user_id: this.currentUser.id,
+            type: 'fire'
+          });
+        
+        if (!error) {
+          btn.classList.add('active');
+          currentCount++;
+          countSpan.textContent = currentCount;
+          this.realReactionCounts[postId] = currentCount;
+          this.userReactions[postId] = true;
+          this.showToast('🔥 You reacted with fire!', 'success');
+        }
+      }
+    } catch (err) {
+      console.error('Reaction error:', err);
+      this.showToast('Failed to update reaction', 'error');
     }
-    return Math.floor(Math.random() * 20); // Mock count for demo
   },
-  
-  // ✅ NEW: Get comment count from localStorage
-  getCommentCount(postId) {
-    const key = `pulse_comments_${postId}`;
-    const data = localStorage.getItem(key);
-    if (data) {
-      const parsed = JSON.parse(data);
-      return parsed.count || 0;
+
+  // ✅ FIX 2 & 3: Working comment handler with NO page reload
+  async handleComment(postId) {
+    console.log('💬 Opening comment modal for post:', postId);
+    
+    // Get existing comments from database
+    let comments = this.commentsData[postId] || [];
+    
+    // Fetch fresh comments
+    try {
+      const { data: freshComments, error } = await window.supabaseAuth
+        .from('pulse_comments')
+        .select('id, content, user_id, created_at, user_profiles!user_id(full_name, username, avatar_url)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: false });
+      
+      if (!error && freshComments) {
+        comments = freshComments;
+        this.commentsData[postId] = comments;
+      }
+    } catch (e) {
+      console.warn('Could not fetch fresh comments:', e);
     }
-    return Math.floor(Math.random() * 10); // Mock count for demo
+    
+    const modalHtml = `
+      <div id="comment-modal-${postId}" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+          <div class="modal-header">
+            <h3><i class="fas fa-comment"></i> Comments (${comments.length})</h3>
+            <button class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+            <div id="comments-list-${postId}" class="comments-list" style="margin-bottom: 20px;">
+              ${comments.length === 0 ? '<p style="color: var(--slate-grey); text-align: center;">No comments yet. Be the first to comment!</p>' : ''}
+              ${comments.map(comment => {
+                const commentAuthor = comment.user_profiles || {};
+                const authorName = commentAuthor.full_name || commentAuthor.username || 'User';
+                const authorInitials = authorName.charAt(0).toUpperCase();
+                return `
+                  <div class="comment-item" style="padding: 12px; border-bottom: 1px solid var(--card-border);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                      <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                        ${authorInitials}
+                      </div>
+                      <div>
+                        <strong style="color: var(--soft-white); font-size: 14px;">${this.escapeHtml(authorName)}</strong>
+                        <div style="color: var(--slate-grey); font-size: 11px;">${this.formatTimeAgo(comment.created_at)}</div>
+                      </div>
+                    </div>
+                    <p style="color: var(--soft-white); margin: 0; font-size: 14px;">${this.escapeHtml(comment.content)}</p>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <textarea id="comment-input-${postId}" placeholder="Write a comment..." rows="3" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; color: var(--soft-white); font-family: inherit; resize: vertical;"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="cancel-btn">Cancel</button>
+            <button class="submit-btn post-comment-btn">Post Comment</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const modal = document.getElementById(`comment-modal-${postId}`);
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = modal.querySelector('.cancel-btn');
+    const submitBtn = modal.querySelector('.post-comment-btn');
+    const commentInput = document.getElementById(`comment-input-${postId}`);
+    
+    const closeModal = () => modal.remove();
+    
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    submitBtn.addEventListener('click', async () => {
+      const commentText = commentInput.value.trim();
+      if (!commentText) {
+        this.showToast('Please enter a comment', 'warning');
+        return;
+      }
+      
+      if (!this.currentUser) {
+        this.showToast('Please sign in to comment', 'warning');
+        closeModal();
+        return;
+      }
+      
+      // Save comment to database
+      try {
+        const { data: newComment, error } = await window.supabaseAuth
+          .from('pulse_comments')
+          .insert({
+            post_id: postId,
+            user_id: this.currentUser.id,
+            content: commentText
+          })
+          .select('id, content, created_at, user_profiles!user_id(full_name, username, avatar_url)')
+          .single();
+        
+        if (error) throw error;
+        
+        // Update local data
+        if (!this.commentsData[postId]) {
+          this.commentsData[postId] = [];
+        }
+        this.commentsData[postId].unshift(newComment);
+        
+        // Update comment count
+        const newCount = (this.realCommentCounts[postId] || 0) + 1;
+        this.realCommentCounts[postId] = newCount;
+        
+        // Update UI count
+        const commentBtn = document.querySelector(`.comment-btn[data-id="${postId}"] .comment-count`);
+        if (commentBtn) {
+          commentBtn.textContent = newCount;
+        }
+        
+        this.showToast('Comment posted!', 'success');
+        closeModal();
+        
+      } catch (err) {
+        console.error('Comment error:', err);
+        this.showToast('Failed to post comment', 'error');
+      }
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
   },
-  
-  // ✅ NEW: Check if user reacted
-  userReacted(postId) {
-    const key = `pulse_user_reacted_${postId}`;
-    return localStorage.getItem(key) === 'true';
+
+  // ✅ FIX 2 & 3: Working repost handler with real data
+  async handleRepost(postId) {
+    if (!this.currentUser) {
+      this.showToast('Please sign in to repost', 'warning');
+      return;
+    }
+    
+    const btn = document.querySelector(`.repost-btn[data-id="${postId}"]`);
+    if (!btn) return;
+    
+    const wasActive = btn.classList.contains('active');
+    const countSpan = btn.querySelector('.repost-count');
+    let currentCount = parseInt(countSpan.textContent) || 0;
+    
+    try {
+      if (wasActive) {
+        // Remove repost
+        const { error } = await window.supabaseAuth
+          .from('pulse_reposts')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', this.currentUser.id);
+        
+        if (!error) {
+          btn.classList.remove('active');
+          currentCount--;
+          countSpan.textContent = currentCount;
+          this.realRepostCounts[postId] = currentCount;
+          this.userReposts[postId] = false;
+          this.showToast('Repost removed', 'info');
+        }
+      } else {
+        // Add repost
+        const { error } = await window.supabaseAuth
+          .from('pulse_reposts')
+          .insert({
+            post_id: postId,
+            user_id: this.currentUser.id
+          });
+        
+        if (!error) {
+          btn.classList.add('active');
+          currentCount++;
+          countSpan.textContent = currentCount;
+          this.realRepostCounts[postId] = currentCount;
+          this.userReposts[postId] = true;
+          this.showToast('✅ Reposted to your profile!', 'success');
+        }
+      }
+    } catch (err) {
+      console.error('Repost error:', err);
+      this.showToast('Failed to update repost', 'error');
+    }
   },
-  
-  // ✅ NEW: Check if user reposted
-  userReposted(postId) {
-    const key = `pulse_user_reposted_${postId}`;
-    return localStorage.getItem(key) === 'true';
+
+  handleShare(postId) {
+    const url = `${window.location.origin}?post=${postId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      this.showToast('Link copied to clipboard!', 'success');
+    }).catch(() => {
+      this.showToast('Share: ' + url, 'info');
+    });
   },
 
   handleSmartLinkClick(link, creatorName) {
@@ -442,7 +696,6 @@ const CommunityPulse = {
         window.playSmartLink(audioUrl, trackTitle, creatorName);
         this.showToast(`Now playing: ${trackTitle}`, 'success');
       } else {
-        console.warn('Audio player not available');
         this.showToast('Audio player coming soon!', 'info');
       }
     } else if (link_type === 'video' && target_content_id) {
@@ -490,7 +743,6 @@ const CommunityPulse = {
       article: 'fa-newspaper'
     };
     const icon = iconMap[link.link_type] || 'fa-link';
-    
     const ctaText = link.cta_text || `Open ${link.link_type}`;
     
     return `
@@ -505,189 +757,6 @@ const CommunityPulse = {
         </div>
       </div>
     `;
-  },
-
-  // ✅ FIX 3: Working reaction handler
-  handleReaction(postId, type) {
-    const btn = document.querySelector(`.fire-btn[data-id="${postId}"]`);
-    if (!btn) return;
-    
-    const wasActive = btn.classList.contains('active');
-    const countSpan = btn.querySelector('.reaction-count');
-    let currentCount = parseInt(countSpan.textContent) || 0;
-    
-    if (wasActive) {
-      // Remove reaction
-      btn.classList.remove('active');
-      currentCount = Math.max(0, currentCount - 1);
-      localStorage.setItem(`pulse_user_reacted_${postId}`, 'false');
-      this.showToast('Reaction removed', 'info');
-    } else {
-      // Add reaction
-      btn.classList.add('active');
-      currentCount++;
-      localStorage.setItem(`pulse_user_reacted_${postId}`, 'true');
-      this.showToast('🔥 You reacted with fire!', 'success');
-    }
-    
-    countSpan.textContent = currentCount;
-    
-    // Save to localStorage
-    const key = `pulse_fire_${postId}`;
-    localStorage.setItem(key, JSON.stringify({ count: currentCount, updated: Date.now() }));
-  },
-
-  // ✅ FIX 3: Working comment handler - opens comment modal
-  handleComment(postId) {
-    console.log('💬 Comment clicked for post:', postId);
-    this.showCommentModal(postId);
-  },
-  
-  // ✅ FIX 3: Working repost handler
-  handleRepost(postId) {
-    const btn = document.querySelector(`.repost-btn[data-id="${postId}"]`);
-    if (!btn) return;
-    
-    const wasActive = btn.classList.contains('active');
-    const countSpan = btn.querySelector('.repost-count');
-    let currentCount = parseInt(countSpan.textContent) || 0;
-    
-    if (wasActive) {
-      // Remove repost
-      btn.classList.remove('active');
-      currentCount = Math.max(0, currentCount - 1);
-      localStorage.setItem(`pulse_user_reposted_${postId}`, 'false');
-      this.showToast('Repost removed', 'info');
-    } else {
-      // Add repost
-      btn.classList.add('active');
-      currentCount++;
-      localStorage.setItem(`pulse_user_reposted_${postId}`, 'true');
-      this.showToast('✅ Reposted to your profile!', 'success');
-    }
-    
-    countSpan.textContent = currentCount;
-    
-    // Save to localStorage
-    const key = `pulse_repost_${postId}`;
-    localStorage.setItem(key, JSON.stringify({ count: currentCount, updated: Date.now() }));
-  },
-
-  // ✅ FIX 3: Working comment modal with actual functionality
-  showCommentModal(postId) {
-    console.log('💬 Opening comment modal for post:', postId);
-    
-    // Get existing comments
-    const commentsKey = `pulse_comments_data_${postId}`;
-    let comments = [];
-    const savedComments = localStorage.getItem(commentsKey);
-    if (savedComments) {
-      comments = JSON.parse(savedComments);
-    }
-    
-    const modalHtml = `
-      <div id="comment-modal-${postId}" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-          <div class="modal-header">
-            <h3><i class="fas fa-comment"></i> Comments</h3>
-            <button class="modal-close">&times;</button>
-          </div>
-          <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
-            <div id="comments-list-${postId}" class="comments-list" style="margin-bottom: 20px;">
-              ${comments.length === 0 ? '<p style="color: var(--slate-grey); text-align: center;">No comments yet. Be the first to comment!</p>' : ''}
-              ${comments.map(comment => `
-                <div class="comment-item" style="padding: 12px; border-bottom: 1px solid var(--card-border);">
-                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
-                      ${comment.authorName?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                      <strong style="color: var(--soft-white); font-size: 14px;">${this.escapeHtml(comment.authorName || 'User')}</strong>
-                      <div style="color: var(--slate-grey); font-size: 11px;">${this.formatTimeAgo(comment.timestamp)}</div>
-                    </div>
-                  </div>
-                  <p style="color: var(--soft-white); margin: 0; font-size: 14px;">${this.escapeHtml(comment.text)}</p>
-                </div>
-              `).join('')}
-            </div>
-            <textarea id="comment-input-${postId}" placeholder="Write a comment..." rows="3" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; color: var(--soft-white); font-family: inherit; resize: vertical;"></textarea>
-          </div>
-          <div class="modal-footer">
-            <button class="cancel-btn">Cancel</button>
-            <button class="submit-btn post-comment-btn">Post Comment</button>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    const modal = document.getElementById(`comment-modal-${postId}`);
-    const closeBtn = modal.querySelector('.modal-close');
-    const cancelBtn = modal.querySelector('.cancel-btn');
-    const submitBtn = modal.querySelector('.post-comment-btn');
-    const commentInput = document.getElementById(`comment-input-${postId}`);
-    
-    const closeModal = () => modal.remove();
-    
-    closeBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    
-    submitBtn.addEventListener('click', () => {
-      const commentText = commentInput.value.trim();
-      if (!commentText) {
-        this.showToast('Please enter a comment', 'warning');
-        return;
-      }
-      
-      // Get author name
-      let authorName = 'User';
-      if (this.currentUser) {
-        authorName = this.currentUser.full_name || this.currentUser.username || 'User';
-      } else {
-        const guestName = prompt('Enter your name to comment:', 'Guest');
-        if (guestName) authorName = guestName;
-      }
-      
-      // Save comment
-      const newComment = {
-        id: Date.now(),
-        text: commentText,
-        authorName: authorName,
-        timestamp: new Date().toISOString()
-      };
-      
-      comments.push(newComment);
-      localStorage.setItem(commentsKey, JSON.stringify(comments));
-      
-      // Update comment count
-      const commentCountKey = `pulse_comments_${postId}`;
-      const currentCount = parseInt(localStorage.getItem(commentCountKey) || '0');
-      const newCount = currentCount + 1;
-      localStorage.setItem(commentCountKey, newCount.toString());
-      
-      // Update UI count
-      const commentBtn = document.querySelector(`.comment-btn[data-id="${postId}"] .comment-count`);
-      if (commentBtn) {
-        commentBtn.textContent = newCount;
-      }
-      
-      this.showToast('Comment posted!', 'success');
-      closeModal();
-    });
-    
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-  },
-
-  handleShare(postId) {
-    const url = `${window.location.origin}?post=${postId}`;
-    navigator.clipboard.writeText(url).then(() => {
-      this.showToast('Link copied to clipboard!', 'success');
-    }).catch(() => {
-      this.showToast('Share: ' + url, 'info');
-    });
   },
 
   fixImageUrl(url) {
