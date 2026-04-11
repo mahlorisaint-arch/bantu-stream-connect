@@ -20,10 +20,12 @@ const CommunityPulse = {
   async init() {
     if (!this.feedContainer) return;
     
-    // Get current user
+    // Get current user FIRST - this is critical
     await this.getCurrentUser();
     
-    // Setup the enhanced button bar (only once)
+    console.log('🔐 Community Pulse Init - Current User:', this.currentUser?.id, this.currentUser?.full_name);
+    
+    // Setup the enhanced button bar
     this.setupButtonBar();
     
     // Load real feed data
@@ -32,34 +34,75 @@ const CommunityPulse = {
 
   async getCurrentUser() {
     try {
-      if (window.supabaseAuth && window.supabaseAuth.getUser) {
-        const { data: { user } } = await window.supabaseAuth.getUser();
-        if (user) {
-          // First try to get from user_profiles
-          const { data: profile, error } = await window.supabaseAuth
+      // Check if supabaseAuth is available
+      if (!window.supabaseAuth) {
+        console.warn('⚠️ Supabase Auth not initialized');
+        this.currentUser = null;
+        return;
+      }
+      
+      // Get session first
+      const { data: { session }, error: sessionError } = await window.supabaseAuth.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Session error:', sessionError);
+        this.currentUser = null;
+        return;
+      }
+      
+      const user = session?.user;
+      
+      if (user) {
+        console.log('✅ User found in session:', user.id, user.email);
+        
+        // Try to get profile from user_profiles
+        try {
+          const { data: profile, error: profileError } = await window.supabaseAuth
             .from('user_profiles')
             .select('*')
             .eq('id', user.id)
             .maybeSingle();
           
+          if (profileError) {
+            console.warn('⚠️ Profile fetch error:', profileError.message);
+          }
+          
           if (profile) {
-            this.currentUser = profile;
+            this.currentUser = {
+              id: profile.id,
+              full_name: profile.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+              username: profile.username || user.email?.split('@')[0] || 'user',
+              email: user.email,
+              avatar_url: profile.avatar_url
+            };
           } else {
-            // Fall back to auth user
+            // Fall back to auth user data
             this.currentUser = {
               id: user.id,
               full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
               username: user.email?.split('@')[0] || 'user',
-              email: user.email
+              email: user.email,
+              avatar_url: null
             };
           }
-          console.log('✅ Community Pulse: User loaded', this.currentUser?.full_name);
-        } else {
-          console.log('ℹ️ Community Pulse: No user logged in');
+        } catch (err) {
+          console.warn('⚠️ Profile fetch exception:', err);
+          this.currentUser = {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            username: user.email?.split('@')[0] || 'user',
+            email: user.email,
+            avatar_url: null
+          };
         }
+        
+        console.log('✅ Community Pulse: User loaded successfully:', this.currentUser.full_name);
+      } else {
+        console.log('ℹ️ Community Pulse: No user logged in');
+        this.currentUser = null;
       }
     } catch (err) {
-      console.log('User not logged in:', err);
+      console.error('❌ Error getting current user:', err);
       this.currentUser = null;
     }
   },
@@ -211,6 +254,9 @@ const CommunityPulse = {
 
   // Load real counts from database using correct table names
   async loadRealCounts(posts) {
+    console.log('📊 Loading real counts for', posts.length, 'posts');
+    console.log('👤 Current user for counts:', this.currentUser?.id);
+    
     for (const post of posts) {
       const postId = post.id;
       
@@ -229,7 +275,7 @@ const CommunityPulse = {
         }
         
         // Check if current user reacted
-        if (this.currentUser) {
+        if (this.currentUser && this.currentUser.id) {
           const { data: userReaction, error: userReactError } = await window.supabaseAuth
             .from('pulse_post_reactions')
             .select('id')
@@ -263,7 +309,7 @@ const CommunityPulse = {
         }
         
         // Check if current user reposted
-        if (this.currentUser) {
+        if (this.currentUser && this.currentUser.id) {
           const { data: userRepost, error: userRepostError } = await window.supabaseAuth
             .from('pulse_post_reposts')
             .select('id')
@@ -330,7 +376,9 @@ const CommunityPulse = {
     console.log('✅ Loaded counts:', {
       reactions: this.realReactionCounts,
       reposts: this.realRepostCounts,
-      comments: this.realCommentCounts
+      comments: this.realCommentCounts,
+      userReactions: this.userReactions,
+      userReposts: this.userReposts
     });
   },
 
@@ -421,7 +469,7 @@ const CommunityPulse = {
       });
     }
     
-    // Attach action button handlers with preventDefault to stop page reload
+    // Attach action button handlers with proper binding
     const fireBtn = card.querySelector('.fire-btn');
     const commentBtn = card.querySelector('.comment-btn');
     const repostBtn = card.querySelector('.repost-btn');
@@ -464,8 +512,16 @@ const CommunityPulse = {
 
   // Handle reaction using pulse_post_reactions table
   async handleReaction(postId) {
-    if (!this.currentUser) {
+    console.log('🔥 Reaction clicked. Current user:', this.currentUser?.id);
+    
+    // Double-check authentication
+    if (!this.currentUser || !this.currentUser.id) {
+      console.warn('No user logged in, showing sign in prompt');
       this.showToast('Please sign in to react', 'warning');
+      // Redirect to login
+      setTimeout(() => {
+        window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }, 1500);
       return;
     }
     
@@ -479,6 +535,7 @@ const CommunityPulse = {
     try {
       if (wasActive) {
         // Remove reaction
+        console.log('Removing reaction for post:', postId, 'user:', this.currentUser.id);
         const { error } = await window.supabaseAuth
           .from('pulse_post_reactions')
           .delete()
@@ -493,12 +550,14 @@ const CommunityPulse = {
           this.realReactionCounts[postId] = currentCount;
           this.userReactions[postId] = false;
           this.showToast('Reaction removed', 'info');
+          console.log('✅ Reaction removed successfully');
         } else {
           console.error('Delete reaction error:', error);
           this.showToast('Failed to remove reaction', 'error');
         }
       } else {
         // Add reaction
+        console.log('Adding reaction for post:', postId, 'user:', this.currentUser.id);
         const { error } = await window.supabaseAuth
           .from('pulse_post_reactions')
           .insert({
@@ -514,6 +573,7 @@ const CommunityPulse = {
           this.realReactionCounts[postId] = currentCount;
           this.userReactions[postId] = true;
           this.showToast('🔥 You reacted with fire!', 'success');
+          console.log('✅ Reaction added successfully');
         } else {
           console.error('Insert reaction error:', error);
           this.showToast('Failed to add reaction', 'error');
@@ -527,7 +587,17 @@ const CommunityPulse = {
 
   // Handle comment using pulse_post_comments table
   async handleComment(postId) {
-    console.log('💬 Opening comment modal for post:', postId);
+    console.log('💬 Comment clicked. Current user:', this.currentUser?.id);
+    
+    // Double-check authentication
+    if (!this.currentUser || !this.currentUser.id) {
+      console.warn('No user logged in, showing sign in prompt');
+      this.showToast('Please sign in to comment', 'warning');
+      setTimeout(() => {
+        window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }, 1500);
+      return;
+    }
     
     // Get existing comments from database
     let comments = this.commentsData[postId] || [];
@@ -626,7 +696,7 @@ const CommunityPulse = {
         return;
       }
       
-      if (!this.currentUser) {
+      if (!this.currentUser || !this.currentUser.id) {
         this.showToast('Please sign in to comment', 'warning');
         closeModal();
         return;
@@ -690,8 +760,15 @@ const CommunityPulse = {
 
   // Handle repost using pulse_post_reposts table
   async handleRepost(postId) {
-    if (!this.currentUser) {
+    console.log('🔄 Repost clicked. Current user:', this.currentUser?.id);
+    
+    // Double-check authentication
+    if (!this.currentUser || !this.currentUser.id) {
+      console.warn('No user logged in, showing sign in prompt');
       this.showToast('Please sign in to repost', 'warning');
+      setTimeout(() => {
+        window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }, 1500);
       return;
     }
     
@@ -705,6 +782,7 @@ const CommunityPulse = {
     try {
       if (wasActive) {
         // Remove repost
+        console.log('Removing repost for post:', postId, 'user:', this.currentUser.id);
         const { error } = await window.supabaseAuth
           .from('pulse_post_reposts')
           .delete()
@@ -718,12 +796,14 @@ const CommunityPulse = {
           this.realRepostCounts[postId] = currentCount;
           this.userReposts[postId] = false;
           this.showToast('Repost removed', 'info');
+          console.log('✅ Repost removed successfully');
         } else {
           console.error('Delete repost error:', error);
           this.showToast('Failed to remove repost', 'error');
         }
       } else {
         // Add repost
+        console.log('Adding repost for post:', postId, 'user:', this.currentUser.id);
         const { error } = await window.supabaseAuth
           .from('pulse_post_reposts')
           .insert({
@@ -738,6 +818,7 @@ const CommunityPulse = {
           this.realRepostCounts[postId] = currentCount;
           this.userReposts[postId] = true;
           this.showToast('✅ Reposted to your profile!', 'success');
+          console.log('✅ Repost added successfully');
         } else {
           console.error('Insert repost error:', error);
           this.showToast('Failed to add repost', 'error');
