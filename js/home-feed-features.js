@@ -219,19 +219,59 @@ function showAllSkeletons() {
     });
 }
 
-function loadCachedFeeds() {
-    // Try to load cached data for all sections instantly
-    const sections = ['forYou', 'trending', 'newContent', 'communityFavorites'];
+// ✅ NEW FUNCTION: Load all cached sections at once
+function loadAllCachedSections() {
+    const sections = {
+        'continue-watching-grid': 'feed_continueWatching',
+        'for-you-grid': 'feed_forYou',
+        'following-grid': 'feed_following',
+        'community-favorites-grid': 'feed_communityFavorites',
+        'trending-grid': 'feed_trending',
+        'new-content-grid': 'feed_newContent'
+    };
+    
+    Object.entries(sections).forEach(([containerId, cacheKey]) => {
+        const container = document.getElementById(containerId);
+        const cachedData = window.cacheManager?.get(cacheKey);
+        
+        if (container && cachedData && cachedData.length > 0) {
+            console.log(`📦 Loading cached ${containerId}`);
+            container.innerHTML = '';
+            renderContentCards(container, cachedData);
+            
+            // Animate cards
+            document.querySelectorAll(`#${containerId} .content-card`).forEach((card, i) => {
+                setTimeout(() => card.classList.add('visible'), i * 50);
+            });
+        }
+    });
+}
+
+// ✅ NEW FUNCTION: Check and retry empty sections
+function checkAndRetryEmptySections() {
+    const sections = [
+        { id: 'continue-watching-grid', loader: loadContinueWatchingSection, name: 'Continue Watching' },
+        { id: 'following-grid', loader: loadFollowingSection, name: 'Following' },
+        { id: 'community-favorites-grid', loader: loadCommunityFavoritesSection, name: 'Community Favorites' }
+    ];
     
     sections.forEach(section => {
-        const cached = window.cacheManager?.get(`feed_${section}`);
-        if (cached) {
-            console.log(`📦 Loading cached ${section} feed`);
-            const containerId = `${section}-grid`;
-            const container = document.getElementById(containerId);
-            if (container && cached.data) {
-                renderContentCards(container, cached.data);
-            }
+        const container = document.getElementById(section.id);
+        if (container && (container.children.length === 0 || container.innerHTML.includes('skeleton'))) {
+            console.log(`🔄 Retrying empty section: ${section.name}`);
+            section.loader().catch(err => {
+                console.error(`Retry failed for ${section.name}:`, err);
+                // Show user-friendly message
+                if (container && container.innerHTML.includes('skeleton')) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <div class="empty-icon"><i class="fas fa-sync-alt"></i></div>
+                            <h3>Unable to load ${section.name}</h3>
+                            <button class="see-all-btn" onclick="location.reload()">Refresh Page</button>
+                        </div>
+                    `;
+                }
+            });
         }
     });
 }
@@ -391,7 +431,7 @@ function setupSidebarThemeToggle() {
 }
 
 // ============================================
-// HOME FEED CONTROLLER (PERFORMANCE MODE)
+// HOME FEED CONTROLLER (PERFORMANCE MODE) - FIXED
 // ============================================
 async function initializeHomeFeed() {
     const loadingScreen = document.getElementById('loading');
@@ -401,75 +441,64 @@ async function initializeHomeFeed() {
     try {
         console.log("🚀 Initializing Home Feed (Performance Mode)");
         
-        // ✅ SHOW UI IMMEDIATELY - Don't wait for data
+        // ✅ SHOW UI IMMEDIATELY
         if (loadingScreen) loadingScreen.style.display = 'none';
         if (app) app.style.display = 'block';
         
         // Show skeletons instantly
         showAllSkeletons();
         
-        // ✅ 1. Check authentication in background (non-blocking)
+        // ✅ CRITICAL: Try to load cached data for ALL sections immediately
+        loadAllCachedSections();
+        
+        // ✅ 1. Check authentication (don't block sections)
         const authPromise = checkAuth();
         
-        // ✅ 2. Load cached data instantly (synchronous)
-        loadCachedFeeds();
-        
-        // ✅ 3. Wait for auth to complete
-        await authPromise;
-        
-        // Update app icon
-        updateAppIcon();
-        
-        // ✅ 4. Load user profiles if authenticated (non-blocking)
-        if (window.currentUser) {
-            // Don't await - let it run in background
-            Promise.all([
-                loadUserProfiles(),
-                loadUserProfile()
-            ]).catch(console.warn);
-        }
-        
-        // ✅ 5. Update UI profile elements (non-blocking)
-        Promise.all([
-            updateHeaderProfile(),
-            updateSidebarProfile(),
-            updateProfileSwitcher()
-        ]).catch(console.warn);
-        
-        // ✅ 6. Add global image error handler
-        setupGlobalImageErrorHandler();
-        
-        // ✅ 7. LOAD ALL SECTIONS IN PARALLEL (THIS IS THE KEY FIX)
-        const sectionLoaders = [
-            loadCinematicHero(),
-            loadContinueWatchingSection(),
+        // ✅ 2. Start loading ALL sections in parallel IMMEDIATELY (don't wait for auth)
+        // This is the key fix - sections load regardless of auth status
+        const sectionPromises = [
+            loadContinueWatchingSection(),  // Will handle null auth gracefully
             loadForYouSection(),
-            loadFollowingSection(),
-            loadShortsSection(),
+            loadFollowingSection(),          // Will handle null auth gracefully
             loadCommunityFavoritesSection(),
-            loadLiveStreamsSection(),
             loadTrendingSection(),
             loadNewContentSection(),
+            loadShortsSection(),
+            loadLiveStreamsSection(),
             loadFeaturedCreatorsSection(),
             loadEventsSection(),
             loadCommunityStats()
         ];
         
-        // Run all sections in parallel with Promise.allSettled (won't fail if one errors)
-        const results = await Promise.allSettled(sectionLoaders);
+        // ✅ 3. Wait for auth to complete (but sections are already loading)
+        await authPromise;
         
-        // Log any failed sections but don't break the page
-        results.forEach((result, index) => {
-            if (result.status === 'rejected') {
-                console.error(`❌ Section ${index} failed to load:`, result.reason);
-            }
-        });
+        // Update app icon
+        updateAppIcon();
         
-        // ✅ 8. Initialize UI components (non-data dependent)
+        // ✅ 4. Load user profiles in background (non-blocking)
+        if (window.currentUser) {
+            Promise.all([
+                loadUserProfiles(),
+                loadUserProfile()
+            ]).catch(console.warn);
+            
+            // Update UI profile elements
+            Promise.all([
+                updateHeaderProfile(),
+                updateSidebarProfile(),
+                updateProfileSwitcher()
+            ]).catch(console.warn);
+        }
+        
+        // ✅ 5. Load Hero section (independent)
+        loadCinematicHero().catch(err => console.error('Hero failed:', err));
+        
+        // ✅ 6. Initialize UI components
         setupSidebar();
-        setupThemeSelector(); // ✅ Enhanced theme selector setup
+        setupThemeSelector();
         setupLanguageFilter();
-        setupSearch(); // ✅ FIXED SEARCH
+        setupSearch();
         setupNotifications();
         setupAnalytics();
         setupVoiceSearch();
@@ -482,19 +511,29 @@ async function initializeHomeFeed() {
         renderCategoryTabs();
         setupNavigationButtons();
         
-        const totalTime = performance.now() - startTime;
-        console.log(`✅ Home Feed Loaded Successfully in ${totalTime.toFixed(0)}ms`);
+        // ✅ 7. Wait for all sections to complete (or fail gracefully)
+        const results = await Promise.allSettled(sectionPromises);
         
-        // Dispatch event that feed is ready
-        document.dispatchEvent(new CustomEvent('homeFeedReady', { detail: { loadTime: totalTime } }));
+        // Log failures but don't break
+        results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.error(`❌ Section ${index} failed:`, result.reason);
+            }
+        });
+        
+        const totalTime = performance.now() - startTime;
+        console.log(`✅ Home Feed Loaded in ${totalTime.toFixed(0)}ms`);
+        
+        // Force a final check for any empty sections
+        setTimeout(() => {
+            checkAndRetryEmptySections();
+        }, 2000);
         
     } catch (err) {
-        console.error("❌ Home Feed Initialization Error:", err);
-        showToast('Failed to load some content, but the page is ready', 'warning');
-        
-        // Still show the UI even if there was an error
+        console.error("❌ Home Feed Error:", err);
         if (loadingScreen) loadingScreen.style.display = 'none';
         if (app) app.style.display = 'block';
+        showToast('Page loaded, but some content may be delayed', 'warning');
     }
 }
 
@@ -673,18 +712,55 @@ async function fetchConnectorCounts(creatorIds) {
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
     const container = document.getElementById('continue-watching-grid');
-    if (!section || !container) return;
     
-    // Hide section if user not logged in
+    console.log('📺 Loading Continue Watching...');
+    
+    if (!section || !container) {
+        console.warn('Continue watching elements not found');
+        return;
+    }
+    
+    const cacheKey = 'feed_continueWatching';
+    
+    // Try cached data first
+    const cachedData = window.cacheManager?.get(cacheKey);
+    if (cachedData && cachedData.length > 0) {
+        console.log('📦 Continue Watching: Using cached data,', cachedData.length, 'items');
+        section.style.display = 'block';
+        container.innerHTML = '';
+        renderContinueWatchingCards(container, cachedData, cachedData.progressMap || {});
+        document.querySelectorAll('#continue-watching-grid .content-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 50);
+        });
+        // Still refresh in background
+        refreshContinueWatchingInBackground(cacheKey, section, container);
+        return;
+    }
+    
+    // Show skeletons
+    container.innerHTML = Array(4).fill().map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-creator"></div>
+            <div class="skeleton-stats"></div>
+        </div>
+    `).join('');
+    section.style.display = 'block';
+    
+    // If not logged in, show empty state after skeletons
     if (!window.currentUser) {
-        section.style.display = 'none';
+        console.log('ℹ️ No user logged in, hiding continue watching');
+        setTimeout(() => {
+            section.style.display = 'none';
+        }, 1000);
         return;
     }
     
     try {
-        console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
+        console.log('📺 Fetching continue watching for user:', window.currentUser.id);
         
-        // ✅ 1️⃣ Fetch from watch_progress table (NOT content_views)
+        // ✅ FIX: Use maybeSingle() pattern and better error handling
         const { data: watchProgress, error } = await supabaseAuth
             .from('watch_progress')
             .select(`
@@ -692,27 +768,11 @@ async function loadContinueWatchingSection() {
                 last_position,
                 total_watch_time,
                 is_completed,
-                updated_at,
-                Content (
-                    id,
-                    title,
-                    thumbnail_url,
-                    duration,
-                    genre,
-                    language,
-                    status,
-                    user_profiles!user_id (
-                        id,
-                        full_name,
-                        username,
-                        avatar_url
-                    )
-                )
+                updated_at
             `)
             .eq('user_id', window.currentUser.id)
             .eq('is_completed', false)
             .neq('last_position', 0)
-            .eq('Content.status', 'published')
             .order('updated_at', { ascending: false })
             .limit(20);
         
@@ -721,69 +781,117 @@ async function loadContinueWatchingSection() {
             throw error;
         }
         
-        console.log('📊 Watch progress data:', watchProgress);
-        
-        // Filter out null content
-        const contentList = (watchProgress || [])
-            .filter(item => item.Content !== null)
-            .map(item => ({
-                ...item.Content,
-                watch_progress: {
-                    last_position: item.last_position,
-                    total_watch_time: item.total_watch_time,
-                    updated_at: item.updated_at
-                }
-            }));
-        
-        if (contentList.length === 0) {
-            console.log('ℹ️ No continue watching content found');
+        if (!watchProgress || watchProgress.length === 0) {
+            console.log('ℹ️ No watch progress found');
             section.style.display = 'none';
             return;
         }
         
-        // ✅ 2️⃣ Build complete dataset with metrics (including connectors)
-        console.log('📊 Building section data with metrics for', contentList.length, 'items');
-        const sectionData = await buildSectionData(contentList);
+        // Get content IDs
+        const contentIds = watchProgress.map(item => item.content_id).filter(Boolean);
         
-        // ✅ 3️⃣ Create progress map with ACTUAL watch times
+        if (contentIds.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        // Fetch content details
+        const { data: contentData, error: contentError } = await supabaseAuth
+            .from('Content')
+            .select('id, title, thumbnail_url, duration, genre, language, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
+            .in('id', contentIds)
+            .eq('status', 'published');
+        
+        if (contentError) {
+            console.error('Content fetch error:', contentError);
+            throw contentError;
+        }
+        
+        if (!contentData || contentData.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        // Build progress map
         const progressMap = {};
         watchProgress.forEach(item => {
-            if (item.content_id && item.Content) {
-                const duration = item.Content.duration || 1;
-                const position = item.last_position || 0;
-                const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
-                
+            const content = contentData.find(c => c.id === item.content_id);
+            if (content && content.duration) {
+                const progress = Math.min(100, Math.floor((item.last_position / content.duration) * 100));
                 progressMap[item.content_id] = {
                     progress: progress,
-                    current: position,
-                    total: duration
+                    current: item.last_position,
+                    total: content.duration
                 };
-                
-                console.log('📍 Progress for content', item.content_id, ':', {
-                    position: position,
-                    duration: duration,
-                    progress: progress + '%'
-                });
             }
         });
         
-        // ✅ 4️⃣ Debug: Log connector counts
-        console.log('📊 Connector counts in section data:', 
-            sectionData.map(item => ({
-                id: item.id,
-                title: item.title,
-                creator: item.user_profiles?.username,
-                connectors: item.metrics?.connectors
-            }))
-        );
+        // Get metrics
+        const creatorIds = [...new Set(contentData.map(c => c.user_id).filter(Boolean))];
+        const metrics = await fetchAllMetrics(contentIds, creatorIds);
         
-        // ✅ 5️⃣ Render with correct progress data
+        // Enrich content with metrics
+        const enrichedData = contentData.map(item => ({
+            ...item,
+            metrics: {
+                views: metrics.views[item.id] || 0,
+                likes: metrics.likes[item.id] || 0,
+                shares: metrics.shares[item.id] || 0,
+                connectors: metrics.connectors[item.user_id] || 0
+            },
+            progressMap: progressMap
+        }));
+        
+        // Cache with progress map
+        const cacheData = { data: enrichedData, progressMap: progressMap };
+        window.cacheManager?.set(cacheKey, cacheData, 5 * 60 * 1000);
+        
+        // Render
         section.style.display = 'block';
-        renderContinueWatchingCards(container, sectionData, progressMap);
+        container.innerHTML = '';
+        renderContinueWatchingCards(container, enrichedData, progressMap);
+        
+        document.querySelectorAll('#continue-watching-grid .content-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 50);
+        });
+        
+        console.log('✅ Continue Watching loaded:', enrichedData.length, 'items');
         
     } catch (err) {
         console.error("❌ Continue Watching Section Error:", err);
-        section.style.display = 'none';
+        // Don't hide the section, show error but keep skeletons
+        setTimeout(() => {
+            if (container && container.innerHTML.includes('skeleton')) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Unable to load continue watching</h3>
+                        <button class="see-all-btn" onclick="location.reload()">Retry</button>
+                    </div>
+                `;
+            }
+        }, 3000);
+    }
+}
+
+// Helper function to refresh in background
+async function refreshContinueWatchingInBackground(cacheKey, section, container) {
+    try {
+        if (!window.currentUser) return;
+        
+        const { data: watchProgress } = await supabaseAuth
+            .from('watch_progress')
+            .select('content_id, last_position, updated_at')
+            .eq('user_id', window.currentUser.id)
+            .eq('is_completed', false)
+            .limit(10);
+        
+        if (watchProgress && watchProgress.length > 0) {
+            // Refresh the section
+            await loadContinueWatchingSection();
+        }
+    } catch (err) {
+        console.log('Background refresh failed:', err);
     }
 }
 
@@ -1041,15 +1149,44 @@ function applyAmplificationLogic(items) {
 }
 
 // ============================================
-// SECTION 3: FROM CREATORS YOU CONNECTED WITH
+// SECTION 3: FROM CREATORS YOU CONNECTED WITH - FIXED
 // ============================================
 async function loadFollowingSection() {
     const section = document.getElementById('following-section');
     const container = document.getElementById('following-grid');
     
+    console.log('👥 Loading Following section...');
+    
     if (!section || !container) return;
     
+    const cacheKey = 'feed_following';
+    
+    // Try cached data
+    const cachedData = window.cacheManager?.get(cacheKey);
+    if (cachedData && cachedData.length > 0) {
+        console.log('📦 Following: Using cached data,', cachedData.length, 'items');
+        section.style.display = 'block';
+        container.innerHTML = '';
+        renderContentCards(container, cachedData);
+        document.querySelectorAll('#following-grid .content-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 50);
+        });
+        return;
+    }
+    
+    // Show skeletons
+    container.innerHTML = Array(4).fill().map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-creator"></div>
+            <div class="skeleton-stats"></div>
+        </div>
+    `).join('');
+    
+    // If not logged in, hide section
     if (!window.currentUser) {
+        console.log('ℹ️ No user logged in, hiding following section');
         section.style.display = 'none';
         return;
     }
@@ -1060,46 +1197,72 @@ async function loadFollowingSection() {
             .from('connectors')
             .select('connected_id')
             .eq('connector_id', window.currentUser.id)
-            .eq('connection_type', 'creator');
+            .eq('connection_type', 'creator')
+            .limit(50);
         
-        if (error || !following || following.length === 0) {
+        if (error) {
+            console.warn('Following fetch error:', error);
             section.style.display = 'none';
             return;
         }
         
-        const creatorIds = following.map(f => f.connected_id);
+        if (!following || following.length === 0) {
+            console.log('ℹ️ User follows no creators');
+            section.style.display = 'none';
+            return;
+        }
         
-        // 2️⃣ Fetch content from followed creators - ✅ Explicitly select language
+        const creatorIds = following.map(f => f.connected_id).slice(0, 20);
+        
+        // 2️⃣ Fetch content from followed creators
         const { data: contentList, error: contentError } = await supabaseAuth
             .from('Content')
             .select('id, title, thumbnail_url, duration, genre, language, created_at, views_count, favorites_count, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
             .eq('status', 'published')
             .in('user_id', creatorIds)
             .order('created_at', { ascending: false })
-            .limit(8);
+            .limit(12);
         
-        if (contentError) throw contentError;
+        if (contentError) {
+            console.error('Content fetch error:', contentError);
+            section.style.display = 'none';
+            return;
+        }
         
         if (!contentList || contentList.length === 0) {
+            console.log('ℹ️ No content from followed creators');
             section.style.display = 'none';
             return;
         }
         
         // 3️⃣ Build complete dataset with metrics
-        const sectionData = await buildSectionData(contentList);
+        const contentIds = contentList.map(c => c.id);
+        const metrics = await fetchAllMetrics(contentIds, creatorIds);
         
-        // 4️⃣ Update section title and render
+        const sectionData = contentList.map(item => ({
+            ...item,
+            metrics: {
+                views: metrics.views[item.id] || 0,
+                likes: metrics.likes[item.id] || 0,
+                shares: metrics.shares[item.id] || 0,
+                favorites: item.favorites_count || 0,
+                connectors: metrics.connectors[item.user_id] || 0
+            }
+        }));
+        
+        // 4️⃣ Render
         section.style.display = 'block';
-        const sectionTitle = section.querySelector('.section-title');
-        if (sectionTitle) {
-            sectionTitle.innerHTML = `
-                <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
-                FROM CREATORS YOU CONNECTED WITH
-            `;
-        }
-        
         container.innerHTML = '';
         renderContentCards(container, sectionData);
+        
+        // Cache
+        window.cacheManager?.set(cacheKey, sectionData, 5 * 60 * 1000);
+        
+        document.querySelectorAll('#following-grid .content-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 50);
+        });
+        
+        console.log('✅ Following section loaded:', sectionData.length, 'items');
         
     } catch (err) {
         console.error("❌ Following Section Error:", err);
@@ -1184,37 +1347,96 @@ function renderShortsCards(container, contents) {
 }
 
 // ============================================
-// SECTION 5: COMMUNITY FAVORITES
+// SECTION 5: COMMUNITY FAVORITES - FIXED
 // ============================================
 async function loadCommunityFavoritesSection() {
     const container = document.getElementById('community-favorites-grid');
+    
+    console.log('⭐ Loading Community Favorites...');
+    
     if (!container) return;
     
+    const cacheKey = 'feed_communityFavorites';
+    
+    // Try cached data
+    const cachedData = window.cacheManager?.get(cacheKey);
+    if (cachedData && cachedData.length > 0) {
+        console.log('📦 Community Favorites: Using cached data,', cachedData.length, 'items');
+        container.innerHTML = '';
+        renderContentCards(container, cachedData);
+        document.querySelectorAll('#community-favorites-grid .content-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 50);
+        });
+        return;
+    }
+    
+    // Show skeletons
+    container.innerHTML = Array(4).fill().map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-creator"></div>
+            <div class="skeleton-stats"></div>
+        </div>
+    `).join('');
+    
     try {
-        // 1️⃣ Fetch community favorites (by favorites_count) - ✅ Explicitly select language
+        // Fetch by favorites_count
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('id, title, thumbnail_url, duration, genre, language, created_at, views_count, favorites_count, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
             .eq('status', 'published')
+            .gt('favorites_count', 0)  // Only content with favorites
             .order('favorites_count', { ascending: false })
             .limit(12);
         
-        if (error) throw error;
+        if (error) {
+            console.error('Community favorites fetch error:', error);
+            throw error;
+        }
         
         if (!contentList || contentList.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>No community favorites yet</p></div>';
+            container.innerHTML = '<div class="empty-state">No community favorites yet</div>';
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
-        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        // Get metrics
+        const contentIds = contentList.map(c => c.id);
+        const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
+        const metrics = await fetchAllMetrics(contentIds, creatorIds);
         
-        // 3️⃣ Render
+        const sectionData = contentList.map(item => ({
+            ...item,
+            metrics: {
+                views: metrics.views[item.id] || 0,
+                likes: metrics.likes[item.id] || 0,
+                shares: metrics.shares[item.id] || 0,
+                favorites: item.favorites_count || 0,
+                connectors: metrics.connectors[item.user_id] || 0
+            }
+        }));
+        
         container.innerHTML = '';
         renderContentCards(container, sectionData);
         
+        // Cache
+        window.cacheManager?.set(cacheKey, sectionData, 5 * 60 * 1000);
+        
+        document.querySelectorAll('#community-favorites-grid .content-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 50);
+        });
+        
+        console.log('✅ Community Favorites loaded:', sectionData.length, 'items');
+        
     } catch (err) {
         console.error("❌ Community Favorites Section Error:", err);
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-icon"><i class="fas fa-heart-broken"></i></div>
+                <h3>Unable to load favorites</h3>
+                <button class="see-all-btn" onclick="location.reload()">Retry</button>
+            </div>
+        `;
     }
 }
 
@@ -1625,73 +1847,172 @@ function renderEventsCards(container, events) {
 }
 
 // ============================================
-// CINEMATIC HERO SECTION
+// CINEMATIC HERO SECTION - FIXED
 // ============================================
 async function loadCinematicHero() {
+    console.log('🎬 Loading Cinematic Hero...');
+    
     try {
-        // Get trending content with highest engagement - ✅ Explicitly select language
-        const { data: trendingData, error } = await supabaseAuth
+        // ✅ Try multiple strategies to get featured content
+        let featuredContent = null;
+        
+        // Strategy 1: Get most viewed content in last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const { data: trendingData, error: trendingError } = await supabaseAuth
             .from('Content')
-            .select('id, title, description, file_url, thumbnail_url, duration, genre, language, created_at, views_count, favorites_count, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
+            .select('id, title, description, thumbnail_url, file_url, views_count, favorites_count, shares_count, language, created_at, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
             .eq('status', 'published')
+            .gte('created_at', thirtyDaysAgo.toISOString())
             .order('views_count', { ascending: false })
-            .order('favorites_count', { ascending: false })
             .limit(5);
         
-        if (error) throw error;
+        if (!trendingError && trendingData && trendingData.length > 0) {
+            featuredContent = trendingData[0];
+            console.log('✅ Hero: Using most viewed content');
+        }
         
-        const featuredContent = trendingData?.[0] || getMockHeroContent();
+        // Strategy 2: If no trending, get any published content
+        if (!featuredContent) {
+            const { data: anyContent, error: anyError } = await supabaseAuth
+                .from('Content')
+                .select('id, title, description, thumbnail_url, file_url, views_count, favorites_count, shares_count, language, created_at, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .limit(1);
+            
+            if (!anyError && anyContent && anyContent.length > 0) {
+                featuredContent = anyContent[0];
+                console.log('✅ Hero: Using most recent content');
+            }
+        }
         
-        if (!featuredContent) return;
+        // Strategy 3: Use fallback with real content from database (not mock)
+        if (!featuredContent) {
+            console.warn('⚠️ No content found in database, checking for any content...');
+            
+            // Check if there's ANY content at all
+            const { count, error: countError } = await supabaseAuth
+                .from('Content')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'published');
+            
+            if (countError) {
+                console.error('Count error:', countError);
+            } else if (count === 0) {
+                console.warn('📭 No content in database yet - this is expected for a new site');
+                // Show a friendly placeholder instead of mock data
+                showHeroPlaceholder();
+                return;
+            }
+            
+            // If we have content but the query failed, try a simpler query
+            const { data: simpleContent, error: simpleError } = await supabaseAuth
+                .from('Content')
+                .select('*')
+                .eq('status', 'published')
+                .limit(1);
+            
+            if (!simpleError && simpleContent && simpleContent.length > 0) {
+                // Fetch the full data with join
+                const { data: fullContent } = await supabaseAuth
+                    .from('Content')
+                    .select('id, title, description, thumbnail_url, file_url, views_count, favorites_count, shares_count, language, created_at, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
+                    .eq('id', simpleContent[0].id)
+                    .single();
+                
+                if (fullContent) {
+                    featuredContent = fullContent;
+                    console.log('✅ Hero: Using simple query fallback');
+                }
+            }
+        }
         
-        // Update hero video
+        if (!featuredContent) {
+            console.error('❌ No content available for hero section');
+            showHeroPlaceholder();
+            return;
+        }
+        
+        // Update hero video background
         const heroVideo = document.getElementById('hero-background-video');
         const videoSource = heroVideo?.querySelector('source');
         
         if (heroVideo && videoSource && featuredContent.file_url) {
-            videoSource.src = fixMediaUrl(featuredContent.file_url);
+            const videoUrl = fixMediaUrl(featuredContent.file_url);
+            videoSource.src = videoUrl;
             heroVideo.load();
-            heroVideo.play().catch(() => {
-                console.log('Video autoplay prevented');
-            });
+            heroVideo.play().catch(e => console.log('Video autoplay prevented:', e));
+        } else if (heroVideo && featuredContent.thumbnail_url) {
+            // Fallback: use thumbnail as background image
+            const thumbnailUrl = fixMediaUrl(featuredContent.thumbnail_url);
+            heroVideo.style.backgroundImage = `url(${thumbnailUrl})`;
+            heroVideo.style.backgroundSize = 'cover';
+            heroVideo.style.backgroundPosition = 'center';
         }
         
         // Update creator info
         const creator = featuredContent.user_profiles;
         if (creator) {
-            document.getElementById('hero-creator-name').textContent = creator.full_name || creator.username || 'Featured Creator';
+            const creatorNameElem = document.getElementById('hero-creator-name');
+            if (creatorNameElem) {
+                creatorNameElem.textContent = creator.full_name || creator.username || 'Featured Creator';
+            }
             
             const avatarImg = document.getElementById('hero-creator-avatar-img');
-            if (creator.avatar_url) {
-                avatarImg.src = fixAvatarUrl(creator.avatar_url);
+            const avatarContainer = document.getElementById('hero-creator-avatar');
+            
+            if (creator.avatar_url && avatarImg) {
+                const avatarUrl = fixAvatarUrl(creator.avatar_url);
+                avatarImg.src = avatarUrl;
                 avatarImg.style.display = 'block';
                 avatarImg.onerror = function() {
                     this.style.display = 'none';
                     const initials = getInitials(creator.full_name || creator.username);
-                    document.getElementById('hero-creator-avatar').innerHTML += `<span class="hero-creator-initials">${initials}</span>`;
+                    if (avatarContainer && !avatarContainer.querySelector('.hero-creator-initials')) {
+                        const initialsSpan = document.createElement('span');
+                        initialsSpan.className = 'hero-creator-initials';
+                        initialsSpan.textContent = initials;
+                        avatarContainer.appendChild(initialsSpan);
+                    }
                 };
-            } else {
-                avatarImg.style.display = 'none';
+            } else if (avatarContainer) {
                 const initials = getInitials(creator.full_name || creator.username);
-                document.getElementById('hero-creator-avatar').innerHTML += `<span class="hero-creator-initials">${initials}</span>`;
+                const initialsSpan = document.createElement('span');
+                initialsSpan.className = 'hero-creator-initials';
+                initialsSpan.textContent = initials;
+                avatarContainer.appendChild(initialsSpan);
             }
         }
         
         // Update title and description
-        document.getElementById('hero-title').textContent = featuredContent.title || 'DISCOVER & CONNECT';
-        document.getElementById('hero-subtitle').textContent = featuredContent.description || 'Explore amazing content, connect with creators, and join live streams from across Africa';
+        const heroTitle = document.getElementById('hero-title');
+        const heroSubtitle = document.getElementById('hero-subtitle');
         
-        // Get metrics for hero
-        const metrics = await fetchAllMetrics([featuredContent.id], creator ? [creator.id] : []);
+        if (heroTitle) heroTitle.textContent = featuredContent.title || 'DISCOVER & CONNECT';
+        if (heroSubtitle) heroSubtitle.textContent = featuredContent.description || 'Explore amazing content from across Africa';
         
-        document.getElementById('hero-views').textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 12500);
-        document.getElementById('hero-favorites').textContent = formatNumber(featuredContent.favorites_count || 2300);
-        document.getElementById('hero-connectors').textContent = formatNumber(creator ? (metrics.connectors[creator.id] || 1200) : 1200);
-        document.getElementById('hero-shares').textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 856);
+        // Get metrics
+        const metrics = await fetchAllMetrics(
+            [featuredContent.id], 
+            creator ? [creator.id] : []
+        );
         
-        // Check if creator is verified
-        if (creator && (metrics.connectors[creator.id] || 0) > 1000) {
-            document.getElementById('hero-verified-badge').style.display = 'inline-flex';
+        const viewsElem = document.getElementById('hero-views');
+        const favoritesElem = document.getElementById('hero-favorites');
+        const connectorsElem = document.getElementById('hero-connectors');
+        const sharesElem = document.getElementById('hero-shares');
+        
+        if (viewsElem) viewsElem.textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 0);
+        if (favoritesElem) favoritesElem.textContent = formatNumber(featuredContent.favorites_count || 0);
+        if (connectorsElem && creator) connectorsElem.textContent = formatNumber(metrics.connectors[creator.id] || 0);
+        if (sharesElem) sharesElem.textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 0);
+        
+        // Check if creator is verified (has > 1000 connectors)
+        const verifiedBadge = document.getElementById('hero-verified-badge');
+        if (verifiedBadge && creator && (metrics.connectors[creator.id] || 0) > 1000) {
+            verifiedBadge.style.display = 'inline-flex';
         }
         
         // Store content ID for watch button
@@ -1702,10 +2023,39 @@ async function loadCinematicHero() {
         }
         
         setupHeroButtons();
+        console.log('✅ Hero section loaded with real content:', featuredContent.title);
         
     } catch (error) {
-        console.error('Error loading cinematic hero:', error);
-        loadMockHeroContent();
+        console.error('❌ Error loading cinematic hero:', error);
+        showHeroPlaceholder();
+    }
+}
+
+// ✅ NEW FUNCTION: Show placeholder when no content exists
+function showHeroPlaceholder() {
+    console.log('🎬 Showing hero placeholder');
+    
+    const heroTitle = document.getElementById('hero-title');
+    const heroSubtitle = document.getElementById('hero-subtitle');
+    
+    if (heroTitle) heroTitle.textContent = 'WELCOME TO BANTU STREAM CONNECT';
+    if (heroSubtitle) heroSubtitle.textContent = 'No content yet. Be the first to upload and share your story!';
+    
+    // Show upload CTA
+    const heroActions = document.querySelector('.hero-actions');
+    if (heroActions && !heroActions.querySelector('.hero-upload-btn')) {
+        const uploadBtn = document.createElement('button');
+        uploadBtn.className = 'hero-primary-btn';
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Content';
+        uploadBtn.onclick = () => {
+            if (window.currentUser) {
+                window.location.href = 'creator-upload.html';
+            } else {
+                showToast('Please sign in to upload content', 'warning');
+                window.location.href = 'login.html';
+            }
+        };
+        heroActions.appendChild(uploadBtn);
     }
 }
 
@@ -1824,6 +2174,20 @@ function renderContentCards(container, contents) {
     });
     
     container.appendChild(fragment);
+}
+
+// ============================================
+// FETCH ALL METRICS HELPER
+// ============================================
+async function fetchAllMetrics(contentIds, creatorIds) {
+    const [views, likes, shares, connectors] = await Promise.all([
+        fetchViewCounts(contentIds),
+        fetchLikeCounts(contentIds),
+        fetchShareCounts(contentIds),
+        fetchConnectorCounts(creatorIds)
+    ]);
+    
+    return { views, likes, shares, connectors };
 }
 
 // ============================================
