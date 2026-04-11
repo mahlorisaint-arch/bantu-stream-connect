@@ -440,3 +440,86 @@
 .theme-light .action-btn:hover {
   background: rgba(245, 158, 11, 0.15);
 }
+
+/* ============================================
+   COMMUNITY PULSE BUTTON BAR - ENHANCED
+   ============================================ */
+
+/* Button container */
+.pulse-button-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Base button styles (already reduced to quarter size) */
+.pulse-btn {
+  transition: all 0.2s ease;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+}
+
+/* Post Update button specific */
+.pulse-post-btn i,
+.pulse-discover-btn i {
+  font-size: 11px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .pulse-post-btn,
+  .pulse-discover-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+  
+  .pulse-post-btn i,
+  .pulse-discover-btn i {
+    font-size: 10px;
+  }
+  
+  .pulse-button-container {
+    gap: 6px;
+  }
+}
+
+/* Light theme adjustments */
+.theme-light .pulse-discover-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1a1a1a;
+}
+
+.theme-light .pulse-discover-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Comments list styles */
+.comments-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.comment-item {
+  transition: background 0.2s ease;
+}
+
+.comment-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Active states for action buttons */
+.action-btn.active {
+  color: var(--warm-gold, #F59E0B);
+}
+
+.action-btn.active i {
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.repost-btn.active {
+  color: #10B981;
+}
+
+.repost-btn.active i {
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
