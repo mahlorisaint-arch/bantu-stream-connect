@@ -1,7 +1,7 @@
 /**
  * Community Pulse Feed Logic
  * Connects to Supabase pulse_posts and handles rendering.
- * INTEGRATED: Smart Links now trigger the global audio player
+ * Uses correct table names: pulse_post_reactions, pulse_post_comments, pulse_post_reposts
  */
 const CommunityPulse = {
   feedContainer: document.getElementById('pulse-feed'),
@@ -35,12 +35,24 @@ const CommunityPulse = {
       if (window.supabaseAuth && window.supabaseAuth.getUser) {
         const { data: { user } } = await window.supabaseAuth.getUser();
         if (user) {
-          const { data: profile } = await window.supabaseAuth
+          // First try to get from user_profiles
+          const { data: profile, error } = await window.supabaseAuth
             .from('user_profiles')
             .select('*')
             .eq('id', user.id)
-            .single();
-          this.currentUser = profile || user;
+            .maybeSingle();
+          
+          if (profile) {
+            this.currentUser = profile;
+          } else {
+            // Fall back to auth user
+            this.currentUser = {
+              id: user.id,
+              full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+              username: user.email?.split('@')[0] || 'user',
+              email: user.email
+            };
+          }
           console.log('✅ Community Pulse: User loaded', this.currentUser?.full_name);
         } else {
           console.log('ℹ️ Community Pulse: No user logged in');
@@ -185,7 +197,7 @@ const CommunityPulse = {
         return;
       }
 
-      // Load real counts for each post
+      // Load real counts for each post using correct table names
       await this.loadRealCounts(posts);
       
       // Render with real data
@@ -197,21 +209,21 @@ const CommunityPulse = {
     }
   },
 
-  // ✅ NEW: Load real counts from database
+  // Load real counts from database using correct table names
   async loadRealCounts(posts) {
     for (const post of posts) {
       const postId = post.id;
       
-      // Fetch real reaction counts from reactions table
+      // Fetch real reaction counts from pulse_post_reactions
       try {
-        const { data: reactions, error: reactionError } = await window.supabaseAuth
-          .from('pulse_reactions')
+        const { count: reactions, error: reactionError } = await window.supabaseAuth
+          .from('pulse_post_reactions')
           .select('id', { count: 'exact', head: true })
           .eq('post_id', postId)
-          .eq('type', 'fire');
+          .eq('reaction_type', 'fire');
         
         if (!reactionError) {
-          this.realReactionCounts[postId] = reactions?.length || 0;
+          this.realReactionCounts[postId] = reactions || 0;
         } else {
           this.realReactionCounts[postId] = 0;
         }
@@ -219,30 +231,33 @@ const CommunityPulse = {
         // Check if current user reacted
         if (this.currentUser) {
           const { data: userReaction, error: userReactError } = await window.supabaseAuth
-            .from('pulse_reactions')
+            .from('pulse_post_reactions')
             .select('id')
             .eq('post_id', postId)
             .eq('user_id', this.currentUser.id)
-            .eq('type', 'fire')
+            .eq('reaction_type', 'fire')
             .maybeSingle();
           
           this.userReactions[postId] = !userReactError && userReaction !== null;
+        } else {
+          this.userReactions[postId] = false;
         }
         
       } catch (e) {
+        console.warn(`Could not fetch reactions for post ${postId}:`, e);
         this.realReactionCounts[postId] = 0;
         this.userReactions[postId] = false;
       }
       
-      // Fetch real repost counts
+      // Fetch real repost counts from pulse_post_reposts
       try {
-        const { data: reposts, error: repostError } = await window.supabaseAuth
-          .from('pulse_reposts')
+        const { count: reposts, error: repostError } = await window.supabaseAuth
+          .from('pulse_post_reposts')
           .select('id', { count: 'exact', head: true })
           .eq('post_id', postId);
         
         if (!repostError) {
-          this.realRepostCounts[postId] = reposts?.length || 0;
+          this.realRepostCounts[postId] = reposts || 0;
         } else {
           this.realRepostCounts[postId] = 0;
         }
@@ -250,38 +265,53 @@ const CommunityPulse = {
         // Check if current user reposted
         if (this.currentUser) {
           const { data: userRepost, error: userRepostError } = await window.supabaseAuth
-            .from('pulse_reposts')
+            .from('pulse_post_reposts')
             .select('id')
             .eq('post_id', postId)
             .eq('user_id', this.currentUser.id)
             .maybeSingle();
           
           this.userReposts[postId] = !userRepostError && userRepost !== null;
+        } else {
+          this.userReposts[postId] = false;
         }
         
       } catch (e) {
+        console.warn(`Could not fetch reposts for post ${postId}:`, e);
         this.realRepostCounts[postId] = 0;
         this.userReposts[postId] = false;
       }
       
-      // Fetch real comment counts
+      // Fetch real comment counts from pulse_post_comments
       try {
-        const { data: comments, error: commentError } = await window.supabaseAuth
-          .from('pulse_comments')
+        const { count: comments, error: commentError } = await window.supabaseAuth
+          .from('pulse_post_comments')
           .select('id', { count: 'exact', head: true })
           .eq('post_id', postId);
         
         if (!commentError) {
-          this.realCommentCounts[postId] = comments?.length || 0;
+          this.realCommentCounts[postId] = comments || 0;
         } else {
           this.realCommentCounts[postId] = 0;
         }
         
         // Load actual comments data
         const { data: commentsData, error: commentsDataError } = await window.supabaseAuth
-          .from('pulse_comments')
-          .select('id, content, user_id, created_at, user_profiles!user_id(full_name, username, avatar_url)')
+          .from('pulse_post_comments')
+          .select(`
+            id, 
+            content, 
+            user_id, 
+            created_at,
+            user_profiles!user_id (
+              id,
+              full_name, 
+              username, 
+              avatar_url
+            )
+          `)
           .eq('post_id', postId)
+          .is('parent_comment_id', null)
           .order('created_at', { ascending: false });
         
         if (!commentsDataError && commentsData) {
@@ -291,10 +321,17 @@ const CommunityPulse = {
         }
         
       } catch (e) {
+        console.warn(`Could not fetch comments for post ${postId}:`, e);
         this.realCommentCounts[postId] = 0;
         this.commentsData[postId] = [];
       }
     }
+    
+    console.log('✅ Loaded counts:', {
+      reactions: this.realReactionCounts,
+      reposts: this.realRepostCounts,
+      comments: this.realCommentCounts
+    });
   },
 
   showEmptyState() {
@@ -384,7 +421,7 @@ const CommunityPulse = {
       });
     }
     
-    // ✅ FIX 3: Attach action button handlers with preventDefault to stop page reload
+    // Attach action button handlers with preventDefault to stop page reload
     const fireBtn = card.querySelector('.fire-btn');
     const commentBtn = card.querySelector('.comment-btn');
     const repostBtn = card.querySelector('.repost-btn');
@@ -425,7 +462,7 @@ const CommunityPulse = {
     this.feedContainer.appendChild(card);
   },
 
-  // ✅ FIX 2 & 3: Working reaction handler with real data
+  // Handle reaction using pulse_post_reactions table
   async handleReaction(postId) {
     if (!this.currentUser) {
       this.showToast('Please sign in to react', 'warning');
@@ -443,11 +480,11 @@ const CommunityPulse = {
       if (wasActive) {
         // Remove reaction
         const { error } = await window.supabaseAuth
-          .from('pulse_reactions')
+          .from('pulse_post_reactions')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', this.currentUser.id)
-          .eq('type', 'fire');
+          .eq('reaction_type', 'fire');
         
         if (!error) {
           btn.classList.remove('active');
@@ -456,15 +493,18 @@ const CommunityPulse = {
           this.realReactionCounts[postId] = currentCount;
           this.userReactions[postId] = false;
           this.showToast('Reaction removed', 'info');
+        } else {
+          console.error('Delete reaction error:', error);
+          this.showToast('Failed to remove reaction', 'error');
         }
       } else {
         // Add reaction
         const { error } = await window.supabaseAuth
-          .from('pulse_reactions')
+          .from('pulse_post_reactions')
           .insert({
             post_id: postId,
             user_id: this.currentUser.id,
-            type: 'fire'
+            reaction_type: 'fire'
           });
         
         if (!error) {
@@ -474,6 +514,9 @@ const CommunityPulse = {
           this.realReactionCounts[postId] = currentCount;
           this.userReactions[postId] = true;
           this.showToast('🔥 You reacted with fire!', 'success');
+        } else {
+          console.error('Insert reaction error:', error);
+          this.showToast('Failed to add reaction', 'error');
         }
       }
     } catch (err) {
@@ -482,7 +525,7 @@ const CommunityPulse = {
     }
   },
 
-  // ✅ FIX 2 & 3: Working comment handler with NO page reload
+  // Handle comment using pulse_post_comments table
   async handleComment(postId) {
     console.log('💬 Opening comment modal for post:', postId);
     
@@ -492,14 +535,32 @@ const CommunityPulse = {
     // Fetch fresh comments
     try {
       const { data: freshComments, error } = await window.supabaseAuth
-        .from('pulse_comments')
-        .select('id, content, user_id, created_at, user_profiles!user_id(full_name, username, avatar_url)')
+        .from('pulse_post_comments')
+        .select(`
+          id, 
+          content, 
+          user_id, 
+          created_at,
+          user_profiles!user_id (
+            id,
+            full_name, 
+            username, 
+            avatar_url
+          )
+        `)
         .eq('post_id', postId)
+        .is('parent_comment_id', null)
         .order('created_at', { ascending: false });
       
       if (!error && freshComments) {
         comments = freshComments;
         this.commentsData[postId] = comments;
+        // Update comment count
+        this.realCommentCounts[postId] = comments.length;
+        const commentBtn = document.querySelector(`.comment-btn[data-id="${postId}"] .comment-count`);
+        if (commentBtn) {
+          commentBtn.textContent = comments.length;
+        }
       }
     } catch (e) {
       console.warn('Could not fetch fresh comments:', e);
@@ -571,16 +632,28 @@ const CommunityPulse = {
         return;
       }
       
-      // Save comment to database
+      // Save comment to pulse_post_comments table
       try {
         const { data: newComment, error } = await window.supabaseAuth
-          .from('pulse_comments')
+          .from('pulse_post_comments')
           .insert({
             post_id: postId,
             user_id: this.currentUser.id,
-            content: commentText
+            content: commentText,
+            parent_comment_id: null
           })
-          .select('id, content, created_at, user_profiles!user_id(full_name, username, avatar_url)')
+          .select(`
+            id, 
+            content, 
+            user_id, 
+            created_at,
+            user_profiles!user_id (
+              id,
+              full_name, 
+              username, 
+              avatar_url
+            )
+          `)
           .single();
         
         if (error) throw error;
@@ -596,9 +669,9 @@ const CommunityPulse = {
         this.realCommentCounts[postId] = newCount;
         
         // Update UI count
-        const commentBtn = document.querySelector(`.comment-btn[data-id="${postId}"] .comment-count`);
-        if (commentBtn) {
-          commentBtn.textContent = newCount;
+        const commentBtnElement = document.querySelector(`.comment-btn[data-id="${postId}"] .comment-count`);
+        if (commentBtnElement) {
+          commentBtnElement.textContent = newCount;
         }
         
         this.showToast('Comment posted!', 'success');
@@ -615,7 +688,7 @@ const CommunityPulse = {
     });
   },
 
-  // ✅ FIX 2 & 3: Working repost handler with real data
+  // Handle repost using pulse_post_reposts table
   async handleRepost(postId) {
     if (!this.currentUser) {
       this.showToast('Please sign in to repost', 'warning');
@@ -633,7 +706,7 @@ const CommunityPulse = {
       if (wasActive) {
         // Remove repost
         const { error } = await window.supabaseAuth
-          .from('pulse_reposts')
+          .from('pulse_post_reposts')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', this.currentUser.id);
@@ -645,11 +718,14 @@ const CommunityPulse = {
           this.realRepostCounts[postId] = currentCount;
           this.userReposts[postId] = false;
           this.showToast('Repost removed', 'info');
+        } else {
+          console.error('Delete repost error:', error);
+          this.showToast('Failed to remove repost', 'error');
         }
       } else {
         // Add repost
         const { error } = await window.supabaseAuth
-          .from('pulse_reposts')
+          .from('pulse_post_reposts')
           .insert({
             post_id: postId,
             user_id: this.currentUser.id
@@ -662,6 +738,9 @@ const CommunityPulse = {
           this.realRepostCounts[postId] = currentCount;
           this.userReposts[postId] = true;
           this.showToast('✅ Reposted to your profile!', 'success');
+        } else {
+          console.error('Insert repost error:', error);
+          this.showToast('Failed to add repost', 'error');
         }
       }
     } catch (err) {
