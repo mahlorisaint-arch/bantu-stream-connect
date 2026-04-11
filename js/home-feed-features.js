@@ -87,7 +87,6 @@ function escapeHtml(text) {
 /**
  * Truncate text to specified length
  * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length
  * @returns {string} Truncated text
  */
 function truncateText(text, maxLength) {
@@ -473,6 +472,9 @@ async function initializeHomeFeed() {
         // ✅ 3. Wait for auth to complete (but sections are already loading)
         await authPromise;
         
+        // ✅ ADD THIS LINE - Setup auth state listener for real-time updates
+        setupAuthStateListener();
+        
         // Update app icon
         updateAppIcon();
         
@@ -535,6 +537,60 @@ async function initializeHomeFeed() {
         if (app) app.style.display = 'block';
         showToast('Page loaded, but some content may be delayed', 'warning');
     }
+}
+
+// ============================================
+// AUTH STATE LISTENER - FIX FOR WELCOME MESSAGE
+// ============================================
+// ✅ NEW FUNCTION: Listen for auth state changes
+function setupAuthStateListener() {
+    if (!window.supabaseAuth) return;
+    
+    // Listen for auth changes
+    window.supabaseAuth.auth.onAuthStateChange((event, session) => {
+        console.log('🔐 Auth state changed:', event);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+            window.currentUser = session.user;
+            // Reload user profile
+            Promise.all([
+                loadUserProfile(),
+                loadUserProfiles()
+            ]).then(() => {
+                // Update all UI elements
+                updateWelcomeMessage();
+                updateHeaderProfile();
+                updateSidebarProfile();
+                updateProfileSwitcher();
+                
+                // Reload personalized sections
+                loadForYouSection();
+                loadFollowingSection();
+                loadContinueWatchingSection();
+                
+                showToast(`Welcome back, ${session.user.user_metadata?.full_name || 'User'}!`, 'success');
+            }).catch(console.warn);
+        }
+        
+        if (event === 'SIGNED_OUT') {
+            window.currentUser = null;
+            window.currentProfile = null;
+            
+            // Update all UI elements to guest mode
+            updateWelcomeMessage();
+            updateHeaderProfile();
+            updateSidebarProfile();
+            updateProfileSwitcher();
+            
+            // Hide user-specific sections
+            const followingSection = document.getElementById('following-section');
+            const continueSection = document.getElementById('continue-watching-section');
+            if (followingSection) followingSection.style.display = 'none';
+            if (continueSection) continueSection.style.display = 'none';
+            
+            showToast('Signed out successfully', 'info');
+        }
+    });
 }
 
 // ============================================
@@ -1847,138 +1903,231 @@ function renderEventsCards(container, events) {
 }
 
 // ============================================
-// CINEMATIC HERO SECTION - FIXED
+// CINEMATIC HERO SECTION - WITH ROTATION LOGIC
 // ============================================
+
+// ✅ HERO ROTATION STATE
+let currentHeroContent = null;
+let heroRotationInterval = null;
+const HERO_ROTATION_HOURS = 4; // Change every 4 hours
+const HERO_ROTATION_MS = HERO_ROTATION_HOURS * 60 * 60 * 1000;
+
 async function loadCinematicHero() {
-    console.log('🎬 Loading Cinematic Hero...');
+    console.log('🎬 Loading Cinematic Hero with rotation...');
     
     try {
-        // ✅ Try multiple strategies to get featured content
-        let featuredContent = null;
-        
-        // Strategy 1: Get most viewed content in last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const { data: trendingData, error: trendingError } = await supabaseAuth
+        // Get all eligible content for hero rotation
+        const { data: contentList, error } = await supabaseAuth
             .from('Content')
             .select('id, title, description, thumbnail_url, file_url, views_count, favorites_count, shares_count, language, created_at, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
             .eq('status', 'published')
-            .gte('created_at', thirtyDaysAgo.toISOString())
+            .not('file_url', 'is', null)  // Must have video file
             .order('views_count', { ascending: false })
-            .limit(5);
+            .limit(20);  // Get top 20 for rotation
         
-        if (!trendingError && trendingData && trendingData.length > 0) {
-            featuredContent = trendingData[0];
-            console.log('✅ Hero: Using most viewed content');
-        }
-        
-        // Strategy 2: If no trending, get any published content
-        if (!featuredContent) {
-            const { data: anyContent, error: anyError } = await supabaseAuth
-                .from('Content')
-                .select('id, title, description, thumbnail_url, file_url, views_count, favorites_count, shares_count, language, created_at, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .limit(1);
-            
-            if (!anyError && anyContent && anyContent.length > 0) {
-                featuredContent = anyContent[0];
-                console.log('✅ Hero: Using most recent content');
-            }
-        }
-        
-        // Strategy 3: Use fallback with real content from database (not mock)
-        if (!featuredContent) {
-            console.warn('⚠️ No content found in database, checking for any content...');
-            
-            // Check if there's ANY content at all
-            const { count, error: countError } = await supabaseAuth
-                .from('Content')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'published');
-            
-            if (countError) {
-                console.error('Count error:', countError);
-            } else if (count === 0) {
-                console.warn('📭 No content in database yet - this is expected for a new site');
-                // Show a friendly placeholder instead of mock data
-                showHeroPlaceholder();
-                return;
-            }
-            
-            // If we have content but the query failed, try a simpler query
-            const { data: simpleContent, error: simpleError } = await supabaseAuth
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .limit(1);
-            
-            if (!simpleError && simpleContent && simpleContent.length > 0) {
-                // Fetch the full data with join
-                const { data: fullContent } = await supabaseAuth
-                    .from('Content')
-                    .select('id, title, description, thumbnail_url, file_url, views_count, favorites_count, shares_count, language, created_at, user_id, user_profiles!user_id(id, full_name, username, avatar_url)')
-                    .eq('id', simpleContent[0].id)
-                    .single();
-                
-                if (fullContent) {
-                    featuredContent = fullContent;
-                    console.log('✅ Hero: Using simple query fallback');
-                }
-            }
-        }
-        
-        if (!featuredContent) {
-            console.error('❌ No content available for hero section');
+        if (error) {
+            console.error('Hero content fetch error:', error);
             showHeroPlaceholder();
             return;
         }
         
-        // Update hero video background
-        const heroVideo = document.getElementById('hero-background-video');
-        const videoSource = heroVideo?.querySelector('source');
-        
-        if (heroVideo && videoSource && featuredContent.file_url) {
-            const videoUrl = fixMediaUrl(featuredContent.file_url);
-            videoSource.src = videoUrl;
-            heroVideo.load();
-            heroVideo.play().catch(e => console.log('Video autoplay prevented:', e));
-        } else if (heroVideo && featuredContent.thumbnail_url) {
-            // Fallback: use thumbnail as background image
-            const thumbnailUrl = fixMediaUrl(featuredContent.thumbnail_url);
-            heroVideo.style.backgroundImage = `url(${thumbnailUrl})`;
-            heroVideo.style.backgroundSize = 'cover';
-            heroVideo.style.backgroundPosition = 'center';
+        if (!contentList || contentList.length === 0) {
+            console.warn('No video content available for hero');
+            showHeroPlaceholder();
+            return;
         }
         
-        // Update creator info
-        const creator = featuredContent.user_profiles;
-        if (creator) {
-            const creatorNameElem = document.getElementById('hero-creator-name');
-            if (creatorNameElem) {
-                creatorNameElem.textContent = creator.full_name || creator.username || 'Featured Creator';
+        // Store all content for rotation
+        window.heroContentList = contentList;
+        
+        // Get last featured content from localStorage
+        const lastFeaturedId = localStorage.getItem('hero_last_content_id');
+        const lastFeaturedTime = localStorage.getItem('hero_last_update_time');
+        const now = Date.now();
+        
+        let selectedContent = null;
+        
+        // Check if we need to rotate
+        if (lastFeaturedId && lastFeaturedTime && (now - parseInt(lastFeaturedTime)) < HERO_ROTATION_MS) {
+            // Use the same content if within rotation window
+            selectedContent = contentList.find(c => c.id.toString() === lastFeaturedId);
+            console.log('🎬 Using existing featured content (within rotation window)');
+        }
+        
+        // If no valid saved content, pick a new one
+        if (!selectedContent) {
+            // Try to avoid showing the same content twice in a row
+            const availableContent = contentList.filter(c => c.id.toString() !== lastFeaturedId);
+            const randomIndex = Math.floor(Math.random() * (availableContent.length || contentList.length));
+            selectedContent = (availableContent.length ? availableContent[randomIndex] : contentList[randomIndex]);
+            
+            // Save to localStorage
+            localStorage.setItem('hero_last_content_id', selectedContent.id.toString());
+            localStorage.setItem('hero_last_update_time', now.toString());
+            
+            console.log('🎬 Rotated to new featured content:', selectedContent.title);
+        }
+        
+        // Set up rotation timer for next change
+        if (heroRotationInterval) clearInterval(heroRotationInterval);
+        heroRotationInterval = setInterval(() => {
+            console.log('🔄 Hero rotation interval triggered');
+            rotateHeroContent();
+        }, HERO_ROTATION_MS);
+        
+        // Render the selected content
+        await renderHeroContent(selectedContent);
+        
+    } catch (error) {
+        console.error('❌ Error loading cinematic hero:', error);
+        showHeroPlaceholder();
+    }
+}
+
+// ✅ NEW FUNCTION: Rotate hero content
+async function rotateHeroContent() {
+    console.log('🔄 Rotating hero content...');
+    
+    if (!window.heroContentList || window.heroContentList.length === 0) {
+        await loadCinematicHero();
+        return;
+    }
+    
+    const lastFeaturedId = localStorage.getItem('hero_last_content_id');
+    
+    // Pick a different content
+    let availableContent = window.heroContentList.filter(c => c.id.toString() !== lastFeaturedId);
+    if (availableContent.length === 0) {
+        availableContent = window.heroContentList;
+    }
+    
+    const randomIndex = Math.floor(Math.random() * availableContent.length);
+    const newContent = availableContent[randomIndex];
+    
+    // Update localStorage
+    localStorage.setItem('hero_last_content_id', newContent.id.toString());
+    localStorage.setItem('hero_last_update_time', Date.now().toString());
+    
+    // Animate out and in
+    const heroSection = document.querySelector('.cinematic-hero');
+    if (heroSection) {
+        heroSection.style.opacity = '0';
+        heroSection.style.transition = 'opacity 0.5s ease';
+        
+        setTimeout(async () => {
+            await renderHeroContent(newContent);
+            heroSection.style.opacity = '1';
+        }, 500);
+    } else {
+        await renderHeroContent(newContent);
+    }
+    
+    console.log('🔄 Hero rotated to:', newContent.title);
+}
+
+// ✅ NEW FUNCTION: Render hero content (separated for rotation)
+async function renderHeroContent(content) {
+    if (!content) {
+        console.error('No content to render in hero');
+        return;
+    }
+    
+    console.log('🎬 Rendering hero content:', content.title);
+    
+    // 1. Handle Background Video
+    const heroVideo = document.getElementById('hero-background-video');
+    const videoSource = heroVideo?.querySelector('source');
+    
+    if (heroVideo && videoSource && content.file_url) {
+        const videoUrl = fixMediaUrl(content.file_url);
+        console.log('🎬 Loading video:', videoUrl);
+        
+        // Reset video
+        heroVideo.pause();
+        videoSource.src = videoUrl;
+        heroVideo.load();
+        
+        // Attempt to play with sound muted (autoplay policy)
+        const playPromise = heroVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('✅ Hero video playing');
+                // Try to unmute after user interaction
+                const audioControl = document.getElementById('hero-audio-control');
+                if (audioControl) {
+                    audioControl.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                    audioControl.title = 'Unmute';
+                }
+            }).catch(error => {
+                console.log('Video autoplay prevented:', error);
+                // Show play button overlay
+                showVideoPlayButton();
+            });
+        }
+        
+        // Handle video errors
+        heroVideo.onerror = () => {
+            console.error('Video failed to load:', videoUrl);
+            // Fallback to thumbnail
+            if (content.thumbnail_url) {
+                const thumbnailUrl = fixMediaUrl(content.thumbnail_url);
+                heroVideo.style.backgroundImage = `url(${thumbnailUrl})`;
+                heroVideo.style.backgroundSize = 'cover';
+                heroVideo.style.backgroundPosition = 'center';
+                heroVideo.style.backgroundColor = '#000';
             }
+        };
+        
+        // Video loaded successfully
+        heroVideo.oncanplay = () => {
+            console.log('✅ Hero video can play');
+            heroVideo.style.opacity = '1';
+        };
+    } else if (heroVideo && content.thumbnail_url) {
+        // Fallback to thumbnail as background
+        const thumbnailUrl = fixMediaUrl(content.thumbnail_url);
+        heroVideo.style.backgroundImage = `url(${thumbnailUrl})`;
+        heroVideo.style.backgroundSize = 'cover';
+        heroVideo.style.backgroundPosition = 'center';
+        console.log('🎬 Using thumbnail as background');
+    }
+    
+    // 2. Update Creator Info
+    const creator = content.user_profiles;
+    const creatorNameElem = document.getElementById('hero-creator-name');
+    const creatorBadge = document.getElementById('hero-creator-badge');
+    const avatarContainer = document.getElementById('hero-creator-avatar');
+    const avatarImg = document.getElementById('hero-creator-avatar-img');
+    
+    if (creator && creatorNameElem) {
+        const displayName = creator.full_name || creator.username || 'Featured Creator';
+        creatorNameElem.textContent = displayName;
+        
+        // Handle avatar
+        if (avatarContainer) {
+            // Clear existing content
+            avatarContainer.innerHTML = '';
             
-            const avatarImg = document.getElementById('hero-creator-avatar-img');
-            const avatarContainer = document.getElementById('hero-creator-avatar');
-            
-            if (creator.avatar_url && avatarImg) {
+            if (creator.avatar_url) {
                 const avatarUrl = fixAvatarUrl(creator.avatar_url);
-                avatarImg.src = avatarUrl;
-                avatarImg.style.display = 'block';
-                avatarImg.onerror = function() {
-                    this.style.display = 'none';
-                    const initials = getInitials(creator.full_name || creator.username);
-                    if (avatarContainer && !avatarContainer.querySelector('.hero-creator-initials')) {
-                        const initialsSpan = document.createElement('span');
-                        initialsSpan.className = 'hero-creator-initials';
-                        initialsSpan.textContent = initials;
-                        avatarContainer.appendChild(initialsSpan);
-                    }
+                const img = document.createElement('img');
+                img.src = avatarUrl;
+                img.alt = displayName;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.onerror = () => {
+                    // Fallback to initials
+                    avatarContainer.innerHTML = '';
+                    const initials = getInitials(displayName);
+                    const initialsSpan = document.createElement('span');
+                    initialsSpan.className = 'hero-creator-initials';
+                    initialsSpan.textContent = initials;
+                    avatarContainer.appendChild(initialsSpan);
                 };
-            } else if (avatarContainer) {
-                const initials = getInitials(creator.full_name || creator.username);
+                avatarContainer.appendChild(img);
+            } else {
+                const initials = getInitials(displayName);
                 const initialsSpan = document.createElement('span');
                 initialsSpan.className = 'hero-creator-initials';
                 initialsSpan.textContent = initials;
@@ -1986,49 +2135,155 @@ async function loadCinematicHero() {
             }
         }
         
-        // Update title and description
-        const heroTitle = document.getElementById('hero-title');
-        const heroSubtitle = document.getElementById('hero-subtitle');
-        
-        if (heroTitle) heroTitle.textContent = featuredContent.title || 'DISCOVER & CONNECT';
-        if (heroSubtitle) heroSubtitle.textContent = featuredContent.description || 'Explore amazing content from across Africa';
-        
-        // Get metrics
-        const metrics = await fetchAllMetrics(
-            [featuredContent.id], 
-            creator ? [creator.id] : []
-        );
-        
-        const viewsElem = document.getElementById('hero-views');
-        const favoritesElem = document.getElementById('hero-favorites');
-        const connectorsElem = document.getElementById('hero-connectors');
-        const sharesElem = document.getElementById('hero-shares');
-        
-        if (viewsElem) viewsElem.textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 0);
-        if (favoritesElem) favoritesElem.textContent = formatNumber(featuredContent.favorites_count || 0);
-        if (connectorsElem && creator) connectorsElem.textContent = formatNumber(metrics.connectors[creator.id] || 0);
-        if (sharesElem) sharesElem.textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 0);
-        
-        // Check if creator is verified (has > 1000 connectors)
-        const verifiedBadge = document.getElementById('hero-verified-badge');
-        if (verifiedBadge && creator && (metrics.connectors[creator.id] || 0) > 1000) {
-            verifiedBadge.style.display = 'inline-flex';
+        // Show trending badge
+        const trendingBadge = document.getElementById('hero-trending-text');
+        if (trendingBadge) {
+            trendingBadge.textContent = 'Trending ↑ 24h';
         }
-        
-        // Store content ID for watch button
-        const heroWatchBtn = document.getElementById('hero-watch-btn');
-        if (heroWatchBtn) {
-            heroWatchBtn.dataset.contentId = featuredContent.id;
-            heroWatchBtn.dataset.creatorId = creator?.id;
-        }
-        
-        setupHeroButtons();
-        console.log('✅ Hero section loaded with real content:', featuredContent.title);
-        
-    } catch (error) {
-        console.error('❌ Error loading cinematic hero:', error);
-        showHeroPlaceholder();
     }
+    
+    // 3. Update Title and Description
+    const heroTitle = document.getElementById('hero-title');
+    const heroSubtitle = document.getElementById('hero-subtitle');
+    
+    if (heroTitle) {
+        heroTitle.textContent = content.title || 'DISCOVER & CONNECT';
+        heroTitle.style.opacity = '0';
+        heroTitle.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            heroTitle.style.opacity = '1';
+            heroTitle.style.transform = 'translateY(0)';
+            heroTitle.style.transition = 'all 0.5s ease';
+        }, 100);
+    }
+    
+    if (heroSubtitle) {
+        heroSubtitle.textContent = content.description || 'Explore amazing content from across Africa';
+        heroSubtitle.style.opacity = '0';
+        heroSubtitle.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            heroSubtitle.style.opacity = '1';
+            heroSubtitle.style.transform = 'translateY(0)';
+            heroSubtitle.style.transition = 'all 0.5s ease 0.1s';
+        }, 150);
+    }
+    
+    // 4. Update Metrics
+    const metrics = await fetchAllMetrics([content.id], creator ? [creator.id] : []);
+    
+    const viewsElem = document.getElementById('hero-views');
+    const favoritesElem = document.getElementById('hero-favorites');
+    const connectorsElem = document.getElementById('hero-connectors');
+    const sharesElem = document.getElementById('hero-shares');
+    
+    if (viewsElem) viewsElem.textContent = formatNumber(metrics.views[content.id] || content.views_count || 0);
+    if (favoritesElem) favoritesElem.textContent = formatNumber(content.favorites_count || 0);
+    if (connectorsElem && creator) connectorsElem.textContent = formatNumber(metrics.connectors[creator.id] || 0);
+    if (sharesElem) sharesElem.textContent = formatNumber(metrics.shares[content.id] || content.shares_count || 0);
+    
+    // 5. Update Verified Badge
+    const verifiedBadge = document.getElementById('hero-verified-badge');
+    if (verifiedBadge && creator) {
+        const connectorCount = metrics.connectors[creator.id] || 0;
+        verifiedBadge.style.display = connectorCount > 1000 ? 'inline-flex' : 'none';
+    }
+    
+    // 6. Store current content ID for watch button
+    const heroWatchBtn = document.getElementById('hero-watch-btn');
+    if (heroWatchBtn) {
+        heroWatchBtn.dataset.contentId = content.id;
+        heroWatchBtn.dataset.creatorId = creator?.id;
+    }
+    
+    // 7. Update audio control
+    setupHeroAudioControl(heroVideo);
+    
+    // 8. Setup buttons
+    setupHeroButtons();
+    
+    console.log('✅ Hero content rendered successfully');
+}
+
+// ✅ NEW FUNCTION: Show video play button overlay
+function showVideoPlayButton() {
+    const heroSection = document.querySelector('.cinematic-hero');
+    if (!heroSection) return;
+    
+    // Check if play button already exists
+    if (heroSection.querySelector('.hero-video-play-btn')) return;
+    
+    const playBtn = document.createElement('button');
+    playBtn.className = 'hero-video-play-btn';
+    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+    playBtn.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(245, 158, 11, 0.9);
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    `;
+    
+    playBtn.onclick = () => {
+        const heroVideo = document.getElementById('hero-background-video');
+        if (heroVideo) {
+            heroVideo.play();
+            playBtn.remove();
+        }
+    };
+    
+    heroSection.appendChild(playBtn);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (playBtn.parentNode) playBtn.remove();
+    }, 5000);
+}
+
+// ✅ NEW FUNCTION: Setup hero audio control
+function setupHeroAudioControl(heroVideo) {
+    const audioControl = document.getElementById('hero-audio-control');
+    if (!audioControl || !heroVideo) return;
+    
+    // Remove existing listener by cloning
+    const newControl = audioControl.cloneNode(true);
+    audioControl.parentNode.replaceChild(newControl, audioControl);
+    
+    let isMuted = true;
+    heroVideo.muted = true;
+    newControl.innerHTML = '<i class="fas fa-volume-mute"></i>';
+    
+    newControl.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isMuted = !isMuted;
+        heroVideo.muted = isMuted;
+        
+        if (isMuted) {
+            newControl.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            newControl.title = 'Unmute';
+        } else {
+            newControl.innerHTML = '<i class="fas fa-volume-up"></i>';
+            newControl.title = 'Mute';
+            
+            // Try to play if paused
+            if (heroVideo.paused) {
+                heroVideo.play().catch(console.log);
+            }
+        }
+    });
 }
 
 // ✅ NEW FUNCTION: Show placeholder when no content exists
@@ -2683,13 +2938,15 @@ async function updateHeaderProfile() {
 }
 
 // ============================================
-// UPDATED SIDEBAR PROFILE FUNCTION (FIXED)
+// UPDATED SIDEBAR PROFILE FUNCTION (FIXED - SPLIT AVATAR)
 // ============================================
 async function updateSidebarProfile() {
     const avatar = document.getElementById('sidebar-profile-avatar');
     const name = document.getElementById('sidebar-profile-name');
     const email = document.getElementById('sidebar-profile-email');
     const profileSection = document.getElementById('sidebar-profile');
+    
+    console.log('👤 Updating sidebar profile, logged in:', !!window.currentUser);
     
     if (!avatar || !name || !email) {
         console.warn('⚠️ Sidebar profile elements not found');
@@ -2698,6 +2955,11 @@ async function updateSidebarProfile() {
 
     // Clear existing avatar content
     avatar.innerHTML = '';
+    
+    // Reset any inline styles that might cause issues
+    avatar.style.display = 'flex';
+    avatar.style.alignItems = 'center';
+    avatar.style.justifyContent = 'center';
 
     if (window.currentUser) {
         console.log('👤 Updating sidebar profile for:', window.currentUser.email);
@@ -2711,63 +2973,110 @@ async function updateSidebarProfile() {
             
             if (error) {
                 console.warn('⚠️ Sidebar profile fetch error:', error.message);
-                renderSidebarFallback(avatar, name, email, window.currentUser);
+                renderSidebarInitials(avatar, { full_name: window.currentUser.user_metadata?.full_name || 'User' });
+                name.textContent = window.currentUser.user_metadata?.full_name || window.currentUser.email?.split('@')[0] || 'User';
+                email.textContent = window.currentUser.email || 'Signed in';
                 return;
             }
 
             if (profile) {
                 // Update name and email
-                name.textContent = profile.full_name || profile.username || 'User';
-                email.textContent = window.currentUser.email;
+                const displayName = profile.full_name || profile.username || 'User';
+                name.textContent = displayName;
+                email.textContent = window.currentUser.email || 'Signed in';
                 
                 // Handle avatar
                 if (profile.avatar_url) {
                     const avatarUrl = fixAvatarUrl(profile.avatar_url);
+                    console.log('🖼️ Sidebar avatar URL:', avatarUrl);
                     
-                    // Use image with error handling
+                    // Create image with proper styling
                     const img = document.createElement('img');
                     img.src = avatarUrl;
-                    img.alt = profile.full_name || 'Profile';
-                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+                    img.alt = displayName;
+                    img.style.cssText = `
+                        width: 100% !important;
+                        height: 100% !important;
+                        min-width: 100% !important;
+                        min-height: 100% !important;
+                        object-fit: cover !important;
+                        object-position: center center !important;
+                        border-radius: 50% !important;
+                        display: block !important;
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                    `;
                     
-                    img.onerror = function() {
-                        console.warn('⚠️ Sidebar avatar failed to load');
+                    // Clear and set up container for absolute positioning
+                    avatar.style.position = 'relative';
+                    avatar.innerHTML = '';
+                    avatar.appendChild(img);
+                    
+                    // Handle image load error
+                    img.onerror = () => {
+                        console.warn('⚠️ Sidebar avatar failed to load:', avatarUrl);
+                        avatar.innerHTML = '';
                         renderSidebarInitials(avatar, profile);
                     };
                     
-                    avatar.appendChild(img);
+                    img.onload = () => {
+                        console.log('✅ Sidebar avatar loaded successfully');
+                    };
                 } else {
                     renderSidebarInitials(avatar, profile);
                 }
                 
                 // Make profile section clickable
                 if (profileSection) {
-                    profileSection.onclick = function(e) {
+                    profileSection.onclick = (e) => {
                         e.preventDefault();
-                        document.getElementById('sidebar-close')?.click();
+                        const sidebarClose = document.getElementById('sidebar-close');
+                        if (sidebarClose) sidebarClose.click();
                         window.location.href = 'manage-profiles.html';
                     };
                 }
                 
             } else {
-                renderSidebarFallback(avatar, name, email, window.currentUser);
+                renderSidebarInitials(avatar, { full_name: window.currentUser.user_metadata?.full_name || 'User' });
+                name.textContent = window.currentUser.user_metadata?.full_name || window.currentUser.email?.split('@')[0] || 'User';
+                email.textContent = window.currentUser.email || 'Signed in';
             }
             
         } catch (err) {
             console.error('❌ Sidebar profile error:', err);
-            renderSidebarFallback(avatar, name, email, window.currentUser);
+            renderSidebarInitials(avatar, { full_name: 'User' });
+            name.textContent = 'User';
+            email.textContent = window.currentUser.email || 'Signed in';
         }
         
     } else {
         // Guest state
+        console.log('👤 Setting sidebar to guest mode');
         name.textContent = 'Guest';
         email.textContent = 'Sign in to continue';
-        avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
+        
+        // Create a nice guest icon
+        const guestIcon = document.createElement('i');
+        guestIcon.className = 'fas fa-user';
+        guestIcon.style.cssText = `
+            font-size: calc(1.3rem * var(--ui-scale));
+            color: var(--soft-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        `;
+        avatar.appendChild(guestIcon);
         
         if (profileSection) {
-            profileSection.onclick = function(e) {
+            profileSection.onclick = (e) => {
                 e.preventDefault();
-                document.getElementById('sidebar-close')?.click();
+                const sidebarClose = document.getElementById('sidebar-close');
+                if (sidebarClose) sidebarClose.click();
                 window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
             };
         }
@@ -4516,37 +4825,66 @@ function closeAllModals() {
 }
 
 // ============================================
-// WELCOME MESSAGE
+// WELCOME MESSAGE - FIXED VERSION
 // ============================================
 function updateWelcomeMessage() {
     const userNameSpan = document.getElementById('user-name');
     const welcomeSubtitle = document.getElementById('welcome-subtitle');
     const welcomeMessage = document.getElementById('welcome-message');
     
-    if (window.currentUser && window.currentProfile) {
-        const name = window.currentProfile.name || 
-                    window.currentUser.user_metadata?.full_name || 
-                    window.currentUser.email?.split('@')[0] || 
-                    'User';
-        userNameSpan.textContent = name;
+    console.log('👋 Updating welcome message, logged in:', !!window.currentUser);
+    
+    // Check if we have a current user AND profile
+    if (window.currentUser) {
+        // Try to get name from multiple sources
+        let displayName = 'User';
         
+        if (window.currentProfile) {
+            displayName = window.currentProfile.full_name || 
+                         window.currentProfile.username || 
+                         window.currentProfile.name || 'User';
+        } else if (window.currentUser.user_metadata) {
+            displayName = window.currentUser.user_metadata.full_name || 
+                         window.currentUser.user_metadata.name || 'User';
+        } else if (window.currentUser.email) {
+            displayName = window.currentUser.email.split('@')[0];
+        }
+        
+        // Capitalize first letter
+        displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        
+        if (userNameSpan) userNameSpan.textContent = displayName;
+        
+        // Get time-based greeting
         const hour = new Date().getHours();
-        let greeting = 'Good ';
-        if (hour < 12) greeting += 'morning';
-        else if (hour < 18) greeting += 'afternoon';
-        else greeting += 'evening';
+        let greeting = '';
+        if (hour < 12) greeting = 'Good morning';
+        else if (hour < 18) greeting = 'Good afternoon';
+        else greeting = 'Good evening';
         
-        welcomeMessage.innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
+        if (welcomeMessage) {
+            welcomeMessage.innerHTML = `${greeting}, <span id="user-name">${displayName}</span>! 👋`;
+        }
         
         if (welcomeSubtitle) {
             welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
         }
+        
+        console.log('✅ Welcome message updated for user:', displayName);
+        
     } else {
-        userNameSpan.textContent = 'Guest';
-        welcomeMessage.innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
+        // Guest user
+        if (userNameSpan) userNameSpan.textContent = 'Guest';
+        
+        if (welcomeMessage) {
+            welcomeMessage.innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
+        }
+        
         if (welcomeSubtitle) {
             welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
         }
+        
+        console.log('✅ Welcome message updated for guest');
     }
 }
 
