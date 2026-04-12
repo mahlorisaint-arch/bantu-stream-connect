@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Swiper JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -996,85 +998,31 @@
         }
         .empty-icon { font-size: 48px; margin-bottom: 20px; color: var(--warm-gold); opacity: 0.5; }
 
-        /* ===== PLAYLIST BUILDER STYLES ===== */
-        #playlist-builder-modal .modal-content {
-            max-width: 900px !important; width: 95% !important; padding: 0 !important;
-            overflow: hidden !important; border-radius: 20px !important;
-            max-height: 90vh !important; display: flex !important; flex-direction: column !important;
+        /* ===== PLAYLIST BUILDER STYLES (NEW) ===== */
+        .theme-selector {
+            position: fixed; top: 80px; right: 20px; background: var(--card-bg);
+            border: 1px solid var(--card-border); border-radius: 12px; padding: 8px;
+            z-index: 1000; display: none; flex-direction: column; gap: 6px;
+            backdrop-filter: blur(15px); box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
-        #playlist-builder-modal .modal-body {
-            display: grid; grid-template-columns: 300px 1fr;
-            flex: 1; overflow: hidden; background: var(--deep-navy);
-        }
-        #playlist-builder-modal .modal-sidebar {
-            padding: 20px; border-right: 1px solid var(--card-border);
-            background: var(--card-bg); overflow-y: auto; max-height: 70vh;
-        }
-        #playlist-builder-modal .modal-main {
-            display: flex; flex-direction: column;
-            background: var(--deep-navy); overflow: hidden;
-        }
-        #playlist-builder-modal .modal-tabs {
-            display: flex; border-bottom: 1px solid var(--card-border);
-            background: var(--card-bg); flex-shrink: 0;
-        }
-        #playlist-builder-modal .modal-content-area {
-            flex: 1; overflow-y: auto; padding: 15px; max-height: 60vh;
-        }
-        #playlist-builder-modal .modal-footer {
-            display: flex; gap: 10px; padding: 20px;
-            background: var(--card-bg); border-top: 1px solid var(--card-border);
-            flex-shrink: 0; position: sticky; bottom: 0;
-        }
-        #playlist-builder-modal .form-group { margin-bottom: 20px; }
-        #playlist-builder-modal .form-input, #playlist-builder-modal .form-textarea {
-            width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--card-border);
-            background: rgba(0, 0, 0, 0.3); color: var(--soft-white); font-size: 14px;
-        }
-        #playlist-builder-modal .form-textarea { min-height: 80px; resize: vertical; }
-        .playlist-item-card {
-            display: flex; gap: 12px; padding: 12px;
-            background: rgba(255, 255, 255, 0.05); border-radius: 12px;
-            border: 1px solid var(--card-border); cursor: grab;
-            transition: all 0.2s ease; margin-bottom: 10px;
-        }
-        .playlist-item-card:active { cursor: grabbing; }
-        .playlist-item-card.drag-over {
-            border-color: var(--warm-gold); background: rgba(245, 158, 11, 0.1);
-            transform: scale(1.02);
-        }
-        .playlist-item-card .item-position {
-            width: 24px; display: flex; align-items: center;
-            justify-content: center; color: var(--slate-grey);
-            font-weight: 600; font-size: 14px;
-        }
-        .library-item-card {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 12px; overflow: hidden; cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .library-item-card:hover {
-            border-color: var(--warm-gold); transform: translateY(-3px);
-        }
-        .library-filter {
-            padding: 6px 12px; border-radius: 20px;
-            background: transparent; border: 1px solid var(--card-border);
-            color: var(--slate-grey); font-size: 12px;
-            cursor: pointer; transition: all 0.2s ease;
-            margin: 0 5px 10px 0; display: inline-block;
-        }
-        .library-filter.active, .library-filter:hover {
-            background: var(--warm-gold); color: var(--deep-black);
-            border-color: var(--warm-gold);
-        }
-        @media (max-width: 768px) {
-            #playlist-builder-modal .modal-body { grid-template-columns: 1fr; }
-            #playlist-builder-modal .modal-sidebar {
-                max-height: 50vh; border-right: none;
-                border-bottom: 1px solid var(--card-border);
-            }
-            #playlist-builder-modal .modal-content-area { max-height: 50vh; }
-        }
+        .theme-selector.active { display: flex; animation: fadeIn 0.2s ease; }
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .analytics-card { background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 12px; padding: 15px; text-align: center; }
+        .analytics-value { font-size: 24px; font-weight: 700; color: var(--warm-gold); margin: 5px 0; }
+        .analytics-trend { font-size: 12px; color: var(--success-color); }
+        .charts-container { background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 12px; padding: 15px; }
+        .pl-item.dragging { opacity: 0.4; } .pl-item.drag-over { border-color: var(--warm-gold); background: rgba(245,158,11,0.1); }
+        .pl-lib-card:hover { transform: translateY(-2px); border-color: var(--warm-gold); transition: 0.2s; }
+        @media (max-width: 768px) { .pl-body { grid-template-columns: 1fr !important; height: auto !important; } .pl-sidebar { border-right: none !important; border-bottom: 1px solid var(--card-border) !important; max-height: 40vh !important; } .pl-main { height: 50vh !important; } }
+        #playlist-builder-modal .modal-content { max-width: 950px; width: 95%; padding: 0; overflow: hidden; border-radius: 20px; max-height: 90vh; display: flex; flex-direction: column; }
+        .pl-body { display: grid; grid-template-columns: 300px 1fr; gap: 0; background: var(--deep-navy); height: 60vh; }
+        .pl-sidebar { padding: 16px; border-right: 1px solid var(--card-border); background: var(--card-bg); overflow-y: auto; }
+        .pl-main { display: flex; flex-direction: column; overflow: hidden; }
+        .pl-tabs { display: flex; border-bottom: 1px solid var(--card-border); background: var(--card-bg); }
+        .pl-tab { flex: 1; padding: 12px; background: none; border: none; color: var(--slate-grey); cursor: pointer; transition: all 0.2s; }
+        .pl-tab.active { color: var(--soft-white); border-bottom: 2px solid var(--warm-gold); }
+        .pl-item { display: flex; gap: 10px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 8px; margin-bottom: 8px; cursor: grab; }
+        .pl-lib-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; cursor: pointer; }
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
@@ -1355,167 +1303,68 @@
             </div>
         </div>
     </div>
-    <div id="theme-selector" class="modal" style="display: none;">
-        <div style="background: var(--card-bg); border-radius: 20px; padding: 20px; max-width: 400px; width: 90%;">
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 20px; margin-bottom: 15px; text-align: center; color: var(--soft-white);">Choose Theme</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                <button class="theme-option" data-theme="dark" style="padding: 15px; border-radius: 12px; border: 1px solid var(--card-border); background: #1e293b; color: white; font-weight: 500; cursor: pointer;">
-                    <i class="fas fa-moon"></i> Dark
-                </button>
-                <button class="theme-option" data-theme="light" style="padding: 15px; border-radius: 12px; border: 1px solid var(--card-border); background: #f8fafc; color: #0f172a; font-weight: 500; cursor: pointer;">
-                    <i class="fas fa-sun"></i> Light
-                </button>
-                <button class="theme-option" data-theme="high-contrast" style="padding: 15px; border-radius: 12px; border: 1px solid var(--card-border); background: #000; color: #fff; font-weight: 500; cursor: pointer;">
-                    <i class="fas fa-eye"></i> High Contrast
-                </button>
+    
+    <!-- 1. FULL THEME CHANGE FEATURE -->
+    <div id="theme-selector" class="theme-selector">
+        <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+        <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+        <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+    </div>
+    
+    <!-- 2. FULL ANALYTICS FEATURE -->
+    <div id="analytics-modal" class="modal">
+        <div class="modal-content" style="max-width:900px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2 class="modal-title" style="margin:0;text-align:left;"><i class="fas fa-chart-line"></i> Channel Analytics</h2>
+                <button id="close-analytics" class="close-search-btn"><i class="fas fa-times"></i></button>
             </div>
+            <div class="analytics-grid">
+                <div class="analytics-card"><h4>Total Views</h4><div class="analytics-value" id="analytics-views">0</div><div class="analytics-trend" id="views-trend">+0%</div></div>
+                <div class="analytics-card"><h4>Connectors</h4><div class="analytics-value" id="analytics-connectors">0</div><div class="analytics-trend" id="connectors-trend">+0%</div></div>
+                <div class="analytics-card"><h4>Engagement Rate</h4><div class="analytics-value" id="analytics-engagement">0%</div><div class="analytics-trend" id="engagement-trend">+0%</div></div>
+                <div class="analytics-card"><h4>Avg. Watch Time</h4><div class="analytics-value" id="analytics-watch-time">0m</div><div class="analytics-trend">+5%</div></div>
+            </div>
+            <div class="charts-container" style="height:250px;margin-bottom:15px;"><canvas id="channel-engagement-chart"></canvas></div>
         </div>
     </div>
+    
+    <!-- 3. CREATOR PLAYLIST BUILDER FEATURE -->
     <div id="playlist-builder-modal" class="modal">
-        <div class="modal-content">
-            <div style="padding: 20px 25px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: var(--card-bg);">
-                <h2 class="modal-title" style="margin: 0; font-size: 20px;">
-                    <i class="fas fa-list"></i>
-                    <span id="playlist-modal-title">Create Playlist</span>
-                </h2>
-                <button id="close-playlist-modal" class="close-search-btn" style="width: 32px; height: 32px; font-size: 18px;">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="modal-content" style="max-width:950px;padding:0;overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;background:var(--card-bg);">
+                <h2 class="modal-title" style="margin:0;font-size:18px;text-align:left;"><i class="fas fa-list"></i> <span id="pl-modal-title">Create Playlist</span></h2>
+                <button id="close-pl-modal" class="close-search-btn"><i class="fas fa-times"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="modal-sidebar">
-                    <form id="playlist-settings-form">
-                        <input type="hidden" id="edit-playlist-id">
-                        <div class="form-group">
-                            <label class="form-label">Playlist Title *</label>
-                            <input type="text" id="playlist-title" class="form-input" placeholder="e.g., African Tech Stories" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Description</label>
-                            <textarea id="playlist-description" class="form-textarea" placeholder="Describe your playlist..." style="min-height: 80px;"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <select id="playlist-type" class="form-input">
-                                <option value="playlist">📁 General Playlist</option>
-                                <option value="series">🎬 Series (Episodes)</option>
-                                <option value="album">🎵 Music Album</option>
-                                <option value="course">🎓 Course/Tutorial</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Visibility</label>
-                            <select id="playlist-visibility" class="form-input">
-                                <option value="public">🌍 Public (Everyone)</option>
-                                <option value="unlisted">🔗 Unlisted (Link only)</option>
-                                <option value="private">🔒 Private (Only me)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Sort Order</label>
-                            <select id="playlist-sort" class="form-input">
-                                <option value="manual">✋ Manual (Drag to reorder)</option>
-                                <option value="newest">📅 Newest First</option>
-                                <option value="oldest">📅 Oldest First</option>
-                                <option value="duration">⏱️ By Duration</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Custom Thumbnail</label>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <div id="playlist-thumb-preview" style="width: 80px; height: 45px; border-radius: 8px; background: var(--deep-black); border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center; color: var(--slate-grey); font-size: 11px; overflow: hidden;">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                                <button type="button" id="upload-thumb-btn" class="banner-upload-btn" style="padding: 8px 12px; font-size: 12px;">Upload</button>
-                                <input type="file" id="thumb-file-input" accept="image/*" style="display: none;">
-                            </div>
-                            <input type="hidden" id="playlist-thumbnail">
-                        </div>
-                        <div class="form-group" style="margin-top: 20px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <input type="checkbox" id="playlist-featured" style="width: 16px; height: 16px;">
-                                <span style="font-size: 14px; color: var(--soft-white);">⭐ Feature on channel</span>
-                            </label>
-                        </div>
-                    </form>
+            <div class="pl-body">
+                <div class="pl-sidebar">
+                    <input type="hidden" id="pl-id">
+                    <div class="form-group"><label class="form-label">Title *</label><input type="text" id="pl-title" class="form-input" placeholder="Playlist name..."></div>
+                    <div class="form-group"><label class="form-label">Description</label><textarea id="pl-desc" class="form-textarea" style="min-height:60px;"></textarea></div>
+                    <div class="form-group"><label class="form-label">Type</label><select id="pl-type" class="form-select form-input"><option value="playlist">General</option><option value="series">Series</option><option value="course">Course</option></select></div>
+                    <div class="form-group"><label class="form-label">Visibility</label><select id="pl-vis" class="form-select form-input"><option value="public">Public</option><option value="private">Private</option></select></div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="pl-featured"> <span style="color:var(--soft-white);font-size:13px;">⭐ Feature on channel</span></label>
                 </div>
-                <div class="modal-main">
-                    <div class="modal-tabs">
-                        <button class="content-tab active" data-playlist-tab="items" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--soft-white); cursor: pointer; border-bottom: 2px solid var(--warm-gold);">
-                            📋 Items (<span id="items-count">0</span>)
-                        </button>
-                        <button class="content-tab" data-playlist-tab="library" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--slate-grey); cursor: pointer;">
-                            📚 Add from Library
-                        </button>
+                <div class="pl-main">
+                    <div class="pl-tabs">
+                        <button class="pl-tab active" data-tab="items" style="border-bottom:2px solid var(--warm-gold);color:var(--soft-white);">Items (<span id="pl-count">0</span>)</button>
+                        <button class="pl-tab" data-tab="library">Library</button>
                     </div>
-                    <div id="playlist-items-tab" class="modal-content-area">
-                        <div id="playlist-items-list" style="display: flex; flex-direction: column; gap: 10px;">
-                            <div style="text-align: center; padding: 40px; color: var(--slate-grey);">
-                                <i class="fas fa-list" style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;"></i>
-                                <p>No items yet. Add videos from your library!</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="playlist-library-tab" class="modal-content-area" style="display: none;">
-                        <div style="position: relative; margin-bottom: 15px;">
-                            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-grey);"></i>
-                            <input type="text" id="library-search" class="form-input" placeholder="Search your videos..." style="padding-left: 35px;">
-                        </div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
-                            <button class="library-filter active" data-filter="all">All</button>
-                            <button class="library-filter" data-filter="video">Videos</button>
-                            <button class="library-filter" data-filter="short">Shorts</button>
-                            <button class="library-filter" data-filter="podcast">Podcasts</button>
-                            <button class="library-filter" data-filter="music">Music</button>
-                            <button class="library-filter" data-filter="series">Series</button>
-                        </div>
-                        <div id="library-content-grid" class="content-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));"></div>
+                    <div id="pl-items-panel" style="flex:1;overflow-y:auto;padding:12px;"><div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>Add videos to your playlist</p></div></div>
+                    <div id="pl-library-panel" style="flex:1;overflow-y:auto;padding:12px;display:none;">
+                        <input type="text" id="pl-lib-search" class="form-input" placeholder="Search your videos..." style="margin-bottom:12px;">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><button class="pl-filter active" data-f="all">All</button><button class="pl-filter" data-f="video">Videos</button><button class="pl-filter" data-f="short">Shorts</button></div>
+                        <div id="pl-lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;"></div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button id="save-playlist-btn" class="modal-btn close" style="flex: 1; padding: 12px;">
-                    <i class="fas fa-save"></i> Save Playlist
-                </button>
-                <button id="delete-playlist-btn" class="modal-btn cancel" style="flex: 1; padding: 12px; display: none;">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
+            <div style="display:flex;gap:10px;padding:16px 20px;background:var(--card-bg);border-top:1px solid var(--card-border);">
+                <button id="pl-save-btn" class="modal-btn close" style="flex:1;"><i class="fas fa-save"></i> Save</button>
+                <button id="pl-delete-btn" class="modal-btn cancel" style="flex:1;display:none;"><i class="fas fa-trash"></i> Delete</button>
             </div>
         </div>
     </div>
-    <template id="playlist-item-template">
-        <div class="playlist-item-card" draggable="true">
-            <div class="item-position">1</div>
-            <div style="width: 100px; height: 56px; border-radius: 8px; overflow: hidden; background: var(--deep-black); flex-shrink: 0; position: relative;">
-                <img src="" alt="" class="item-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
-                <span style="position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;" class="item-duration">0:00</span>
-            </div>
-            <div style="flex: 1; min-width: 0;">
-                <div class="item-title" style="font-size: 14px; font-weight: 600; color: var(--soft-white); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Video Title</div>
-                <div style="font-size: 12px; color: var(--slate-grey); display: flex; gap: 10px;">
-                    <span><i class="fas fa-eye"></i> <span class="item-views">0</span></span>
-                    <span><i class="fas fa-clock"></i> <span class="item-date">2 days ago</span></span>
-                </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
-                <button class="item-remove-btn" style="background: none; border: none; color: var(--slate-grey); cursor: pointer; padding: 4px; border-radius: 4px;" title="Remove"><i class="fas fa-times"></i></button>
-                <button class="item-edit-btn" style="background: none; border: none; color: var(--slate-grey); cursor: pointer; padding: 4px; border-radius: 4px;" title="Edit"><i class="fas fa-edit"></i></button>
-            </div>
-        </div>
-    </template>
-    <template id="library-item-template">
-        <div class="library-item-card">
-            <div style="position: relative; height: 84px; background: var(--deep-black);">
-                <img src="" alt="" class="lib-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
-                <div style="position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;" class="lib-duration">0:00</div>
-                <div style="position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; color: var(--warm-gold); font-size: 11px; cursor: pointer;" class="lib-add-btn" title="Add to playlist"><i class="fas fa-plus"></i></div>
-            </div>
-            <div style="padding: 10px;">
-                <div class="lib-title" style="font-size: 13px; font-weight: 600; color: var(--soft-white); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Video Title</div>
-                <div style="font-size: 11px; color: var(--slate-grey);"><i class="fas fa-eye"></i> <span class="lib-views">0</span> views</div>
-            </div>
-        </div>
-    </template>
+    <template id="pl-item-tmpl"><div class="pl-item" draggable="true"><div style="width:80px;height:45px;border-radius:6px;overflow:hidden;flex-shrink:0;"><img class="pl-thumb" style="width:100%;height:100%;object-fit:cover;"></div><div style="flex:1;min-width:0;"><div class="pl-title" style="font-size:13px;font-weight:600;color:var(--soft-white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div><div class="pl-meta" style="font-size:11px;color:var(--slate-grey);display:flex;gap:8px;margin-top:4px;"></div></div><button class="pl-remove" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;"><i class="fas fa-times"></i></button></div></template>
+    <template id="pl-lib-tmpl"><div class="pl-lib-card"><div style="height:90px;position:relative;"><img class="lb-thumb" style="width:100%;height:100%;object-fit:cover;"><button class="lb-add" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:var(--warm-gold);cursor:pointer;"><i class="fas fa-plus"></i></button></div><div style="padding:8px;"><div class="lb-title" style="font-size:12px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div><div class="lb-views" style="font-size:10px;color:var(--slate-grey);"></div></div></div></template>
 
     <div id="app" style="display: none;">
         <!-- NEW HEADER (from content-detail) -->
@@ -1543,6 +1392,7 @@
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notification-count" style="display: none;">0</span>
                 </button>
+                <button id="theme-toggle-btn" class="icon-btn" title="Change Theme"><i class="fas fa-palette"></i></button>
                 <div class="profile-switcher">
                     <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
                         <div class="profile-placeholder" id="userProfilePlaceholder">
@@ -1916,22 +1766,182 @@
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
             }
             
-            // Theme functions
+            // ========================
+            // NEW FEATURE: THEME SYSTEM
+            // ========================
+            function initThemeSystem() {
+                const selector = document.getElementById('theme-selector');
+                const toggle = document.getElementById('theme-toggle-btn');
+                if (!selector || !toggle) return;
+                const themes = ['dark', 'light', 'high-contrast'];
+                const saved = localStorage.getItem('bantu_theme') || 'dark';
+                applyTheme(saved);
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selector.classList.toggle('active');
+                });
+                document.addEventListener('click', (e) => {
+                    if (selector.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) {
+                        selector.classList.remove('active');
+                    }
+                });
+                document.querySelectorAll('.theme-option').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        applyTheme(btn.dataset.theme);
+                        selector.classList.remove('active');
+                    });
+                });
+            }
+            function applyTheme(theme) {
+                if (!['dark','light','high-contrast'].includes(theme)) theme = 'dark';
+                document.body.className = `theme-${theme}`;
+                localStorage.setItem('bantu_theme', theme);
+                document.querySelectorAll('.theme-option').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+                if (typeof showToast === 'function') showToast(`Theme changed to ${theme}`, 'success');
+            }
+            
+            // ========================
+            // NEW FEATURE: ANALYTICS
+            // ========================
+            function initAnalyticsModal() {
+                const modal = document.getElementById('analytics-modal');
+                const analyticsBtn = document.getElementById('analytics-btn');
+                const closeBtn = document.getElementById('close-analytics');
+                if (!modal) return;
+                analyticsBtn?.addEventListener('click', () => {
+                    modal.classList.add('active');
+                    loadChannelAnalytics();
+                });
+                closeBtn?.addEventListener('click', () => modal.classList.remove('active'));
+                modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
+            }
+            async function loadChannelAnalytics() {
+                if (!window.currentUser || !window.creatorContent) return;
+                const totalViews = window.creatorContent.reduce((s,c) => s + (c.views_count || 0), 0);
+                const totalLikes = window.creatorContent.reduce((s,c) => s + (c.likes_count || 0), 0);
+                const engagement = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) + '%' : '0%';
+                document.getElementById('analytics-views').textContent = formatNumber(totalViews);
+                document.getElementById('analytics-connectors').textContent = formatNumber(window.connectorCount || 0);
+                document.getElementById('analytics-engagement').textContent = engagement;
+                document.getElementById('analytics-watch-time').textContent = Math.floor(totalViews * 0.65 / 60) + 'm';
+                const ctx = document.getElementById('channel-engagement-chart')?.getContext('2d');
+                if (ctx) {
+                    if (window._analyticsChart) window._analyticsChart.destroy();
+                    window._analyticsChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            datasets: [
+                                { label: 'Views', data: [65, 80, 50, 90, 110, 75, 120], borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.4, fill: true },
+                                { label: 'Connects', data: [12, 19, 15, 25, 22, 30, 35], borderColor: '#1D4ED8', backgroundColor: 'rgba(29,78,216,0.1)', tension: 0.4, fill: true }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { labels: { color: 'var(--soft-white)' } } },
+                            scales: { x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'var(--slate-grey)' } },
+                                      y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'var(--slate-grey)' } } }
+                        }
+                    });
+                }
+            }
+            
+            // ========================
+            // NEW FEATURE: PLAYLIST BUILDER
+            // ========================
+            let _plItems = [], _plLib = [];
+            function initPlaylistBuilder() {
+                const modal = document.getElementById('playlist-builder-modal');
+                const newBtn = document.getElementById('new-playlist-btn');
+                if (newBtn) newBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openPlaylistBuilder(); });
+                document.getElementById('close-pl-modal')?.addEventListener('click', () => modal.classList.remove('active'));
+                document.getElementById('pl-save-btn')?.addEventListener('click', savePlaylist);
+                document.getElementById('pl-delete-btn')?.addEventListener('click', deletePlaylist);
+                setupPlaylistTabs();
+            }
+            async function openPlaylistBuilder(id = null) {
+                if (!window.currentUser || window.currentUser.id !== window.creatorId) { showToast('Creator only', 'warning'); return; }
+                document.getElementById('pl-id').value = '';
+                document.getElementById('pl-title').value = ''; document.getElementById('pl-desc').value = '';
+                document.getElementById('pl-type').value = 'playlist'; document.getElementById('pl-vis').value = 'public';
+                document.getElementById('pl-featured').checked = false;
+                document.getElementById('pl-delete-btn').style.display = 'none';
+                document.getElementById('pl-items-panel').innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Loading...</div>`;
+                document.getElementById('pl-count').textContent = '0';
+                _plItems = [];
+                if (id) {
+                    document.getElementById('pl-modal-title').textContent = 'Edit Playlist';
+                    document.getElementById('pl-delete-btn').style.display = 'block';
+                    const { data: pl } = await supabase.from('creator_playlists').select('*').eq('id', id).eq('creator_id', window.creatorId).maybeSingle();
+                    if (!pl) { showToast('Not found', 'error'); return; }
+                    document.getElementById('pl-id').value = pl.id;
+                    document.getElementById('pl-title').value = pl.name || '';
+                    document.getElementById('pl-desc').value = pl.description || '';
+                    document.getElementById('pl-type').value = pl.playlist_type || 'playlist';
+                    document.getElementById('pl-vis').value = pl.visibility || 'public';
+                    document.getElementById('pl-featured').checked = pl.is_featured || false;
+                    await loadPLItems(pl.id);
+                } else {
+                    document.getElementById('pl-modal-title').textContent = 'Create Playlist';
+                    document.getElementById('pl-items-panel').innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>Add videos from your library</p></div>`;
+                }
+                await loadPLLibrary();
+                document.getElementById('playlist-builder-modal').classList.add('active');
+            }
+            async function loadPLItems(plId) {
+                const { data: items } = await supabase.from('creator_playlist_items').select('*, Content!content_id(id,title,thumbnail_url,duration,views_count,created_at,media_type)').eq('playlist_id', plId).order('position', {ascending:true});
+                _plItems = items || [];
+                renderPLItems();
+            }
+            function renderPLItems() {
+                const panel = document.getElementById('pl-items-panel');
+                document.getElementById('pl-count').textContent = _plItems.length;
+                if (!_plItems.length) { panel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Add videos to your playlist</div>`; return; }
+                panel.innerHTML = '';
+                _plItems.forEach((item, i) => {
+                    const c = item.Content; const tmplt = document.getElementById('pl-item-tmpl').content.cloneNode(true);
+                    tmplt.querySelector('.pl-thumb').src = c?.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/80x45/111/444';
+                    tmplt.querySelector('.pl-title').textContent = c?.title || 'Untitled';
+                    tmplt.querySelector('.pl-meta').innerHTML = `<span><i class="fas fa-eye"></i>${formatNumber(c?.views_count||0)}</span><span>${formatDuration(c?.duration)}</span>`;
+                    const el = tmplt.querySelector('.pl-item');
+                    el.dataset.id = item.id; el.dataset.pos = i + 1;
+                    tmplt.querySelector('.pl-remove').onclick = () => removePLItem(item.id);
+                    setupPLDragDrop(el, panel);
+                    panel.appendChild(el);
+                });
+            }
+            function setupPLDragDrop(el, panel) {
+                el.addEventListener('dragstart', e => { el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+                el.addEventListener('dragend', () => { el.classList.remove('dragging'); savePLOrder(); });
+                panel.addEventListener('dragover', e => { e.preventDefault(); const after = [...panel.querySelectorAll('.pl-item:not(.dragging)')].reduce((closest, child) => { const box = child.getBoundingClientRect(); const off = e.clientY - box.top - box.height/2; return off < 0 && off > closest.offset ? { offset: off, element: child } : closest; }, { offset: Number.NEGATIVE_INFINITY }).element; if (after) panel.querySelector('.dragging').before(after); else panel.appendChild(panel.querySelector('.dragging')); });
+            }
+            async function savePLOrder() { const plId = document.getElementById('pl-id').value; if(!plId) return; document.querySelectorAll('.pl-item').forEach((el, i) => { supabase.from('creator_playlist_items').update({position: i+1}).eq('id', el.dataset.id); }); }
+            async function loadPLLibrary(filter='all', search='') {
+                let q = supabase.from('Content').select('id,title,thumbnail_url,duration,views_count,media_type,genre').eq('user_id', window.creatorId).eq('status','published').order('created_at',{ascending:false}).limit(50);
+                if(filter!=='all') q = filter==='short' ? q.eq('media_type','short') : q.or('media_type.eq.video,media_type.is.null');
+                if(search) q = q.ilike('title', `%${search}%`);
+                const { data } = await q;
+                _plLib = data || []; renderPLLib(filter, search);
+            }
+            function renderPLLib(filter, search) {
+                const grid = document.getElementById('pl-lib-grid');
+                const added = new Set(_plItems.map(i=>i.content_id));
+                const lib = _plLib.filter(c => !added.has(c.id));
+                grid.innerHTML = lib.map(c => { const tmplt = document.getElementById('pl-lib-tmpl').content.cloneNode(true); tmplt.querySelector('.lb-thumb').src = c.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/160x90/111/444'; tmplt.querySelector('.lb-title').textContent = c.title; tmplt.querySelector('.lb-views').textContent = `${formatNumber(c.views_count||0)} views`; tmplt.querySelector('.lb-add').onclick = (e) => { e.stopPropagation(); addPLItem(c.id); }; return tmplt.querySelector('.pl-lib-card').outerHTML; }).join('');
+                document.getElementById('pl-lib-search').oninput = e => { clearTimeout(window._libTimer); window._libTimer = setTimeout(()=>loadPLLibrary(filter, e.target.value), 300); };
+                document.querySelectorAll('.pl-filter').forEach(b => b.onclick = () => { document.querySelectorAll('.pl-filter').forEach(x=>x.classList.remove('active')); b.classList.add('active'); loadPLLibrary(b.dataset.f, document.getElementById('pl-lib-search').value); });
+            }
+            async function addPLItem(contentId) { const plId = document.getElementById('pl-id').value; if(!plId) return showToast('Save playlist first', 'warning'); const max = _plItems.length ? Math.max(..._plItems.map(i=>i.position||0)) : 0; const { error } = await supabase.from('creator_playlist_items').insert({playlist_id:plId,content_id:parseInt(contentId),position:max+1,added_at:new Date().toISOString()}); if(!error) { await loadPLItems(plId); loadPLLibrary(); showToast('Added!', 'success'); } }
+            async function removePLItem(id) { await supabase.from('creator_playlist_items').delete().eq('id', id); await loadPLItems(document.getElementById('pl-id').value); loadPLLibrary(); }
+            function setupPlaylistTabs() { document.querySelectorAll('.pl-tab').forEach(t => t.onclick = () => { document.querySelectorAll('.pl-tab').forEach(x=>{x.classList.remove('active');x.style.color='var(--slate-grey)';x.style.borderBottomColor='transparent';}); t.classList.add('active'); t.style.color='var(--soft-white)'; t.style.borderBottomColor='var(--warm-gold)'; document.getElementById('pl-items-panel').style.display = t.dataset.tab==='items'?'block':'none'; document.getElementById('pl-library-panel').style.display = t.dataset.tab==='library'?'block':'none'; }); }
+            async function savePlaylist() { const title = document.getElementById('pl-title').value.trim(); if(!title) return showToast('Title required', 'warning'); const id = document.getElementById('pl-id').value; const data = { creator_id: window.creatorId, name: title, description: document.getElementById('pl-desc').value, playlist_type: document.getElementById('pl-type').value, visibility: document.getElementById('pl-vis').value, is_featured: document.getElementById('pl-featured').checked, updated_at: new Date().toISOString() }; const res = id ? await supabase.from('creator_playlists').update(data).eq('id',id).eq('creator_id',window.creatorId).select().single() : await supabase.from('creator_playlists').insert([{...data, created_at:new Date().toISOString()}]).select().single(); if(!res.error) { await loadCreatorData(); document.getElementById('playlist-builder-modal').classList.remove('active'); showToast(id?'Updated!':'Created!', 'success'); } }
+            async function deletePlaylist() { const id = document.getElementById('pl-id').value; if(!id || !confirm('Delete playlist?')) return; await supabase.from('creator_playlists').delete().eq('id',id).eq('creator_id',window.creatorId); await loadCreatorData(); document.getElementById('playlist-builder-modal').classList.remove('active'); showToast('Deleted', 'info'); }
+            
+            // Theme functions (legacy compatibility)
             window.initTheme = function() {
                 const savedTheme = localStorage.getItem('bantu-theme') || 'dark';
                 applyTheme(savedTheme);
             };
-            function applyTheme(theme) {
-                const root = document.documentElement;
-                const themeColors = window.themes[theme];
-                if (themeColors) {
-                    Object.entries(themeColors).forEach(([key, value]) => {
-                        root.style.setProperty(key, value);
-                    });
-                    document.body.className = theme === 'light' ? 'light-theme' : (theme === 'high-contrast' ? 'high-contrast' : '');
-                    localStorage.setItem('bantu-theme', theme);
-                }
-            }
 
             // Sidebar setup
             function setupSidebar() {
@@ -2481,7 +2491,7 @@
                         card.addEventListener('click', (e) => {
                             const playlistId = card.dataset.playlistId;
                             if (!playlistId) return;
-                            if (window.currentUser && window.currentUser.id === window.creatorId) { e.preventDefault(); showPlaylistBuilder(playlistId); }
+                            if (window.currentUser && window.currentUser.id === window.creatorId) { e.preventDefault(); openPlaylistBuilder(playlistId); }
                             else { window.location.href = `playlist.html?id=${playlistId}`; }
                         });
                     });
@@ -2494,7 +2504,7 @@
                     newBtn.id = 'new-playlist-btn';
                     newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
                     newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;';
-                    newBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); showPlaylistBuilder(); };
+                    newBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); openPlaylistBuilder(); };
                     header.appendChild(newBtn);
                 }
             }
@@ -2596,209 +2606,7 @@
                 } catch (error) { console.error('Error loading connectors:', error); showToast('Failed to load connectors', 'error'); }
             }
 
-            // Playlist Builder Functions (Preserved from original)
-            async function showPlaylistBuilder(playlistId = null) {
-                if (!window.currentUser || window.currentUser.id !== window.creatorId) { showToast('Only the channel owner can manage playlists', 'warning'); return; }
-                const modal = document.getElementById('playlist-builder-modal');
-                const title = document.getElementById('playlist-modal-title');
-                const deleteBtn = document.getElementById('delete-playlist-btn');
-                document.getElementById('playlist-settings-form').reset();
-                document.getElementById('edit-playlist-id').value = '';
-                document.getElementById('playlist-thumb-preview').innerHTML = '<i class="fas fa-image"></i>';
-                document.getElementById('playlist-thumbnail').value = '';
-                if (playlistId) {
-                    title.textContent = 'Edit Playlist'; deleteBtn.style.display = 'block';
-                    const { data: playlist, error } = await supabase.from('creator_playlists').select('*').eq('id', playlistId).eq('creator_id', window.creatorId).maybeSingle();
-                    if (error || !playlist) { showToast('Playlist not found', 'error'); return; }
-                    document.getElementById('edit-playlist-id').value = playlist.id;
-                    document.getElementById('playlist-title').value = playlist.name || '';
-                    document.getElementById('playlist-description').value = playlist.description || '';
-                    document.getElementById('playlist-type').value = playlist.playlist_type || 'playlist';
-                    document.getElementById('playlist-visibility').value = playlist.visibility || 'public';
-                    document.getElementById('playlist-sort').value = playlist.sort_order || 'manual';
-                    document.getElementById('playlist-featured').checked = playlist.is_featured || false;
-                    if (playlist.custom_thumbnail_url) {
-                        document.getElementById('playlist-thumbnail').value = playlist.custom_thumbnail_url;
-                        document.getElementById('playlist-thumb-preview').innerHTML = `<img src="${fixMediaUrl(playlist.custom_thumbnail_url)}" style="width:100%;height:100%;object-fit:cover;">`;
-                    }
-                    await loadPlaylistItems(playlist.id);
-                } else {
-                    title.textContent = 'Create Playlist'; deleteBtn.style.display = 'none';
-                    document.getElementById('playlist-items-list').innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>No items yet. Add videos from your library!</p></div>`;
-                    document.getElementById('items-count').textContent = '0';
-                    window.playlistItems = [];
-                }
-                await loadCreatorLibrary();
-                modal.classList.add('active');
-                setupPlaylistTabs();
-                setupDragAndDrop();
-            }
-            async function loadPlaylistItems(playlistId) {
-                try {
-                    const { data: items, error } = await supabase.from('creator_playlist_items').select(`*, Content!content_id (id, title, thumbnail_url, duration, views_count, created_at, media_type)`).eq('playlist_id', playlistId).order('position', { ascending: true, nullsLast: true });
-                    if (error) throw error;
-                    window.playlistItems = items || [];
-                    renderPlaylistItems();
-                } catch (error) { console.error('Error loading playlist items:', error); showToast('Failed to load items', 'error'); }
-            }
-            function renderPlaylistItems() {
-                const list = document.getElementById('playlist-items-list');
-                if (window.playlistItems.length === 0) {
-                    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>No items yet. Add videos from your library!</p></div>`;
-                    document.getElementById('items-count').textContent = '0'; return;
-                }
-                list.innerHTML = window.playlistItems.map((item, index) => {
-                    const content = item.Content;
-                    const thumb = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-                    const duration = formatDuration(content?.duration);
-                    const views = formatNumber(content?.views_count || 0);
-                    const date = formatDate(content?.created_at);
-                    return `
-                        <div class="playlist-item-card" draggable="true" data-item-id="${item.id}" data-content-id="${content?.id}">
-                            <div class="item-position">${index + 1}</div>
-                            <div style="width:100px;height:56px;border-radius:8px;overflow:hidden;background:var(--deep-black);flex-shrink:0;position:relative;">
-                                <img src="${thumb}" alt="${escapeHtml(content?.title || '')}" class="item-thumbnail" style="width:100%;height:100%;object-fit:cover;">
-                                <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</span>
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div class="item-title" style="font-size:14px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content?.title || '')}">${escapeHtml(content?.title || 'Untitled')}</div>
-                                <div style="font-size:12px;color:var(--slate-grey);display:flex;gap:10px;"><span><i class="fas fa-eye"></i> ${views}</span><span><i class="fas fa-clock"></i> ${date}</span></div>
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
-                                <button class="item-remove-btn" data-item-id="${item.id}" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;padding:4px;border-radius:4px;" title="Remove"><i class="fas fa-times"></i></button>
-                                <button class="item-edit-btn" data-item-id="${item.id}" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;padding:4px;border-radius:4px;" title="Edit"><i class="fas fa-edit"></i></button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                document.getElementById('items-count').textContent = window.playlistItems.length;
-                list.querySelectorAll('.item-remove-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); removePlaylistItem(btn.dataset.itemId); }); });
-                list.querySelectorAll('.item-edit-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); editPlaylistItem(btn.dataset.itemId); }); });
-            }
-            async function loadCreatorLibrary(filter = 'all', search = '') {
-                try {
-                    let query = supabase.from('Content').select('id, title, thumbnail_url, duration, views_count, created_at, media_type, genre').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false });
-                    if (filter !== 'all') {
-                        if (filter === 'short') query = query.eq('media_type', 'short');
-                        else if (filter === 'podcast') query = query.eq('media_type', 'podcast');
-                        else if (filter === 'video') query = query.or('media_type.eq.video,media_type.is.null');
-                        else if (filter === 'music') query = query.eq('genre', 'Music');
-                        else if (filter === 'series') query = query.eq('genre', 'Series');
-                    }
-                    if (search) query = query.ilike('title', `%${search}%`);
-                    const { data, error } = await query.limit(50);
-                    if (error) throw error;
-                    window.creatorLibrary = data || [];
-                    renderLibraryContent(filter, search);
-                } catch (error) { console.error('Error loading library:', error); }
-            }
-            function renderLibraryContent(filter = 'all', search = '') {
-                const grid = document.getElementById('library-content-grid');
-                const playlistContentIds = new Set(window.playlistItems.map(i => i.content_id));
-                const availableContent = window.creatorLibrary.filter(c => !playlistContentIds.has(c.id));
-                if (availableContent.length === 0) {
-                    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-search" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>${search ? 'No matching videos found' : 'All videos already added!'}</p></div>`; return;
-                }
-                grid.innerHTML = availableContent.map(content => {
-                    const thumb = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-                    const duration = formatDuration(content.duration);
-                    const views = formatNumber(content.views_count || 0);
-                    return `
-                        <div class="library-item-card" data-content-id="${content.id}">
-                            <div style="position:relative;height:84px;background:var(--deep-black);">
-                                <img src="${thumb}" alt="${escapeHtml(content.title)}" class="lib-thumbnail" style="width:100%;height:100%;object-fit:cover;">
-                                <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</div>
-                                <div class="lib-add-btn" data-content-id="${content.id}" style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;color:var(--warm-gold);font-size:11px;cursor:pointer;" title="Add to playlist"><i class="fas fa-plus"></i></div>
-                            </div>
-                            <div style="padding:10px;">
-                                <div class="lib-title" style="font-size:13px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content.title)}">${escapeHtml(content.title)}</div>
-                                <div style="font-size:11px;color:var(--slate-grey);"><i class="fas fa-eye"></i> ${views} views</div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                grid.querySelectorAll('.library-item-card').forEach(card => { card.addEventListener('click', (e) => { if (!e.target.closest('.lib-add-btn')) { const contentId = card.dataset.contentId; if (contentId) window.open(`content-detail.html?id=${contentId}`, '_blank'); } }); });
-                grid.querySelectorAll('.lib-add-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); addContentToPlaylist(btn.dataset.contentId); }); });
-            }
-            async function addContentToPlaylist(contentId) {
-                const playlistId = document.getElementById('edit-playlist-id').value;
-                if (!playlistId) { showToast('Please save the playlist first', 'warning'); return; }
-                try {
-                    const maxPos = window.playlistItems.length > 0 ? Math.max(...window.playlistItems.map(i => i.position || 0)) : 0;
-                    const { error } = await supabase.from('creator_playlist_items').insert({ playlist_id: playlistId, content_id: parseInt(contentId), position: maxPos + 1, added_at: new Date().toISOString() });
-                    if (error) { if (error.code === '23505') { showToast('This video is already in the playlist', 'warning'); } else { throw error; } return; }
-                    await loadPlaylistItems(playlistId);
-                    const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
-                    const search = document.getElementById('library-search')?.value.trim() || '';
-                    await loadCreatorLibrary(filter, search);
-                    showToast('Video added to playlist!', 'success');
-                } catch (error) { console.error('Error adding to playlist:', error); showToast('Failed to add video', 'error'); }
-            }
-            async function removePlaylistItem(itemId) {
-                if (!confirm('Remove this item from the playlist?')) return;
-                try {
-                    const { error } = await supabase.from('creator_playlist_items').delete().eq('id', itemId);
-                    if (error) throw error;
-                    const playlistId = document.getElementById('edit-playlist-id').value;
-                    await loadPlaylistItems(playlistId);
-                    const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
-                    const search = document.getElementById('library-search')?.value.trim() || '';
-                    await loadCreatorLibrary(filter, search);
-                    showToast('Item removed', 'info');
-                } catch (error) { console.error('Error removing item:', error); showToast('Failed to remove item', 'error'); }
-            }
-            function editPlaylistItem(itemId) {
-                const item = window.playlistItems.find(i => i.id === itemId);
-                if (!item) return;
-                const customTitle = prompt('Custom title for this episode (optional):', item.custom_title || '');
-                if (customTitle !== null) {
-                    supabase.from('creator_playlist_items').update({ custom_title: customTitle || null }).eq('id', itemId).then(({ error }) => { if (error) { showToast('Failed to update', 'error'); } else { showToast('Item updated', 'success'); loadPlaylistItems(document.getElementById('edit-playlist-id').value); } });
-                }
-            }
-            function setupPlaylistTabs() {
-                document.querySelectorAll('[data-playlist-tab]').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        document.querySelectorAll('[data-playlist-tab]').forEach(t => { t.classList.remove('active'); t.style.color = 'var(--slate-grey)'; t.style.borderBottomColor = 'transparent'; });
-                        tab.classList.add('active'); tab.style.color = 'var(--soft-white)'; tab.style.borderBottomColor = 'var(--warm-gold)';
-                        const tabName = tab.dataset.playlistTab;
-                        document.getElementById('playlist-items-tab').style.display = tabName === 'items' ? 'block' : 'none';
-                        document.getElementById('playlist-library-tab').style.display = tabName === 'library' ? 'block' : 'none';
-                    });
-                });
-                const searchInput = document.getElementById('library-search');
-                if (searchInput) {
-                    let timeout;
-                    searchInput.addEventListener('input', (e) => { clearTimeout(timeout); timeout = setTimeout(() => { const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all'; loadCreatorLibrary(filter, e.target.value.trim()); }, 300); });
-                }
-                document.querySelectorAll('.library-filter').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.library-filter').forEach(b => b.classList.remove('active')); btn.classList.add('active'); const search = document.getElementById('library-search')?.value.trim() || ''; loadCreatorLibrary(btn.dataset.filter, search); }); });
-            }
-            function setupDragAndDrop() {
-                const list = document.getElementById('playlist-items-list');
-                let draggedItem = null;
-                list.addEventListener('dragstart', (e) => { if (e.target.classList.contains('playlist-item-card')) { draggedItem = e.target; e.target.style.opacity = '0.5'; e.dataTransfer.effectAllowed = 'move'; } });
-                list.addEventListener('dragend', (e) => { if (draggedItem) { draggedItem.style.opacity = '1'; draggedItem = null; document.querySelectorAll('.playlist-item-card').forEach(item => { item.classList.remove('drag-over'); }); } });
-                list.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const afterElement = getDragAfterElement(list, e.clientY); const currentDragOver = document.querySelector('.drag-over'); if (currentDragOver) currentDragOver.classList.remove('drag-over'); if (afterElement == null) { list.appendChild(draggedItem); } else { afterElement.classList.add('drag-over'); list.insertBefore(draggedItem, afterElement); } });
-                list.addEventListener('drop', (e) => { e.preventDefault(); document.querySelectorAll('.playlist-item-card').forEach(item => { item.classList.remove('drag-over'); }); updateItemPositions(); savePlaylistOrder(); });
-            }
-            function getDragAfterElement(container, y) { const draggableElements = [...container.querySelectorAll('.playlist-item-card:not(.dragging)')]; return draggableElements.reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = y - box.top - box.height / 2; if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } else { return closest; } }, { offset: Number.NEGATIVE_INFINITY }).element; }
-            function updateItemPositions() { const items = document.querySelectorAll('#playlist-items-list .playlist-item-card'); items.forEach((item, index) => { const positionEl = item.querySelector('.item-position'); if (positionEl) { positionEl.textContent = index + 1; } }); }
-            async function savePlaylistOrder() { const playlistId = document.getElementById('edit-playlist-id').value; if (!playlistId) return; const items = document.querySelectorAll('#playlist-items-list .playlist-item-card'); const updates = []; items.forEach((item, index) => { const itemId = item.dataset.itemId; if (itemId) { updates.push({ id: itemId, position: index + 1 }); } }); try { for (const update of updates) { await supabase.from('creator_playlist_items').update({ position: update.position }).eq('id', update.id); } console.log('Playlist order saved'); } catch (error) { console.error('Error saving order:', error); } }
-            async function savePlaylist() { const playlistId = document.getElementById('edit-playlist-id').value; const title = document.getElementById('playlist-title').value.trim(); if (!title) { showToast('Playlist title is required', 'warning'); return; } try { const playlistData = { creator_id: window.creatorId, name: title, description: document.getElementById('playlist-description').value.trim() || null, playlist_type: document.getElementById('playlist-type').value, visibility: document.getElementById('playlist-visibility').value, sort_order: document.getElementById('playlist-sort').value, is_featured: document.getElementById('playlist-featured').checked, custom_thumbnail_url: document.getElementById('playlist-thumbnail').value || null, updated_at: new Date().toISOString() }; if (window.playlistItems.length > 0) { const totalDuration = window.playlistItems.reduce((sum, item) => { return sum + (item.Content?.duration || 0); }, 0); playlistData.total_duration = totalDuration; } let result; if (playlistId) { result = await supabase.from('creator_playlists').update(playlistData).eq('id', playlistId).eq('creator_id', window.creatorId).select().single(); } else { playlistData.created_at = new Date().toISOString(); result = await supabase.from('creator_playlists').insert([playlistData]).select().single(); } if (result.error) throw result.error; await loadCreatorData(); document.getElementById('playlist-builder-modal').classList.remove('active'); showToast(playlistId ? 'Playlist updated!' : 'Playlist created!', 'success'); } catch (error) { console.error('Error saving playlist:', error); if (error.code === '23505') { showToast('A playlist with this name already exists', 'error'); } else { showToast('Failed to save playlist: ' + (error.message || 'Unknown error'), 'error'); } } }
-            async function deletePlaylist() { const playlistId = document.getElementById('edit-playlist-id').value; if (!playlistId) return; if (!confirm('Delete this playlist? All items will be removed. This cannot be undone.')) return; try { const { error } = await supabase.from('creator_playlists').delete().eq('id', playlistId).eq('creator_id', window.creatorId); if (error) throw error; await loadCreatorData(); document.getElementById('playlist-builder-modal').classList.remove('active'); showToast('Playlist deleted', 'info'); } catch (error) { console.error('Error deleting playlist:', error); showToast('Failed to delete playlist', 'error'); } }
-            function setupThumbnailUpload() { document.getElementById('upload-thumb-btn')?.addEventListener('click', () => { document.getElementById('thumb-file-input').click(); }); document.getElementById('thumb-file-input')?.addEventListener('change', async (e) => { const file = e.target.files[0]; if (!file) return; if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; } if (file.size > 5 * 1024 * 1024) { showToast('Image must be less than 5MB', 'error'); return; } const reader = new FileReader(); reader.onload = (event) => { document.getElementById('playlist-thumb-preview').innerHTML = `<img src="${event.target.result}" style="width:100%;height:100%;object-fit:cover;">`; document.getElementById('playlist-thumbnail').value = event.target.result; }; reader.readAsDataURL(file); try { const fileName = `playlist-thumbs/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`; const { data, error } = await supabase.storage.from('content-thumbnails').upload(fileName, file); if (error) { console.log('Storage upload failed, keeping local preview:', error); } else { const { data: { publicUrl } } = supabase.storage.from('content-thumbnails').getPublicUrl(fileName); document.getElementById('playlist-thumbnail').value = publicUrl; showToast('Thumbnail uploaded!', 'success'); } } catch (error) { console.error('Upload error:', error); } }); }
-            function setupContentTabs() { document.querySelectorAll('.content-tab').forEach(tab => { tab.addEventListener('click', (e) => { document.querySelectorAll('.content-tab').forEach(t => t.classList.remove('active')); e.target.classList.add('active'); const tabType = e.target.dataset.tab; let filtered = window.creatorContent; if (tabType === 'shorts') filtered = window.creatorContent.filter(c => c.media_type === 'short' || c.genre?.toLowerCase().includes('short')); else if (tabType === 'music') filtered = window.creatorContent.filter(c => c.genre === 'Music' || c.media_type === 'music'); else if (tabType === 'podcasts') filtered = window.creatorContent.filter(c => c.media_type === 'podcast' || c.genre === 'Podcasts'); else if (tabType === 'series') filtered = window.creatorContent.filter(c => c.genre === 'Series' || c.tags?.includes('series')); else if (tabType === 'films') filtered = window.creatorContent.filter(c => c.media_type === 'film' || c.genre === 'Movies'); else if (tabType === 'stem') filtered = window.creatorContent.filter(c => c.genre === 'STEM' || c.tags?.includes('STEM')); else if (tabType === 'documentaries') filtered = window.creatorContent.filter(c => c.genre === 'Documentaries' || c.media_type === 'documentary'); else if (tabType === 'videos') filtered = window.creatorContent.filter(c => !c.media_type || c.media_type === 'video'); else if (tabType === 'all') filtered = window.creatorContent; if (tabType === 'about') { document.getElementById('uploads-section').style.display = 'none'; document.getElementById('playlists-section').style.display = 'none'; document.querySelector('.identity-card').scrollIntoView({ behavior: 'smooth' }); } else { document.getElementById('uploads-section').style.display = 'block'; document.getElementById('playlists-section').style.display = 'block'; updateContentUI(filtered); } }); }); }
-
             // Theme and Scale setup
-            function initThemeSelector() {
-                const themeSelector = document.getElementById('theme-selector');
-                const themeToggle = document.getElementById('sidebar-theme-toggle');
-                if (!themeSelector || !themeToggle) return;
-                const savedTheme = localStorage.getItem('bantu-theme') || 'dark';
-                applyTheme(savedTheme);
-                document.querySelectorAll('.theme-option').forEach(option => { option.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); applyTheme(this.dataset.theme); setTimeout(() => themeSelector.classList.remove('active'), 100); }); });
-                themeToggle.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); themeSelector.classList.toggle('active'); });
-                document.addEventListener('click', (e) => { if (themeSelector.classList.contains('active') && !themeSelector.contains(e.target) && !themeToggle.contains(e.target)) { themeSelector.classList.remove('active'); } });
-            }
             function setupScaleControls() {
                 const decreaseBtn = document.getElementById('sidebar-scale-decrease');
                 const increaseBtn = document.getElementById('sidebar-scale-increase');
@@ -2852,7 +2660,6 @@
                 document.getElementById('mark-all-read')?.addEventListener('click', async () => { if (!window.currentUser) return; try { const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false); if (error) throw error; window.notifications = window.notifications.map(n => ({ ...n, is_read: true })); renderNotifications(); updateNotificationBadge(0); showToast('All notifications marked as read', 'success'); } catch (error) { console.error('Error marking all as read:', error); showToast('Failed to mark notifications as read', 'error'); } });
                 
                 // Theme & scale
-                initThemeSelector();
                 setupScaleControls();
                 
                 // Sidebar nav items
@@ -2864,7 +2671,6 @@
                 document.getElementById('sidebar-badges')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); showToast('Badges coming soon!', 'info'); });
                 document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); showToast('Watch Party coming soon!', 'info'); });
                 document.getElementById('voice-search-btn')?.addEventListener('click', () => { showToast('Voice search coming soon!', 'info'); });
-                document.getElementById('analytics-btn')?.addEventListener('click', () => { showToast('Analytics coming soon!', 'info'); });
             }
             
             async function searchContent(query, category = '', sortBy = 'newest') { try { let qb = supabase.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status', 'published'); if (category) qb = qb.eq('genre', category); const { data, error } = await qb.limit(50); if (error) throw error; const enriched = await Promise.all((data || []).map(async item => { const { count: views } = await supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id); const { count: likes } = await supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id); return { ...item, real_views: views || 0, real_likes: likes || 0 }; })); if (sortBy === 'popular') enriched.sort((a,b) => (b.real_views||0) - (a.real_views||0)); else if (sortBy === 'trending') enriched.sort((a,b) => ((b.real_views||0) + ((b.real_likes||0)*2)) - ((a.real_views||0) + ((a.real_likes||0)*2))); else enriched.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)); return enriched; } catch (error) { console.error('Search error:', error); return []; } }
@@ -2887,6 +2693,10 @@
                     await checkAuth();
                     await loadCreatorData();
                     setupEventListeners();
+                    // Initialize new features
+                    initThemeSystem();
+                    initAnalyticsModal();
+                    initPlaylistBuilder();
                     setTimeout(() => {
                         document.getElementById('loading').style.display = 'none';
                         document.getElementById('app').style.display = 'block';
