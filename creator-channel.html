@@ -2096,56 +2096,81 @@ async function loadPLItems(plId) {
 }
 
 function renderPLItems() {
-  const panel = document.getElementById('pl-items-panel');
-  document.getElementById('pl-count').textContent = window._plItems.length;
-  
-  if (!window._plItems.length) {
-    panel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Add videos to your playlist</div>`;
-    return;
-  }
-  
-  panel.innerHTML = '';
-  window._plItems.forEach((item, i) => {
-    const c = item.Content;
-    const tmplt = document.getElementById('pl-item-tmpl').content.cloneNode(true);
+    const panel = document.getElementById('pl-items-panel');
+    document.getElementById('pl-count').textContent = window._plItems.length;
     
-    tmplt.querySelector('.pl-thumb').src = c?.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/80x45/111/444';
-    tmplt.querySelector('.pl-title').textContent = c?.title || 'Untitled';
-    tmplt.querySelector('.pl-meta').innerHTML = `<span><i class="fas fa-eye"></i>${formatNumber(c?.views_count||0)}</span><span>${formatDuration(c?.duration)}</span>`;
+    if (!window._plItems.length) {
+        panel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Add videos to your playlist</div>`;
+        return;
+    }
     
-    const el = tmplt.querySelector('.pl-item');
-    el.dataset.id = item.id;
-    el.dataset.pos = i + 1;
-    
-    tmplt.querySelector('.pl-remove').onclick = () => removePLItem(item.id);
-    setupPLDragDrop(el, panel);
-    
-    panel.appendChild(el);
-  });
+    panel.innerHTML = '';
+    window._plItems.forEach((item, i) => {
+        const c = item.Content;
+        const tmplt = document.getElementById('pl-item-tmpl').content.cloneNode(true);
+        
+        tmplt.querySelector('.pl-thumb').src = c?.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/80x45/111/444';
+        tmplt.querySelector('.pl-title').textContent = c?.title || 'Untitled';
+        tmplt.querySelector('.pl-meta').innerHTML = `<span><i class="fas fa-eye"></i>${formatNumber(c?.views_count||0)}</span><span>${formatDuration(c?.duration)}</span>`;
+        
+        const el = tmplt.querySelector('.pl-item');
+        el.dataset.id = item.id;
+        el.dataset.pos = i + 1;
+        
+        tmplt.querySelector('.pl-remove').onclick = () => removePLItem(item.id);
+        
+        // Fix: Pass both the element and the panel container
+        setupPLDragDrop(el, panel);
+        
+        panel.appendChild(el);
+    });
 }
 
-function setupPLDragDrop(el, panel) {
-  el.addEventListener('dragstart', e => { 
-    el.classList.add('dragging'); 
-    e.dataTransfer.effectAllowed = 'move'; 
-  });
-  el.addEventListener('dragend', () => { 
-    el.classList.remove('dragging'); 
-    savePLOrder(); 
-  });
+function setupPLDragDrop(el, container) {
+    el.setAttribute('draggable', 'true');
+    
+    el.addEventListener('dragstart', e => { 
+        el.classList.add('dragging'); 
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', el.dataset.id || '');
+    });
+    
+    el.addEventListener('dragend', () => { 
+        el.classList.remove('dragging'); 
+        savePLOrder(); 
+    });
+    
+    // Add drag over handler to the container
+    if (container && !container.hasDragOverListener) {
+        container.hasDragOverListener = true;
+        container.addEventListener('dragover', e => {
+            e.preventDefault();
+            const draggable = document.querySelector('.pl-item.dragging');
+            if (!draggable) return;
+            
+            const afterElement = getDragAfterElement(container, e.clientY);
+            if (afterElement == null) {
+                container.appendChild(draggable);
+            } else {
+                container.insertBefore(draggable, afterElement);
+            }
+        });
+    }
 }
 
-panel?.addEventListener('dragover', e => {
-  e.preventDefault();
-  const after = [...panel.querySelectorAll('.pl-item:not(.dragging)')].reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const off = e.clientY - box.top - box.height/2;
-    return off < 0 && off > closest.offset ? { offset: off, element: child } : closest;
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-  
-  if (after) panel.querySelector('.dragging').before(after);
-  else panel.appendChild(panel.querySelector('.dragging'));
-});
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.pl-item:not(.dragging)')];
+    
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
 
 async function savePLOrder() {
   const plId = document.getElementById('pl-id').value;
