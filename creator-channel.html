@@ -1525,7 +1525,6 @@ Banner preview
 <span class="notification-badge" id="notification-count" style="display: none;">0</span>
 </button>
 <!-- Theme Toggle Button (New Feature) -->
-<button id="theme-toggle-btn" class="icon-btn" title="Change Theme"><i class="fas fa-palette"></i></button>
 <div class="profile-switcher">
 <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
 <div class="profile-placeholder" id="userProfilePlaceholder">
@@ -1822,13 +1821,6 @@ window.currentPlaylist = null;
 window.playlistItems = [];
 window.creatorLibrary = [];
 
-// Theme System
-window.themes = {
-  dark: { '--deep-black': '#0A0E12', '--deep-navy': '#0F172A', '--soft-white': '#F8FAFC', '--slate-grey': '#94A3B8', '--card-bg': 'rgba(15, 23, 42, 0.6)', '--card-border': 'rgba(148, 163, 184, 0.2)' },
-  light: { '--deep-black': '#F8FAFC', '--deep-navy': '#E2E8F0', '--soft-white': '#0F172A', '--slate-grey': '#475569', '--card-bg': 'rgba(255, 255, 255, 0.85)', '--card-border': 'rgba(0, 0, 0, 0.1)' },
-  'high-contrast': { '--deep-black': '#000', '--deep-navy': '#050505', '--soft-white': '#FFF', '--slate-grey': '#CCC', '--bantu-blue': '#FFD700', '--warm-gold': '#00FFFF', '--card-bg': '#0A0A0A', '--card-border': '#FFF' }
-};
-
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -1911,24 +1903,30 @@ function formatDuration(seconds) {
 
 // ===== THEME SYSTEM FUNCTIONS =====
 function initThemeSystem() {
-  const selector = document.getElementById('theme-selector');
-  const toggle = document.getElementById('theme-toggle-btn');
+  // Remove theme toggle from header
+  const headerThemeBtn = document.getElementById('theme-toggle-btn');
+  if (headerThemeBtn) headerThemeBtn.remove();
+  
+  // Setup sidebar theme toggle
+  const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
+  const themeSelector = document.getElementById('theme-selector');
   
   // Load saved theme
   const saved = localStorage.getItem('bantu_theme') || 'dark';
   applyTheme(saved);
   
-  // Toggle UI
-  if (toggle) {
-    toggle.addEventListener('click', (e) => {
+  // Toggle UI for sidebar
+  if (sidebarThemeToggle && themeSelector) {
+    sidebarThemeToggle.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (selector) selector.classList.toggle('active');
+      themeSelector.classList.toggle('active');
     });
   }
   
   document.addEventListener('click', (e) => {
-    if (selector && selector.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) {
-      selector.classList.remove('active');
+    if (themeSelector && themeSelector.classList.contains('active') && 
+        !themeSelector.contains(e.target) && e.target !== sidebarThemeToggle) {
+      themeSelector.classList.remove('active');
     }
   });
   
@@ -1936,7 +1934,7 @@ function initThemeSystem() {
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.addEventListener('click', () => {
       applyTheme(btn.dataset.theme);
-      if (selector) selector.classList.remove('active');
+      if (themeSelector) themeSelector.classList.remove('active');
     });
   });
 }
@@ -2059,7 +2057,6 @@ function initAnalyticsModal() {
 async function loadChannelAnalytics() {
   if (!window.currentUser || !window.creatorContent) return;
   
-  // Calculate metrics
   const totalViews = window.creatorContent.reduce((s,c) => s + (c.views_count || 0), 0);
   const totalLikes = window.creatorContent.reduce((s,c) => s + (c.likes_count || 0), 0);
   const engagement = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) + '%' : '0%';
@@ -2074,7 +2071,6 @@ async function loadChannelAnalytics() {
   if (engagementEl) engagementEl.textContent = engagement;
   if (watchTimeEl) watchTimeEl.textContent = Math.floor(totalViews * 0.65 / 60) + 'm';
   
-  // Chart.js Integration
   const ctx = document.getElementById('channel-engagement-chart');
   if (!ctx) return;
   
@@ -2157,7 +2153,6 @@ async function openPlaylistBuilder(id = null) {
     return;
   }
   
-  // Reset form
   const plIdInput = document.getElementById('pl-id');
   const plTitleInput = document.getElementById('pl-title');
   const plDescInput = document.getElementById('pl-desc');
@@ -2181,7 +2176,6 @@ async function openPlaylistBuilder(id = null) {
   window._plItems = [];
   
   if (id) {
-    // Edit mode
     if (plModalTitle) plModalTitle.textContent = 'Edit Playlist';
     if (plDeleteBtn) plDeleteBtn.style.display = 'block';
     
@@ -2205,7 +2199,6 @@ async function openPlaylistBuilder(id = null) {
     
     await loadPLItems(pl.id);
   } else {
-    // Create mode
     if (plModalTitle) plModalTitle.textContent = 'Create Playlist';
     if (plItemsPanel) {
       plItemsPanel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>Add videos from your library</p></div>`;
@@ -2297,7 +2290,6 @@ function setupPLDragDrop(el, container) {
     savePLOrder(); 
   });
   
-  // Add drag over handler to the container
   if (container && !container.hasDragOverListener) {
     container.hasDragOverListener = true;
     container.addEventListener('dragover', e => {
@@ -2925,11 +2917,29 @@ async function loadCreatorData() {
     }
     
     if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
-    let playlistsQuery = supabase.from('creator_playlists').select(`*, creator_playlist_items!left (count, Content!content_id (id, title, thumbnail_url, views_count, duration))`).eq('creator_id', window.creatorId);
+    
+    // Updated query for playlists with proper schema
+    let playlistsQuery = supabase.from('creator_playlists')
+      .select(`
+        *,
+        creator_playlist_items (
+          count,
+          Content!content_id (
+            id,
+            title,
+            thumbnail_url,
+            views_count,
+            duration
+          )
+        )
+      `)
+      .eq('creator_id', window.creatorId);
+    
     if (!window.currentUser || window.currentUser.id !== window.creatorId) {
       playlistsQuery = playlistsQuery.eq('visibility', 'public');
     }
-    const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('updated_at', { ascending: false }).limit(10);
+    
+    const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
     if (playlistsError) console.error('Error loading playlists:', playlistsError);
     window.playlists = playlistsData || [];
     
@@ -3328,8 +3338,17 @@ function updateIdentityCard() {
   if (websiteLink) {
     if (window.creatorProfile.website_url) {
       websiteLink.href = window.creatorProfile.website_url;
-      websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\//, '');
-      websiteLink.style.display = 'block';
+      // Truncate long URLs to prevent overflow
+      let displayUrl = window.creatorProfile.website_url.replace(/^https?:\/\//, '');
+      if (displayUrl.length > 40) {
+        displayUrl = displayUrl.substring(0, 37) + '...';
+      }
+      websiteLink.textContent = displayUrl;
+      websiteLink.style.display = 'inline-block';
+      websiteLink.style.maxWidth = '100%';
+      websiteLink.style.overflow = 'hidden';
+      websiteLink.style.textOverflow = 'ellipsis';
+      websiteLink.style.whiteSpace = 'nowrap';
     } else {
       websiteLink.style.display = 'none';
     }
@@ -3368,7 +3387,7 @@ function updatePlaylistsUI() {
     const sorted = [...window.playlists].sort((a, b) => {
       if (a.is_featured && !b.is_featured) return -1;
       if (!a.is_featured && b.is_featured) return 1;
-      return new Date(b.updated_at) - new Date(a.updated_at);
+      return new Date(b.created_at) - new Date(a.created_at);
     });
     
     playlistGrid.innerHTML = sorted.map(playlist => {
@@ -4131,6 +4150,6 @@ supabase.auth.onAuthStateChange((event, session) => {
 // Start
 initializeCreatorChannel();
 })();
-</script>
+</script>>
 </body>
 </html>
