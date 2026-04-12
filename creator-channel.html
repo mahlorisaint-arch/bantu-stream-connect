@@ -1885,7 +1885,7 @@ function getInitials(name) {
 function fixMediaUrl(url) {
   if (!url) return '';
   if (url.startsWith('http')) return url;
-  if (url.startsWith('')) return url;
+  if (url.startsWith('data:')) return url;
   return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 
@@ -1909,24 +1909,25 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// ===== THEME SYSTEM FUNCTIONS (New Feature) =====
+// ===== THEME SYSTEM FUNCTIONS =====
 function initThemeSystem() {
   const selector = document.getElementById('theme-selector');
   const toggle = document.getElementById('theme-toggle-btn');
-  const themes = ['dark', 'light', 'high-contrast'];
   
   // Load saved theme
   const saved = localStorage.getItem('bantu_theme') || 'dark';
   applyTheme(saved);
   
   // Toggle UI
-  toggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    selector.classList.toggle('active');
-  });
+  if (toggle) {
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (selector) selector.classList.toggle('active');
+    });
+  }
   
   document.addEventListener('click', (e) => {
-    if (selector.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) {
+    if (selector && selector.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) {
       selector.classList.remove('active');
     }
   });
@@ -1935,7 +1936,7 @@ function initThemeSystem() {
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.addEventListener('click', () => {
       applyTheme(btn.dataset.theme);
-      selector.classList.remove('active');
+      if (selector) selector.classList.remove('active');
     });
   });
 }
@@ -1953,17 +1954,106 @@ function applyTheme(theme) {
   if(typeof showToast === 'function') showToast(`Theme changed to ${theme}`, 'success');
 }
 
-// ===== ANALYTICS FUNCTIONS (New Feature) =====
+// ===== UI SCALE CONTROLS =====
+function setupScaleControls() {
+  const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+  const increaseBtn = document.getElementById('sidebar-scale-increase');
+  const resetBtn = document.getElementById('sidebar-scale-reset');
+  
+  if (decreaseBtn) {
+    decreaseBtn.addEventListener('click', () => {
+      if (window.uiScaleController) window.uiScaleController.decrease();
+    });
+  }
+  
+  if (increaseBtn) {
+    increaseBtn.addEventListener('click', () => {
+      if (window.uiScaleController) window.uiScaleController.increase();
+    });
+  }
+  
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (window.uiScaleController) window.uiScaleController.reset();
+    });
+  }
+}
+
+class UIScaleController {
+  constructor() {
+    this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    this.minScale = 0.8;
+    this.maxScale = 1.4;
+    this.step = 0.1;
+  }
+  
+  init() {
+    this.applyScale();
+    this.setupEventListeners();
+  }
+  
+  setupEventListeners() {
+    document.addEventListener('scaleChanged', (e) => {
+      this.updateScaleDisplay(e.detail.scale);
+    });
+  }
+  
+  applyScale() {
+    document.documentElement.style.setProperty('--ui-scale', this.scale);
+    localStorage.setItem('bantu_ui_scale', this.scale.toString());
+    document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale: this.scale } }));
+  }
+  
+  increase() {
+    if (this.scale < this.maxScale) {
+      this.scale = Math.min(this.maxScale, this.scale + this.step);
+      this.applyScale();
+    }
+  }
+  
+  decrease() {
+    if (this.scale > this.minScale) {
+      this.scale = Math.max(this.minScale, this.scale - this.step);
+      this.applyScale();
+    }
+  }
+  
+  reset() {
+    this.scale = 1;
+    this.applyScale();
+  }
+  
+  getScale() { return this.scale; }
+  
+  updateScaleDisplay(scale) {
+    const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
+    displays.forEach(el => {
+      if (el) el.textContent = Math.round(scale * 100) + '%';
+    });
+  }
+}
+
+// ===== ANALYTICS FUNCTIONS =====
 function initAnalyticsModal() {
   const modal = document.getElementById('analytics-modal');
+  if (!modal) return;
   
-  document.getElementById('analytics-btn')?.addEventListener('click', () => {
-    modal.classList.add('active');
-    loadChannelAnalytics();
+  const analyticsBtn = document.getElementById('analytics-btn');
+  if (analyticsBtn) {
+    analyticsBtn.addEventListener('click', () => {
+      modal.classList.add('active');
+      loadChannelAnalytics();
+    });
+  }
+  
+  const closeBtn = document.getElementById('close-analytics');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+  }
+  
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.classList.remove('active');
   });
-  
-  document.getElementById('close-analytics')?.addEventListener('click', () => modal.classList.remove('active'));
-  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
 }
 
 async function loadChannelAnalytics() {
@@ -1974,23 +2064,30 @@ async function loadChannelAnalytics() {
   const totalLikes = window.creatorContent.reduce((s,c) => s + (c.likes_count || 0), 0);
   const engagement = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) + '%' : '0%';
   
-  document.getElementById('analytics-views').textContent = formatNumber(totalViews);
-  document.getElementById('analytics-connectors').textContent = formatNumber(window.connectorCount || 0);
-  document.getElementById('analytics-engagement').textContent = engagement;
-  document.getElementById('analytics-watch-time').textContent = Math.floor(totalViews * 0.65 / 60) + 'm';
+  const viewsEl = document.getElementById('analytics-views');
+  const connectorsEl = document.getElementById('analytics-connectors');
+  const engagementEl = document.getElementById('analytics-engagement');
+  const watchTimeEl = document.getElementById('analytics-watch-time');
+  
+  if (viewsEl) viewsEl.textContent = formatNumber(totalViews);
+  if (connectorsEl) connectorsEl.textContent = formatNumber(window.connectorCount || 0);
+  if (engagementEl) engagementEl.textContent = engagement;
+  if (watchTimeEl) watchTimeEl.textContent = Math.floor(totalViews * 0.65 / 60) + 'm';
   
   // Chart.js Integration
-  const ctx = document.getElementById('channel-engagement-chart').getContext('2d');
+  const ctx = document.getElementById('channel-engagement-chart');
+  if (!ctx) return;
+  
   if (window._analyticsChart) window._analyticsChart.destroy();
   
   window._analyticsChart = new Chart(ctx, {
     type: 'line',
-     {
+    data: {
       labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       datasets: [
         { 
           label: 'Views', 
-           [65, 80, 50, 90, 110, 75, 120], 
+          data: [65, 80, 50, 90, 110, 75, 120], 
           borderColor: '#F59E0B', 
           backgroundColor: 'rgba(245,158,11,0.1)', 
           tension: 0.4, 
@@ -1998,7 +2095,7 @@ async function loadChannelAnalytics() {
         },
         { 
           label: 'Connects', 
-           [12, 19, 15, 25, 22, 30, 35], 
+          data: [12, 19, 15, 25, 22, 30, 35], 
           borderColor: '#1D4ED8', 
           backgroundColor: 'rgba(29,78,216,0.1)', 
           tension: 0.4, 
@@ -2026,220 +2123,315 @@ async function loadChannelAnalytics() {
   });
 }
 
-// ===== PLAYLIST BUILDER FUNCTIONS (New Feature - Enhanced) =====
+// ===== PLAYLIST BUILDER FUNCTIONS =====
 function initPlaylistBuilder() {
   const modal = document.getElementById('playlist-builder-modal');
+  if (!modal) return;
   
-  document.getElementById('new-playlist-btn')?.addEventListener('click', () => openPlaylistBuilder());
-  document.getElementById('close-pl-modal')?.addEventListener('click', () => modal.classList.remove('active'));
-  document.getElementById('pl-save-btn')?.addEventListener('click', savePlaylist);
-  document.getElementById('pl-delete-btn')?.addEventListener('click', deletePlaylist);
+  const newBtn = document.getElementById('new-playlist-btn');
+  if (newBtn) {
+    newBtn.addEventListener('click', () => openPlaylistBuilder());
+  }
+  
+  const closeBtn = document.getElementById('close-pl-modal');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+  }
+  
+  const saveBtn = document.getElementById('pl-save-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', savePlaylist);
+  }
+  
+  const deleteBtn = document.getElementById('pl-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', deletePlaylist);
+  }
   
   setupPlaylistTabs();
 }
 
 async function openPlaylistBuilder(id = null) {
-  if (!window.currentUser || window.currentUser.id !== window.creatorId) return showToast('Creator only', 'warning');
+  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+    showToast('Creator only', 'warning');
+    return;
+  }
   
   // Reset form
-  document.getElementById('pl-id').value = '';
-  document.getElementById('pl-title').value = '';
-  document.getElementById('pl-desc').value = '';
-  document.getElementById('pl-type').value = 'playlist';
-  document.getElementById('pl-vis').value = 'public';
-  document.getElementById('pl-featured').checked = false;
-  document.getElementById('pl-delete-btn').style.display = 'none';
-  document.getElementById('pl-items-panel').innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Loading...</div>`;
-  document.getElementById('pl-count').textContent = '0';
+  const plIdInput = document.getElementById('pl-id');
+  const plTitleInput = document.getElementById('pl-title');
+  const plDescInput = document.getElementById('pl-desc');
+  const plTypeSelect = document.getElementById('pl-type');
+  const plVisSelect = document.getElementById('pl-vis');
+  const plFeaturedCheck = document.getElementById('pl-featured');
+  const plDeleteBtn = document.getElementById('pl-delete-btn');
+  const plItemsPanel = document.getElementById('pl-items-panel');
+  const plCountSpan = document.getElementById('pl-count');
+  const plModalTitle = document.getElementById('pl-modal-title');
+  
+  if (plIdInput) plIdInput.value = '';
+  if (plTitleInput) plTitleInput.value = '';
+  if (plDescInput) plDescInput.value = '';
+  if (plTypeSelect) plTypeSelect.value = 'playlist';
+  if (plVisSelect) plVisSelect.value = 'public';
+  if (plFeaturedCheck) plFeaturedCheck.checked = false;
+  if (plDeleteBtn) plDeleteBtn.style.display = 'none';
+  if (plItemsPanel) plItemsPanel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Loading...</div>`;
+  if (plCountSpan) plCountSpan.textContent = '0';
   window._plItems = [];
   
   if (id) {
     // Edit mode
-    document.getElementById('pl-modal-title').textContent = 'Edit Playlist';
-    document.getElementById('pl-delete-btn').style.display = 'block';
+    if (plModalTitle) plModalTitle.textContent = 'Edit Playlist';
+    if (plDeleteBtn) plDeleteBtn.style.display = 'block';
     
-    const {  pl } = await window.supabase.from('creator_playlists')
+    const { data: pl, error } = await supabase.from('creator_playlists')
       .select('*')
       .eq('id', id)
       .eq('creator_id', window.creatorId)
       .maybeSingle();
     
-    if (!pl) return showToast('Not found', 'error');
+    if (error || !pl) {
+      showToast('Not found', 'error');
+      return;
+    }
     
-    document.getElementById('pl-id').value = pl.id;
-    document.getElementById('pl-title').value = pl.name || '';
-    document.getElementById('pl-desc').value = pl.description || '';
-    document.getElementById('pl-type').value = pl.playlist_type || 'playlist';
-    document.getElementById('pl-vis').value = pl.visibility || 'public';
-    document.getElementById('pl-featured').checked = pl.is_featured || false;
+    if (plIdInput) plIdInput.value = pl.id;
+    if (plTitleInput) plTitleInput.value = pl.name || '';
+    if (plDescInput) plDescInput.value = pl.description || '';
+    if (plTypeSelect) plTypeSelect.value = pl.playlist_type || 'playlist';
+    if (plVisSelect) plVisSelect.value = pl.visibility || 'public';
+    if (plFeaturedCheck) plFeaturedCheck.checked = pl.is_featured || false;
     
     await loadPLItems(pl.id);
   } else {
     // Create mode
-    document.getElementById('pl-modal-title').textContent = 'Create Playlist';
-    document.getElementById('pl-items-panel').innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>Add videos from your library</p></div>`;
+    if (plModalTitle) plModalTitle.textContent = 'Create Playlist';
+    if (plItemsPanel) {
+      plItemsPanel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>Add videos from your library</p></div>`;
+    }
   }
   
   await loadPLLibrary();
-  document.getElementById('playlist-builder-modal').classList.add('active');
+  const modal = document.getElementById('playlist-builder-modal');
+  if (modal) modal.classList.add('active');
 }
 
 async function loadPLItems(plId) {
-  const {  items } = await window.supabase
+  const { data: items, error } = await supabase
     .from('creator_playlist_items')
     .select('*, Content!content_id(id,title,thumbnail_url,duration,views_count,created_at,media_type)')
     .eq('playlist_id', plId)
-    .order('position', {ascending:true});
+    .order('position', {ascending: true});
   
-  window._plItems = items || [];
-  renderPLItems();
+  if (!error) {
+    window._plItems = items || [];
+    renderPLItems();
+  }
 }
 
 function renderPLItems() {
-    const panel = document.getElementById('pl-items-panel');
-    document.getElementById('pl-count').textContent = window._plItems.length;
-    
-    if (!window._plItems.length) {
-        panel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Add videos to your playlist</div>`;
-        return;
-    }
-    
-    panel.innerHTML = '';
-    window._plItems.forEach((item, i) => {
-        const c = item.Content;
-        const tmplt = document.getElementById('pl-item-tmpl').content.cloneNode(true);
-        
-        tmplt.querySelector('.pl-thumb').src = c?.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/80x45/111/444';
-        tmplt.querySelector('.pl-title').textContent = c?.title || 'Untitled';
-        tmplt.querySelector('.pl-meta').innerHTML = `<span><i class="fas fa-eye"></i>${formatNumber(c?.views_count||0)}</span><span>${formatDuration(c?.duration)}</span>`;
-        
-        const el = tmplt.querySelector('.pl-item');
-        el.dataset.id = item.id;
-        el.dataset.pos = i + 1;
-        
-        tmplt.querySelector('.pl-remove').onclick = () => removePLItem(item.id);
-        
-        // Fix: Pass both the element and the panel container
-        setupPLDragDrop(el, panel);
-        
-        panel.appendChild(el);
-    });
-}
-
-function setupPLDragDrop(el, container) {
-    el.setAttribute('draggable', 'true');
-    
-    el.addEventListener('dragstart', e => { 
-        el.classList.add('dragging'); 
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', el.dataset.id || '');
-    });
-    
-    el.addEventListener('dragend', () => { 
-        el.classList.remove('dragging'); 
-        savePLOrder(); 
-    });
-    
-    // Add drag over handler to the container
-    if (container && !container.hasDragOverListener) {
-        container.hasDragOverListener = true;
-        container.addEventListener('dragover', e => {
-            e.preventDefault();
-            const draggable = document.querySelector('.pl-item.dragging');
-            if (!draggable) return;
-            
-            const afterElement = getDragAfterElement(container, e.clientY);
-            if (afterElement == null) {
-                container.appendChild(draggable);
-            } else {
-                container.insertBefore(draggable, afterElement);
-            }
-        });
-    }
-}
-
-function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.pl-item:not(.dragging)')];
-    
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-    
-async function savePLOrder() {
-  const plId = document.getElementById('pl-id').value;
-  if(!plId) return;
+  const panel = document.getElementById('pl-items-panel');
+  const countSpan = document.getElementById('pl-count');
   
-  document.querySelectorAll('.pl-item').forEach((el, i) => {
-    window.supabase.from('creator_playlist_items').update({position: i+1}).eq('id', el.dataset.id);
+  if (!panel) return;
+  if (countSpan) countSpan.textContent = window._plItems.length;
+  
+  if (!window._plItems.length) {
+    panel.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);">Add videos to your playlist</div>`;
+    return;
+  }
+  
+  panel.innerHTML = '';
+  window._plItems.forEach((item, i) => {
+    const c = item.Content;
+    const tmplt = document.getElementById('pl-item-tmpl');
+    if (!tmplt) return;
+    
+    const clone = tmplt.content.cloneNode(true);
+    
+    const thumb = clone.querySelector('.pl-thumb');
+    if (thumb) {
+      thumb.src = c?.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/80x45/111/444';
+    }
+    
+    const title = clone.querySelector('.pl-title');
+    if (title) title.textContent = c?.title || 'Untitled';
+    
+    const meta = clone.querySelector('.pl-meta');
+    if (meta) {
+      meta.innerHTML = `<span><i class="fas fa-eye"></i>${formatNumber(c?.views_count||0)}</span><span>${formatDuration(c?.duration)}</span>`;
+    }
+    
+    const el = clone.querySelector('.pl-item');
+    if (el) {
+      el.dataset.id = item.id;
+      el.dataset.pos = i + 1;
+    }
+    
+    const removeBtn = clone.querySelector('.pl-remove');
+    if (removeBtn) {
+      removeBtn.onclick = () => removePLItem(item.id);
+    }
+    
+    if (el && panel) {
+      setupPLDragDrop(el, panel);
+      panel.appendChild(el);
+    }
   });
 }
 
-async function loadPLLibrary(filter='all', search='') {
-  let q = window.supabase.from('Content')
+function setupPLDragDrop(el, container) {
+  if (!el || !container) return;
+  
+  el.setAttribute('draggable', 'true');
+  
+  el.addEventListener('dragstart', e => { 
+    el.classList.add('dragging'); 
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', el.dataset.id || '');
+  });
+  
+  el.addEventListener('dragend', () => { 
+    el.classList.remove('dragging'); 
+    savePLOrder(); 
+  });
+  
+  // Add drag over handler to the container
+  if (container && !container.hasDragOverListener) {
+    container.hasDragOverListener = true;
+    container.addEventListener('dragover', e => {
+      e.preventDefault();
+      const draggable = document.querySelector('.pl-item.dragging');
+      if (!draggable) return;
+      
+      const afterElement = getDragAfterElement(container, e.clientY);
+      if (afterElement == null) {
+        container.appendChild(draggable);
+      } else {
+        container.insertBefore(draggable, afterElement);
+      }
+    });
+  }
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.pl-item:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function savePLOrder() {
+  const plId = document.getElementById('pl-id')?.value;
+  if (!plId) return;
+  
+  const items = document.querySelectorAll('.pl-item');
+  for (let i = 0; i < items.length; i++) {
+    const el = items[i];
+    await supabase.from('creator_playlist_items').update({position: i+1}).eq('id', el.dataset.id);
+  }
+}
+
+async function loadPLLibrary(filter = 'all', search = '') {
+  let query = supabase.from('Content')
     .select('id,title,thumbnail_url,duration,views_count,media_type,genre')
     .eq('user_id', window.creatorId)
-    .eq('status','published')
-    .order('created_at',{ascending:false})
+    .eq('status', 'published')
+    .order('created_at', {ascending: false})
     .limit(50);
   
-  if(filter!=='all') {
-    q = filter==='short' ? q.eq('media_type','short') : q.or('media_type.eq.video,media_type.is.null');
+  if (filter !== 'all') {
+    if (filter === 'short') {
+      query = query.eq('media_type', 'short');
+    } else {
+      query = query.or('media_type.eq.video,media_type.is.null');
+    }
   }
-  if(search) q = q.ilike('title', `%${search}%`);
+  if (search) query = query.ilike('title', `%${search}%`);
   
-  const { data } = await q;
+  const { data } = await query;
   window._plLib = data || [];
   renderPLLib(filter, search);
 }
 
 function renderPLLib(filter, search) {
   const grid = document.getElementById('pl-lib-grid');
-  const added = new Set(window._plItems.map(i=>i.content_id));
+  if (!grid) return;
+  
+  const added = new Set(window._plItems.map(i => i.content_id));
   const lib = window._plLib.filter(c => !added.has(c.id));
   
-  grid.innerHTML = lib.map(c => {
-    const tmplt = document.getElementById('pl-lib-tmpl').content.cloneNode(true);
-    tmplt.querySelector('.lb-thumb').src = c.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/160x90/111/444';
-    tmplt.querySelector('.lb-title').textContent = c.title;
-    tmplt.querySelector('.lb-views').textContent = `${formatNumber(c.views_count||0)} views`;
-    tmplt.querySelector('.lb-add').onclick = (e) => { e.stopPropagation(); addPLItem(c.id); };
-    return tmplt.querySelector('.pl-lib-card').outerHTML;
-  }).join('');
+  const searchInput = document.getElementById('pl-lib-search');
+  if (searchInput) {
+    searchInput.oninput = (e) => { 
+      clearTimeout(window._libTimer); 
+      window._libTimer = setTimeout(() => loadPLLibrary(filter, e.target.value), 300); 
+    };
+  }
   
-  document.getElementById('pl-lib-search').oninput = e => { 
-    clearTimeout(window._libTimer); 
-    window._libTimer = setTimeout(()=>loadPLLibrary(filter, e.target.value), 300); 
-  };
-  
-  document.querySelectorAll('.pl-filter').forEach(b => {
+  const filters = document.querySelectorAll('.pl-filter');
+  filters.forEach(b => {
     b.onclick = () => {
-      document.querySelectorAll('.pl-filter').forEach(x=>x.classList.remove('active'));
+      filters.forEach(x => x.classList.remove('active'));
       b.classList.add('active');
-      loadPLLibrary(b.dataset.f, document.getElementById('pl-lib-search').value);
+      const searchVal = document.getElementById('pl-lib-search')?.value || '';
+      loadPLLibrary(b.dataset.f, searchVal);
     };
   });
+  
+  grid.innerHTML = lib.map(c => {
+    const tmplt = document.getElementById('pl-lib-tmpl');
+    if (!tmplt) return '';
+    const clone = tmplt.content.cloneNode(true);
+    
+    const thumb = clone.querySelector('.lb-thumb');
+    if (thumb) {
+      thumb.src = c.thumbnail_url ? fixMediaUrl(c.thumbnail_url) : 'https://via.placeholder.com/160x90/111/444';
+    }
+    
+    const title = clone.querySelector('.lb-title');
+    if (title) title.textContent = c.title;
+    
+    const views = clone.querySelector('.lb-views');
+    if (views) views.textContent = `${formatNumber(c.views_count||0)} views`;
+    
+    const addBtn = clone.querySelector('.lb-add');
+    if (addBtn) {
+      addBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        addPLItem(c.id); 
+      };
+    }
+    
+    const card = clone.querySelector('.pl-lib-card');
+    return card ? card.outerHTML : '';
+  }).join('');
 }
 
 async function addPLItem(contentId) {
-  const plId = document.getElementById('pl-id').value;
-  if(!plId) return showToast('Save playlist first', 'warning');
+  const plId = document.getElementById('pl-id')?.value;
+  if (!plId) {
+    showToast('Save playlist first', 'warning');
+    return;
+  }
   
-  const max = window._plItems.length ? Math.max(...window._plItems.map(i=>i.position||0)) : 0;
-  const { error } = await window.supabase.from('creator_playlist_items').insert({
-    playlist_id:plId,
-    content_id:parseInt(contentId),
-    position:max+1,
-    added_at:new Date().toISOString()
+  const max = window._plItems.length ? Math.max(...window._plItems.map(i => i.position || 0)) : 0;
+  const { error } = await supabase.from('creator_playlist_items').insert({
+    playlist_id: plId,
+    content_id: parseInt(contentId),
+    position: max + 1,
+    added_at: new Date().toISOString()
   });
   
-  if(!error) {
+  if (!error) {
     await loadPLItems(plId);
     loadPLLibrary();
     showToast('Added!', 'success');
@@ -2247,62 +2439,85 @@ async function addPLItem(contentId) {
 }
 
 async function removePLItem(id) {
-  await window.supabase.from('creator_playlist_items').delete().eq('id', id);
-  await loadPLItems(document.getElementById('pl-id').value);
-  loadPLLibrary();
+  await supabase.from('creator_playlist_items').delete().eq('id', id);
+  const plId = document.getElementById('pl-id')?.value;
+  if (plId) {
+    await loadPLItems(plId);
+    loadPLLibrary();
+  }
 }
 
 function setupPlaylistTabs() {
-  document.querySelectorAll('.pl-tab').forEach(t => {
+  const tabs = document.querySelectorAll('.pl-tab');
+  tabs.forEach(t => {
     t.onclick = () => {
-      document.querySelectorAll('.pl-tab').forEach(x=>{
+      tabs.forEach(x => {
         x.classList.remove('active');
-        x.style.color='var(--slate-grey)';
-        x.style.borderBottomColor='transparent';
+        x.style.color = 'var(--slate-grey)';
+        x.style.borderBottomColor = 'transparent';
       });
       t.classList.add('active');
-      t.style.color='var(--soft-white)';
-      t.style.borderBottomColor='var(--warm-gold)';
+      t.style.color = 'var(--soft-white)';
+      t.style.borderBottomColor = 'var(--warm-gold)';
       
-      document.getElementById('pl-items-panel').style.display = t.dataset.tab==='items'?'block':'none';
-      document.getElementById('pl-library-panel').style.display = t.dataset.tab==='library'?'block':'none';
+      const itemsPanel = document.getElementById('pl-items-panel');
+      const libraryPanel = document.getElementById('pl-library-panel');
+      
+      if (itemsPanel) itemsPanel.style.display = t.dataset.tab === 'items' ? 'block' : 'none';
+      if (libraryPanel) libraryPanel.style.display = t.dataset.tab === 'library' ? 'block' : 'none';
     };
   });
 }
 
 async function savePlaylist() {
-  const title = document.getElementById('pl-title').value.trim();
-  if(!title) return showToast('Title required', 'warning');
+  const title = document.getElementById('pl-title')?.value.trim();
+  if (!title) {
+    showToast('Title required', 'warning');
+    return;
+  }
   
-  const id = document.getElementById('pl-id').value;
+  const id = document.getElementById('pl-id')?.value;
   const data = {
     creator_id: window.creatorId,
     name: title,
-    description: document.getElementById('pl-desc').value,
-    playlist_type: document.getElementById('pl-type').value,
-    visibility: document.getElementById('pl-vis').value,
-    is_featured: document.getElementById('pl-featured').checked,
+    description: document.getElementById('pl-desc')?.value || '',
+    playlist_type: document.getElementById('pl-type')?.value || 'playlist',
+    visibility: document.getElementById('pl-vis')?.value || 'public',
+    is_featured: document.getElementById('pl-featured')?.checked || false,
     updated_at: new Date().toISOString()
   };
   
-  const res = id 
-    ? await window.supabase.from('creator_playlists').update(data).eq('id',id).eq('creator_id',window.creatorId).select().single()
-    : await window.supabase.from('creator_playlists').insert([{...data, created_at:new Date().toISOString()}]).select().single();
+  let result;
+  if (id) {
+    result = await supabase.from('creator_playlists')
+      .update(data)
+      .eq('id', id)
+      .eq('creator_id', window.creatorId)
+      .select()
+      .single();
+  } else {
+    result = await supabase.from('creator_playlists')
+      .insert([{...data, created_at: new Date().toISOString()}])
+      .select()
+      .single();
+  }
   
-  if(!res.error) {
+  if (!result.error) {
     await loadCreatorData();
-    document.getElementById('playlist-builder-modal').classList.remove('active');
-    showToast(id?'Updated!':'Created!', 'success');
+    const modal = document.getElementById('playlist-builder-modal');
+    if (modal) modal.classList.remove('active');
+    showToast(id ? 'Updated!' : 'Created!', 'success');
   }
 }
 
 async function deletePlaylist() {
-  const id = document.getElementById('pl-id').value;
-  if(!id || !confirm('Delete playlist?')) return;
+  const id = document.getElementById('pl-id')?.value;
+  if (!id || !confirm('Delete playlist?')) return;
   
-  await window.supabase.from('creator_playlists').delete().eq('id',id).eq('creator_id',window.creatorId);
+  await supabase.from('creator_playlists').delete().eq('id', id).eq('creator_id', window.creatorId);
   await loadCreatorData();
-  document.getElementById('playlist-builder-modal').classList.remove('active');
+  const modal = document.getElementById('playlist-builder-modal');
+  if (modal) modal.classList.remove('active');
   showToast('Deleted', 'info');
 }
 
@@ -2327,40 +2542,69 @@ function setupSidebar() {
     document.body.style.overflow = '';
   };
   
-  menuToggle.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openSidebar(); });
+  menuToggle.addEventListener('click', (e) => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    openSidebar(); 
+  });
   sidebarClose.addEventListener('click', closeSidebar);
   sidebarOverlay.addEventListener('click', closeSidebar);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar(); });
+  document.addEventListener('keydown', (e) => { 
+    if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar(); 
+  });
 }
 
 // Navigation buttons
 function setupNavigationButtons() {
-  document.getElementById('nav-home-btn')?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'index.html'; });
-  document.getElementById('nav-history-btn')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if (!window.currentUser) {
-      showToast('Please sign in to view watch history', 'warning');
-      window.location.href = `login.html?redirect=watch-history.html`;
-      return;
-    }
-    window.location.href = 'watch-history.html';
-  });
-  document.getElementById('nav-create-btn')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) { window.location.href = 'creator-upload.html'; }
-    else { showToast('Please sign in to create content', 'warning'); window.location.href = `login.html?redirect=creator-upload.html`; }
-  });
-  document.getElementById('nav-menu-btn')?.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    const sidebarMenu = document.getElementById('sidebar-menu');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    if (sidebarMenu && sidebarOverlay) {
-      sidebarMenu.classList.add('active');
-      sidebarOverlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-  });
+  const navHome = document.getElementById('nav-home-btn');
+  if (navHome) {
+    navHome.addEventListener('click', (e) => { 
+      e.preventDefault(); 
+      window.location.href = 'index.html'; 
+    });
+  }
+  
+  const navHistory = document.getElementById('nav-history-btn');
+  if (navHistory) {
+    navHistory.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (!window.currentUser) {
+        showToast('Please sign in to view watch history', 'warning');
+        window.location.href = `login.html?redirect=watch-history.html`;
+        return;
+      }
+      window.location.href = 'watch-history.html';
+    });
+  }
+  
+  const navCreate = document.getElementById('nav-create-btn');
+  if (navCreate) {
+    navCreate.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const { data } = await supabase.auth.getSession();
+      if (data?.session) {
+        window.location.href = 'creator-upload.html';
+      } else {
+        showToast('Please sign in to create content', 'warning');
+        window.location.href = `login.html?redirect=creator-upload.html`;
+      }
+    });
+  }
+  
+  const navMenu = document.getElementById('nav-menu-btn');
+  if (navMenu) {
+    navMenu.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sidebarMenu = document.getElementById('sidebar-menu');
+      const sidebarOverlay = document.getElementById('sidebar-overlay');
+      if (sidebarMenu && sidebarOverlay) {
+        sidebarMenu.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    });
+  }
 }
 
 // Profile update
@@ -2396,19 +2640,27 @@ async function updateProfileUI() {
           fallback.className = 'profile-placeholder';
           fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
           fallback.textContent = getInitials(displayName);
-          placeholder.innerHTML = ''; placeholder.appendChild(fallback);
-          if (sidebarAvatar) { sidebarAvatar.innerHTML = ''; sidebarAvatar.appendChild(fallback.cloneNode(true)); }
+          placeholder.innerHTML = '';
+          placeholder.appendChild(fallback);
+          if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.appendChild(fallback.cloneNode(true));
+          }
         };
         placeholder.appendChild(img);
         if (sidebarAvatar) {
           const sidebarImg = img.cloneNode(true);
-          sidebarImg.onload = () => { sidebarAvatar.innerHTML = ''; sidebarAvatar.appendChild(sidebarImg); };
+          sidebarImg.onload = () => {
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.appendChild(sidebarImg);
+          };
           sidebarImg.onerror = () => {
             const fallback = document.createElement('div');
             fallback.className = 'profile-placeholder';
             fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
             fallback.textContent = getInitials(displayName);
-            sidebarAvatar.innerHTML = ''; sidebarAvatar.appendChild(fallback);
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.appendChild(fallback);
           };
         }
       } else {
@@ -2419,10 +2671,13 @@ async function updateProfileUI() {
         placeholder.appendChild(fallback);
         if (sidebarAvatar) {
           const sidebarFallback = fallback.cloneNode(true);
-          sidebarAvatar.innerHTML = ''; sidebarAvatar.appendChild(sidebarFallback);
+          sidebarAvatar.innerHTML = '';
+          sidebarAvatar.appendChild(sidebarFallback);
         }
       }
-    } catch (e) { console.warn('Profile fetch error:', e); }
+    } catch (e) {
+      console.warn('Profile fetch error:', e);
+    }
   } else {
     nameEl.textContent = 'Guest';
     if (sidebarName) sidebarName.textContent = 'Guest';
@@ -2435,45 +2690,59 @@ async function updateProfileUI() {
 // Notifications
 async function loadNotifications() {
   try {
-    if (!window.currentUser) { updateNotificationBadge(0); return; }
+    if (!window.currentUser) {
+      updateNotificationBadge(0);
+      return;
+    }
     const { data, error } = await supabase.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
     if (error) throw error;
     window.notifications = data || [];
     const unreadCount = window.notifications.filter(n => !n.is_read).length;
     updateNotificationBadge(unreadCount);
-  } catch (error) { console.error('Error loading notifications:', error); updateNotificationBadge(0); }
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    updateNotificationBadge(0);
+  }
 }
 
 function updateNotificationBadge(count) {
   const mainBadge = document.getElementById('notification-count');
   const sidebarBadge = document.getElementById('sidebar-notification-count');
   [mainBadge, sidebarBadge].forEach(badge => {
-    if (badge) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+    if (badge) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
   });
 }
 
 // Auth check
 async function checkAuth() {
   try {
-    const {  { session }, error } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-    window.currentUser = session?.user || null;
+    window.currentUser = data?.session?.user || null;
     if (window.currentUser) {
       console.log('✅ User authenticated:', window.currentUser.email);
       await loadUserProfile();
     }
     return window.currentUser;
-  } catch (error) { console.error('Auth check error:', error); return null; }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    return null;
+  }
 }
 
 async function loadUserProfile() {
   try {
     if (!window.currentUser) return;
-    const {  profile, error } = await supabase.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
+    const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
     if (error) throw error;
-    updateProfileUI(profile);
+    updateProfileUI();
     await loadNotifications();
-  } catch (error) { console.error('Error loading profile:', error); }
+  } catch (error) {
+    console.error('Error loading profile:', error);
+  }
 }
 
 // Banner functions
@@ -2488,20 +2757,30 @@ function setBannerImage(url) {
   if (!url) return;
   const banner = document.getElementById('channel-banner');
   window.bannerUrl = url;
-  banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
+  if (banner) {
+    banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
+  }
 }
 
 function showBannerUploadModal() {
   if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can change the banner', 'warning'); return;
+    showToast('Only the channel owner can change the banner', 'warning');
+    return;
   }
-  document.getElementById('banner-upload-modal').classList.add('active');
-  document.getElementById('banner-preview-img').style.display = 'none';
-  document.getElementById('banner-preview-placeholder').style.display = 'flex';
-  document.getElementById('banner-url-input').value = '';
+  const modal = document.getElementById('banner-upload-modal');
+  if (modal) modal.classList.add('active');
+  const previewImg = document.getElementById('banner-preview-img');
+  const placeholder = document.getElementById('banner-preview-placeholder');
+  const urlInput = document.getElementById('banner-url-input');
+  if (previewImg) previewImg.style.display = 'none';
+  if (placeholder) placeholder.style.display = 'flex';
+  if (urlInput) urlInput.value = '';
 }
 
-function hideBannerUploadModal() { document.getElementById('banner-upload-modal').classList.remove('active'); }
+function hideBannerUploadModal() {
+  const modal = document.getElementById('banner-upload-modal');
+  if (modal) modal.classList.remove('active');
+}
 
 async function saveBanner(url) {
   if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
@@ -2511,93 +2790,126 @@ async function saveBanner(url) {
     if (error) throw error;
     showToast('Banner updated successfully!', 'success');
     hideBannerUploadModal();
-  } catch (error) { console.error('Error saving banner:', error); showToast('Failed to save banner', 'error'); }
+  } catch (error) {
+    console.error('Error saving banner:', error);
+    showToast('Failed to save banner', 'error');
+  }
 }
 
 // Edit About Modal
 function showEditAboutModal() {
   if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can edit this section', 'warning'); return;
+    showToast('Only the channel owner can edit this section', 'warning');
+    return;
   }
-  document.getElementById('edit-quote').value = window.creatorProfile.quote || '';
-  document.getElementById('edit-mission').value = window.creatorProfile.mission || '';
-  document.getElementById('edit-location').value = window.creatorProfile.location || '';
-  document.getElementById('edit-website').value = window.creatorProfile.website_url || '';
-  document.getElementById('edit-schedule').value = window.creatorProfile.upload_schedule || '';
-  document.getElementById('edit-tags').value = window.creatorProfile.interests || '';
-  document.getElementById('edit-social').value = window.creatorProfile.social_links ? JSON.stringify(window.creatorProfile.social_links, null, 2) : '';
-  document.getElementById('edit-about-modal').classList.add('active');
+  const quoteInput = document.getElementById('edit-quote');
+  const missionInput = document.getElementById('edit-mission');
+  const locationInput = document.getElementById('edit-location');
+  const websiteInput = document.getElementById('edit-website');
+  const scheduleInput = document.getElementById('edit-schedule');
+  const tagsInput = document.getElementById('edit-tags');
+  const socialInput = document.getElementById('edit-social');
+  const modal = document.getElementById('edit-about-modal');
+  
+  if (quoteInput) quoteInput.value = window.creatorProfile.quote || '';
+  if (missionInput) missionInput.value = window.creatorProfile.mission || '';
+  if (locationInput) locationInput.value = window.creatorProfile.location || '';
+  if (websiteInput) websiteInput.value = window.creatorProfile.website_url || '';
+  if (scheduleInput) scheduleInput.value = window.creatorProfile.upload_schedule || '';
+  if (tagsInput) tagsInput.value = window.creatorProfile.interests || '';
+  if (socialInput) socialInput.value = window.creatorProfile.social_links ? JSON.stringify(window.creatorProfile.social_links, null, 2) : '';
+  if (modal) modal.classList.add('active');
 }
 
-function hideEditAboutModal() { document.getElementById('edit-about-modal').classList.remove('active'); }
+function hideEditAboutModal() {
+  const modal = document.getElementById('edit-about-modal');
+  if (modal) modal.classList.remove('active');
+}
 
 async function saveAboutSection() {
   if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can edit this section', 'warning'); return;
+    showToast('Only the channel owner can edit this section', 'warning');
+    return;
   }
   try {
     const updates = { updated_at: new Date().toISOString() };
     const fields = [
-      { id: 'edit-quote', key: 'quote' }, { id: 'edit-mission', key: 'mission' },
-      { id: 'edit-location', key: 'location' }, { id: 'edit-website', key: 'website_url' },
-      { id: 'edit-schedule', key: 'upload_schedule' }, { id: 'edit-tags', key: 'interests' }
+      { id: 'edit-quote', key: 'quote' },
+      { id: 'edit-mission', key: 'mission' },
+      { id: 'edit-location', key: 'location' },
+      { id: 'edit-website', key: 'website_url' },
+      { id: 'edit-schedule', key: 'upload_schedule' },
+      { id: 'edit-tags', key: 'interests' }
     ];
-    fields.forEach(({ id, key }) => { const val = document.getElementById(id).value.trim(); if (val) updates[key] = val; });
     
-    const socialInput = document.getElementById('edit-social').value.trim();
-    if (socialInput) { try { updates.social_links = JSON.parse(socialInput); } catch (e) { showToast('Invalid JSON for social links', 'warning'); return; } }
+    fields.forEach(({ id, key }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const val = el.value.trim();
+        if (val) updates[key] = val;
+      }
+    });
+    
+    const socialInput = document.getElementById('edit-social');
+    if (socialInput) {
+      const socialValue = socialInput.value.trim();
+      if (socialValue) {
+        try {
+          updates.social_links = JSON.parse(socialValue);
+        } catch (e) {
+          showToast('Invalid JSON for social links', 'warning');
+          return;
+        }
+      }
+    }
     
     const { data, error } = await supabase.from('user_profiles').update(updates).eq('id', window.creatorId).select().single();
     if (error) throw error;
     if (data) window.creatorProfile = { ...window.creatorProfile, ...data };
-    updateIdentityCard(); hideEditAboutModal();
+    updateIdentityCard();
+    hideEditAboutModal();
     showToast('About section updated successfully! ✨', 'success');
-  } catch (error) { console.error('Save error:', error); showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error'); }
-}
-
-// UI Scale Controller
-class UIScaleController {
-  constructor() {
-    this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-    this.minScale = 0.8; this.maxScale = 1.4; this.step = 0.1;
-  }
-  init() { this.applyScale(); this.setupEventListeners(); }
-  setupEventListeners() { document.addEventListener('scaleChanged', (e) => { this.updateScaleDisplay(e.detail.scale); }); }
-  applyScale() {
-    document.documentElement.style.setProperty('--ui-scale', this.scale);
-    localStorage.setItem('bantu_ui_scale', this.scale.toString());
-    document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale: this.scale } }));
-  }
-  increase() { if (this.scale < this.maxScale) { this.scale = Math.min(this.maxScale, this.scale + this.step); this.applyScale(); } }
-  decrease() { if (this.scale > this.minScale) { this.scale = Math.max(this.minScale, this.scale - this.step); this.applyScale(); } }
-  reset() { this.scale = 1; this.applyScale(); }
-  getScale() { return this.scale; }
-  updateScaleDisplay(scale) {
-    const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
-    displays.forEach(el => { if (el) el.textContent = Math.round(scale * 100) + '%'; });
+  } catch (error) {
+    console.error('Save error:', error);
+    showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error');
   }
 }
 
 // Data Loading Functions
-function getUrlParam(name) { const urlParams = new URLSearchParams(window.location.search); return urlParams.get(name); }
+function getUrlParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
 
 async function loadCreatorData() {
   try {
     window.creatorId = getUrlParam('id');
-    if (!window.creatorId) { showToast('Creator ID not found', 'error'); window.location.href = 'content-library.html'; return; }
+    if (!window.creatorId) {
+      showToast('Creator ID not found', 'error');
+      window.location.href = 'content-library.html';
+      return;
+    }
     
-    document.getElementById('view-all-playlists').href = `playlists.html?creatorId=${window.creatorId}`;
+    const viewAllLink = document.getElementById('view-all-playlists');
+    if (viewAllLink) {
+      viewAllLink.href = `playlists.html?creatorId=${window.creatorId}`;
+    }
+    
     window.loadingText = document.getElementById('loading-text');
-    window.loadingText.textContent = 'Loading creator profile...';
+    if (window.loadingText) window.loadingText.textContent = 'Loading creator profile...';
     
-    const {  profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
-    if (profileError || !profile) { showToast('Creator not found', 'error'); window.location.href = 'content-library.html'; return; }
+    const { data: profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
+    if (profileError || !profile) {
+      showToast('Creator not found', 'error');
+      window.location.href = 'content-library.html';
+      return;
+    }
     
     window.creatorProfile = profile;
     await loadBannerFromProfile();
     
-    window.loadingText.textContent = 'Loading creator content...';
-    const {  content, error: contentError } = await supabase.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
+    if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
+    const { data: content, error: contentError } = await supabase.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
     if (contentError) throw contentError;
     window.creatorContent = content || [];
     
@@ -2606,67 +2918,135 @@ async function loadCreatorData() {
     window.connectorCount = connectorCount || 0;
     
     if (window.currentUser) {
-      const {  connections } = await supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
+      const { data: connections } = await supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
       window.isConnected = connections && connections.length > 0;
-    } else window.isConnected = false;
+    } else {
+      window.isConnected = false;
+    }
     
-    window.loadingText.textContent = 'Loading playlists...';
+    if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
     let playlistsQuery = supabase.from('creator_playlists').select(`*, creator_playlist_items!left (count, Content!content_id (id, title, thumbnail_url, views_count, duration))`).eq('creator_id', window.creatorId);
-    if (!window.currentUser || window.currentUser.id !== window.creatorId) { playlistsQuery = playlistsQuery.eq('visibility', 'public'); }
-    const {  playlistsData, error: playlistsError } = await playlistsQuery.order('updated_at', { ascending: false }).limit(10);
+    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+      playlistsQuery = playlistsQuery.eq('visibility', 'public');
+    }
+    const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('updated_at', { ascending: false }).limit(10);
     if (playlistsError) console.error('Error loading playlists:', playlistsError);
     window.playlists = playlistsData || [];
     
-    const {  badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
+    const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
     window.achievements = badges || [];
     
-    console.log('✅ Creator data loaded:', { profile, contentCount: window.creatorContent.length, connectorCount, isConnected: window.isConnected, playlists: window.playlists.length });
+    console.log('✅ Creator data loaded:', { profile: window.creatorProfile, contentCount: window.creatorContent.length, connectorCount: window.connectorCount, isConnected: window.isConnected, playlists: window.playlists.length });
     
-    updateCreatorUI(); updateIdentityCard(); updateContentUI(window.creatorContent); updatePlaylistsUI(); checkAndShowAllSections();
-  } catch (error) { console.error('❌ Error loading creator channel:', error); showToast('Failed to load creator channel', 'error'); }
+    updateCreatorUI();
+    updateIdentityCard();
+    updateContentUI(window.creatorContent);
+    updatePlaylistsUI();
+    checkAndShowAllSections();
+  } catch (error) {
+    console.error('❌ Error loading creator channel:', error);
+    showToast('Failed to load creator channel', 'error');
+  }
 }
 
 function checkAndShowAllSections() {
   if (window.creatorContent.length > 0) {
-    const mostPopular = [...window.creatorContent].sort((a,b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 4);
-    if (mostPopular.length > 0) { document.getElementById('popular-section').style.display = 'block'; updatePopularUI(mostPopular); }
+    const mostPopular = [...window.creatorContent].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 4);
+    if (mostPopular.length > 0) {
+      const popularSection = document.getElementById('popular-section');
+      if (popularSection) popularSection.style.display = 'block';
+      updatePopularUI(mostPopular);
+    }
   }
-  document.getElementById('activity-section').style.display = 'block'; updateActivityFeed();
-  document.getElementById('fan-section').style.display = 'block'; updateFanHighlights();
-  document.getElementById('achievements-section').style.display = 'block'; updateAchievementsUI();
+  
+  const activitySection = document.getElementById('activity-section');
+  if (activitySection) activitySection.style.display = 'block';
+  updateActivityFeed();
+  
+  const fanSection = document.getElementById('fan-section');
+  if (fanSection) fanSection.style.display = 'block';
+  updateFanHighlights();
+  
+  const achievementsSection = document.getElementById('achievements-section');
+  if (achievementsSection) achievementsSection.style.display = 'block';
+  updateAchievementsUI();
+  
   if (window.creatorProfile.upload_schedule) {
-    document.getElementById('schedule-section').style.display = 'block';
-    document.getElementById('schedule-text').textContent = window.creatorProfile.upload_schedule;
+    const scheduleSection = document.getElementById('schedule-section');
+    const scheduleText = document.getElementById('schedule-text');
+    if (scheduleSection) scheduleSection.style.display = 'block';
+    if (scheduleText) scheduleText.textContent = window.creatorProfile.upload_schedule;
   }
-  document.getElementById('recommended-section').style.display = 'block'; loadRecommendedCreators();
-  document.getElementById('support-section').style.display = 'block';
+  
+  const recommendedSection = document.getElementById('recommended-section');
+  if (recommendedSection) recommendedSection.style.display = 'block';
+  loadRecommendedCreators();
+  
+  const supportSection = document.getElementById('support-section');
+  if (supportSection) supportSection.style.display = 'block';
+  
   const trailer = window.creatorContent.find(c => c.is_channel_trailer);
-  if (trailer) { document.getElementById('trailer-section').style.display = 'block'; updateTrailerUI(trailer); }
+  if (trailer) {
+    const trailerSection = document.getElementById('trailer-section');
+    if (trailerSection) trailerSection.style.display = 'block';
+    updateTrailerUI(trailer);
+  }
+  
   const pinned = window.creatorContent.find(c => c.is_pinned);
-  if (pinned) { document.getElementById('pinned-section').style.display = 'block'; updatePinnedUI(pinned); }
+  if (pinned) {
+    const pinnedSection = document.getElementById('pinned-section');
+    if (pinnedSection) pinnedSection.style.display = 'block';
+    updatePinnedUI(pinned);
+  }
 }
 
 function updateTrailerUI(content) {
-  document.getElementById('trailer-title').textContent = content.title || 'Channel Trailer';
-  document.getElementById('trailer-description').textContent = truncateText(content.description || 'Welcome to my channel!', 150);
-  document.getElementById('trailer-views').textContent = formatNumber(content.views_count || 0);
+  const titleEl = document.getElementById('trailer-title');
+  const descEl = document.getElementById('trailer-description');
+  const viewsEl = document.getElementById('trailer-views');
   const videoEl = document.getElementById('trailer-video');
-  if (content.thumbnail_url) videoEl.querySelector('img').src = fixMediaUrl(content.thumbnail_url);
-  videoEl.onclick = () => { window.location.href = `content-detail.html?id=${content.id}`; };
+  
+  if (titleEl) titleEl.textContent = content.title || 'Channel Trailer';
+  if (descEl) descEl.textContent = truncateText(content.description || 'Welcome to my channel!', 150);
+  if (viewsEl) viewsEl.textContent = formatNumber(content.views_count || 0);
+  
+  if (videoEl && content.thumbnail_url) {
+    const img = videoEl.querySelector('img');
+    if (img) img.src = fixMediaUrl(content.thumbnail_url);
+    videoEl.onclick = () => {
+      window.location.href = `content-detail.html?id=${content.id}`;
+    };
+  }
 }
 
 function updatePinnedUI(content) {
-  document.getElementById('pinned-thumbnail').src = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop';
-  document.getElementById('pinned-title').textContent = content.title || 'Featured Content';
-  document.getElementById('pinned-description').textContent = truncateText(content.description || 'Check out this featured content', 120);
-  document.getElementById('pinned-views').textContent = formatNumber(content.views_count || 0);
-  document.getElementById('pinned-likes').textContent = formatNumber(content.likes_count || 0);
-  document.getElementById('pinned-time').textContent = formatDate(content.created_at);
-  document.getElementById('pinned-watch-btn').onclick = () => { window.location.href = `content-detail.html?id=${content.id}`; };
+  const thumbnail = document.getElementById('pinned-thumbnail');
+  const title = document.getElementById('pinned-title');
+  const description = document.getElementById('pinned-description');
+  const views = document.getElementById('pinned-views');
+  const likes = document.getElementById('pinned-likes');
+  const time = document.getElementById('pinned-time');
+  const watchBtn = document.getElementById('pinned-watch-btn');
+  
+  if (thumbnail) {
+    thumbnail.src = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop';
+  }
+  if (title) title.textContent = content.title || 'Featured Content';
+  if (description) description.textContent = truncateText(content.description || 'Check out this featured content', 120);
+  if (views) views.textContent = formatNumber(content.views_count || 0);
+  if (likes) likes.textContent = formatNumber(content.likes_count || 0);
+  if (time) time.textContent = formatDate(content.created_at);
+  if (watchBtn) {
+    watchBtn.onclick = () => {
+      window.location.href = `content-detail.html?id=${content.id}`;
+    };
+  }
 }
 
 function updatePopularUI(popularContent) {
   const grid = document.getElementById('popular-grid');
+  if (!grid) return;
+  
   grid.innerHTML = popularContent.map((item, index) => `
     <div class="popular-item" data-content-id="${item.id}">
       <div class="popular-rank">#${index + 1}</div>
@@ -2676,28 +3056,47 @@ function updatePopularUI(popularContent) {
       </div>
     </div>
   `).join('');
-  grid.querySelectorAll('.popular-item').forEach(item => { item.addEventListener('click', () => { const id = item.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); });
+  
+  grid.querySelectorAll('.popular-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.contentId;
+      if (id) window.location.href = `content-detail.html?id=${id}`;
+    });
+  });
 }
 
 function updateActivityFeed() {
   const feed = document.getElementById('activity-feed');
+  if (!feed) return;
+  
   const activities = [];
-  const recentUploads = [...window.creatorContent].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
-  recentUploads.forEach(u => { activities.push({ icon: 'fa-video', text: `Uploaded "${truncateText(u.title, 30)}"`, time: u.created_at }); });
+  const recentUploads = [...window.creatorContent].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
+  recentUploads.forEach(u => {
+    activities.push({ icon: 'fa-video', text: `Uploaded "${truncateText(u.title, 30)}"`, time: u.created_at });
+  });
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString();
   activities.push({ icon: 'fa-users', text: `Gained ${window.connectorCount} connectors`, time: weekAgo });
+  
   feed.innerHTML = activities.slice(0, 5).map(activity => `
     <div class="activity-item">
       <div class="activity-icon"><i class="fas ${activity.icon}"></i></div>
-      <div class="activity-content"><div class="activity-text"><strong>${activity.text}</strong></div><div class="activity-time"><i class="fas fa-clock"></i> ${formatDate(activity.time)}</div></div>
+      <div class="activity-content">
+        <div class="activity-text"><strong>${activity.text}</strong></div>
+        <div class="activity-time"><i class="fas fa-clock"></i> ${formatDate(activity.time)}</div>
+      </div>
     </div>
   `).join('');
 }
 
 function updateFanHighlights() {
   const fanGrid = document.getElementById('fan-grid');
+  if (!fanGrid) return;
+  
   const contentIds = window.creatorContent.map(c => c.id);
-  if (contentIds.length === 0) { fanGrid.innerHTML = '<p style="color:var(--slate-grey);">No fan comments yet</p>'; return; }
+  if (contentIds.length === 0) {
+    fanGrid.innerHTML = '<p style="color:var(--slate-grey);">No fan comments yet</p>';
+    return;
+  }
   
   supabase.from('comments').select('*, user_profiles!user_id(full_name, username, avatar_url)').in('content_id', contentIds).order('created_at', { ascending: false }).limit(4).then(({ data }) => {
     if (data && data.length > 0) {
@@ -2723,17 +3122,21 @@ function updateFanHighlights() {
 
 function updateAchievementsUI() {
   const grid = document.getElementById('achievements-grid');
+  if (!grid) return;
+  
   const achievements = [
     { name: 'First Upload', icon: 'fa-check-circle', completed: window.creatorContent.length >= 1 },
     { name: '100 Connectors', icon: 'fa-users', completed: window.connectorCount >= 100 },
     { name: '10K Views', icon: 'fa-eye', completed: window.creatorContent.reduce((sum, c) => sum + (c.views_count || 0), 0) >= 10000 },
     { name: '50 Videos', icon: 'fa-video', completed: window.creatorContent.length >= 50 }
   ];
+  
   if (window.achievements) {
     window.achievements.forEach(badge => {
       achievements.push({ name: badge.badge_name, icon: 'fa-trophy', completed: true, date: badge.awarded_at });
     });
   }
+  
   grid.innerHTML = achievements.slice(0, 8).map(achievement => `
     <div class="achievement-card ${achievement.completed ? 'completed' : 'in-progress'}">
       <div class="achievement-icon"><i class="fas ${achievement.icon}"></i></div>
@@ -2745,6 +3148,8 @@ function updateAchievementsUI() {
 
 async function loadRecommendedCreators() {
   const grid = document.getElementById('recommended-grid');
+  if (!grid) return;
+  
   try {
     const { data: connectors, error: connError } = await supabase.from('connectors').select('connector_id').eq('connected_id', window.creatorId).limit(10);
     if (connError) throw connError;
@@ -2756,8 +3161,9 @@ async function loadRecommendedCreators() {
       if (profError) throw profError;
       recommended = profiles || [];
     }
+    
     if (recommended.length === 0) {
-      const {  randomCreators, error: randError } = await supabase.from('user_profiles').select('id, username, full_name, avatar_url, bio').eq('role', 'creator').neq('id', window.creatorId).limit(4);
+      const { data: randomCreators, error: randError } = await supabase.from('user_profiles').select('id, username, full_name, avatar_url, bio').eq('role', 'creator').neq('id', window.creatorId).limit(4);
       if (randError) throw randError;
       recommended = randomCreators || [];
     }
@@ -2765,7 +3171,7 @@ async function loadRecommendedCreators() {
     if (recommended.length > 0) {
       const connectionChecks = await Promise.all(recommended.map(async (creator) => {
         if (!window.currentUser) return { id: creator.id, isConnected: false };
-        const {  conn } = await supabase.from('connectors').select('id').eq('connector_id', window.currentUser.id).eq('connected_id', creator.id).eq('connection_type', 'creator').maybeSingle();
+        const { data: conn } = await supabase.from('connectors').select('id').eq('connector_id', window.currentUser.id).eq('connected_id', creator.id).eq('connection_type', 'creator').maybeSingle();
         return { id: creator.id, isConnected: !!conn };
       }));
       const connectionMap = Object.fromEntries(connectionChecks.map(c => [c.id, c.isConnected]));
@@ -2787,12 +3193,24 @@ async function loadRecommendedCreators() {
       }).join('');
       
       grid.querySelectorAll('.recommended-follow-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => { e.stopPropagation(); const targetId = btn.dataset.targetId; await handleRecommendedConnect(targetId, btn); });
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const targetId = btn.dataset.targetId;
+          await handleRecommendedConnect(targetId, btn);
+        });
       });
+      
       grid.querySelectorAll('.recommended-creator').forEach(card => {
-        card.addEventListener('click', (e) => { if (!e.target.classList.contains('recommended-follow-btn')) { const creatorId = card.dataset.creatorId; if (creatorId) window.location.href = `creator-channel.html?id=${creatorId}`; } });
+        card.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('recommended-follow-btn')) {
+            const creatorId = card.dataset.creatorId;
+            if (creatorId) window.location.href = `creator-channel.html?id=${creatorId}`;
+          }
+        });
       });
-      document.getElementById('recommended-section').style.display = 'block';
+      
+      const recommendedSection = document.getElementById('recommended-section');
+      if (recommendedSection) recommendedSection.style.display = 'block';
     }
   } catch (error) {
     console.error('Error loading recommended creators:', error);
@@ -2801,82 +3219,158 @@ async function loadRecommendedCreators() {
 }
 
 async function handleRecommendedConnect(targetCreatorId, button) {
-  if (!window.currentUser) { showToast('Please log in to connect', 'info'); window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`; return; }
-  if (window.currentUser.id === targetCreatorId) { showToast('You cannot connect to your own channel', 'info'); return; }
+  if (!window.currentUser) {
+    showToast('Please log in to connect', 'info');
+    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    return;
+  }
+  if (window.currentUser.id === targetCreatorId) {
+    showToast('You cannot connect to your own channel', 'info');
+    return;
+  }
   
   try {
-    const {  existing } = await supabase.from('connectors').select('id').eq('connector_id', window.currentUser.id).eq('connected_id', targetCreatorId).eq('connection_type', 'creator').maybeSingle();
+    const { data: existing } = await supabase.from('connectors').select('id').eq('connector_id', window.currentUser.id).eq('connected_id', targetCreatorId).eq('connection_type', 'creator').maybeSingle();
     if (existing) {
       const { error } = await supabase.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', targetCreatorId).eq('connection_type', 'creator');
       if (error) throw error;
-      button.textContent = 'Connect'; button.classList.remove('connected');
+      button.textContent = 'Connect';
+      button.classList.remove('connected');
       showToast('Disconnected', 'info');
     } else {
       const { error } = await supabase.from('connectors').insert({ connector_id: window.currentUser.id, connected_id: targetCreatorId, connection_type: 'creator', created_at: new Date().toISOString() });
       if (error) throw error;
-      button.textContent = 'Connected'; button.classList.add('connected');
+      button.textContent = 'Connected';
+      button.classList.add('connected');
       showConfetti();
       showToast('Connected successfully! ✨', 'success');
     }
-  } catch (error) { console.error('Error toggling connection:', error); showToast('Failed to update connection', 'error'); }
+  } catch (error) {
+    console.error('Error toggling connection:', error);
+    showToast('Failed to update connection', 'error');
+  }
 }
 
 // UI Update Functions
 function updateCreatorUI() {
   if (!window.creatorProfile) return;
-  document.getElementById('creator-name').textContent = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
-  document.getElementById('creator-username').textContent = `@${window.creatorProfile.username || 'creator'}`;
-  document.getElementById('creator-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories.';
-  document.getElementById('banner-title').textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
   
+  const nameEl = document.getElementById('creator-name');
+  const usernameEl = document.getElementById('creator-username');
+  const bioEl = document.getElementById('creator-bio');
+  const bannerTitle = document.getElementById('banner-title');
   const editBtn = document.getElementById('edit-identity-btn');
   const bannerEditBtn = document.getElementById('banner-edit-btn');
-  if (window.currentUser && window.currentUser.id === window.creatorId) { editBtn.style.display = 'flex'; bannerEditBtn.style.display = 'flex'; }
-  else { editBtn.style.display = 'none'; bannerEditBtn.style.display = 'none'; }
-  
   const avatarContainer = document.getElementById('creator-avatar-container');
+  const founderBadge = document.getElementById('founder-badge');
+  const videosCount = document.getElementById('videos-count');
+  const connectorsCount = document.getElementById('connectors-count');
+  const viewsCount = document.getElementById('views-count');
+  const engagementCount = document.getElementById('engagement-count');
+  
+  if (nameEl) nameEl.textContent = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
+  if (usernameEl) usernameEl.textContent = `@${window.creatorProfile.username || 'creator'}`;
+  if (bioEl) bioEl.textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories.';
+  if (bannerTitle) bannerTitle.textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
+  
+  if (window.currentUser && window.currentUser.id === window.creatorId) {
+    if (editBtn) editBtn.style.display = 'flex';
+    if (bannerEditBtn) bannerEditBtn.style.display = 'flex';
+  } else {
+    if (editBtn) editBtn.style.display = 'none';
+    if (bannerEditBtn) bannerEditBtn.style.display = 'none';
+  }
+  
   const avatarUrl = window.creatorProfile.avatar_url ? fixMediaUrl(window.creatorProfile.avatar_url) : null;
   const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
   const initials = getInitials(displayName);
-  avatarContainer.innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">` : `<div class="creator-initials">${initials}</div>`;
   
-  document.getElementById('founder-badge').style.display = window.creatorProfile.is_founder ? 'block' : 'none';
-  document.getElementById('videos-count').textContent = window.creatorContent.length;
-  document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+  if (avatarContainer) {
+    avatarContainer.innerHTML = avatarUrl ? 
+      `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">` : 
+      `<div class="creator-initials">${initials}</div>`;
+  }
+  
+  if (founderBadge) founderBadge.style.display = window.creatorProfile.is_founder ? 'block' : 'none';
+  if (videosCount) videosCount.textContent = window.creatorContent.length;
+  if (connectorsCount) connectorsCount.textContent = formatNumber(window.connectorCount);
+  
   const totalViews = window.creatorContent.reduce((sum, item) => sum + (item.views_count || 0), 0);
-  document.getElementById('views-count').textContent = formatNumber(totalViews);
+  if (viewsCount) viewsCount.textContent = formatNumber(totalViews);
+  
   const totalLikes = window.creatorContent.reduce((sum, item) => sum + (item.likes_count || 0), 0);
   const engagement = totalViews > 0 ? Math.round((totalLikes / totalViews) * 100) : 0;
-  document.getElementById('engagement-count').textContent = engagement + '%';
+  if (engagementCount) engagementCount.textContent = engagement + '%';
+  
   updateConnectButton();
 }
 
 function updateIdentityCard() {
   if (!window.creatorProfile) return;
-  document.getElementById('creator-quote').textContent = window.creatorProfile.quote || '"Creating authentic African stories for the world"';
-  document.getElementById('creator-mission').textContent = window.creatorProfile.mission || 'Passionate about sharing African culture, technology, and innovation.';
-  document.getElementById('creator-location').textContent = window.creatorProfile.location || 'Johannesburg, South Africa';
-  if (window.creatorProfile.created_at) { const joinDate = new Date(window.creatorProfile.created_at); document.getElementById('creator-joined').textContent = `Joined ${joinDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`; }
+  
+  const quoteEl = document.getElementById('creator-quote');
+  const missionEl = document.getElementById('creator-mission');
+  const locationEl = document.getElementById('creator-location');
+  const joinedEl = document.getElementById('creator-joined');
   const websiteLink = document.getElementById('creator-website');
-  if (window.creatorProfile.website_url) { websiteLink.href = window.creatorProfile.website_url; websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\//, ''); websiteLink.style.display = 'block'; } else websiteLink.style.display = 'none';
-  if (window.creatorProfile.upload_schedule) document.getElementById('creator-schedule').textContent = window.creatorProfile.upload_schedule;
+  const scheduleEl = document.getElementById('creator-schedule');
   const tagsContainer = document.getElementById('creator-tags');
-  if (window.creatorProfile.interests) { const tags = window.creatorProfile.interests.split(',').map(t => t.trim()).filter(t => t); tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHtml(tag)}</span>`).join(''); }
+  
+  if (quoteEl) quoteEl.textContent = window.creatorProfile.quote || '"Creating authentic African stories for the world"';
+  if (missionEl) missionEl.textContent = window.creatorProfile.mission || 'Passionate about sharing African culture, technology, and innovation.';
+  if (locationEl) locationEl.textContent = window.creatorProfile.location || 'Johannesburg, South Africa';
+  
+  if (window.creatorProfile.created_at && joinedEl) {
+    const joinDate = new Date(window.creatorProfile.created_at);
+    joinedEl.textContent = `Joined ${joinDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+  }
+  
+  if (websiteLink) {
+    if (window.creatorProfile.website_url) {
+      websiteLink.href = window.creatorProfile.website_url;
+      websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\//, '');
+      websiteLink.style.display = 'block';
+    } else {
+      websiteLink.style.display = 'none';
+    }
+  }
+  
+  if (scheduleEl && window.creatorProfile.upload_schedule) {
+    scheduleEl.textContent = window.creatorProfile.upload_schedule;
+  }
+  
+  if (tagsContainer && window.creatorProfile.interests) {
+    const tags = window.creatorProfile.interests.split(',').map(t => t.trim()).filter(t => t);
+    tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHtml(tag)}</span>`).join('');
+  }
 }
 
 function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
   const emptyState = document.getElementById('playlists-empty');
+  
+  if (!playlistSection || !playlistGrid || !emptyState) return;
+  
   playlistSection.style.display = 'block';
   
   if (!window.playlists || window.playlists.length === 0) {
-    playlistGrid.style.display = 'none'; emptyState.style.display = 'block';
-    if (window.currentUser && window.currentUser.id === window.creatorId) { emptyState.innerHTML = `<div class="empty-icon"><i class="fas fa-list"></i></div><h3>No playlists yet</h3><p>You haven't created any playlists. Click "New Playlist" to get started!</p>`; }
-    else { emptyState.innerHTML = `<div class="empty-icon"><i class="fas fa-list"></i></div><h3>No playlists yet</h3><p>This creator hasn't created any playlists yet.</p>`; }
+    playlistGrid.style.display = 'none';
+    emptyState.style.display = 'block';
+    if (window.currentUser && window.currentUser.id === window.creatorId) {
+      emptyState.innerHTML = `<div class="empty-icon"><i class="fas fa-list"></i></div><h3>No playlists yet</h3><p>You haven't created any playlists. Click "New Playlist" to get started!</p>`;
+    } else {
+      emptyState.innerHTML = `<div class="empty-icon"><i class="fas fa-list"></i></div><h3>No playlists yet</h3><p>This creator hasn't created any playlists yet.</p>`;
+    }
   } else {
-    playlistGrid.style.display = 'grid'; emptyState.style.display = 'none';
-    const sorted = [...window.playlists].sort((a, b) => { if (a.is_featured && !b.is_featured) return -1; if (!a.is_featured && b.is_featured) return 1; return new Date(b.updated_at) - new Date(a.updated_at); });
+    playlistGrid.style.display = 'grid';
+    emptyState.style.display = 'none';
+    const sorted = [...window.playlists].sort((a, b) => {
+      if (a.is_featured && !b.is_featured) return -1;
+      if (!a.is_featured && b.is_featured) return 1;
+      return new Date(b.updated_at) - new Date(a.updated_at);
+    });
+    
     playlistGrid.innerHTML = sorted.map(playlist => {
       const firstItem = playlist.creator_playlist_items?.[0]?.Content;
       let thumb = playlist.custom_thumbnail_url ? fixMediaUrl(playlist.custom_thumbnail_url) : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
@@ -2903,8 +3397,12 @@ function updatePlaylistsUI() {
       card.addEventListener('click', (e) => {
         const playlistId = card.dataset.playlistId;
         if (!playlistId) return;
-        if (window.currentUser && window.currentUser.id === window.creatorId) { e.preventDefault(); openPlaylistBuilder(playlistId); }
-        else { window.location.href = `playlist.html?id=${playlistId}`; }
+        if (window.currentUser && window.currentUser.id === window.creatorId) {
+          e.preventDefault();
+          openPlaylistBuilder(playlistId);
+        } else {
+          window.location.href = `playlist.html?id=${playlistId}`;
+        }
       });
     });
   }
@@ -2918,8 +3416,12 @@ function updatePlaylistsUI() {
     newBtn.id = 'new-playlist-btn';
     newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
     newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;';
-    newBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); openPlaylistBuilder(); };
-    header.appendChild(newBtn);
+    newBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openPlaylistBuilder();
+    };
+    if (header) header.appendChild(newBtn);
   }
 }
 
@@ -2927,7 +3429,9 @@ function createContentCard(item) {
   const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
   const displayName = item.user_profiles?.full_name || item.user_profiles?.username || 'User';
   const initials = getInitials(displayName);
-  const avatarHtml = item.user_profiles?.avatar_url ? `<img src="${fixMediaUrl(item.user_profiles.avatar_url)}" alt="${escapeHtml(displayName)}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
+  const avatarHtml = item.user_profiles?.avatar_url ? 
+    `<img src="${fixMediaUrl(item.user_profiles.avatar_url)}" alt="${escapeHtml(displayName)}" style="width:100%;height:100%;object-fit:cover;">` : 
+    `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
   const isNew = (new Date() - new Date(item.created_at)) < 7*24*60*60*1000;
   
   return `
@@ -2957,45 +3461,111 @@ function updateContentUI(content) {
   const grid = document.getElementById('content-grid');
   const noContent = document.getElementById('no-content');
   const countEl = document.getElementById('content-count');
-  countEl.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
   
-  if (content.length === 0) { grid.style.display = 'none'; noContent.style.display = 'block'; return; }
-  grid.style.display = 'grid'; noContent.style.display = 'none';
+  if (!grid || !noContent) return;
   
-  const sorted = [...content].sort((a, b) => { if (a.is_pinned && !b.is_pinned) return -1; if (!a.is_pinned && b.is_pinned) return 1; return new Date(b.created_at) - new Date(a.created_at); });
+  if (countEl) countEl.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
+  
+  if (content.length === 0) {
+    grid.style.display = 'none';
+    noContent.style.display = 'block';
+    return;
+  }
+  
+  grid.style.display = 'grid';
+  noContent.style.display = 'none';
+  
+  const sorted = [...content].sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
   grid.innerHTML = sorted.map(item => createContentCard(item)).join('');
 }
 
 function updateConnectButton() {
   const btn = document.getElementById('connect-btn');
-  if (!window.currentUser) { btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in to Connect'; btn.classList.remove('connected-btn'); btn.classList.add('connect-btn'); btn.onclick = handleLoginRequired; return; }
-  if (window.currentUser.id === window.creatorId) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-user"></i> This is your channel'; return; }
-  if (window.isConnected) { btn.innerHTML = '<i class="fas fa-link"></i> Connected'; btn.classList.remove('connect-btn'); btn.classList.add('connected-btn'); btn.onclick = handleDisconnect; }
-  else { btn.innerHTML = '<i class="fas fa-link"></i> Connect'; btn.classList.remove('connected-btn'); btn.classList.add('connect-btn'); btn.onclick = handleConnect; }
+  if (!btn) return;
+  
+  if (!window.currentUser) {
+    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in to Connect';
+    btn.classList.remove('connected-btn');
+    btn.classList.add('connect-btn');
+    btn.onclick = handleLoginRequired;
+    return;
+  }
+  
+  if (window.currentUser.id === window.creatorId) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-user"></i> This is your channel';
+    return;
+  }
+  
+  if (window.isConnected) {
+    btn.innerHTML = '<i class="fas fa-link"></i> Connected';
+    btn.classList.remove('connect-btn');
+    btn.classList.add('connected-btn');
+    btn.onclick = handleDisconnect;
+  } else {
+    btn.innerHTML = '<i class="fas fa-link"></i> Connect';
+    btn.classList.remove('connected-btn');
+    btn.classList.add('connect-btn');
+    btn.onclick = handleConnect;
+  }
 }
 
-function handleLoginRequired() { showToast('Please log in to connect', 'info'); window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`; }
+function handleLoginRequired() {
+  showToast('Please log in to connect', 'info');
+  window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
+}
 
 async function handleConnect() {
-  if (!window.currentUser) { handleLoginRequired(); return; }
-  if (window.currentUser.id === window.creatorId) { showToast('You cannot connect to your own channel', 'info'); return; }
+  if (!window.currentUser) {
+    handleLoginRequired();
+    return;
+  }
+  if (window.currentUser.id === window.creatorId) {
+    showToast('You cannot connect to your own channel', 'info');
+    return;
+  }
   try {
-    const { error } = await supabase.from('connectors').insert({ connector_id: window.currentUser.id, connected_id: window.creatorId, connection_type: 'creator', created_at: new Date().toISOString() });
+    const { error } = await supabase.from('connectors').insert({ 
+      connector_id: window.currentUser.id, 
+      connected_id: window.creatorId, 
+      connection_type: 'creator', 
+      created_at: new Date().toISOString() 
+    });
     if (error) throw error;
-    window.isConnected = true; window.connectorCount++;
-    updateConnectButton(); document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-    showConfetti(); showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}!`, 'success');
-  } catch (error) { console.error('Error connecting:', error); showToast('Failed to connect', 'error'); }
+    window.isConnected = true;
+    window.connectorCount++;
+    updateConnectButton();
+    const connectorsCount = document.getElementById('connectors-count');
+    if (connectorsCount) connectorsCount.textContent = formatNumber(window.connectorCount);
+    showConfetti();
+    showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}!`, 'success');
+  } catch (error) {
+    console.error('Error connecting:', error);
+    showToast('Failed to connect', 'error');
+  }
 }
 
 async function handleDisconnect() {
   try {
-    const { error } = await supabase.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+    const { error } = await supabase.from('connectors').delete()
+      .eq('connector_id', window.currentUser.id)
+      .eq('connected_id', window.creatorId)
+      .eq('connection_type', 'creator');
     if (error) throw error;
-    window.isConnected = false; window.connectorCount = Math.max(0, window.connectorCount - 1);
-    updateConnectButton(); document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+    window.isConnected = false;
+    window.connectorCount = Math.max(0, window.connectorCount - 1);
+    updateConnectButton();
+    const connectorsCount = document.getElementById('connectors-count');
+    if (connectorsCount) connectorsCount.textContent = formatNumber(window.connectorCount);
     showToast('Disconnected', 'info');
-  } catch (error) { console.error('Error disconnecting:', error); showToast('Failed to disconnect', 'error'); }
+  } catch (error) {
+    console.error('Error disconnecting:', error);
+    showToast('Failed to disconnect', 'error');
+  }
 }
 
 function handleShare() {
@@ -3003,130 +3573,319 @@ function handleShare() {
   const name = window.creatorProfile.full_name || window.creatorProfile.username || 'this creator';
   const text = `Check out ${name}'s channel on Bantu Stream Connect!`;
   const url = window.location.href;
-  if (navigator.share) { navigator.share({ title: `${name}'s Channel`, text, url }); }
-  else { navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('Link copied!', 'success')); }
+  if (navigator.share) {
+    navigator.share({ title: `${name}'s Channel`, text, url });
+  } else {
+    navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('Link copied!', 'success'));
+  }
 }
 
 async function showConnectorsModal() {
   try {
-    const { data: connectors, error } = await supabase.from('connectors').select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+    const { data: connectors, error } = await supabase.from('connectors')
+      .select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`)
+      .eq('connected_id', window.creatorId)
+      .eq('connection_type', 'creator');
     if (error) throw error;
+    
     const title = document.getElementById('modal-title');
     const list = document.getElementById('connectors-list');
     const profiles = connectors.map(c => c.user_profiles);
-    title.textContent = `Connectors (${profiles.length})`;
-    if (profiles.length === 0) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>'; }
-    else {
-      list.innerHTML = profiles.map(p => {
-        const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-        return `
-          <div style="display:flex;align-items:center;gap:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;">
-            <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--warm-gold);"><img src="${avatarUrl}" alt="${p.full_name || p.username}" style="width:100%;height:100%;object-fit:cover;"></div>
-            <div><div style="font-weight:600;color:var(--soft-white);">${escapeHtml(p.full_name || p.username)}</div><div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(p.username || 'user')}</div></div>
-          </div>
-        `;
-      }).join('');
+    
+    if (title) title.textContent = `Connectors (${profiles.length})`;
+    
+    if (list) {
+      if (profiles.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>';
+      } else {
+        list.innerHTML = profiles.map(p => {
+          const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
+          return `
+            <div style="display:flex;align-items:center;gap:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;">
+              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--warm-gold);"><img src="${avatarUrl}" alt="${p.full_name || p.username}" style="width:100%;height:100%;object-fit:cover;"></div>
+              <div><div style="font-weight:600;color:var(--soft-white);">${escapeHtml(p.full_name || p.username)}</div><div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(p.username || 'user')}</div></div>
+            </div>
+          `;
+        }).join('');
+      }
     }
-    document.getElementById('connectors-modal').classList.add('active');
-  } catch (error) { console.error('Error loading connectors:', error); showToast('Failed to load connectors', 'error'); }
+    
+    const modal = document.getElementById('connectors-modal');
+    if (modal) modal.classList.add('active');
+  } catch (error) {
+    console.error('Error loading connectors:', error);
+    showToast('Failed to load connectors', 'error');
+  }
 }
 
 // Setup all event listeners
 function setupEventListeners() {
-  document.getElementById('profile-btn')?.addEventListener('click', async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
-  });
-  document.getElementById('current-profile-btn')?.addEventListener('click', async (e) => { e.stopPropagation(); const dropdown = document.getElementById('profile-dropdown'); dropdown.classList.toggle('active'); });
-  document.getElementById('manage-profiles-btn')?.addEventListener('click', () => { window.location.href = 'manage-profiles.html'; });
-  document.addEventListener('click', (e) => { if (!document.getElementById('profile-btn').contains(e.target) && !document.getElementById('profile-dropdown').contains(e.target) && !document.getElementById('current-profile-btn').contains(e.target)) { document.getElementById('profile-dropdown').classList.remove('active'); } });
+  const profileBtn = document.getElementById('profile-btn');
+  if (profileBtn) {
+    profileBtn.addEventListener('click', async () => {
+      const { data } = await supabase.auth.getSession();
+      data?.session ? window.location.href = 'profile.html' : window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    });
+  }
   
-  document.getElementById('banner-edit-btn')?.addEventListener('click', showBannerUploadModal);
-  document.getElementById('banner-file-upload')?.addEventListener('click', () => { document.getElementById('banner-file-input').click(); });
-  document.getElementById('banner-file-input')?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { showToast('Image must be less than 5MB', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = (event) => {
+  const currentProfileBtn = document.getElementById('current-profile-btn');
+  if (currentProfileBtn) {
+    currentProfileBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const dropdown = document.getElementById('profile-dropdown');
+      if (dropdown) dropdown.classList.toggle('active');
+    });
+  }
+  
+  const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+  if (manageProfilesBtn) {
+    manageProfilesBtn.addEventListener('click', () => {
+      window.location.href = 'manage-profiles.html';
+    });
+  }
+  
+  document.addEventListener('click', (e) => {
+    const profileBtnEl = document.getElementById('profile-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const currentProfileBtnEl = document.getElementById('current-profile-btn');
+    if (profileDropdown && profileBtnEl && currentProfileBtnEl) {
+      if (!profileBtnEl.contains(e.target) && !profileDropdown.contains(e.target) && !currentProfileBtnEl.contains(e.target)) {
+        profileDropdown.classList.remove('active');
+      }
+    }
+  });
+  
+  const bannerEditBtn = document.getElementById('banner-edit-btn');
+  if (bannerEditBtn) bannerEditBtn.addEventListener('click', showBannerUploadModal);
+  
+  const bannerFileUpload = document.getElementById('banner-file-upload');
+  const bannerFileInput = document.getElementById('banner-file-input');
+  if (bannerFileUpload && bannerFileInput) {
+    bannerFileUpload.addEventListener('click', () => { bannerFileInput.click(); });
+    bannerFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image must be less than 5MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const previewImg = document.getElementById('banner-preview-img');
+        const placeholder = document.getElementById('banner-preview-placeholder');
+        if (previewImg && placeholder) {
+          previewImg.src = event.target.result;
+          previewImg.style.display = 'block';
+          placeholder.style.display = 'none';
+        }
+      };
+      reader.readAsDataURL(file);
+      try {
+        const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error } = await supabase.storage.from('channel-banners').upload(fileName, file);
+        if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
+        await saveBanner(publicUrl);
+      } catch (error) {
+        console.error('Upload error:', error);
+        showToast('Failed to upload image', 'error');
+      }
+    });
+  }
+  
+  const bannerUrlApply = document.getElementById('banner-url-apply');
+  if (bannerUrlApply) {
+    bannerUrlApply.addEventListener('click', () => {
+      const url = document.getElementById('banner-url-input')?.value.trim();
+      if (!url) {
+        showToast('Please enter a URL', 'warning');
+        return;
+      }
       const previewImg = document.getElementById('banner-preview-img');
       const placeholder = document.getElementById('banner-preview-placeholder');
-      previewImg.src = event.target.result;
-      previewImg.style.display = 'block';
-      placeholder.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-    try {
-      const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { data, error } = await supabase.storage.from('channel-banners').upload(fileName, file);
-      if (error) throw error;
-      const {  { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
-      await saveBanner(publicUrl);
-    } catch (error) { console.error('Upload error:', error); showToast('Failed to upload image', 'error'); }
-  });
-  document.getElementById('banner-url-apply')?.addEventListener('click', () => {
-    const url = document.getElementById('banner-url-input').value.trim();
-    if (!url) { showToast('Please enter a URL', 'warning'); return; }
-    const previewImg = document.getElementById('banner-preview-img');
-    const placeholder = document.getElementById('banner-preview-placeholder');
-    previewImg.src = url;
-    previewImg.onload = () => { previewImg.style.display = 'block'; placeholder.style.display = 'none'; };
-  });
-  document.getElementById('banner-save')?.addEventListener('click', () => {
-    const previewImg = document.getElementById('banner-preview-img');
-    if (previewImg.style.display === 'block' && previewImg.src) { saveBanner(previewImg.src); }
-    else { showToast('Please select or enter an image first', 'warning'); }
-  });
-  document.getElementById('banner-cancel')?.addEventListener('click', hideBannerUploadModal);
+      if (previewImg && placeholder) {
+        previewImg.src = url;
+        previewImg.onload = () => {
+          previewImg.style.display = 'block';
+          placeholder.style.display = 'none';
+        };
+      }
+    });
+  }
   
-  document.getElementById('edit-identity-btn')?.addEventListener('click', showEditAboutModal);
-  document.getElementById('cancel-about-btn')?.addEventListener('click', hideEditAboutModal);
-  document.getElementById('save-about-btn')?.addEventListener('click', saveAboutSection);
+  const bannerSave = document.getElementById('banner-save');
+  if (bannerSave) {
+    bannerSave.addEventListener('click', () => {
+      const previewImg = document.getElementById('banner-preview-img');
+      if (previewImg && previewImg.style.display === 'block' && previewImg.src) {
+        saveBanner(previewImg.src);
+      } else {
+        showToast('Please select or enter an image first', 'warning');
+      }
+    });
+  }
   
-  document.getElementById('search-btn')?.addEventListener('click', () => { document.getElementById('search-modal').classList.add('active'); setTimeout(() => document.getElementById('search-input')?.focus(), 300); });
-  document.getElementById('close-search-btn')?.addEventListener('click', () => { document.getElementById('search-modal').classList.remove('active'); document.getElementById('search-input').value = ''; document.getElementById('search-results-grid').innerHTML = ''; });
-  document.getElementById('search-modal').addEventListener('click', e => { if (e.target === document.getElementById('search-modal')) { document.getElementById('search-modal').classList.remove('active'); document.getElementById('search-input').value = ''; document.getElementById('search-results-grid').innerHTML = ''; } });
+  const bannerCancel = document.getElementById('banner-cancel');
+  if (bannerCancel) bannerCancel.addEventListener('click', hideBannerUploadModal);
   
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
+  const editIdentityBtn = document.getElementById('edit-identity-btn');
+  if (editIdentityBtn) editIdentityBtn.addEventListener('click', showEditAboutModal);
+  
+  const cancelAboutBtn = document.getElementById('cancel-about-btn');
+  if (cancelAboutBtn) cancelAboutBtn.addEventListener('click', hideEditAboutModal);
+  
+  const saveAboutBtn = document.getElementById('save-about-btn');
+  if (saveAboutBtn) saveAboutBtn.addEventListener('click', saveAboutSection);
+  
+  const searchBtn = document.getElementById('search-btn');
+  const closeSearchBtn = document.getElementById('close-search-btn');
+  const searchModal = document.getElementById('search-modal');
+  
+  if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+      if (searchModal) searchModal.classList.add('active');
+      setTimeout(() => document.getElementById('search-input')?.focus(), 300);
+    });
+  }
+  
+  if (closeSearchBtn) {
+    closeSearchBtn.addEventListener('click', () => {
+      if (searchModal) searchModal.classList.remove('active');
+      const searchInputEl = document.getElementById('search-input');
+      const searchResultsGrid = document.getElementById('search-results-grid');
+      if (searchInputEl) searchInputEl.value = '';
+      if (searchResultsGrid) searchResultsGrid.innerHTML = '';
+    });
+  }
+  
+  if (searchModal) {
+    searchModal.addEventListener('click', e => {
+      if (e.target === searchModal) {
+        searchModal.classList.remove('active');
+        const searchInputEl = document.getElementById('search-input');
+        const searchResultsGrid = document.getElementById('search-results-grid');
+        if (searchInputEl) searchInputEl.value = '';
+        if (searchResultsGrid) searchResultsGrid.innerHTML = '';
+      }
+    });
+  }
+  
+  const searchInputElement = document.getElementById('search-input');
+  if (searchInputElement) {
     let timeout;
-    searchInput.addEventListener('input', e => {
+    searchInputElement.addEventListener('input', e => {
       clearTimeout(timeout);
       timeout = setTimeout(async () => {
         const query = e.target.value.trim();
-        if (query.length < 2) { document.getElementById('search-results-grid').innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">Start typing to search...</div>'; return; }
-        document.getElementById('search-results-grid').innerHTML = `<div style="text-align:center;padding:40px;"><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin:0 auto 15px;"></div><div style="color:var(--slate-grey);">Searching...</div></div>`;
-        const results = await searchContent(query, document.getElementById('category-filter')?.value, document.getElementById('sort-filter')?.value);
+        if (query.length < 2) {
+          const resultsGrid = document.getElementById('search-results-grid');
+          if (resultsGrid) resultsGrid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">Start typing to search...</div>';
+          return;
+        }
+        const resultsGrid = document.getElementById('search-results-grid');
+        if (resultsGrid) {
+          resultsGrid.innerHTML = `<div style="text-align:center;padding:40px;"><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin:0 auto 15px;"></div><div style="color:var(--slate-grey);">Searching...</div></div>`;
+        }
+        const categoryFilter = document.getElementById('category-filter')?.value;
+        const sortFilter = document.getElementById('sort-filter')?.value;
+        const results = await searchContent(query, categoryFilter, sortFilter);
         renderSearchResults(results);
       }, 300);
     });
   }
-  document.getElementById('category-filter')?.addEventListener('change', () => { if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input')); });
-  document.getElementById('sort-filter')?.addEventListener('change', () => { if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input')); });
   
-  document.getElementById('share-btn')?.addEventListener('click', handleShare);
-  document.getElementById('support-btn')?.addEventListener('click', () => { showToast('Support feature coming soon!', 'info'); });
-  document.getElementById('tip-btn')?.addEventListener('click', () => { showToast('Tips feature coming soon!', 'info'); });
-  document.getElementById('membership-btn')?.addEventListener('click', () => { showToast('Memberships feature coming soon!', 'info'); });
-  document.getElementById('connectors-stat-card')?.addEventListener('click', showConnectorsModal);
-  document.getElementById('close-modal-btn')?.addEventListener('click', () => { document.getElementById('connectors-modal').classList.remove('active'); });
-  document.getElementById('connectors-modal').addEventListener('click', e => { if (e.target === document.getElementById('connectors-modal')) { document.getElementById('connectors-modal').classList.remove('active'); } });
+  const categoryFilter = document.getElementById('category-filter');
+  const sortFilter = document.getElementById('sort-filter');
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', () => {
+      if (searchInputElement && searchInputElement.value.trim().length >= 2) {
+        searchInputElement.dispatchEvent(new Event('input'));
+      }
+    });
+  }
+  if (sortFilter) {
+    sortFilter.addEventListener('change', () => {
+      if (searchInputElement && searchInputElement.value.trim().length >= 2) {
+        searchInputElement.dispatchEvent(new Event('input'));
+      }
+    });
+  }
   
-  document.getElementById('notifications-btn')?.addEventListener('click', () => { document.getElementById('notifications-panel').classList.add('active'); renderNotifications(); });
-  document.getElementById('close-notifications')?.addEventListener('click', () => { document.getElementById('notifications-panel').classList.remove('active'); });
-  document.getElementById('notifications-panel').addEventListener('click', e => { if (e.target === document.getElementById('notifications-panel')) { document.getElementById('notifications-panel').classList.remove('active'); } });
-  document.getElementById('mark-all-read')?.addEventListener('click', async () => {
-    if (!window.currentUser) return;
-    try {
-      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
-      if (error) throw error;
-      window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
+  const shareBtn = document.getElementById('share-btn');
+  if (shareBtn) shareBtn.addEventListener('click', handleShare);
+  
+  const supportBtn = document.getElementById('support-btn');
+  if (supportBtn) supportBtn.addEventListener('click', () => { showToast('Support feature coming soon!', 'info'); });
+  
+  const tipBtn = document.getElementById('tip-btn');
+  if (tipBtn) tipBtn.addEventListener('click', () => { showToast('Tips feature coming soon!', 'info'); });
+  
+  const membershipBtn = document.getElementById('membership-btn');
+  if (membershipBtn) membershipBtn.addEventListener('click', () => { showToast('Memberships feature coming soon!', 'info'); });
+  
+  const connectorsStatCard = document.getElementById('connectors-stat-card');
+  if (connectorsStatCard) connectorsStatCard.addEventListener('click', showConnectorsModal);
+  
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+      const modal = document.getElementById('connectors-modal');
+      if (modal) modal.classList.remove('active');
+    });
+  }
+  
+  const connectorsModal = document.getElementById('connectors-modal');
+  if (connectorsModal) {
+    connectorsModal.addEventListener('click', e => {
+      if (e.target === connectorsModal) connectorsModal.classList.remove('active');
+    });
+  }
+  
+  const notificationsBtn = document.getElementById('notifications-btn');
+  if (notificationsBtn) {
+    notificationsBtn.addEventListener('click', () => {
+      const panel = document.getElementById('notifications-panel');
+      if (panel) panel.classList.add('active');
       renderNotifications();
-      updateNotificationBadge(0);
-      showToast('All notifications marked as read', 'success');
-    } catch (error) { console.error('Error marking all as read:', error); showToast('Failed to mark notifications as read', 'error'); }
-  });
+    });
+  }
+  
+  const closeNotifications = document.getElementById('close-notifications');
+  if (closeNotifications) {
+    closeNotifications.addEventListener('click', () => {
+      const panel = document.getElementById('notifications-panel');
+      if (panel) panel.classList.remove('active');
+    });
+  }
+  
+  const notificationsPanel = document.getElementById('notifications-panel');
+  if (notificationsPanel) {
+    notificationsPanel.addEventListener('click', e => {
+      if (e.target === notificationsPanel) notificationsPanel.classList.remove('active');
+    });
+  }
+  
+  const markAllRead = document.getElementById('mark-all-read');
+  if (markAllRead) {
+    markAllRead.addEventListener('click', async () => {
+      if (!window.currentUser) return;
+      try {
+        const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
+        if (error) throw error;
+        window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
+        renderNotifications();
+        updateNotificationBadge(0);
+        showToast('All notifications marked as read', 'success');
+      } catch (error) {
+        console.error('Error marking all as read:', error);
+        showToast('Failed to mark notifications as read', 'error');
+      }
+    });
+  }
   
   // Theme & scale
   initThemeSystem();
@@ -3139,14 +3898,103 @@ function setupEventListeners() {
   initPlaylistBuilder();
   
   // Sidebar nav items
-  document.getElementById('sidebar-create')?.addEventListener('click', async (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); const { data } = await supabase.auth.getSession(); if (!data?.session) { showToast('Please sign in to upload content', 'warning'); window.location.href = `login.html?redirect=creator-upload.html`; } else { window.location.href = 'creator-upload.html'; } });
-  document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); const { data } = await supabase.auth.getSession(); if (!data?.session) { showToast('Please sign in to access dashboard', 'warning'); window.location.href = `login.html?redirect=creator-dashboard.html`; } else { window.location.href = 'creator-dashboard.html'; } });
-  document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); if (!window.currentUser) { showToast('Please sign in to view watch history', 'warning'); window.location.href = `login.html?redirect=watch-history.html`; return; } window.location.href = 'watch-history.html'; });
-  document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); document.getElementById('analytics-modal').classList.add('active'); loadChannelAnalytics(); });
-  document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); document.getElementById('notifications-panel').classList.add('active'); renderNotifications(); });
-  document.getElementById('sidebar-badges')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); showToast('Badges coming soon!', 'info'); });
-  document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('sidebar-close')?.click(); showToast('Watch Party coming soon!', 'info'); });
-  document.getElementById('voice-search-btn')?.addEventListener('click', () => { showToast('Voice search coming soon!', 'info'); });
+  const sidebarCreate = document.getElementById('sidebar-create');
+  if (sidebarCreate) {
+    sidebarCreate.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session) {
+        showToast('Please sign in to upload content', 'warning');
+        window.location.href = `login.html?redirect=creator-upload.html`;
+      } else {
+        window.location.href = 'creator-upload.html';
+      }
+    });
+  }
+  
+  const sidebarDashboard = document.getElementById('sidebar-dashboard');
+  if (sidebarDashboard) {
+    sidebarDashboard.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session) {
+        showToast('Please sign in to access dashboard', 'warning');
+        window.location.href = `login.html?redirect=creator-dashboard.html`;
+      } else {
+        window.location.href = 'creator-dashboard.html';
+      }
+    });
+  }
+  
+  const sidebarWatchHistory = document.getElementById('sidebar-watch-history');
+  if (sidebarWatchHistory) {
+    sidebarWatchHistory.addEventListener('click', (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      if (!window.currentUser) {
+        showToast('Please sign in to view watch history', 'warning');
+        window.location.href = `login.html?redirect=watch-history.html`;
+        return;
+      }
+      window.location.href = 'watch-history.html';
+    });
+  }
+  
+  const sidebarAnalytics = document.getElementById('sidebar-analytics');
+  if (sidebarAnalytics) {
+    sidebarAnalytics.addEventListener('click', (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      const modal = document.getElementById('analytics-modal');
+      if (modal) modal.classList.add('active');
+      loadChannelAnalytics();
+    });
+  }
+  
+  const sidebarNotifications = document.getElementById('sidebar-notifications');
+  if (sidebarNotifications) {
+    sidebarNotifications.addEventListener('click', (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      const panel = document.getElementById('notifications-panel');
+      if (panel) panel.classList.add('active');
+      renderNotifications();
+    });
+  }
+  
+  const sidebarBadges = document.getElementById('sidebar-badges');
+  if (sidebarBadges) {
+    sidebarBadges.addEventListener('click', (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      showToast('Badges coming soon!', 'info');
+    });
+  }
+  
+  const sidebarWatchParty = document.getElementById('sidebar-watch-party');
+  if (sidebarWatchParty) {
+    sidebarWatchParty.addEventListener('click', (e) => {
+      e.preventDefault();
+      const closeBtn = document.getElementById('sidebar-close');
+      if (closeBtn) closeBtn.click();
+      showToast('Watch Party coming soon!', 'info');
+    });
+  }
+  
+  const voiceSearchBtn = document.getElementById('voice-search-btn');
+  if (voiceSearchBtn) {
+    voiceSearchBtn.addEventListener('click', () => {
+      showToast('Voice search coming soon!', 'info');
+    });
+  }
 }
 
 async function searchContent(query, category = '', sortBy = 'newest') {
@@ -3160,35 +4008,57 @@ async function searchContent(query, category = '', sortBy = 'newest') {
       const { count: likes } = await supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
       return { ...item, real_views: views || 0, real_likes: likes || 0 };
     }));
-    if (sortBy === 'popular') enriched.sort((a,b) => (b.real_views||0) - (a.real_views||0));
-    else if (sortBy === 'trending') enriched.sort((a,b) => ((b.real_views||0) + ((b.real_likes||0)*2)) - ((a.real_views||0) + ((a.real_likes||0)*2)));
-    else enriched.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    if (sortBy === 'popular') enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
+    else if (sortBy === 'trending') enriched.sort((a, b) => ((b.real_views || 0) + ((b.real_likes || 0) * 2)) - ((a.real_views || 0) + ((a.real_likes || 0) * 2)));
+    else enriched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     return enriched;
-  } catch (error) { console.error('Search error:', error); return []; }
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
+  }
 }
 
 function renderSearchResults(results) {
   const grid = document.getElementById('search-results-grid');
   if (!grid) return;
-  if (!results || results.length === 0) { grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No results found. Try different keywords.</div>'; return; }
+  if (!results || results.length === 0) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No results found. Try different keywords.</div>';
+    return;
+  }
   grid.innerHTML = results.map(item => {
     const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
     return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy"><div class="thumbnail-overlay"></div><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div></div><div class="card-content"><h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3><div class="card-meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.real_views || 0)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.real_likes || 0)}</span></div></div></div>`;
   }).join('');
   grid.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', () => { const id = card.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; });
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `content-detail.html?id=${id}`;
+    });
   });
 }
 
 function renderNotifications() {
   const list = document.getElementById('notifications-list');
   if (!list) return;
-  if (!window.currentUser) { list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`; return; }
-  if (!window.notifications || window.notifications.length === 0) { list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`; return; }
+  if (!window.currentUser) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`;
+    return;
+  }
+  if (!window.notifications || window.notifications.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`;
+    return;
+  }
   list.innerHTML = window.notifications.map(n => `<div style="padding:15px;border-bottom:1px solid var(--card-border);${n.is_read ? 'opacity:0.7;' : 'background:rgba(245,158,11,0.1);'}"><div style="display:flex;gap:12px;"><div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="${getNotificationIcon(n.type)}" style="font-size:18px;"></i></div><div style="flex:1;"><div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div><div style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div><div style="font-size:12px;color:var(--warm-gold);">${formatNotificationTime(n.created_at)}</div></div>${!n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);margin-top:5px;"></div>' : ''}</div></div>`).join('');
 }
 
-function getNotificationIcon(type) { switch(type) { case 'like': return 'fas fa-heart'; case 'comment': return 'fas fa-comment'; case 'follow': return 'fas fa-user-plus'; default: return 'fas fa-bell'; } }
+function getNotificationIcon(type) {
+  switch(type) {
+    case 'like': return 'fas fa-heart';
+    case 'comment': return 'fas fa-comment';
+    case 'follow': return 'fas fa-user-plus';
+    default: return 'fas fa-bell';
+  }
+}
 
 function formatNotificationTime(timestamp) {
   if (!timestamp) return 'Just now';
@@ -3206,8 +4076,10 @@ function formatNotificationTime(timestamp) {
 // Initialize
 async function initializeCreatorChannel() {
   try {
-    document.getElementById('loading').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading) loading.style.display = 'flex';
+    if (app) app.style.display = 'none';
     window.loadingText = document.getElementById('loading-text');
     
     // Initialize theme system
@@ -3224,15 +4096,20 @@ async function initializeCreatorChannel() {
     setupEventListeners();
     
     setTimeout(() => {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
+      if (loading) loading.style.display = 'none';
+      if (app) app.style.display = 'block';
     }, 500);
     
     console.log('✅ Creator channel initialized with new features!');
   } catch (error) {
     console.error('❌ Error initializing:', error);
     showToast('Failed to initialize', 'error');
-    setTimeout(() => { document.getElementById('loading').style.display = 'none'; document.getElementById('app').style.display = 'block'; }, 1000);
+    setTimeout(() => {
+      const loading = document.getElementById('loading');
+      const app = document.getElementById('app');
+      if (loading) loading.style.display = 'none';
+      if (app) app.style.display = 'block';
+    }, 1000);
   }
 }
 
