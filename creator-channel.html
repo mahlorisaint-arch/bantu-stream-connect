@@ -2918,21 +2918,9 @@ async function loadCreatorData() {
     
     if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
     
-    // Updated query for playlists with proper schema
+    // ✅ FIXED: Load playlists WITHOUT the problematic nested join
     let playlistsQuery = supabase.from('creator_playlists')
-      .select(`
-        *,
-        creator_playlist_items (
-          count,
-          Content!content_id (
-            id,
-            title,
-            thumbnail_url,
-            views_count,
-            duration
-          )
-        )
-      `)
+      .select('*')  // Just get the playlists first - no nested join!
       .eq('creator_id', window.creatorId);
     
     if (!window.currentUser || window.currentUser.id !== window.creatorId) {
@@ -2941,7 +2929,36 @@ async function loadCreatorData() {
     
     const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
     if (playlistsError) console.error('Error loading playlists:', playlistsError);
-    window.playlists = playlistsData || [];
+    
+    // ✅ FIXED: Load playlist items SEPARATELY (no GROUP BY issue)
+    const { data: playlistItems, error: itemsError } = await supabase
+      .from('creator_playlist_items')
+      .select(`
+        *,
+        Content (
+          id,
+          title,
+          thumbnail_url,
+          views_count,
+          duration
+        )
+      `);
+    
+    if (itemsError) console.error('Error loading playlist items:', itemsError);
+    
+    // ✅ FIXED: Manually attach items to their playlists (like YouTube backend style)
+    const itemsByPlaylist = {};
+    (playlistItems || []).forEach(item => {
+      if (!itemsByPlaylist[item.playlist_id]) {
+        itemsByPlaylist[item.playlist_id] = [];
+      }
+      itemsByPlaylist[item.playlist_id].push(item);
+    });
+    
+    window.playlists = (playlistsData || []).map(playlist => ({
+      ...playlist,
+      creator_playlist_items: itemsByPlaylist[playlist.id] || []
+    }));
     
     const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
     window.achievements = badges || [];
