@@ -3580,104 +3580,136 @@ async function loadCreatorData() {
   try {
     window.creatorId = getUrlParam('id');
     if (!window.creatorId) {
+      console.error('Creator ID not found in URL');
       showToast('Creator ID not found', 'error');
-      window.location.href = 'content-library.html';
+      setTimeout(() => { window.location.href = 'content-library.html'; }, 2000);
       return;
     }
     
-    const viewAllLink = document.getElementById('view-all-playlists');
-    if (viewAllLink) {
-      viewAllLink.href = `playlists.html?creatorId=${window.creatorId}`;
-    }
+    console.log('Loading creator data for ID:', window.creatorId);
     
-    window.loadingText = document.getElementById('loading-text');
     if (window.loadingText) window.loadingText.textContent = 'Loading creator profile...';
     
+    // Load profile - using maybeSingle() to avoid errors
     const { data: profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
     if (profileError || !profile) {
+      console.error('Creator not found:', profileError);
       showToast('Creator not found', 'error');
-      window.location.href = 'content-library.html';
+      setTimeout(() => { window.location.href = 'content-library.html'; }, 2000);
       return;
     }
     
     window.creatorProfile = profile;
+    console.log('Profile loaded:', profile.full_name || profile.username);
+    
+    // Set banner image
     await loadBannerFromProfile();
     
     if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
-    const { data: content, error: contentError } = await supabase.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
+    
+    // Load content - simplified query
+    const { data: content, error: contentError } = await supabase.from('Content')
+      .select('*, user_profiles!user_id(*)')
+      .eq('user_id', window.creatorId)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(50);
+      
     if (contentError) throw contentError;
     window.creatorContent = content || [];
+    console.log('Content loaded:', window.creatorContent.length, 'items');
     
-    const { count: connectorCount, error: countError } = await supabase.from('connectors').select('*', { count: 'exact', head: true }).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
-    if (countError) throw countError;
-    window.connectorCount = connectorCount || 0;
+    if (window.loadingText) window.loadingText.textContent = 'Loading connectors...';
     
+    // Load connector count
+    const { count: connectorCount, error: countError } = await supabase.from('connectors')
+      .select('*', { count: 'exact', head: true })
+      .eq('connected_id', window.creatorId)
+      .eq('connection_type', 'creator');
+      
+    if (!countError) window.connectorCount = connectorCount || 0;
+    
+    // Check if current user is connected to this creator
     if (window.currentUser) {
-      const { data: connections } = await supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
-      window.isConnected = connections && connections.length > 0;
+      const { data: connections, error: connError } = await supabase.from('connectors')
+        .select('*')
+        .eq('connector_id', window.currentUser.id)
+        .eq('connected_id', window.creatorId)
+        .eq('connection_type', 'creator')
+        .limit(1);
+      
+      if (!connError) {
+        window.isConnected = connections && connections.length > 0;
+      }
     } else {
       window.isConnected = false;
     }
     
     if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
     
+    // Load playlists - simplified to avoid complex joins
     let playlistsQuery = supabase.from('creator_playlists')
       .select('*')
       .eq('creator_id', window.creatorId);
     
+    // Only show public playlists to non-owners
     if (!window.currentUser || window.currentUser.id !== window.creatorId) {
       playlistsQuery = playlistsQuery.eq('visibility', 'public');
     }
     
     const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
-    if (playlistsError) console.error('Error loading playlists:', playlistsError);
+    if (playlistsError) {
+      console.error('Error loading playlists:', playlistsError);
+      window.playlists = [];
+    } else {
+      window.playlists = playlistsData || [];
+    }
+    console.log('Playlists loaded:', window.playlists.length);
     
-    const { data: playlistItems, error: itemsError } = await supabase
-      .from('creator_playlist_items')
-      .select(`
-        *,
-        Content (
-          id,
-          title,
-          thumbnail_url,
-          views_count,
-          duration
-        )
-      `);
+    // Load achievements/badges
+    const { data: badges, error: badgesError } = await supabase.from('user_badges')
+      .select('*')
+      .eq('user_id', window.creatorId)
+      .limit(10);
+      
+    if (!badgesError) {
+      window.achievements = badges || [];
+    }
     
-    if (itemsError) console.error('Error loading playlist items:', itemsError);
+    console.log('All data loaded successfully!');
     
-    const itemsByPlaylist = {};
-    (playlistItems || []).forEach(item => {
-      if (!itemsByPlaylist[item.playlist_id]) {
-        itemsByPlaylist[item.playlist_id] = [];
-      }
-      itemsByPlaylist[item.playlist_id].push(item);
-    });
-    
-    window.playlists = (playlistsData || []).map(playlist => ({
-      ...playlist,
-      creator_playlist_items: itemsByPlaylist[playlist.id] || []
-    }));
-    
-    const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
-    window.achievements = badges || [];
-    
-    console.log('✅ Creator data loaded:', { profile: window.creatorProfile, contentCount: window.creatorContent.length, connectorCount: window.connectorCount, isConnected: window.isConnected, playlists: window.playlists.length });
-    
+    // Update all UI components
     updateCreatorUI();
     updateIdentityCard();
     updateContentUI(window.creatorContent);
     updatePlaylistsUI();
     checkAndShowAllSections();
+    
+    // Hide loading screen and show app
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading) loading.style.display = 'none';
+    if (app) app.style.display = 'block';
+    
+    console.log('✅ Creator channel loaded successfully!');
+    
   } catch (error) {
     console.error('❌ Error loading creator channel:', error);
-    showToast('Failed to load creator channel', 'error');
+    showToast('Failed to load creator channel: ' + (error.message || 'Unknown error'), 'error');
+    
+    // Still show the app after error so page isn't stuck
+    setTimeout(() => {
+      const loading = document.getElementById('loading');
+      const app = document.getElementById('app');
+      if (loading) loading.style.display = 'none';
+      if (app) app.style.display = 'block';
+    }, 2000);
   }
 }
 
 function checkAndShowAllSections() {
-  if (window.creatorContent.length > 0) {
+  // Show popular section if there's content
+  if (window.creatorContent && window.creatorContent.length > 0) {
     const mostPopular = [...window.creatorContent].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 4);
     if (mostPopular.length > 0) {
       const popularSection = document.getElementById('popular-section');
@@ -3686,40 +3718,48 @@ function checkAndShowAllSections() {
     }
   }
   
+  // Show activity section
   const activitySection = document.getElementById('activity-section');
   if (activitySection) activitySection.style.display = 'block';
   updateActivityFeed();
   
+  // Show fan section
   const fanSection = document.getElementById('fan-section');
   if (fanSection) fanSection.style.display = 'block';
   updateFanHighlights();
   
+  // Show achievements section
   const achievementsSection = document.getElementById('achievements-section');
   if (achievementsSection) achievementsSection.style.display = 'block';
   updateAchievementsUI();
   
-  if (window.creatorProfile.upload_schedule) {
+  // Show schedule section if there's a schedule
+  if (window.creatorProfile && window.creatorProfile.upload_schedule) {
     const scheduleSection = document.getElementById('schedule-section');
     const scheduleText = document.getElementById('schedule-text');
     if (scheduleSection) scheduleSection.style.display = 'block';
     if (scheduleText) scheduleText.textContent = window.creatorProfile.upload_schedule;
   }
   
+  // Show recommended section
   const recommendedSection = document.getElementById('recommended-section');
   if (recommendedSection) recommendedSection.style.display = 'block';
   loadRecommendedCreators();
   
+  // Show support section
   const supportSection = document.getElementById('support-section');
   if (supportSection) supportSection.style.display = 'block';
   
-  const trailer = window.creatorContent.find(c => c.is_channel_trailer);
+  // Show trailer if exists
+  const trailer = window.creatorContent.find(c => c.is_channel_trailer === true);
   if (trailer) {
     const trailerSection = document.getElementById('trailer-section');
     if (trailerSection) trailerSection.style.display = 'block';
     updateTrailerUI(trailer);
   }
   
-  const pinned = window.creatorContent.find(c => c.is_pinned);
+  // Show pinned content if exists
+  const pinned = window.creatorContent.find(c => c.is_pinned === true);
   if (pinned) {
     const pinnedSection = document.getElementById('pinned-section');
     if (pinnedSection) pinnedSection.style.display = 'block';
