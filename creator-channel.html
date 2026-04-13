@@ -1905,53 +1905,115 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// ===== THEME SYSTEM FUNCTIONS =====
+// ===== THEME SYSTEM FUNCTIONS - FIXED =====
 function initThemeSystem() {
-  // Setup sidebar theme toggle
+  // Get elements
   const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
   const themeSelector = document.getElementById('theme-selector');
   
-  // Load saved theme
-  const saved = localStorage.getItem('bantu_theme') || 'dark';
-  applyTheme(saved);
-  
-  // Toggle UI for sidebar
-  if (sidebarThemeToggle && themeSelector) {
-    sidebarThemeToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      themeSelector.classList.toggle('active');
-    });
+  if (!sidebarThemeToggle || !themeSelector) {
+    console.warn('Theme elements not found');
+    return;
   }
   
+  // Load saved theme
+  const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+  applyTheme(savedTheme);
+  
+  // Toggle theme selector when clicking the Theme button in sidebar
+  sidebarThemeToggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    themeSelector.classList.toggle('active');
+  });
+  
+  // Theme option click handlers
+  document.querySelectorAll('.theme-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const theme = option.dataset.theme;
+      applyTheme(theme);
+      themeSelector.classList.remove('active');
+    });
+  });
+  
+  // Close theme selector when clicking outside
   document.addEventListener('click', (e) => {
-    if (themeSelector && themeSelector.classList.contains('active') && 
-        !themeSelector.contains(e.target) && e.target !== sidebarThemeToggle) {
+    if (themeSelector.classList.contains('active') && 
+        !themeSelector.contains(e.target) && 
+        e.target !== sidebarThemeToggle &&
+        !sidebarThemeToggle.contains(e.target)) {
       themeSelector.classList.remove('active');
     }
   });
   
-  // Theme buttons
-  document.querySelectorAll('.theme-option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      applyTheme(btn.dataset.theme);
-      if (themeSelector) themeSelector.classList.remove('active');
-    });
-  });
+  console.log('✅ Theme system initialized');
 }
 
 function applyTheme(theme) {
-  if (!['dark','light','high-contrast'].includes(theme)) theme = 'dark';
-  document.body.className = `theme-${theme}`;
+  if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
+    theme = 'dark';
+  }
+  
+  // Remove existing theme classes
+  document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+  
+  // Add new theme class
+  document.body.classList.add(`theme-${theme}`);
+  
+  // Apply theme-specific CSS variables for immediate effect
+  const root = document.documentElement;
+  switch(theme) {
+    case 'light':
+      root.style.setProperty('--deep-black', '#F8FAFC');
+      root.style.setProperty('--deep-navy', '#E2E8F0');
+      root.style.setproperty('--soft-white', '#0F172A');
+      root.style.setProperty('--slate-grey', '#475569');
+      root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.85)');
+      root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
+      break;
+    case 'high-contrast':
+      root.style.setProperty('--deep-black', '#000000');
+      root.style.setProperty('--deep-navy', '#050505');
+      root.style.setProperty('--soft-white', '#FFFFFF');
+      root.style.setProperty('--slate-grey', '#CCCCCC');
+      root.style.setProperty('--bantu-blue', '#FFD700');
+      root.style.setProperty('--warm-gold', '#00FFFF');
+      root.style.setProperty('--card-bg', '#0A0A0A');
+      root.style.setProperty('--card-border', '#FFFFFF');
+      break;
+    default: // dark
+      root.style.setProperty('--deep-black', '#0A0E12');
+      root.style.setProperty('--deep-navy', '#0F172A');
+      root.style.setProperty('--soft-white', '#F8FAFC');
+      root.style.setProperty('--slate-grey', '#94A3B8');
+      root.style.setProperty('--bantu-blue', '#1D4ED8');
+      root.style.setProperty('--warm-gold', '#F59E0B');
+      root.style.setProperty('--card-bg', 'rgba(15, 23, 42, 0.6)');
+      root.style.setProperty('--card-border', 'rgba(148, 163, 184, 0.2)');
+      break;
+  }
+  
+  // Save preference
   localStorage.setItem('bantu_theme', theme);
   
-  // Update active state on buttons
-  document.querySelectorAll('.theme-option').forEach(b => {
-    b.classList.toggle('active', b.dataset.theme === theme);
+  // Update active state on theme options
+  document.querySelectorAll('.theme-option').forEach(option => {
+    if (option.dataset.theme === theme) {
+      option.classList.add('active');
+    } else {
+      option.classList.remove('active');
+    }
   });
   
-  if(typeof showToast === 'function') showToast(`Theme changed to ${theme}`, 'success');
+  // Show confirmation
+  if (typeof showToast === 'function') {
+    showToast(`Theme changed to ${theme}`, 'success');
+  }
+  
+  console.log(`🎨 Theme applied: ${theme}`);
 }
-
 // ===== UI SCALE CONTROLS =====
 function setupScaleControls() {
   const decreaseBtn = document.getElementById('sidebar-scale-decrease');
