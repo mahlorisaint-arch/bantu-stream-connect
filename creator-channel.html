@@ -3580,34 +3580,34 @@ async function loadCreatorData() {
   try {
     window.creatorId = getUrlParam('id');
     if (!window.creatorId) {
-      console.error('Creator ID not found in URL');
       showToast('Creator ID not found', 'error');
-      setTimeout(() => { window.location.href = 'content-library.html'; }, 2000);
+      window.location.href = 'content-library.html';
       return;
     }
     
-    console.log('Loading creator data for ID:', window.creatorId);
+    // FIX #1: Update view-all link
+    const viewAllLink = document.getElementById('view-all-playlists');
+    if (viewAllLink) {
+      viewAllLink.href = `playlists.html?creatorId=${window.creatorId}`;
+    }
     
+    window.loadingText = document.getElementById('loading-text');
     if (window.loadingText) window.loadingText.textContent = 'Loading creator profile...';
     
-    // Load profile - using maybeSingle() to avoid errors
+    // Load profile
     const { data: profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
     if (profileError || !profile) {
-      console.error('Creator not found:', profileError);
       showToast('Creator not found', 'error');
-      setTimeout(() => { window.location.href = 'content-library.html'; }, 2000);
+      window.location.href = 'content-library.html';
       return;
     }
     
     window.creatorProfile = profile;
-    console.log('Profile loaded:', profile.full_name || profile.username);
-    
-    // Set banner image
     await loadBannerFromProfile();
     
     if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
     
-    // Load content - simplified query
+    // Load content - this works in the working file
     const { data: content, error: contentError } = await supabase.from('Content')
       .select('*, user_profiles!user_id(*)')
       .eq('user_id', window.creatorId)
@@ -3617,9 +3617,6 @@ async function loadCreatorData() {
       
     if (contentError) throw contentError;
     window.creatorContent = content || [];
-    console.log('Content loaded:', window.creatorContent.length, 'items');
-    
-    if (window.loadingText) window.loadingText.textContent = 'Loading connectors...';
     
     // Load connector count
     const { count: connectorCount, error: countError } = await supabase.from('connectors')
@@ -3627,77 +3624,97 @@ async function loadCreatorData() {
       .eq('connected_id', window.creatorId)
       .eq('connection_type', 'creator');
       
-    if (!countError) window.connectorCount = connectorCount || 0;
+    if (countError) throw countError;
+    window.connectorCount = connectorCount || 0;
     
-    // Check if current user is connected to this creator
+    // Check if current user is connected
     if (window.currentUser) {
-      const { data: connections, error: connError } = await supabase.from('connectors')
+      const { data: connections } = await supabase.from('connectors')
         .select('*')
         .eq('connector_id', window.currentUser.id)
         .eq('connected_id', window.creatorId)
         .eq('connection_type', 'creator')
         .limit(1);
-      
-      if (!connError) {
-        window.isConnected = connections && connections.length > 0;
-      }
+      window.isConnected = connections && connections.length > 0;
     } else {
       window.isConnected = false;
     }
     
     if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
     
-    // Load playlists - simplified to avoid complex joins
+    // Load playlists
     let playlistsQuery = supabase.from('creator_playlists')
       .select('*')
       .eq('creator_id', window.creatorId);
     
-    // Only show public playlists to non-owners
     if (!window.currentUser || window.currentUser.id !== window.creatorId) {
       playlistsQuery = playlistsQuery.eq('visibility', 'public');
     }
     
     const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
-    if (playlistsError) {
-      console.error('Error loading playlists:', playlistsError);
-      window.playlists = [];
-    } else {
-      window.playlists = playlistsData || [];
-    }
-    console.log('Playlists loaded:', window.playlists.length);
+    if (playlistsError) console.error('Error loading playlists:', playlistsError);
     
-    // Load achievements/badges
-    const { data: badges, error: badgesError } = await supabase.from('user_badges')
-      .select('*')
-      .eq('user_id', window.creatorId)
-      .limit(10);
-      
-    if (!badgesError) {
-      window.achievements = badges || [];
-    }
+    // FIX #2: Load playlist items separately
+    const { data: playlistItems, error: itemsError } = await supabase
+      .from('creator_playlist_items')
+      .select(`
+        *,
+        Content (
+          id,
+          title,
+          thumbnail_url,
+          views_count,
+          duration
+        )
+      `);
     
-    console.log('All data loaded successfully!');
+    if (itemsError) console.error('Error loading playlist items:', itemsError);
     
-    // Update all UI components
+    // FIX #3: Map items to their playlists
+    const itemsByPlaylist = {};
+    (playlistItems || []).forEach(item => {
+      if (!itemsByPlaylist[item.playlist_id]) {
+        itemsByPlaylist[item.playlist_id] = [];
+      }
+      itemsByPlaylist[item.playlist_id].push(item);
+    });
+    
+    // Attach items to playlists
+    window.playlists = (playlistsData || []).map(playlist => ({
+      ...playlist,
+      creator_playlist_items: itemsByPlaylist[playlist.id] || []
+    }));
+    
+    // Load badges
+    const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
+    window.achievements = badges || [];
+    
+    console.log('✅ Creator data loaded:', { 
+      profile: window.creatorProfile, 
+      contentCount: window.creatorContent.length, 
+      connectorCount: window.connectorCount, 
+      isConnected: window.isConnected, 
+      playlists: window.playlists.length 
+    });
+    
+    // Update all UI
     updateCreatorUI();
     updateIdentityCard();
     updateContentUI(window.creatorContent);
     updatePlaylistsUI();
     checkAndShowAllSections();
     
-    // Hide loading screen and show app
+    // Hide loading screen
     const loading = document.getElementById('loading');
     const app = document.getElementById('app');
     if (loading) loading.style.display = 'none';
     if (app) app.style.display = 'block';
     
-    console.log('✅ Creator channel loaded successfully!');
-    
   } catch (error) {
     console.error('❌ Error loading creator channel:', error);
-    showToast('Failed to load creator channel: ' + (error.message || 'Unknown error'), 'error');
+    showToast('Failed to load creator channel', 'error');
     
-    // Still show the app after error so page isn't stuck
+    // Still show the app
     setTimeout(() => {
       const loading = document.getElementById('loading');
       const app = document.getElementById('app');
