@@ -73,24 +73,16 @@ async function recordContentView(contentId) {
     let viewerId = null;
     let profileId = null;
     let userId = null;
-    let creatorId = null;
     
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
       profileId = userProfile?.id || null;
-      userId = userProfile?.id || null;  // ✅ user_id is same as viewer_id
-      console.log('👤 Viewer ID:', viewerId);
-      console.log('👤 Profile ID:', profileId);
+      userId = userProfile?.id || null;
       console.log('👤 User ID:', userId);
+      console.log('👤 Profile ID:', profileId);
     } else {
-      console.log('👤 Guest user - no viewer ID or profile ID');
-    }
-    
-    // Get creator_id from currentContent
-    if (currentContent?.user_id) {
-      creatorId = currentContent.user_id;
-      console.log('👤 Creator ID (from content):', creatorId);
+      console.log('👤 Guest user');
     }
 
     // Generate or get session ID
@@ -113,20 +105,18 @@ async function recordContentView(contentId) {
       ? 'mobile'
       : 'desktop';
     
-    // ✅ FULL INSERT with all columns including new user_id and creator_id
+    // ✅ CORRECT INSERT - NO creator_id
     const insertData = {
       content_id: contentIdNum,
       viewer_id: viewerId,
       profile_id: profileId,
-      user_id: userId,           // ✅ NEW COLUMN
-      creator_id: creatorId,     // ✅ NEW COLUMN
+      user_id: userId,
       session_id: sessionId,
       view_duration: 0,
       counted_as_view: false,
       device_type: deviceType,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-      // completed_at will be null initially
     };
     
     console.log('📝 Inserting view data:', insertData);
@@ -138,23 +128,22 @@ async function recordContentView(contentId) {
       .single();
 
     if (error) {
-      console.error('❌ Supabase insert error:', error);
+      console.error('❌ Insert failed:', error.message);
       console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
       return null;
     }
 
-    console.log('✅ View recorded successfully:', data);
-    console.log('✅ Session ID:', sessionId);
+    console.log('✅ VIEW CREATED SUCCESSFULLY!');
     console.log('✅ View ID:', data.id);
+    console.log('✅ Session ID:', sessionId);
     
     return sessionId;
   } catch (error) {
-    console.error('❌ View recording exception:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Exception:', error.message);
     return null;
   }
 }
+
 
 // ============================================
 // 🔧 FIXED: Start view validation timer (YouTube-style 20-second threshold)
