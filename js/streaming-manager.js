@@ -2,6 +2,7 @@
 // Bantu Stream Connect — Phase 4 Implementation
 // ✅ COMPLETE: Quality switching works for both HLS and MP4
 // 🎵 AUDIO SUPPORT: Skip HLS for audio files, use direct playback
+// ✅ FIXED: No creator_id references (this file never used it)
 
 (function() {
   'use strict';
@@ -36,6 +37,7 @@
     this.hlsInstance = null;
     this.originalVideoUrl = null;
     this.contentType = 'video'; // 'video' or 'audio'
+    this._networkCheckInterval = null; // ✅ Added for cleanup
     
     // Callbacks
     this.onQualityChange = config.onQualityChange || null;
@@ -106,6 +108,7 @@
       
     } catch (error) {
       console.error('❌ StreamingManager initialization error:', error);
+      this._handleError('init', error);
     }
     
     console.log('✅ StreamingManager fully initialized for', this.contentType);
@@ -155,7 +158,9 @@
     }
     
     // Show toast notification
-    if (typeof showToast === 'function') {
+    if (typeof window.showToast === 'function') {
+      window.showToast('Quality: ' + quality.toUpperCase(), 'info');
+    } else if (typeof showToast === 'function') {
       showToast('Quality: ' + quality.toUpperCase(), 'info');
     }
     
@@ -231,7 +236,11 @@
     
     // Destroy HLS instance
     if (this.hlsInstance) {
-      this.hlsInstance.destroy();
+      try {
+        this.hlsInstance.destroy();
+      } catch (e) {
+        console.warn('HLS destroy error:', e);
+      }
       this.hlsInstance = null;
     }
     
@@ -350,7 +359,12 @@
       return;
     }
     
-    // Check network speed every 60 seconds (not 30) to reduce requests
+    // Clear any existing interval
+    if (this._networkCheckInterval) {
+      clearInterval(this._networkCheckInterval);
+    }
+    
+    // Check network speed every 60 seconds
     this._networkCheckInterval = setInterval(() => {
       this._measureNetworkSpeed();
     }, 60000);
@@ -380,13 +394,13 @@
       
       // Estimate speed based on response time
       if (duration < 0.5) {
-        this.networkSpeed = 10000000;
+        this.networkSpeed = 10000000; // 10 Mbps+
       } else if (duration < 1.5) {
-        this.networkSpeed = 5000000;
+        this.networkSpeed = 5000000;  // 5 Mbps
       } else if (duration < 3) {
-        this.networkSpeed = 2000000;
+        this.networkSpeed = 2000000;  // 2 Mbps
       } else {
-        this.networkSpeed = 500000;
+        this.networkSpeed = 500000;   // 0.5 Mbps
       }
       
       console.log('🌐 Network speed:', (this.networkSpeed / 1000000).toFixed(2), 'Mbps');
@@ -398,7 +412,8 @@
       
     } catch (error) {
       // Fail silently — default to medium speed on error
-      this.networkSpeed = 2000000;
+      console.warn('⚠️ Network speed measurement failed:', error);
+      this.networkSpeed = 2000000; // Default to 2 Mbps
     }
   };
 
@@ -430,8 +445,11 @@
     
     if (dataSaver) {
       this.toggleDataSaver(true);
-    } else if (savedQuality) {
+    } else if (savedQuality && savedQuality !== 'auto') {
       await this.setQuality(savedQuality);
+    } else {
+      // If no preference, start with auto and let network decide
+      await this.setQuality('auto');
     }
   };
 
