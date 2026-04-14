@@ -1,4 +1,5 @@
-// js/video-player-features.js - Phase 1 Critical Fixes + creator_id removal + profile_id fix
+// js/video-player-features.js - Phase 1 Critical Fixes
+// ✅ COMPLETE REWRITE - NO creator_id references
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -6,8 +7,7 @@
  * 2. Fix fullscreen API implementation
  * 3. Implement view deduplication
  * 4. Fix memory leaks
- * 5. REMOVED creator_id from content_views operations
- * 6. ADDED profile_id to content_views inserts (required column)
+ * 5. NO creator_id references anywhere
  */
 
 class VideoPlayerFeatures {
@@ -19,12 +19,10 @@ class VideoPlayerFeatures {
 
   /**
    * CRITICAL FIX #1: Remove all duplicate control systems
-   * This function removes ALL Bantu branded controls that conflict with EnhancedVideoPlayer
    */
   removeDuplicateControls() {
     console.log('🔧 Removing duplicate control systems...');
     
-    // Remove all Bantu branded control elements
     const duplicateSelectors = [
       '.bantu-video-controls',
       '.bantu-control-bar',
@@ -52,7 +50,6 @@ class VideoPlayerFeatures {
       });
     });
     
-    // Ensure video element has no native controls
     const videoElement = document.getElementById('inlineVideoPlayer');
     if (videoElement) {
       videoElement.controls = false;
@@ -64,17 +61,12 @@ class VideoPlayerFeatures {
 
   /**
    * CRITICAL FIX #2: Proper fullscreen API implementation
-   * Uses correct element (video-container) instead of inline-player
    */
   setupFullscreenFix() {
     console.log('🔧 Setting up fullscreen API fix...');
     
-    // Override EnhancedVideoPlayer's toggleFullscreen method
     if (window.EnhancedVideoPlayer && window.EnhancedVideoPlayer.prototype) {
-      const originalToggleFullscreen = window.EnhancedVideoPlayer.prototype.toggleFullscreen;
-      
       window.EnhancedVideoPlayer.prototype.toggleFullscreen = function() {
-        // Use the actual video container, not the inline-player wrapper
         const videoContainer = document.querySelector('.video-container');
         if (!videoContainer) {
           console.error('Video container not found for fullscreen');
@@ -82,7 +74,6 @@ class VideoPlayerFeatures {
         }
         
         if (!this.isFullscreen) {
-          // Request fullscreen on the video container
           if (videoContainer.requestFullscreen) {
             videoContainer.requestFullscreen();
           } else if (videoContainer.webkitRequestFullscreen) {
@@ -93,7 +84,6 @@ class VideoPlayerFeatures {
             videoContainer.msRequestFullscreen();
           }
         } else {
-          // Exit fullscreen
           if (document.exitFullscreen) {
             document.exitFullscreen();
           } else if (document.webkitExitFullscreen) {
@@ -107,7 +97,6 @@ class VideoPlayerFeatures {
         
         this.isFullscreen = !this.isFullscreen;
         
-        // Update button icon
         const fullscreenBtn = this.controls?.querySelector('.fullscreen-btn');
         if (fullscreenBtn) {
           fullscreenBtn.innerHTML = this.isFullscreen ? 
@@ -115,7 +104,6 @@ class VideoPlayerFeatures {
             '<i class="fas fa-expand"></i>';
         }
         
-        // Force controls to show in fullscreen
         setTimeout(() => {
           if (this.controls) {
             this.controls.style.opacity = '1';
@@ -124,7 +112,6 @@ class VideoPlayerFeatures {
         }, 100);
       };
       
-      // Add fullscreen change listeners
       document.addEventListener('fullscreenchange', this.handleFullscreenChange.bind(this));
       document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange.bind(this));
       document.addEventListener('mozfullscreenchange', this.handleFullscreenChange.bind(this));
@@ -140,7 +127,6 @@ class VideoPlayerFeatures {
                            document.mozFullScreenElement || 
                            document.msFullscreenElement);
     
-    // Update all EnhancedVideoPlayer instances
     if (window.enhancedVideoPlayer) {
       window.enhancedVideoPlayer.isFullscreen = isFullscreen;
       
@@ -155,18 +141,14 @@ class VideoPlayerFeatures {
 
   /**
    * CRITICAL FIX #3: View deduplication system
-   * Prevents view count inflation by tracking views in localStorage
-   * ✅ FIXED: Removed creator_id from insert
-   * ✅ FIXED: Added profile_id to insert (required column)
+   * ✅ COMPLETELY REWRITTEN - NO creator_id
    */
   setupViewDeduplication() {
     console.log('🔧 Setting up view deduplication...');
     
-    // Override the view recording logic in content-detail.js
-    const originalRecordView = window.recordContentView;
-    
+    // Complete override - no creator_id anywhere
     window.recordContentView = async function(contentId) {
-      console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
+      console.log('🚨 recordContentView CALLED with contentId:', contentId);
       
       try {
         let viewerId = null;
@@ -175,64 +157,45 @@ class VideoPlayerFeatures {
         if (window.AuthHelper?.isAuthenticated?.()) {
           const userProfile = window.AuthHelper.getUserProfile();
           viewerId = userProfile?.id || null;
-          profileId = userProfile?.id || null; // ✅ profile_id is the same as viewer_id/user_id
-          console.log('👤 Viewer ID:', viewerId);
-          console.log('👤 Profile ID:', profileId);
-        } else {
-          console.log('👤 Guest user - no viewer ID or profile ID');
+          profileId = userProfile?.id || null;
+          console.log('👤 User ID:', viewerId);
         }
 
-        // Generate or get session ID
         let sessionId = sessionStorage.getItem('bantu_view_session');
         if (!sessionId) {
           sessionId = crypto.randomUUID();
           sessionStorage.setItem('bantu_view_session', sessionId);
-          console.log('🔑 Generated new session ID:', sessionId);
-        } else {
-          console.log('🔑 Using existing session ID:', sessionId);
         }
+        console.log('🔑 Session ID:', sessionId);
 
         const contentIdNum = parseInt(contentId);
-        if (isNaN(contentIdNum)) {
-          console.error('❌ Invalid content ID:', contentId);
-          return null;
+        
+        // Check for recent view
+        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+        const lastViewTime = viewedContent[contentIdNum];
+        if (lastViewTime && (Date.now() - lastViewTime) < 3600000) {
+          console.log('📊 View already recorded recently, skipping');
+          return sessionId;
         }
         
         const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
           ? 'mobile'
           : 'desktop';
         
-        console.log('📝 Preparing insert with:', {
-          content_id: contentIdNum,
-          viewer_id: viewerId,
-          profile_id: profileId,
-          session_id: sessionId,
-          device_type: deviceType
-        });
-
-        // Check if view was already recorded recently
-        if (VideoPlayerFeatures.hasViewedContent(contentIdNum)) {
-          console.log(`📊 View already recorded for content ${contentIdNum} in last 24h`);
-          return null;
-        }
-
-        // ✅ CORRECT: Include ALL required columns from content_views schema
-        // ❌ NO creator_id here - that column doesn't exist!
-        // ✅ INCLUDES profile_id - required column!
+        // ✅ CORRECT INSERT - ONLY columns that exist
         const insertData = {
           content_id: contentIdNum,
           viewer_id: viewerId,
-          profile_id: profileId,  // ✅ REQUIRED: This column exists in your table!
+          profile_id: profileId,
           session_id: sessionId,
           view_duration: 0,
           counted_as_view: false,
           device_type: deviceType,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-          // completed_at will be null initially
         };
         
-        console.log('📝 Inserting view data:', insertData);
+        console.log('📝 Inserting:', insertData);
 
         const { data, error } = await window.supabaseClient
           .from('content_views')
@@ -241,25 +204,19 @@ class VideoPlayerFeatures {
           .single();
 
         if (error) {
-          console.error('❌ Supabase insert error:', error);
-          console.error('❌ Error code:', error.code);
-          console.error('❌ Error message:', error.message);
-          console.error('❌ Error details:', error.details);
-          console.error('❌ Hint:', error.hint);
+          console.error('❌ Insert error:', error.message);
           return null;
         }
 
-        console.log('✅ View session created successfully:', data);
-        console.log('✅ Session ID:', sessionId);
-        console.log('✅ View ID:', data.id);
+        console.log('✅ View recorded:', data.id);
         
-        // Mark content as viewed in localStorage
-        VideoPlayerFeatures.markContentAsViewed(contentIdNum);
+        // Mark as viewed
+        viewedContent[contentIdNum] = Date.now();
+        localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
         
         return sessionId;
       } catch (error) {
-        console.error('❌ View recording exception:', error);
-        console.error('❌ Stack trace:', error.stack);
+        console.error('❌ View recording error:', error);
         return null;
       }
     };
@@ -268,53 +225,21 @@ class VideoPlayerFeatures {
   }
 
   /**
-   * Check if content was viewed in the last 24 hours
+   * Check if content was viewed recently
    */
   static hasViewedContent(contentId) {
-    // 🔧 TEMPORARILY DISABLED FOR TESTING - Remove this line after testing
-    // return false;
-    
     try {
       const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
       const viewTime = viewedContent[contentId];
-      
       if (!viewTime) return false;
-      
-      const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
-      
-      // Reduced from 24 hours to 1 hour for testing
-      return hoursSinceView < 1;
+      return (Date.now() - viewTime) < 3600000; // 1 hour
     } catch (error) {
-      console.error('Error checking view history:', error);
       return false;
     }
   }
 
   /**
-   * Mark content as viewed
-   */
-  static markContentAsViewed(contentId) {
-    try {
-      const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
-      viewedContent[contentId] = Date.now();
-      
-      // Clean up old entries (older than 7 days)
-      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-      Object.keys(viewedContent).forEach(id => {
-        if (viewedContent[id] < sevenDaysAgo) {
-          delete viewedContent[id];
-        }
-      });
-      
-      localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
-      console.log(`✅ Content ${contentId} marked as viewed`);
-    } catch (error) {
-      console.error('Error marking content as viewed:', error);
-    }
-  }
-
-  /**
-   * Clear view cache for testing
+   * Clear view cache
    */
   static clearViewCache() {
     localStorage.removeItem('bantu_viewed_content');
@@ -322,30 +247,26 @@ class VideoPlayerFeatures {
   }
 
   /**
-   * CRITICAL FIX #4: Fix memory leaks in player lifecycle
+   * CRITICAL FIX #4: Fix memory leaks
    */
   setupMemoryLeakFix() {
     console.log('🔧 Setting up memory leak fixes...');
     
-    // Store original destroy method
     if (window.EnhancedVideoPlayer && window.EnhancedVideoPlayer.prototype) {
       const originalDestroy = window.EnhancedVideoPlayer.prototype.destroy;
       
       window.EnhancedVideoPlayer.prototype.destroy = function() {
         console.log('🧹 Cleaning up video player resources...');
         
-        // Clear video source before destroying
         if (this.video) {
           this.video.pause();
           this.video.src = '';
           this.video.load();
         }
         
-        // Clear all timeouts and intervals
         if (this.bufferingTimeout) clearTimeout(this.bufferingTimeout);
         if (this.networkCheckInterval) clearInterval(this.networkCheckInterval);
         
-        // Remove all event listeners
         if (this.video) {
           const events = [
             'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
@@ -353,23 +274,19 @@ class VideoPlayerFeatures {
             'timeupdate', 'progress', 'seeking', 'seeked',
             'volumechange', 'ratechange'
           ];
-          
           events.forEach(event => {
             this.video.removeEventListener(event, this.handleVideoEvent);
           });
         }
         
-        // Remove controls
         if (this.controls && this.controls.parentNode) {
           this.controls.parentNode.removeChild(this.controls);
         }
         
-        // Clear event listeners map
         if (this.eventListeners) {
           this.eventListeners.clear();
         }
         
-        // Call original destroy method
         if (originalDestroy) {
           originalDestroy.call(this);
         }
@@ -389,30 +306,21 @@ class VideoPlayerFeatures {
     
     console.log('🚀 Initializing Phase 1 video player fixes...');
     
-    // Fix 1: Remove duplicate controls
     this.removeDuplicateControls();
-    
-    // Fix 2: Setup proper fullscreen API
     this.setupFullscreenFix();
-    
-    // Fix 3: Setup view deduplication
     this.setupViewDeduplication();
-    
-    // Fix 4: Fix memory leaks
     this.setupMemoryLeakFix();
     
     this.initialized = true;
     console.log('✅ Phase 1 fixes initialized successfully');
     
-    // Setup additional event listeners
     this.setupAdditionalEventListeners();
   }
 
   /**
-   * Setup additional event listeners for better UX
+   * Setup additional event listeners
    */
   setupAdditionalEventListeners() {
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (!window.enhancedVideoPlayer) return;
       
@@ -449,7 +357,6 @@ class VideoPlayerFeatures {
       }
     });
     
-    // Double click for fullscreen
     const videoContainer = document.querySelector('.video-container');
     if (videoContainer) {
       videoContainer.addEventListener('dblclick', (e) => {
@@ -461,7 +368,7 @@ class VideoPlayerFeatures {
   }
 
   /**
-   * Fix for touch devices - ensure controls are accessible
+   * Touch device support
    */
   setupTouchDeviceSupport() {
     if ('ontouchstart' in window) {
@@ -492,23 +399,16 @@ class VideoPlayerFeatures {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  // Wait a bit for other scripts to load
   setTimeout(() => {
     const videoPlayerFeatures = new VideoPlayerFeatures();
     videoPlayerFeatures.initialize();
-    
-    // Setup touch device support
     videoPlayerFeatures.setupTouchDeviceSupport();
     
-    // Expose helper methods to console for testing
     window.clearViewCache = () => VideoPlayerFeatures.clearViewCache();
     window.hasViewedContent = (id) => VideoPlayerFeatures.hasViewedContent(id);
-    
-    console.log('🎬 Video Player Features initialized with profile_id fix');
   }, 1000);
 });
 
-// Export for use in other scripts
 window.VideoPlayerFeatures = VideoPlayerFeatures;
 
-console.log('✅ Video Player Features (Phase 1) loaded - creator_id removed, profile_id added to view recording');
+console.log('✅ Video Player Features (Phase 1) loaded - NO creator_id');
