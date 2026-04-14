@@ -29,6 +29,7 @@
 // 🎯 MOBILE FIX: Header profile picture hidden on mobile phones
 // 🎯 MOBILE FIX: RSA badge stays inside header, no overflow
 // 🔧 CRITICAL FIX: Added session_id to view recording system (YouTube-style validation)
+// 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -47,6 +48,7 @@ let viewValidationTimer = null; // 🔧 NEW: Timer for view validation
 
 // ============================================
 // 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM WITH SESSION ID
+// 🔧 FIXED: Removed creator_id - column doesn't exist in content_views
 // ============================================
 
 // Generate new session ID for each play
@@ -58,6 +60,7 @@ function generateNewSession() {
 }
 
 // Record view in content_views table with session_id
+// ✅ FIXED: No creator_id in insert
 async function recordContentView(contentId) {
   console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
   
@@ -83,6 +86,8 @@ async function recordContentView(contentId) {
       device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
     });
 
+    // ✅ CORRECT: Only use columns that exist in content_views table
+    // ❌ NO creator_id here - that column doesn't exist!
     const { data, error } = await window.supabaseClient
       .from('content_views')
       .insert({
@@ -94,7 +99,8 @@ async function recordContentView(contentId) {
         device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
           ? 'mobile'
           : 'desktop',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -113,6 +119,7 @@ async function recordContentView(contentId) {
 }
 
 // Start 20-second validation timer (YouTube-style)
+// ✅ FIXED: No creator_id in update
 function startViewValidationTimer(sessionId, contentId) {
   if (viewValidationTimer) {
     clearTimeout(viewValidationTimer);
@@ -124,12 +131,14 @@ function startViewValidationTimer(sessionId, contentId) {
     console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
     
     try {
+      // ✅ CORRECT: Only update fields that exist, no creator_id
       const { data, error } = await window.supabaseClient
         .from('content_views')
         .update({
           counted_as_view: true,
           view_duration: Math.floor(enhancedVideoPlayer?.video?.currentTime || 20),
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('session_id', sessionId)
         .eq('content_id', parseInt(contentId))
@@ -1283,6 +1292,7 @@ function generateNewSession() {
 
 // ============================================
 // 🔧 FIXED: Record view in content_views table with session_id
+// ✅ REMOVED: creator_id (column doesn't exist)
 // ============================================
 async function recordContentView(contentId) {
   try {
@@ -1299,18 +1309,21 @@ async function recordContentView(contentId) {
       sessionStorage.setItem('bantu_view_session', sessionId);
     }
 
+    // ✅ CORRECT: Only use columns that exist in content_views table
+    // ❌ NO creator_id here
     const { data, error } = await window.supabaseClient
       .from('content_views')
       .insert({
         content_id: contentId,
         viewer_id: viewerId,
-        session_id: sessionId, // ✅ FIXED: Now included
+        session_id: sessionId,
         view_duration: 0,
-        counted_as_view: false, // ✅ Track if counted
+        counted_as_view: false,
         device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
           ? 'mobile'
           : 'desktop',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -1321,7 +1334,7 @@ async function recordContentView(contentId) {
     }
 
     console.log('✅ View session created:', { sessionId, contentId, viewerId });
-    return sessionId; // ✅ Return session ID for later updates
+    return sessionId;
   } catch (error) {
     console.error('❌ View recording error:', error);
     return null;
@@ -1330,6 +1343,7 @@ async function recordContentView(contentId) {
 
 // ============================================
 // 🔧 NEW: Start view validation timer (YouTube-style 20-second threshold)
+// ✅ REMOVED: creator_id from update
 // ============================================
 function startViewValidationTimer(sessionId, contentId) {
   // Clear existing timer
@@ -1342,12 +1356,14 @@ function startViewValidationTimer(sessionId, contentId) {
     console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
     
     try {
+      // ✅ CORRECT: Only update fields that exist in content_views
       const { data, error } = await window.supabaseClient
         .from('content_views')
         .update({
           counted_as_view: true,
           view_duration: Math.floor(enhancedVideoPlayer?.video?.currentTime || 20),
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('session_id', sessionId)
         .eq('content_id', contentId)
@@ -1453,6 +1469,7 @@ function initializeWatchSessionOnPlay() {
 
 // ============================================
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
+// ✅ REMOVED: creator_id references
 // ============================================
 function handlePlay() {
   console.log('🎬 handlePlay CALLED - Starting view recording...');
@@ -2803,6 +2820,7 @@ function updateContentUI(content) {
   // 🎯 REMOVED: Player title "Now Playing" header - no longer used
 }
 
+// ✅ FIXED: loadComments - REMOVED creator_id from update
 async function loadComments(contentId) {
   try {
     console.log('💬 Loading comments for content:', contentId);
@@ -2823,11 +2841,13 @@ async function loadComments(contentId) {
       countEl.textContent = `(${comments.length})`;
     }
     
+    // ✅ FIXED: Update comments_count - NO creator_id condition
     if (currentContent) {
       const { error: updateError } = await window.supabaseClient
         .from('Content')
         .update({ comments_count: comments.length })
-        .eq('id', currentContent.id);
+        .eq('id', currentContent.id);  // ✅ Only use id, NOT creator_id
+      
       if (updateError) {
         console.warn('Failed to update comments_count:', updateError);
       }
