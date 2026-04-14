@@ -341,21 +341,14 @@ WatchSession.prototype._recordView = function(video) {
   var self = this;
   if (!this.userId) return Promise.resolve();
   
-  // Get creator_id from content if available
-  var creatorId = null;
-  if (window.currentContent && window.currentContent.user_id) {
-    creatorId = window.currentContent.user_id;
-  }
-  
-  // ✅ FULL INSERT with all columns including user_id and creator_id
+  // ✅ CORRECT INSERT - NO creator_id
   return this.supabase
     .from('content_views')
     .insert({
       content_id: this.contentId,
       viewer_id: this.userId,
-      profile_id: this.userId,   // profile_id is same as user_id
-      user_id: this.userId,       // ✅ NEW COLUMN
-      creator_id: creatorId,      // ✅ NEW COLUMN
+      profile_id: this.userId,
+      user_id: this.userId,
       session_id: this.sessionId,
       view_duration: Math.floor(video.currentTime),
       counted_as_view: true,
@@ -367,19 +360,18 @@ WatchSession.prototype._recordView = function(video) {
       if (result.error && result.error.code !== '23505') {
         throw result.error;
       }
-      console.log('✅ View recorded with session:', self.sessionId, 'user_id:', self.userId, 'creator_id:', creatorId);
+      console.log('✅ View recorded successfully with session:', self.sessionId);
       if (self.onViewCounted) {
         self.onViewCounted({ 
           contentId: self.contentId, 
           sessionId: self.sessionId,
           userId: self.userId,
-          creatorId: creatorId,
           viewId: result.data && result.data.id 
         });
       }
     })
     .catch(function(error) {
-      console.error('❌ Record view failed:', error);
+      console.error('❌ Record view failed:', error.message);
       self._handleError('recordView', error);
     });
 };
