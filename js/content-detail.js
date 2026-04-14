@@ -30,6 +30,7 @@
 // 🎯 MOBILE FIX: RSA badge stays inside header, no overflow
 // 🔧 CRITICAL FIX: Added session_id to view recording system (YouTube-style validation)
 // 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
+// 🔧 CRITICAL FIX: ADDED profile_id to content_views inserts (required column)
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -49,6 +50,7 @@ let viewValidationTimer = null; // 🔧 NEW: Timer for view validation
 // ============================================
 // 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM WITH SESSION ID
 // 🔧 FIXED: Removed creator_id - column doesn't exist in content_views
+// 🔧 FIXED: Added profile_id - required column in content_views table
 // ============================================
 
 // Generate new session ID for each play
@@ -60,15 +62,22 @@ function generateNewSession() {
 }
 
 // Record view in content_views table with session_id
-// ✅ FIXED: No creator_id in insert
+// ✅ FIXED: Added profile_id (required column)
 async function recordContentView(contentId) {
   console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
   
   try {
     let viewerId = null;
+    let profileId = null;
+    
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
+      profileId = userProfile?.id || null; // ✅ profile_id is the same as viewer_id/user_id
+      console.log('👤 Viewer ID:', viewerId);
+      console.log('👤 Profile ID:', profileId);
+    } else {
+      console.log('👤 Guest user - no viewer ID or profile ID');
     }
 
     // Generate or get session ID
@@ -76,67 +85,87 @@ async function recordContentView(contentId) {
     if (!sessionId) {
       sessionId = crypto.randomUUID();
       sessionStorage.setItem('bantu_view_session', sessionId);
+      console.log('🔑 Generated new session ID:', sessionId);
+    } else {
+      console.log('🔑 Using existing session ID:', sessionId);
     }
 
     const contentIdNum = parseInt(contentId);
-    console.log('📝 Inserting view with data:', {
+    if (isNaN(contentIdNum)) {
+      console.error('❌ Invalid content ID:', contentId);
+      return null;
+    }
+    
+    const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+      ? 'mobile'
+      : 'desktop';
+    
+    // ✅ CORRECT: Include ALL required columns from your schema
+    const insertData = {
       content_id: contentIdNum,
       viewer_id: viewerId,
+      profile_id: profileId,  // ✅ REQUIRED: This column exists in your table!
       session_id: sessionId,
-      device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-    });
+      view_duration: 0,
+      counted_as_view: false,
+      device_type: deviceType,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+      // completed_at will be null initially
+    };
+    
+    console.log('📝 Inserting view data:', insertData);
 
-    // ✅ CORRECT: Only use columns that exist in content_views table
-    // ❌ NO creator_id here - that column doesn't exist!
     const { data, error } = await window.supabaseClient
       .from('content_views')
-      .insert({
-        content_id: contentIdNum,
-        viewer_id: viewerId,
-        session_id: sessionId,
-        view_duration: 0,
-        counted_as_view: false,
-        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-          ? 'mobile'
-          : 'desktop',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      console.error('❌ View recording failed:', error);
+      console.error('❌ Supabase insert error:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error details:', error.details);
+      console.error('❌ Hint:', error.hint);
       return null;
     }
 
-    console.log('✅ View session created:', { sessionId, contentId: contentIdNum, viewerId });
+    console.log('✅ View recorded successfully:', data);
+    console.log('✅ Session ID:', sessionId);
+    console.log('✅ View ID:', data.id);
+    
     return sessionId;
   } catch (error) {
-    console.error('❌ View recording error:', error);
+    console.error('❌ View recording exception:', error);
+    console.error('❌ Error stack:', error.stack);
     return null;
   }
 }
 
 // Start 20-second validation timer (YouTube-style)
-// ✅ FIXED: No creator_id in update
+// ✅ FIXED: Added profile_id awareness (no creator_id)
 function startViewValidationTimer(sessionId, contentId) {
   if (viewValidationTimer) {
     clearTimeout(viewValidationTimer);
   }
   
   console.log('⏱ Starting 20-second validation timer for session:', sessionId);
+  console.log('⏱ Content ID:', contentId);
   
   viewValidationTimer = setTimeout(async () => {
     console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
     
     try {
-      // ✅ CORRECT: Only update fields that exist, no creator_id
+      const currentTime = enhancedVideoPlayer?.video?.currentTime || 0;
+      console.log('📊 Current video time at validation:', currentTime);
+      
+      // ✅ CORRECT: Update only the fields that should change
       const { data, error } = await window.supabaseClient
         .from('content_views')
         .update({
           counted_as_view: true,
-          view_duration: Math.floor(enhancedVideoPlayer?.video?.currentTime || 20),
+          view_duration: Math.floor(currentTime),
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -152,7 +181,22 @@ function startViewValidationTimer(sessionId, contentId) {
       
       if (data && data.length > 0) {
         console.log('✅ View validated and counted after 20 seconds!');
+        console.log('✅ Updated record:', data[0]);
         await refreshCountsFromSource();
+      } else {
+        console.warn('⚠️ No matching session found for validation or already counted');
+        
+        // Try to find any record with this session_id to debug
+        const { data: findData, error: findError } = await window.supabaseClient
+          .from('content_views')
+          .select('*')
+          .eq('session_id', sessionId);
+        
+        if (findError) {
+          console.error('❌ Could not find session:', findError);
+        } else {
+          console.log('🔍 Found records with session_id:', findData);
+        }
       }
     } catch (error) {
       console.error('❌ View validation error:', error);
@@ -1293,56 +1337,90 @@ function generateNewSession() {
 // ============================================
 // 🔧 FIXED: Record view in content_views table with session_id
 // ✅ REMOVED: creator_id (column doesn't exist)
+// ✅ ADDED: profile_id (required column)
 // ============================================
 async function recordContentView(contentId) {
+  console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
+  
   try {
     let viewerId = null;
+    let profileId = null;
+    
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
+      profileId = userProfile?.id || null;
+      console.log('👤 Viewer ID:', viewerId);
+      console.log('👤 Profile ID:', profileId);
+    } else {
+      console.log('👤 Guest user - no viewer ID or profile ID');
     }
 
-    // ✅ CRITICAL FIX: Generate session ID
+    // Generate or get session ID
     let sessionId = sessionStorage.getItem('bantu_view_session');
     if (!sessionId) {
       sessionId = crypto.randomUUID();
       sessionStorage.setItem('bantu_view_session', sessionId);
+      console.log('🔑 Generated new session ID:', sessionId);
+    } else {
+      console.log('🔑 Using existing session ID:', sessionId);
     }
 
-    // ✅ CORRECT: Only use columns that exist in content_views table
-    // ❌ NO creator_id here
+    const contentIdNum = parseInt(contentId);
+    if (isNaN(contentIdNum)) {
+      console.error('❌ Invalid content ID:', contentId);
+      return null;
+    }
+    
+    const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+      ? 'mobile'
+      : 'desktop';
+    
+    // ✅ CORRECT: Include ALL required columns from your schema
+    const insertData = {
+      content_id: contentIdNum,
+      viewer_id: viewerId,
+      profile_id: profileId,  // ✅ REQUIRED: This column exists in your table!
+      session_id: sessionId,
+      view_duration: 0,
+      counted_as_view: false,
+      device_type: deviceType,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+      // completed_at will be null initially
+    };
+    
+    console.log('📝 Inserting view data:', insertData);
+
     const { data, error } = await window.supabaseClient
       .from('content_views')
-      .insert({
-        content_id: contentId,
-        viewer_id: viewerId,
-        session_id: sessionId,
-        view_duration: 0,
-        counted_as_view: false,
-        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-          ? 'mobile'
-          : 'desktop',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      console.error('❌ View recording failed:', error);
+      console.error('❌ Supabase insert error:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error details:', error.details);
+      console.error('❌ Hint:', error.hint);
       return null;
     }
 
-    console.log('✅ View session created:', { sessionId, contentId, viewerId });
+    console.log('✅ View recorded successfully:', data);
+    console.log('✅ Session ID:', sessionId);
+    console.log('✅ View ID:', data.id);
+    
     return sessionId;
   } catch (error) {
-    console.error('❌ View recording error:', error);
+    console.error('❌ View recording exception:', error);
+    console.error('❌ Error stack:', error.stack);
     return null;
   }
 }
 
 // ============================================
-// 🔧 NEW: Start view validation timer (YouTube-style 20-second threshold)
+// 🔧 FIXED: Start view validation timer (YouTube-style 20-second threshold)
 // ✅ REMOVED: creator_id from update
 // ============================================
 function startViewValidationTimer(sessionId, contentId) {
@@ -1395,7 +1473,7 @@ function startViewValidationTimer(sessionId, contentId) {
 }
 
 // ============================================
-// PHASE 1 UPDATED: Initialize watch session with session ID
+// PHASE 1 UPDATED: Initialize watch session with session ID and profile ID
 // ============================================
 function initializeWatchSessionOnPlay() {
   if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
@@ -1469,7 +1547,7 @@ function initializeWatchSessionOnPlay() {
 
 // ============================================
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
-// ✅ REMOVED: creator_id references
+// ✅ ADDED: profile_id to insert
 // ============================================
 function handlePlay() {
   console.log('🎬 handlePlay CALLED - Starting view recording...');
@@ -4602,4 +4680,4 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, and HOME FEED UI INTEGRATION');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, and HOME FEED UI INTEGRATION');
