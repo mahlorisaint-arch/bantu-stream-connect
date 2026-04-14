@@ -61,10 +61,13 @@ function generateNewSession() {
   return newSessionId;
 }
 
-// Record view in content_views table with session_id
-// ✅ FIXED: Added profile_id (required column)
+// ============================================
+// 🔧 FIXED: Record view in content_views table with session_id
+// ✅ REMOVED: creator_id (column doesn't exist)
+// ✅ ADDED: profile_id (required column)
+// ============================================
 async function recordContentView(contentId) {
-  console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
+  console.log('🚨 recordContentView CALLED with contentId:', contentId);
   
   try {
     let viewerId = null;
@@ -73,7 +76,7 @@ async function recordContentView(contentId) {
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
-      profileId = userProfile?.id || null; // ✅ profile_id is the same as viewer_id/user_id
+      profileId = userProfile?.id || null;
       console.log('👤 Viewer ID:', viewerId);
       console.log('👤 Profile ID:', profileId);
     } else {
@@ -100,21 +103,20 @@ async function recordContentView(contentId) {
       ? 'mobile'
       : 'desktop';
     
-    // ✅ CORRECT: Include ALL required columns from your schema
+    // ✅ ONLY use columns that exist in your content_views table
     const insertData = {
       content_id: contentIdNum,
       viewer_id: viewerId,
-      profile_id: profileId,  // ✅ REQUIRED: This column exists in your table!
+      profile_id: profileId,
       session_id: sessionId,
       view_duration: 0,
       counted_as_view: false,
       device_type: deviceType,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-      // completed_at will be null initially
     };
     
-    console.log('📝 Inserting view data:', insertData);
+    console.log('📝 Inserting view data:', JSON.stringify(insertData, null, 2));
 
     const { data, error } = await window.supabaseClient
       .from('content_views')
@@ -123,36 +125,36 @@ async function recordContentView(contentId) {
       .single();
 
     if (error) {
-      console.error('❌ Supabase insert error:', error);
+      console.error('❌ Supabase insert error:', error.message);
       console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
       console.error('❌ Error details:', error.details);
       console.error('❌ Hint:', error.hint);
       return null;
     }
 
-    console.log('✅ View recorded successfully:', data);
+    console.log('✅ View recorded successfully! ID:', data.id);
     console.log('✅ Session ID:', sessionId);
-    console.log('✅ View ID:', data.id);
-    
     return sessionId;
   } catch (error) {
-    console.error('❌ View recording exception:', error);
+    console.error('❌ View recording exception:', error.message);
     console.error('❌ Error stack:', error.stack);
     return null;
   }
 }
 
-// Start 20-second validation timer (YouTube-style)
-// ✅ FIXED: Added profile_id awareness (no creator_id)
+// ============================================
+// 🔧 FIXED: Start view validation timer (YouTube-style 20-second threshold)
+// ✅ REMOVED: creator_id from update
+// ============================================
 function startViewValidationTimer(sessionId, contentId) {
+  // Clear existing timer
   if (viewValidationTimer) {
     clearTimeout(viewValidationTimer);
   }
   
   console.log('⏱ Starting 20-second validation timer for session:', sessionId);
-  console.log('⏱ Content ID:', contentId);
   
+  // ✅ Wait 20 seconds before counting as valid view
   viewValidationTimer = setTimeout(async () => {
     console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
     
@@ -160,7 +162,7 @@ function startViewValidationTimer(sessionId, contentId) {
       const currentTime = enhancedVideoPlayer?.video?.currentTime || 0;
       console.log('📊 Current video time at validation:', currentTime);
       
-      // ✅ CORRECT: Update only the fields that should change
+      // ✅ CORRECT: Update only fields that exist in content_views
       const { data, error } = await window.supabaseClient
         .from('content_views')
         .update({
@@ -182,7 +184,14 @@ function startViewValidationTimer(sessionId, contentId) {
       if (data && data.length > 0) {
         console.log('✅ View validated and counted after 20 seconds!');
         console.log('✅ Updated record:', data[0]);
+        
+        // ✅ Refresh counts after validation
         await refreshCountsFromSource();
+        
+        // ✅ Show subtle notification
+        if (data[0].counted_as_view) {
+          console.log('📊 View counted for content:', contentId);
+        }
       } else {
         console.warn('⚠️ No matching session found for validation or already counted');
         
@@ -201,7 +210,7 @@ function startViewValidationTimer(sessionId, contentId) {
     } catch (error) {
       console.error('❌ View validation error:', error);
     }
-  }, 20000);
+  }, 20000); // 20 seconds threshold
 }
 
 // TEMPORARILY DISABLE the recent view check for testing
@@ -1332,144 +1341,6 @@ function generateNewSession() {
   const newSessionId = crypto.randomUUID();
   sessionStorage.setItem('bantu_view_session', newSessionId);
   return newSessionId;
-}
-
-// ============================================
-// 🔧 FIXED: Record view in content_views table with session_id
-// ✅ REMOVED: creator_id (column doesn't exist)
-// ✅ ADDED: profile_id (required column)
-// ============================================
-async function recordContentView(contentId) {
-  console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
-  
-  try {
-    let viewerId = null;
-    let profileId = null;
-    
-    if (window.AuthHelper?.isAuthenticated?.()) {
-      const userProfile = window.AuthHelper.getUserProfile();
-      viewerId = userProfile?.id || null;
-      profileId = userProfile?.id || null;
-      console.log('👤 Viewer ID:', viewerId);
-      console.log('👤 Profile ID:', profileId);
-    } else {
-      console.log('👤 Guest user - no viewer ID or profile ID');
-    }
-
-    // Generate or get session ID
-    let sessionId = sessionStorage.getItem('bantu_view_session');
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      sessionStorage.setItem('bantu_view_session', sessionId);
-      console.log('🔑 Generated new session ID:', sessionId);
-    } else {
-      console.log('🔑 Using existing session ID:', sessionId);
-    }
-
-    const contentIdNum = parseInt(contentId);
-    if (isNaN(contentIdNum)) {
-      console.error('❌ Invalid content ID:', contentId);
-      return null;
-    }
-    
-    const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-      ? 'mobile'
-      : 'desktop';
-    
-    // ✅ CORRECT: Include ALL required columns from your schema
-    const insertData = {
-      content_id: contentIdNum,
-      viewer_id: viewerId,
-      profile_id: profileId,  // ✅ REQUIRED: This column exists in your table!
-      session_id: sessionId,
-      view_duration: 0,
-      counted_as_view: false,
-      device_type: deviceType,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-      // completed_at will be null initially
-    };
-    
-    console.log('📝 Inserting view data:', insertData);
-
-    const { data, error } = await window.supabaseClient
-      .from('content_views')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Supabase insert error:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error details:', error.details);
-      console.error('❌ Hint:', error.hint);
-      return null;
-    }
-
-    console.log('✅ View recorded successfully:', data);
-    console.log('✅ Session ID:', sessionId);
-    console.log('✅ View ID:', data.id);
-    
-    return sessionId;
-  } catch (error) {
-    console.error('❌ View recording exception:', error);
-    console.error('❌ Error stack:', error.stack);
-    return null;
-  }
-}
-
-// ============================================
-// 🔧 FIXED: Start view validation timer (YouTube-style 20-second threshold)
-// ✅ REMOVED: creator_id from update
-// ============================================
-function startViewValidationTimer(sessionId, contentId) {
-  // Clear existing timer
-  if (viewValidationTimer) {
-    clearTimeout(viewValidationTimer);
-  }
-  
-  // ✅ Wait 20 seconds before counting as valid view
-  viewValidationTimer = setTimeout(async () => {
-    console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
-    
-    try {
-      // ✅ CORRECT: Only update fields that exist in content_views
-      const { data, error } = await window.supabaseClient
-        .from('content_views')
-        .update({
-          counted_as_view: true,
-          view_duration: Math.floor(enhancedVideoPlayer?.video?.currentTime || 20),
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('session_id', sessionId)
-        .eq('content_id', contentId)
-        .eq('counted_as_view', false)
-        .select();
-      
-      if (error) {
-        console.error('❌ Failed to validate view:', error);
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        console.log('✅ View validated and counted:', data[0]);
-        
-        // ✅ Refresh counts after validation
-        await refreshCountsFromSource();
-        
-        // ✅ Show subtle notification
-        if (data[0].counted_as_view) {
-          console.log('📊 View counted for content:', contentId);
-        }
-      } else {
-        console.warn('⚠️ No matching session found for validation');
-      }
-    } catch (error) {
-      console.error('❌ View validation error:', error);
-    }
-  }, 20000); // 20 seconds threshold
 }
 
 // ============================================
