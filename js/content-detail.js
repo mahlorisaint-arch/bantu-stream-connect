@@ -67,20 +67,30 @@ function generateNewSession() {
 // ✅ ADDED: profile_id (required column)
 // ============================================
 async function recordContentView(contentId) {
-  console.log('🚨 recordContentView CALLED with contentId:', contentId);
+  console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
   
   try {
     let viewerId = null;
     let profileId = null;
+    let userId = null;
+    let creatorId = null;
     
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
       profileId = userProfile?.id || null;
+      userId = userProfile?.id || null;  // ✅ user_id is same as viewer_id
       console.log('👤 Viewer ID:', viewerId);
       console.log('👤 Profile ID:', profileId);
+      console.log('👤 User ID:', userId);
     } else {
       console.log('👤 Guest user - no viewer ID or profile ID');
+    }
+    
+    // Get creator_id from currentContent
+    if (currentContent?.user_id) {
+      creatorId = currentContent.user_id;
+      console.log('👤 Creator ID (from content):', creatorId);
     }
 
     // Generate or get session ID
@@ -103,20 +113,23 @@ async function recordContentView(contentId) {
       ? 'mobile'
       : 'desktop';
     
-    // ✅ ONLY use columns that exist in your content_views table
+    // ✅ FULL INSERT with all columns including new user_id and creator_id
     const insertData = {
       content_id: contentIdNum,
       viewer_id: viewerId,
       profile_id: profileId,
+      user_id: userId,           // ✅ NEW COLUMN
+      creator_id: creatorId,     // ✅ NEW COLUMN
       session_id: sessionId,
       view_duration: 0,
       counted_as_view: false,
       device_type: deviceType,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
+      // completed_at will be null initially
     };
     
-    console.log('📝 Inserting view data:', JSON.stringify(insertData, null, 2));
+    console.log('📝 Inserting view data:', insertData);
 
     const { data, error } = await window.supabaseClient
       .from('content_views')
@@ -125,18 +138,19 @@ async function recordContentView(contentId) {
       .single();
 
     if (error) {
-      console.error('❌ Supabase insert error:', error.message);
+      console.error('❌ Supabase insert error:', error);
       console.error('❌ Error code:', error.code);
-      console.error('❌ Error details:', error.details);
-      console.error('❌ Hint:', error.hint);
+      console.error('❌ Error message:', error.message);
       return null;
     }
 
-    console.log('✅ View recorded successfully! ID:', data.id);
+    console.log('✅ View recorded successfully:', data);
     console.log('✅ Session ID:', sessionId);
+    console.log('✅ View ID:', data.id);
+    
     return sessionId;
   } catch (error) {
-    console.error('❌ View recording exception:', error.message);
+    console.error('❌ View recording exception:', error);
     console.error('❌ Error stack:', error.stack);
     return null;
   }
