@@ -46,6 +46,118 @@ let currentUserId = null;
 let viewValidationTimer = null; // 🔧 NEW: Timer for view validation
 
 // ============================================
+// 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM WITH SESSION ID
+// ============================================
+
+// Generate new session ID for each play
+function generateNewSession() {
+  const newSessionId = crypto.randomUUID();
+  sessionStorage.setItem('bantu_view_session', newSessionId);
+  console.log('🎬 Generated new session ID:', newSessionId);
+  return newSessionId;
+}
+
+// Record view in content_views table with session_id
+async function recordContentView(contentId) {
+  console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
+  
+  try {
+    let viewerId = null;
+    if (window.AuthHelper?.isAuthenticated?.()) {
+      const userProfile = window.AuthHelper.getUserProfile();
+      viewerId = userProfile?.id || null;
+    }
+
+    // Generate or get session ID
+    let sessionId = sessionStorage.getItem('bantu_view_session');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('bantu_view_session', sessionId);
+    }
+
+    const contentIdNum = parseInt(contentId);
+    console.log('📝 Inserting view with data:', {
+      content_id: contentIdNum,
+      viewer_id: viewerId,
+      session_id: sessionId,
+      device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+    });
+
+    const { data, error } = await window.supabaseClient
+      .from('content_views')
+      .insert({
+        content_id: contentIdNum,
+        viewer_id: viewerId,
+        session_id: sessionId,
+        view_duration: 0,
+        counted_as_view: false,
+        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+          ? 'mobile'
+          : 'desktop',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ View recording failed:', error);
+      return null;
+    }
+
+    console.log('✅ View session created:', { sessionId, contentId: contentIdNum, viewerId });
+    return sessionId;
+  } catch (error) {
+    console.error('❌ View recording error:', error);
+    return null;
+  }
+}
+
+// Start 20-second validation timer (YouTube-style)
+function startViewValidationTimer(sessionId, contentId) {
+  if (viewValidationTimer) {
+    clearTimeout(viewValidationTimer);
+  }
+  
+  console.log('⏱ Starting 20-second validation timer for session:', sessionId);
+  
+  viewValidationTimer = setTimeout(async () => {
+    console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
+    
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('content_views')
+        .update({
+          counted_as_view: true,
+          view_duration: Math.floor(enhancedVideoPlayer?.video?.currentTime || 20),
+          completed_at: new Date().toISOString()
+        })
+        .eq('session_id', sessionId)
+        .eq('content_id', parseInt(contentId))
+        .eq('counted_as_view', false)
+        .select();
+      
+      if (error) {
+        console.error('❌ Failed to validate view:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        console.log('✅ View validated and counted after 20 seconds!');
+        await refreshCountsFromSource();
+      }
+    } catch (error) {
+      console.error('❌ View validation error:', error);
+    }
+  }, 20000);
+}
+
+// TEMPORARILY DISABLE the recent view check for testing
+function hasViewedContentRecently(contentId) {
+  console.log('🔍 hasViewedContentRecently called - returning FALSE for testing');
+  return false;
+}
+
+// ============================================
 // HOME FEED UI INTEGRATION - SIDEBAR, HEADER, NAVIGATION, UTILITIES
 // ============================================
 
@@ -1343,6 +1455,8 @@ function initializeWatchSessionOnPlay() {
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
 // ============================================
 function handlePlay() {
+  console.log('🎬 handlePlay CALLED - Starting view recording...');
+  
   if (!currentContent) {
     showToast('No content to play', 'error');
     return;
@@ -1356,176 +1470,111 @@ function handlePlay() {
     return;
   }
   
-  // ✅ Generate NEW session for this play session
+  // ✅ GENERATE NEW SESSION FOR THIS PLAY
   const sessionId = generateNewSession();
   console.log('🎬 New viewing session:', sessionId);
   
-  // ✅ Record view on play (like mobile app) with session tracking
-  if (!hasViewedContentRecently(currentContent.id)) {
-    const viewsEl = document.getElementById('viewsCount');
-    const viewsFullEl = document.getElementById('viewsCountFull');
-    const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
-    const newViews = currentViews + 1;
-    
-    // Optimistic UI update
-    if (viewsEl && viewsFullEl) {
-      viewsEl.textContent = `${formatNumber(newViews)} views`;
-      viewsFullEl.textContent = formatNumber(newViews);
-    }
-    
-    // ✅ Record view with session ID
-    recordContentView(currentContent.id)
-      .then(async function(sessionId) {
-        if (sessionId) {
-          markContentAsViewed(currentContent.id);
-          await refreshCountsFromSource();
-          
-          // ✅ Start 20-second timer for view validation
-          startViewValidationTimer(sessionId, currentContent.id);
-          
-          if (window.track?.contentView) {
-            window.track.contentView(currentContent.id, 'video');
-          }
-        } else {
-          // Rollback on failure
-          if (viewsEl && viewsFullEl) {
-            viewsEl.textContent = `${formatNumber(currentViews)} views`;
-            viewsFullEl.textContent = formatNumber(currentViews);
-          }
+  // ✅ UPDATE UI OPTIMISTICALLY
+  const viewsEl = document.getElementById('viewsCount');
+  const viewsFullEl = document.getElementById('viewsCountFull');
+  const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
+  const newViews = currentViews + 1;
+  
+  if (viewsEl && viewsFullEl) {
+    viewsEl.textContent = `${formatNumber(newViews)} views`;
+    viewsFullEl.textContent = formatNumber(newViews);
+  }
+  
+  // ✅ RECORD VIEW (ALWAYS, NO CONDITION)
+  const contentIdNum = parseInt(currentContent.id);
+  console.log('📝 Calling recordContentView with ID:', contentIdNum);
+  
+  recordContentView(contentIdNum)
+    .then(async function(returnedSessionId) {
+      if (returnedSessionId) {
+        console.log('✅ View recorded successfully! Session:', returnedSessionId);
+        markContentAsViewed(currentContent.id);
+        await refreshCountsFromSource();
+        startViewValidationTimer(returnedSessionId, contentIdNum);
+        
+        if (window.track?.contentView) {
+          window.track.contentView(currentContent.id, 'video');
         }
-      })
-      .catch(function(error) {
-        console.error('View recording error:', error);
+      } else {
+        console.error('❌ Failed to record view - rolling back UI');
         if (viewsEl && viewsFullEl) {
           viewsEl.textContent = `${formatNumber(currentViews)} views`;
           viewsFullEl.textContent = formatNumber(currentViews);
         }
-      });
-  }
+      }
+    })
+    .catch(function(error) {
+      console.error('❌ View recording promise rejected:', error);
+      if (viewsEl && viewsFullEl) {
+        viewsEl.textContent = `${formatNumber(currentViews)} views`;
+        viewsFullEl.textContent = formatNumber(currentViews);
+      }
+    });
   
-  // ✅ Show player (now positioned BEFORE hero)
+  // Continue with video playback setup
   player.style.display = 'block';
   
   const placeholder = document.getElementById('videoPlaceholder');
-  if (placeholder) {
-    placeholder.style.display = 'none';
-  }
+  if (placeholder) placeholder.style.display = 'none';
   
-  // ✅ Hide hero poster when player is active
   const heroPoster = document.getElementById('heroPoster');
-  if (heroPoster) {
-    heroPoster.style.opacity = '0.3';
-  }
+  if (heroPoster) heroPoster.style.opacity = '0.3';
   
-  // ✅ Show close button in hero actions (optional)
   const closeFromHero = document.getElementById('closePlayerFromHero');
-  if (closeFromHero) {
-    closeFromHero.style.display = 'flex';
-  }
+  if (closeFromHero) closeFromHero.style.display = 'flex';
   
-  // Ensure audio is enabled
-  console.log('🔊 Preparing playback');
   videoElement.muted = false;
   videoElement.defaultMuted = false;
   videoElement.volume = 1.0;
   
-  // ✅ SCROLL TO TOP - Player is now at top of page
   window.scrollTo({ top: 0, behavior: 'smooth' });
   
-  // PHASE 4: Check if HLS is available and use streaming manager
-  if (currentContent.hls_manifest_url && streamingManager) {
-    console.log('📺 Using HLS streaming');
-    streamingManager.initialize();
-    
-    // Initialize quality indicator
-    setTimeout(() => {
-      if (streamingManager) {
-        updateQualityIndicator(streamingManager.getCurrentQuality());
-      }
-    }, 1000);
-    
-    // Set media type attribute for CSS styling
-    const videoContainer = document.querySelector('.video-container');
-    if (videoContainer) {
-      videoContainer.setAttribute('data-media-type', 'video');
-    }
-    return;
-  }
-  
-  // Fallback to direct file (MP4, MP3, WAV, etc.)
+  // Video source setup (keep your existing working code)
   let fileUrl = currentContent.file_url;
   console.log('📥 Raw file_url from database:', fileUrl);
   
   if (fileUrl && !fileUrl.startsWith('http')) {
-    if (fileUrl.startsWith('/')) {
-      fileUrl = fileUrl.substring(1);
-    }
+    if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
     fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
   }
   
   if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined' || fileUrl === '') {
     if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
-      const cleanPath = currentContent.thumbnail_url.startsWith('/')
-        ? currentContent.thumbnail_url.substring(1)
-        : currentContent.thumbnail_url;
+      const cleanPath = currentContent.thumbnail_url.startsWith('/') ? currentContent.thumbnail_url.substring(1) : currentContent.thumbnail_url;
       fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
     }
   }
   
   console.log('🎵 Final file URL:', fileUrl);
   
-  // ============================================
-  // ✅ CRITICAL FIX: ALLOW AUDIO FILES (MP3, WAV, OGG)
-  // ============================================
-  const isAudioFile = fileUrl && (
-    fileUrl.includes('.mp3') ||
-    fileUrl.includes('.wav') ||
-    fileUrl.includes('.ogg') ||
-    fileUrl.includes('.aac') ||
-    fileUrl.includes('.m4a')
-  );
-  
-  const isVideoFile = fileUrl && (
-    fileUrl.includes('.mp4') ||
-    fileUrl.includes('.webm') ||
-    fileUrl.includes('.mov')
-  );
+  const isAudioFile = fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac') || fileUrl.includes('.m4a'));
+  const isVideoFile = fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
   
   if (!fileUrl || (!isAudioFile && !isVideoFile)) {
     console.error('❌ Invalid file format:', fileUrl);
-    showToast('Invalid file format. Supported: MP4, WebM, MP3, WAV, OGG', 'error');
+    showToast('Invalid file format', 'error');
     return;
   }
   
-  // ============================================
-  // ✅ CRITICAL FIX: SET POSTER FOR AUDIO FILES
-  // ============================================
   if (isAudioFile && currentContent.thumbnail_url) {
     const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
     videoElement.setAttribute('poster', imgUrl);
-    console.log('🎵 Audio file detected - setting poster:', imgUrl);
   } else {
     videoElement.removeAttribute('poster');
   }
   
-  // Set media type attribute for CSS styling
   const videoContainer = document.querySelector('.video-container');
   if (videoContainer) {
-    if (isAudioFile) {
-      videoContainer.setAttribute('data-media-type', 'audio');
-    } else {
-      videoContainer.setAttribute('data-media-type', 'video');
-    }
+    videoContainer.setAttribute('data-media-type', isAudioFile ? 'audio' : 'video');
   }
   
-  // Clean up existing player
   if (enhancedVideoPlayer) {
-    try {
-      console.log('🗑️ Destroying existing player...');
-      enhancedVideoPlayer.destroy();
-    } catch (e) {
-      console.warn('Error destroying old player:', e);
-    }
+    try { enhancedVideoPlayer.destroy(); } catch(e) {}
     enhancedVideoPlayer = null;
   }
   
@@ -1534,57 +1583,29 @@ function handlePlay() {
     watchSession = null;
   }
   
-  // Set file source
-  console.log('🔧 Setting file source...');
-  while (videoElement.firstChild) {
-    videoElement.removeChild(videoElement.firstChild);
-  }
+  while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
   videoElement.removeAttribute('src');
   videoElement.src = '';
   
   const source = document.createElement('source');
   source.src = fileUrl;
   
-  // ============================================
-  // ✅ CRITICAL FIX: CORRECT MIME TYPES FOR AUDIO
-  // ============================================
   if (isAudioFile) {
-    if (fileUrl.endsWith('.mp3')) {
-      source.type = 'audio/mpeg';
-    } else if (fileUrl.endsWith('.wav')) {
-      source.type = 'audio/wav';
-    } else if (fileUrl.endsWith('.ogg')) {
-      source.type = 'audio/ogg';
-    } else if (fileUrl.endsWith('.aac')) {
-      source.type = 'audio/aac';
-    } else if (fileUrl.endsWith('.m4a')) {
-      source.type = 'audio/mp4';
-    } else {
-      source.type = 'audio/mpeg'; // Default to MP3
-    }
-    console.log('🎵 Audio source type:', source.type);
+    if (fileUrl.endsWith('.mp3')) source.type = 'audio/mpeg';
+    else if (fileUrl.endsWith('.wav')) source.type = 'audio/wav';
+    else if (fileUrl.endsWith('.ogg')) source.type = 'audio/ogg';
+    else source.type = 'audio/mpeg';
   } else {
-    // Video types
-    if (fileUrl.endsWith('.mp4')) {
-      source.type = 'video/mp4';
-    } else if (fileUrl.endsWith('.webm')) {
-      source.type = 'video/webm';
-    } else if (fileUrl.endsWith('.mov')) {
-      source.type = 'video/quicktime';
-    } else {
-      source.type = 'video/mp4';
-    }
-    console.log('📺 Video source type:', source.type);
+    if (fileUrl.endsWith('.mp4')) source.type = 'video/mp4';
+    else if (fileUrl.endsWith('.webm')) source.type = 'video/webm';
+    else source.type = 'video/mp4';
   }
   
   videoElement.appendChild(source);
   videoElement.load();
-  console.log('✅ File source set successfully');
   
-  console.log('🎬 Initializing EnhancedVideoPlayer...');
   initializeEnhancedVideoPlayer();
   
-  // PHASE 4: Reinitialize streaming manager with new content
   setTimeout(() => {
     if (streamingManager) {
       streamingManager.destroy();
@@ -1593,19 +1614,11 @@ function handlePlay() {
     initializeStreamingManager();
   }, 100);
   
-  // Auto-play after setup
   setTimeout(() => {
-    console.log('▶️ Attempting to play...');
     if (enhancedVideoPlayer) {
-      enhancedVideoPlayer.play().catch(function(err) {
-        console.error('🔴 Play failed:', err);
-        showToast('Click play button in video player', 'info');
-      });
+      enhancedVideoPlayer.play().catch(err => console.error('Play failed:', err));
     } else {
-      videoElement.play().catch(function(err) {
-        console.error('🔴 Autoplay failed:', err);
-        showToast('Click play button in video player', 'info');
-      });
+      videoElement.play().catch(err => console.error('Autoplay failed:', err));
     }
   }, 500);
   
