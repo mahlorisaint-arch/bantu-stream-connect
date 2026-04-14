@@ -146,76 +146,89 @@ class VideoPlayerFeatures {
   setupViewDeduplication() {
     console.log('🔧 Setting up view deduplication...');
     
-// In video-player-features.js, update the recordContentView override:
-window.recordContentView = async function(contentId) {
-  console.log('🚨 recordContentView CALLED with contentId:', contentId);
-  
-  try {
-    let viewerId = null;
-    let profileId = null;
-    let userId = null;
-    
-    if (window.AuthHelper?.isAuthenticated?.()) {
-      const userProfile = window.AuthHelper.getUserProfile();
-      viewerId = userProfile?.id || null;
-      profileId = userProfile?.id || null;
-      userId = userProfile?.id || null;
-    }
+    // Override recordContentView globally
+    window.recordContentView = async function(contentId) {
+      console.log('🚨 recordContentView CALLED with contentId:', contentId);
+      
+      try {
+        let viewerId = null;
+        let profileId = null;
+        let userId = null;
+        
+        if (window.AuthHelper?.isAuthenticated?.()) {
+          const userProfile = window.AuthHelper.getUserProfile();
+          viewerId = userProfile?.id || null;
+          profileId = userProfile?.id || null;
+          userId = userProfile?.id || null;
+        }
 
-    // Generate or get session ID
-    let sessionId = sessionStorage.getItem('bantu_view_session');
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      sessionStorage.setItem('bantu_view_session', sessionId);
-    }
+        // Generate or get session ID
+        let sessionId = sessionStorage.getItem('bantu_view_session');
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          sessionStorage.setItem('bantu_view_session', sessionId);
+        }
 
-    const contentIdNum = parseInt(contentId);
-    
-    // Check if view was already recorded recently
-    if (VideoPlayerFeatures.hasViewedContent(contentIdNum)) {
-      console.log(`📊 View already recorded for content ${contentIdNum}`);
-      return null;
-    }
+        const contentIdNum = parseInt(contentId);
+        
+        // Check if view was already recorded recently
+        if (VideoPlayerFeatures.hasViewedContent(contentIdNum)) {
+          console.log(`📊 View already recorded for content ${contentIdNum}`);
+          return null;
+        }
 
-    // ✅ CORRECT INSERT - NO creator_id
-    const insertData = {
-      content_id: contentIdNum,
-      viewer_id: viewerId,
-      profile_id: profileId,
-      user_id: userId,
-      session_id: sessionId,
-      view_duration: 0,
-      counted_as_view: false,
-      device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-        ? 'mobile'
-        : 'desktop',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+        // ✅ CORRECT INSERT - NO creator_id
+        const insertData = {
+          content_id: contentIdNum,
+          viewer_id: viewerId,
+          profile_id: profileId,
+          user_id: userId,
+          session_id: sessionId,
+          view_duration: 0,
+          counted_as_view: false,
+          device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+            ? 'mobile'
+            : 'desktop',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await window.supabaseClient
+          .from('content_views')
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Insert failed:', error.message);
+          return null;
+        }
+
+        console.log('✅ View session created successfully');
+        
+        VideoPlayerFeatures.markContentAsViewed(contentIdNum);
+        
+        return sessionId;
+      } catch (error) {
+        console.error('❌ Exception:', error.message);
+        return null;
+      }
     };
 
-    const { data, error } = await window.supabaseClient
-      .from('content_views')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Insert failed:', error.message);
-      return null;
-    }
-
-    console.log('✅ View session created successfully');
-    
-    VideoPlayerFeatures.markContentAsViewed(contentIdNum);
-    
-    return sessionId;
-  } catch (error) {
-    console.error('❌ Exception:', error.message);
-    return null;
-  }
-};
-
     console.log('✅ View deduplication setup complete');
+  }
+
+  /**
+   * Mark content as viewed
+   */
+  static markContentAsViewed(contentId) {
+    try {
+      const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+      viewedContent[contentId] = Date.now();
+      localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+    } catch (error) {
+      console.warn('Could not mark content as viewed:', error);
+    }
   }
 
   /**
