@@ -146,81 +146,100 @@ class VideoPlayerFeatures {
   setupViewDeduplication() {
     console.log('🔧 Setting up view deduplication...');
     
-    // Complete override - no creator_id anywhere
-    window.recordContentView = async function(contentId) {
-      console.log('🚨 recordContentView CALLED with contentId:', contentId);
-      
-      try {
-        let viewerId = null;
-        let profileId = null;
-        
-        if (window.AuthHelper?.isAuthenticated?.()) {
-          const userProfile = window.AuthHelper.getUserProfile();
-          viewerId = userProfile?.id || null;
-          profileId = userProfile?.id || null;
-          console.log('👤 User ID:', viewerId);
-        }
+// In video-player-features.js, update the recordContentView override:
+window.recordContentView = async function(contentId) {
+  console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
+  
+  try {
+    let viewerId = null;
+    let profileId = null;
+    let userId = null;
+    let creatorId = null;
+    
+    if (window.AuthHelper?.isAuthenticated?.()) {
+      const userProfile = window.AuthHelper.getUserProfile();
+      viewerId = userProfile?.id || null;
+      profileId = userProfile?.id || null;
+      userId = userProfile?.id || null;  // ✅ user_id is same as viewer_id
+      console.log('👤 Viewer ID:', viewerId);
+      console.log('👤 Profile ID:', profileId);
+      console.log('👤 User ID:', userId);
+    } else {
+      console.log('👤 Guest user - no viewer ID or profile ID');
+    }
+    
+    // Get creator_id from currentContent if available
+    if (window.currentContent?.user_id) {
+      creatorId = window.currentContent.user_id;
+      console.log('👤 Creator ID (from content):', creatorId);
+    }
 
-        let sessionId = sessionStorage.getItem('bantu_view_session');
-        if (!sessionId) {
-          sessionId = crypto.randomUUID();
-          sessionStorage.setItem('bantu_view_session', sessionId);
-        }
-        console.log('🔑 Session ID:', sessionId);
+    // Generate or get session ID
+    let sessionId = sessionStorage.getItem('bantu_view_session');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem('bantu_view_session', sessionId);
+      console.log('🔑 Generated new session ID:', sessionId);
+    } else {
+      console.log('🔑 Using existing session ID:', sessionId);
+    }
 
-        const contentIdNum = parseInt(contentId);
-        
-        // Check for recent view
-        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
-        const lastViewTime = viewedContent[contentIdNum];
-        if (lastViewTime && (Date.now() - lastViewTime) < 3600000) {
-          console.log('📊 View already recorded recently, skipping');
-          return sessionId;
-        }
-        
-        const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-          ? 'mobile'
-          : 'desktop';
-        
-        // ✅ CORRECT INSERT - ONLY columns that exist
-        const insertData = {
-          content_id: contentIdNum,
-          viewer_id: viewerId,
-          profile_id: profileId,
-          session_id: sessionId,
-          view_duration: 0,
-          counted_as_view: false,
-          device_type: deviceType,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        console.log('📝 Inserting:', insertData);
+    const contentIdNum = parseInt(contentId);
+    if (isNaN(contentIdNum)) {
+      console.error('❌ Invalid content ID:', contentId);
+      return null;
+    }
+    
+    const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+      ? 'mobile'
+      : 'desktop';
+    
+    // Check if view was already recorded recently
+    if (VideoPlayerFeatures.hasViewedContent(contentIdNum)) {
+      console.log(`📊 View already recorded for content ${contentIdNum} in last 24h`);
+      return null;
+    }
 
-        const { data, error } = await window.supabaseClient
-          .from('content_views')
-          .insert(insertData)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('❌ Insert error:', error.message);
-          return null;
-        }
-
-        console.log('✅ View recorded:', data.id);
-        
-        // Mark as viewed
-        viewedContent[contentIdNum] = Date.now();
-        localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
-        
-        return sessionId;
-      } catch (error) {
-        console.error('❌ View recording error:', error);
-        return null;
-      }
+    // ✅ FULL INSERT with all columns
+    const insertData = {
+      content_id: contentIdNum,
+      viewer_id: viewerId,
+      profile_id: profileId,
+      user_id: userId,           // ✅ NEW COLUMN
+      creator_id: creatorId,     // ✅ NEW COLUMN
+      session_id: sessionId,
+      view_duration: 0,
+      counted_as_view: false,
+      device_type: deviceType,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
+    console.log('📝 Inserting view data:', insertData);
+
+    const { data, error } = await window.supabaseClient
+      .from('content_views')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase insert error:', error);
+      return null;
+    }
+
+    console.log('✅ View session created successfully:', data);
+    
+    // Mark content as viewed in localStorage
+    VideoPlayerFeatures.markContentAsViewed(contentIdNum);
+    
+    return sessionId;
+  } catch (error) {
+    console.error('❌ View recording exception:', error);
+    return null;
+  }
+};
+
     console.log('✅ View deduplication setup complete');
   }
 
