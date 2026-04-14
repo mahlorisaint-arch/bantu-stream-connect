@@ -332,54 +332,53 @@
   // ✅ FIXED: ADDED profile_id to content_views insert
   // ============================================
 
-  // ============================================
-  // 🔧 FIXED: Record view in content_views table with session_id
-  // ✅ NO creator_id anywhere in this function
-  // ============================================
-  // In watch-session.js, update the _recordView method:
-WatchSession.prototype._recordView = function(video) {
-  var self = this;
-  if (!this.userId) return Promise.resolve();
-  
-  // ✅ CORRECT INSERT - NO creator_id
-  return this.supabase
-    .from('content_views')
-    .insert({
-      content_id: this.contentId,
-      viewer_id: this.userId,
-      profile_id: this.userId,
-      user_id: this.userId,
-      session_id: this.sessionId,
-      view_duration: Math.floor(video.currentTime),
-      counted_as_view: true,
-      device_type: this._getDeviceType(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .then(function(result) {
-      if (result.error && result.error.code !== '23505') {
-        throw result.error;
-      }
-      console.log('✅ View recorded successfully with session:', self.sessionId);
-      if (self.onViewCounted) {
-        self.onViewCounted({ 
-          contentId: self.contentId, 
-          sessionId: self.sessionId,
-          userId: self.userId,
-          viewId: result.data && result.data.id 
-        });
-      }
-    })
-    .catch(function(error) {
-      console.error('❌ Record view failed:', error.message);
-      self._handleError('recordView', error);
-    });
-};
+  /**
+   * 🔧 FIXED: Record view in content_views table with session_id
+   * ✅ NO creator_id anywhere in this function
+   */
+  WatchSession.prototype._recordView = function(video) {
+    var self = this;
+    if (!this.userId) return Promise.resolve();
+    
+    // ✅ CORRECT INSERT - NO creator_id
+    return this.supabase
+      .from('content_views')
+      .insert({
+        content_id: this.contentId,
+        viewer_id: this.userId,
+        profile_id: this.userId,
+        user_id: this.userId,
+        session_id: this.sessionId,
+        view_duration: Math.floor(video.currentTime),
+        counted_as_view: true,
+        device_type: this._getDeviceType(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .then(function(result) {
+        if (result.error && result.error.code !== '23505') {
+          throw result.error;
+        }
+        console.log('✅ View recorded successfully with session:', self.sessionId);
+        if (self.onViewCounted) {
+          self.onViewCounted({ 
+            contentId: self.contentId, 
+            sessionId: self.sessionId,
+            userId: self.userId,
+            viewId: result.data && result.data.id 
+          });
+        }
+      })
+      .catch(function(error) {
+        console.error('❌ Record view failed:', error.message);
+        self._handleError('recordView', error);
+      });
+  };
 
-  // ============================================
-  // 🔧 FIXED: Sync progress to watch_progress table
-  // ✅ Uses correct column names (total_watch_time, NOT watch_duration)
-  // ============================================
+  /**
+   * 🔧 FIXED: Sync progress to watch_progress table
+   * ✅ Uses correct column names (total_watch_time, NOT watch_duration)
+   */
   WatchSession.prototype._syncProgress = function(force) {
     var self = this;
     if (!this.userId || !this.videoElement) return Promise.resolve();
