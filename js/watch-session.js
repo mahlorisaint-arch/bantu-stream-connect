@@ -332,11 +332,15 @@
   // ✅ FIXED: ADDED profile_id to content_views insert
   // ============================================
 
+  // ============================================
+  // 🔧 FIXED: Record view in content_views table with session_id
+  // ✅ NO creator_id anywhere in this function
+  // ============================================
   WatchSession.prototype._recordView = function(video) {
     var self = this;
     if (!this.userId) return Promise.resolve();
     
-    // ✅ CORRECT: Use ONLY columns that exist in your content_views table
+    // ✅ CORRECT: Use ONLY columns that exist in content_views table
     // ❌ NO creator_id here - that column doesn't exist!
     // ✅ INCLUDES profile_id - required column!
     return this.supabase
@@ -367,11 +371,15 @@
         }
       })
       .catch(function(error) {
-        console.error('❌ Record view failed:', error);
+        console.error('❌ Record view failed:', error.message);
         self._handleError('recordView', error);
       });
   };
 
+  // ============================================
+  // 🔧 FIXED: Sync progress to watch_progress table
+  // ✅ Uses correct column names (total_watch_time, NOT watch_duration)
+  // ============================================
   WatchSession.prototype._syncProgress = function(force) {
     var self = this;
     if (!this.userId || !this.videoElement) return Promise.resolve();
@@ -413,7 +421,7 @@
         }
       })
       .catch(function(error) {
-        console.error('❌ Sync failed:', error);
+        console.error('❌ Sync failed:', error.message);
         self._handleError('syncProgress', error);
       });
   };
@@ -436,7 +444,7 @@
         console.log('✅ Completion updated: ' + isCompleted);
       })
       .catch(function(error) {
-        console.error('❌ Completion update failed:', error);
+        console.error('❌ Completion update failed:', error.message);
         self._handleError('updateCompletion', error);
       });
   };
