@@ -1,4 +1,4 @@
-// js/video-player-features.js - Phase 1 Critical Fixes + creator_id removal
+// js/video-player-features.js - Phase 1 Critical Fixes + creator_id removal + profile_id fix
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -7,6 +7,7 @@
  * 3. Implement view deduplication
  * 4. Fix memory leaks
  * 5. REMOVED creator_id from content_views operations
+ * 6. ADDED profile_id to content_views inserts (required column)
  */
 
 class VideoPlayerFeatures {
@@ -156,6 +157,7 @@ class VideoPlayerFeatures {
    * CRITICAL FIX #3: View deduplication system
    * Prevents view count inflation by tracking views in localStorage
    * ✅ FIXED: Removed creator_id from insert
+   * ✅ FIXED: Added profile_id to insert (required column)
    */
   setupViewDeduplication() {
     console.log('🔧 Setting up view deduplication...');
@@ -168,10 +170,16 @@ class VideoPlayerFeatures {
       
       try {
         let viewerId = null;
+        let profileId = null;
+        
         if (window.AuthHelper?.isAuthenticated?.()) {
           const userProfile = window.AuthHelper.getUserProfile();
           viewerId = userProfile?.id || null;
+          profileId = userProfile?.id || null; // ✅ profile_id is the same as viewer_id/user_id
           console.log('👤 Viewer ID:', viewerId);
+          console.log('👤 Profile ID:', profileId);
+        } else {
+          console.log('👤 Guest user - no viewer ID or profile ID');
         }
 
         // Generate or get session ID
@@ -179,14 +187,27 @@ class VideoPlayerFeatures {
         if (!sessionId) {
           sessionId = crypto.randomUUID();
           sessionStorage.setItem('bantu_view_session', sessionId);
+          console.log('🔑 Generated new session ID:', sessionId);
+        } else {
+          console.log('🔑 Using existing session ID:', sessionId);
         }
-        console.log('🔑 Session ID:', sessionId);
 
         const contentIdNum = parseInt(contentId);
+        if (isNaN(contentIdNum)) {
+          console.error('❌ Invalid content ID:', contentId);
+          return null;
+        }
+        
+        const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+          ? 'mobile'
+          : 'desktop';
+        
         console.log('📝 Preparing insert with:', {
           content_id: contentIdNum,
           viewer_id: viewerId,
+          profile_id: profileId,
           session_id: sessionId,
+          device_type: deviceType
         });
 
         // Check if view was already recorded recently
@@ -195,36 +216,42 @@ class VideoPlayerFeatures {
           return null;
         }
 
-        // ✅ CORRECT: Only use columns that exist in content_views table
+        // ✅ CORRECT: Include ALL required columns from content_views schema
         // ❌ NO creator_id here - that column doesn't exist!
+        // ✅ INCLUDES profile_id - required column!
+        const insertData = {
+          content_id: contentIdNum,
+          viewer_id: viewerId,
+          profile_id: profileId,  // ✅ REQUIRED: This column exists in your table!
+          session_id: sessionId,
+          view_duration: 0,
+          counted_as_view: false,
+          device_type: deviceType,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+          // completed_at will be null initially
+        };
+        
+        console.log('📝 Inserting view data:', insertData);
+
         const { data, error } = await window.supabaseClient
           .from('content_views')
-          .insert({
-            content_id: contentIdNum,
-            viewer_id: viewerId,
-            session_id: sessionId,
-            view_duration: 0,
-            counted_as_view: false,
-            device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-              ? 'mobile'
-              : 'desktop',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
+          .insert(insertData)
           .select()
           .single();
 
         if (error) {
           console.error('❌ Supabase insert error:', error);
-          console.error('❌ Error details:', {
-            code: error.code,
-            message: error.message,
-            details: error.details
-          });
+          console.error('❌ Error code:', error.code);
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Error details:', error.details);
+          console.error('❌ Hint:', error.hint);
           return null;
         }
 
         console.log('✅ View session created successfully:', data);
+        console.log('✅ Session ID:', sessionId);
+        console.log('✅ View ID:', data.id);
         
         // Mark content as viewed in localStorage
         VideoPlayerFeatures.markContentAsViewed(contentIdNum);
@@ -280,6 +307,7 @@ class VideoPlayerFeatures {
       });
       
       localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+      console.log(`✅ Content ${contentId} marked as viewed`);
     } catch (error) {
       console.error('Error marking content as viewed:', error);
     }
@@ -475,10 +503,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Expose helper methods to console for testing
     window.clearViewCache = () => VideoPlayerFeatures.clearViewCache();
     window.hasViewedContent = (id) => VideoPlayerFeatures.hasViewedContent(id);
+    
+    console.log('🎬 Video Player Features initialized with profile_id fix');
   }, 1000);
 });
 
 // Export for use in other scripts
 window.VideoPlayerFeatures = VideoPlayerFeatures;
 
-console.log('✅ Video Player Features (Phase 1) loaded - creator_id removed from view recording');
+console.log('✅ Video Player Features (Phase 1) loaded - creator_id removed, profile_id added to view recording');
