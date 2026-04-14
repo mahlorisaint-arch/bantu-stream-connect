@@ -2,6 +2,7 @@
 // Bantu Stream Connect — Phase 1 Implementation
 // ✅ FIXED: Matches your actual Supabase schema (total_watch_time, no session_id/device_type)
 // ✅ FIXED: REMOVED creator_id from content_views operations (column doesn't exist)
+// ✅ FIXED: ADDED profile_id to content_views inserts (required column)
 // ✅ FIXED: Proper session tracking with session_id
 
 (function() {
@@ -328,6 +329,7 @@
   // ============================================
   // DATABASE OPERATIONS — ✅ MATCHES YOUR SCHEMA
   // ✅ FIXED: REMOVED creator_id from all operations
+  // ✅ FIXED: ADDED profile_id to content_views insert
   // ============================================
 
   WatchSession.prototype._recordView = function(video) {
@@ -336,12 +338,14 @@
     
     // ✅ CORRECT: Use ONLY columns that exist in your content_views table
     // ❌ NO creator_id here - that column doesn't exist!
+    // ✅ INCLUDES profile_id - required column!
     return this.supabase
       .from('content_views')
       .insert({
         content_id: this.contentId,
         viewer_id: this.userId,
-        session_id: this.sessionId,  // ✅ Keep session_id for tracking
+        profile_id: this.userId,  // ✅ REQUIRED: profile_id (same as viewer_id for authenticated users)
+        session_id: this.sessionId,
         view_duration: Math.floor(video.currentTime),
         counted_as_view: true,
         device_type: this._getDeviceType(),
@@ -352,9 +356,14 @@
         if (result.error && result.error.code !== '23505') {
           throw result.error;
         }
-        console.log('✅ View recorded with session:', self.sessionId);
+        console.log('✅ View recorded with session:', self.sessionId, 'profile_id:', self.userId);
         if (self.onViewCounted) {
-          self.onViewCounted({ contentId: self.contentId, sessionId: self.sessionId, viewId: result.data && result.data.id });
+          self.onViewCounted({ 
+            contentId: self.contentId, 
+            sessionId: self.sessionId, 
+            profileId: self.userId,
+            viewId: result.data && result.data.id 
+          });
         }
       })
       .catch(function(error) {
@@ -464,5 +473,5 @@
     window.WatchSession = WatchSession;
   }
   
-  console.log('✅ WatchSession module loaded successfully - creator_id removed');
+  console.log('✅ WatchSession module loaded successfully - creator_id removed, profile_id added');
 })();
