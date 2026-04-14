@@ -1,4 +1,4 @@
-// js/video-player-features.js - Phase 1 Critical Fixes
+// js/video-player-features.js - Phase 1 Critical Fixes + creator_id removal
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -6,6 +6,7 @@
  * 2. Fix fullscreen API implementation
  * 3. Implement view deduplication
  * 4. Fix memory leaks
+ * 5. REMOVED creator_id from content_views operations
  */
 
 class VideoPlayerFeatures {
@@ -154,6 +155,7 @@ class VideoPlayerFeatures {
   /**
    * CRITICAL FIX #3: View deduplication system
    * Prevents view count inflation by tracking views in localStorage
+   * ✅ FIXED: Removed creator_id from insert
    */
   setupViewDeduplication() {
     console.log('🔧 Setting up view deduplication...');
@@ -193,7 +195,8 @@ class VideoPlayerFeatures {
           return null;
         }
 
-        // Record the view in Supabase
+        // ✅ CORRECT: Only use columns that exist in content_views table
+        // ❌ NO creator_id here - that column doesn't exist!
         const { data, error } = await window.supabaseClient
           .from('content_views')
           .insert({
@@ -205,7 +208,8 @@ class VideoPlayerFeatures {
             device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
               ? 'mobile'
               : 'desktop',
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           })
           .select()
           .single();
@@ -477,4 +481,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export for use in other scripts
 window.VideoPlayerFeatures = VideoPlayerFeatures;
 
-console.log('✅ Video Player Features (Phase 1) loaded');
+console.log('✅ Video Player Features (Phase 1) loaded - creator_id removed from view recording');
