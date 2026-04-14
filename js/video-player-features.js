@@ -162,24 +162,74 @@ class VideoPlayerFeatures {
     const originalRecordView = window.recordContentView;
     
     window.recordContentView = async function(contentId) {
+      console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
+      
       try {
+        let viewerId = null;
+        if (window.AuthHelper?.isAuthenticated?.()) {
+          const userProfile = window.AuthHelper.getUserProfile();
+          viewerId = userProfile?.id || null;
+          console.log('👤 Viewer ID:', viewerId);
+        }
+
+        // Generate or get session ID
+        let sessionId = sessionStorage.getItem('bantu_view_session');
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          sessionStorage.setItem('bantu_view_session', sessionId);
+        }
+        console.log('🔑 Session ID:', sessionId);
+
+        const contentIdNum = parseInt(contentId);
+        console.log('📝 Preparing insert with:', {
+          content_id: contentIdNum,
+          viewer_id: viewerId,
+          session_id: sessionId,
+        });
+
         // Check if view was already recorded recently
-        if (VideoPlayerFeatures.hasViewedContent(contentId)) {
-          console.log(`📊 View already recorded for content ${contentId} in last 24h`);
-          return;
+        if (VideoPlayerFeatures.hasViewedContent(contentIdNum)) {
+          console.log(`📊 View already recorded for content ${contentIdNum} in last 24h`);
+          return null;
         }
-        
-        // Record the view
-        VideoPlayerFeatures.markContentAsViewed(contentId);
-        
-        // Call original function
-        if (originalRecordView) {
-          return await originalRecordView.call(this, contentId);
+
+        // Record the view in Supabase
+        const { data, error } = await window.supabaseClient
+          .from('content_views')
+          .insert({
+            content_id: contentIdNum,
+            viewer_id: viewerId,
+            session_id: sessionId,
+            view_duration: 0,
+            counted_as_view: false,
+            device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+              ? 'mobile'
+              : 'desktop',
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Supabase insert error:', error);
+          console.error('❌ Error details:', {
+            code: error.code,
+            message: error.message,
+            details: error.details
+          });
+          return null;
         }
+
+        console.log('✅ View session created successfully:', data);
         
-        console.log(`✅ New view recorded for content ${contentId}`);
+        // Mark content as viewed in localStorage
+        VideoPlayerFeatures.markContentAsViewed(contentIdNum);
+        
+        return sessionId;
       } catch (error) {
-        console.error('❌ Error recording view:', error);
+        console.error('❌ View recording exception:', error);
+        console.error('❌ Stack trace:', error.stack);
+        return null;
       }
     };
     
@@ -190,6 +240,9 @@ class VideoPlayerFeatures {
    * Check if content was viewed in the last 24 hours
    */
   static hasViewedContent(contentId) {
+    // 🔧 TEMPORARILY DISABLED FOR TESTING - Remove this line after testing
+    // return false;
+    
     try {
       const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
       const viewTime = viewedContent[contentId];
@@ -197,7 +250,9 @@ class VideoPlayerFeatures {
       if (!viewTime) return false;
       
       const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
-      return hoursSinceView < 24;
+      
+      // Reduced from 24 hours to 1 hour for testing
+      return hoursSinceView < 1;
     } catch (error) {
       console.error('Error checking view history:', error);
       return false;
@@ -224,6 +279,14 @@ class VideoPlayerFeatures {
     } catch (error) {
       console.error('Error marking content as viewed:', error);
     }
+  }
+
+  /**
+   * Clear view cache for testing
+   */
+  static clearViewCache() {
+    localStorage.removeItem('bantu_viewed_content');
+    console.log('🧹 View cache cleared');
   }
 
   /**
@@ -404,6 +467,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Setup touch device support
     videoPlayerFeatures.setupTouchDeviceSupport();
+    
+    // Expose helper methods to console for testing
+    window.clearViewCache = () => VideoPlayerFeatures.clearViewCache();
+    window.hasViewedContent = (id) => VideoPlayerFeatures.hasViewedContent(id);
   }, 1000);
 });
 
