@@ -1,6 +1,8 @@
 // js/watch-session.js — Production Watch Session Lifecycle Manager
 // Bantu Stream Connect — Phase 1 Implementation
 // ✅ FIXED: Matches your actual Supabase schema (total_watch_time, no session_id/device_type)
+// ✅ FIXED: REMOVED creator_id from content_views operations (column doesn't exist)
+// ✅ FIXED: Proper session tracking with session_id
 
 (function() {
   'use strict';
@@ -22,7 +24,8 @@
     this.viewThreshold = config.viewThreshold || 20;
     this.completionThreshold = config.completionThreshold || 0.9;
     
-    this.sessionId = this._generateSessionId();
+    // ✅ Store session ID from config or generate new one
+    this.sessionId = config.sessionId || this._generateSessionId();
     this.lastSyncTime = 0;
     this.lastSavedPosition = 0;
     this.totalWatchTime = 0; // Track cumulative watch time
@@ -324,30 +327,34 @@
 
   // ============================================
   // DATABASE OPERATIONS — ✅ MATCHES YOUR SCHEMA
+  // ✅ FIXED: REMOVED creator_id from all operations
   // ============================================
 
   WatchSession.prototype._recordView = function(video) {
     var self = this;
-    if (!this.userId) return;
+    if (!this.userId) return Promise.resolve();
     
-    // ✅ Use ONLY columns that exist in your content_views table
+    // ✅ CORRECT: Use ONLY columns that exist in your content_views table
+    // ❌ NO creator_id here - that column doesn't exist!
     return this.supabase
       .from('content_views')
       .insert({
         content_id: this.contentId,
         viewer_id: this.userId,
+        session_id: this.sessionId,  // ✅ Keep session_id for tracking
         view_duration: Math.floor(video.currentTime),
         counted_as_view: true,
-        created_at: new Date().toISOString()
-        // ❌ REMOVED: session_id, device_type (not in your schema)
+        device_type: this._getDeviceType(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .then(function(result) {
         if (result.error && result.error.code !== '23505') {
           throw result.error;
         }
-        console.log('✅ View recorded');
+        console.log('✅ View recorded with session:', self.sessionId);
         if (self.onViewCounted) {
-          self.onViewCounted({ contentId: self.contentId, viewId: result.data && result.data.id });
+          self.onViewCounted({ contentId: self.contentId, sessionId: self.sessionId, viewId: result.data && result.data.id });
         }
       })
       .catch(function(error) {
@@ -367,14 +374,14 @@
       return Promise.resolve();
     }
     
-    // ✅ Use ONLY columns that exist in your watch_progress table
+    // ✅ CORRECT: Use ONLY columns that exist in your watch_progress table
     return this.supabase
       .from('watch_progress')
       .upsert({
         user_id: this.userId,
         content_id: this.contentId,
         last_position: currentTime,
-        total_watch_time: this.totalWatchTime,  // ✅ Your schema uses this
+        total_watch_time: this.totalWatchTime,  // ✅ Your schema uses total_watch_time
         is_completed: this.isCompleted,
         completed_at: this.isCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
@@ -391,7 +398,8 @@
             position: currentTime,
             duration: duration,
             totalWatchTime: self.totalWatchTime,
-            completed: self.isCompleted
+            completed: self.isCompleted,
+            sessionId: self.sessionId
           });
         }
       })
@@ -403,7 +411,7 @@
 
   WatchSession.prototype._updateCompletionStatus = function(isCompleted) {
     var self = this;
-    if (!this.userId) return;
+    if (!this.userId) return Promise.resolve();
     
     return this.supabase
       .from('watch_progress')
@@ -428,6 +436,13 @@
   // UTILITIES
   // ============================================
 
+  WatchSession.prototype._getDeviceType = function() {
+    if (/Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)) {
+      return 'mobile';
+    }
+    return 'desktop';
+  };
+
   WatchSession.prototype._formatTime = function(seconds) {
     if (!seconds || isNaN(seconds)) return '0:00';
     var mins = Math.floor(seconds / 60);
@@ -449,5 +464,5 @@
     window.WatchSession = WatchSession;
   }
   
-  console.log('✅ WatchSession module loaded successfully');
+  console.log('✅ WatchSession module loaded successfully - creator_id removed');
 })();
