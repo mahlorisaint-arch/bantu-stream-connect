@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Sports - The Arena | Bantu Stream Connect</title>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+--deep-black: #0A0E12;
+--deep-navy: #0F172A;
+--soft-white: #F8FAFC;
+--slate-grey: #94A3B8;
+--bantu-blue: #1D4ED8;
+--warm-gold: #F59E0B;
+--error-color: #EF4444;
+--success-color: #10B981;
+--sports-green: #10B981;
+--sports-blue: #3B82F6;
+--sports-purple: #8B5CF6;
+--sports-orange: #F97316;
+--card-bg: rgba(15, 23, 42, 0.6);
+--card-border: rgba(148, 163, 184, 0.2);
+--ui-scale: 1;
+}
+
+/* Light Theme */
+body.theme-light {
+--deep-black: #F8FAFC;
+--deep-navy: #E2E8F0;
+--soft-white: #0F172A;
+--slate-grey: #475569;
+--card-bg: rgba(255, 255, 255, 0.85);
+--card-border: rgba(0, 0, 0, 0.1);
+background: #F1F5F9;
+}
+
+/* High Contrast Theme */
+body.theme-high-contrast {
+--deep-black: #000000;
+--deep-navy: #050505;
+--soft-white: #FFFFFF;
+--slate-grey: #CCCCCC;
+--bantu-blue: #FFD700;
+--warm-gold: #00FFFF;
+--sports-green: #00FF00;
+--sports-blue: #00BFFF;
+--sports-purple: #FF00FF;
+--sports-orange: #FFA500;
+--card-bg: #0A0A0A;
+--card-border: #FFFFFF;
+background: #000000;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+font-family: 'Inter', sans-serif;
+background: var(--deep-black);
+color: var(--soft-white);
+min-height: 100vh;
+overflow-x: hidden !important;
+width: 100% !important;
+max-width: 100% !important;
+transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html { 
+font-size: calc(16px * var(--ui-scale)); 
+overflow-x: hidden !important;
+}
+
+/* ===== GLOBAL OVERFLOW FIXES ===== */
+html, body {
+overflow-x: hidden !important;
+width: 100% !important;
+max-width: 100% !important;
+position: relative !important;
+}
+
+* { max-width: 100%; box-sizing: border-box; }
+
+/* ===== LOADING SCREEN ===== */
+.loading-screen {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: var(--deep-black); display: flex; flex-direction: column;
+align-items: center; justify-content: center; z-index: 1000;
+}
+.spinner {
+width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1);
+border-radius: 50%; border-top-color: var(--sports-green);
+animation: spin 1s linear infinite; margin-bottom: 20px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== LOW DATA MODE TOGGLE ===== */
+.data-mode-toggle {
+position: fixed;
+bottom: 100px;
+left: 20px;
+z-index: 99;
+background: var(--card-bg);
+backdrop-filter: blur(10px);
+border: 1px solid var(--card-border);
+border-radius: 40px;
+padding: 8px 16px;
+display: flex;
+align-items: center;
+gap: 10px;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.data-mode-toggle:hover {
+border-color: var(--sports-green);
+}
+.data-mode-toggle i {
+font-size: 18px;
+color: var(--sports-green);
+}
+.data-mode-toggle span {
+font-size: 12px;
+font-weight: 600;
+}
+.data-mode-toggle.active {
+background: var(--sports-green);
+border-color: var(--sports-green);
+}
+.data-mode-toggle.active i,
+.data-mode-toggle.active span {
+color: var(--deep-black);
+}
+
+/* ===== ANIMATED BACKGROUND ===== */
+.animated-bg {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
+}
+.glow-cycle {
+position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.08;
+animation: float 8s infinite ease-in-out;
+}
+.glow-1 { width: 400px; height: 400px; background: var(--sports-green); top: 10%; left: 5%; }
+.glow-2 { width: 300px; height: 300px; background: var(--sports-blue); top: 60%; right: 10%; animation-delay: 2s; }
+.glow-3 { width: 350px; height: 350px; background: var(--sports-orange); bottom: 10%; left: 20%; animation-delay: 4s; }
+@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
+
+/* ===== HEADER ===== */
+.header {
+background: rgba(10,14,18,0.9); backdrop-filter: blur(20px);
+padding: 0.75rem 1.5rem; position: sticky; top: 0; z-index: 100;
+border-bottom: 1px solid var(--card-border); display: flex;
+justify-content: space-between; align-items: center;
+width: 100%; max-width: 100vw;
+}
+body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
+.logo { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; flex-shrink: 0; }
+.menu-toggle {
+width: 2.375rem; height: 2.375rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white); display: flex; align-items: center;
+justify-content: center; cursor: pointer; transition: all 0.3s ease;
+font-size: 1.5rem; margin-right: 0.5rem; border: none;
+}
+.menu-toggle:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-0.125rem); }
+.logo-icon {
+width: 2.5rem; height: 2.5rem; border-radius: 0.625rem;
+display: flex; align-items: center; justify-content: center;
+background: transparent; border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.logo-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.625rem; }
+.logo-text {
+font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.125rem;
+background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+-webkit-background-clip: text; background-clip: text; color: transparent;
+white-space: nowrap;
+}
+.header-actions { display: flex; gap: 0.625rem; align-items: center; flex-shrink: 0; }
+.icon-btn {
+width: 2.375rem; height: 2.375rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white); display: flex; align-items: center;
+justify-content: center; cursor: pointer; transition: all 0.3s ease;
+position: relative; font-size: 1.25rem; flex-shrink: 0;
+}
+.icon-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-0.125rem); }
+.notification-badge {
+position: absolute; top: -0.3125rem; right: -0.3125rem;
+background: var(--error-color); color: white; font-size: 0.625rem;
+font-weight: bold; width: 1.125rem; height: 1.125rem; border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+border: 2px solid var(--deep-black);
+}
+.profile-switcher { position: relative; }
+.profile-btn {
+background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
+border-radius: 2.5rem; padding: 0.3125rem 1rem 0.3125rem 0.3125rem;
+display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+transition: all 0.3s ease; height: 2.75rem;
+}
+.profile-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--sports-green); }
+.profile-placeholder {
+width: 2.25rem; height: 2.25rem; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--sports-green));
+display: flex; align-items: center; justify-content: center;
+color: white; font-size: 0.875rem; overflow: hidden; flex-shrink: 0;
+}
+.profile-placeholder img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.profile-name {
+color: var(--soft-white); font-size: 0.875rem; font-weight: 500;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+}
+.profile-btn i { color: var(--slate-grey); font-size: 0.75rem; }
+.profile-dropdown {
+position: absolute; top: 3.75rem; right: 0; width: 15.625rem;
+background: var(--card-bg); backdrop-filter: blur(20px);
+border: 1px solid var(--card-border); border-radius: 0.75rem;
+opacity: 0; visibility: hidden; transform: translateY(-0.625rem);
+transition: all 0.3s ease; z-index: 1000;
+}
+.profile-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); }
+.profile-dropdown-header { padding: 15px; border-bottom: 1px solid var(--card-border); }
+.profile-dropdown-header h4 { font-size: 14px; color: var(--soft-white); margin: 0; }
+.profile-list { max-height: 300px; overflow-y: auto; padding: 10px; }
+.profile-item {
+display: flex; align-items: center; gap: 10px; padding: 10px;
+border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
+}
+.profile-item:hover { background: rgba(255, 255, 255, 0.1); }
+.profile-item.active { background: rgba(29, 78, 216, 0.2); border: 1px solid var(--bantu-blue); }
+.profile-avatar-small {
+width: 36px; height: 36px; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--sports-green));
+display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
+}
+.profile-avatar-small img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.profile-item .profile-name { flex: 1; font-size: 14px; }
+.profile-item i { color: var(--success-color); }
+.profile-dropdown-footer { padding: 15px; border-top: 1px solid var(--card-border); }
+.text-btn {
+background: none; border: none; color: var(--sports-green); cursor: pointer;
+font-size: 14px; transition: all 0.3s ease; width: 100%;
+text-align: left; padding: 8px; border-radius: 6px;
+}
+.text-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--soft-white); }
+.rsa-badge {
+display: flex; align-items: center; gap: 0.25rem;
+background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+padding: 0.375rem 0.75rem; border-radius: 1.875rem;
+color: white; font-size: 0.75rem; font-weight: 600;
+margin-left: 0.5rem; flex-shrink: 0;
+}
+
+/* ===== SIDEBAR MENU ===== */
+.sidebar-overlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+}
+.sidebar-overlay.active { opacity: 1; visibility: visible; }
+.sidebar-menu {
+position: fixed; top: 0; left: -20rem; width: 18rem; height: 100vh;
+background: var(--card-bg); backdrop-filter: blur(20px);
+border-right: 1px solid var(--card-border); z-index: 1001;
+transition: left 0.3s ease; display: flex; flex-direction: column;
+overflow: hidden; padding: 1.25rem;
+}
+.sidebar-menu.active { left: 0; }
+.sidebar-header {
+display: flex; align-items: center; justify-content: space-between;
+padding-bottom: 1.25rem; border-bottom: 1px solid var(--card-border);
+margin-bottom: 1.25rem; flex-shrink: 0;
+}
+.sidebar-logo { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
+.sidebar-logo-text {
+font-family: 'Orbitron', sans-serif; font-size: 1.125rem; font-weight: 700;
+background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+-webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.sidebar-close {
+width: 2.25rem; height: 2.25rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
+color: var(--soft-white); cursor: pointer; transition: all 0.3s ease;
+}
+.sidebar-close:hover { background: var(--error-color); }
+.sidebar-profile {
+display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem;
+background: rgba(255, 255, 255, 0.05); border-radius: 0.75rem;
+margin-bottom: 1.25rem; cursor: pointer; transition: background 0.3s ease;
+flex-shrink: 0;
+}
+.sidebar-profile:hover { background: rgba(255, 255, 255, 0.1); }
+.sidebar-profile-avatar {
+width: 2.75rem; height: 2.75rem; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--sports-green));
+display: flex; align-items: center; justify-content: center;
+color: white; font-weight: 600; overflow: hidden; flex-shrink: 0;
+}
+.sidebar-profile-info { flex: 1; min-width: 0; }
+.sidebar-profile-name {
+font-size: 1rem; font-weight: 600; color: var(--soft-white);
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-profile-email {
+font-size: 0.75rem; color: var(--slate-grey);
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-nav {
+flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px;
+display: flex; flex-direction: column; gap: 0.5rem;
+}
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--sports-green); border-radius: 3px; }
+.sidebar-nav-item {
+display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem;
+border-radius: 0.75rem; color: var(--soft-white); text-decoration: none;
+font-size: 1rem; transition: all 0.3s ease; cursor: pointer;
+}
+.sidebar-nav-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(0.25rem); }
+.sidebar-nav-item.active { background: linear-gradient(135deg, var(--bantu-blue), var(--sports-green)); }
+.sidebar-nav-item i { width: 1.25rem; text-align: center; font-size: 1.25rem; flex-shrink: 0; }
+.sidebar-footer {
+flex-shrink: 0; margin-top: auto; padding-top: 1.25rem;
+border-top: 1px solid var(--card-border);
+padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.sidebar-theme-toggle {
+display: flex; align-items: center; justify-content: space-between;
+padding: 0.75rem; background: rgba(255, 255, 255, 0.05);
+border-radius: 0.75rem; cursor: pointer; transition: background 0.3s ease;
+margin-bottom: 0.75rem;
+}
+.sidebar-theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
+.sidebar-scale-control {
+padding: 0.75rem; background: rgba(255, 255, 255, 0.05);
+border-radius: 0.75rem; display: flex; flex-direction: column;
+gap: 0.5rem;
+}
+.scale-control-row {
+display: flex; align-items: center; justify-content: space-between;
+margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;
+}
+.scale-control-row:last-child { margin-bottom: 0; }
+.scale-btn {
+width: 2rem; height: 2rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: none;
+color: var(--soft-white); cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+transition: all 0.3s ease; flex-shrink: 0; font-size: 0.875rem;
+}
+.scale-value {
+font-size: 0.875rem; color: var(--soft-white); min-width: 3rem;
+text-align: center; font-weight: 600;
+}
+
+/* ===== COUNTDOWN TIMER ===== */
+.countdown-section {
+margin-bottom: 30px;
+}
+.countdown-card {
+background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(0,0,0,0.6));
+border: 2px solid var(--sports-green);
+border-radius: 24px;
+padding: 30px;
+text-align: center;
+position: relative;
+overflow: hidden;
+}
+.countdown-badge {
+position: absolute;
+top: 20px;
+right: 20px;
+background: var(--sports-green);
+color: var(--deep-black);
+padding: 6px 16px;
+border-radius: 30px;
+font-size: 12px;
+font-weight: 700;
+}
+.countdown-title {
+font-size: 28px;
+font-weight: 800;
+margin-bottom: 10px;
+}
+.countdown-match {
+font-size: 18px;
+color: var(--slate-grey);
+margin-bottom: 25px;
+}
+.countdown-timer {
+display: flex;
+justify-content: center;
+gap: 20px;
+margin-bottom: 25px;
+}
+.countdown-unit {
+text-align: center;
+}
+.countdown-number {
+font-size: 48px;
+font-weight: 800;
+font-family: 'Orbitron', sans-serif;
+background: linear-gradient(135deg, var(--sports-green), var(--sports-blue));
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+}
+.countdown-label {
+font-size: 12px;
+color: var(--slate-grey);
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+.countdown-btn {
+padding: 12px 32px;
+border-radius: 40px;
+background: linear-gradient(135deg, var(--sports-green), var(--sports-blue));
+border: none;
+color: white;
+font-weight: 700;
+cursor: pointer;
+transition: all 0.3s ease;
+display: inline-flex;
+align-items: center;
+gap: 10px;
+}
+.countdown-btn:hover {
+transform: translateY(-2px);
+box-shadow: 0 10px 25px rgba(16,185,129,0.4);
+}
+
+/* ===== CONTAINER ===== */
+.container { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; position: relative; z-index: 2; }
+
+/* ===== SECTION STYLES ===== */
+.section {
+margin-bottom: 40px;
+}
+.section-header {
+display: flex;
+justify-content: space-between;
+align-items: baseline;
+margin-bottom: 20px;
+flex-wrap: wrap;
+gap: 12px;
+}
+.section-title {
+font-family: 'Orbitron', sans-serif;
+font-size: 22px;
+font-weight: 700;
+background: linear-gradient(135deg, var(--soft-white), var(--sports-green));
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.section-link {
+color: var(--sports-green);
+text-decoration: none;
+font-size: 13px;
+display: flex;
+align-items: center;
+gap: 5px;
+transition: gap 0.3s ease;
+}
+.section-link:hover { gap: 10px; }
+
+/* ===== SPORTS FILTERS ===== */
+.sports-filters {
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+margin-bottom: 24px;
+padding: 16px 0;
+border-bottom: 1px solid var(--card-border);
+}
+.sport-chip {
+padding: 8px 20px;
+border-radius: 30px;
+background: rgba(255,255,255,0.05);
+border: 1px solid var(--card-border);
+color: var(--slate-grey);
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.sport-chip:hover {
+background: rgba(16,185,129,0.1);
+border-color: var(--sports-green);
+color: var(--sports-green);
+}
+.sport-chip.active {
+background: var(--sports-green);
+border-color: var(--sports-green);
+color: var(--deep-black);
+}
+
+/* ===== HIGHLIGHTS REEL ===== */
+.highlights-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+gap: 24px;
+}
+.highlight-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+overflow: hidden;
+cursor: pointer;
+transition: all 0.3s ease;
+backdrop-filter: blur(10px);
+}
+.highlight-card:hover {
+transform: translateY(-5px);
+border-color: var(--sports-green);
+box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+}
+.highlight-video {
+position: relative;
+height: 180px;
+overflow: hidden;
+}
+.highlight-video img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+transition: transform 0.3s ease;
+}
+.highlight-card:hover .highlight-video img {
+transform: scale(1.05);
+}
+.play-icon-overlay {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 50px;
+height: 50px;
+background: rgba(16,185,129,0.9);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+font-size: 20px;
+opacity: 0;
+transition: opacity 0.3s ease;
+}
+.highlight-card:hover .play-icon-overlay {
+opacity: 1;
+}
+.highlight-duration {
+position: absolute;
+bottom: 12px;
+right: 12px;
+background: rgba(0,0,0,0.8);
+color: white;
+padding: 4px 8px;
+border-radius: 6px;
+font-size: 11px;
+font-weight: 600;
+}
+.highlight-info {
+padding: 16px;
+}
+.highlight-title {
+font-size: 16px;
+font-weight: 700;
+margin-bottom: 8px;
+color: var(--soft-white);
+}
+.highlight-meta {
+display: flex;
+gap: 16px;
+font-size: 12px;
+color: var(--slate-grey);
+}
+.highlight-meta i { color: var(--sports-green); margin-right: 4px; }
+
+/* ===== RISING STARS ===== */
+.stars-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+gap: 20px;
+}
+.star-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+padding: 20px;
+cursor: pointer;
+transition: all 0.3s ease;
+display: flex;
+align-items: center;
+gap: 16px;
+}
+.star-card:hover {
+transform: translateY(-3px);
+border-color: var(--sports-blue);
+}
+.star-avatar {
+width: 70px;
+height: 70px;
+border-radius: 50%;
+overflow: hidden;
+background: linear-gradient(135deg, var(--bantu-blue), var(--sports-green));
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.star-avatar img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.star-info {
+flex: 1;
+}
+.star-name {
+font-size: 18px;
+font-weight: 700;
+margin-bottom: 4px;
+color: var(--soft-white);
+}
+.star-position {
+font-size: 12px;
+color: var(--sports-green);
+margin-bottom: 6px;
+}
+.star-stats {
+display: flex;
+gap: 12px;
+font-size: 11px;
+color: var(--slate-grey);
+}
+.star-stats i { margin-right: 3px; }
+
+/* ===== FAN ZONES - WATCH-ALONGS ===== */
+.fanzone-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 20px;
+}
+.fanzone-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+overflow: hidden;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.fanzone-card:hover {
+transform: translateY(-5px);
+border-color: var(--sports-purple);
+}
+.fanzone-header {
+padding: 16px;
+display: flex;
+align-items: center;
+gap: 12px;
+border-bottom: 1px solid var(--card-border);
+}
+.fanzone-avatar {
+width: 50px;
+height: 50px;
+border-radius: 50%;
+overflow: hidden;
+background: linear-gradient(135deg, var(--sports-purple), var(--sports-blue));
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.fanzone-info {
+flex: 1;
+}
+.fanzone-creator {
+font-weight: 700;
+margin-bottom: 4px;
+}
+.fanzone-match {
+font-size: 12px;
+color: var(--sports-purple);
+}
+.fanzone-stats {
+display: flex;
+gap: 12px;
+font-size: 11px;
+color: var(--slate-grey);
+}
+.fanzone-thumb {
+height: 120px;
+overflow: hidden;
+position: relative;
+}
+.fanzone-thumb img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.live-badge {
+position: absolute;
+top: 10px;
+left: 10px;
+background: var(--error-color);
+color: white;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 10px;
+font-weight: 700;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+.live-badge::before {
+content: '';
+width: 6px;
+height: 6px;
+background: white;
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+.fanzone-footer {
+padding: 12px 16px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-top: 1px solid var(--card-border);
+}
+.fanzone-views {
+font-size: 12px;
+color: var(--slate-grey);
+}
+.fanzone-join {
+padding: 6px 16px;
+border-radius: 20px;
+background: var(--sports-purple);
+color: white;
+font-size: 12px;
+font-weight: 600;
+border: none;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.fanzone-join:hover {
+transform: scale(1.05);
+}
+
+/* ===== LIVE SCORES TICKER ===== */
+.live-scores {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 16px;
+padding: 16px;
+margin-bottom: 30px;
+}
+.live-scores-header {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 12px;
+}
+.live-scores-header i {
+color: var(--error-color);
+animation: pulse 1.5s infinite;
+}
+.live-scores-scroll {
+overflow-x: auto;
+white-space: nowrap;
+padding-bottom: 8px;
+}
+.score-item {
+display: inline-flex;
+align-items: center;
+gap: 20px;
+background: rgba(255,255,255,0.05);
+padding: 10px 20px;
+border-radius: 40px;
+margin-right: 12px;
+}
+.score-teams {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.score-team {
+font-weight: 600;
+}
+.score-result {
+font-weight: 800;
+color: var(--sports-green);
+}
+.score-status {
+font-size: 11px;
+color: var(--error-color);
+}
+
+/* ===== TOAST ===== */
+#toast-container {
+position: fixed;
+bottom: 20px;
+right: 20px;
+z-index: 9999;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+.toast {
+padding: 15px 25px;
+border-radius: 12px;
+color: var(--soft-white);
+font-weight: 500;
+animation: slideIn 0.3s ease;
+max-width: 300px;
+backdrop-filter: blur(10px);
+border: 1px solid var(--card-border);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.toast.success { background: rgba(16, 185, 129, 0.9); }
+.toast.error { background: rgba(239, 68, 68, 0.9); }
+.toast.warning { background: rgba(245, 158, 11, 0.9); }
+@keyframes slideIn {
+from { transform: translateX(100%); opacity: 0; }
+to { transform: translateX(0); opacity: 1; }
+}
+
+/* ===== FOOTER ===== */
+.footer {
+background: var(--card-bg);
+border-top: 1px solid var(--card-border);
+padding: 30px 20px;
+margin-top: 50px;
+backdrop-filter: blur(10px);
+position: relative;
+z-index: 2;
+}
+.footer p { text-align: center; color: var(--slate-grey); margin-bottom: 15px; font-size: 14px; }
+.footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.footer-links a { color: var(--slate-grey); text-decoration: none; font-size: 14px; }
+.footer-links a:hover { color: var(--sports-green); }
+
+/* ===== NAVIGATION BUTTON ===== */
+.navigation-button-container {
+position: fixed !important;
+bottom: 1rem !important;
+left: 0 !important;
+right: 0 !important;
+width: 100% !important;
+display: flex !important;
+justify-content: center !important;
+z-index: 999 !important;
+pointer-events: none !important;
+}
+.navigation-button {
+display: flex !important;
+justify-content: space-evenly !important;
+align-items: center !important;
+background: rgba(15, 23, 42, 0.95) !important;
+backdrop-filter: blur(12px) !important;
+border-radius: 60px !important;
+padding: 0.5rem 1rem !important;
+gap: 0.75rem !important;
+pointer-events: auto !important;
+border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+.nav-icon {
+width: 48px;
+height: 48px;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: 20px;
+}
+.nav-icon:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
+
+/* ===== BACK TO TOP ===== */
+.back-to-top {
+position: fixed;
+bottom: 100px;
+right: 30px;
+width: 50px;
+height: 50px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--sports-green), var(--sports-blue));
+border: none;
+color: white;
+font-size: 20px;
+cursor: pointer;
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 100;
+transition: all 0.3s ease;
+}
+.back-to-top:hover { transform: translateY(-5px); }
+
+/* ===== THEME SELECTOR ===== */
+.theme-selector {
+position: fixed;
+top: 80px;
+right: 20px;
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 12px;
+padding: 8px;
+z-index: 1000;
+display: none;
+flex-direction: column;
+gap: 6px;
+backdrop-filter: blur(15px);
+}
+.theme-selector.active { display: flex; }
+.theme-option {
+background: none;
+border: 1px solid transparent;
+color: var(--soft-white);
+padding: 10px 14px;
+border-radius: 8px;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 10px;
+transition: all 0.2s;
+}
+.theme-option:hover { background: rgba(255,255,255,0.1); }
+.theme-option.active { background: rgba(29,78,216,0.2); border-color: var(--bantu-blue); }
+
+/* ===== LOW DATA MODE STYLES ===== */
+body.low-data-mode .highlight-video img {
+filter: blur(2px);
+}
+body.low-data-mode .highlight-thumb-placeholder {
+background: var(--deep-navy);
+display: flex;
+align-items: center;
+justify-content: center;
+}
+body.low-data-mode .highlight-thumb-placeholder i {
+font-size: 32px;
+color: var(--sports-green);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+.profile-switcher, .rsa-badge { display: none !important; }
+.countdown-timer { gap: 12px; }
+.countdown-number { font-size: 32px; }
+.countdown-title { font-size: 22px; }
+.highlights-grid { grid-template-columns: 1fr; gap: 16px; }
+.stars-grid { grid-template-columns: 1fr; }
+.fanzone-grid { grid-template-columns: 1fr; }
+.section-title { font-size: 18px; }
+.navigation-button { gap: 0.5rem; padding: 0.375rem 0.875rem; }
+.nav-icon { width: 40px; height: 40px; font-size: 16px; }
+.data-mode-toggle { bottom: 80px; left: 10px; padding: 6px 12px; }
+}
+
+@media (max-width: 480px) {
+.logo-text { font-size: 0.75rem; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.countdown-number { font-size: 24px; }
+.countdown-label { font-size: 10px; }
+.countdown-btn { padding: 8px 20px; font-size: 13px; }
+.sport-chip { padding: 6px 14px; font-size: 12px; }
+.star-card { padding: 12px; }
+.star-avatar { width: 50px; height: 50px; }
+.star-name { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading-screen">
+<div class="spinner"></div>
+<div id="loading-text">Loading Sports Arena...</div>
+</div>
+
+<div class="animated-bg">
+<div class="glow-cycle glow-1"></div>
+<div class="glow-cycle glow-2"></div>
+<div class="glow-cycle glow-3"></div>
+</div>
+
+<!-- LOW DATA MODE TOGGLE -->
+<div class="data-mode-toggle" id="data-mode-toggle">
+<i class="fas fa-tachometer-alt"></i>
+<span>Low-Data Mode</span>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+<div class="sidebar-header">
+<div class="sidebar-logo" onclick="window.location.href='index.html'">
+<div class="logo-icon">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo" onerror="this.style.display='none'">
+</div>
+<span class="sidebar-logo-text">BANTU</span>
+</div>
+<button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+</div>
+<div class="sidebar-profile" id="sidebar-profile">
+<div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+<div class="sidebar-profile-info">
+<div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+<div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+</div>
+</div>
+<nav class="sidebar-nav">
+<a href="index.html" class="sidebar-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+<a href="explore-screen.html" class="sidebar-nav-item"><i class="fas fa-compass"></i><span>Explore</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+<a href="music.html" class="sidebar-nav-item"><i class="fas fa-music"></i><span>Music</span></a>
+<a href="stem.html" class="sidebar-nav-item"><i class="fas fa-microchip"></i><span>STEM</span></a>
+<a href="culture.html" class="sidebar-nav-item"><i class="fas fa-landmark"></i><span>Culture</span></a>
+<a href="news.html" class="sidebar-nav-item"><i class="fas fa-newspaper"></i><span>News</span></a>
+<a href="sports.html" class="sidebar-nav-item active"><i class="fas fa-futbol"></i><span>Sports</span></a>
+<a href="movies.html" class="sidebar-nav-item"><i class="fas fa-film"></i><span>Movies</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+</nav>
+<div class="sidebar-footer">
+<div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
+<div class="sidebar-scale-control">
+<div class="scale-control-row"><span><i class="fas fa-text-height"></i> UI Size</span><div><button class="scale-btn" id="scale-decrease"><i class="fas fa-minus"></i></button><span class="scale-value" id="scale-value">100%</span><button class="scale-btn" id="scale-increase"><i class="fas fa-plus"></i></button></div></div>
+</div>
+</div>
+</div>
+
+<!-- THEME SELECTOR -->
+<div id="theme-selector" class="theme-selector">
+<button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+<button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+<button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+<div class="logo">
+<button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+<div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Logo" onerror="this.style.display='none'"></div>
+<div class="logo-text">BANTU STREAM CONNECT</div>
+</div>
+<div class="header-actions">
+<button id="search-btn" class="icon-btn"><i class="fas fa-search"></i></button>
+<button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display:none;">0</span></button>
+<div class="profile-switcher">
+<button id="current-profile-btn" class="profile-btn"><div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div><span class="profile-name" id="current-profile-name">Guest</span><i class="fas fa-chevron-down"></i></button>
+<div class="profile-dropdown" id="profile-dropdown"><div class="profile-dropdown-header"><h4>Switch Profile</h4></div><div class="profile-list" id="profile-list"></div><div class="profile-dropdown-footer"><button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button></div></div>
+</div>
+<div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
+</div>
+</header>
+
+<main class="container">
+
+<!-- COUNTDOWN TIMER - MATCH DAY CENTRAL -->
+<section class="countdown-section">
+<div class="countdown-card">
+<div class="countdown-badge"><i class="fas fa-futbol"></i> NEXT BIG MATCH</div>
+<h2 class="countdown-title">AFCON 2025 Qualifiers</h2>
+<p class="countdown-match">South Africa 🆚 Nigeria • Saturday, 19:00 CAT</p>
+<div class="countdown-timer" id="countdown-timer">
+<div class="countdown-unit"><div class="countdown-number" id="days">00</div><div class="countdown-label">Days</div></div>
+<div class="countdown-unit"><div class="countdown-number" id="hours">00</div><div class="countdown-label">Hours</div></div>
+<div class="countdown-unit"><div class="countdown-number" id="minutes">00</div><div class="countdown-label">Minutes</div></div>
+<div class="countdown-unit"><div class="countdown-number" id="seconds">00</div><div class="countdown-label">Seconds</div></div>
+</div>
+<button class="countdown-btn" id="set-reminder-btn"><i class="fas fa-bell"></i> Set Reminder</button>
+</div>
+</section>
+
+<!-- LIVE SCORES TICKER -->
+<div class="live-scores">
+<div class="live-scores-header">
+<i class="fas fa-circle"></i>
+<span><strong>LIVE SCORES</strong> • Updated in real-time</span>
+</div>
+<div class="live-scores-scroll" id="live-scores-scroll">
+<div class="score-item"><div class="score-teams"><span class="score-team">Kaizer Chiefs</span><span>VS</span><span class="score-team">Orlando Pirates</span></div><div class="score-result">2 - 1</div><div class="score-status">65'</div></div>
+<div class="score-item"><div class="score-teams"><span class="score-team">Al Ahly</span><span>VS</span><span class="score-team">Wydad</span></div><div class="score-result">1 - 0</div><div class="score-status">78'</div></div>
+<div class="score-item"><div class="score-teams"><span class="score-team">Nigeria</span><span>VS</span><span class="score-team">Ghana</span></div><div class="score-result">0 - 0</div><div class="score-status">Halftime</div></div>
+</div>
+</div>
+
+<!-- SPORTS FILTERS -->
+<div class="sports-filters" id="sports-filters">
+<button class="sport-chip active" data-sport="all">All Sports</button>
+<button class="sport-chip" data-sport="football">Football</button>
+<button class="sport-chip" data-sport="rugby">Rugby</button>
+<button class="sport-chip" data-sport="basketball">Basketball</button>
+<button class="sport-chip" data-sport="athletics">Athletics</button>
+<button class="sport-chip" data-sport="cricket">Cricket</button>
+</div>
+
+<!-- HIGHLIGHTS REEL -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-video"></i> Weekend Highlights</h2>
+<a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="highlights-grid" id="highlights-grid">
+<!-- Will be populated by JS -->
+</div>
+</section>
+
+<!-- RISING STARS -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-star"></i> Rising Stars</h2>
+<a href="#" class="section-link">Meet All Stars <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="stars-grid" id="stars-grid">
+<!-- Will be populated by JS -->
+</div>
+</section>
+
+<!-- FAN ZONES - WATCH-ALONGS -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-users"></i> Fan Zones</h2>
+<a href="#" class="section-link">Watch Parties <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="fanzone-grid" id="fanzone-grid">
+<!-- Will be populated by JS -->
+</div>
+</section>
+
+</main>
+
+<footer class="footer">
+<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+<div class="footer-links">
+<a href="privacy-policy.html">Privacy Policy</a>
+<a href="terms-of-service.html">Terms of Service</a>
+<a href="support.html">Support</a>
+</div>
+</footer>
+
+<div class="navigation-button-container">
+<div class="navigation-button">
+<div class="nav-icon" id="nav-home-btn"><i class="fas fa-home"></i></div>
+<div class="nav-icon" id="nav-history-btn"><i class="fas fa-history"></i></div>
+<div class="nav-icon" id="nav-create-btn"><i class="fas fa-plus-circle"></i></div>
+<div class="nav-icon" id="nav-menu-btn"><i class="fas fa-bars"></i></div>
+</div>
+</div>
+
+<button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+<div id="toast-container"></div>
+
+<script>
+// ===== SUPABASE CONFIGURATION =====
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== GLOBAL STATE =====
+let currentUser = null;
+let currentSport = 'all';
+let lowDataMode = localStorage.getItem('sports_low_data_mode') === 'true';
+
+// ===== DEMO SPORTS CONTENT =====
+const highlights = [
+    { id: 1, title: "Mokwena's Stunning Bicycle Kick - Orlando Pirates vs Kaizer Chiefs", duration: "3:24", views: "1.2M", sport: "football", image: "https://images.unsplash.com/photo-1431324155620-5687f5e4342f?w=600&h=350&fit=crop" },
+    { id: 2, title: "Springboks vs All Blacks - Match Highlights", duration: "5:12", views: "892K", sport: "rugby", image: "https://images.unsplash.com/photo-1628779238951-be2c9f2a59f0?w=600&h=350&fit=crop" },
+    { id: 3, title: "Nigeria's Osimhen Hat-trick vs Cameroon", duration: "4:08", views: "2.1M", sport: "football", image: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=600&h=350&fit=crop" },
+    { id: 4, title: "AfroBasket Final - Best Moments", duration: "6:45", views: "456K", sport: "basketball", image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&h=350&fit=crop" },
+    { id: 5, title: "Ferdinand Omanyala - African Sprint Record", duration: "2:15", views: "678K", sport: "athletics", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&h=350&fit=crop" },
+    { id: 6, title: "SA vs Australia T20 Highlights", duration: "7:30", views: "345K", sport: "cricket", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600&h=350&fit=crop" },
+];
+
+const risingStars = [
+    { id: 1, name: "Lamine Yamal", position: "Forward", club: "Barcelona", country: "Spain", goals: 8, assists: 5, avatar: null },
+    { id: 2, name: "Victor Osimhen", position: "Striker", club: "Napoli", country: "Nigeria", goals: 15, assists: 3, avatar: null },
+    { id: 3, name: "Jude Bellingham", position: "Midfielder", club: "Real Madrid", country: "England", goals: 12, assists: 6, avatar: null },
+    { id: 4, name: "Kobbie Mainoo", position: "Midfielder", club: "Man United", country: "England", goals: 3, assists: 2, avatar: null },
+];
+
+const fanZones = [
+    { id: 1, creator: "SoccerStrike SA", match: "SA vs Nigeria - AFCON Qualifier", viewers: "2.3K", live: true, avatar: null },
+    { id: 2, creator: "Ballerz Only", match: "EPL Highlights Review", viewers: "1.1K", live: false, avatar: null },
+    { id: 3, creator: "The Referee", match: "Match Analysis: Kaizer Chiefs", viewers: "892", live: true, avatar: null },
+    { id: 4, creator: "Football Fiesta", match: "Transfer News & Rumors", viewers: "654", live: false, avatar: null },
+];
+
+// ===== COUNTDOWN TIMER =====
+function startCountdown() {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + 3); // 3 days from now
+    targetDate.setHours(19, 0, 0, 0);
+    
+    function updateTimer() {
+        const now = new Date();
+        const diff = targetDate - now;
+        
+        if (diff <= 0) {
+            document.getElementById('days').textContent = '00';
+            document.getElementById('hours').textContent = '00';
+            document.getElementById('minutes').textContent = '00';
+            document.getElementById('seconds').textContent = '00';
+            return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('days').textContent = days.toString().padStart(2, '0');
+        document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+        document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    updateTimer();
+    setInterval(updateTimer, 1000);
+}
+
+// ===== RENDER FUNCTIONS =====
+function renderHighlights() {
+    const grid = document.getElementById('highlights-grid');
+    let filtered = [...highlights];
+    if (currentSport !== 'all') {
+        filtered = filtered.filter(h => h.sport === currentSport);
+    }
+    
+    grid.innerHTML = filtered.map(highlight => `
+        <div class="highlight-card" data-id="${highlight.id}">
+            <div class="highlight-video">
+                <img src="${lowDataMode ? '' : highlight.image}" alt="${highlight.title}" ${lowDataMode ? 'style="display:none;"' : ''}>
+                ${lowDataMode ? `<div class="highlight-thumb-placeholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--deep-navy);"><i class="fas fa-headphones" style="font-size:48px;color:var(--sports-green);"></i><span style="margin-left:10px;">Radio Mode</span></div>` : ''}
+                <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                <div class="highlight-duration">${highlight.duration}</div>
+            </div>
+            <div class="highlight-info">
+                <h3 class="highlight-title">${escapeHtml(highlight.title)}</h3>
+                <div class="highlight-meta">
+                    <span><i class="fas fa-eye"></i> ${highlight.views} views</span>
+                    <span><i class="fas fa-clock"></i> ${highlight.duration}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    attachHighlightClickHandlers();
+}
+
+function renderRisingStars() {
+    const grid = document.getElementById('stars-grid');
+    grid.innerHTML = risingStars.map(star => `
+        <div class="star-card" data-id="${star.id}">
+            <div class="star-avatar">
+                <i class="fas fa-user" style="font-size: 28px; color: white;"></i>
+            </div>
+            <div class="star-info">
+                <h3 class="star-name">${escapeHtml(star.name)}</h3>
+                <div class="star-position">${star.position} • ${star.club}</div>
+                <div class="star-stats">
+                    <span><i class="fas fa-futbol"></i> ${star.goals} goals</span>
+                    <span><i class="fas fa-hands-helping"></i> ${star.assists} assists</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    attachStarClickHandlers();
+}
+
+function renderFanZones() {
+    const grid = document.getElementById('fanzone-grid');
+    grid.innerHTML = fanZones.map(zone => `
+        <div class="fanzone-card" data-id="${zone.id}">
+            <div class="fanzone-header">
+                <div class="fanzone-avatar"><i class="fas fa-microphone" style="font-size: 24px; color: white;"></i></div>
+                <div class="fanzone-info">
+                    <div class="fanzone-creator">${escapeHtml(zone.creator)}</div>
+                    <div class="fanzone-match">${escapeHtml(zone.match)}</div>
+                    <div class="fanzone-stats"><span><i class="fas fa-users"></i> ${zone.viewers} watching</span></div>
+                </div>
+            </div>
+            <div class="fanzone-thumb">
+                <img src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=400&h=200&fit=crop" alt="Watch Party">
+                ${zone.live ? '<div class="live-badge"><i class="fas fa-circle"></i> LIVE</div>' : ''}
+            </div>
+            <div class="fanzone-footer">
+                <span class="fanzone-views"><i class="fas fa-comment"></i> ${Math.floor(zone.viewers * 0.3)} chatting</span>
+                <button class="fanzone-join" data-zone-id="${zone.id}">Join Watch-Along</button>
+            </div>
+        </div>
+    `).join('');
+    
+    attachFanzoneClickHandlers();
+}
+
+function attachHighlightClickHandlers() {
+    document.querySelectorAll('.highlight-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.id;
+            if (id) window.location.href = `content-detail.html?id=${id}`;
+        });
+    });
+}
+
+function attachStarClickHandlers() {
+    document.querySelectorAll('.star-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.id;
+            showToast(`Viewing ${risingStars.find(s => s.id == id)?.name} profile`, 'info');
+        });
+    });
+}
+
+function attachFanzoneClickHandlers() {
+    document.querySelectorAll('.fanzone-join').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const zoneId = btn.dataset.zoneId;
+            if (!currentUser) {
+                showToast('Please sign in to join watch-alongs', 'warning');
+                window.location.href = `login.html?redirect=sports.html`;
+                return;
+            }
+            showToast(`Joining watch-along... Redirecting to chat room`, 'success');
+            setTimeout(() => {
+                window.location.href = `watch-party.html?id=${zoneId}`;
+            }, 1000);
+        });
+    });
+}
+
+// ===== FILTER HANDLERS =====
+function setupFilters() {
+    const filters = document.querySelectorAll('.sport-chip');
+    filters.forEach(filter => {
+        filter.addEventListener('click', () => {
+            filters.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            currentSport = filter.dataset.sport;
+            renderHighlights();
+            showToast(`Showing ${currentSport === 'all' ? 'all sports' : currentSport} highlights`, 'success');
+        });
+    });
+}
+
+// ===== REMINDER BUTTON =====
+function setupReminder() {
+    const reminderBtn = document.getElementById('set-reminder-btn');
+    reminderBtn?.addEventListener('click', async () => {
+        if (!currentUser) {
+            showToast('Please sign in to set reminders', 'warning');
+            window.location.href = `login.html?redirect=sports.html`;
+            return;
+        }
+        showToast('Reminder set! We\'ll notify you before kickoff ⚽', 'success');
+    });
+}
+
+// ===== LOW DATA MODE =====
+function setupLowDataMode() {
+    const toggle = document.getElementById('data-mode-toggle');
+    
+    if (lowDataMode) {
+        document.body.classList.add('low-data-mode');
+        toggle?.classList.add('active');
+    }
+    
+    toggle?.addEventListener('click', () => {
+        lowDataMode = !lowDataMode;
+        if (lowDataMode) {
+            document.body.classList.add('low-data-mode');
+            toggle.classList.add('active');
+            localStorage.setItem('sports_low_data_mode', 'true');
+            showToast('Low-Data Mode ON • Audio-only streams • Saving your data', 'success');
+        } else {
+            document.body.classList.remove('low-data-mode');
+            toggle.classList.remove('active');
+            localStorage.setItem('sports_low_data_mode', 'false');
+            showToast('Low-Data Mode OFF • Full video quality restored', 'success');
+        }
+        renderHighlights();
+    });
+}
+
+// ===== THEME SYSTEM =====
+function initThemeSystem() {
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('theme-selector')?.classList.toggle('active');
+    });
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            applyTheme(option.dataset.theme);
+            document.getElementById('theme-selector')?.classList.remove('active');
+        });
+    });
+}
+
+function applyTheme(theme) {
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.body.classList.add(`theme-${theme}`);
+    localStorage.setItem('bantu_theme', theme);
+}
+
+// ===== SIDEBAR & NAVIGATION =====
+function setupSidebar() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    
+    menuToggle?.addEventListener('click', () => {
+        sidebarMenu?.classList.add('active');
+        sidebarOverlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    const closeSidebar = () => {
+        sidebarMenu?.classList.remove('active');
+        sidebarOverlay?.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+    sidebarClose?.addEventListener('click', closeSidebar);
+    sidebarOverlay?.addEventListener('click', closeSidebar);
+}
+
+function setupNavigation() {
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+    document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data?.session) window.location.href = 'creator-upload.html';
+        else window.location.href = 'login.html?redirect=creator-upload.html';
+    });
+    document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar-menu')?.classList.add('active');
+        document.getElementById('sidebar-overlay')?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+}
+
+function setupBackToTop() {
+    const btn = document.getElementById('backToTopBtn');
+    window.addEventListener('scroll', () => {
+        btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
+    btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+function setupScaleControls() {
+    const decrease = document.getElementById('scale-decrease');
+    const increase = document.getElementById('scale-increase');
+    const value = document.getElementById('scale-value');
+    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    const apply = () => {
+        document.documentElement.style.setProperty('--ui-scale', scale);
+        localStorage.setItem('bantu_ui_scale', scale);
+        if (value) value.textContent = Math.round(scale * 100) + '%';
+    };
+    decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+    increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+    apply();
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ===== AUTO-REFRESH LIVE SCORES =====
+function setupLiveScoresRefresh() {
+    setInterval(() => {
+        const scoreItems = document.querySelectorAll('.score-result');
+        scoreItems.forEach(item => {
+            const currentText = item.textContent;
+            if (currentText.includes('-')) {
+                const scores = currentText.split('-').map(s => parseInt(s));
+                if (!isNaN(scores[0]) && !isNaN(scores[1]) && Math.random() > 0.8) {
+                    const newScore = `${scores[0] + (Math.random() > 0.7 ? 1 : 0)} - ${scores[1] + (Math.random() > 0.8 ? 1 : 0)}`;
+                    item.textContent = newScore;
+                }
+            }
+        });
+    }, 15000);
+}
+
+// ===== AUTH CHECK =====
+async function checkAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data?.session?.user || null;
+    if (currentUser) {
+        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
+        const nameEl = document.getElementById('current-profile-name');
+        if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+    }
+}
+
+// ===== INITIALIZE =====
+async function initialize() {
+    setupSidebar();
+    setupNavigation();
+    setupBackToTop();
+    setupScaleControls();
+    initThemeSystem();
+    setupFilters();
+    setupReminder();
+    setupLowDataMode();
+    setupLiveScoresRefresh();
+    await checkAuth();
+    
+    startCountdown();
+    renderHighlights();
+    renderRisingStars();
+    renderFanZones();
+    
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+}
+
+initialize();
+</script>
+</body>
+</html>
