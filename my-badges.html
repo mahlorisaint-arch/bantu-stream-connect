@@ -140,7 +140,7 @@ padding: 0.375rem 0.75rem; border-radius: 1.875rem;
 color: white; font-size: 0.75rem; font-weight: 600;
 }
 
-/* ===== SIDEBAR (Same as creator-channel) ===== */
+/* ===== SIDEBAR ===== */
 .sidebar-overlay {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
@@ -865,7 +865,7 @@ backdrop-filter: blur(10px);
                 <div class="identity-subtitle" id="identity-subtitle">@username</div>
                 <div class="identity-level" id="identity-level">
                     <i class="fas fa-star"></i>
-                    <span id="level-text">Level 1 • Amapiano Tastemaker</span>
+                    <span id="level-text">Level 1 • Starting Out</span>
                 </div>
             </div>
             <div class="identity-stats">
@@ -935,589 +935,348 @@ backdrop-filter: blur(10px);
 <div id="toast-container"></div>
 
 <script>
-// ===== SUPABASE CONFIGURATION =====
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ===== GLOBAL STATE =====
-let currentUser = null;
-let userProfile = null;
-let userBadges = [];
-let allBadges = [];
-let currentCategory = 'all';
-
-// ===== HELPER FUNCTIONS =====
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function getInitials(name) {
-    if (!name) return '?';
-    return name.charAt(0).toUpperCase();
-}
-
-function formatNumber(num) {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-}
-
-function showConfetti() {
-    const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EC4899', '#8B5CF6'];
-    for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.animationDelay = Math.random() * 0.5 + 's';
-        document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 3000);
+// ===== IIFE to avoid global variable conflicts =====
+(function() {
+    // ===== SUPABASE CONFIGURATION =====
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // ===== GLOBAL STATE =====
+    let currentUser = null;
+    let userProfile = null;
+    let userBadges = [];
+    let currentCategory = 'all';
+    
+    // ===== HELPER FUNCTIONS =====
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+        toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
-}
-
-// ===== THEME SYSTEM =====
-function initThemeSystem() {
-    const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
-    const themeSelector = document.getElementById('theme-selector');
-    if (!sidebarThemeToggle || !themeSelector) return;
     
-    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-    applyTheme(savedTheme);
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
     
-    sidebarThemeToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        themeSelector.classList.toggle('active');
-    });
+    function getInitials(name) {
+        if (!name) return '?';
+        return name.charAt(0).toUpperCase();
+    }
     
-    document.querySelectorAll('.theme-option').forEach(option => {
-        option.addEventListener('click', () => {
-            const theme = option.dataset.theme;
-            applyTheme(theme);
-            themeSelector.classList.remove('active');
-        });
-    });
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
     
-    document.addEventListener('click', (e) => {
-        if (themeSelector.classList.contains('active') && 
-            !themeSelector.contains(e.target) && 
-            e.target !== sidebarThemeToggle) {
-            themeSelector.classList.remove('active');
+    function showConfetti() {
+        const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EC4899', '#8B5CF6'];
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 0.5 + 's';
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 3000);
         }
-    });
-}
-
-function applyTheme(theme) {
-    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-    document.body.classList.add(`theme-${theme}`);
-    localStorage.setItem('bantu_theme', theme);
-    
-    const root = document.documentElement;
-    if (theme === 'light') {
-        root.style.setProperty('--deep-black', '#F8FAFC');
-        root.style.setProperty('--deep-navy', '#E2E8F0');
-        root.style.setProperty('--soft-white', '#0F172A');
-        root.style.setProperty('--slate-grey', '#475569');
-        root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.85)');
-        root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
-    } else if (theme === 'high-contrast') {
-        root.style.setProperty('--deep-black', '#000000');
-        root.style.setProperty('--deep-navy', '#050505');
-        root.style.setProperty('--soft-white', '#FFFFFF');
-        root.style.setProperty('--slate-grey', '#CCCCCC');
-        root.style.setProperty('--bantu-blue', '#FFD700');
-        root.style.setProperty('--warm-gold', '#00FFFF');
-        root.style.setProperty('--card-bg', '#0A0A0A');
-        root.style.setProperty('--card-border', '#FFFFFF');
-    } else {
-        root.style.setProperty('--deep-black', '#0A0E12');
-        root.style.setProperty('--deep-navy', '#0F172A');
-        root.style.setProperty('--soft-white', '#F8FAFC');
-        root.style.setProperty('--slate-grey', '#94A3B8');
-        root.style.setProperty('--card-bg', 'rgba(15, 23, 42, 0.6)');
-        root.style.setProperty('--card-border', 'rgba(148, 163, 184, 0.2)');
-    }
-}
-
-// ===== UI SCALE =====
-function initScaleControls() {
-    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-    const minScale = 0.8, maxScale = 1.4, step = 0.1;
-    
-    function applyScale() {
-        document.documentElement.style.setProperty('--ui-scale', scale);
-        localStorage.setItem('bantu_ui_scale', scale.toString());
-        const scaleValues = document.querySelectorAll('.scale-value');
-        scaleValues.forEach(el => { if (el) el.textContent = Math.round(scale * 100) + '%'; });
     }
     
-    const decreaseBtn = document.getElementById('scale-decrease');
-    const increaseBtn = document.getElementById('scale-increase');
-    
-    if (decreaseBtn) {
-        decreaseBtn.addEventListener('click', () => {
-            if (scale > minScale) { scale = Math.max(minScale, scale - step); applyScale(); }
-        });
-    }
-    if (increaseBtn) {
-        increaseBtn.addEventListener('click', () => {
-            if (scale < maxScale) { scale = Math.min(maxScale, scale + step); applyScale(); }
-        });
+    function formatDate(dateString) {
+        if (!dateString) return 'recently';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } catch {
+            return 'recently';
+        }
     }
     
-    applyScale();
-}
-
-// ===== SIDEBAR FUNCTIONS =====
-function setupSidebar() {
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebarClose = document.getElementById('sidebar-close');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    const sidebarMenu = document.getElementById('sidebar-menu');
-    
-    if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
-    
-    const openSidebar = () => {
-        sidebarMenu.classList.add('active');
-        sidebarOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    };
-    
-    const closeSidebar = () => {
-        sidebarMenu.classList.remove('active');
-        sidebarOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-    };
-    
-    menuToggle.addEventListener('click', openSidebar);
-    sidebarClose.addEventListener('click', closeSidebar);
-    sidebarOverlay.addEventListener('click', closeSidebar);
-    
-    // Sidebar navigation
-    const sidebarBadges = document.getElementById('sidebar-badges');
-    if (sidebarBadges) sidebarBadges.classList.add('active');
-    
-    const sidebarWatchParty = document.getElementById('sidebar-watch-party');
-    if (sidebarWatchParty) {
-        sidebarWatchParty.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSidebar();
-            showToast('Watch Party coming soon!', 'info');
-        });
-    }
-    
-    const sidebarCreate = document.getElementById('sidebar-create');
-    if (sidebarCreate) {
-        sidebarCreate.addEventListener('click', async (e) => {
-            e.preventDefault();
-            closeSidebar();
-            const { data } = await supabase.auth.getSession();
-            if (!data?.session) {
-                showToast('Please sign in to upload content', 'warning');
-                window.location.href = `login.html?redirect=creator-upload.html`;
-            } else {
-                window.location.href = 'creator-upload.html';
-            }
-        });
-    }
-    
-    const sidebarDashboard = document.getElementById('sidebar-dashboard');
-    if (sidebarDashboard) {
-        sidebarDashboard.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSidebar();
-            window.location.href = 'creator-dashboard.html';
-        });
-    }
-    
-    const sidebarWatchHistory = document.getElementById('sidebar-watch-history');
-    if (sidebarWatchHistory) {
-        sidebarWatchHistory.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSidebar();
-            if (!currentUser) {
-                showToast('Please sign in to view watch history', 'warning');
-                window.location.href = `login.html?redirect=watch-history.html`;
-                return;
-            }
-            window.location.href = 'watch-history.html';
-        });
-    }
-}
-
-// ===== NAVIGATION BUTTONS =====
-function setupNavigationButtons() {
-    const navHome = document.getElementById('nav-home-btn');
-    if (navHome) navHome.addEventListener('click', () => window.location.href = 'index.html');
-    
-    const navHistory = document.getElementById('nav-history-btn');
-    if (navHistory) {
-        navHistory.addEventListener('click', () => {
-            if (!currentUser) {
-                showToast('Please sign in to view watch history', 'warning');
-                window.location.href = `login.html?redirect=watch-history.html`;
-                return;
-            }
-            window.location.href = 'watch-history.html';
-        });
-    }
-    
-    const navCreate = document.getElementById('nav-create-btn');
-    if (navCreate) {
-        navCreate.addEventListener('click', async () => {
-            const { data } = await supabase.auth.getSession();
-            if (!data?.session) {
-                showToast('Please sign in to create content', 'warning');
-                window.location.href = `login.html?redirect=creator-upload.html`;
-            } else {
-                window.location.href = 'creator-upload.html';
-            }
-        });
-    }
-    
-    const navMenu = document.getElementById('nav-menu-btn');
-    if (navMenu) {
-        navMenu.addEventListener('click', () => {
-            const sidebarMenu = document.getElementById('sidebar-menu');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            if (sidebarMenu && sidebarOverlay) {
-                sidebarMenu.classList.add('active');
-                sidebarOverlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-        });
-    }
-}
-
-// ===== PROFILE FUNCTIONS =====
-async function updateProfileUI() {
-    const placeholder = document.getElementById('userProfilePlaceholder');
-    const nameEl = document.getElementById('current-profile-name');
-    const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
-    const sidebarName = document.getElementById('sidebar-profile-name');
-    const sidebarEmail = document.getElementById('sidebar-profile-email');
-    
-    if (!placeholder || !nameEl) return;
-    
-    if (currentUser && userProfile) {
-        const displayName = userProfile.full_name || userProfile.username || currentUser.email?.split('@')[0] || 'User';
-        nameEl.textContent = displayName;
-        if (sidebarName) sidebarName.textContent = displayName;
-        if (sidebarEmail) sidebarEmail.textContent = currentUser.email || 'user@example.com';
+    // ===== BADGE CATALOG =====
+    const BADGE_CATALOG = [
+        // Identity Badges
+        { id: 'amapiano_tastemaker', name: 'Amapiano Tastemaker', description: 'The go-to source for Amapiano heat', category: 'identity', rarity: 'rare', icon: 'fa-music', identityLabel: 'Amapiano Tastemaker', xp: 100, unlockEvent: 'watch', threshold: 50, genre: 'Music' },
+        { id: 'stem_scholar', name: 'STEM Scholar', description: 'Building the future through knowledge', category: 'identity', rarity: 'epic', icon: 'fa-microscope', identityLabel: 'STEM Scholar', xp: 150, unlockEvent: 'watch', threshold: 30, genre: 'STEM' },
+        { id: 'culture_keeper', name: 'Culture Keeper', description: 'Preserving and celebrating African culture', category: 'identity', rarity: 'legendary', icon: 'fa-landmark', identityLabel: 'Cultural Ambassador', xp: 200, unlockEvent: 'watch', threshold: 100, genre: 'Culture' },
         
-        if (userProfile.avatar_url) {
-            const img = document.createElement('img');
-            img.src = userProfile.avatar_url;
-            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-            placeholder.innerHTML = '';
-            placeholder.appendChild(img);
-            if (sidebarAvatar) {
-                const sidebarImg = img.cloneNode(true);
-                sidebarAvatar.innerHTML = '';
-                sidebarAvatar.appendChild(sidebarImg);
+        // Activity Badges
+        { id: 'hundred_club', name: '100 Club', description: '100 videos watched and counting', category: 'activity', rarity: 'common', icon: 'fa-tv', identityLabel: 'Century Club Member', xp: 50, unlockEvent: 'watch', threshold: 100 },
+        { id: 'engagement_king', name: 'Engagement King', description: '500+ reactions given', category: 'activity', rarity: 'rare', icon: 'fa-heart', identityLabel: 'Community Energizer', xp: 75, unlockEvent: 'reaction', threshold: 500 },
+        { id: 'week_warrior', name: 'Week Warrior', description: '7-day watch streak', category: 'activity', rarity: 'rare', icon: 'fa-calendar-check', identityLabel: 'Consistent', xp: 80, unlockEvent: 'streak', threshold: 7 },
+        { id: 'monthly_master', name: 'Monthly Master', description: '30-day watch streak', category: 'activity', rarity: 'legendary', icon: 'fa-crown', identityLabel: 'Dedicated', xp: 200, unlockEvent: 'streak', threshold: 30 },
+        
+        // Community Badges
+        { id: 'watch_party_pioneer', name: 'Watch Party Pioneer', description: 'Hosted your first watch party', category: 'community', rarity: 'common', icon: 'fa-users', identityLabel: 'Party Starter', xp: 50, unlockEvent: 'watch_party_host', threshold: 1 },
+        { id: 'trend_starter', name: 'Trend Starter', description: 'You set the pace', category: 'community', rarity: 'epic', icon: 'fa-chart-line', identityLabel: 'Culture Driver', xp: 150, unlockEvent: 'share', threshold: 50 },
+        { id: 'top_commenter', name: 'Top Commenter', description: '50+ insightful comments', category: 'community', rarity: 'rare', icon: 'fa-comments', identityLabel: 'Voice of Community', xp: 75, unlockEvent: 'comment', threshold: 50 },
+        { id: 'early_supporter', name: 'Early Supporter', description: 'Joined in the first month', category: 'community', rarity: 'epic', icon: 'fa-star', identityLabel: 'OG', xp: 100, unlockEvent: 'join_date', threshold: 1 }
+    ];
+    
+    // ===== THEME SYSTEM =====
+    function initThemeSystem() {
+        const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
+        const themeSelector = document.getElementById('theme-selector');
+        if (!sidebarThemeToggle || !themeSelector) return;
+        
+        const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+        applyTheme(savedTheme);
+        
+        sidebarThemeToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            themeSelector.classList.toggle('active');
+        });
+        
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.dataset.theme;
+                applyTheme(theme);
+                themeSelector.classList.remove('active');
+            });
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (themeSelector.classList.contains('active') && 
+                !themeSelector.contains(e.target) && 
+                e.target !== sidebarThemeToggle) {
+                themeSelector.classList.remove('active');
+            }
+        });
+    }
+    
+    function applyTheme(theme) {
+        document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+        document.body.classList.add(`theme-${theme}`);
+        localStorage.setItem('bantu_theme', theme);
+        
+        const root = document.documentElement;
+        if (theme === 'light') {
+            root.style.setProperty('--deep-black', '#F8FAFC');
+            root.style.setProperty('--deep-navy', '#E2E8F0');
+            root.style.setProperty('--soft-white', '#0F172A');
+            root.style.setProperty('--slate-grey', '#475569');
+            root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.85)');
+            root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
+        } else if (theme === 'high-contrast') {
+            root.style.setProperty('--deep-black', '#000000');
+            root.style.setProperty('--deep-navy', '#050505');
+            root.style.setProperty('--soft-white', '#FFFFFF');
+            root.style.setProperty('--slate-grey', '#CCCCCC');
+            root.style.setProperty('--bantu-blue', '#FFD700');
+            root.style.setProperty('--warm-gold', '#00FFFF');
+            root.style.setProperty('--card-bg', '#0A0A0A');
+            root.style.setProperty('--card-border', '#FFFFFF');
+        } else {
+            root.style.setProperty('--deep-black', '#0A0E12');
+            root.style.setProperty('--deep-navy', '#0F172A');
+            root.style.setProperty('--soft-white', '#F8FAFC');
+            root.style.setProperty('--slate-grey', '#94A3B8');
+            root.style.setProperty('--card-bg', 'rgba(15, 23, 42, 0.6)');
+            root.style.setProperty('--card-border', 'rgba(148, 163, 184, 0.2)');
+        }
+    }
+    
+    // ===== UI SCALE =====
+    function initScaleControls() {
+        let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+        const minScale = 0.8, maxScale = 1.4, step = 0.1;
+        
+        function applyScale() {
+            document.documentElement.style.setProperty('--ui-scale', scale);
+            localStorage.setItem('bantu_ui_scale', scale.toString());
+            const scaleValues = document.querySelectorAll('.scale-value');
+            scaleValues.forEach(el => { if (el) el.textContent = Math.round(scale * 100) + '%'; });
+        }
+        
+        const decreaseBtn = document.getElementById('scale-decrease');
+        const increaseBtn = document.getElementById('scale-increase');
+        
+        if (decreaseBtn) {
+            decreaseBtn.addEventListener('click', () => {
+                if (scale > minScale) { scale = Math.max(minScale, scale - step); applyScale(); }
+            });
+        }
+        if (increaseBtn) {
+            increaseBtn.addEventListener('click', () => {
+                if (scale < maxScale) { scale = Math.min(maxScale, scale + step); applyScale(); }
+            });
+        }
+        
+        applyScale();
+    }
+    
+    // ===== SIDEBAR FUNCTIONS =====
+    function setupSidebar() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebarClose = document.getElementById('sidebar-close');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        
+        if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
+        
+        const openSidebar = () => {
+            sidebarMenu.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+        
+        const closeSidebar = () => {
+            sidebarMenu.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+        
+        menuToggle.addEventListener('click', openSidebar);
+        sidebarClose.addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+        
+        // Sidebar navigation
+        const sidebarWatchParty = document.getElementById('sidebar-watch-party');
+        if (sidebarWatchParty) {
+            sidebarWatchParty.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+                showToast('Watch Party coming soon!', 'info');
+            });
+        }
+        
+        const sidebarCreate = document.getElementById('sidebar-create');
+        if (sidebarCreate) {
+            sidebarCreate.addEventListener('click', async (e) => {
+                e.preventDefault();
+                closeSidebar();
+                const { data } = await supabaseClient.auth.getSession();
+                if (!data?.session) {
+                    showToast('Please sign in to upload content', 'warning');
+                    window.location.href = `login.html?redirect=creator-upload.html`;
+                } else {
+                    window.location.href = 'creator-upload.html';
+                }
+            });
+        }
+        
+        const sidebarWatchHistory = document.getElementById('sidebar-watch-history');
+        if (sidebarWatchHistory) {
+            sidebarWatchHistory.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+                if (!currentUser) {
+                    showToast('Please sign in to view watch history', 'warning');
+                    window.location.href = `login.html?redirect=watch-history.html`;
+                    return;
+                }
+                window.location.href = 'watch-history.html';
+            });
+        }
+    }
+    
+    // ===== NAVIGATION BUTTONS =====
+    function setupNavigationButtons() {
+        const navHome = document.getElementById('nav-home-btn');
+        if (navHome) navHome.addEventListener('click', () => window.location.href = 'index.html');
+        
+        const navHistory = document.getElementById('nav-history-btn');
+        if (navHistory) {
+            navHistory.addEventListener('click', () => {
+                if (!currentUser) {
+                    showToast('Please sign in to view watch history', 'warning');
+                    window.location.href = `login.html?redirect=watch-history.html`;
+                    return;
+                }
+                window.location.href = 'watch-history.html';
+            });
+        }
+        
+        const navCreate = document.getElementById('nav-create-btn');
+        if (navCreate) {
+            navCreate.addEventListener('click', async () => {
+                const { data } = await supabaseClient.auth.getSession();
+                if (!data?.session) {
+                    showToast('Please sign in to create content', 'warning');
+                    window.location.href = `login.html?redirect=creator-upload.html`;
+                } else {
+                    window.location.href = 'creator-upload.html';
+                }
+            });
+        }
+        
+        const navMenu = document.getElementById('nav-menu-btn');
+        if (navMenu) {
+            navMenu.addEventListener('click', () => {
+                const sidebarMenu = document.getElementById('sidebar-menu');
+                const sidebarOverlay = document.getElementById('sidebar-overlay');
+                if (sidebarMenu && sidebarOverlay) {
+                    sidebarMenu.classList.add('active');
+                    sidebarOverlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
+    }
+    
+    // ===== PROFILE FUNCTIONS =====
+    async function updateProfileUI() {
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        const nameEl = document.getElementById('current-profile-name');
+        const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        const sidebarEmail = document.getElementById('sidebar-profile-email');
+        
+        if (!placeholder || !nameEl) return;
+        
+        if (currentUser && userProfile) {
+            const displayName = userProfile.full_name || userProfile.username || currentUser.email?.split('@')[0] || 'User';
+            nameEl.textContent = displayName;
+            if (sidebarName) sidebarName.textContent = displayName;
+            if (sidebarEmail) sidebarEmail.textContent = currentUser.email || 'user@example.com';
+            
+            if (userProfile.avatar_url) {
+                const img = document.createElement('img');
+                img.src = userProfile.avatar_url;
+                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                placeholder.innerHTML = '';
+                placeholder.appendChild(img);
+                if (sidebarAvatar) {
+                    const sidebarImg = img.cloneNode(true);
+                    sidebarAvatar.innerHTML = '';
+                    sidebarAvatar.appendChild(sidebarImg);
+                }
+            } else {
+                placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+                if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
             }
         } else {
-            placeholder.innerHTML = `<div class="profile-placeholder"><i class="fas fa-user"></i></div>`;
+            nameEl.textContent = 'Guest';
+            if (sidebarName) sidebarName.textContent = 'Guest';
+            if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+            placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
             if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
         }
-    } else {
-        nameEl.textContent = 'Guest';
-        if (sidebarName) sidebarName.textContent = 'Guest';
-        if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
-        placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
-        if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
     }
-}
-
-// ===== BADGE DATA =====
-// Pre-defined badge catalog (would come from badges table in production)
-const BADGE_CATALOG = [
-    // Identity Badges
-    { id: 'amapiano_tastemaker', name: 'Amapiano Tastemaker', description: 'The go-to source for Amapiano heat', category: 'identity', rarity: 'rare', icon: 'fa-music', identityLabel: 'Amapiano Tastemaker', xp: 100, unlockEvent: 'watch', threshold: 50, genre: 'Music' },
-    { id: 'stem_scholar', name: 'STEM Scholar', description: 'Building the future through knowledge', category: 'identity', rarity: 'epic', icon: 'fa-microscope', identityLabel: 'STEM Scholar', xp: 150, unlockEvent: 'watch', threshold: 30, genre: 'STEM' },
-    { id: 'culture_keeper', name: 'Culture Keeper', description: 'Preserving and celebrating African culture', category: 'identity', rarity: 'legendary', icon: 'fa-landmark', identityLabel: 'Cultural Ambassador', xp: 200, unlockEvent: 'watch', threshold: 100, genre: 'Culture' },
     
-    // Activity Badges
-    { id: 'hundred_club', name: '100 Club', description: '100 videos watched and counting', category: 'activity', rarity: 'common', icon: 'fa-tv', identityLabel: 'Century Club Member', xp: 50, unlockEvent: 'watch', threshold: 100 },
-    { id: 'engagement_king', name: 'Engagement King', description: '500+ reactions given', category: 'activity', rarity: 'rare', icon: 'fa-heart', identityLabel: 'Community Energizer', xp: 75, unlockEvent: 'reaction', threshold: 500 },
-    { id: 'week_warrior', name: 'Week Warrior', description: '7-day watch streak', category: 'activity', rarity: 'rare', icon: 'fa-calendar-check', identityLabel: 'Consistent', xp: 80, unlockEvent: 'streak', threshold: 7 },
-    { id: 'monthly_master', name: 'Monthly Master', description: '30-day watch streak', category: 'activity', rarity: 'legendary', icon: 'fa-crown', identityLabel: 'Dedicated', xp: 200, unlockEvent: 'streak', threshold: 30 },
-    
-    // Community Badges
-    { id: 'watch_party_pioneer', name: 'Watch Party Pioneer', description: 'Hosted your first watch party', category: 'community', rarity: 'common', icon: 'fa-users', identityLabel: 'Party Starter', xp: 50, unlockEvent: 'watch_party_host', threshold: 1 },
-    { id: 'trend_starter', name: 'Trend Starter', description: 'You set the pace', category: 'community', rarity: 'epic', icon: 'fa-chart-line', identityLabel: 'Culture Driver', xp: 150, unlockEvent: 'share', threshold: 50 },
-    { id: 'top_commenter', name: 'Top Commenter', description: '50+ insightful comments', category: 'community', rarity: 'rare', icon: 'fa-comments', identityLabel: 'Voice of Community', xp: 75, unlockEvent: 'comment', threshold: 50 },
-    { id: 'early_supporter', name: 'Early Supporter', description: 'Joined in the first month', category: 'community', rarity: 'epic', icon: 'fa-star', identityLabel: 'OG', xp: 100, unlockEvent: 'join_date', threshold: 1 }
-];
-
-// ===== LOAD USER BADGES FROM SUPABASE =====
-async function loadUserBadges() {
-    if (!currentUser) return;
-    
-    try {
-        // Get user's earned badges from user_badges table
-        const { data: earnedBadges, error } = await supabase
-            .from('user_badges')
-            .select('*')
-            .eq('user_id', currentUser.id);
+    // ===== LOAD USER BADGES =====
+    async function loadUserBadges() {
+        console.log('Loading badges for user:', currentUser?.id);
         
-        if (error) throw error;
+        // Get loading text element
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) loadingText.textContent = 'Loading your achievements...';
         
-        // Create a map of earned badge names
-        const earnedMap = new Map();
-        (earnedBadges || []).forEach(b => {
-            earnedMap.set(b.badge_name, { awarded_at: b.awarded_at });
-        });
-        
-        // Build full badge list with progress
-        userBadges = BADGE_CATALOG.map(badge => {
-            const earned = earnedMap.get(badge.name);
-            // For demo, simulate progress for locked badges
-            let progress = 0;
-            if (!earned) {
-                // Simulate random progress for demo
-                progress = Math.floor(Math.random() * (badge.threshold - 5)) + 5;
-            } else {
-                progress = badge.threshold;
-            }
-            
-            return {
-                ...badge,
-                isUnlocked: !!earned,
-                unlockedAt: earned?.awarded_at,
-                progress: Math.min(progress, badge.threshold),
-                threshold: badge.threshold
-            };
-        });
-        
-        // Update UI
-        updateIdentityHeader();
-        renderFeaturedBadges();
-        renderBadgesGrid();
-        
-    } catch (error) {
-        console.error('Error loading badges:', error);
-        showToast('Failed to load badges', 'error');
-    }
-}
-
-// ===== UPDATE IDENTITY HEADER =====
-function updateIdentityHeader() {
-    const earnedCount = userBadges.filter(b => b.isUnlocked).length;
-    const totalXP = userBadges.filter(b => b.isUnlocked).reduce((sum, b) => sum + b.xp, 0);
-    const level = Math.floor(totalXP / 200) + 1;
-    
-    // Find top identity badge
-    const identityBadge = userBadges.find(b => b.category === 'identity' && b.isUnlocked);
-    const levelTitle = identityBadge ? identityBadge.identityLabel : 'Badge Collector';
-    
-    const totalBadgesEl = document.getElementById('total-badges');
-    const totalXpEl = document.getElementById('total-xp');
-    const levelTextEl = document.getElementById('level-text');
-    const identityTitleEl = document.getElementById('identity-title');
-    const identitySubtitleEl = document.getElementById('identity-subtitle');
-    const identityAvatarEl = document.getElementById('identity-avatar');
-    
-    if (totalBadgesEl) totalBadgesEl.textContent = earnedCount;
-    if (totalXpEl) totalXpEl.textContent = totalXP;
-    if (levelTextEl) levelTextEl.textContent = `Level ${level} • ${levelTitle}`;
-    if (identityTitleEl) identityTitleEl.textContent = levelTitle;
-    if (identitySubtitleEl && userProfile) {
-        identitySubtitleEl.textContent = `@${userProfile.username || 'user'}`;
-    }
-    
-    if (identityAvatarEl && userProfile?.avatar_url) {
-        identityAvatarEl.innerHTML = `<img src="${userProfile.avatar_url}" alt="Avatar">`;
-    } else if (identityAvatarEl && userProfile?.full_name) {
-        identityAvatarEl.innerHTML = `<span style="font-size:36px;">${getInitials(userProfile.full_name)}</span>`;
-    }
-}
-
-// ===== RENDER FEATURED BADGES =====
-function renderFeaturedBadges() {
-    const featuredGrid = document.getElementById('featured-grid');
-    if (!featuredGrid) return;
-    
-    // Get top 3 rarest unlocked badges
-    const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 };
-    const featured = [...userBadges]
-        .filter(b => b.isUnlocked)
-        .sort((a, b) => rarityOrder[b.rarity] - rarityOrder[a.rarity])
-        .slice(0, 3);
-    
-    if (featured.length === 0) {
-        featuredGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fas fa-medal"></i></div><h3>No badges yet</h3><p>Start watching content to earn your first badge!</p></div>`;
-        return;
-    }
-    
-    featuredGrid.innerHTML = featured.map(badge => `
-        <div class="featured-badge-card ${badge.rarity}">
-            <div class="featured-badge-icon"><i class="fas ${badge.icon}"></i></div>
-            <div class="featured-badge-name">${escapeHtml(badge.name)}</div>
-            <div class="featured-badge-desc">${escapeHtml(badge.description)}</div>
-            <div class="featured-badge-rarity rarity-${badge.rarity}">${badge.rarity.toUpperCase()}</div>
-            <div style="font-size:12px;color:var(--success-color);"><i class="fas fa-check-circle"></i> Unlocked</div>
-        </div>
-    `).join('');
-}
-
-// ===== RENDER BADGES GRID =====
-function renderBadgesGrid() {
-    const grid = document.getElementById('badges-grid');
-    if (!grid) return;
-    
-    let filteredBadges = [...userBadges];
-    
-    switch(currentCategory) {
-        case 'identity':
-            filteredBadges = filteredBadges.filter(b => b.category === 'identity');
-            break;
-        case 'activity':
-            filteredBadges = filteredBadges.filter(b => b.category === 'activity');
-            break;
-        case 'community':
-            filteredBadges = filteredBadges.filter(b => b.category === 'community');
-            break;
-        case 'rare':
-            filteredBadges = filteredBadges.filter(b => b.rarity === 'rare' || b.rarity === 'epic' || b.rarity === 'legendary');
-            break;
-        case 'in-progress':
-            filteredBadges = filteredBadges.filter(b => !b.isUnlocked && b.progress > 0);
-            break;
-        default:
-            break;
-    }
-    
-    if (filteredBadges.length === 0) {
-        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fas fa-search"></i></div><h3>No badges in this category</h3><p>Keep exploring to unlock more achievements!</p></div>`;
-        return;
-    }
-    
-    grid.innerHTML = filteredBadges.map(badge => {
-        const progressPercent = (badge.progress / badge.threshold) * 100;
-        const isUnlocked = badge.isUnlocked;
-        
-        return `
-            <div class="badge-card ${isUnlocked ? 'unlocked' : 'locked'}">
-                ${isUnlocked ? '<div class="badge-influence"><i class="fas fa-chart-line"></i> +' + badge.xp + ' XP</div>' : ''}
-                <div class="badge-header">
-                    <div class="badge-icon"><i class="fas ${badge.icon}"></i></div>
-                    <div class="badge-info">
-                        <div class="badge-name">${escapeHtml(badge.name)}</div>
-                        <div class="badge-rarity rarity-${badge.rarity}">${badge.rarity.toUpperCase()}</div>
-                    </div>
-                </div>
-                <div class="badge-description">${escapeHtml(badge.description)}</div>
-                ${!isUnlocked ? `
-                    <div class="progress-container">
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
-                        </div>
-                        <div class="progress-text">
-                            <span>${badge.progress} / ${badge.threshold}</span>
-                            <span>${Math.round(progressPercent)}%</span>
-                        </div>
-                        <div class="progress-cta" data-badge-id="${badge.id}">
-                            <i class="fas fa-play"></i> ${getCTAForBadge(badge)}
-                        </div>
-                    </div>
-                ` : `
-                    <div style="margin-top:15px;font-size:12px;color:var(--warm-gold);">
-                        <i class="fas fa-calendar-check"></i> Earned ${formatDate(badge.unlockedAt)}
-                    </div>
-                `}
-            </div>
-        `;
-    }).join('');
-    
-    // Add event listeners to CTAs
-    document.querySelectorAll('.progress-cta').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const badgeId = btn.dataset.badgeId;
-            const badge = userBadges.find(b => b.id === badgeId);
-            if (badge) {
-                showToast(`Watch ${badge.genre ? badge.genre + ' ' : ''}content to earn this badge!`, 'info');
-            }
-        });
-    });
-}
-
-function getCTAForBadge(badge) {
-    if (badge.unlockEvent === 'watch') {
-        return `Watch ${badge.threshold - badge.progress} more ${badge.genre || ''} videos`;
-    }
-    if (badge.unlockEvent === 'streak') {
-        return `Maintain streak for ${badge.threshold - badge.progress} more days`;
-    }
-    if (badge.unlockEvent === 'share') {
-        return `Share ${badge.threshold - badge.progress} more times`;
-    }
-    if (badge.unlockEvent === 'comment') {
-        return `Post ${badge.threshold - badge.progress} more comments`;
-    }
-    return `Complete ${badge.threshold - badge.progress} more actions`;
-}
-
-function formatDate(dateString) {
-    if (!dateString) return 'recently';
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } catch {
-        return 'recently';
-    }
-}
-
-// ===== SETUP CATEGORY TABS =====
-function setupCategoryTabs() {
-    const tabs = document.querySelectorAll('.badge-tab');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            currentCategory = tab.dataset.category;
-            renderBadgesGrid();
-        });
-    });
-}
-
-// ===== AUTH CHECK =====
-async function checkAuth() {
-    try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        currentUser = data?.session?.user || null;
-        
-        if (currentUser) {
-            const { data: profile } = await supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .maybeSingle();
-            userProfile = profile;
-            updateProfileUI();
-            await loadUserBadges();
-        } else {
-            // Demo mode - show some sample badges
+        if (!currentUser) {
+            // Demo mode - show sample badges for non-logged in users
+            console.log('No user logged in, showing demo badges');
             userBadges = BADGE_CATALOG.map(badge => ({
                 ...badge,
                 isUnlocked: Math.random() > 0.6,
@@ -1527,48 +1286,311 @@ async function checkAuth() {
             updateIdentityHeader();
             renderFeaturedBadges();
             renderBadgesGrid();
+            return;
         }
         
-        return currentUser;
-    } catch (error) {
-        console.error('Auth error:', error);
-        return null;
-    }
-}
-
-// ===== INITIALIZE =====
-async function initialize() {
-    const loading = document.getElementById('loading');
-    const app = document.getElementById('app');
-    
-    if (loading) loading.style.display = 'flex';
-    if (app) app.style.display = 'none';
-    
-    initThemeSystem();
-    initScaleControls();
-    setupSidebar();
-    setupNavigationButtons();
-    setupCategoryTabs();
-    await checkAuth();
-    
-    if (loading) loading.style.display = 'none';
-    if (app) app.style.display = 'block';
-    
-    // Auth state listener
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN') {
-            currentUser = session.user;
-            initialize();
-        } else if (event === 'SIGNED_OUT') {
-            currentUser = null;
-            userProfile = null;
-            initialize();
+        try {
+            // Get user's earned badges from user_badges table
+            const { data: earnedBadges, error } = await supabaseClient
+                .from('user_badges')
+                .select('*')
+                .eq('user_id', currentUser.id);
+            
+            if (error) {
+                console.error('Error fetching badges:', error);
+                // Fallback to demo mode
+                userBadges = BADGE_CATALOG.map(badge => ({
+                    ...badge,
+                    isUnlocked: false,
+                    progress: Math.floor(Math.random() * badge.threshold),
+                    threshold: badge.threshold
+                }));
+            } else {
+                console.log('Earned badges:', earnedBadges?.length || 0);
+                
+                // Create a map of earned badge names
+                const earnedMap = new Map();
+                (earnedBadges || []).forEach(b => {
+                    earnedMap.set(b.badge_name, { awarded_at: b.awarded_at });
+                });
+                
+                // Build full badge list with progress
+                userBadges = BADGE_CATALOG.map(badge => {
+                    const earned = earnedMap.get(badge.name);
+                    // For demo, simulate progress for locked badges
+                    let progress = 0;
+                    if (!earned) {
+                        // Simulate random progress for demo (would come from actual user data in production)
+                        progress = Math.floor(Math.random() * (badge.threshold - 5)) + 5;
+                    } else {
+                        progress = badge.threshold;
+                    }
+                    
+                    return {
+                        ...badge,
+                        isUnlocked: !!earned,
+                        unlockedAt: earned?.awarded_at,
+                        progress: Math.min(progress, badge.threshold),
+                        threshold: badge.threshold
+                    };
+                });
+            }
+            
+            // Update UI
+            updateIdentityHeader();
+            renderFeaturedBadges();
+            renderBadgesGrid();
+            
+        } catch (error) {
+            console.error('Error loading badges:', error);
+            showToast('Failed to load badges', 'error');
+            // Fallback to demo mode
+            userBadges = BADGE_CATALOG.map(badge => ({
+                ...badge,
+                isUnlocked: false,
+                progress: Math.floor(Math.random() * badge.threshold),
+                threshold: badge.threshold
+            }));
+            updateIdentityHeader();
+            renderFeaturedBadges();
+            renderBadgesGrid();
         }
-    });
-}
-
-// Start the app
-initialize();
+    }
+    
+    // ===== UPDATE IDENTITY HEADER =====
+    function updateIdentityHeader() {
+        const earnedCount = userBadges.filter(b => b.isUnlocked).length;
+        const totalXP = userBadges.filter(b => b.isUnlocked).reduce((sum, b) => sum + b.xp, 0);
+        const level = Math.floor(totalXP / 200) + 1;
+        
+        // Find top identity badge
+        const identityBadge = userBadges.find(b => b.category === 'identity' && b.isUnlocked);
+        const levelTitle = identityBadge ? identityBadge.identityLabel : 'Badge Collector';
+        
+        const totalBadgesEl = document.getElementById('total-badges');
+        const totalXpEl = document.getElementById('total-xp');
+        const levelTextEl = document.getElementById('level-text');
+        const identityTitleEl = document.getElementById('identity-title');
+        const identitySubtitleEl = document.getElementById('identity-subtitle');
+        const identityAvatarEl = document.getElementById('identity-avatar');
+        
+        if (totalBadgesEl) totalBadgesEl.textContent = earnedCount;
+        if (totalXpEl) totalXpEl.textContent = totalXP;
+        if (levelTextEl) levelTextEl.textContent = `Level ${level} • ${levelTitle}`;
+        if (identityTitleEl) identityTitleEl.textContent = levelTitle;
+        if (identitySubtitleEl && userProfile) {
+            identitySubtitleEl.textContent = `@${userProfile.username || 'user'}`;
+        } else if (identitySubtitleEl) {
+            identitySubtitleEl.textContent = '@explorer';
+        }
+        
+        if (identityAvatarEl && userProfile?.avatar_url) {
+            identityAvatarEl.innerHTML = `<img src="${userProfile.avatar_url}" alt="Avatar">`;
+        } else if (identityAvatarEl && userProfile?.full_name) {
+            identityAvatarEl.innerHTML = `<span style="font-size:36px;">${getInitials(userProfile.full_name)}</span>`;
+        }
+    }
+    
+    // ===== RENDER FEATURED BADGES =====
+    function renderFeaturedBadges() {
+        const featuredGrid = document.getElementById('featured-grid');
+        if (!featuredGrid) return;
+        
+        // Get top 3 rarest unlocked badges
+        const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 };
+        const featured = [...userBadges]
+            .filter(b => b.isUnlocked)
+            .sort((a, b) => rarityOrder[b.rarity] - rarityOrder[a.rarity])
+            .slice(0, 3);
+        
+        if (featured.length === 0) {
+            featuredGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fas fa-medal"></i></div><h3>No badges yet</h3><p>Start watching content to earn your first badge!</p></div>`;
+            return;
+        }
+        
+        featuredGrid.innerHTML = featured.map(badge => `
+            <div class="featured-badge-card ${badge.rarity}">
+                <div class="featured-badge-icon"><i class="fas ${badge.icon}"></i></div>
+                <div class="featured-badge-name">${escapeHtml(badge.name)}</div>
+                <div class="featured-badge-desc">${escapeHtml(badge.description)}</div>
+                <div class="featured-badge-rarity rarity-${badge.rarity}">${badge.rarity.toUpperCase()}</div>
+                <div style="font-size:12px;color:var(--success-color);"><i class="fas fa-check-circle"></i> Unlocked</div>
+            </div>
+        `).join('');
+    }
+    
+    // ===== RENDER BADGES GRID =====
+    function renderBadgesGrid() {
+        const grid = document.getElementById('badges-grid');
+        if (!grid) return;
+        
+        let filteredBadges = [...userBadges];
+        
+        switch(currentCategory) {
+            case 'identity':
+                filteredBadges = filteredBadges.filter(b => b.category === 'identity');
+                break;
+            case 'activity':
+                filteredBadges = filteredBadges.filter(b => b.category === 'activity');
+                break;
+            case 'community':
+                filteredBadges = filteredBadges.filter(b => b.category === 'community');
+                break;
+            case 'rare':
+                filteredBadges = filteredBadges.filter(b => b.rarity === 'rare' || b.rarity === 'epic' || b.rarity === 'legendary');
+                break;
+            case 'in-progress':
+                filteredBadges = filteredBadges.filter(b => !b.isUnlocked && b.progress > 0);
+                break;
+            default:
+                break;
+        }
+        
+        if (filteredBadges.length === 0) {
+            grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon"><i class="fas fa-search"></i></div><h3>No badges in this category</h3><p>Keep exploring to unlock more achievements!</p></div>`;
+            return;
+        }
+        
+        grid.innerHTML = filteredBadges.map(badge => {
+            const progressPercent = (badge.progress / badge.threshold) * 100;
+            const isUnlocked = badge.isUnlocked;
+            
+            return `
+                <div class="badge-card ${isUnlocked ? 'unlocked' : 'locked'}">
+                    ${isUnlocked ? '<div class="badge-influence"><i class="fas fa-chart-line"></i> +' + badge.xp + ' XP</div>' : ''}
+                    <div class="badge-header">
+                        <div class="badge-icon"><i class="fas ${badge.icon}"></i></div>
+                        <div class="badge-info">
+                            <div class="badge-name">${escapeHtml(badge.name)}</div>
+                            <div class="badge-rarity rarity-${badge.rarity}">${badge.rarity.toUpperCase()}</div>
+                        </div>
+                    </div>
+                    <div class="badge-description">${escapeHtml(badge.description)}</div>
+                    ${!isUnlocked ? `
+                        <div class="progress-container">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span>${badge.progress} / ${badge.threshold}</span>
+                                <span>${Math.round(progressPercent)}%</span>
+                            </div>
+                            <div class="progress-cta" data-badge-id="${badge.id}">
+                                <i class="fas fa-play"></i> ${getCTAForBadge(badge)}
+                            </div>
+                        </div>
+                    ` : `
+                        <div style="margin-top:15px;font-size:12px;color:var(--warm-gold);">
+                            <i class="fas fa-calendar-check"></i> Earned ${formatDate(badge.unlockedAt)}
+                        </div>
+                    `}
+                </div>
+            `;
+        }).join('');
+        
+        // Add event listeners to CTAs
+        document.querySelectorAll('.progress-cta').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const badgeId = btn.dataset.badgeId;
+                const badge = userBadges.find(b => b.id === badgeId);
+                if (badge) {
+                    showToast(`Watch ${badge.genre ? badge.genre + ' ' : ''}content to earn this badge!`, 'info');
+                }
+            });
+        });
+    }
+    
+    function getCTAForBadge(badge) {
+        if (badge.unlockEvent === 'watch') {
+            const remaining = badge.threshold - badge.progress;
+            return `Watch ${remaining} more ${badge.genre || ''} videos`;
+        }
+        if (badge.unlockEvent === 'streak') {
+            const remaining = badge.threshold - badge.progress;
+            return `Maintain streak for ${remaining} more days`;
+        }
+        if (badge.unlockEvent === 'share') {
+            const remaining = badge.threshold - badge.progress;
+            return `Share ${remaining} more times`;
+        }
+        if (badge.unlockEvent === 'comment') {
+            const remaining = badge.threshold - badge.progress;
+            return `Post ${remaining} more comments`;
+        }
+        const remaining = badge.threshold - badge.progress;
+        return `Complete ${remaining} more actions`;
+    }
+    
+    // ===== SETUP CATEGORY TABS =====
+    function setupCategoryTabs() {
+        const tabs = document.querySelectorAll('.badge-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentCategory = tab.dataset.category;
+                renderBadgesGrid();
+            });
+        });
+    }
+    
+    // ===== AUTH CHECK =====
+    async function checkAuth() {
+        try {
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (error) throw error;
+            currentUser = data?.session?.user || null;
+            
+            if (currentUser) {
+                console.log('User logged in:', currentUser.email);
+                const { data: profile } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
+                userProfile = profile;
+                updateProfileUI();
+                await loadUserBadges();
+            } else {
+                console.log('No user logged in, showing demo mode');
+                updateProfileUI();
+                await loadUserBadges();
+            }
+            
+            return currentUser;
+        } catch (error) {
+            console.error('Auth error:', error);
+            return null;
+        }
+    }
+    
+    // ===== INITIALIZE =====
+    async function initialize() {
+        console.log('Initializing My Badges page...');
+        const loading = document.getElementById('loading');
+        const app = document.getElementById('app');
+        
+        if (loading) loading.style.display = 'flex';
+        if (app) app.style.display = 'none';
+        
+        initThemeSystem();
+        initScaleControls();
+        setupSidebar();
+        setupNavigationButtons();
+        setupCategoryTabs();
+        await checkAuth();
+        
+        // Hide loading and show app
+        if (loading) loading.style.display = 'none';
+        if (app) app.style.display = 'block';
+        
+        console.log('My Badges page initialized');
+    }
+    
+    // Start the app
+    initialize();
+})();
 </script>
 </body>
 </html>
