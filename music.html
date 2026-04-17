@@ -12,9 +12,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Swiper JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <style>
 /* ===== CSS VARIABLES - MATCHING CREATOR CHANNEL ===== */
 :root {
@@ -82,20 +79,6 @@ position: relative !important;
 }
 
 * { max-width: 100%; box-sizing: border-box; }
-
-.container,
-.hero-section,
-.section,
-.footer,
-.modal-content {
-overflow-x: hidden !important;
-max-width: 100% !important;
-}
-
-img, video, iframe {
-max-width: 100% !important;
-height: auto !important;
-}
 
 /* ===== LOADING SCREEN ===== */
 .loading-screen {
@@ -1283,7 +1266,7 @@ transition: all 0.2s;
 
 <!-- HERO SECTION - THE WAVE -->
 <section class="hero-section" id="hero-section">
-<video id="wave-video" class="wave-video" autoplay muted loop playsinline>
+<video id="wave-video" class="wave-video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=600&fit=crop">
 <source src="" type="video/mp4">
 </video>
 <div class="hero-overlay"></div>
@@ -1331,7 +1314,7 @@ transition: all 0.2s;
 <span>Score</span>
 <span>Trend</span>
 </div>
-<div id="chart-list"></div>
+<div id="chart-list"><div style="padding:40px;text-align:center;">Loading chart...</div></div>
 </div>
 </section>
 
@@ -1342,7 +1325,7 @@ transition: all 0.2s;
 <a href="#" class="section-link" id="regional-view-all">View All <i class="fas fa-arrow-right"></i></a>
 </div>
 <div class="scroll-container">
-<div class="horizontal-scroll" id="regional-fusion-list"></div>
+<div class="horizontal-scroll" id="regional-fusion-list"><div style="padding:20px;color:var(--slate-grey);">Loading regional content...</div></div>
 </div>
 </section>
 
@@ -1352,7 +1335,7 @@ transition: all 0.2s;
 <h2 class="section-title"><i class="fas fa-microphone-alt"></i> Live From...</h2>
 </div>
 <div class="scroll-container">
-<div class="horizontal-scroll" id="live-from-list"></div>
+<div class="horizontal-scroll" id="live-from-list"><div style="padding:20px;color:var(--slate-grey);">Loading live content...</div></div>
 </div>
 </section>
 
@@ -1361,7 +1344,7 @@ transition: all 0.2s;
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-headphones"></i> More Music</h2>
 </div>
-<div class="content-grid" id="more-music-grid"></div>
+<div class="content-grid" id="more-music-grid"><div style="padding:40px;text-align:center;grid-column:1/-1;">Loading music...</div></div>
 <div id="more-music-empty" class="empty-state" style="display: none;">
 <div class="empty-icon"><i class="fas fa-music"></i></div>
 <h3>No music found</h3>
@@ -1396,16 +1379,18 @@ transition: all 0.2s;
 // ===== SUPABASE CONFIGURATION =====
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Create supabase client - only once
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
-window.currentUser = null;
-window.musicContent = [];
-window.trendingContent = [];
-window.regionalContent = [];
-window.liveContent = [];
-window.currentSort = 'velocity';
-window.currentGenre = 'all';
+let currentUser = null;
+let musicContent = [];
+let trendingScores = new Map();
+let momentumMap = new Map();
+let currentSort = 'velocity';
+let currentGenre = 'all';
+let currentHeroContent = null;
 
 // ===== HELPER FUNCTIONS =====
 function showToast(message, type = 'info') {
@@ -1420,7 +1405,7 @@ setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translate
 }
 
 function formatNumber(num) {
-if (!num) return '0';
+if (!num || num === 0) return '0';
 if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
 if (num >= 1000) return (num/1000).toFixed(1) + 'K';
 return num.toString();
@@ -1459,205 +1444,256 @@ const loadingText = document.getElementById('loading-text');
 if (loadingText) loadingText.textContent = 'Loading music catalog...';
 
 // Query music content with user profiles
-let query = supabase
+const { data, error } = await supabaseClient
 .from('Content')
 .select(`
 id, title, description, thumbnail_url, file_url, views_count, likes_count, 
 comments_count, shares_count, duration, created_at, user_id, genre, 
-is_channel_trailer, is_pinned, user_profiles!user_id(id, full_name, username, avatar_url)
+is_channel_trailer, is_pinned, tags,
+user_profiles!user_id(id, full_name, username, avatar_url)
 `)
 .eq('status', 'published')
 .in('genre', ['Music', 'Afrobeats', 'Amapiano', 'Gengetone', 'Gqom', 'Bongo Flava', 'Hip Hop', 'R&B'])
 .order('created_at', { ascending: false })
 .limit(100);
 
-const { data, error } = await query;
+if (error) {
+console.error('Supabase error:', error);
+throw error;
+}
 
-if (error) throw error;
+musicContent = data || [];
+console.log(`✅ Loaded ${musicContent.length} music items`);
 
-window.musicContent = data || [];
-console.log(`✅ Loaded ${window.musicContent.length} music items`);
-
+if (musicContent.length === 0) {
+// Show demo/fallback content
+showDemoContent();
+} else {
 // Load trending metrics
 await loadTrendingMetrics();
+// Organize and display
+organizeAndDisplay();
+}
 
-// Organize content
-organizeContent();
+const loading = document.getElementById('loading');
+if (loading) loading.style.display = 'none';
 
-// Update UI
+} catch (error) {
+console.error('Error loading music:', error);
+showToast('Failed to load music content. Please refresh.', 'error');
+// Show demo content as fallback
+showDemoContent();
+const loading = document.getElementById('loading');
+if (loading) loading.style.display = 'none';
+}
+}
+
+function showDemoContent() {
+// Create demo music data for testing
+musicContent = [
+{ id: 1, title: "African Giant", genre: "Afrobeats", views_count: 1250000, likes_count: 89000, shares_count: 34000, duration: 210, created_at: new Date().toISOString(), user_profiles: { full_name: "Burna Boy", username: "burnaboy", avatar_url: null }, thumbnail_url: null, velocityScore: 125000 },
+{ id: 2, title: "Amapiano Anthem", genre: "Amapiano", views_count: 980000, likes_count: 67000, shares_count: 28000, duration: 195, created_at: new Date().toISOString(), user_profiles: { full_name: "DJ Maphorisa", username: "djmaphorisa", avatar_url: null }, thumbnail_url: null, velocityScore: 98000 },
+{ id: 3, title: "Gengetone Vibes", genre: "Gengetone", views_count: 756000, likes_count: 54000, shares_count: 22000, duration: 185, created_at: new Date().toISOString(), user_profiles: { full_name: "Ethic Entertainment", username: "ethic", avatar_url: null }, thumbnail_url: null, velocityScore: 75600 },
+{ id: 4, title: "Gqom Nation", genre: "Gqom", views_count: 432000, likes_count: 31000, shares_count: 15000, duration: 240, created_at: new Date().toISOString(), user_profiles: { full_name: "DJ Tira", username: "djtira", avatar_url: null }, thumbnail_url: null, velocityScore: 43200 },
+{ id: 5, title: "Bongo Flava", genre: "Bongo Flava", views_count: 567000, likes_count: 42000, shares_count: 18000, duration: 200, created_at: new Date().toISOString(), user_profiles: { full_name: "Diamond Platnumz", username: "diamond", avatar_url: null }, thumbnail_url: null, velocityScore: 56700 },
+];
+updateHeroWithDemo();
+updateChartWithDemo();
+updateRegionalWithDemo();
+updateLiveWithDemo();
+updateMoreMusicWithDemo();
+}
+
+function updateHeroWithDemo() {
+const topItem = musicContent[0];
+currentHeroContent = topItem;
+document.getElementById('hero-title').textContent = topItem.title;
+document.getElementById('hero-artist').innerHTML = `<i class="fas fa-user-circle"></i><span>${topItem.user_profiles.full_name}</span>`;
+document.getElementById('hero-stats').innerHTML = `
+<span><i class="fas fa-eye"></i> ${formatNumber(topItem.views_count)} views</span>
+<span><i class="fas fa-heart"></i> ${formatNumber(topItem.likes_count)} likes</span>
+`;
+}
+
+function updateChartWithDemo() {
+const chartList = document.getElementById('chart-list');
+chartList.innerHTML = musicContent.slice(0, 10).map((item, index) => `
+<div class="chart-item" data-content-id="${item.id}">
+<div class="chart-rank">#${index + 1}</div>
+<div class="chart-info">
+<img class="chart-thumb" src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop" alt="${escapeHtml(item.title)}">
+<div class="chart-details">
+<h4>${truncateText(escapeHtml(item.title), 35)}</h4>
+<p>${escapeHtml(item.user_profiles.full_name)}</p>
+</div>
+</div>
+<div class="chart-stats">${formatNumber(item.velocityScore)}</div>
+<div class="chart-trend">↑ Trending</div>
+</div>
+`).join('');
+attachChartClickHandlers();
+}
+
+function updateRegionalWithDemo() {
+const container = document.getElementById('regional-fusion-list');
+container.innerHTML = musicContent.slice(0, 6).map(item => `
+<div class="regional-card" data-content-id="${item.id}">
+<div class="regional-thumb">
+<img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop" alt="${escapeHtml(item.title)}">
+<div class="regional-overlay"></div>
+<div class="regional-badge">🇿🇦 ${item.genre}</div>
+</div>
+<div class="regional-info">
+<div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
+<div class="regional-artist">${escapeHtml(item.user_profiles.full_name)}</div>
+<div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
+</div>
+</div>
+`).join('');
+attachRegionalClickHandlers();
+}
+
+function updateLiveWithDemo() {
+const container = document.getElementById('live-from-list');
+const cities = ['Lagos', 'Nairobi', 'Johannesburg'];
+container.innerHTML = musicContent.slice(0, 6).map((item, idx) => `
+<div class="live-card" data-content-id="${item.id}">
+<div class="live-badge"><i class="fas fa-circle"></i> LIVE</div>
+<div class="live-thumb">
+<img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop" alt="${escapeHtml(item.title)}">
+</div>
+<div class="live-info">
+<div class="live-title">${truncateText(escapeHtml(item.title), 25)}</div>
+<div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${cities[idx % 3]}</div>
+<div class="live-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span></div>
+</div>
+</div>
+`).join('');
+attachLiveClickHandlers();
+}
+
+function updateMoreMusicWithDemo() {
+const grid = document.getElementById('more-music-grid');
+grid.innerHTML = musicContent.slice(0, 12).map(item => `
+<div class="content-card" data-content-id="${item.id}">
+<div class="card-thumbnail">
+<img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop" alt="${escapeHtml(item.title)}">
+<div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+</div>
+<div class="card-content">
+<h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3>
+<div class="creator-info-small">
+<div class="creator-avatar-small"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${(item.user_profiles.full_name || 'A')[0]}</div></div>
+<div class="creator-name-small">${escapeHtml(item.user_profiles.full_name)}</div>
+</div>
+<div class="card-meta">
+<span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
+<span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
+</div>
+</div>
+</div>
+`).join('');
+attachContentClickHandlers();
+}
+
+async function loadTrendingMetrics() {
+try {
+const { data: trendingData } = await supabaseClient
+.from('mv_trending_scores')
+.select('content_id, trending_score, global_rank')
+.limit(50);
+
+if (trendingData) {
+trendingData.forEach(ts => trendingScores.set(ts.content_id, ts.trending_score));
+}
+
+const { data: momentumData } = await supabaseClient
+.from('content_metrics_realtime')
+.select('content_id, final_score, velocity_score, momentum_score, trend_label')
+.limit(50);
+
+if (momentumData) {
+momentumData.forEach(mm => momentumMap.set(mm.content_id, mm));
+}
+} catch (e) {
+console.log('Metrics loading optional:', e);
+}
+}
+
+function organizeAndDisplay() {
+// Add scores
+musicContent.forEach(item => {
+item.trendingScore = trendingScores.get(item.id) || 0;
+item.momentum = momentumMap.get(item.id) || { velocity_score: 0 };
+item.velocityScore = item.momentum.velocity_score || (item.views_count || 0) * 0.4 + (item.shares_count || 0) * 0.6;
+});
+
 updateHeroSection();
 updateChart();
 updateRegionalFusion();
 updateLiveFrom();
 updateMoreMusic();
-
-const loading = document.getElementById('loading');
-const app = document.getElementById('app');
-if (loading) loading.style.display = 'none';
-if (app) app.style.display = 'block';
-
-} catch (error) {
-console.error('Error loading music:', error);
-showToast('Failed to load music content', 'error');
-const loading = document.getElementById('loading');
-if (loading) loading.style.display = 'none';
-}
 }
 
-async function loadTrendingMetrics() {
-// Get trending scores from mv_trending_scores
-const { data: trendingScores, error } = await supabase
-.from('mv_trending_scores')
-.select('content_id, trending_score, global_rank')
-.limit(50);
-
-if (!error && trendingScores) {
-const scoreMap = new Map();
-trendingScores.forEach(ts => scoreMap.set(ts.content_id, ts.trending_score));
-window.trendingScores = scoreMap;
-}
-
-// Get momentum metrics
-const { data: momentumMetrics } = await supabase
-.from('content_metrics_realtime')
-.select('content_id, final_score, velocity_score, momentum_score, trend_label')
-.limit(50);
-
-if (momentumMetrics) {
-const momentumMap = new Map();
-momentumMetrics.forEach(mm => momentumMap.set(mm.content_id, mm));
-window.momentumMap = momentumMap;
-}
-}
-
-function organizeContent() {
-// Add scores to each content item
-window.musicContent.forEach(item => {
-item.trendingScore = window.trendingScores?.get(item.id) || 0;
-item.momentum = window.momentumMap?.get(item.id) || { velocity_score: 0, final_score: 0 };
-item.velocityScore = item.momentum.velocity_score || (item.views_count || 0) * 0.4 + (item.shares_count || 0) * 0.6;
-});
-
-// Sort for chart
-window.chartContent = [...window.musicContent].sort((a, b) => {
-if (window.currentSort === 'velocity') return b.velocityScore - a.velocityScore;
-if (window.currentSort === 'views') return (b.views_count || 0) - (a.views_count || 0);
-return b.trendingScore - a.trendingScore;
-}).slice(0, 20);
-
-// Regional fusion (group by region via tags or metadata)
-window.regionalContent = window.musicContent.filter(item => {
-const tags = item.tags || [];
-return tags.includes('amapiano') || tags.includes('afrobeats') || item.genre === 'Amapiano' || item.genre === 'Afrobeats';
-}).slice(0, 12);
-
-// Live content (content that might be tagged as live or has is_channel_trailer)
-window.liveContent = window.musicContent.filter(item => 
-item.is_channel_trailer === true || (item.description && item.description.toLowerCase().includes('live'))
-).slice(0, 8);
-}
-
-// ===== UI UPDATE FUNCTIONS =====
 function updateHeroSection() {
-const topTrending = window.chartContent[0];
-if (!topTrending) return;
+if (musicContent.length === 0) return;
+const topTrending = [...musicContent].sort((a, b) => b.velocityScore - a.velocityScore)[0];
+currentHeroContent = topTrending;
 
-const heroTitle = document.getElementById('hero-title');
-const heroArtist = document.getElementById('hero-artist');
-const heroStats = document.getElementById('hero-stats');
-const videoElement = document.getElementById('wave-video');
-
-if (heroTitle) heroTitle.textContent = truncateText(topTrending.title, 50);
-
+document.getElementById('hero-title').textContent = truncateText(topTrending.title, 50);
 const creatorName = topTrending.user_profiles?.full_name || topTrending.user_profiles?.username || 'Unknown Artist';
 const avatarUrl = topTrending.user_profiles?.avatar_url ? fixMediaUrl(topTrending.user_profiles.avatar_url) : null;
-
-if (heroArtist) {
-heroArtist.innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}">` : `<i class="fas fa-user-circle"></i>`;
-heroArtist.innerHTML += `<span>${escapeHtml(creatorName)}</span>`;
-}
-
-if (heroStats) {
-heroStats.innerHTML = `
+document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
+document.getElementById('hero-stats').innerHTML = `
 <span><i class="fas fa-eye"></i> ${formatNumber(topTrending.views_count)} views</span>
 <span><i class="fas fa-heart"></i> ${formatNumber(topTrending.likes_count)} likes</span>
-<span><i class="fas fa-chart-line"></i> ${topTrending.velocityScore ? formatNumber(Math.round(topTrending.velocityScore)) : 'Trending'}</span>
+<span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(topTrending.velocityScore))}</span>
 `;
-}
 
-// Set video source if available
-if (topTrending.file_url && videoElement) {
-const videoUrl = fixMediaUrl(topTrending.file_url);
-videoElement.querySelector('source')?.remove();
-const source = document.createElement('source');
-source.src = videoUrl;
-source.type = 'video/mp4';
-videoElement.appendChild(source);
-videoElement.load();
-videoElement.play().catch(e => console.log('Autoplay prevented:', e));
+if (topTrending.file_url) {
+const videoEl = document.getElementById('wave-video');
+const source = videoEl.querySelector('source');
+if (source) source.src = fixMediaUrl(topTrending.file_url);
+videoEl.load();
+videoEl.play().catch(e => console.log('Autoplay prevented'));
 }
-
-// Store current hero content for actions
-window.currentHeroContent = topTrending;
 }
 
 function updateChart() {
 const chartList = document.getElementById('chart-list');
-if (!chartList) return;
+let sorted = [...musicContent];
+if (currentSort === 'velocity') sorted.sort((a, b) => b.velocityScore - a.velocityScore);
+else if (currentSort === 'views') sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+else sorted.sort((a, b) => b.trendingScore - a.trendingScore);
+sorted = sorted.slice(0, 20);
 
-if (window.chartContent.length === 0) {
-chartList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">No chart data available</div>';
-return;
-}
-
-chartList.innerHTML = window.chartContent.map((item, index) => {
-const trendChange = item.momentum?.trend_label === 'rising' ? '↑' : (item.momentum?.trend_label === 'declining' ? '↓' : '→');
-const trendColor = trendChange === '↑' ? 'var(--success-color)' : (trendChange === '↓' ? 'var(--error-color)' : 'var(--slate-grey)');
-const score = window.currentSort === 'velocity' ? Math.round(item.velocityScore) : (window.currentSort === 'views' ? formatNumber(item.views_count) : (item.trendingScore ? Math.round(item.trendingScore) : formatNumber(item.views_count)));
-
+chartList.innerHTML = sorted.map((item, index) => {
+const score = currentSort === 'velocity' ? Math.round(item.velocityScore) : (currentSort === 'views' ? formatNumber(item.views_count) : (item.trendingScore ? Math.round(item.trendingScore) : formatNumber(item.views_count)));
 return `
 <div class="chart-item" data-content-id="${item.id}">
 <div class="chart-rank">#${index + 1}</div>
 <div class="chart-info">
-<img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}" loading="lazy">
+<img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
 <div class="chart-details">
 <h4>${truncateText(escapeHtml(item.title), 35)}</h4>
 <p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>
 </div>
 </div>
 <div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div>
-<div class="chart-trend" style="color: ${trendColor};">${trendChange} ${item.momentum?.trend_label === 'rising' ? 'Trending' : ''}</div>
+<div class="chart-trend">${item.momentum?.trend_label === 'rising' ? '↑ Trending' : (item.momentum?.trend_label === 'declining' ? '↓' : '→')}</div>
 </div>
 `;
 }).join('');
-
-document.querySelectorAll('.chart-item').forEach(item => {
-item.addEventListener('click', () => {
-const id = item.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
+attachChartClickHandlers();
 }
 
 function updateRegionalFusion() {
 const container = document.getElementById('regional-fusion-list');
-if (!container) return;
-
-if (window.regionalContent.length === 0) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No regional content available</div>';
-return;
-}
-
-// Define regions based on genre/tags
-const regions = [
-{ name: 'Afrobeats Heat', genre: 'Afrobeats', icon: '🇳🇬', color: '#008751' },
-{ name: 'Amapiano Wave', genre: 'Amapiano', icon: '🇿🇦', color: '#FFB81C' },
-{ name: 'Gengetone Vibes', genre: 'Gengetone', icon: '🇰🇪', color: '#E03C31' }
-];
-
+const regions = ['Afrobeats', 'Amapiano', 'Gengetone'];
 const regionalItems = [];
+
 regions.forEach(region => {
-const items = window.musicContent.filter(c => c.genre === region.genre).slice(0, 4);
+const items = musicContent.filter(c => c.genre === region).slice(0, 4);
 regionalItems.push({ region, items });
 });
 
@@ -1668,47 +1704,25 @@ return items.map(item => `
 <div class="regional-thumb">
 <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
 <div class="regional-overlay"></div>
-<div class="regional-badge">${region.icon} ${region.name}</div>
+<div class="regional-badge">${region === 'Afrobeats' ? '🇳🇬' : (region === 'Amapiano' ? '🇿🇦' : '🇰🇪')} ${region}</div>
 </div>
 <div class="regional-info">
 <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
 <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-<div class="regional-stats">
-<span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-</div>
+<div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
 </div>
 </div>
 `).join('');
 }).join('');
-
-document.querySelectorAll('.regional-card').forEach(card => {
-card.addEventListener('click', () => {
-const id = card.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
+attachRegionalClickHandlers();
 }
 
 function updateLiveFrom() {
 const container = document.getElementById('live-from-list');
-if (!container) return;
-
-if (window.liveContent.length === 0) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No live content available</div>';
-return;
-}
-
 const cities = ['Lagos', 'Nairobi', 'Johannesburg'];
-const liveByCity = {};
+const liveItems = musicContent.filter((_, idx) => idx % 3 === 0).slice(0, 6);
 
-cities.forEach(city => {
-liveByCity[city] = window.liveContent.filter((_, idx) => idx % 3 === cities.indexOf(city)).slice(0, 3);
-});
-
-container.innerHTML = cities.map(city => {
-const items = liveByCity[city];
-return items.map(item => `
+container.innerHTML = liveItems.map((item, idx) => `
 <div class="live-card" data-content-id="${item.id}">
 <div class="live-badge"><i class="fas fa-circle"></i> LIVE</div>
 <div class="live-thumb">
@@ -1716,35 +1730,22 @@ return items.map(item => `
 </div>
 <div class="live-info">
 <div class="live-title">${truncateText(escapeHtml(item.title), 25)}</div>
-<div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${city}</div>
-<div class="live-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-</div>
+<div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${cities[idx % 3]}</div>
+<div class="live-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span></div>
 </div>
 </div>
 `).join('');
-}).join('');
-
-document.querySelectorAll('.live-card').forEach(card => {
-card.addEventListener('click', () => {
-const id = card.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
+attachLiveClickHandlers();
 }
 
 function updateMoreMusic() {
 const grid = document.getElementById('more-music-grid');
 const empty = document.getElementById('more-music-empty');
-if (!grid || !empty) return;
 
-let filtered = [...window.musicContent];
-if (window.currentGenre !== 'all') {
-filtered = filtered.filter(item => item.genre === window.currentGenre);
+let filtered = [...musicContent];
+if (currentGenre !== 'all') {
+filtered = filtered.filter(item => item.genre === currentGenre);
 }
-
-// Remove top 5 that are already featured
 filtered = filtered.slice(5, 35);
 
 if (filtered.length === 0) {
@@ -1759,15 +1760,16 @@ empty.style.display = 'none';
 grid.innerHTML = filtered.map(item => {
 const avatarUrl = item.user_profiles?.avatar_url ? fixMediaUrl(item.user_profiles.avatar_url) : null;
 const initials = (item.user_profiles?.full_name || item.user_profiles?.username || 'A')[0].toUpperCase();
+const isNew = (new Date() - new Date(item.created_at)) < 7*24*60*60*1000;
 
 return `
 <div class="content-card" data-content-id="${item.id}">
 <div class="card-thumbnail">
-<img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}" loading="lazy">
+<img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
 <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
 <div class="card-badges">
 ${item.velocityScore > 10000 ? '<div class="badge-trending"><i class="fas fa-chart-line"></i> Trending</div>' : ''}
-${(new Date() - new Date(item.created_at)) < 7*24*60*60*1000 ? '<div class="badge-new">NEW</div>' : ''}
+${isNew ? '<div class="badge-new">NEW</div>' : ''}
 </div>
 ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${formatDuration(item.duration)}</div>` : ''}
 </div>
@@ -1785,67 +1787,80 @@ ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background
 </div>
 `;
 }).join('');
+attachContentClickHandlers();
+}
 
-document.querySelectorAll('.content-card').forEach(card => {
-card.addEventListener('click', () => {
-const id = card.dataset.contentId;
+// ===== CLICK HANDLERS =====
+function attachChartClickHandlers() {
+document.querySelectorAll('.chart-item').forEach(el => {
+el.addEventListener('click', () => {
+const id = el.dataset.contentId;
 if (id) window.location.href = `content-detail.html?id=${id}`;
 });
 });
 }
 
-// ===== FILTER & SORT HANDLERS =====
+function attachRegionalClickHandlers() {
+document.querySelectorAll('.regional-card').forEach(el => {
+el.addEventListener('click', () => {
+const id = el.dataset.contentId;
+if (id) window.location.href = `content-detail.html?id=${id}`;
+});
+});
+}
+
+function attachLiveClickHandlers() {
+document.querySelectorAll('.live-card').forEach(el => {
+el.addEventListener('click', () => {
+const id = el.dataset.contentId;
+if (id) window.location.href = `content-detail.html?id=${id}`;
+});
+});
+}
+
+function attachContentClickHandlers() {
+document.querySelectorAll('.content-card').forEach(el => {
+el.addEventListener('click', () => {
+const id = el.dataset.contentId;
+if (id) window.location.href = `content-detail.html?id=${id}`;
+});
+});
+}
+
+// ===== FILTER & SORT =====
 function setupFilters() {
-const filterChips = document.querySelectorAll('.filter-chip');
-filterChips.forEach(chip => {
+document.querySelectorAll('.filter-chip').forEach(chip => {
 chip.addEventListener('click', () => {
-filterChips.forEach(c => c.classList.remove('active'));
+document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
 chip.classList.add('active');
-window.currentGenre = chip.dataset.genre;
+currentGenre = chip.dataset.genre;
 updateMoreMusic();
 });
 });
 
-const sortBtns = document.querySelectorAll('.sort-btn');
-sortBtns.forEach(btn => {
+document.querySelectorAll('.sort-btn').forEach(btn => {
 btn.addEventListener('click', () => {
-sortBtns.forEach(b => b.classList.remove('active'));
+document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
-window.currentSort = btn.dataset.sort;
-window.chartContent = [...window.musicContent].sort((a, b) => {
-if (window.currentSort === 'velocity') return b.velocityScore - a.velocityScore;
-if (window.currentSort === 'views') return (b.views_count || 0) - (a.views_count || 0);
-return b.trendingScore - a.trendingScore;
-}).slice(0, 20);
+currentSort = btn.dataset.sort;
 updateChart();
 });
 });
 }
 
-// ===== HERO BUTTON HANDLERS =====
+// ===== HERO BUTTONS =====
 function setupHeroButtons() {
-const streamBtn = document.getElementById('hero-stream-btn');
-if (streamBtn) {
-streamBtn.addEventListener('click', () => {
-if (window.currentHeroContent) {
-window.location.href = `content-detail.html?id=${window.currentHeroContent.id}`;
-}
+document.getElementById('hero-stream-btn')?.addEventListener('click', () => {
+if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.id}`;
 });
-}
-
-const addVibeBtn = document.getElementById('hero-add-vibe-btn');
-if (addVibeBtn) {
-addVibeBtn.addEventListener('click', async () => {
-if (!window.currentUser) {
+document.getElementById('hero-add-vibe-btn')?.addEventListener('click', async () => {
+if (!currentUser) {
 showToast('Please sign in to add to My Vibe', 'warning');
 window.location.href = `login.html?redirect=music.html`;
 return;
 }
-if (window.currentHeroContent) {
-showToast(`Added "${truncateText(window.currentHeroContent.title, 30)}" to My Vibe`, 'success');
-}
+showToast(`Added to My Vibe`, 'success');
 });
-}
 }
 
 // ===== THEME SYSTEM =====
@@ -1853,28 +1868,23 @@ function initThemeSystem() {
 const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
 applyTheme(savedTheme);
 
-const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
-const themeSelector = document.getElementById('theme-selector');
-
-if (sidebarThemeToggle) {
-sidebarThemeToggle.addEventListener('click', (e) => {
+document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
 e.preventDefault();
-themeSelector.classList.toggle('active');
+document.getElementById('theme-selector')?.classList.toggle('active');
 });
-}
 
 document.querySelectorAll('.theme-option').forEach(option => {
 option.addEventListener('click', () => {
-const theme = option.dataset.theme;
-applyTheme(theme);
-themeSelector.classList.remove('active');
+applyTheme(option.dataset.theme);
+document.getElementById('theme-selector')?.classList.remove('active');
 });
 });
 
 document.addEventListener('click', (e) => {
-if (themeSelector.classList.contains('active') && 
-!themeSelector.contains(e.target) && e.target !== sidebarThemeToggle) {
-themeSelector.classList.remove('active');
+const selector = document.getElementById('theme-selector');
+const toggle = document.getElementById('sidebar-theme-toggle');
+if (selector?.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) {
+selector.classList.remove('active');
 }
 });
 }
@@ -1883,10 +1893,8 @@ function applyTheme(theme) {
 document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
 document.body.classList.add(`theme-${theme}`);
 localStorage.setItem('bantu_theme', theme);
-
 document.querySelectorAll('.theme-option').forEach(opt => {
-if (opt.dataset.theme === theme) opt.classList.add('active');
-else opt.classList.remove('active');
+opt.classList.toggle('active', opt.dataset.theme === theme);
 });
 }
 
@@ -1897,127 +1905,87 @@ const sidebarClose = document.getElementById('sidebar-close');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
 const sidebarMenu = document.getElementById('sidebar-menu');
 
-if (menuToggle) {
-menuToggle.addEventListener('click', () => {
-sidebarMenu.classList.add('active');
-sidebarOverlay.classList.add('active');
+menuToggle?.addEventListener('click', () => {
+sidebarMenu?.classList.add('active');
+sidebarOverlay?.classList.add('active');
 document.body.style.overflow = 'hidden';
 });
-}
 
-if (sidebarClose) {
-sidebarClose.addEventListener('click', () => {
-sidebarMenu.classList.remove('active');
-sidebarOverlay.classList.remove('active');
+const closeSidebar = () => {
+sidebarMenu?.classList.remove('active');
+sidebarOverlay?.classList.remove('active');
 document.body.style.overflow = '';
-});
+};
+sidebarClose?.addEventListener('click', closeSidebar);
+sidebarOverlay?.addEventListener('click', closeSidebar);
 }
 
-if (sidebarOverlay) {
-sidebarOverlay.addEventListener('click', () => {
-sidebarMenu.classList.remove('active');
-sidebarOverlay.classList.remove('active');
-document.body.style.overflow = '';
-});
-}
-}
-
-function setupNavigationButtons() {
-const navHome = document.getElementById('nav-home-btn');
-if (navHome) navHome.addEventListener('click', () => window.location.href = 'index.html');
-
-const navHistory = document.getElementById('nav-history-btn');
-if (navHistory) navHistory.addEventListener('click', () => window.location.href = 'watch-history.html');
-
-const navCreate = document.getElementById('nav-create-btn');
-if (navCreate) navCreate.addEventListener('click', async () => {
-const { data } = await supabase.auth.getSession();
+function setupNavigation() {
+document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+const { data } = await supabaseClient.auth.getSession();
 if (data?.session) window.location.href = 'creator-upload.html';
 else window.location.href = 'login.html?redirect=creator-upload.html';
 });
-
-const navMenu = document.getElementById('nav-menu-btn');
-if (navMenu) {
-navMenu.addEventListener('click', () => {
-const sidebarMenu = document.getElementById('sidebar-menu');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-if (sidebarMenu && sidebarOverlay) {
-sidebarMenu.classList.add('active');
-sidebarOverlay.classList.add('active');
+document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+document.getElementById('sidebar-menu')?.classList.add('active');
+document.getElementById('sidebar-overlay')?.classList.add('active');
 document.body.style.overflow = 'hidden';
-}
 });
-}
 }
 
 function setupBackToTop() {
 const btn = document.getElementById('backToTopBtn');
 window.addEventListener('scroll', () => {
-if (window.scrollY > 300) btn.style.display = 'flex';
-else btn.style.display = 'none';
+btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
 });
-btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function setupMuteToggle() {
 const muteBtn = document.getElementById('mute-toggle');
 const video = document.getElementById('wave-video');
-if (muteBtn && video) {
-muteBtn.addEventListener('click', () => {
+muteBtn?.addEventListener('click', () => {
 video.muted = !video.muted;
 muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
 });
 }
-}
 
-// ===== SCALE CONTROL =====
 function setupScaleControls() {
-const decreaseBtn = document.getElementById('scale-decrease');
-const increaseBtn = document.getElementById('scale-increase');
-const scaleValue = document.getElementById('scale-value');
+const decrease = document.getElementById('scale-decrease');
+const increase = document.getElementById('scale-increase');
+const value = document.getElementById('scale-value');
 let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-
-function applyScale() {
+const apply = () => {
 document.documentElement.style.setProperty('--ui-scale', scale);
 localStorage.setItem('bantu_ui_scale', scale);
-scaleValue.textContent = Math.round(scale * 100) + '%';
-}
-
-if (decreaseBtn) decreaseBtn.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; applyScale(); } });
-if (increaseBtn) increaseBtn.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; applyScale(); } });
-applyScale();
+if (value) value.textContent = Math.round(scale * 100) + '%';
+};
+decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+apply();
 }
 
 // ===== AUTH CHECK =====
 async function checkAuth() {
-const { data } = await supabase.auth.getSession();
-window.currentUser = data?.session?.user || null;
-updateProfileUI();
-}
-
-async function updateProfileUI() {
-if (!window.currentUser) return;
-const { data: profile } = await supabase.from('user_profiles').select('full_name, username, avatar_url').eq('id', window.currentUser.id).maybeSingle();
+const { data } = await supabaseClient.auth.getSession();
+currentUser = data?.session?.user || null;
+if (currentUser) {
+const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
 const nameEl = document.getElementById('current-profile-name');
 const placeholder = document.getElementById('userProfilePlaceholder');
-const sidebarName = document.getElementById('sidebar-profile-name');
-const sidebarEmail = document.getElementById('sidebar-profile-email');
-
-if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
-if (sidebarName) sidebarName.textContent = profile?.full_name || profile?.username || 'User';
-if (sidebarEmail) sidebarEmail.textContent = window.currentUser.email || 'user@example.com';
-
-if (placeholder) {
-placeholder.innerHTML = profile?.avatar_url ? 
-`<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : 
-`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;">${(profile?.full_name || profile?.username || 'U')[0].toUpperCase()}</div>`;
+if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+if (placeholder && profile?.avatar_url) {
+placeholder.innerHTML = `<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+}
 }
 }
 
 // ===== INITIALIZE =====
 async function initialize() {
 setupSidebar();
-setupNavigationButtons();
+setupNavigation();
 setupBackToTop();
 setupMuteToggle();
 setupScaleControls();
@@ -2028,7 +1996,6 @@ await checkAuth();
 await loadMusicContent();
 }
 
-// Start
 initialize();
 </script>
 </body>
