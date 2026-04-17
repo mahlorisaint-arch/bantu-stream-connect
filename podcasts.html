@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<title>Podcasts - The Voice | Bantu Stream Connect</title>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+--deep-black: #0A0E12;
+--deep-navy: #0F172A;
+--soft-white: #F8FAFC;
+--slate-grey: #94A3B8;
+--bantu-blue: #1D4ED8;
+--warm-gold: #F59E0B;
+--error-color: #EF4444;
+--success-color: #10B981;
+--podcast-orange: #EA580C;
+--podcast-coral: #F43F5E;
+--podcast-amber: #D97706;
+--card-bg: rgba(15, 23, 42, 0.6);
+--card-border: rgba(148, 163, 184, 0.2);
+--ui-scale: 1;
+--wave-color: var(--podcast-orange);
+}
+
+/* Light Theme */
+body.theme-light {
+--deep-black: #F8FAFC;
+--deep-navy: #E2E8F0;
+--soft-white: #0F172A;
+--slate-grey: #475569;
+--card-bg: rgba(255, 255, 255, 0.85);
+--card-border: rgba(0, 0, 0, 0.1);
+background: #F1F5F9;
+}
+
+/* High Contrast Theme */
+body.theme-high-contrast {
+--deep-black: #000000;
+--deep-navy: #050505;
+--soft-white: #FFFFFF;
+--slate-grey: #CCCCCC;
+--bantu-blue: #FFD700;
+--warm-gold: #00FFFF;
+--podcast-orange: #FFA500;
+--podcast-coral: #FF69B4;
+--podcast-amber: #FFD700;
+--card-bg: #0A0A0A;
+--card-border: #FFFFFF;
+background: #000000;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+font-family: 'Inter', sans-serif;
+background: var(--deep-black);
+color: var(--soft-white);
+min-height: 100vh;
+overflow-x: hidden !important;
+width: 100% !important;
+max-width: 100% !important;
+transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html { 
+font-size: calc(16px * var(--ui-scale)); 
+overflow-x: hidden !important;
+}
+
+/* ===== GLOBAL OVERFLOW FIXES ===== */
+html, body {
+overflow-x: hidden !important;
+width: 100% !important;
+max-width: 100% !important;
+position: relative !important;
+}
+
+* { max-width: 100%; box-sizing: border-box; }
+
+/* ===== LOADING SCREEN ===== */
+.loading-screen {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: var(--deep-black); display: flex; flex-direction: column;
+align-items: center; justify-content: center; z-index: 1000;
+}
+.spinner {
+width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1);
+border-radius: 50%; border-top-color: var(--podcast-orange);
+animation: spin 1s linear infinite; margin-bottom: 20px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== ANIMATED BACKGROUND ===== */
+.animated-bg {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
+}
+.glow-cycle {
+position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.08;
+animation: float 8s infinite ease-in-out;
+}
+.glow-1 { width: 400px; height: 400px; background: var(--podcast-orange); top: 10%; left: 5%; }
+.glow-2 { width: 300px; height: 300px; background: var(--podcast-coral); top: 60%; right: 10%; animation-delay: 2s; }
+.glow-3 { width: 350px; height: 350px; background: var(--podcast-amber); bottom: 10%; left: 20%; animation-delay: 4s; }
+@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
+
+/* ===== HEADER ===== */
+.header {
+background: rgba(10,14,18,0.9); backdrop-filter: blur(20px);
+padding: 0.75rem 1.5rem; position: sticky; top: 0; z-index: 100;
+border-bottom: 1px solid var(--card-border); display: flex;
+justify-content: space-between; align-items: center;
+width: 100%; max-width: 100vw;
+}
+body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
+.logo { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; flex-shrink: 0; }
+.menu-toggle {
+width: 2.375rem; height: 2.375rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white); display: flex; align-items: center;
+justify-content: center; cursor: pointer; transition: all 0.3s ease;
+font-size: 1.5rem; margin-right: 0.5rem; border: none;
+}
+.menu-toggle:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-0.125rem); }
+.logo-icon {
+width: 2.5rem; height: 2.5rem; border-radius: 0.625rem;
+display: flex; align-items: center; justify-content: center;
+background: transparent; border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.logo-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.625rem; }
+.logo-text {
+font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.125rem;
+background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+-webkit-background-clip: text; background-clip: text; color: transparent;
+white-space: nowrap;
+}
+.header-actions { display: flex; gap: 0.625rem; align-items: center; flex-shrink: 0; }
+.icon-btn {
+width: 2.375rem; height: 2.375rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white); display: flex; align-items: center;
+justify-content: center; cursor: pointer; transition: all 0.3s ease;
+position: relative; font-size: 1.25rem; flex-shrink: 0;
+}
+.icon-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-0.125rem); }
+.notification-badge {
+position: absolute; top: -0.3125rem; right: -0.3125rem;
+background: var(--error-color); color: white; font-size: 0.625rem;
+font-weight: bold; width: 1.125rem; height: 1.125rem; border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+border: 2px solid var(--deep-black);
+}
+.profile-switcher { position: relative; }
+.profile-btn {
+background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
+border-radius: 2.5rem; padding: 0.3125rem 1rem 0.3125rem 0.3125rem;
+display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+transition: all 0.3s ease; height: 2.75rem;
+}
+.profile-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--podcast-orange); }
+.profile-placeholder {
+width: 2.25rem; height: 2.25rem; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange));
+display: flex; align-items: center; justify-content: center;
+color: white; font-size: 0.875rem; overflow: hidden; flex-shrink: 0;
+}
+.profile-placeholder img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.profile-name {
+color: var(--soft-white); font-size: 0.875rem; font-weight: 500;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+}
+.profile-btn i { color: var(--slate-grey); font-size: 0.75rem; }
+.profile-dropdown {
+position: absolute; top: 3.75rem; right: 0; width: 15.625rem;
+background: var(--card-bg); backdrop-filter: blur(20px);
+border: 1px solid var(--card-border); border-radius: 0.75rem;
+opacity: 0; visibility: hidden; transform: translateY(-0.625rem);
+transition: all 0.3s ease; z-index: 1000;
+}
+.profile-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); }
+.profile-dropdown-header { padding: 15px; border-bottom: 1px solid var(--card-border); }
+.profile-dropdown-header h4 { font-size: 14px; color: var(--soft-white); margin: 0; }
+.profile-list { max-height: 300px; overflow-y: auto; padding: 10px; }
+.profile-item {
+display: flex; align-items: center; gap: 10px; padding: 10px;
+border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
+}
+.profile-item:hover { background: rgba(255, 255, 255, 0.1); }
+.profile-item.active { background: rgba(29, 78, 216, 0.2); border: 1px solid var(--bantu-blue); }
+.profile-avatar-small {
+width: 36px; height: 36px; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange));
+display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
+}
+.profile-avatar-small img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.profile-item .profile-name { flex: 1; font-size: 14px; }
+.profile-item i { color: var(--success-color); }
+.profile-dropdown-footer { padding: 15px; border-top: 1px solid var(--card-border); }
+.text-btn {
+background: none; border: none; color: var(--podcast-orange); cursor: pointer;
+font-size: 14px; transition: all 0.3s ease; width: 100%;
+text-align: left; padding: 8px; border-radius: 6px;
+}
+.text-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--soft-white); }
+.rsa-badge {
+display: flex; align-items: center; gap: 0.25rem;
+background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+padding: 0.375rem 0.75rem; border-radius: 1.875rem;
+color: white; font-size: 0.75rem; font-weight: 600;
+margin-left: 0.5rem; flex-shrink: 0;
+}
+
+/* ===== SIDEBAR MENU ===== */
+.sidebar-overlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+}
+.sidebar-overlay.active { opacity: 1; visibility: visible; }
+.sidebar-menu {
+position: fixed; top: 0; left: -20rem; width: 18rem; height: 100vh;
+background: var(--card-bg); backdrop-filter: blur(20px);
+border-right: 1px solid var(--card-border); z-index: 1001;
+transition: left 0.3s ease; display: flex; flex-direction: column;
+overflow: hidden; padding: 1.25rem;
+}
+.sidebar-menu.active { left: 0; }
+.sidebar-header {
+display: flex; align-items: center; justify-content: space-between;
+padding-bottom: 1.25rem; border-bottom: 1px solid var(--card-border);
+margin-bottom: 1.25rem; flex-shrink: 0;
+}
+.sidebar-logo { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
+.sidebar-logo-text {
+font-family: 'Orbitron', sans-serif; font-size: 1.125rem; font-weight: 700;
+background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+-webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.sidebar-close {
+width: 2.25rem; height: 2.25rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
+color: var(--soft-white); cursor: pointer; transition: all 0.3s ease;
+}
+.sidebar-close:hover { background: var(--error-color); }
+.sidebar-profile {
+display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem;
+background: rgba(255, 255, 255, 0.05); border-radius: 0.75rem;
+margin-bottom: 1.25rem; cursor: pointer; transition: background 0.3s ease;
+flex-shrink: 0;
+}
+.sidebar-profile:hover { background: rgba(255, 255, 255, 0.1); }
+.sidebar-profile-avatar {
+width: 2.75rem; height: 2.75rem; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange));
+display: flex; align-items: center; justify-content: center;
+color: white; font-weight: 600; overflow: hidden; flex-shrink: 0;
+}
+.sidebar-profile-info { flex: 1; min-width: 0; }
+.sidebar-profile-name {
+font-size: 1rem; font-weight: 600; color: var(--soft-white);
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-profile-email {
+font-size: 0.75rem; color: var(--slate-grey);
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-nav {
+flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px;
+display: flex; flex-direction: column; gap: 0.5rem;
+}
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--podcast-orange); border-radius: 3px; }
+.sidebar-nav-item {
+display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem;
+border-radius: 0.75rem; color: var(--soft-white); text-decoration: none;
+font-size: 1rem; transition: all 0.3s ease; cursor: pointer;
+}
+.sidebar-nav-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(0.25rem); }
+.sidebar-nav-item.active { background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange)); }
+.sidebar-nav-item i { width: 1.25rem; text-align: center; font-size: 1.25rem; flex-shrink: 0; }
+.sidebar-footer {
+flex-shrink: 0; margin-top: auto; padding-top: 1.25rem;
+border-top: 1px solid var(--card-border);
+padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.sidebar-theme-toggle {
+display: flex; align-items: center; justify-content: space-between;
+padding: 0.75rem; background: rgba(255, 255, 255, 0.05);
+border-radius: 0.75rem; cursor: pointer; transition: background 0.3s ease;
+margin-bottom: 0.75rem;
+}
+.sidebar-theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
+.sidebar-scale-control {
+padding: 0.75rem; background: rgba(255, 255, 255, 0.05);
+border-radius: 0.75rem; display: flex; flex-direction: column;
+gap: 0.5rem;
+}
+.scale-control-row {
+display: flex; align-items: center; justify-content: space-between;
+margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;
+}
+.scale-control-row:last-child { margin-bottom: 0; }
+.scale-btn {
+width: 2rem; height: 2rem; border-radius: 50%;
+background: rgba(255, 255, 255, 0.1); border: none;
+color: var(--soft-white); cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+transition: all 0.3s ease; flex-shrink: 0; font-size: 0.875rem;
+}
+.scale-value {
+font-size: 0.875rem; color: var(--soft-white); min-width: 3rem;
+text-align: center; font-weight: 600;
+}
+
+/* ===== HERO SECTION - PODCAST OF THE WEEK ===== */
+.hero-section {
+margin-bottom: 40px;
+}
+.hero-card {
+background: linear-gradient(135deg, rgba(234,88,12,0.15), rgba(0,0,0,0.6));
+border: 2px solid var(--podcast-orange);
+border-radius: 28px;
+overflow: hidden;
+display: flex;
+flex-direction: column;
+position: relative;
+}
+@media (min-width: 768px) {
+.hero-card { flex-direction: row; }
+}
+.hero-image {
+flex: 1;
+position: relative;
+min-height: 300px;
+overflow: hidden;
+}
+.hero-image img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.hero-waveform {
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+height: 80px;
+background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 4px;
+padding: 0 20px;
+}
+.wave-bar {
+width: 4px;
+height: 30px;
+background: var(--podcast-orange);
+border-radius: 2px;
+animation: wave 1s ease-in-out infinite;
+}
+.wave-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
+.wave-bar:nth-child(2) { animation-delay: 0.1s; height: 40px; }
+.wave-bar:nth-child(3) { animation-delay: 0.2s; height: 60px; }
+.wave-bar:nth-child(4) { animation-delay: 0.3s; height: 45px; }
+.wave-bar:nth-child(5) { animation-delay: 0.4s; height: 30px; }
+.wave-bar:nth-child(6) { animation-delay: 0.5s; height: 55px; }
+.wave-bar:nth-child(7) { animation-delay: 0.6s; height: 35px; }
+.wave-bar:nth-child(8) { animation-delay: 0.7s; height: 20px; }
+.wave-bar:nth-child(9) { animation-delay: 0.8s; height: 50px; }
+.wave-bar:nth-child(10) { animation-delay: 0.9s; height: 25px; }
+@keyframes wave {
+0%, 100% { transform: scaleY(0.5); }
+50% { transform: scaleY(1); }
+}
+.hero-info {
+flex: 1;
+padding: 30px;
+}
+.hero-badge {
+display: inline-block;
+background: var(--podcast-orange);
+color: white;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 11px;
+font-weight: 700;
+margin-bottom: 16px;
+}
+.hero-title {
+font-size: 32px;
+font-weight: 800;
+margin-bottom: 12px;
+}
+.hero-creator {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 16px;
+}
+.hero-creator-avatar {
+width: 48px;
+height: 48px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange));
+display: flex;
+align-items: center;
+justify-content: center;
+overflow: hidden;
+}
+.hero-creator-name {
+font-weight: 600;
+}
+.hero-description {
+font-size: 15px;
+color: var(--slate-grey);
+margin-bottom: 20px;
+line-height: 1.6;
+}
+.hero-stats {
+display: flex;
+gap: 24px;
+margin-bottom: 24px;
+font-size: 13px;
+}
+.hero-stats i { color: var(--podcast-orange); margin-right: 6px; }
+.hero-buttons {
+display: flex;
+gap: 16px;
+flex-wrap: wrap;
+}
+.hero-btn {
+padding: 12px 28px;
+border-radius: 40px;
+font-weight: 600;
+font-size: 14px;
+cursor: pointer;
+transition: all 0.3s ease;
+border: none;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.hero-btn.primary {
+background: var(--podcast-orange);
+color: white;
+}
+.hero-btn.primary:hover {
+transform: translateY(-2px);
+box-shadow: 0 10px 20px rgba(234,88,12,0.4);
+}
+.hero-btn.secondary {
+background: rgba(255,255,255,0.1);
+backdrop-filter: blur(10px);
+color: white;
+border: 1px solid rgba(255,255,255,0.2);
+}
+.hero-btn.secondary:hover {
+background: rgba(255,255,255,0.2);
+transform: translateY(-2px);
+}
+
+/* ===== CONTAINER ===== */
+.container { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; position: relative; z-index: 2; }
+
+/* ===== SECTION STYLES ===== */
+.section {
+margin-bottom: 50px;
+}
+.section-header {
+display: flex;
+justify-content: space-between;
+align-items: baseline;
+margin-bottom: 24px;
+flex-wrap: wrap;
+gap: 12px;
+}
+.section-title {
+font-family: 'Orbitron', sans-serif;
+font-size: 22px;
+font-weight: 700;
+background: linear-gradient(135deg, var(--soft-white), var(--podcast-orange));
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.section-link {
+color: var(--podcast-orange);
+text-decoration: none;
+font-size: 13px;
+display: flex;
+align-items: center;
+gap: 5px;
+transition: gap 0.3s ease;
+}
+.section-link:hover { gap: 10px; }
+
+/* ===== CATEGORY FILTERS ===== */
+.category-filters {
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+margin-bottom: 24px;
+padding: 16px 0;
+border-bottom: 1px solid var(--card-border);
+}
+.filter-chip {
+padding: 8px 20px;
+border-radius: 30px;
+background: rgba(255,255,255,0.05);
+border: 1px solid var(--card-border);
+color: var(--slate-grey);
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.filter-chip:hover {
+background: rgba(234,88,12,0.1);
+border-color: var(--podcast-orange);
+color: var(--podcast-orange);
+}
+.filter-chip.active {
+background: var(--podcast-orange);
+border-color: var(--podcast-orange);
+color: white;
+}
+
+/* ===== TOP PODCASTERS GRID ===== */
+.podcasters-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+gap: 24px;
+}
+.podcaster-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+padding: 20px;
+cursor: pointer;
+transition: all 0.3s ease;
+text-align: center;
+}
+.podcaster-card:hover {
+transform: translateY(-5px);
+border-color: var(--podcast-orange);
+}
+.podcaster-avatar {
+width: 100px;
+height: 100px;
+border-radius: 50%;
+margin: 0 auto 15px;
+overflow: hidden;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange));
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.podcaster-avatar img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.podcaster-name {
+font-size: 18px;
+font-weight: 700;
+margin-bottom: 5px;
+}
+.podcaster-category {
+font-size: 12px;
+color: var(--podcast-orange);
+margin-bottom: 10px;
+}
+.podcaster-stats {
+display: flex;
+justify-content: center;
+gap: 20px;
+margin-bottom: 15px;
+font-size: 12px;
+color: var(--slate-grey);
+}
+.podcaster-stats i { color: var(--podcast-orange); margin-right: 4px; }
+.growth-badge {
+display: inline-block;
+background: var(--success-color);
+color: white;
+padding: 4px 12px;
+border-radius: 20px;
+font-size: 11px;
+font-weight: 700;
+}
+.follow-btn {
+margin-top: 15px;
+padding: 8px 24px;
+border-radius: 30px;
+background: transparent;
+border: 1px solid var(--podcast-orange);
+color: var(--podcast-orange);
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+width: 100%;
+}
+.follow-btn:hover {
+background: var(--podcast-orange);
+color: white;
+}
+.follow-btn.following {
+background: var(--success-color);
+border-color: var(--success-color);
+color: white;
+}
+
+/* ===== BITE-SIZED CLIPS GRID ===== */
+.clips-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 20px;
+}
+.clip-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 16px;
+overflow: hidden;
+cursor: pointer;
+transition: all 0.3s ease;
+display: flex;
+flex-direction: column;
+}
+.clip-card:hover {
+transform: translateY(-3px);
+border-color: var(--podcast-coral);
+}
+.clip-header {
+padding: 16px;
+display: flex;
+align-items: center;
+gap: 12px;
+border-bottom: 1px solid var(--card-border);
+}
+.clip-avatar {
+width: 44px;
+height: 44px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-coral));
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.clip-info {
+flex: 1;
+}
+.clip-podcast {
+font-weight: 700;
+font-size: 14px;
+margin-bottom: 4px;
+}
+.clip-episode {
+font-size: 11px;
+color: var(--slate-grey);
+}
+.clip-waveform {
+padding: 16px;
+background: rgba(0,0,0,0.2);
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 3px;
+height: 60px;
+}
+.clip-wave-bar {
+width: 3px;
+background: var(--podcast-coral);
+border-radius: 2px;
+animation: clipWave 1s ease-in-out infinite;
+}
+.clip-wave-bar:nth-child(1) { animation-delay: 0s; height: 15px; }
+.clip-wave-bar:nth-child(2) { animation-delay: 0.15s; height: 25px; }
+.clip-wave-bar:nth-child(3) { animation-delay: 0.3s; height: 35px; }
+.clip-wave-bar:nth-child(4) { animation-delay: 0.45s; height: 28px; }
+.clip-wave-bar:nth-child(5) { animation-delay: 0.6s; height: 20px; }
+.clip-wave-bar:nth-child(6) { animation-delay: 0.75s; height: 32px; }
+.clip-wave-bar:nth-child(7) { animation-delay: 0.9s; height: 18px; }
+@keyframes clipWave {
+0%, 100% { transform: scaleY(0.6); }
+50% { transform: scaleY(1); }
+}
+.clip-footer {
+padding: 12px 16px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-top: 1px solid var(--card-border);
+}
+.clip-duration {
+font-size: 11px;
+color: var(--slate-grey);
+}
+.clip-play {
+padding: 6px 16px;
+border-radius: 20px;
+background: var(--podcast-coral);
+color: white;
+font-size: 11px;
+font-weight: 600;
+border: none;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.clip-play:hover {
+transform: scale(1.05);
+}
+
+/* ===== GLOBAL DIASPORA PODCASTS ===== */
+.diaspora-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+gap: 20px;
+}
+.diaspora-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 16px;
+padding: 16px;
+cursor: pointer;
+transition: all 0.3s ease;
+display: flex;
+align-items: center;
+gap: 14px;
+}
+.diaspora-card:hover {
+transform: translateX(5px);
+border-color: var(--podcast-amber);
+}
+.diaspora-flag {
+font-size: 32px;
+}
+.diaspora-info {
+flex: 1;
+}
+.diaspora-title {
+font-weight: 700;
+font-size: 15px;
+margin-bottom: 4px;
+}
+.diaspora-host {
+font-size: 11px;
+color: var(--podcast-amber);
+margin-bottom: 6px;
+}
+.diaspora-stats {
+font-size: 11px;
+color: var(--slate-grey);
+display: flex;
+gap: 12px;
+}
+
+/* ===== NOW PLAYING BAR (PWA Audio Player) ===== */
+.now-playing-bar {
+position: fixed;
+bottom: 80px;
+left: 0;
+right: 0;
+background: var(--card-bg);
+backdrop-filter: blur(20px);
+border-top: 1px solid var(--card-border);
+border-bottom: 1px solid var(--card-border);
+padding: 12px 20px;
+z-index: 98;
+transform: translateY(100%);
+transition: transform 0.3s ease;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 15px;
+flex-wrap: wrap;
+}
+.now-playing-bar.active {
+transform: translateY(0);
+}
+.now-playing-info {
+display: flex;
+align-items: center;
+gap: 12px;
+flex: 1;
+min-width: 0;
+}
+.now-playing-avatar {
+width: 48px;
+height: 48px;
+border-radius: 12px;
+background: linear-gradient(135deg, var(--bantu-blue), var(--podcast-orange));
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.now-playing-details {
+flex: 1;
+min-width: 0;
+}
+.now-playing-title {
+font-weight: 700;
+font-size: 14px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.now-playing-podcast {
+font-size: 11px;
+color: var(--slate-grey);
+}
+.now-playing-controls {
+display: flex;
+align-items: center;
+gap: 20px;
+}
+.now-playing-btn {
+background: none;
+border: none;
+color: var(--soft-white);
+font-size: 18px;
+cursor: pointer;
+transition: all 0.3s ease;
+width: 36px;
+height: 36px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.now-playing-btn:hover {
+background: rgba(255,255,255,0.1);
+color: var(--podcast-orange);
+}
+.now-playing-progress {
+width: 200px;
+}
+.progress-slider {
+width: 100%;
+height: 4px;
+-webkit-appearance: none;
+background: rgba(255,255,255,0.2);
+border-radius: 2px;
+outline: none;
+}
+.progress-slider::-webkit-slider-thumb {
+-webkit-appearance: none;
+width: 12px;
+height: 12px;
+border-radius: 50%;
+background: var(--podcast-orange);
+cursor: pointer;
+}
+.now-playing-time {
+font-size: 11px;
+color: var(--slate-grey);
+min-width: 80px;
+}
+.now-playing-close {
+background: none;
+border: none;
+color: var(--slate-grey);
+cursor: pointer;
+font-size: 16px;
+}
+.now-playing-close:hover {
+color: var(--error-color);
+}
+
+/* ===== TOAST ===== */
+#toast-container {
+position: fixed;
+bottom: 20px;
+right: 20px;
+z-index: 9999;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+.toast {
+padding: 15px 25px;
+border-radius: 12px;
+color: var(--soft-white);
+font-weight: 500;
+animation: slideIn 0.3s ease;
+max-width: 300px;
+backdrop-filter: blur(10px);
+border: 1px solid var(--card-border);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.toast.success { background: rgba(16, 185, 129, 0.9); }
+.toast.error { background: rgba(239, 68, 68, 0.9); }
+.toast.warning { background: rgba(245, 158, 11, 0.9); }
+@keyframes slideIn {
+from { transform: translateX(100%); opacity: 0; }
+to { transform: translateX(0); opacity: 1; }
+}
+
+/* ===== FOOTER ===== */
+.footer {
+background: var(--card-bg);
+border-top: 1px solid var(--card-border);
+padding: 30px 20px;
+margin-top: 50px;
+backdrop-filter: blur(10px);
+position: relative;
+z-index: 2;
+}
+.footer p { text-align: center; color: var(--slate-grey); margin-bottom: 15px; font-size: 14px; }
+.footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.footer-links a { color: var(--slate-grey); text-decoration: none; font-size: 14px; }
+.footer-links a:hover { color: var(--podcast-orange); }
+
+/* ===== NAVIGATION BUTTON ===== */
+.navigation-button-container {
+position: fixed !important;
+bottom: 1rem !important;
+left: 0 !important;
+right: 0 !important;
+width: 100% !important;
+display: flex !important;
+justify-content: center !important;
+z-index: 999 !important;
+pointer-events: none !important;
+}
+.navigation-button {
+display: flex !important;
+justify-content: space-evenly !important;
+align-items: center !important;
+background: rgba(15, 23, 42, 0.95) !important;
+backdrop-filter: blur(12px) !important;
+border-radius: 60px !important;
+padding: 0.5rem 1rem !important;
+gap: 0.75rem !important;
+pointer-events: auto !important;
+border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+.nav-icon {
+width: 48px;
+height: 48px;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: 20px;
+}
+.nav-icon:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
+
+/* ===== BACK TO TOP ===== */
+.back-to-top {
+position: fixed;
+bottom: 100px;
+right: 30px;
+width: 50px;
+height: 50px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--podcast-orange), var(--podcast-coral));
+border: none;
+color: white;
+font-size: 20px;
+cursor: pointer;
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 100;
+transition: all 0.3s ease;
+}
+.back-to-top:hover { transform: translateY(-5px); }
+
+/* ===== THEME SELECTOR ===== */
+.theme-selector {
+position: fixed;
+top: 80px;
+right: 20px;
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 12px;
+padding: 8px;
+z-index: 1000;
+display: none;
+flex-direction: column;
+gap: 6px;
+backdrop-filter: blur(15px);
+}
+.theme-selector.active { display: flex; }
+.theme-option {
+background: none;
+border: 1px solid transparent;
+color: var(--soft-white);
+padding: 10px 14px;
+border-radius: 8px;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 10px;
+transition: all 0.2s;
+}
+.theme-option:hover { background: rgba(255,255,255,0.1); }
+.theme-option.active { background: rgba(29,78,216,0.2); border-color: var(--bantu-blue); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+.profile-switcher, .rsa-badge { display: none !important; }
+.hero-title { font-size: 24px; }
+.hero-info { padding: 20px; }
+.hero-stats { gap: 16px; font-size: 11px; }
+.hero-buttons { gap: 12px; }
+.hero-btn { padding: 10px 20px; font-size: 13px; }
+.podcasters-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.clips-grid { grid-template-columns: 1fr; }
+.diaspora-grid { grid-template-columns: 1fr; }
+.section-title { font-size: 18px; }
+.now-playing-bar { padding: 10px 16px; }
+.now-playing-progress { width: 120px; }
+.now-playing-time { min-width: 60px; font-size: 10px; }
+.navigation-button { gap: 0.5rem; padding: 0.375rem 0.875rem; }
+.nav-icon { width: 40px; height: 40px; font-size: 16px; }
+}
+
+@media (max-width: 480px) {
+.logo-text { font-size: 0.75rem; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.podcasters-grid { grid-template-columns: 1fr; }
+.filter-chip { padding: 6px 14px; font-size: 12px; }
+.now-playing-controls { gap: 10px; }
+.now-playing-progress { width: 80px; }
+.now-playing-btn { width: 28px; height: 28px; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading-screen">
+<div class="spinner"></div>
+<div id="loading-text">Loading Podcasts...</div>
+</div>
+
+<div class="animated-bg">
+<div class="glow-cycle glow-1"></div>
+<div class="glow-cycle glow-2"></div>
+<div class="glow-cycle glow-3"></div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+<div class="sidebar-header">
+<div class="sidebar-logo" onclick="window.location.href='index.html'">
+<div class="logo-icon">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo" onerror="this.style.display='none'">
+</div>
+<span class="sidebar-logo-text">BANTU</span>
+</div>
+<button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+</div>
+<div class="sidebar-profile" id="sidebar-profile">
+<div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+<div class="sidebar-profile-info">
+<div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+<div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+</div>
+</div>
+<nav class="sidebar-nav">
+<a href="index.html" class="sidebar-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+<a href="explore-screen.html" class="sidebar-nav-item"><i class="fas fa-compass"></i><span>Explore</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+<a href="music.html" class="sidebar-nav-item"><i class="fas fa-music"></i><span>Music</span></a>
+<a href="stem.html" class="sidebar-nav-item"><i class="fas fa-microchip"></i><span>STEM</span></a>
+<a href="culture.html" class="sidebar-nav-item"><i class="fas fa-landmark"></i><span>Culture</span></a>
+<a href="news.html" class="sidebar-nav-item"><i class="fas fa-newspaper"></i><span>News</span></a>
+<a href="sports.html" class="sidebar-nav-item"><i class="fas fa-futbol"></i><span>Sports</span></a>
+<a href="movies.html" class="sidebar-nav-item"><i class="fas fa-film"></i><span>Movies</span></a>
+<a href="documentaries.html" class="sidebar-nav-item"><i class="fas fa-video"></i><span>Documentaries</span></a>
+<a href="podcasts.html" class="sidebar-nav-item active"><i class="fas fa-podcast"></i><span>Podcasts</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+</nav>
+<div class="sidebar-footer">
+<div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
+<div class="sidebar-scale-control">
+<div class="scale-control-row"><span><i class="fas fa-text-height"></i> UI Size</span><div><button class="scale-btn" id="scale-decrease"><i class="fas fa-minus"></i></button><span class="scale-value" id="scale-value">100%</span><button class="scale-btn" id="scale-increase"><i class="fas fa-plus"></i></button></div></div>
+</div>
+</div>
+</div>
+
+<!-- THEME SELECTOR -->
+<div id="theme-selector" class="theme-selector">
+<button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+<button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+<button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+<div class="logo">
+<button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+<div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Logo" onerror="this.style.display='none'"></div>
+<div class="logo-text">BANTU STREAM CONNECT</div>
+</div>
+<div class="header-actions">
+<button id="search-btn" class="icon-btn"><i class="fas fa-search"></i></button>
+<button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display:none;">0</span></button>
+<div class="profile-switcher">
+<button id="current-profile-btn" class="profile-btn"><div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div><span class="profile-name" id="current-profile-name">Guest</span><i class="fas fa-chevron-down"></i></button>
+<div class="profile-dropdown" id="profile-dropdown"><div class="profile-dropdown-header"><h4>Switch Profile</h4></div><div class="profile-list" id="profile-list"></div><div class="profile-dropdown-footer"><button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button></div></div>
+</div>
+<div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
+</div>
+</header>
+
+<!-- HERO SECTION - PODCAST OF THE WEEK -->
+<section class="hero-section">
+<div class="hero-card">
+<div class="hero-image">
+<img src="https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=600&h=500&fit=crop" alt="Podcast of the Week">
+<div class="hero-waveform">
+<div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+<div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+<div class="wave-bar"></div><div class="wave-bar"></div>
+</div>
+</div>
+<div class="hero-info">
+<div class="hero-badge"><i class="fas fa-star"></i> PODCAST OF THE WEEK</div>
+<h2 class="hero-title">The African Narrative</h2>
+<div class="hero-creator">
+<div class="hero-creator-avatar"><i class="fas fa-microphone" style="font-size: 24px;"></i></div>
+<div class="hero-creator-name">Chimamanda Adichie & Co.</div>
+</div>
+<p class="hero-description">Exploring African stories, perspectives, and the future of the continent through powerful conversations with thought leaders, artists, and innovators.</p>
+<div class="hero-stats">
+<span><i class="fas fa-headphones"></i> 1.2M monthly listeners</span>
+<span><i class="fas fa-chart-line"></i> +45% growth</span>
+<span><i class="fas fa-calendar"></i> New episode weekly</span>
+</div>
+<div class="hero-buttons">
+<button class="hero-btn primary" id="play-podcast-btn"><i class="fas fa-play"></i> Latest Episode</button>
+<button class="hero-btn secondary" id="subscribe-podcast-btn"><i class="fas fa-bell"></i> Subscribe</button>
+</div>
+</div>
+</div>
+</section>
+
+<main class="container">
+
+<!-- CATEGORY FILTERS -->
+<div class="category-filters" id="category-filters">
+<button class="filter-chip active" data-category="all">All Podcasts</button>
+<button class="filter-chip" data-category="news">News & Politics</button>
+<button class="filter-chip" data-category="business">Business</button>
+<button class="filter-chip" data-category="tech">Technology</button>
+<button class="filter-chip" data-category="culture">Culture</button>
+<button class="filter-chip" data-category="true-crime">True Crime</button>
+</div>
+
+<!-- TOP PODCASTERS (Sorted by weekly growth) -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-chart-line"></i> Fastest Growing</h2>
+<a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="podcasters-grid" id="podcasters-grid"></div>
+</section>
+
+<!-- BITE-SIZED CLIPS (60-second "Best Of") -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-cut"></i> Bite-sized Clips</h2>
+<a href="#" class="section-link">More Clips <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="clips-grid" id="clips-grid"></div>
+</section>
+
+<!-- GLOBAL DIASPORA PODCASTS -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-globe-americas"></i> Global Diaspora</h2>
+<a href="#" class="section-link">Explore <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="diaspora-grid" id="diaspora-grid"></div>
+</section>
+
+</main>
+
+<footer class="footer">
+<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+<div class="footer-links">
+<a href="privacy-policy.html">Privacy Policy</a>
+<a href="terms-of-service.html">Terms of Service</a>
+<a href="support.html">Support</a>
+</div>
+</footer>
+
+<div class="navigation-button-container">
+<div class="navigation-button">
+<div class="nav-icon" id="nav-home-btn"><i class="fas fa-home"></i></div>
+<div class="nav-icon" id="nav-history-btn"><i class="fas fa-history"></i></div>
+<div class="nav-icon" id="nav-create-btn"><i class="fas fa-plus-circle"></i></div>
+<div class="nav-icon" id="nav-menu-btn"><i class="fas fa-bars"></i></div>
+</div>
+</div>
+
+<!-- NOW PLAYING BAR (PWA Audio Player) -->
+<div id="now-playing-bar" class="now-playing-bar">
+<div class="now-playing-info">
+<div class="now-playing-avatar"><i class="fas fa-podcast" style="font-size: 24px;"></i></div>
+<div class="now-playing-details">
+<div class="now-playing-title" id="now-playing-title">The African Narrative</div>
+<div class="now-playing-podcast" id="now-playing-podcast">Chimamanda Adichie</div>
+</div>
+</div>
+<div class="now-playing-controls">
+<button class="now-playing-btn" id="play-pause-btn"><i class="fas fa-play"></i></button>
+<button class="now-playing-btn" id="stop-playback-btn"><i class="fas fa-stop"></i></button>
+<div class="now-playing-progress">
+<input type="range" class="progress-slider" id="progress-slider" value="0" min="0" max="100">
+</div>
+<div class="now-playing-time" id="now-playing-time">0:00 / 0:00</div>
+<button class="now-playing-close" id="close-now-playing"><i class="fas fa-times"></i></button>
+</div>
+</div>
+
+<button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+<div id="toast-container"></div>
+
+<script>
+// ===== SUPABASE CONFIGURATION =====
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== GLOBAL STATE =====
+let currentUser = null;
+let currentCategory = 'all';
+let following = new Set();
+let isPlaying = false;
+let currentTime = 0;
+let duration = 1800; // 30 minutes in seconds
+let playInterval = null;
+
+// ===== DEMO PODCAST CONTENT =====
+const topPodcasters = [
+    { id: 1, name: "The African Narrative", host: "Chimamanda Adichie", category: "culture", listeners: "1.2M", growth: "+45%", avatar: null, following: false },
+    { id: 2, name: "Tech Africa Daily", host: "Mark Essien", category: "tech", listeners: "892K", growth: "+38%", avatar: null, following: false },
+    { id: 3, name: "Business Unusual", host: "Strive Masiyiwa", category: "business", listeners: "756K", growth: "+32%", avatar: null, following: false },
+    { id: 4, name: "The Truth Teller", host: "John Githongo", category: "news", listeners: "634K", growth: "+28%", avatar: null, following: false },
+    { id: 5, name: "Afropolitan Vibes", host: "Minna Salami", category: "culture", listeners: "567K", growth: "+25%", avatar: null, following: false },
+    { id: 6, name: "Crime Scene Africa", host: "Detective Mkhize", category: "true-crime", listeners: "489K", growth: "+52%", avatar: null, following: false },
+];
+
+const biteClips = [
+    { id: 101, podcast: "The African Narrative", episode: "The Future of African Literature", duration: "58 sec", host: "Chimamanda Adichie" },
+    { id: 102, podcast: "Tech Africa Daily", episode: "AI in Agriculture", duration: "62 sec", host: "Mark Essien" },
+    { id: 103, podcast: "Business Unusual", episode: "Investing in African Startups", duration: "55 sec", host: "Strive Masiyiwa" },
+    { id: 104, podcast: "The Truth Teller", episode: "Election Integrity", duration: "60 sec", host: "John Githongo" },
+];
+
+const diasporaPodcasts = [
+    { id: 201, title: "Afro-Latinx Stories", host: "Elena Mendez", location: "Brazil", flag: "🇧🇷", listeners: "234K" },
+    { id: 202, title: "London to Lagos", host: "Tunde Johnson", location: "UK", flag: "🇬🇧", listeners: "189K" },
+    { id: 203, title: "The African American", host: "Marcus Thompson", location: "USA", flag: "🇺🇸", listeners: "456K" },
+    { id: 204, title: "Caribbean Roots", host: "Simone Clarke", location: "Jamaica", flag: "🇯🇲", listeners: "312K" },
+];
+
+// ===== RENDER FUNCTIONS =====
+function renderPodcasters() {
+    const grid = document.getElementById('podcasters-grid');
+    let filtered = [...topPodcasters];
+    if (currentCategory !== 'all') {
+        filtered = filtered.filter(p => p.category === currentCategory);
+    }
+    
+    grid.innerHTML = filtered.map(podcaster => `
+        <div class="podcaster-card" data-id="${podcaster.id}">
+            <div class="podcaster-avatar">
+                <i class="fas fa-microphone" style="font-size: 40px; color: white;"></i>
+            </div>
+            <h3 class="podcaster-name">${escapeHtml(podcaster.name)}</h3>
+            <div class="podcaster-category">${escapeHtml(podcaster.host)}</div>
+            <div class="podcaster-stats">
+                <span><i class="fas fa-headphones"></i> ${podcaster.listeners}</span>
+                <span><i class="fas fa-chart-line"></i> ${podcaster.growth}</span>
+            </div>
+            <div class="growth-badge">↑ ${podcaster.growth} weekly growth</div>
+            <button class="follow-btn" data-id="${podcaster.id}">${following.has(podcaster.id) ? 'Following' : 'Follow'}</button>
+        </div>
+    `).join('');
+    
+    attachPodcasterHandlers();
+}
+
+function renderClips() {
+    const grid = document.getElementById('clips-grid');
+    grid.innerHTML = biteClips.map(clip => `
+        <div class="clip-card" data-id="${clip.id}">
+            <div class="clip-header">
+                <div class="clip-avatar"><i class="fas fa-podcast" style="font-size: 22px;"></i></div>
+                <div class="clip-info">
+                    <div class="clip-podcast">${escapeHtml(clip.podcast)}</div>
+                    <div class="clip-episode">${escapeHtml(clip.episode)} • ${escapeHtml(clip.host)}</div>
+                </div>
+            </div>
+            <div class="clip-waveform">
+                <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
+                <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
+                <div class="clip-wave-bar"></div>
+            </div>
+            <div class="clip-footer">
+                <span class="clip-duration"><i class="fas fa-clock"></i> ${clip.duration}</span>
+                <button class="clip-play" data-clip='${JSON.stringify(clip)}'><i class="fas fa-play"></i> Play Clip</button>
+            </div>
+        </div>
+    `).join('');
+    
+    attachClipHandlers();
+}
+
+function renderDiaspora() {
+    const grid = document.getElementById('diaspora-grid');
+    grid.innerHTML = diasporaPodcasts.map(podcast => `
+        <div class="diaspora-card" data-id="${podcast.id}">
+            <div class="diaspora-flag">${podcast.flag}</div>
+            <div class="diaspora-info">
+                <div class="diaspora-title">${escapeHtml(podcast.title)}</div>
+                <div class="diaspora-host">with ${escapeHtml(podcast.host)}</div>
+                <div class="diaspora-stats">
+                    <span><i class="fas fa-map-marker-alt"></i> ${podcast.location}</span>
+                    <span><i class="fas fa-headphones"></i> ${podcast.listeners}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    attachDiasporaHandlers();
+}
+
+function attachPodcasterHandlers() {
+    document.querySelectorAll('.follow-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.dataset.id);
+            if (!currentUser) {
+                showToast('Please sign in to follow podcasts', 'warning');
+                window.location.href = `login.html?redirect=podcasts.html`;
+                return;
+            }
+            if (following.has(id)) {
+                following.delete(id);
+                btn.textContent = 'Follow';
+                btn.classList.remove('following');
+                showToast('Unfollowed', 'info');
+            } else {
+                following.add(id);
+                btn.textContent = 'Following';
+                btn.classList.add('following');
+                showToast('Following! You\'ll get new episode notifications', 'success');
+            }
+        });
+    });
+    
+    document.querySelectorAll('.podcaster-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.id;
+            const podcaster = topPodcasters.find(p => p.id == id);
+            if (podcaster) {
+                showToast(`Opening ${podcaster.name}...`, 'info');
+            }
+        });
+    });
+}
+
+function attachClipHandlers() {
+    document.querySelectorAll('.clip-play').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const clip = JSON.parse(btn.dataset.clip);
+            playClip(clip);
+        });
+    });
+}
+
+function attachDiasporaHandlers() {
+    document.querySelectorAll('.diaspora-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.id;
+            showToast(`Opening podcast...`, 'info');
+        });
+    });
+}
+
+// ===== AUDIO PLAYER FUNCTIONS =====
+function playClip(clip) {
+    const nowPlayingBar = document.getElementById('now-playing-bar');
+    const nowPlayingTitle = document.getElementById('now-playing-title');
+    const nowPlayingPodcast = document.getElementById('now-playing-podcast');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const progressSlider = document.getElementById('progress-slider');
+    const timeDisplay = document.getElementById('now-playing-time');
+    
+    // Reset previous playback
+    if (playInterval) clearInterval(playInterval);
+    
+    // Update UI
+    nowPlayingTitle.textContent = clip.episode;
+    nowPlayingPodcast.textContent = clip.podcast;
+    nowPlayingBar.classList.add('active');
+    
+    // Reset state
+    currentTime = 0;
+    isPlaying = true;
+    const clipDuration = parseInt(clip.duration) || 60;
+    duration = clipDuration;
+    
+    updatePlaybackUI();
+    
+    // Start playback simulation
+    playInterval = setInterval(() => {
+        if (isPlaying && currentTime < duration) {
+            currentTime++;
+            updatePlaybackUI();
+            
+            if (currentTime >= duration) {
+                // Clip finished
+                clearInterval(playInterval);
+                isPlaying = false;
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                showToast('Clip finished playing', 'success');
+            }
+        }
+    }, 1000);
+    
+    showToast(`Now playing: ${clip.episode}`, 'success');
+}
+
+function updatePlaybackUI() {
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const progressSlider = document.getElementById('progress-slider');
+    const timeDisplay = document.getElementById('now-playing-time');
+    
+    const percent = (currentTime / duration) * 100;
+    progressSlider.value = percent;
+    
+    const currentMin = Math.floor(currentTime / 60);
+    const currentSec = currentTime % 60;
+    const durationMin = Math.floor(duration / 60);
+    const durationSec = duration % 60;
+    
+    timeDisplay.textContent = `${currentMin}:${currentSec.toString().padStart(2, '0')} / ${durationMin}:${durationSec.toString().padStart(2, '0')}`;
+    playPauseBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+}
+
+function setupAudioPlayer() {
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const stopBtn = document.getElementById('stop-playback-btn');
+    const closeBtn = document.getElementById('close-now-playing');
+    const progressSlider = document.getElementById('progress-slider');
+    
+    playPauseBtn?.addEventListener('click', () => {
+        if (!playInterval) return;
+        isPlaying = !isPlaying;
+        updatePlaybackUI();
+    });
+    
+    stopBtn?.addEventListener('click', () => {
+        if (playInterval) {
+            clearInterval(playInterval);
+            playInterval = null;
+        }
+        isPlaying = false;
+        currentTime = 0;
+        updatePlaybackUI();
+        document.getElementById('now-playing-bar').classList.remove('active');
+    });
+    
+    closeBtn?.addEventListener('click', () => {
+        if (playInterval) {
+            clearInterval(playInterval);
+            playInterval = null;
+        }
+        document.getElementById('now-playing-bar').classList.remove('active');
+    });
+    
+    progressSlider?.addEventListener('input', (e) => {
+        if (!playInterval) return;
+        const percent = parseInt(e.target.value);
+        currentTime = (percent / 100) * duration;
+        updatePlaybackUI();
+    });
+}
+
+// ===== FILTER HANDLERS =====
+function setupFilters() {
+    const filters = document.querySelectorAll('.filter-chip');
+    filters.forEach(filter => {
+        filter.addEventListener('click', () => {
+            filters.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            currentCategory = filter.dataset.category;
+            renderPodcasters();
+            showToast(`Showing ${currentCategory === 'all' ? 'all' : currentCategory} podcasts`, 'success');
+        });
+    });
+}
+
+// ===== HERO BUTTONS =====
+function setupHeroButtons() {
+    document.getElementById('play-podcast-btn')?.addEventListener('click', () => {
+        const clip = { episode: "Latest Episode: The Future of Africa", podcast: "The African Narrative", duration: "45" };
+        playClip(clip);
+    });
+    
+    document.getElementById('subscribe-podcast-btn')?.addEventListener('click', async () => {
+        if (!currentUser) {
+            showToast('Please sign in to subscribe', 'warning');
+            window.location.href = `login.html?redirect=podcasts.html`;
+            return;
+        }
+        showToast('Subscribed to The African Narrative! 🔔', 'success');
+    });
+}
+
+// ===== THEME SYSTEM =====
+function initThemeSystem() {
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('theme-selector')?.classList.toggle('active');
+    });
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            applyTheme(option.dataset.theme);
+            document.getElementById('theme-selector')?.classList.remove('active');
+        });
+    });
+}
+
+function applyTheme(theme) {
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.body.classList.add(`theme-${theme}`);
+    localStorage.setItem('bantu_theme', theme);
+}
+
+// ===== SIDEBAR & NAVIGATION =====
+function setupSidebar() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    
+    menuToggle?.addEventListener('click', () => {
+        sidebarMenu?.classList.add('active');
+        sidebarOverlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    const closeSidebar = () => {
+        sidebarMenu?.classList.remove('active');
+        sidebarOverlay?.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+    sidebarClose?.addEventListener('click', closeSidebar);
+    sidebarOverlay?.addEventListener('click', closeSidebar);
+}
+
+function setupNavigation() {
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+    document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data?.session) window.location.href = 'creator-upload.html';
+        else window.location.href = 'login.html?redirect=creator-upload.html';
+    });
+    document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar-menu')?.classList.add('active');
+        document.getElementById('sidebar-overlay')?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+}
+
+function setupBackToTop() {
+    const btn = document.getElementById('backToTopBtn');
+    window.addEventListener('scroll', () => {
+        btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
+    btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+function setupScaleControls() {
+    const decrease = document.getElementById('scale-decrease');
+    const increase = document.getElementById('scale-increase');
+    const value = document.getElementById('scale-value');
+    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    const apply = () => {
+        document.documentElement.style.setProperty('--ui-scale', scale);
+        localStorage.setItem('bantu_ui_scale', scale);
+        if (value) value.textContent = Math.round(scale * 100) + '%';
+    };
+    decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+    increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+    apply();
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ===== AUTH CHECK =====
+async function checkAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data?.session?.user || null;
+    if (currentUser) {
+        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
+        const nameEl = document.getElementById('current-profile-name');
+        if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+    }
+}
+
+// ===== PWA BACKGROUND PLAY SUPPORT =====
+function setupPWASupport() {
+    // Check if running in standalone mode (PWA)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        console.log('Running as PWA - background audio enabled');
+        // Prevent screen from locking during playback
+        if ('wakeLock' in navigator) {
+            let wakeLock = null;
+            const requestWakeLock = async () => {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake lock acquired');
+                } catch (err) {
+                    console.log('Wake lock failed:', err);
+                }
+            };
+            requestWakeLock();
+        }
+    }
+}
+
+// ===== INITIALIZE =====
+async function initialize() {
+    setupSidebar();
+    setupNavigation();
+    setupBackToTop();
+    setupScaleControls();
+    initThemeSystem();
+    setupFilters();
+    setupHeroButtons();
+    setupAudioPlayer();
+    setupPWASupport();
+    await checkAuth();
+    
+    renderPodcasters();
+    renderClips();
+    renderDiaspora();
+    
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+}
+
+initialize();
+</script>
+</body>
+</html>
