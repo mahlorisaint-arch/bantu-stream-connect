@@ -324,7 +324,6 @@ margin-bottom: 40px;
 border-radius: 0;
 overflow: hidden;
 }
-
 .wave-video {
 position: absolute;
 top: 0;
@@ -334,7 +333,6 @@ height: 100%;
 object-fit: cover;
 z-index: 1;
 }
-
 .hero-overlay {
 position: absolute;
 top: 0;
@@ -344,7 +342,6 @@ height: 100%;
 background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
 z-index: 2;
 }
-
 .hero-content {
 position: absolute;
 bottom: 80px;
@@ -354,7 +351,6 @@ padding: 0 10%;
 z-index: 3;
 color: white;
 }
-
 .hero-badge {
 display: inline-block;
 background: rgba(245, 158, 11, 0.9);
@@ -366,7 +362,6 @@ font-weight: 700;
 margin-bottom: 16px;
 letter-spacing: 1px;
 }
-
 .hero-title {
 font-size: 48px;
 font-weight: 800;
@@ -374,7 +369,6 @@ margin-bottom: 16px;
 text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 max-width: 600px;
 }
-
 .hero-artist {
 font-size: 18px;
 margin-bottom: 20px;
@@ -384,32 +378,27 @@ align-items: center;
 gap: 12px;
 flex-wrap: wrap;
 }
-
 .hero-artist img {
 width: 40px;
 height: 40px;
 border-radius: 50%;
 border: 2px solid var(--warm-gold);
 }
-
 .hero-stats {
 display: flex;
 gap: 24px;
 margin-bottom: 24px;
 font-size: 14px;
 }
-
 .hero-stats span i {
 margin-right: 6px;
 color: var(--warm-gold);
 }
-
 .hero-buttons {
 display: flex;
 gap: 16px;
 flex-wrap: wrap;
 }
-
 .hero-btn {
 padding: 12px 28px;
 border-radius: 40px;
@@ -422,29 +411,24 @@ display: flex;
 align-items: center;
 gap: 10px;
 }
-
 .hero-btn.primary {
 background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
 color: white;
 }
-
 .hero-btn.primary:hover {
 transform: translateY(-3px);
 box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
 }
-
 .hero-btn.secondary {
 background: rgba(255,255,255,0.2);
 backdrop-filter: blur(10px);
 color: white;
 border: 1px solid rgba(255,255,255,0.3);
 }
-
 .hero-btn.secondary:hover {
 background: rgba(255,255,255,0.3);
 transform: translateY(-3px);
 }
-
 .mute-toggle {
 position: absolute;
 bottom: 20px;
@@ -463,7 +447,6 @@ align-items: center;
 justify-content: center;
 transition: all 0.3s ease;
 }
-
 .mute-toggle:hover {
 background: var(--warm-gold);
 color: var(--deep-black);
@@ -473,10 +456,7 @@ color: var(--deep-black);
 .container { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; position: relative; z-index: 2; }
 
 /* ===== SECTION STYLES ===== */
-.section {
-margin-bottom: 50px;
-}
-
+.section { margin-bottom: 50px; }
 .section-header {
 display: flex;
 justify-content: space-between;
@@ -485,7 +465,6 @@ margin-bottom: 24px;
 flex-wrap: wrap;
 gap: 12px;
 }
-
 .section-title {
 font-family: 'Orbitron', sans-serif;
 font-size: 24px;
@@ -498,20 +477,8 @@ display: flex;
 align-items: center;
 gap: 10px;
 }
-
-.section-link {
-color: var(--warm-gold);
-text-decoration: none;
-font-size: 14px;
-display: flex;
-align-items: center;
-gap: 5px;
-transition: gap 0.3s ease;
-}
-
+.section-link { color: var(--warm-gold); text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 5px; transition: gap 0.3s ease; }
 .section-link:hover { gap: 10px; }
-
-/* ===== CHARTS - TOP 20 ===== */
 .chart-container {
 background: var(--card-bg);
 border: 1px solid var(--card-border);
@@ -519,7 +486,6 @@ border-radius: 24px;
 backdrop-filter: blur(10px);
 overflow: hidden;
 }
-
 .chart-header {
 display: grid;
 grid-template-columns: 60px 1fr 100px 80px;
@@ -532,7 +498,6 @@ color: var(--slate-grey);
 text-transform: uppercase;
 letter-spacing: 0.5px;
 }
-
 .chart-item {
 display: grid;
 grid-template-columns: 60px 1fr 100px 80px;
@@ -542,12 +507,10 @@ cursor: pointer;
 transition: all 0.3s ease;
 align-items: center;
 }
-
 .chart-item:hover {
 background: rgba(245, 158, 11, 0.1);
 transform: translateX(5px);
 }
-
 .chart-rank {
 font-size: 24px;
 font-weight: 800;
@@ -555,13 +518,11 @@ color: var(--warm-gold);
 opacity: 0.6;
 font-family: 'Orbitron', sans-serif;
 }
-
 .chart-info {
 display: flex;
 align-items: center;
 gap: 15px;
 }
-
 .chart-thumb {
 width: 50px;
 height: 50px;
@@ -569,32 +530,25 @@ border-radius: 8px;
 object-fit: cover;
 background: var(--deep-navy);
 }
-
 .chart-details h4 {
 font-size: 16px;
 font-weight: 600;
 margin-bottom: 4px;
 color: var(--soft-white);
 }
-
 .chart-details p {
 font-size: 12px;
 color: var(--slate-grey);
 }
-
 .chart-stats {
 font-size: 14px;
 color: var(--warm-gold);
 font-weight: 600;
 }
-
-.chart-trend {
-font-size: 12px;
-color: var(--success-color);
-display: flex;
-align-items: center;
-gap: 4px;
-}
+.chart-trend { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.chart-trend.trend-up { color: var(--success-color); }
+.chart-trend.trend-down { color: var(--error-color); }
+.chart-trend.trend-peak { color: var(--warm-gold); }
 
 /* ===== HORIZONTAL SCROLL CARDS ===== */
 .scroll-container {
@@ -603,29 +557,15 @@ scrollbar-width: thin;
 -webkit-overflow-scrolling: touch;
 padding-bottom: 12px;
 }
-
-.scroll-container::-webkit-scrollbar {
-height: 4px;
-}
-
-.scroll-container::-webkit-scrollbar-track {
-background: var(--card-border);
-border-radius: 4px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-background: var(--warm-gold);
-border-radius: 4px;
-}
-
+.scroll-container::-webkit-scrollbar { height: 4px; }
+.scroll-container::-webkit-scrollbar-track { background: var(--card-border); border-radius: 4px; }
+.scroll-container::-webkit-scrollbar-thumb { background: var(--warm-gold); border-radius: 4px; }
 .horizontal-scroll {
 display: flex;
 gap: 20px;
 width: max-content;
 padding: 4px;
 }
-
-/* Regional Card */
 .regional-card {
 width: 280px;
 flex-shrink: 0;
@@ -636,30 +576,23 @@ overflow: hidden;
 cursor: pointer;
 transition: all 0.3s ease;
 }
-
 .regional-card:hover {
 transform: translateY(-8px);
 border-color: var(--warm-gold);
 box-shadow: 0 20px 30px rgba(0,0,0,0.3);
 }
-
 .regional-thumb {
 position: relative;
 height: 160px;
 overflow: hidden;
 }
-
 .regional-thumb img {
 width: 100%;
 height: 100%;
 object-fit: cover;
 transition: transform 0.3s ease;
 }
-
-.regional-card:hover .regional-thumb img {
-transform: scale(1.05);
-}
-
+.regional-card:hover .regional-thumb img { transform: scale(1.05); }
 .regional-overlay {
 position: absolute;
 top: 0;
@@ -668,7 +601,6 @@ right: 0;
 bottom: 0;
 background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.7) 100%);
 }
-
 .regional-badge {
 position: absolute;
 top: 12px;
@@ -680,32 +612,26 @@ border-radius: 20px;
 font-size: 11px;
 font-weight: 700;
 }
-
 .regional-info {
 padding: 16px;
 }
-
 .regional-title {
 font-size: 16px;
 font-weight: 700;
 margin-bottom: 6px;
 color: var(--soft-white);
 }
-
 .regional-artist {
 font-size: 13px;
 color: var(--slate-grey);
 margin-bottom: 8px;
 }
-
 .regional-stats {
 font-size: 12px;
 color: var(--warm-gold);
 display: flex;
 gap: 12px;
 }
-
-/* Live Card */
 .live-card {
 width: 320px;
 flex-shrink: 0;
@@ -717,12 +643,10 @@ cursor: pointer;
 transition: all 0.3s ease;
 position: relative;
 }
-
 .live-card:hover {
 transform: translateY(-8px);
 border-color: var(--warm-gold);
 }
-
 .live-badge {
 position: absolute;
 top: 12px;
@@ -737,7 +661,6 @@ display: flex;
 align-items: center;
 gap: 6px;
 }
-
 .live-badge::before {
 content: '';
 width: 8px;
@@ -746,34 +669,19 @@ background: white;
 border-radius: 50%;
 animation: pulse 1.5s infinite;
 }
-
 @keyframes pulse {
 0%, 100% { opacity: 1; }
 50% { opacity: 0.4; }
 }
-
-.live-thumb {
-height: 180px;
-overflow: hidden;
-}
-
-.live-thumb img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-
-.live-info {
-padding: 16px;
-}
-
+.live-thumb { height: 180px; overflow: hidden; }
+.live-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.live-info { padding: 16px; }
 .live-title {
 font-size: 16px;
 font-weight: 700;
 margin-bottom: 6px;
 color: var(--soft-white);
 }
-
 .live-venue {
 font-size: 13px;
 color: var(--slate-grey);
@@ -782,15 +690,12 @@ display: flex;
 align-items: center;
 gap: 6px;
 }
-
 .live-stats {
 font-size: 12px;
 color: var(--warm-gold);
 display: flex;
 gap: 12px;
 }
-
-/* ===== FILTER BAR ===== */
 .filter-bar {
 display: flex;
 gap: 12px;
@@ -799,7 +704,6 @@ margin-bottom: 24px;
 padding: 16px 0;
 border-bottom: 1px solid var(--card-border);
 }
-
 .filter-chip {
 padding: 8px 20px;
 border-radius: 30px;
@@ -811,27 +715,22 @@ font-weight: 500;
 cursor: pointer;
 transition: all 0.3s ease;
 }
-
 .filter-chip:hover {
 background: rgba(245, 158, 11, 0.1);
 border-color: var(--warm-gold);
 color: var(--warm-gold);
 }
-
 .filter-chip.active {
 background: var(--warm-gold);
 border-color: var(--warm-gold);
 color: var(--deep-black);
 }
-
-/* ===== SORTING OPTIONS ===== */
 .sorting-options {
 display: flex;
 gap: 8px;
 margin-bottom: 20px;
 justify-content: flex-end;
 }
-
 .sort-btn {
 padding: 6px 14px;
 border-radius: 20px;
@@ -842,20 +741,16 @@ font-size: 12px;
 cursor: pointer;
 transition: all 0.3s ease;
 }
-
 .sort-btn:hover, .sort-btn.active {
 background: var(--warm-gold);
 border-color: var(--warm-gold);
 color: var(--deep-black);
 }
-
-/* ===== CONTENT GRID ===== */
 .content-grid {
 display: grid;
 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 gap: 20px;
 }
-
 .content-card {
 background: var(--card-bg);
 border: 1px solid var(--card-border);
@@ -865,30 +760,23 @@ transition: all 0.3s ease;
 cursor: pointer;
 backdrop-filter: blur(10px);
 }
-
 .content-card:hover {
 transform: translateY(-8px);
 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 border-color: rgba(245, 158, 11, 0.3);
 }
-
 .card-thumbnail {
 position: relative;
 height: 140px;
 overflow: hidden;
 }
-
 .card-thumbnail img {
 width: 100%;
 height: 100%;
 object-fit: cover;
 transition: transform 0.3s ease;
 }
-
-.content-card:hover .card-thumbnail img {
-transform: scale(1.05);
-}
-
+.content-card:hover .card-thumbnail img { transform: scale(1.05); }
 .play-overlay {
 position: absolute;
 top: 0;
@@ -902,9 +790,7 @@ justify-content: center;
 opacity: 0;
 transition: opacity 0.3s ease;
 }
-
 .content-card:hover .play-overlay { opacity: 1; }
-
 .play-icon {
 width: 50px;
 height: 50px;
@@ -918,9 +804,7 @@ font-size: 1.5rem;
 transform: scale(0.8);
 transition: all 0.3s ease;
 }
-
 .content-card:hover .play-icon { transform: scale(1); }
-
 .card-badges {
 position: absolute;
 top: 10px;
@@ -929,7 +813,6 @@ display: flex;
 gap: 8px;
 z-index: 2;
 }
-
 .badge-trending {
 background: rgba(245, 158, 11, 0.9);
 color: var(--deep-black);
@@ -941,7 +824,6 @@ display: flex;
 align-items: center;
 gap: 4px;
 }
-
 .badge-new {
 background: rgba(29, 78, 216, 0.9);
 color: white;
@@ -950,11 +832,9 @@ border-radius: 12px;
 font-size: 10px;
 font-weight: 700;
 }
-
 .card-content {
 padding: 15px;
 }
-
 .card-title {
 font-size: 14px;
 font-weight: 600;
@@ -966,7 +846,6 @@ overflow: hidden;
 color: var(--soft-white);
 line-height: 1.4;
 }
-
 .creator-info-small {
 display: flex;
 align-items: center;
@@ -974,7 +853,6 @@ gap: 8px;
 margin-bottom: 8px;
 font-size: 12px;
 }
-
 .creator-avatar-small {
 width: 24px;
 height: 24px;
@@ -983,7 +861,6 @@ overflow: hidden;
 background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
 flex-shrink: 0;
 }
-
 .creator-name-small {
 color: var(--soft-white);
 font-weight: 500;
@@ -991,19 +868,15 @@ white-space: nowrap;
 overflow: hidden;
 text-overflow: ellipsis;
 }
-
 .card-meta {
 display: flex;
 gap: 12px;
 font-size: 11px;
 color: var(--slate-grey);
 }
-
 .card-meta i { margin-right: 3px; }
 .card-meta i.fa-eye { color: var(--warm-gold); }
 .card-meta i.fa-heart { color: #ef4444; }
-
-/* ===== EMPTY STATE ===== */
 .empty-state {
 text-align: center;
 padding: 60px 20px;
@@ -1012,10 +885,7 @@ background: var(--card-bg);
 border: 1px solid var(--card-border);
 border-radius: 16px;
 }
-
 .empty-icon { font-size: 48px; margin-bottom: 20px; color: var(--warm-gold); opacity: 0.5; }
-
-/* ===== TOAST ===== */
 #toast-container {
 position: fixed;
 bottom: 20px;
@@ -1045,8 +915,6 @@ gap: 10px;
 from { transform: translateX(100%); opacity: 0; }
 to { transform: translateX(0); opacity: 1; }
 }
-
-/* ===== FOOTER ===== */
 .footer {
 background: var(--card-bg);
 border-top: 1px solid var(--card-border);
@@ -1060,8 +928,6 @@ z-index: 2;
 .footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
 .footer-links a { color: var(--slate-grey); text-decoration: none; font-size: 14px; }
 .footer-links a:hover { color: var(--warm-gold); }
-
-/* ===== NAVIGATION BUTTON ===== */
 .navigation-button-container {
 position: fixed !important;
 bottom: 1rem !important;
@@ -1100,8 +966,6 @@ transition: all 0.3s ease;
 font-size: 20px;
 }
 .nav-icon:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
-
-/* ===== BACK TO TOP ===== */
 .back-to-top {
 position: fixed;
 bottom: 100px;
@@ -1121,8 +985,6 @@ z-index: 100;
 transition: all 0.3s ease;
 }
 .back-to-top:hover { transform: translateY(-5px); }
-
-/* ===== THEME SELECTOR ===== */
 .theme-selector {
 position: fixed;
 top: 80px;
@@ -1152,8 +1014,6 @@ transition: all 0.2s;
 }
 .theme-option:hover { background: rgba(255,255,255,0.1); }
 .theme-option.active { background: rgba(29,78,216,0.2); border-color: var(--bantu-blue); }
-
-/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
 .profile-switcher, .rsa-badge { display: none !important; }
 .hero-title { font-size: 28px; }
@@ -1171,7 +1031,6 @@ transition: all 0.2s;
 .navigation-button { gap: 0.5rem; padding: 0.375rem 0.875rem; }
 .nav-icon { width: 40px; height: 40px; font-size: 16px; }
 }
-
 @media (max-width: 480px) {
 .logo-text { font-size: 0.75rem; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hero-section { height: 60vh; min-height: 400px; }
@@ -1285,16 +1144,9 @@ transition: all 0.2s;
 
 <main class="container">
 
-<!-- FILTER BAR -->
+<!-- FILTER BAR - DYNAMIC GENRES FROM SUPABASE -->
 <div class="filter-bar" id="filter-bar">
 <button class="filter-chip active" data-genre="all">All Music</button>
-<button class="filter-chip" data-genre="Afrobeats">Afrobeats</button>
-<button class="filter-chip" data-genre="Amapiano">Amapiano</button>
-<button class="filter-chip" data-genre="Gengetone">Gengetone</button>
-<button class="filter-chip" data-genre="Gqom">Gqom</button>
-<button class="filter-chip" data-genre="Bongo Flava">Bongo Flava</button>
-<button class="filter-chip" data-genre="Hip Hop">Hip Hop</button>
-<button class="filter-chip" data-genre="R&B">R&B</button>
 </div>
 
 <!-- THE CHART - TOP 20 -->
@@ -1379,8 +1231,6 @@ transition: all 0.2s;
 // ===== SUPABASE CONFIGURATION =====
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-
-// Create supabase client - only once
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
@@ -1394,608 +1244,265 @@ let currentHeroContent = null;
 
 // ===== HELPER FUNCTIONS =====
 function showToast(message, type = 'info') {
-const container = document.getElementById('toast-container');
-if (!container) return;
-const toast = document.createElement('div');
-toast.className = `toast ${type}`;
-const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-container.appendChild(toast);
-setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
+function formatNumber(num) { if (!num || num === 0) return '0'; if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; if (num >= 1000) return (num/1000).toFixed(1) + 'K'; return num.toString(); }
+function truncateText(text, maxLength) { if (!text) return ''; return text.length <= maxLength ? text : text.substring(0, maxLength) + '...'; }
+function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+function formatDuration(seconds) { if (!seconds) return '0:00'; const mins = Math.floor(seconds / 60); const secs = seconds % 60; return `${mins}:${secs.toString().padStart(2, '0')}`; }
+function fixMediaUrl(url) { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('data:')) return url; return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`; }
 
-function formatNumber(num) {
-if (!num || num === 0) return '0';
-if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
-if (num >= 1000) return (num/1000).toFixed(1) + 'K';
-return num.toString();
-}
-
-function truncateText(text, maxLength) {
-if (!text) return '';
-return text.length <= maxLength ? text : text.substring(0, maxLength) + '...';
-}
-
-function escapeHtml(text) {
-if (!text) return '';
-const div = document.createElement('div');
-div.textContent = text;
-return div.innerHTML;
-}
-
-function formatDuration(seconds) {
-if (!seconds) return '0:00';
-const mins = Math.floor(seconds / 60);
-const secs = seconds % 60;
-return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function fixMediaUrl(url) {
-if (!url) return '';
-if (url.startsWith('http')) return url;
-if (url.startsWith('data:')) return url;
-return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
-}
-
-// ===== LOAD MUSIC CONTENT =====
+// ===== LOAD MUSIC CONTENT WITH NEW GENRE SYSTEM =====
 async function loadMusicContent() {
-try {
-const loadingText = document.getElementById('loading-text');
-if (loadingText) loadingText.textContent = 'Loading music catalog...';
-
-// Query music content with user profiles
-const { data, error } = await supabaseClient
-.from('Content')
-.select(`
-id, title, description, thumbnail_url, file_url, views_count, likes_count, 
-comments_count, shares_count, duration, created_at, user_id, genre, 
-is_channel_trailer, is_pinned, tags,
-user_profiles!user_id(id, full_name, username, avatar_url)
-`)
-.eq('status', 'published')
-.in('genre', ['Music', 'Afrobeats', 'Amapiano', 'Gengetone', 'Gqom', 'Bongo Flava', 'Hip Hop', 'R&B'])
-.order('created_at', { ascending: false })
-.limit(100);
-
-if (error) {
-console.error('Supabase error:', error);
-throw error;
+    try {
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) loadingText.textContent = 'Loading music catalog...';
+        const { data: contentData, error: contentError } = await supabaseClient
+            .from('Content')
+            .select(`
+                id, title, description, thumbnail_url, file_url, views_count, likes_count,
+                comments_count, shares_count, duration, created_at, user_id, genre,
+                language_code, city, region_code, tempo, is_explicit,
+                user_profiles!user_id ( id, full_name, username, avatar_url ),
+                content_genres!inner ( is_primary, genres!inner ( id, name, slug, parent_genre_id ) ),
+                content_tags ( tags!inner ( id, name, tag_type ) )
+            `)
+            .eq('status', 'published')
+            .eq('content_genres.is_primary', true)
+            .order('created_at', { ascending: false })
+            .limit(200);
+        if (contentError) throw contentError;
+        if (!contentData || contentData.length === 0) { showDemoContent(); return; }
+        musicContent = contentData.map(item => {
+            const primaryGenre = item.content_genres?.[0]?.genres || null;
+            const genreName = primaryGenre?.name || item.genre || 'Music';
+            const genreSlug = primaryGenre?.slug || genreName.toLowerCase().replace(/\s+/g, '-');
+            const parentGenre = primaryGenre?.parent_genre_id || null;
+            const tags = item.content_tags || [];
+            const moodTags = tags.filter(t => t.tags?.tag_type === 'mood').map(t => t.tags.name);
+            const languageTags = tags.filter(t => t.tags?.tag_type === 'language').map(t => t.tags.name);
+            const cityTags = tags.filter(t => t.tags?.tag_type === 'city').map(t => t.tags.name);
+            return {
+                id: item.id, title: item.title, description: item.description,
+                thumbnail_url: item.thumbnail_url, file_url: item.file_url,
+                views_count: item.views_count || 0, likes_count: item.likes_count || 0,
+                comments_count: item.comments_count || 0, shares_count: item.shares_count || 0,
+                duration: item.duration, created_at: item.created_at, user_id: item.user_id,
+                genre: genreName, genre_slug: genreSlug, parent_genre: parentGenre,
+                language_code: item.language_code, city: item.city, region_code: item.region_code,
+                tempo: item.tempo, is_explicit: item.is_explicit, mood_tags: moodTags,
+                language_tags: languageTags, city_tags: cityTags, user_profiles: item.user_profiles,
+                velocityScore: 0, trendingScore: 0, momentum: null
+            };
+        });
+        console.log(`✅ Loaded ${musicContent.length} music items with genre taxonomy`);
+        await loadTrendingMetrics();
+        musicContent.forEach(item => {
+            const momentum = momentumMap.get(item.id);
+            if (momentum) {
+                item.momentum = momentum;
+                item.velocityScore = momentum.velocity_score || (momentum.final_score * 100) || (item.views_count * 0.4 + item.shares_count * 0.6);
+                item.trendingScore = momentum.final_score || momentum.velocity_score || 0;
+            } else {
+                item.velocityScore = (item.views_count || 0) * 0.4 + (item.shares_count || 0) * 0.6;
+                item.trendingScore = item.velocityScore / 1000;
+            }
+        });
+        organizeAndDisplay();
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
+    } catch (error) {
+        console.error('Error loading music:', error);
+        showToast('Failed to load music content. Please refresh.', 'error');
+        showDemoContent();
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
+    }
 }
-
-musicContent = data || [];
-console.log(`✅ Loaded ${musicContent.length} music items`);
-
-if (musicContent.length === 0) {
-// Show demo/fallback content
-showDemoContent();
-} else {
-// Load trending metrics
-await loadTrendingMetrics();
-// Organize and display
-organizeAndDisplay();
-}
-
-const loading = document.getElementById('loading');
-if (loading) loading.style.display = 'none';
-
-} catch (error) {
-console.error('Error loading music:', error);
-showToast('Failed to load music content. Please refresh.', 'error');
-// Show demo content as fallback
-showDemoContent();
-const loading = document.getElementById('loading');
-if (loading) loading.style.display = 'none';
-}
-}
-
-function showDemoContent() {
-// Create demo music data for testing
-musicContent = [
-{ id: 1, title: "African Giant", genre: "Afrobeats", views_count: 1250000, likes_count: 89000, shares_count: 34000, duration: 210, created_at: new Date().toISOString(), user_profiles: { full_name: "Burna Boy", username: "burnaboy", avatar_url: null }, thumbnail_url: null, velocityScore: 125000 },
-{ id: 2, title: "Amapiano Anthem", genre: "Amapiano", views_count: 980000, likes_count: 67000, shares_count: 28000, duration: 195, created_at: new Date().toISOString(), user_profiles: { full_name: "DJ Maphorisa", username: "djmaphorisa", avatar_url: null }, thumbnail_url: null, velocityScore: 98000 },
-{ id: 3, title: "Gengetone Vibes", genre: "Gengetone", views_count: 756000, likes_count: 54000, shares_count: 22000, duration: 185, created_at: new Date().toISOString(), user_profiles: { full_name: "Ethic Entertainment", username: "ethic", avatar_url: null }, thumbnail_url: null, velocityScore: 75600 },
-{ id: 4, title: "Gqom Nation", genre: "Gqom", views_count: 432000, likes_count: 31000, shares_count: 15000, duration: 240, created_at: new Date().toISOString(), user_profiles: { full_name: "DJ Tira", username: "djtira", avatar_url: null }, thumbnail_url: null, velocityScore: 43200 },
-{ id: 5, title: "Bongo Flava", genre: "Bongo Flava", views_count: 567000, likes_count: 42000, shares_count: 18000, duration: 200, created_at: new Date().toISOString(), user_profiles: { full_name: "Diamond Platnumz", username: "diamond", avatar_url: null }, thumbnail_url: null, velocityScore: 56700 },
-];
-updateHeroWithDemo();
-updateChartWithDemo();
-updateRegionalWithDemo();
-updateLiveWithDemo();
-updateMoreMusicWithDemo();
-}
-
-function updateHeroWithDemo() {
-const topItem = musicContent[0];
-currentHeroContent = topItem;
-document.getElementById('hero-title').textContent = topItem.title;
-document.getElementById('hero-artist').innerHTML = `<i class="fas fa-user-circle"></i><span>${topItem.user_profiles.full_name}</span>`;
-document.getElementById('hero-stats').innerHTML = `
-<span><i class="fas fa-eye"></i> ${formatNumber(topItem.views_count)} views</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(topItem.likes_count)} likes</span>
-`;
-}
-
-function updateChartWithDemo() {
-const chartList = document.getElementById('chart-list');
-chartList.innerHTML = musicContent.slice(0, 10).map((item, index) => `
-<div class="chart-item" data-content-id="${item.id}">
-<div class="chart-rank">#${index + 1}</div>
-<div class="chart-info">
-<img class="chart-thumb" src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop" alt="${escapeHtml(item.title)}">
-<div class="chart-details">
-<h4>${truncateText(escapeHtml(item.title), 35)}</h4>
-<p>${escapeHtml(item.user_profiles.full_name)}</p>
-</div>
-</div>
-<div class="chart-stats">${formatNumber(item.velocityScore)}</div>
-<div class="chart-trend">↑ Trending</div>
-</div>
-`).join('');
-attachChartClickHandlers();
-}
-
-function updateRegionalWithDemo() {
-const container = document.getElementById('regional-fusion-list');
-container.innerHTML = musicContent.slice(0, 6).map(item => `
-<div class="regional-card" data-content-id="${item.id}">
-<div class="regional-thumb">
-<img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop" alt="${escapeHtml(item.title)}">
-<div class="regional-overlay"></div>
-<div class="regional-badge">🇿🇦 ${item.genre}</div>
-</div>
-<div class="regional-info">
-<div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-<div class="regional-artist">${escapeHtml(item.user_profiles.full_name)}</div>
-<div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
-</div>
-</div>
-`).join('');
-attachRegionalClickHandlers();
-}
-
-function updateLiveWithDemo() {
-const container = document.getElementById('live-from-list');
-const cities = ['Lagos', 'Nairobi', 'Johannesburg'];
-container.innerHTML = musicContent.slice(0, 6).map((item, idx) => `
-<div class="live-card" data-content-id="${item.id}">
-<div class="live-badge"><i class="fas fa-circle"></i> LIVE</div>
-<div class="live-thumb">
-<img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop" alt="${escapeHtml(item.title)}">
-</div>
-<div class="live-info">
-<div class="live-title">${truncateText(escapeHtml(item.title), 25)}</div>
-<div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${cities[idx % 3]}</div>
-<div class="live-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span></div>
-</div>
-</div>
-`).join('');
-attachLiveClickHandlers();
-}
-
-function updateMoreMusicWithDemo() {
-const grid = document.getElementById('more-music-grid');
-grid.innerHTML = musicContent.slice(0, 12).map(item => `
-<div class="content-card" data-content-id="${item.id}">
-<div class="card-thumbnail">
-<img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop" alt="${escapeHtml(item.title)}">
-<div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-</div>
-<div class="card-content">
-<h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3>
-<div class="creator-info-small">
-<div class="creator-avatar-small"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${(item.user_profiles.full_name || 'A')[0]}</div></div>
-<div class="creator-name-small">${escapeHtml(item.user_profiles.full_name)}</div>
-</div>
-<div class="card-meta">
-<span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-</div>
-</div>
-</div>
-`).join('');
-attachContentClickHandlers();
-}
-
 async function loadTrendingMetrics() {
-try {
-const { data: trendingData } = await supabaseClient
-.from('mv_trending_scores')
-.select('content_id, trending_score, global_rank')
-.limit(50);
-
-if (trendingData) {
-trendingData.forEach(ts => trendingScores.set(ts.content_id, ts.trending_score));
+    try {
+        const { data: momentumData, error: momentumError } = await supabaseClient
+            .from('content_metrics_realtime')
+            .select('content_id, final_score, velocity_score, momentum_score, trend_label, trend_stage, views_last_24h, likes_last_1h')
+            .limit(100);
+        if (momentumError) throw momentumError;
+        if (momentumData) {
+            momentumData.forEach(mm => {
+                momentumMap.set(mm.content_id, {
+                    final_score: mm.final_score || 0, velocity_score: mm.velocity_score || 0,
+                    momentum_score: mm.momentum_score || 0, trend_label: mm.trend_label,
+                    trend_stage: mm.trend_stage, views_last_24h: mm.views_last_24h || 0,
+                    likes_last_1h: mm.likes_last_1h || 0
+                });
+                trendingScores.set(mm.content_id, mm.final_score || mm.velocity_score || 0);
+            });
+        }
+        console.log(`✅ Loaded metrics for ${momentumMap.size} items`);
+    } catch (e) { console.log('Metrics loading optional:', e); }
 }
-
-const { data: momentumData } = await supabaseClient
-.from('content_metrics_realtime')
-.select('content_id, final_score, velocity_score, momentum_score, trend_label')
-.limit(50);
-
-if (momentumData) {
-momentumData.forEach(mm => momentumMap.set(mm.content_id, mm));
+async function setupFilters() {
+    try {
+        const { data: genreData, error: genreError } = await supabaseClient
+            .from('genres')
+            .select('name, slug')
+            .eq('is_active', true)
+            .is('parent_genre_id', null)
+            .order('display_order', { ascending: true });
+        if (!genreError && genreData && genreData.length > 0) {
+            const filterBar = document.getElementById('filter-bar');
+            if (filterBar) {
+                let chipsHtml = `<button class="filter-chip active" data-genre="all">All Music</button>`;
+                genreData.forEach(genre => { chipsHtml += `<button class="filter-chip" data-genre="${escapeHtml(genre.slug)}">${escapeHtml(genre.name)}</button>`; });
+                filterBar.innerHTML = chipsHtml;
+            }
+        }
+    } catch (e) { console.log('Using fallback genres'); }
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            const genreValue = chip.dataset.genre;
+            currentGenre = genreValue === 'all' ? 'all' : genreValue;
+            updateMoreMusic();
+        });
+    });
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSort = btn.dataset.sort;
+            updateChart();
+        });
+    });
 }
-} catch (e) {
-console.log('Metrics loading optional:', e);
-}
-}
-
-function organizeAndDisplay() {
-// Add scores
-musicContent.forEach(item => {
-item.trendingScore = trendingScores.get(item.id) || 0;
-item.momentum = momentumMap.get(item.id) || { velocity_score: 0 };
-item.velocityScore = item.momentum.velocity_score || (item.views_count || 0) * 0.4 + (item.shares_count || 0) * 0.6;
-});
-
-updateHeroSection();
-updateChart();
-updateRegionalFusion();
-updateLiveFrom();
-updateMoreMusic();
-}
-
-function updateHeroSection() {
-if (musicContent.length === 0) return;
-const topTrending = [...musicContent].sort((a, b) => b.velocityScore - a.velocityScore)[0];
-currentHeroContent = topTrending;
-
-document.getElementById('hero-title').textContent = truncateText(topTrending.title, 50);
-const creatorName = topTrending.user_profiles?.full_name || topTrending.user_profiles?.username || 'Unknown Artist';
-const avatarUrl = topTrending.user_profiles?.avatar_url ? fixMediaUrl(topTrending.user_profiles.avatar_url) : null;
-document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
-document.getElementById('hero-stats').innerHTML = `
-<span><i class="fas fa-eye"></i> ${formatNumber(topTrending.views_count)} views</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(topTrending.likes_count)} likes</span>
-<span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(topTrending.velocityScore))}</span>
-`;
-
-if (topTrending.file_url) {
-const videoEl = document.getElementById('wave-video');
-const source = videoEl.querySelector('source');
-if (source) source.src = fixMediaUrl(topTrending.file_url);
-videoEl.load();
-videoEl.play().catch(e => console.log('Autoplay prevented'));
-}
-}
-
-function updateChart() {
-const chartList = document.getElementById('chart-list');
-let sorted = [...musicContent];
-if (currentSort === 'velocity') sorted.sort((a, b) => b.velocityScore - a.velocityScore);
-else if (currentSort === 'views') sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-else sorted.sort((a, b) => b.trendingScore - a.trendingScore);
-sorted = sorted.slice(0, 20);
-
-chartList.innerHTML = sorted.map((item, index) => {
-const score = currentSort === 'velocity' ? Math.round(item.velocityScore) : (currentSort === 'views' ? formatNumber(item.views_count) : (item.trendingScore ? Math.round(item.trendingScore) : formatNumber(item.views_count)));
-return `
-<div class="chart-item" data-content-id="${item.id}">
-<div class="chart-rank">#${index + 1}</div>
-<div class="chart-info">
-<img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
-<div class="chart-details">
-<h4>${truncateText(escapeHtml(item.title), 35)}</h4>
-<p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>
-</div>
-</div>
-<div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div>
-<div class="chart-trend">${item.momentum?.trend_label === 'rising' ? '↑ Trending' : (item.momentum?.trend_label === 'declining' ? '↓' : '→')}</div>
-</div>
-`;
-}).join('');
-attachChartClickHandlers();
-}
-
-function updateRegionalFusion() {
-const container = document.getElementById('regional-fusion-list');
-const regions = ['Afrobeats', 'Amapiano', 'Gengetone'];
-const regionalItems = [];
-
-regions.forEach(region => {
-const items = musicContent.filter(c => c.genre === region).slice(0, 4);
-regionalItems.push({ region, items });
-});
-
-container.innerHTML = regionalItems.map(regionData => {
-const { region, items } = regionData;
-return items.map(item => `
-<div class="regional-card" data-content-id="${item.id}">
-<div class="regional-thumb">
-<img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
-<div class="regional-overlay"></div>
-<div class="regional-badge">${region === 'Afrobeats' ? '🇳🇬' : (region === 'Amapiano' ? '🇿🇦' : '🇰🇪')} ${region}</div>
-</div>
-<div class="regional-info">
-<div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-<div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-<div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
-</div>
-</div>
-`).join('');
-}).join('');
-attachRegionalClickHandlers();
-}
-
-function updateLiveFrom() {
-const container = document.getElementById('live-from-list');
-const cities = ['Lagos', 'Nairobi', 'Johannesburg'];
-const liveItems = musicContent.filter((_, idx) => idx % 3 === 0).slice(0, 6);
-
-container.innerHTML = liveItems.map((item, idx) => `
-<div class="live-card" data-content-id="${item.id}">
-<div class="live-badge"><i class="fas fa-circle"></i> LIVE</div>
-<div class="live-thumb">
-<img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
-</div>
-<div class="live-info">
-<div class="live-title">${truncateText(escapeHtml(item.title), 25)}</div>
-<div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${cities[idx % 3]}</div>
-<div class="live-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span></div>
-</div>
-</div>
-`).join('');
-attachLiveClickHandlers();
-}
-
 function updateMoreMusic() {
-const grid = document.getElementById('more-music-grid');
-const empty = document.getElementById('more-music-empty');
-
-let filtered = [...musicContent];
-if (currentGenre !== 'all') {
-filtered = filtered.filter(item => item.genre === currentGenre);
+    const grid = document.getElementById('more-music-grid');
+    const empty = document.getElementById('more-music-empty');
+    let filtered = [...musicContent];
+    if (currentGenre !== 'all') { filtered = filtered.filter(item => item.genre_slug === currentGenre || item.parent_genre === currentGenre || item.genre === currentGenre); }
+    filtered = filtered.slice(5, 35);
+    if (filtered.length === 0) { if (grid) grid.style.display = 'none'; if (empty) empty.style.display = 'block'; return; }
+    if (grid) grid.style.display = 'grid'; if (empty) empty.style.display = 'none';
+    grid.innerHTML = filtered.map(item => {
+        const avatarUrl = item.user_profiles?.avatar_url ? fixMediaUrl(item.user_profiles.avatar_url) : null;
+        const initials = (item.user_profiles?.full_name || item.user_profiles?.username || 'A')[0].toUpperCase();
+        const isNew = (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000;
+        const isTrending = item.velocityScore > 10000 || (item.momentum?.trend_label === 'rising');
+        return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}"><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div><div class="card-badges">${isTrending ? '<div class="badge-trending"><i class="fas fa-chart-line"></i> Trending</div>' : ''}${isNew ? '<div class="badge-new">NEW</div>' : ''}${item.language_code ? `<div class="badge-trending" style="background:rgba(29,78,216,0.9);">${item.language_code}</div>` : ''}</div>${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${formatDuration(item.duration)}</div>` : ''}</div><div class="card-content"><h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3><div class="creator-info-small"><div class="creator-avatar-small">${avatarUrl ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${initials}</div>`}</div><div class="creator-name-small">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div></div><div class="card-meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>${item.mood_tags?.length ? `<span><i class="fas fa-music"></i> ${item.mood_tags[0]}</span>` : ''}</div></div></div>`;
+    }).join('');
+    attachContentClickHandlers();
 }
-filtered = filtered.slice(5, 35);
-
-if (filtered.length === 0) {
-grid.style.display = 'none';
-empty.style.display = 'block';
-return;
+function updateChart() {
+    const chartList = document.getElementById('chart-list');
+    if (!chartList) return;
+    let sorted = [...musicContent];
+    if (currentSort === 'velocity') sorted.sort((a, b) => b.velocityScore - a.velocityScore);
+    else if (currentSort === 'views') sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+    else sorted.sort((a, b) => b.trendingScore - a.trendingScore);
+    sorted = sorted.slice(0, 20);
+    chartList.innerHTML = sorted.map((item, index) => {
+        const score = currentSort === 'velocity' ? Math.round(item.velocityScore) : (currentSort === 'views' ? formatNumber(item.views_count) : (item.trendingScore ? Math.round(item.trendingScore) : formatNumber(item.views_count)));
+        let trendIcon = '→', trendClass = '';
+        if (item.momentum?.trend_label === 'rising') { trendIcon = '↑'; trendClass = 'trend-up'; }
+        else if (item.momentum?.trend_label === 'declining') { trendIcon = '↓'; trendClass = 'trend-down'; }
+        else if (item.momentum?.trend_label === 'peak') { trendIcon = '★'; trendClass = 'trend-peak'; }
+        return `<div class="chart-item" data-content-id="${item.id}"><div class="chart-rank">#${index + 1}</div><div class="chart-info"><img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}"><div class="chart-details"><h4>${truncateText(escapeHtml(item.title), 35)}</h4><p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>${item.genre ? `<p style="font-size:10px;color:var(--warm-gold);">${escapeHtml(item.genre)}</p>` : ''}</div></div><div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div><div class="chart-trend ${trendClass}">${trendIcon} ${item.momentum?.trend_label === 'rising' ? 'Rising' : (item.momentum?.trend_label === 'peak' ? 'Peak' : '')}</div></div>`;
+    }).join('');
+    attachChartClickHandlers();
 }
-
-grid.style.display = 'grid';
-empty.style.display = 'none';
-
-grid.innerHTML = filtered.map(item => {
-const avatarUrl = item.user_profiles?.avatar_url ? fixMediaUrl(item.user_profiles.avatar_url) : null;
-const initials = (item.user_profiles?.full_name || item.user_profiles?.username || 'A')[0].toUpperCase();
-const isNew = (new Date() - new Date(item.created_at)) < 7*24*60*60*1000;
-
-return `
-<div class="content-card" data-content-id="${item.id}">
-<div class="card-thumbnail">
-<img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
-<div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-<div class="card-badges">
-${item.velocityScore > 10000 ? '<div class="badge-trending"><i class="fas fa-chart-line"></i> Trending</div>' : ''}
-${isNew ? '<div class="badge-new">NEW</div>' : ''}
-</div>
-${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${formatDuration(item.duration)}</div>` : ''}
-</div>
-<div class="card-content">
-<h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3>
-<div class="creator-info-small">
-<div class="creator-avatar-small">${avatarUrl ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${initials}</div>`}</div>
-<div class="creator-name-small">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-</div>
-<div class="card-meta">
-<span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-</div>
-</div>
-</div>
-`;
-}).join('');
-attachContentClickHandlers();
+function organizeAndDisplay() {
+    if (musicContent.length === 0) return;
+    const topTrending = [...musicContent].sort((a, b) => b.velocityScore - a.velocityScore)[0];
+    currentHeroContent = topTrending;
+    document.getElementById('hero-title').textContent = truncateText(topTrending.title, 50);
+    const creatorName = topTrending.user_profiles?.full_name || topTrending.user_profiles?.username || 'Unknown Artist';
+    const avatarUrl = topTrending.user_profiles?.avatar_url ? fixMediaUrl(topTrending.user_profiles.avatar_url) : null;
+    document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
+    document.getElementById('hero-stats').innerHTML = `<span><i class="fas fa-eye"></i> ${formatNumber(topTrending.views_count)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(topTrending.likes_count)} likes</span><span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(topTrending.velocityScore))}</span>`;
+    if (topTrending.file_url) { const videoEl = document.getElementById('wave-video'); const source = videoEl.querySelector('source'); if (source) source.src = fixMediaUrl(topTrending.file_url); videoEl.load(); videoEl.play().catch(e => console.log('Autoplay prevented')); }
+    updateChart();
+    updateRegionalFusion();
+    updateLiveFrom();
+    updateMoreMusic();
 }
-
-// ===== CLICK HANDLERS =====
-function attachChartClickHandlers() {
-document.querySelectorAll('.chart-item').forEach(el => {
-el.addEventListener('click', () => {
-const id = el.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
+function updateRegionalFusion() {
+    const container = document.getElementById('regional-fusion-list');
+    const regions = ['Afrobeats', 'Amapiano', 'Gengetone'];
+    const regionalItems = [];
+    regions.forEach(region => { const items = musicContent.filter(c => c.genre === region).slice(0, 4); regionalItems.push({ region, items }); });
+    container.innerHTML = regionalItems.map(regionData => regionData.items.map(item => `<div class="regional-card" data-content-id="${item.id}"><div class="regional-thumb"><img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}"><div class="regional-overlay"></div><div class="regional-badge">${regionData.region === 'Afrobeats' ? '🇳🇬' : (regionData.region === 'Amapiano' ? '🇿🇦' : '🇰🇪')} ${regionData.region}</div></div><div class="regional-info"><div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div><div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div><div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div></div></div>`).join('')).join('');
+    attachRegionalClickHandlers();
 }
-
-function attachRegionalClickHandlers() {
-document.querySelectorAll('.regional-card').forEach(el => {
-el.addEventListener('click', () => {
-const id = el.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
+function updateLiveFrom() {
+    const container = document.getElementById('live-from-list');
+    const cities = ['Lagos', 'Nairobi', 'Johannesburg'];
+    const liveItems = musicContent.filter((_, idx) => idx % 3 === 0).slice(0, 6);
+    container.innerHTML = liveItems.map((item, idx) => `<div class="live-card" data-content-id="${item.id}"><div class="live-badge"><i class="fas fa-circle"></i> LIVE</div><div class="live-thumb"><img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}"></div><div class="live-info"><div class="live-title">${truncateText(escapeHtml(item.title), 25)}</div><div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${cities[idx % 3]}</div><div class="live-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span></div></div></div>`).join('');
+    attachLiveClickHandlers();
 }
-
-function attachLiveClickHandlers() {
-document.querySelectorAll('.live-card').forEach(el => {
-el.addEventListener('click', () => {
-const id = el.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
+function showDemoContent() {
+    musicContent = [
+        { id: 1, title: "African Giant", genre: "Afrobeats", genre_slug: "afrobeats", views_count: 1250000, likes_count: 89000, shares_count: 34000, duration: 210, created_at: new Date().toISOString(), user_profiles: { full_name: "Burna Boy", username: "burnaboy", avatar_url: null }, thumbnail_url: null, velocityScore: 125000, trendingScore: 1250, momentum: { trend_label: 'rising' } },
+        { id: 2, title: "Amapiano Anthem", genre: "Amapiano", genre_slug: "amapiano", views_count: 980000, likes_count: 67000, shares_count: 28000, duration: 195, created_at: new Date().toISOString(), user_profiles: { full_name: "DJ Maphorisa", username: "djmaphorisa", avatar_url: null }, thumbnail_url: null, velocityScore: 98000, trendingScore: 980, momentum: { trend_label: 'peak' } }
+    ];
+    organizeAndDisplay();
 }
-
-function attachContentClickHandlers() {
-document.querySelectorAll('.content-card').forEach(el => {
-el.addEventListener('click', () => {
-const id = el.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
-}
-
-// ===== FILTER & SORT =====
-function setupFilters() {
-document.querySelectorAll('.filter-chip').forEach(chip => {
-chip.addEventListener('click', () => {
-document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-chip.classList.add('active');
-currentGenre = chip.dataset.genre;
-updateMoreMusic();
-});
-});
-
-document.querySelectorAll('.sort-btn').forEach(btn => {
-btn.addEventListener('click', () => {
-document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-btn.classList.add('active');
-currentSort = btn.dataset.sort;
-updateChart();
-});
-});
-}
-
-// ===== HERO BUTTONS =====
+function attachChartClickHandlers() { document.querySelectorAll('.chart-item').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
+function attachRegionalClickHandlers() { document.querySelectorAll('.regional-card').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
+function attachLiveClickHandlers() { document.querySelectorAll('.live-card').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
+function attachContentClickHandlers() { document.querySelectorAll('.content-card').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
 function setupHeroButtons() {
-document.getElementById('hero-stream-btn')?.addEventListener('click', () => {
-if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.id}`;
-});
-document.getElementById('hero-add-vibe-btn')?.addEventListener('click', async () => {
-if (!currentUser) {
-showToast('Please sign in to add to My Vibe', 'warning');
-window.location.href = `login.html?redirect=music.html`;
-return;
+    document.getElementById('hero-stream-btn')?.addEventListener('click', () => { if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.id}`; });
+    document.getElementById('hero-add-vibe-btn')?.addEventListener('click', async () => { if (!currentUser) { showToast('Please sign in to add to My Vibe', 'warning'); window.location.href = `login.html?redirect=music.html`; return; } showToast(`Added to My Vibe`, 'success'); });
 }
-showToast(`Added to My Vibe`, 'success');
-});
-}
-
-// ===== THEME SYSTEM =====
 function initThemeSystem() {
-const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-applyTheme(savedTheme);
-
-document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
-e.preventDefault();
-document.getElementById('theme-selector')?.classList.toggle('active');
-});
-
-document.querySelectorAll('.theme-option').forEach(option => {
-option.addEventListener('click', () => {
-applyTheme(option.dataset.theme);
-document.getElementById('theme-selector')?.classList.remove('active');
-});
-});
-
-document.addEventListener('click', (e) => {
-const selector = document.getElementById('theme-selector');
-const toggle = document.getElementById('sidebar-theme-toggle');
-if (selector?.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) {
-selector.classList.remove('active');
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    const applyTheme = (theme) => { document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast'); document.body.classList.add(`theme-${theme}`); localStorage.setItem('bantu_theme', theme); document.querySelectorAll('.theme-option').forEach(opt => opt.classList.toggle('active', opt.dataset.theme === theme)); };
+    applyTheme(savedTheme);
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('theme-selector')?.classList.toggle('active'); });
+    document.querySelectorAll('.theme-option').forEach(option => { option.addEventListener('click', () => { applyTheme(option.dataset.theme); document.getElementById('theme-selector')?.classList.remove('active'); }); });
+    document.addEventListener('click', (e) => { const selector = document.getElementById('theme-selector'); const toggle = document.getElementById('sidebar-theme-toggle'); if (selector?.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) selector.classList.remove('active'); });
 }
-});
-}
-
-function applyTheme(theme) {
-document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-document.body.classList.add(`theme-${theme}`);
-localStorage.setItem('bantu_theme', theme);
-document.querySelectorAll('.theme-option').forEach(opt => {
-opt.classList.toggle('active', opt.dataset.theme === theme);
-});
-}
-
-// ===== SIDEBAR & NAVIGATION =====
 function setupSidebar() {
-const menuToggle = document.getElementById('menu-toggle');
-const sidebarClose = document.getElementById('sidebar-close');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-const sidebarMenu = document.getElementById('sidebar-menu');
-
-menuToggle?.addEventListener('click', () => {
-sidebarMenu?.classList.add('active');
-sidebarOverlay?.classList.add('active');
-document.body.style.overflow = 'hidden';
-});
-
-const closeSidebar = () => {
-sidebarMenu?.classList.remove('active');
-sidebarOverlay?.classList.remove('active');
-document.body.style.overflow = '';
-};
-sidebarClose?.addEventListener('click', closeSidebar);
-sidebarOverlay?.addEventListener('click', closeSidebar);
+    const menuToggle = document.getElementById('menu-toggle'); const sidebarClose = document.getElementById('sidebar-close'); const sidebarOverlay = document.getElementById('sidebar-overlay'); const sidebarMenu = document.getElementById('sidebar-menu');
+    menuToggle?.addEventListener('click', () => { sidebarMenu?.classList.add('active'); sidebarOverlay?.classList.add('active'); document.body.style.overflow = 'hidden'; });
+    const closeSidebar = () => { sidebarMenu?.classList.remove('active'); sidebarOverlay?.classList.remove('active'); document.body.style.overflow = ''; };
+    sidebarClose?.addEventListener('click', closeSidebar); sidebarOverlay?.addEventListener('click', closeSidebar);
 }
-
 function setupNavigation() {
-document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
-document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
-document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-const { data } = await supabaseClient.auth.getSession();
-if (data?.session) window.location.href = 'creator-upload.html';
-else window.location.href = 'login.html?redirect=creator-upload.html';
-});
-document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
-document.getElementById('sidebar-menu')?.classList.add('active');
-document.getElementById('sidebar-overlay')?.classList.add('active');
-document.body.style.overflow = 'hidden';
-});
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+    document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => { const { data } = await supabaseClient.auth.getSession(); if (data?.session) window.location.href = 'creator-upload.html'; else window.location.href = 'login.html?redirect=creator-upload.html'; });
+    document.getElementById('nav-menu-btn')?.addEventListener('click', () => { document.getElementById('sidebar-menu')?.classList.add('active'); document.getElementById('sidebar-overlay')?.classList.add('active'); document.body.style.overflow = 'hidden'; });
 }
-
 function setupBackToTop() {
-const btn = document.getElementById('backToTopBtn');
-window.addEventListener('scroll', () => {
-btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-});
-btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    const btn = document.getElementById('backToTopBtn');
+    window.addEventListener('scroll', () => { btn.style.display = window.scrollY > 300 ? 'flex' : 'none'; });
+    btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
-
 function setupMuteToggle() {
-const muteBtn = document.getElementById('mute-toggle');
-const video = document.getElementById('wave-video');
-muteBtn?.addEventListener('click', () => {
-video.muted = !video.muted;
-muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-});
+    const muteBtn = document.getElementById('mute-toggle'); const video = document.getElementById('wave-video');
+    muteBtn?.addEventListener('click', () => { video.muted = !video.muted; muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>'; });
 }
-
 function setupScaleControls() {
-const decrease = document.getElementById('scale-decrease');
-const increase = document.getElementById('scale-increase');
-const value = document.getElementById('scale-value');
-let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-const apply = () => {
-document.documentElement.style.setProperty('--ui-scale', scale);
-localStorage.setItem('bantu_ui_scale', scale);
-if (value) value.textContent = Math.round(scale * 100) + '%';
-};
-decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
-increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
-apply();
+    const decrease = document.getElementById('scale-decrease'); const increase = document.getElementById('scale-increase'); const value = document.getElementById('scale-value');
+    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    const apply = () => { document.documentElement.style.setProperty('--ui-scale', scale); localStorage.setItem('bantu_ui_scale', scale); if (value) value.textContent = Math.round(scale * 100) + '%'; };
+    decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+    increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+    apply();
 }
-
-// ===== AUTH CHECK =====
-async function checkAuth() {
-const { data } = await supabaseClient.auth.getSession();
-currentUser = data?.session?.user || null;
-if (currentUser) {
-const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
-const nameEl = document.getElementById('current-profile-name');
-const placeholder = document.getElementById('userProfilePlaceholder');
-if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
-if (placeholder && profile?.avatar_url) {
-placeholder.innerHTML = `<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-}
-}
-}
-
-// ===== INITIALIZE =====
+async function checkAuth() { const { data } = await supabaseClient.auth.getSession(); currentUser = data?.session?.user || null; if (currentUser) { const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle(); const nameEl = document.getElementById('current-profile-name'); const placeholder = document.getElementById('userProfilePlaceholder'); if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User'; if (placeholder && profile?.avatar_url) { placeholder.innerHTML = `<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`; } } }
 async function initialize() {
-setupSidebar();
-setupNavigation();
-setupBackToTop();
-setupMuteToggle();
-setupScaleControls();
-initThemeSystem();
-setupFilters();
-setupHeroButtons();
-await checkAuth();
-await loadMusicContent();
+    setupSidebar(); setupNavigation(); setupBackToTop(); setupMuteToggle(); setupScaleControls(); initThemeSystem(); await setupFilters(); setupHeroButtons(); await checkAuth(); await loadMusicContent();
 }
-
 initialize();
 </script>
 </body>
