@@ -1138,6 +1138,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
+    // 🔧 UUID SANITIZER HELPER - CATCHES ALL EMPTY STRINGS
+    // ============================================
+    function sanitizeForSupabase(obj) {
+        const sanitized = {};
+        for (const [key, value] of Object.entries(obj)) {
+            // Convert empty strings to null for ALL fields
+            if (value === "" || value === undefined) {
+                console.warn(`⚠️ Field "${key}" was "${value}" - converting to null`);
+                sanitized[key] = null;
+            } 
+            // Keep valid values as-is
+            else {
+                sanitized[key] = value;
+            }
+        }
+        return sanitized;
+    }
+
+    // ============================================
     // TAGS INPUT COMPONENT
     // ============================================
     function createTagsInput(field) {
@@ -1297,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
         else return null;
         
-        const { data: existing } = await window.supabaseClient
+        const {  existing } = await window.supabaseClient
             .from('creator_playlists')
             .select('id')
             .eq('creator_id', currentUserId)
@@ -1307,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let playlistId = existing?.id;
         if (!playlistId) {
-            const { data: newPlaylist, error } = await window.supabaseClient
+            const {  newPlaylist, error } = await window.supabaseClient
                 .from('creator_playlists')
                 .insert([{
                     creator_id: currentUserId,
@@ -1374,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     async function loadGenresForUpload() {
       try {
-        const { data: genres, error } = await window.supabaseClient
+        const {  genres, error } = await window.supabaseClient
           .from('genres')
           .select('id, name, slug, parent_genre_id')
           .eq('is_active', true)
@@ -1423,7 +1442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadTagsForUpload() {
       try {
-        const { data: tags, error } = await window.supabaseClient
+        const {  tags, error } = await window.supabaseClient
           .from('tags')
           .select('id, name, tag_type')
           .eq('is_active', true)
@@ -1645,9 +1664,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
         return new Promise(async (resolve, reject) => {
             try {
-                let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                let {  { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
                 if (sessionError || !session) {
-                    const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+                    const {  refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
                     if (refreshError || !refreshData.session) { reject(new Error('Authentication failed')); return; }
                     session = refreshData.session;
                 }
@@ -1734,10 +1753,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // INSERT LOGIC WITH PROPER UUID NULL HANDLING
+    // INSERT LOGIC WITH UNIVERSAL UUID SANITIZATION
     // ============================================
     async function createContentRecord(data) {
-        // Build content object with PROPER NULL handling for UUID fields
+        // Build base content object
         const contentData = {
             title: data.title || null,
             description: data.description || null,
@@ -1746,17 +1765,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             media_type: data.media_type,
             genre: data.genre || null,
             status: data.status,
-            user_id: currentUserId || null,  // ← KEY FIX: null instead of ""
+            user_id: currentUserId || null,
             created_at: new Date().toISOString(),
             content_metadata: data.content_metadata || {},
             content_format: data.content_format || null,
-            chapters: data.chapters || []
+            chapters: data.chapters || [],
+            duration: data.duration !== undefined ? data.duration : null,
+            // ← KEY FIX: Explicitly set ALL potential UUID fields to null by default
+            creator_id: null,
+            series_id: null,
+            primary_genre_id: null,
+            // Music-specific fields (will be overridden if isMusic)
+            language_code: null,
+            city: null,
+            tempo: null,
+            key_signature: null,
+            is_explicit: false
         };
         
-        // Add optional numeric fields safely
-        if (data.duration !== null && data.duration !== undefined) {
-            contentData.duration = data.duration;
-        }
+        // Handle series_episode specific fields
         if (data.content_format === 'series_episode') {
             contentData.season_number = data.season_number || null;
             contentData.episode_number = data.episode_number || null;
@@ -1766,30 +1793,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isMusic = data.content_format === 'music' || data.content_format === 'music_video';
         
         if (isMusic) {
-            // ← KEY FIX: All UUID fields use || null, never || ""
             contentData.primary_genre_id = data.primary_genre_id || null;
             contentData.language_code = data.language_code || null;
             contentData.city = data.city || null;
             contentData.tempo = data.tempo ? parseInt(data.tempo) : null;
             contentData.key_signature = data.key_signature || null;
             contentData.is_explicit = data.is_explicit || false;
-        } else {
-            // Non-music: explicitly set music fields to null
-            contentData.primary_genre_id = null;
-            contentData.language_code = null;
-            contentData.city = null;
-            contentData.tempo = null;
-            contentData.key_signature = null;
-            contentData.is_explicit = false;
         }
         
-        console.log('Inserting content with format:', contentData.content_format);
-        console.log('UUID fields check:', {
-            user_id: contentData.user_id,
-            primary_genre_id: contentData.primary_genre_id
+        // ============================================
+        // 🔧 UNIVERSAL SANITIZER: Convert ALL empty strings to null
+        // ============================================
+        const sanitizedData = sanitizeForSupabase(contentData);
+        
+        // Debug logging
+        console.log('=== UPLOAD DIAGNOSTIC ===');
+        console.log('Content format:', sanitizedData.content_format);
+        console.log('Is music:', isMusic);
+        console.log('UUID fields after sanitization:', {
+            user_id: sanitizedData.user_id,
+            creator_id: sanitizedData.creator_id,
+            series_id: sanitizedData.series_id,
+            primary_genre_id: sanitizedData.primary_genre_id
+        });
+        console.log('FULL sanitized object:', JSON.stringify(sanitizedData, null, 2));
+        
+        // Final check for any remaining empty strings
+        Object.entries(sanitizedData).forEach(([key, val]) => {
+            if (val === "") {
+                console.error(`🚨 CRITICAL: Field "${key}" is still empty string after sanitization!`);
+            }
         });
         
-        const { data: result, error } = await window.supabaseClient.from('Content').insert([contentData]).select();
+        console.log('Inserting content with format:', sanitizedData.content_format);
+        
+        const {  result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
         if (error) throw error;
         return result[0];
     }
@@ -1818,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('content_genres')
                 .insert({
                     content_id: contentId,
-                    genre_id: selectedGenreId,  // ← Already validated as UUID or null
+                    genre_id: selectedGenreId,
                     is_primary: true,
                     confidence_score: 1.0
                 });
@@ -1843,7 +1881,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('content_tags')
                 .insert({
                     content_id: contentId,
-                    tag_id: tag.tag_id || null,  // ← Safe null handling
+                    tag_id: tag.tag_id || null,
                     confidence_score: 1.0
                 });
         }
@@ -1857,7 +1895,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await window.supabaseClient
             .from('Content')
             .update({ 
-                primary_genre_id: selectedGenreId || null,  // ← KEY FIX
+                primary_genre_id: selectedGenreId || null,
                 genre: genreName,
                 language_code: languageTag,
                 city: cityTag
@@ -1932,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 genre, 
                 status: isDraft ? 'draft' : 'published',
                 duration: extractedDuration, 
-                content_metadata: contentMetadata,
+                content_meta contentMetadata,
                 content_format: contentFormat,
                 chapters: chaptersData, 
                 season_number: contentMetadata.season_number, 
@@ -2124,7 +2162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function checkAuthentication() {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        const {  { session } } = await window.supabaseClient.auth.getSession();
         if (session?.user) {
             currentSession = session;
             currentUserId = session.user.id;
