@@ -743,7 +743,7 @@ transition: color .3s ease; font-size: 14px;
 }
 .footer-links a:hover { color: var(--warm-gold); }
 
-/* ========= NEW: Tag Buttons for Upload Form ========= */
+/* ========= Tag Buttons for Upload Form ========= */
 .tag-buttons-container {
   display: flex;
   flex-direction: column;
@@ -894,7 +894,7 @@ transition: color .3s ease; font-size: 14px;
 <!-- Genre/Category -->
 <div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
 
-<!-- ========= NEW: Content Format Field ========= -->
+<!-- Content Format Field -->
 <div class="form-group">
   <label><i class="fas fa-layer-group"></i> Content Format</label>
   <select id="content_format" class="form-input" required>
@@ -914,7 +914,7 @@ transition: color .3s ease; font-size: 14px;
 <!-- Dynamic Genre Fields -->
 <div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
 
-<!-- ========= NEW: Music Genre Selector ========= -->
+<!-- Music Genre Selector -->
 <div class="form-group" id="music-genre-group" style="display: none;">
   <label><i class="fas fa-music"></i> Music Genre</label>
   <select id="music-genre" class="form-input">
@@ -929,7 +929,7 @@ transition: color .3s ease; font-size: 14px;
   <small class="form-text text-muted">Select the primary genre for your music content</small>
 </div>
 
-<!-- ========= NEW: Music Tags ========= -->
+<!-- Music Tags -->
 <div class="form-group" id="music-tags-group" style="display: none;">
   <label><i class="fas fa-tags"></i> Tags (Language, Mood, City)</label>
   <div id="tag-buttons" class="tag-buttons-container">
@@ -938,7 +938,7 @@ transition: color .3s ease; font-size: 14px;
   <small class="form-text text-muted">Select tags that describe your music</small>
 </div>
 
-<!-- ========= NEW: Music Metadata Fields ========= -->
+<!-- Music Metadata Fields -->
 <div id="tempo-group" class="form-group" style="display: none;">
   <label><i class="fas fa-metronome"></i> Tempo (BPM)</label>
   <input type="number" id="tempo" class="form-input" placeholder="e.g., 112" step="1" min="40" max="220">
@@ -1016,7 +1016,7 @@ if (!window.supabaseClient) {
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
-    // GENRE CONFIGURATION - COMPLETE WITH ALL FIELDS
+    // GENRE CONFIGURATION
     // ============================================
     const genreConfig = {
         'Film': {
@@ -1369,10 +1369,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // ========= NEW: GENRE/TAG LOADING FUNCTIONS =========
+    // GENRE/TAG LOADING FUNCTIONS
     // ============================================
     
-    // Load genres for music upload
     async function loadGenresForUpload() {
       try {
         const { data: genres, error } = await window.supabaseClient
@@ -1422,7 +1421,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    // Load tags for music upload
     async function loadTagsForUpload() {
       try {
         const { data: tags, error } = await window.supabaseClient
@@ -1483,7 +1481,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    // Get selected tags
     function getSelectedTags() {
       const selected = [];
       document.querySelectorAll('.tag-btn.selected').forEach(btn => {
@@ -1496,7 +1493,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       return selected;
     }
 
-    // Show/hide music fields based on content format
     function setupContentFormatToggle() {
       const formatSelect = document.getElementById('content_format');
       const musicGenreGroup = document.getElementById('music-genre-group');
@@ -1738,32 +1734,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // ========= NEW: INSERT LOGIC WITH GENRE/TAGS =========
+    // INSERT LOGIC WITH PROPER UUID NULL HANDLING
     // ============================================
     async function createContentRecord(data) {
-        const insertData = {
-            title: data.title,
-            description: data.description,
+        // Build content object with PROPER NULL handling for UUID fields
+        const contentData = {
+            title: data.title || null,
+            description: data.description || null,
             file_url: data.media_url,
-            thumbnail_url: data.thumbnail_url || '',
+            thumbnail_url: data.thumbnail_url || null,
             media_type: data.media_type,
-            genre: data.genre,
+            genre: data.genre || null,
             status: data.status,
-            user_id: currentUserId,
+            user_id: currentUserId || null,  // ← KEY FIX: null instead of ""
             created_at: new Date().toISOString(),
             content_metadata: data.content_metadata || {},
-            content_format: data.content_format,
+            content_format: data.content_format || null,
             chapters: data.chapters || []
         };
-        if (data.duration !== null && data.duration !== undefined) insertData.duration = data.duration;
+        
+        // Add optional numeric fields safely
+        if (data.duration !== null && data.duration !== undefined) {
+            contentData.duration = data.duration;
+        }
         if (data.content_format === 'series_episode') {
-            insertData.season_number = data.season_number;
-            insertData.episode_number = data.episode_number;
+            contentData.season_number = data.season_number || null;
+            contentData.episode_number = data.episode_number || null;
         }
         
-        console.log('Inserting content with format:', data.content_format);
+        // Add music-specific fields ONLY if content_format is music/music_video
+        const isMusic = data.content_format === 'music' || data.content_format === 'music_video';
         
-        const { data: result, error } = await window.supabaseClient.from('Content').insert([insertData]).select();
+        if (isMusic) {
+            // ← KEY FIX: All UUID fields use || null, never || ""
+            contentData.primary_genre_id = data.primary_genre_id || null;
+            contentData.language_code = data.language_code || null;
+            contentData.city = data.city || null;
+            contentData.tempo = data.tempo ? parseInt(data.tempo) : null;
+            contentData.key_signature = data.key_signature || null;
+            contentData.is_explicit = data.is_explicit || false;
+        } else {
+            // Non-music: explicitly set music fields to null
+            contentData.primary_genre_id = null;
+            contentData.language_code = null;
+            contentData.city = null;
+            contentData.tempo = null;
+            contentData.key_signature = null;
+            contentData.is_explicit = false;
+        }
+        
+        console.log('Inserting content with format:', contentData.content_format);
+        console.log('UUID fields check:', {
+            user_id: contentData.user_id,
+            primary_genre_id: contentData.primary_genre_id
+        });
+        
+        const { data: result, error } = await window.supabaseClient.from('Content').insert([contentData]).select();
         if (error) throw error;
         return result[0];
     }
@@ -1778,13 +1804,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }]);
     }
 
-    // ========= NEW: Insert genre/tag relationships for music =========
-    async function insertMusicGenreTags(contentId, mediaType) {
-        const isMusic = ['music', 'Music', 'audio', 'song', 'track', 'music_video'].includes(mediaType);
+    // Insert genre/tag relationships for music with proper null handling
+    async function insertMusicGenreTags(contentId, mediaType, contentFormat) {
+        const isMusic = contentFormat === 'music' || contentFormat === 'music_video';
         if (!isMusic) return;
 
-        const selectedGenreId = document.getElementById('music-genre')?.value;
-        const selectedSubgenreId = document.getElementById('music-subgenre')?.value;
+        const selectedGenreId = document.getElementById('music-genre')?.value || null;
+        const selectedSubgenreId = document.getElementById('music-subgenre')?.value || null;
         
         // Insert primary genre
         if (selectedGenreId) {
@@ -1792,7 +1818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('content_genres')
                 .insert({
                     content_id: contentId,
-                    genre_id: selectedGenreId,
+                    genre_id: selectedGenreId,  // ← Already validated as UUID or null
                     is_primary: true,
                     confidence_score: 1.0
                 });
@@ -1817,7 +1843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('content_tags')
                 .insert({
                     content_id: contentId,
-                    tag_id: tag.tag_id,
+                    tag_id: tag.tag_id || null,  // ← Safe null handling
                     confidence_score: 1.0
                 });
         }
@@ -1831,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await window.supabaseClient
             .from('Content')
             .update({ 
-                primary_genre_id: selectedGenreId,
+                primary_genre_id: selectedGenreId || null,  // ← KEY FIX
                 genre: genreName,
                 language_code: languageTag,
                 city: cityTag
@@ -1874,7 +1900,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (selectedMediaType === 'short') finalMediaType = 'short';
             if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
             
-            // Set content_format based on genre config or manual selection
+            // Set content_format based on manual selection or genre config
             let contentFormat = document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
             
             progressText.textContent = 'Uploading media file...';
@@ -1887,20 +1913,45 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             progressText.textContent = 'Creating content record...';
+            
+            // Get music-specific values with proper null handling
+            const selectedGenreId = document.getElementById('music-genre')?.value || null;
+            const selectedTags = getSelectedTags();
+            const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
+            const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
+            const tempo = document.getElementById('tempo')?.value || null;
+            const keySignature = document.getElementById('key_signature')?.value || null;
+            const isExplicit = document.getElementById('is_explicit')?.checked || false;
+            
             const contentRecord = await createContentRecord({
-                title, description: desc, media_url: mediaUrl, thumbnail_url: thumbnailUrl,
-                media_type: finalMediaType, genre, status: isDraft ? 'draft' : 'published',
-                duration: extractedDuration, content_metadata: contentMetadata,
+                title, 
+                description: desc, 
+                media_url: mediaUrl, 
+                thumbnail_url: thumbnailUrl,
+                media_type: finalMediaType, 
+                genre, 
+                status: isDraft ? 'draft' : 'published',
+                duration: extractedDuration, 
+                content_metadata: contentMetadata,
                 content_format: contentFormat,
-                chapters: chaptersData, season_number: contentMetadata.season_number, episode_number: contentMetadata.episode_number
+                chapters: chaptersData, 
+                season_number: contentMetadata.season_number, 
+                episode_number: contentMetadata.episode_number,
+                // Music-specific fields with null safety
+                primary_genre_id: selectedGenreId,
+                language_code: languageTag,
+                city: cityTag,
+                tempo: tempo,
+                key_signature: keySignature,
+                is_explicit: isExplicit
             });
             
             if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
             if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
             
-            // ========= NEW: Insert music genre/tag relationships =========
+            // Insert music genre/tag relationships
             if (contentRecord.id) {
-                await insertMusicGenreTags(contentRecord.id, finalMediaType);
+                await insertMusicGenreTags(contentRecord.id, finalMediaType, contentFormat);
             }
             
             progressFill.style.width = '100%';
@@ -2235,7 +2286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
 
     // ============================================
-    // ========= NEW: INITIALIZATION FOR MUSIC EXTENSIONS =========
+    // INITIALIZATION FOR MUSIC EXTENSIONS
     // ============================================
     async function initMusicUploadExtensions() {
         await loadGenresForUpload();
