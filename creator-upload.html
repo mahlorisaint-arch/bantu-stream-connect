@@ -1316,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
         else return null;
         
-        const {  existing } = await window.supabaseClient
+        const { data: existing, error } = await window.supabaseClient
             .from('creator_playlists')
             .select('id')
             .eq('creator_id', currentUserId)
@@ -1326,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let playlistId = existing?.id;
         if (!playlistId) {
-            const {  newPlaylist, error } = await window.supabaseClient
+            const { data: newPlaylist, error } = await window.supabaseClient
                 .from('creator_playlists')
                 .insert([{
                     creator_id: currentUserId,
@@ -1393,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     async function loadGenresForUpload() {
       try {
-        const {  genres, error } = await window.supabaseClient
+        const { data: genres, error } = await window.supabaseClient
           .from('genres')
           .select('id, name, slug, parent_genre_id')
           .eq('is_active', true)
@@ -1442,7 +1442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadTagsForUpload() {
       try {
-        const {  tags, error } = await window.supabaseClient
+        const { data: tags, error } = await window.supabaseClient
           .from('tags')
           .select('id, name, tag_type')
           .eq('is_active', true)
@@ -1505,8 +1505,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.tag-btn.selected').forEach(btn => {
         selected.push({
           tag_id: btn.dataset.tagId,
-          name: btn.datasetTagName,
-          type: btn.datasetTagType
+          name: btn.dataset.tagName,
+          type: btn.dataset.tagType
         });
       });
       return selected;
@@ -1664,9 +1664,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
         return new Promise(async (resolve, reject) => {
             try {
-                let {  { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
                 if (sessionError || !session) {
-                    const {  refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+                    const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
                     if (refreshError || !refreshData.session) { reject(new Error('Authentication failed')); return; }
                     session = refreshData.session;
                 }
@@ -1827,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         console.log('Inserting content with format:', sanitizedData.content_format);
         
-        const {  result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+        const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
         if (error) throw error;
         return result[0];
     }
@@ -1970,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 genre, 
                 status: isDraft ? 'draft' : 'published',
                 duration: extractedDuration, 
-                content_meta contentMetadata,
+                content_metadata: contentMetadata,
                 content_format: contentFormat,
                 chapters: chaptersData, 
                 season_number: contentMetadata.season_number, 
@@ -2162,7 +2162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function checkAuthentication() {
-        const {  { session } } = await window.supabaseClient.auth.getSession();
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (session?.user) {
             currentSession = session;
             currentUserId = session.user.id;
