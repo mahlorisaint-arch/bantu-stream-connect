@@ -1143,17 +1143,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     function sanitizeForSupabase(obj) {
         const sanitized = {};
         for (const [key, value] of Object.entries(obj)) {
-            // Convert empty strings to null for ALL fields
             if (value === "" || value === undefined) {
                 console.warn(`⚠️ Field "${key}" was "${value}" - converting to null`);
                 sanitized[key] = null;
-            } 
-            // Keep valid values as-is
-            else {
+            } else {
                 sanitized[key] = value;
             }
         }
         return sanitized;
+    }
+
+    // ============================================
+    // CLEAN METADATA HELPER - NO EMPTY STRINGS
+    // ============================================
+    function cleanContentMetadata(rawMetadata) {
+        return {
+            track_title: rawMetadata.track_title || null,
+            artist_name: rawMetadata.artist_name || null,
+            album_title: rawMetadata.album_title || null,      // ← empty string -> null
+            track_number: rawMetadata.track_number ? parseInt(rawMetadata.track_number) : null,
+            featured_artists: Array.isArray(rawMetadata.featured_artists) ? rawMetadata.featured_artists : [],
+            explicit: rawMetadata.explicit || false,
+            record_label: rawMetadata.record_label || null
+        };
     }
 
     // ============================================
@@ -1753,10 +1765,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // INSERT LOGIC WITH UNIVERSAL UUID SANITIZATION
+    // INSERT LOGIC WITH CLEAN METADATA
     // ============================================
     async function createContentRecord(data) {
-        // Build base content object
+        // Clean metadata before inserting
+        const cleanedMetadata = data.content_metadata ? cleanContentMetadata(data.content_metadata) : {};
+        
         const contentData = {
             title: data.title || null,
             description: data.description || null,
@@ -1767,15 +1781,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             status: data.status,
             user_id: currentUserId || null,
             created_at: new Date().toISOString(),
-            content_metadata: data.content_metadata || {},
+            content_metadata: cleanedMetadata,
             content_format: data.content_format || null,
             chapters: data.chapters || [],
             duration: data.duration !== undefined ? data.duration : null,
-            // ← KEY FIX: Explicitly set ALL potential UUID fields to null by default
             creator_id: null,
             series_id: null,
             primary_genre_id: null,
-            // Music-specific fields (will be overridden if isMusic)
             language_code: null,
             city: null,
             tempo: null,
@@ -1783,15 +1795,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             is_explicit: false
         };
         
-        // Handle series_episode specific fields
         if (data.content_format === 'series_episode') {
             contentData.season_number = data.season_number || null;
             contentData.episode_number = data.episode_number || null;
         }
         
-        // Add music-specific fields ONLY if content_format is music/music_video
         const isMusic = data.content_format === 'music' || data.content_format === 'music_video';
-        
         if (isMusic) {
             contentData.primary_genre_id = data.primary_genre_id || null;
             contentData.language_code = data.language_code || null;
@@ -1801,31 +1810,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             contentData.is_explicit = data.is_explicit || false;
         }
         
-        // ============================================
-        // 🔧 UNIVERSAL SANITIZER: Convert ALL empty strings to null
-        // ============================================
         const sanitizedData = sanitizeForSupabase(contentData);
         
-        // Debug logging
-        console.log('=== UPLOAD DIAGNOSTIC ===');
-        console.log('Content format:', sanitizedData.content_format);
-        console.log('Is music:', isMusic);
-        console.log('UUID fields after sanitization:', {
-            user_id: sanitizedData.user_id,
-            creator_id: sanitizedData.creator_id,
-            series_id: sanitizedData.series_id,
-            primary_genre_id: sanitizedData.primary_genre_id
-        });
+        console.log('=== UPLOAD DIAGNOSTIC (FIXED) ===');
+        console.log('Cleaned metadata:', cleanedMetadata);
         console.log('FULL sanitized object:', JSON.stringify(sanitizedData, null, 2));
-        
-        // Final check for any remaining empty strings
-        Object.entries(sanitizedData).forEach(([key, val]) => {
-            if (val === "") {
-                console.error(`🚨 CRITICAL: Field "${key}" is still empty string after sanitization!`);
-            }
-        });
-        
-        console.log('Inserting content with format:', sanitizedData.content_format);
         
         const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
         if (error) throw error;
@@ -1842,7 +1831,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }]);
     }
 
-    // Insert genre/tag relationships for music with proper null handling
     async function insertMusicGenreTags(contentId, mediaType, contentFormat) {
         const isMusic = contentFormat === 'music' || contentFormat === 'music_video';
         if (!isMusic) return;
@@ -1850,7 +1838,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedGenreId = document.getElementById('music-genre')?.value || null;
         const selectedSubgenreId = document.getElementById('music-subgenre')?.value || null;
         
-        // Insert primary genre
         if (selectedGenreId) {
             await window.supabaseClient
                 .from('content_genres')
@@ -1862,7 +1849,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
         }
         
-        // Insert subgenre
         if (selectedSubgenreId && selectedSubgenreId !== selectedGenreId) {
             await window.supabaseClient
                 .from('content_genres')
@@ -1874,7 +1860,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
         }
         
-        // Insert tags
         const selectedTags = getSelectedTags();
         for (const tag of selectedTags) {
             await window.supabaseClient
@@ -1886,7 +1871,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
         }
         
-        // Update Content table with primary genre ID and tag info
         const genreSelect = document.getElementById('music-genre');
         const genreName = genreSelect?.options[genreSelect?.selectedIndex]?.textContent || null;
         const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
@@ -1938,7 +1922,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (selectedMediaType === 'short') finalMediaType = 'short';
             if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
             
-            // Set content_format based on manual selection or genre config
             let contentFormat = document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
             
             progressText.textContent = 'Uploading media file...';
@@ -1952,7 +1935,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             progressText.textContent = 'Creating content record...';
             
-            // Get music-specific values with proper null handling
             const selectedGenreId = document.getElementById('music-genre')?.value || null;
             const selectedTags = getSelectedTags();
             const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
@@ -1975,7 +1957,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 chapters: chaptersData, 
                 season_number: contentMetadata.season_number, 
                 episode_number: contentMetadata.episode_number,
-                // Music-specific fields with null safety
                 primary_genre_id: selectedGenreId,
                 language_code: languageTag,
                 city: cityTag,
@@ -1986,11 +1967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
             if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
-            
-            // Insert music genre/tag relationships
-            if (contentRecord.id) {
-                await insertMusicGenreTags(contentRecord.id, finalMediaType, contentFormat);
-            }
+            if (contentRecord.id) await insertMusicGenreTags(contentRecord.id, finalMediaType, contentFormat);
             
             progressFill.style.width = '100%';
             progressPercentage.textContent = '100%';
@@ -2248,7 +2225,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
         
-        // Search modal
         const searchBtn = document.getElementById('search-btn');
         const searchModal = document.getElementById('search-modal');
         const closeSearchBtn = document.getElementById('close-search-btn');
@@ -2258,7 +2234,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchModal.addEventListener('click', (e) => { if (e.target === searchModal) searchModal.classList.remove('active'); });
         }
         
-        // Notifications panel
         const notificationsBtn = document.getElementById('notifications-btn');
         const notificationsPanel = document.getElementById('notifications-panel');
         const closeNotifications = document.getElementById('close-notifications');
@@ -2323,9 +2298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
 
-    // ============================================
-    // INITIALIZATION FOR MUSIC EXTENSIONS
-    // ============================================
     async function initMusicUploadExtensions() {
         await loadGenresForUpload();
         await loadTagsForUpload();
@@ -2345,10 +2317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateButtonsState();
         updateChecklist();
         loadDraftFromLocalStorage();
-        
-        // Initialize music upload extensions
         await initMusicUploadExtensions();
-        
         loadingScreen.style.display = 'none';
         app.style.display = 'block';
     }
