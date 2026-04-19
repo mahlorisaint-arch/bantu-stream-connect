@@ -1143,29 +1143,30 @@ transition: all 0.2s;
 
 <main class="container">
 
-<!-- ADVANCED FILTER BAR - DISCOVERY API INTEGRATION -->
+<!-- FILTER BAR -->
 <div class="filter-bar" id="filter-bar">
 <button class="filter-chip active" data-filter="all" data-filter-type="all">All Music</button>
 <button class="filter-chip" data-filter="trending" data-filter-type="special">🔥 Trending</button>
-<button class="filter-chip" data-filter="amapiano" data-filter-type="genre">Amapiano</button>
-<button class="filter-chip" data-filter="afrobeats" data-filter-type="genre">Afrobeats</button>
-<button class="filter-chip" data-filter="gqom" data-filter-type="genre">Gqom</button>
-<button class="filter-chip" data-filter="bongo-flava" data-filter-type="genre">Bongo Flava</button>
+<button class="filter-chip" data-filter="Amapiano" data-filter-type="genre">Amapiano</button>
+<button class="filter-chip" data-filter="Afrobeats" data-filter-type="genre">Afrobeats</button>
+<button class="filter-chip" data-filter="Gqom" data-filter-type="genre">Gqom</button>
+<button class="filter-chip" data-filter="Bongo Flava" data-filter-type="genre">Bongo Flava</button>
 </div>
 
 <!-- LOCATION & LANGUAGE QUICK FILTERS -->
 <div class="filter-bar" style="border-bottom: none; padding-top: 0;">
-<button class="filter-chip" data-filter="location" data-location="Johannesburg" data-filter-type="location"><i class="fas fa-city"></i> Johannesburg</button>
-<button class="filter-chip" data-filter="location" data-location="Cape Town" data-filter-type="location"><i class="fas fa-city"></i> Cape Town</button>
-<button class="filter-chip" data-filter="location" data-location="Durban" data-filter-type="location"><i class="fas fa-city"></i> Durban</button>
-<button class="filter-chip" data-filter="language" data-language="isiZulu" data-filter-type="language"><i class="fas fa-language"></i> isiZulu</button>
-<button class="filter-chip" data-filter="language" data-language="Xitsonga" data-filter-type="language"><i class="fas fa-language"></i> Xitsonga</button>
-<button class="filter-chip" data-filter="language" data-language="Setswana" data-filter-type="language"><i class="fas fa-language"></i> Setswana</button>
-<button class="filter-chip" data-filter="mood" data-mood="Party" data-filter-type="mood"><i class="fas fa-smile"></i> Party</button>
-<button class="filter-chip" data-filter="mood" data-mood="Chill" data-filter-type="mood"><i class="fas fa-cloud-moon"></i> Chill</button>
+<button class="filter-chip" data-filter="Johannesburg" data-filter-type="city"><i class="fas fa-city"></i> Johannesburg</button>
+<button class="filter-chip" data-filter="Cape Town" data-filter-type="city"><i class="fas fa-city"></i> Cape Town</button>
+<button class="filter-chip" data-filter="Durban" data-filter-type="city"><i class="fas fa-city"></i> Durban</button>
+<button class="filter-chip" data-filter="isiZulu" data-filter-type="language"><i class="fas fa-language"></i> isiZulu</button>
+<button class="filter-chip" data-filter="Xitsonga" data-filter-type="language"><i class="fas fa-language"></i> Xitsonga</button>
+<button class="filter-chip" data-filter="Setswana" data-filter-type="language"><i class="fas fa-language"></i> Setswana</button>
+<button class="filter-chip" data-filter="Party" data-filter-type="mood"><i class="fas fa-smile"></i> Party</button>
+<button class="filter-chip" data-filter="Chill" data-filter-type="mood"><i class="fas fa-cloud-moon"></i> Chill</button>
+<button class="filter-chip" data-filter="Spiritual" data-filter-type="mood"><i class="fas fa-pray"></i> Spiritual</button>
 </div>
 
-<!-- THE CHART - TOP 20 (Using get_trending_music) -->
+<!-- THE CHART - TOP 20 -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-chart-simple"></i> The Chart</h2>
@@ -1182,37 +1183,37 @@ transition: all 0.2s;
 <span>Score</span>
 <span>Trend</span>
 </div>
-<div id="chart-list"><div style="padding:40px;text-align:center;">Loading chart...</div></div>
+<div id="chart-list"><div style="padding:40px;text-align:center;"><div class="spinner" style="width:30px;height:30px;"></div> Loading chart...</div></div>
 </div>
 </section>
 
-<!-- REGIONAL FUSION (Using get_music_by_location) -->
+<!-- REGIONAL FUSION (By City) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-globe-africa"></i> Regional Fusion</h2>
 <a href="#" class="section-link" id="regional-view-all">View All <i class="fas fa-arrow-right"></i></a>
 </div>
 <div class="scroll-container">
-<div class="horizontal-scroll" id="regional-fusion-list"><div style="padding:20px;color:var(--slate-grey);">Loading regional content...</div></div>
+<div class="horizontal-scroll" id="regional-fusion-list"><div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading regional content...</div></div>
 </div>
 </section>
 
-<!-- LANGUAGE SPOTLIGHT (Using get_music_by_language) -->
+<!-- LANGUAGE SPOTLIGHT -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-language"></i> Language Spotlight</h2>
 </div>
 <div class="scroll-container">
-<div class="horizontal-scroll" id="language-spotlight-list"><div style="padding:20px;color:var(--slate-grey);">Loading language content...</div></div>
+<div class="horizontal-scroll" id="language-spotlight-list"><div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading language content...</div></div>
 </div>
 </section>
 
-<!-- MORE MUSIC (Using discover_music with current filters) -->
+<!-- MORE MUSIC -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-headphones"></i> More Music</h2>
 </div>
-<div class="content-grid" id="more-music-grid"><div style="padding:40px;text-align:center;grid-column:1/-1;">Loading music...</div></div>
+<div class="content-grid" id="more-music-grid"><div style="padding:40px;text-align:center;grid-column:1/-1;"><div class="spinner" style="width:30px;height:30px;"></div> Loading music...</div></div>
 <div id="more-music-empty" class="empty-state" style="display: none;">
 <div class="empty-icon"><i class="fas fa-music"></i></div>
 <h3>No music found</h3>
@@ -1251,7 +1252,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
-let trendingData = [];
+let allMusicContent = [];
 let currentFilter = { type: 'all', value: null };
 let currentSort = 'trending';
 let currentHeroContent = null;
@@ -1301,103 +1302,172 @@ function fixMediaUrl(url) {
     return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`; 
 }
 
-// ===== DISCOVERY API ENDPOINT CALLS =====
+// ===== SIMPLE SUPABASE QUERIES (No RPC Functions Needed) =====
 
-// 1. Get trending music (supports genre, city, language filters)
-async function getTrendingMusic(limit = 20, genreSlug = null, city = null, language = null) {
+// 1. Load all music content (base query)
+async function loadAllMusic() {
     try {
-        const params = { p_limit: limit };
-        if (genreSlug) params.p_genre_slug = genreSlug;
-        if (city) params.p_city = city;
-        if (language) params.p_language = language;
-        
-        const { data, error } = await supabaseClient.rpc('get_trending_music', params);
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id, title, description, thumbnail_url, file_url, views_count,
+                likes_count, shares_count, comments_count, duration, created_at,
+                user_id, genre, city, language_code, content_format,
+                user_profiles!user_id ( id, full_name, username, avatar_url )
+            `)
+            .eq('status', 'published')
+            .in('content_format', ['music', 'music_video', 'song', 'track', 'audio', 'album_track'])
+            .order('created_at', { ascending: false })
+            .limit(200);
+
         if (error) throw error;
-        return data || [];
+        
+        if (!data || data.length === 0) {
+            console.log('No music content found');
+            return [];
+        }
+        
+        // Fetch mood tags from content_tags (text column)
+        const contentIds = data.map(c => c.id);
+        const { data: tagData, error: tagError } = await supabaseClient
+            .from('content_tags')
+            .select('content_id, tag')
+            .in('content_id', contentIds);
+        
+        const tagsByContent = new Map();
+        if (tagData && !tagError) {
+            tagData.forEach(t => {
+                if (!tagsByContent.has(t.content_id)) tagsByContent.set(t.content_id, []);
+                tagsByContent.get(t.content_id).push(t.tag);
+            });
+        }
+        
+        // Fetch metrics for trending score
+        const { data: metricsData, error: metricsError } = await supabaseClient
+            .from('content_metrics_realtime')
+            .select('content_id, final_score, trend_label')
+            .in('content_id', contentIds);
+        
+        const metricsByContent = new Map();
+        if (metricsData && !metricsError) {
+            metricsData.forEach(m => {
+                metricsByContent.set(m.content_id, {
+                    final_score: m.final_score || 0,
+                    trend_label: m.trend_label
+                });
+            });
+        }
+        
+        // Transform data
+        allMusicContent = data.map(item => {
+            const tags = tagsByContent.get(item.id) || [];
+            const metrics = metricsByContent.get(item.id) || { final_score: 0, trend_label: null };
+            
+            // Calculate trending score (views + likes + shares velocity)
+            const trendingScore = metrics.final_score > 0 ? metrics.final_score : 
+                (item.views_count || 0) * 0.4 + (item.likes_count || 0) * 0.3 + (item.shares_count || 0) * 0.3;
+            
+            return {
+                ...item,
+                mood_tags: tags.filter(t => ['Party', 'Chill', 'Spiritual', 'Energetic', 'Relaxing'].includes(t)),
+                language_tags: tags.filter(t => ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa', 'Sepedi', 'English'].includes(t)),
+                city_tags: tags.filter(t => ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'].includes(t)),
+                trending_score: trendingScore,
+                trend_label: metrics.trend_label,
+                user_profiles: item.user_profiles
+            };
+        });
+        
+        console.log(`✅ Loaded ${allMusicContent.length} music items`);
+        return allMusicContent;
+        
     } catch (error) {
-        console.error('Error fetching trending music:', error);
+        console.error('Error loading music:', error);
+        showToast('Failed to load music content', 'error');
         return [];
     }
 }
 
-// 2. Get music by location
-async function getMusicByLocation(city = null, province = null, limit = 30) {
-    try {
-        const params = { p_limit: limit };
-        if (city) params.p_city = city;
-        if (province) params.p_province = province;
-        
-        const { data, error } = await supabaseClient.rpc('get_music_by_location', params);
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error('Error fetching music by location:', error);
-        return [];
-    }
+// 2. Get music by genre (simple filter)
+async function getMusicByGenre(genreName, limit = 30) {
+    let filtered = allMusicContent.filter(item => 
+        item.genre && item.genre.toLowerCase() === genreName.toLowerCase()
+    );
+    return applySorting(filtered, currentSort).slice(0, limit);
 }
 
-// 3. Get music by language
+// 3. Get music by city
+async function getMusicByCity(cityName, limit = 30) {
+    let filtered = allMusicContent.filter(item => 
+        (item.city && item.city.toLowerCase() === cityName.toLowerCase()) ||
+        (item.city_tags && item.city_tags.some(tag => tag.toLowerCase() === cityName.toLowerCase()))
+    );
+    return applySorting(filtered, currentSort).slice(0, limit);
+}
+
+// 4. Get music by language
 async function getMusicByLanguage(language, limit = 30) {
-    try {
-        const { data, error } = await supabaseClient.rpc('get_music_by_language', {
-            p_language: language,
-            p_limit: limit
-        });
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error('Error fetching music by language:', error);
-        return [];
-    }
+    let filtered = allMusicContent.filter(item => 
+        (item.language_code && item.language_code.toLowerCase() === language.toLowerCase()) ||
+        (item.language_tags && item.language_tags.some(tag => tag.toLowerCase() === language.toLowerCase()))
+    );
+    return applySorting(filtered, currentSort).slice(0, limit);
 }
 
-// 4. Get music by mood
+// 5. Get music by mood (using content_tags text column)
 async function getMusicByMood(mood, limit = 30) {
-    try {
-        const { data, error } = await supabaseClient.rpc('get_music_by_mood', {
-            p_mood: mood,
-            p_limit: limit
-        });
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error('Error fetching music by mood:', error);
-        return [];
-    }
+    let filtered = allMusicContent.filter(item => 
+        item.mood_tags && item.mood_tags.some(tag => tag.toLowerCase() === mood.toLowerCase())
+    );
+    return applySorting(filtered, currentSort).slice(0, limit);
 }
 
-// 5. Advanced discovery with multiple filters
-async function discoverMusic(genreSlug = null, city = null, language = null, mood = null, sortBy = 'trending', limit = 30, offset = 0) {
-    try {
-        const params = {
-            p_sort_by: sortBy,
-            p_limit: limit,
-            p_offset: offset
-        };
-        if (genreSlug) params.p_genre_slug = genreSlug;
-        if (city) params.p_city = city;
-        if (language) params.p_language = language;
-        if (mood) params.p_mood = mood;
+// 6. Get trending music (sorted by trending_score)
+async function getTrendingMusic(limit = 20) {
+    let sorted = [...allMusicContent].sort((a, b) => b.trending_score - a.trending_score);
+    return sorted.slice(0, limit);
+}
+
+// 7. Apply sorting
+function applySorting(items, sortType) {
+    const sorted = [...items];
+    if (sortType === 'trending') {
+        sorted.sort((a, b) => b.trending_score - a.trending_score);
+    } else if (sortType === 'views') {
+        sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+    } else if (sortType === 'newest') {
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return sorted;
+}
+
+// ===== UI UPDATE FUNCTIONS =====
+
+async function updateHeroSection() {
+    const trending = await getTrendingMusic(1);
+    if (trending && trending.length > 0) {
+        currentHeroContent = trending[0];
+        document.getElementById('hero-title').textContent = truncateText(currentHeroContent.title, 50);
+        const creatorName = currentHeroContent.user_profiles?.full_name || currentHeroContent.user_profiles?.username || 'Unknown Artist';
+        const avatarUrl = currentHeroContent.user_profiles?.avatar_url ? fixMediaUrl(currentHeroContent.user_profiles.avatar_url) : null;
+        document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
+        document.getElementById('hero-stats').innerHTML = `<span><i class="fas fa-eye"></i> ${formatNumber(currentHeroContent.views_count)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(currentHeroContent.likes_count)} likes</span><span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(currentHeroContent.trending_score))}</span>`;
         
-        const { data, error } = await supabaseClient.rpc('discover_music', params);
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error('Error in discover music:', error);
-        return [];
+        if (currentHeroContent.file_url) {
+            const videoEl = document.getElementById('wave-video');
+            const source = videoEl.querySelector('source');
+            if (source) source.src = fixMediaUrl(currentHeroContent.file_url);
+            videoEl.load();
+            videoEl.play().catch(e => console.log('Autoplay prevented'));
+        }
     }
 }
-
-// ===== UI UPDATE FUNCTIONS USING DISCOVERY API =====
 
 async function updateChart() {
     const chartList = document.getElementById('chart-list');
     if (!chartList) return;
     
-    chartList.innerHTML = '<div style="padding:40px;text-align:center;"><div class="spinner" style="width:30px;height:30px;"></div> Loading chart...</div>';
-    
-    // Use discover_music for chart with trending sort
-    let data = await discoverMusic(null, null, null, null, currentSort, 20, 0);
+    let data = await getTrendingMusic(20);
     
     if (data.length === 0) {
         chartList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">No trending music available</div>';
@@ -1405,7 +1475,7 @@ async function updateChart() {
     }
     
     chartList.innerHTML = data.map((item, index) => {
-        const score = currentSort === 'trending' ? Math.round(item.trending_score || 0) : 
+        const score = currentSort === 'trending' ? Math.round(item.trending_score) : 
                      (currentSort === 'views' ? formatNumber(item.views_count) : 
                      new Date(item.created_at).toLocaleDateString());
         
@@ -1414,14 +1484,14 @@ async function updateChart() {
         else if (item.trend_label === 'declining') { trendIcon = '↓'; trendClass = 'trend-down'; }
         else if (item.trend_label === 'peak') { trendIcon = '★'; trendClass = 'trend-peak'; }
         
-        return `<div class="chart-item" data-content-id="${item.content_id}">
+        return `<div class="chart-item" data-content-id="${item.id}">
             <div class="chart-rank">#${index + 1}</div>
             <div class="chart-info">
                 <img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
                 <div class="chart-details">
                     <h4>${truncateText(escapeHtml(item.title), 35)}</h4>
-                    <p>${escapeHtml(item.creator_name || item.creator_username || 'Artist')}</p>
-                    ${item.genre_name ? `<p style="font-size:10px;color:var(--warm-gold);">${escapeHtml(item.genre_name)}</p>` : ''}
+                    <p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>
+                    ${item.genre ? `<p style="font-size:10px;color:var(--warm-gold);">${escapeHtml(item.genre)}</p>` : ''}
                 </div>
             </div>
             <div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div>
@@ -1436,14 +1506,11 @@ async function updateRegionalFusion() {
     const container = document.getElementById('regional-fusion-list');
     if (!container) return;
     
-    container.innerHTML = '<div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading regional...</div>';
-    
-    // Get music from major South African cities
-    const cities = ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'];
+    const cities = ['Johannesburg', 'Cape Town', 'Durban'];
     const results = [];
     
     for (const city of cities) {
-        const cityMusic = await getMusicByLocation(city, null, 4);
+        const cityMusic = await getMusicByCity(city, 4);
         if (cityMusic.length > 0) {
             results.push({ city, items: cityMusic });
         }
@@ -1455,7 +1522,7 @@ async function updateRegionalFusion() {
     }
     
     container.innerHTML = results.map(regionData => 
-        regionData.items.map(item => `<div class="regional-card" data-content-id="${item.content_id}">
+        regionData.items.map(item => `<div class="regional-card" data-content-id="${item.id}">
             <div class="regional-thumb">
                 <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
                 <div class="regional-overlay"></div>
@@ -1463,7 +1530,7 @@ async function updateRegionalFusion() {
             </div>
             <div class="regional-info">
                 <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-                <div class="regional-artist">${escapeHtml(item.creator_name || item.creator_username || 'Artist')}</div>
+                <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
                 <div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
             </div>
         </div>`).join('')
@@ -1476,9 +1543,7 @@ async function updateLanguageSpotlight() {
     const container = document.getElementById('language-spotlight-list');
     if (!container) return;
     
-    container.innerHTML = '<div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading language content...</div>';
-    
-    const languages = ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa', 'Sepedi'];
+    const languages = ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa'];
     const results = [];
     
     for (const lang of languages) {
@@ -1494,7 +1559,7 @@ async function updateLanguageSpotlight() {
     }
     
     container.innerHTML = results.map(langData => 
-        langData.items.map(item => `<div class="regional-card" data-content-id="${item.content_id}">
+        langData.items.map(item => `<div class="regional-card" data-content-id="${item.id}">
             <div class="regional-thumb">
                 <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
                 <div class="regional-overlay"></div>
@@ -1502,7 +1567,7 @@ async function updateLanguageSpotlight() {
             </div>
             <div class="regional-info">
                 <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-                <div class="regional-artist">${escapeHtml(item.creator_name || item.creator_username || 'Artist')}</div>
+                <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
                 <div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
             </div>
         </div>`).join('')
@@ -1517,23 +1582,21 @@ async function updateMoreMusic() {
     
     if (!grid) return;
     
-    grid.innerHTML = '<div style="padding:40px;text-align:center;grid-column:1/-1;"><div class="spinner" style="width:30px;height:30px;"></div> Loading music...</div>';
-    
     let data = [];
     
-    // Apply current filter to discover_music
+    // Apply current filter
     if (currentFilter.type === 'genre' && currentFilter.value) {
-        data = await discoverMusic(currentFilter.value, null, null, null, currentSort, 30, 0);
-    } else if (currentFilter.type === 'location' && currentFilter.value) {
-        data = await discoverMusic(null, currentFilter.value, null, null, currentSort, 30, 0);
+        data = await getMusicByGenre(currentFilter.value, 30);
+    } else if (currentFilter.type === 'city' && currentFilter.value) {
+        data = await getMusicByCity(currentFilter.value, 30);
     } else if (currentFilter.type === 'language' && currentFilter.value) {
-        data = await discoverMusic(null, null, currentFilter.value, null, currentSort, 30, 0);
+        data = await getMusicByLanguage(currentFilter.value, 30);
     } else if (currentFilter.type === 'mood' && currentFilter.value) {
-        data = await discoverMusic(null, null, null, currentFilter.value, currentSort, 30, 0);
+        data = await getMusicByMood(currentFilter.value, 30);
     } else if (currentFilter.type === 'special' && currentFilter.value === 'trending') {
         data = await getTrendingMusic(30);
     } else {
-        data = await discoverMusic(null, null, null, null, currentSort, 30, 0);
+        data = applySorting(allMusicContent, currentSort).slice(0, 30);
     }
     
     if (!data || data.length === 0) {
@@ -1546,12 +1609,12 @@ async function updateMoreMusic() {
     if (empty) empty.style.display = 'none';
     
     grid.innerHTML = data.map(item => {
-        const avatarUrl = item.creator_avatar ? fixMediaUrl(item.creator_avatar) : null;
-        const initials = (item.creator_name || item.creator_username || 'A')[0].toUpperCase();
+        const avatarUrl = item.user_profiles?.avatar_url ? fixMediaUrl(item.user_profiles.avatar_url) : null;
+        const initials = (item.user_profiles?.full_name || item.user_profiles?.username || 'A')[0].toUpperCase();
         const isNew = (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000;
         const isTrending = item.trend_label === 'rising' || item.trending_score > 1000;
         
-        return `<div class="content-card" data-content-id="${item.content_id}">
+        return `<div class="content-card" data-content-id="${item.id}">
             <div class="card-thumbnail">
                 <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
                 <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
@@ -1566,12 +1629,12 @@ async function updateMoreMusic() {
                 <h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3>
                 <div class="creator-info-small">
                     <div class="creator-avatar-small">${avatarUrl ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${initials}</div>`}</div>
-                    <div class="creator-name-small">${escapeHtml(item.creator_name || item.creator_username || 'Artist')}</div>
+                    <div class="creator-name-small">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
                 </div>
                 <div class="card-meta">
                     <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-                    ${item.genre_name ? `<span><i class="fas fa-music"></i> ${item.genre_name}</span>` : ''}
+                    ${item.genre ? `<span><i class="fas fa-music"></i> ${item.genre}</span>` : ''}
                 </div>
             </div>
         </div>`;
@@ -1580,48 +1643,26 @@ async function updateMoreMusic() {
     attachContentClickHandlers();
 }
 
-async function updateHeroSection() {
-    // Get top trending music for hero
-    const trending = await getTrendingMusic(1);
-    if (trending && trending.length > 0) {
-        currentHeroContent = trending[0];
-        document.getElementById('hero-title').textContent = truncateText(currentHeroContent.title, 50);
-        const creatorName = currentHeroContent.creator_name || currentHeroContent.creator_username || 'Unknown Artist';
-        const avatarUrl = currentHeroContent.creator_avatar ? fixMediaUrl(currentHeroContent.creator_avatar) : null;
-        document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
-        document.getElementById('hero-stats').innerHTML = `<span><i class="fas fa-eye"></i> ${formatNumber(currentHeroContent.views_count)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(currentHeroContent.likes_count)} likes</span><span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(currentHeroContent.trending_score || 0))}</span>`;
-        
-        if (currentHeroContent.file_url) {
-            const videoEl = document.getElementById('wave-video');
-            const source = videoEl.querySelector('source');
-            if (source) source.src = fixMediaUrl(currentHeroContent.file_url);
-            videoEl.load();
-            videoEl.play().catch(e => console.log('Autoplay prevented'));
-        }
-    }
-}
-
 // ===== FILTER HANDLERS =====
 function setupFilters() {
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', async () => {
-            // Update active state
             document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
             
             const filterType = chip.dataset.filterType;
-            const filterValue = chip.dataset.filter || chip.dataset.genre || chip.dataset.location || chip.dataset.language || chip.dataset.mood;
+            const filterValue = chip.dataset.filter;
             
             if (filterType === 'all') {
                 currentFilter = { type: 'all', value: null };
             } else if (filterType === 'genre') {
                 currentFilter = { type: 'genre', value: filterValue };
-            } else if (filterType === 'location') {
-                currentFilter = { type: 'location', value: chip.dataset.location };
+            } else if (filterType === 'city') {
+                currentFilter = { type: 'city', value: filterValue };
             } else if (filterType === 'language') {
-                currentFilter = { type: 'language', value: chip.dataset.language };
+                currentFilter = { type: 'language', value: filterValue };
             } else if (filterType === 'mood') {
-                currentFilter = { type: 'mood', value: chip.dataset.mood };
+                currentFilter = { type: 'mood', value: filterValue };
             } else if (filterType === 'special') {
                 currentFilter = { type: 'special', value: filterValue };
             }
@@ -1630,7 +1671,6 @@ function setupFilters() {
         });
     });
     
-    // Setup sort buttons
     document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
@@ -1672,7 +1712,7 @@ function attachContentClickHandlers() {
 
 function setupHeroButtons() {
     document.getElementById('hero-stream-btn')?.addEventListener('click', () => { 
-        if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.content_id}`; 
+        if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.id}`; 
     });
     document.getElementById('hero-add-vibe-btn')?.addEventListener('click', async () => { 
         if (!currentUser) { 
@@ -1680,7 +1720,7 @@ function setupHeroButtons() {
             window.location.href = `login.html?redirect=music.html`; 
             return; 
         } 
-        showToast(`Added to My Vibe`, 'success'); 
+        showToast(`Added "${currentHeroContent?.title}" to My Vibe`, 'success'); 
     });
 }
 
@@ -1803,7 +1843,10 @@ async function initialize() {
     setupHeroButtons(); 
     await checkAuth(); 
     
-    // Load all sections using Discovery API
+    // Load all music content first
+    await loadAllMusic();
+    
+    // Update all sections
     await updateHeroSection();
     await updateChart();
     await updateRegionalFusion();
