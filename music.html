@@ -1143,27 +1143,9 @@ transition: all 0.2s;
 
 <main class="container">
 
-<!-- FILTER BAR -->
+<!-- FILTER BAR - DYNAMIC GENRES -->
 <div class="filter-bar" id="filter-bar">
-<button class="filter-chip active" data-filter="all" data-filter-type="all">All Music</button>
-<button class="filter-chip" data-filter="trending" data-filter-type="special">🔥 Trending</button>
-<button class="filter-chip" data-filter="Amapiano" data-filter-type="genre">Amapiano</button>
-<button class="filter-chip" data-filter="Afrobeats" data-filter-type="genre">Afrobeats</button>
-<button class="filter-chip" data-filter="Gqom" data-filter-type="genre">Gqom</button>
-<button class="filter-chip" data-filter="Bongo Flava" data-filter-type="genre">Bongo Flava</button>
-</div>
-
-<!-- LOCATION & LANGUAGE QUICK FILTERS -->
-<div class="filter-bar" style="border-bottom: none; padding-top: 0;">
-<button class="filter-chip" data-filter="Johannesburg" data-filter-type="city"><i class="fas fa-city"></i> Johannesburg</button>
-<button class="filter-chip" data-filter="Cape Town" data-filter-type="city"><i class="fas fa-city"></i> Cape Town</button>
-<button class="filter-chip" data-filter="Durban" data-filter-type="city"><i class="fas fa-city"></i> Durban</button>
-<button class="filter-chip" data-filter="isiZulu" data-filter-type="language"><i class="fas fa-language"></i> isiZulu</button>
-<button class="filter-chip" data-filter="Xitsonga" data-filter-type="language"><i class="fas fa-language"></i> Xitsonga</button>
-<button class="filter-chip" data-filter="Setswana" data-filter-type="language"><i class="fas fa-language"></i> Setswana</button>
-<button class="filter-chip" data-filter="Party" data-filter-type="mood"><i class="fas fa-smile"></i> Party</button>
-<button class="filter-chip" data-filter="Chill" data-filter-type="mood"><i class="fas fa-cloud-moon"></i> Chill</button>
-<button class="filter-chip" data-filter="Spiritual" data-filter-type="mood"><i class="fas fa-pray"></i> Spiritual</button>
+<button class="filter-chip active" data-genre="all">All Music</button>
 </div>
 
 <!-- THE CHART - TOP 20 -->
@@ -1171,9 +1153,9 @@ transition: all 0.2s;
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-chart-simple"></i> The Chart</h2>
 <div class="sorting-options" id="sorting-options">
-<button class="sort-btn active" data-sort="trending">Trending</button>
+<button class="sort-btn active" data-sort="velocity">Velocity</button>
 <button class="sort-btn" data-sort="views">Most Viewed</button>
-<button class="sort-btn" data-sort="newest">Newest</button>
+<button class="sort-btn" data-sort="trending">Trending</button>
 </div>
 </div>
 <div class="chart-container">
@@ -1183,28 +1165,28 @@ transition: all 0.2s;
 <span>Score</span>
 <span>Trend</span>
 </div>
-<div id="chart-list"><div style="padding:40px;text-align:center;"><div class="spinner" style="width:30px;height:30px;"></div> Loading chart...</div></div>
+<div id="chart-list"><div style="padding:40px;text-align:center;">Loading chart...</div></div>
 </div>
 </section>
 
-<!-- REGIONAL FUSION (By City) -->
+<!-- REGIONAL FUSION -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-globe-africa"></i> Regional Fusion</h2>
 <a href="#" class="section-link" id="regional-view-all">View All <i class="fas fa-arrow-right"></i></a>
 </div>
 <div class="scroll-container">
-<div class="horizontal-scroll" id="regional-fusion-list"><div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading regional content...</div></div>
+<div class="horizontal-scroll" id="regional-fusion-list"><div style="padding:20px;color:var(--slate-grey);">Loading regional content...</div></div>
 </div>
 </section>
 
-<!-- LANGUAGE SPOTLIGHT -->
+<!-- LIVE FROM... -->
 <section class="section">
 <div class="section-header">
-<h2 class="section-title"><i class="fas fa-language"></i> Language Spotlight</h2>
+<h2 class="section-title"><i class="fas fa-microphone-alt"></i> Live From...</h2>
 </div>
 <div class="scroll-container">
-<div class="horizontal-scroll" id="language-spotlight-list"><div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading language content...</div></div>
+<div class="horizontal-scroll" id="live-from-list"><div style="padding:20px;color:var(--slate-grey);">Loading live content...</div></div>
 </div>
 </section>
 
@@ -1213,7 +1195,7 @@ transition: all 0.2s;
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-headphones"></i> More Music</h2>
 </div>
-<div class="content-grid" id="more-music-grid"><div style="padding:40px;text-align:center;grid-column:1/-1;"><div class="spinner" style="width:30px;height:30px;"></div> Loading music...</div></div>
+<div class="content-grid" id="more-music-grid"><div style="padding:40px;text-align:center;grid-column:1/-1;">Loading music...</div></div>
 <div id="more-music-empty" class="empty-state" style="display: none;">
 <div class="empty-icon"><i class="fas fa-music"></i></div>
 <h3>No music found</h3>
@@ -1252,9 +1234,11 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
-let allMusicContent = [];
-let currentFilter = { type: 'all', value: null };
-let currentSort = 'trending';
+let musicContent = [];
+let trendingScores = new Map();
+let momentumMap = new Map();
+let currentSort = 'velocity';
+let currentGenre = 'all';
 let currentHeroContent = null;
 
 // ===== HELPER FUNCTIONS =====
@@ -1268,352 +1252,249 @@ function showToast(message, type = 'info') {
     container.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
+function formatNumber(num) { if (!num || num === 0) return '0'; if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; if (num >= 1000) return (num/1000).toFixed(1) + 'K'; return num.toString(); }
+function truncateText(text, maxLength) { if (!text) return ''; return text.length <= maxLength ? text : text.substring(0, maxLength) + '...'; }
+function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+function formatDuration(seconds) { if (!seconds) return '0:00'; const mins = Math.floor(seconds / 60); const secs = seconds % 60; return `${mins}:${secs.toString().padStart(2, '0')}`; }
+function fixMediaUrl(url) { if (!url) return ''; if (url.startsWith('http')) return url; if (url.startsWith('data:')) return url; return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`; }
 
-function formatNumber(num) { 
-    if (!num || num === 0) return '0'; 
-    if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; 
-    if (num >= 1000) return (num/1000).toFixed(1) + 'K'; 
-    return num.toString(); 
-}
-
-function truncateText(text, maxLength) { 
-    if (!text) return ''; 
-    return text.length <= maxLength ? text : text.substring(0, maxLength) + '...'; 
-}
-
-function escapeHtml(text) { 
-    if (!text) return ''; 
-    const div = document.createElement('div'); 
-    div.textContent = text; 
-    return div.innerHTML; 
-}
-
-function formatDuration(seconds) { 
-    if (!seconds) return '0:00'; 
-    const mins = Math.floor(seconds / 60); 
-    const secs = seconds % 60; 
-    return `${mins}:${secs.toString().padStart(2, '0')}`; 
-}
-
-function fixMediaUrl(url) { 
-    if (!url) return ''; 
-    if (url.startsWith('http')) return url; 
-    if (url.startsWith('data:')) return url; 
-    return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`; 
-}
-
-// ===== SIMPLE SUPABASE QUERIES (No RPC Functions Needed) =====
-
-// 1. Load all music content (base query)
-async function loadAllMusic() {
+// ===== LOAD MUSIC CONTENT - WITH CRITICAL content_format FILTER =====
+// Only includes actual music (songs, music videos, tracks, audio) and excludes documentaries, films, podcasts
+async function loadMusicContent() {
     try {
-        const { data, error } = await supabaseClient
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) loadingText.textContent = 'Loading music catalog...';
+        
+        // CRITICAL FIX: Filter by content_format to ONLY get music content
+        // Excludes documentaries, films, podcast episodes, interview series
+        const { data: contentData, error: contentError } = await supabaseClient
             .from('Content')
             .select(`
                 id, title, description, thumbnail_url, file_url, views_count,
-                likes_count, shares_count, comments_count, duration, created_at,
-                user_id, genre, city, language_code, content_format,
+                likes_count, comments_count, shares_count, duration, created_at,
+                user_id, genre, language_code, city, region_code, tempo, is_explicit,
+                content_format,
                 user_profiles!user_id ( id, full_name, username, avatar_url )
             `)
             .eq('status', 'published')
-            .in('content_format', ['music', 'music_video', 'song', 'track', 'audio', 'album_track'])
+            .in('content_format', ['music', 'music_video', 'song', 'track', 'audio', 'Music', 'music_video'])
             .order('created_at', { ascending: false })
             .limit(200);
 
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-            console.log('No music content found');
-            return [];
+        if (contentError) throw contentError;
+        if (!contentData || contentData.length === 0) { 
+            console.log('No music content found with content_format filter, showing demo');
+            showDemoContent(); 
+            const loading = document.getElementById('loading');
+            if (loading) loading.style.display = 'none';
+            return; 
         }
-        
-        // Fetch mood tags from content_tags (text column)
-        const contentIds = data.map(c => c.id);
-        const { data: tagData, error: tagError } = await supabaseClient
+
+        console.log(`✅ Loaded ${contentData.length} music items (filtered by content_format: only music/music_video/song/track/audio)`);
+
+        // Step 2: Get genre mappings separately
+        const contentIds = contentData.map(c => c.id);
+        const { data: genreMappings, error: genreError } = await supabaseClient
+            .from('content_genres')
+            .select(`content_id, is_primary, genre_id, genres!inner ( id, name, slug, parent_genre_id )`)
+            .in('content_id', contentIds)
+            .eq('is_primary', true);
+
+        const genreMap = new Map();
+        if (genreMappings && !genreError) {
+            genreMappings.forEach(gm => {
+                if (gm.genres) {
+                    genreMap.set(gm.content_id, {
+                        id: gm.genres.id,
+                        name: gm.genres.name,
+                        slug: gm.genres.slug,
+                        parent_genre_id: gm.genres.parent_genre_id
+                    });
+                }
+            });
+        }
+
+        // Step 3: Get tag mappings
+        const { data: tagMappings, error: tagError } = await supabaseClient
             .from('content_tags')
-            .select('content_id, tag')
+            .select('content_id, tag_id')
             .in('content_id', contentIds);
-        
-        const tagsByContent = new Map();
-        if (tagData && !tagError) {
-            tagData.forEach(t => {
-                if (!tagsByContent.has(t.content_id)) tagsByContent.set(t.content_id, []);
-                tagsByContent.get(t.content_id).push(t.tag);
-            });
-        }
-        
-        // Fetch metrics for trending score
-        const { data: metricsData, error: metricsError } = await supabaseClient
-            .from('content_metrics_realtime')
-            .select('content_id, final_score, trend_label')
-            .in('content_id', contentIds);
-        
-        const metricsByContent = new Map();
-        if (metricsData && !metricsError) {
-            metricsData.forEach(m => {
-                metricsByContent.set(m.content_id, {
-                    final_score: m.final_score || 0,
-                    trend_label: m.trend_label
-                });
-            });
-        }
-        
-        // Transform data
-        allMusicContent = data.map(item => {
-            const tags = tagsByContent.get(item.id) || [];
-            const metrics = metricsByContent.get(item.id) || { final_score: 0, trend_label: null };
+
+        let tagsByContent = new Map();
+        if (tagMappings && !tagError && tagMappings.length > 0) {
+            const tagIds = [...new Set(tagMappings.map(t => t.tag_id))];
+            const { data: tagsData, error: tagsError } = await supabaseClient
+                .from('tags')
+                .select('id, name, tag_type')
+                .in('id', tagIds);
             
-            // Calculate trending score (views + likes + shares velocity)
-            const trendingScore = metrics.final_score > 0 ? metrics.final_score : 
-                (item.views_count || 0) * 0.4 + (item.likes_count || 0) * 0.3 + (item.shares_count || 0) * 0.3;
+            if (!tagsError && tagsData) {
+                const tagDetailsMap = new Map(tagsData.map(tag => [tag.id, { name: tag.name, type: tag.tag_type }]));
+                tagMappings.forEach(tm => {
+                    const tagDetail = tagDetailsMap.get(tm.tag_id);
+                    if (tagDetail) {
+                        if (!tagsByContent.has(tm.content_id)) tagsByContent.set(tm.content_id, []);
+                        tagsByContent.get(tm.content_id).push(tagDetail);
+                    }
+                });
+            }
+        }
+
+        // Step 4: Load trending metrics
+        await loadTrendingMetrics();
+
+        // Step 5: Transform data for UI
+        musicContent = contentData.map(item => {
+            const primaryGenre = genreMap.get(item.id);
+            const itemTags = tagsByContent.get(item.id) || [];
+            const moodTags = itemTags.filter(t => t.type === 'mood').map(t => t.name);
+            const languageTags = itemTags.filter(t => t.type === 'language').map(t => t.name);
+            const cityTags = itemTags.filter(t => t.type === 'city').map(t => t.name);
+            const momentum = momentumMap.get(item.id);
             
             return {
-                ...item,
-                mood_tags: tags.filter(t => ['Party', 'Chill', 'Spiritual', 'Energetic', 'Relaxing'].includes(t)),
-                language_tags: tags.filter(t => ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa', 'Sepedi', 'English'].includes(t)),
-                city_tags: tags.filter(t => ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'].includes(t)),
-                trending_score: trendingScore,
-                trend_label: metrics.trend_label,
-                user_profiles: item.user_profiles
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                thumbnail_url: item.thumbnail_url,
+                file_url: item.file_url,
+                views_count: item.views_count || 0,
+                likes_count: item.likes_count || 0,
+                comments_count: item.comments_count || 0,
+                shares_count: item.shares_count || 0,
+                duration: item.duration,
+                created_at: item.created_at,
+                user_id: item.user_id,
+                genre: primaryGenre?.name || item.genre || 'Music',
+                genre_slug: primaryGenre?.slug || (item.genre || 'music').toLowerCase().replace(/\s+/g, '-'),
+                parent_genre: primaryGenre?.parent_genre_id || null,
+                language_code: item.language_code,
+                city: item.city,
+                region_code: item.region_code,
+                tempo: item.tempo,
+                is_explicit: item.is_explicit,
+                mood_tags: moodTags,
+                language_tags: languageTags,
+                city_tags: cityTags,
+                user_profiles: item.user_profiles,
+                content_format: item.content_format,
+                velocityScore: momentum?.velocity_score || (item.views_count || 0) * 0.4 + (item.shares_count || 0) * 0.6,
+                trendingScore: momentum?.final_score || momentum?.velocity_score || 0,
+                momentum: momentum
             };
         });
-        
-        console.log(`✅ Loaded ${allMusicContent.length} music items`);
-        return allMusicContent;
-        
+
+        console.log(`✅ Transformed ${musicContent.length} music items with genre taxonomy`);
+        organizeAndDisplay();
+
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
+
     } catch (error) {
         console.error('Error loading music:', error);
-        showToast('Failed to load music content', 'error');
-        return [];
+        showToast('Failed to load music content. Please refresh.', 'error');
+        showDemoContent();
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
     }
 }
 
-// 2. Get music by genre (simple filter)
-async function getMusicByGenre(genreName, limit = 30) {
-    let filtered = allMusicContent.filter(item => 
-        item.genre && item.genre.toLowerCase() === genreName.toLowerCase()
-    );
-    return applySorting(filtered, currentSort).slice(0, limit);
-}
-
-// 3. Get music by city
-async function getMusicByCity(cityName, limit = 30) {
-    let filtered = allMusicContent.filter(item => 
-        (item.city && item.city.toLowerCase() === cityName.toLowerCase()) ||
-        (item.city_tags && item.city_tags.some(tag => tag.toLowerCase() === cityName.toLowerCase()))
-    );
-    return applySorting(filtered, currentSort).slice(0, limit);
-}
-
-// 4. Get music by language
-async function getMusicByLanguage(language, limit = 30) {
-    let filtered = allMusicContent.filter(item => 
-        (item.language_code && item.language_code.toLowerCase() === language.toLowerCase()) ||
-        (item.language_tags && item.language_tags.some(tag => tag.toLowerCase() === language.toLowerCase()))
-    );
-    return applySorting(filtered, currentSort).slice(0, limit);
-}
-
-// 5. Get music by mood (using content_tags text column)
-async function getMusicByMood(mood, limit = 30) {
-    let filtered = allMusicContent.filter(item => 
-        item.mood_tags && item.mood_tags.some(tag => tag.toLowerCase() === mood.toLowerCase())
-    );
-    return applySorting(filtered, currentSort).slice(0, limit);
-}
-
-// 6. Get trending music (sorted by trending_score)
-async function getTrendingMusic(limit = 20) {
-    let sorted = [...allMusicContent].sort((a, b) => b.trending_score - a.trending_score);
-    return sorted.slice(0, limit);
-}
-
-// 7. Apply sorting
-function applySorting(items, sortType) {
-    const sorted = [...items];
-    if (sortType === 'trending') {
-        sorted.sort((a, b) => b.trending_score - a.trending_score);
-    } else if (sortType === 'views') {
-        sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-    } else if (sortType === 'newest') {
-        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
-    return sorted;
-}
-
-// ===== UI UPDATE FUNCTIONS =====
-
-async function updateHeroSection() {
-    const trending = await getTrendingMusic(1);
-    if (trending && trending.length > 0) {
-        currentHeroContent = trending[0];
-        document.getElementById('hero-title').textContent = truncateText(currentHeroContent.title, 50);
-        const creatorName = currentHeroContent.user_profiles?.full_name || currentHeroContent.user_profiles?.username || 'Unknown Artist';
-        const avatarUrl = currentHeroContent.user_profiles?.avatar_url ? fixMediaUrl(currentHeroContent.user_profiles.avatar_url) : null;
-        document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
-        document.getElementById('hero-stats').innerHTML = `<span><i class="fas fa-eye"></i> ${formatNumber(currentHeroContent.views_count)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(currentHeroContent.likes_count)} likes</span><span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(currentHeroContent.trending_score))}</span>`;
+async function loadTrendingMetrics() {
+    try {
+        const { data: momentumData, error: momentumError } = await supabaseClient
+            .from('content_metrics_realtime')
+            .select('content_id, final_score, velocity_score, momentum_score, trend_label, trend_stage, views_last_24h, likes_last_1h')
+            .limit(100);
         
-        if (currentHeroContent.file_url) {
-            const videoEl = document.getElementById('wave-video');
-            const source = videoEl.querySelector('source');
-            if (source) source.src = fixMediaUrl(currentHeroContent.file_url);
-            videoEl.load();
-            videoEl.play().catch(e => console.log('Autoplay prevented'));
+        if (momentumError) {
+            console.warn('Metrics table may not be populated yet:', momentumError);
+            return;
         }
-    }
-}
-
-async function updateChart() {
-    const chartList = document.getElementById('chart-list');
-    if (!chartList) return;
-    
-    let data = await getTrendingMusic(20);
-    
-    if (data.length === 0) {
-        chartList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">No trending music available</div>';
-        return;
-    }
-    
-    chartList.innerHTML = data.map((item, index) => {
-        const score = currentSort === 'trending' ? Math.round(item.trending_score) : 
-                     (currentSort === 'views' ? formatNumber(item.views_count) : 
-                     new Date(item.created_at).toLocaleDateString());
         
-        let trendIcon = '→', trendClass = '';
-        if (item.trend_label === 'rising') { trendIcon = '↑'; trendClass = 'trend-up'; }
-        else if (item.trend_label === 'declining') { trendIcon = '↓'; trendClass = 'trend-down'; }
-        else if (item.trend_label === 'peak') { trendIcon = '★'; trendClass = 'trend-peak'; }
+        if (momentumData && momentumData.length > 0) {
+            momentumData.forEach(mm => {
+                momentumMap.set(mm.content_id, {
+                    final_score: mm.final_score || 0,
+                    velocity_score: mm.velocity_score || 0,
+                    momentum_score: mm.momentum_score || 0,
+                    trend_label: mm.trend_label,
+                    trend_stage: mm.trend_stage,
+                    views_last_24h: mm.views_last_24h || 0,
+                    likes_last_1h: mm.likes_last_1h || 0
+                });
+                trendingScores.set(mm.content_id, mm.final_score || mm.velocity_score || 0);
+            });
+        }
+        console.log(`✅ Loaded metrics for ${momentumMap.size} items`);
+    } catch (e) {
+        console.log('Metrics loading optional:', e);
+    }
+}
+
+async function setupFilters() {
+    try {
+        const { data: genreData, error: genreError } = await supabaseClient
+            .from('genres')
+            .select('name, slug')
+            .eq('is_active', true)
+            .is('parent_genre_id', null)
+            .order('display_order', { ascending: true });
         
-        return `<div class="chart-item" data-content-id="${item.id}">
-            <div class="chart-rank">#${index + 1}</div>
-            <div class="chart-info">
-                <img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
-                <div class="chart-details">
-                    <h4>${truncateText(escapeHtml(item.title), 35)}</h4>
-                    <p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>
-                    ${item.genre ? `<p style="font-size:10px;color:var(--warm-gold);">${escapeHtml(item.genre)}</p>` : ''}
-                </div>
-            </div>
-            <div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div>
-            <div class="chart-trend ${trendClass}">${trendIcon} ${item.trend_label === 'rising' ? 'Rising' : (item.trend_label === 'peak' ? 'Peak' : '')}</div>
-        </div>`;
-    }).join('');
-    
-    attachChartClickHandlers();
-}
-
-async function updateRegionalFusion() {
-    const container = document.getElementById('regional-fusion-list');
-    if (!container) return;
-    
-    const cities = ['Johannesburg', 'Cape Town', 'Durban'];
-    const results = [];
-    
-    for (const city of cities) {
-        const cityMusic = await getMusicByCity(city, 4);
-        if (cityMusic.length > 0) {
-            results.push({ city, items: cityMusic });
+        if (!genreError && genreData && genreData.length > 0) {
+            const filterBar = document.getElementById('filter-bar');
+            if (filterBar) {
+                let chipsHtml = `<button class="filter-chip active" data-genre="all">All Music</button>`;
+                genreData.forEach(genre => {
+                    chipsHtml += `<button class="filter-chip" data-genre="${escapeHtml(genre.slug)}">${escapeHtml(genre.name)}</button>`;
+                });
+                filterBar.innerHTML = chipsHtml;
+            }
         }
+    } catch (e) {
+        console.log('Using fallback genres');
     }
     
-    if (results.length === 0) {
-        container.innerHTML = '<div style="padding:20px;color:var(--slate-grey);">No regional content available</div>';
-        return;
-    }
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            const genreValue = chip.dataset.genre;
+            currentGenre = genreValue === 'all' ? 'all' : genreValue;
+            updateMoreMusic();
+        });
+    });
     
-    container.innerHTML = results.map(regionData => 
-        regionData.items.map(item => `<div class="regional-card" data-content-id="${item.id}">
-            <div class="regional-thumb">
-                <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
-                <div class="regional-overlay"></div>
-                <div class="regional-badge"><i class="fas fa-map-marker-alt"></i> ${regionData.city}</div>
-            </div>
-            <div class="regional-info">
-                <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-                <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-                <div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
-            </div>
-        </div>`).join('')
-    ).join('');
-    
-    attachRegionalClickHandlers();
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSort = btn.dataset.sort;
+            updateChart();
+        });
+    });
 }
 
-async function updateLanguageSpotlight() {
-    const container = document.getElementById('language-spotlight-list');
-    if (!container) return;
-    
-    const languages = ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa'];
-    const results = [];
-    
-    for (const lang of languages) {
-        const langMusic = await getMusicByLanguage(lang, 3);
-        if (langMusic.length > 0) {
-            results.push({ language: lang, items: langMusic });
-        }
-    }
-    
-    if (results.length === 0) {
-        container.innerHTML = '<div style="padding:20px;color:var(--slate-grey);">No language-specific content available</div>';
-        return;
-    }
-    
-    container.innerHTML = results.map(langData => 
-        langData.items.map(item => `<div class="regional-card" data-content-id="${item.id}">
-            <div class="regional-thumb">
-                <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
-                <div class="regional-overlay"></div>
-                <div class="regional-badge"><i class="fas fa-language"></i> ${langData.language}</div>
-            </div>
-            <div class="regional-info">
-                <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-                <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-                <div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
-            </div>
-        </div>`).join('')
-    ).join('');
-    
-    attachRegionalClickHandlers();
-}
-
-async function updateMoreMusic() {
+function updateMoreMusic() {
     const grid = document.getElementById('more-music-grid');
     const empty = document.getElementById('more-music-empty');
-    
-    if (!grid) return;
-    
-    let data = [];
-    
-    // Apply current filter
-    if (currentFilter.type === 'genre' && currentFilter.value) {
-        data = await getMusicByGenre(currentFilter.value, 30);
-    } else if (currentFilter.type === 'city' && currentFilter.value) {
-        data = await getMusicByCity(currentFilter.value, 30);
-    } else if (currentFilter.type === 'language' && currentFilter.value) {
-        data = await getMusicByLanguage(currentFilter.value, 30);
-    } else if (currentFilter.type === 'mood' && currentFilter.value) {
-        data = await getMusicByMood(currentFilter.value, 30);
-    } else if (currentFilter.type === 'special' && currentFilter.value === 'trending') {
-        data = await getTrendingMusic(30);
-    } else {
-        data = applySorting(allMusicContent, currentSort).slice(0, 30);
+    let filtered = [...musicContent];
+    if (currentGenre !== 'all') {
+        filtered = filtered.filter(item => item.genre_slug === currentGenre || item.parent_genre === currentGenre || item.genre === currentGenre);
     }
-    
-    if (!data || data.length === 0) {
+    filtered = filtered.slice(5, 35);
+    if (filtered.length === 0) {
         if (grid) grid.style.display = 'none';
         if (empty) empty.style.display = 'block';
         return;
     }
-    
     if (grid) grid.style.display = 'grid';
     if (empty) empty.style.display = 'none';
     
-    grid.innerHTML = data.map(item => {
+    grid.innerHTML = filtered.map(item => {
         const avatarUrl = item.user_profiles?.avatar_url ? fixMediaUrl(item.user_profiles.avatar_url) : null;
         const initials = (item.user_profiles?.full_name || item.user_profiles?.username || 'A')[0].toUpperCase();
         const isNew = (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000;
-        const isTrending = item.trend_label === 'rising' || item.trending_score > 1000;
-        
+        const isTrending = item.velocityScore > 10000 || (item.momentum?.trend_label === 'rising');
         return `<div class="content-card" data-content-id="${item.id}">
             <div class="card-thumbnail">
                 <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
@@ -1634,227 +1515,173 @@ async function updateMoreMusic() {
                 <div class="card-meta">
                     <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-                    ${item.genre ? `<span><i class="fas fa-music"></i> ${item.genre}</span>` : ''}
+                    ${item.mood_tags?.length ? `<span><i class="fas fa-music"></i> ${item.mood_tags[0]}</span>` : ''}
                 </div>
             </div>
         </div>`;
     }).join('');
-    
     attachContentClickHandlers();
 }
 
-// ===== FILTER HANDLERS =====
-function setupFilters() {
-    document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', async () => {
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            
-            const filterType = chip.dataset.filterType;
-            const filterValue = chip.dataset.filter;
-            
-            if (filterType === 'all') {
-                currentFilter = { type: 'all', value: null };
-            } else if (filterType === 'genre') {
-                currentFilter = { type: 'genre', value: filterValue };
-            } else if (filterType === 'city') {
-                currentFilter = { type: 'city', value: filterValue };
-            } else if (filterType === 'language') {
-                currentFilter = { type: 'language', value: filterValue };
-            } else if (filterType === 'mood') {
-                currentFilter = { type: 'mood', value: filterValue };
-            } else if (filterType === 'special') {
-                currentFilter = { type: 'special', value: filterValue };
-            }
-            
-            await updateMoreMusic();
-        });
-    });
+function updateChart() {
+    const chartList = document.getElementById('chart-list');
+    if (!chartList) return;
+    let sorted = [...musicContent];
+    if (currentSort === 'velocity') sorted.sort((a, b) => b.velocityScore - a.velocityScore);
+    else if (currentSort === 'views') sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+    else sorted.sort((a, b) => b.trendingScore - a.trendingScore);
+    sorted = sorted.slice(0, 20);
     
-    document.querySelectorAll('.sort-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentSort = btn.dataset.sort;
-            await updateChart();
-            await updateMoreMusic();
-        });
+    chartList.innerHTML = sorted.map((item, index) => {
+        const score = currentSort === 'velocity' ? Math.round(item.velocityScore) : (currentSort === 'views' ? formatNumber(item.views_count) : (item.trendingScore ? Math.round(item.trendingScore) : formatNumber(item.views_count)));
+        let trendIcon = '→', trendClass = '';
+        if (item.momentum?.trend_label === 'rising') { trendIcon = '↑'; trendClass = 'trend-up'; }
+        else if (item.momentum?.trend_label === 'declining') { trendIcon = '↓'; trendClass = 'trend-down'; }
+        else if (item.momentum?.trend_label === 'peak') { trendIcon = '★'; trendClass = 'trend-peak'; }
+        return `<div class="chart-item" data-content-id="${item.id}">
+            <div class="chart-rank">#${index + 1}</div>
+            <div class="chart-info">
+                <img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
+                <div class="chart-details">
+                    <h4>${truncateText(escapeHtml(item.title), 35)}</h4>
+                    <p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>
+                    ${item.genre ? `<p style="font-size:10px;color:var(--warm-gold);">${escapeHtml(item.genre)}</p>` : ''}
+                </div>
+            </div>
+            <div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div>
+            <div class="chart-trend ${trendClass}">${trendIcon} ${item.momentum?.trend_label === 'rising' ? 'Rising' : (item.momentum?.trend_label === 'peak' ? 'Peak' : '')}</div>
+        </div>`;
+    }).join('');
+    attachChartClickHandlers();
+}
+
+function organizeAndDisplay() {
+    if (musicContent.length === 0) return;
+    const topTrending = [...musicContent].sort((a, b) => b.velocityScore - a.velocityScore)[0];
+    currentHeroContent = topTrending;
+    document.getElementById('hero-title').textContent = truncateText(topTrending.title, 50);
+    const creatorName = topTrending.user_profiles?.full_name || topTrending.user_profiles?.username || 'Unknown Artist';
+    const avatarUrl = topTrending.user_profiles?.avatar_url ? fixMediaUrl(topTrending.user_profiles.avatar_url) : null;
+    document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
+    document.getElementById('hero-stats').innerHTML = `<span><i class="fas fa-eye"></i> ${formatNumber(topTrending.views_count)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(topTrending.likes_count)} likes</span><span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(topTrending.velocityScore))}</span>`;
+    if (topTrending.file_url) {
+        const videoEl = document.getElementById('wave-video');
+        const source = videoEl.querySelector('source');
+        if (source) source.src = fixMediaUrl(topTrending.file_url);
+        videoEl.load();
+        videoEl.play().catch(e => console.log('Autoplay prevented'));
+    }
+    updateChart();
+    updateRegionalFusion();
+    updateLiveFrom();
+    updateMoreMusic();
+}
+
+function updateRegionalFusion() {
+    const container = document.getElementById('regional-fusion-list');
+    const regions = ['Afrobeats', 'Amapiano', 'Gengetone'];
+    const regionalItems = [];
+    regions.forEach(region => {
+        const items = musicContent.filter(c => c.genre === region).slice(0, 4);
+        regionalItems.push({ region, items });
     });
+    container.innerHTML = regionalItems.map(regionData => regionData.items.map(item => `<div class="regional-card" data-content-id="${item.id}">
+        <div class="regional-thumb">
+            <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
+            <div class="regional-overlay"></div>
+            <div class="regional-badge">${regionData.region === 'Afrobeats' ? '🇳🇬' : (regionData.region === 'Amapiano' ? '🇿🇦' : '🇰🇪')} ${regionData.region}</div>
+        </div>
+        <div class="regional-info">
+            <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
+            <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
+            <div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
+        </div>
+    </div>`).join('')).join('');
+    attachRegionalClickHandlers();
 }
 
-// ===== CLICK HANDLERS =====
-function attachChartClickHandlers() { 
-    document.querySelectorAll('.chart-item').forEach(el => { 
-        el.addEventListener('click', () => { 
-            const id = el.dataset.contentId; 
-            if (id) window.location.href = `content-detail.html?id=${id}`; 
-        }); 
-    }); 
+function updateLiveFrom() {
+    const container = document.getElementById('live-from-list');
+    const cities = ['Lagos', 'Nairobi', 'Johannesburg'];
+    const liveItems = musicContent.filter((_, idx) => idx % 3 === 0).slice(0, 6);
+    container.innerHTML = liveItems.map((item, idx) => `<div class="live-card" data-content-id="${item.id}">
+        <div class="live-badge"><i class="fas fa-circle"></i> LIVE</div>
+        <div class="live-thumb"><img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}"></div>
+        <div class="live-info">
+            <div class="live-title">${truncateText(escapeHtml(item.title), 25)}</div>
+            <div class="live-venue"><i class="fas fa-map-marker-alt"></i> ${cities[idx % 3]}</div>
+            <div class="live-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span></div>
+        </div>
+    </div>`).join('');
+    attachLiveClickHandlers();
 }
 
-function attachRegionalClickHandlers() { 
-    document.querySelectorAll('.regional-card').forEach(el => { 
-        el.addEventListener('click', () => { 
-            const id = el.dataset.contentId; 
-            if (id) window.location.href = `content-detail.html?id=${id}`; 
-        }); 
-    }); 
+function showDemoContent() {
+    musicContent = [
+        { id: 1, title: "African Giant", genre: "Afrobeats", genre_slug: "afrobeats", views_count: 1250000, likes_count: 89000, shares_count: 34000, duration: 210, created_at: new Date().toISOString(), user_profiles: { full_name: "Burna Boy", username: "burnaboy", avatar_url: null }, thumbnail_url: null, velocityScore: 125000, trendingScore: 1250, momentum: { trend_label: 'rising' } },
+        { id: 2, title: "Amapiano Anthem", genre: "Amapiano", genre_slug: "amapiano", views_count: 980000, likes_count: 67000, shares_count: 28000, duration: 195, created_at: new Date().toISOString(), user_profiles: { full_name: "DJ Maphorisa", username: "djmaphorisa", avatar_url: null }, thumbnail_url: null, velocityScore: 98000, trendingScore: 980, momentum: { trend_label: 'peak' } },
+        { id: 3, title: "Gengetone Vibe", genre: "Gengetone", genre_slug: "gengetone", views_count: 750000, likes_count: 52000, shares_count: 19000, duration: 188, created_at: new Date().toISOString(), user_profiles: { full_name: "Ethic", username: "ethic", avatar_url: null }, thumbnail_url: null, velocityScore: 75000, trendingScore: 750, momentum: { trend_label: 'rising' } }
+    ];
+    organizeAndDisplay();
 }
 
-function attachContentClickHandlers() { 
-    document.querySelectorAll('.content-card').forEach(el => { 
-        el.addEventListener('click', () => { 
-            const id = el.dataset.contentId; 
-            if (id) window.location.href = `content-detail.html?id=${id}`; 
-        }); 
-    }); 
-}
+function attachChartClickHandlers() { document.querySelectorAll('.chart-item').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
+function attachRegionalClickHandlers() { document.querySelectorAll('.regional-card').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
+function attachLiveClickHandlers() { document.querySelectorAll('.live-card').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
+function attachContentClickHandlers() { document.querySelectorAll('.content-card').forEach(el => { el.addEventListener('click', () => { const id = el.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; }); }); }
 
 function setupHeroButtons() {
-    document.getElementById('hero-stream-btn')?.addEventListener('click', () => { 
-        if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.id}`; 
-    });
-    document.getElementById('hero-add-vibe-btn')?.addEventListener('click', async () => { 
-        if (!currentUser) { 
-            showToast('Please sign in to add to My Vibe', 'warning'); 
-            window.location.href = `login.html?redirect=music.html`; 
-            return; 
-        } 
-        showToast(`Added "${currentHeroContent?.title}" to My Vibe`, 'success'); 
-    });
+    document.getElementById('hero-stream-btn')?.addEventListener('click', () => { if (currentHeroContent) window.location.href = `content-detail.html?id=${currentHeroContent.id}`; });
+    document.getElementById('hero-add-vibe-btn')?.addEventListener('click', async () => { if (!currentUser) { showToast('Please sign in to add to My Vibe', 'warning'); window.location.href = `login.html?redirect=music.html`; return; } showToast(`Added to My Vibe`, 'success'); });
 }
 
-// ===== UI SETUP FUNCTIONS =====
 function initThemeSystem() {
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-    const applyTheme = (theme) => { 
-        document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast'); 
-        document.body.classList.add(`theme-${theme}`); 
-        localStorage.setItem('bantu_theme', theme); 
-        document.querySelectorAll('.theme-option').forEach(opt => opt.classList.toggle('active', opt.dataset.theme === theme)); 
-    };
+    const applyTheme = (theme) => { document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast'); document.body.classList.add(`theme-${theme}`); localStorage.setItem('bantu_theme', theme); document.querySelectorAll('.theme-option').forEach(opt => opt.classList.toggle('active', opt.dataset.theme === theme)); };
     applyTheme(savedTheme);
-    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => { 
-        e.preventDefault(); 
-        document.getElementById('theme-selector')?.classList.toggle('active'); 
-    });
-    document.querySelectorAll('.theme-option').forEach(option => { 
-        option.addEventListener('click', () => { 
-            applyTheme(option.dataset.theme); 
-            document.getElementById('theme-selector')?.classList.remove('active'); 
-        }); 
-    });
-    document.addEventListener('click', (e) => { 
-        const selector = document.getElementById('theme-selector'); 
-        const toggle = document.getElementById('sidebar-theme-toggle'); 
-        if (selector?.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) 
-            selector.classList.remove('active'); 
-    });
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('theme-selector')?.classList.toggle('active'); });
+    document.querySelectorAll('.theme-option').forEach(option => { option.addEventListener('click', () => { applyTheme(option.dataset.theme); document.getElementById('theme-selector')?.classList.remove('active'); }); });
+    document.addEventListener('click', (e) => { const selector = document.getElementById('theme-selector'); const toggle = document.getElementById('sidebar-theme-toggle'); if (selector?.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) selector.classList.remove('active'); });
 }
 
 function setupSidebar() {
-    const menuToggle = document.getElementById('menu-toggle'); 
-    const sidebarClose = document.getElementById('sidebar-close'); 
-    const sidebarOverlay = document.getElementById('sidebar-overlay'); 
-    const sidebarMenu = document.getElementById('sidebar-menu');
-    menuToggle?.addEventListener('click', () => { 
-        sidebarMenu?.classList.add('active'); 
-        sidebarOverlay?.classList.add('active'); 
-        document.body.style.overflow = 'hidden'; 
-    });
-    const closeSidebar = () => { 
-        sidebarMenu?.classList.remove('active'); 
-        sidebarOverlay?.classList.remove('active'); 
-        document.body.style.overflow = ''; 
-    };
-    sidebarClose?.addEventListener('click', closeSidebar); 
-    sidebarOverlay?.addEventListener('click', closeSidebar);
+    const menuToggle = document.getElementById('menu-toggle'); const sidebarClose = document.getElementById('sidebar-close'); const sidebarOverlay = document.getElementById('sidebar-overlay'); const sidebarMenu = document.getElementById('sidebar-menu');
+    menuToggle?.addEventListener('click', () => { sidebarMenu?.classList.add('active'); sidebarOverlay?.classList.add('active'); document.body.style.overflow = 'hidden'; });
+    const closeSidebar = () => { sidebarMenu?.classList.remove('active'); sidebarOverlay?.classList.remove('active'); document.body.style.overflow = ''; };
+    sidebarClose?.addEventListener('click', closeSidebar); sidebarOverlay?.addEventListener('click', closeSidebar);
 }
 
 function setupNavigation() {
     document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
     document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
-    document.getElementById('nav-create-btn')?.addEventListener('click', async () => { 
-        const { data } = await supabaseClient.auth.getSession(); 
-        if (data?.session) window.location.href = 'creator-upload.html'; 
-        else window.location.href = 'login.html?redirect=creator-upload.html'; 
-    });
-    document.getElementById('nav-menu-btn')?.addEventListener('click', () => { 
-        document.getElementById('sidebar-menu')?.classList.add('active'); 
-        document.getElementById('sidebar-overlay')?.classList.add('active'); 
-        document.body.style.overflow = 'hidden'; 
-    });
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => { const { data } = await supabaseClient.auth.getSession(); if (data?.session) window.location.href = 'creator-upload.html'; else window.location.href = 'login.html?redirect=creator-upload.html'; });
+    document.getElementById('nav-menu-btn')?.addEventListener('click', () => { document.getElementById('sidebar-menu')?.classList.add('active'); document.getElementById('sidebar-overlay')?.classList.add('active'); document.body.style.overflow = 'hidden'; });
 }
 
 function setupBackToTop() {
     const btn = document.getElementById('backToTopBtn');
-    window.addEventListener('scroll', () => { 
-        btn.style.display = window.scrollY > 300 ? 'flex' : 'none'; 
-    });
+    window.addEventListener('scroll', () => { btn.style.display = window.scrollY > 300 ? 'flex' : 'none'; });
     btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function setupMuteToggle() {
-    const muteBtn = document.getElementById('mute-toggle'); 
-    const video = document.getElementById('wave-video');
-    muteBtn?.addEventListener('click', () => { 
-        video.muted = !video.muted; 
-        muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>'; 
-    });
+    const muteBtn = document.getElementById('mute-toggle'); const video = document.getElementById('wave-video');
+    muteBtn?.addEventListener('click', () => { video.muted = !video.muted; muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>'; });
 }
 
 function setupScaleControls() {
-    const decrease = document.getElementById('scale-decrease'); 
-    const increase = document.getElementById('scale-increase'); 
-    const value = document.getElementById('scale-value');
+    const decrease = document.getElementById('scale-decrease'); const increase = document.getElementById('scale-increase'); const value = document.getElementById('scale-value');
     let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-    const apply = () => { 
-        document.documentElement.style.setProperty('--ui-scale', scale); 
-        localStorage.setItem('bantu_ui_scale', scale); 
-        if (value) value.textContent = Math.round(scale * 100) + '%'; 
-    };
+    const apply = () => { document.documentElement.style.setProperty('--ui-scale', scale); localStorage.setItem('bantu_ui_scale', scale); if (value) value.textContent = Math.round(scale * 100) + '%'; };
     decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
     increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
     apply();
 }
 
-async function checkAuth() { 
-    const { data } = await supabaseClient.auth.getSession(); 
-    currentUser = data?.session?.user || null; 
-    if (currentUser) { 
-        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle(); 
-        const nameEl = document.getElementById('current-profile-name'); 
-        const placeholder = document.getElementById('userProfilePlaceholder'); 
-        if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User'; 
-        if (placeholder && profile?.avatar_url) { 
-            placeholder.innerHTML = `<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`; 
-        } 
-    } 
-}
+async function checkAuth() { const { data } = await supabaseClient.auth.getSession(); currentUser = data?.session?.user || null; if (currentUser) { const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle(); const nameEl = document.getElementById('current-profile-name'); const placeholder = document.getElementById('userProfilePlaceholder'); if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User'; if (placeholder && profile?.avatar_url) { placeholder.innerHTML = `<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`; } } }
 
 async function initialize() {
-    setupSidebar(); 
-    setupNavigation(); 
-    setupBackToTop(); 
-    setupMuteToggle(); 
-    setupScaleControls(); 
-    initThemeSystem(); 
-    setupFilters(); 
-    setupHeroButtons(); 
-    await checkAuth(); 
-    
-    // Load all music content first
-    await loadAllMusic();
-    
-    // Update all sections
-    await updateHeroSection();
-    await updateChart();
-    await updateRegionalFusion();
-    await updateLanguageSpotlight();
-    await updateMoreMusic();
-    
-    const loading = document.getElementById('loading');
-    if (loading) loading.style.display = 'none';
+    setupSidebar(); setupNavigation(); setupBackToTop(); setupMuteToggle(); setupScaleControls(); initThemeSystem(); await setupFilters(); setupHeroButtons(); await checkAuth(); await loadMusicContent();
 }
 
 initialize();
