@@ -1016,7 +1016,7 @@ if (!window.supabaseClient) {
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
-    // GENRE CONFIGURATION (same as before)
+    // GENRE CONFIGURATION
     // ============================================
     const genreConfig = {
         'Film': {
@@ -1138,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🔧 UUID SANITIZER HELPER - CATCHES ALL EMPTY STRINGS
+    // UUID SANITIZER HELPER - CATCHES ALL EMPTY STRINGS
     // ============================================
     function sanitizeForSupabase(obj) {
         const sanitized = {};
@@ -1154,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // CLEAN METADATA HELPER - NO EMPTY STRINGS
+    // CLEAN METADATA HELPER
     // ============================================
     function cleanContentMetadata(rawMetadata) {
         return {
@@ -1169,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // TAGS INPUT COMPONENT (same as before)
+    // TAGS INPUT COMPONENT
     // ============================================
     function createTagsInput(field) {
         const container = document.createElement('div');
@@ -1400,7 +1400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // GENRE/TAG LOADING FUNCTIONS (same as before)
+    // GENRE/TAG LOADING FUNCTIONS
     // ============================================
     async function loadGenresForUpload() {
       try {
@@ -1549,7 +1549,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // MEDIA FUNCTIONS (same as before)
+    // MEDIA FUNCTIONS
     // ============================================
     function extractMediaDuration(file) {
         return new Promise((resolve, reject) => {
@@ -1764,13 +1764,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🚀 THE FIXED INSERT LOGIC (with creator_id, creator=null, sanitized)
+    // THE FIXED INSERT LOGIC - EXPLICITLY SETS creator_id AND creator=null
     // ============================================
     async function createContentRecord(data) {
         const cleanedMetadata = data.content_metadata ? cleanContentMetadata(data.content_metadata) : {};
         
         // CRITICAL FIX: Explicitly set creator_id to currentUserId and creator to null
-        // This bypasses the trigger's lookup logic completely
+        // This completely bypasses any trigger lookup logic
         const contentData = {
             title: data.title || null,
             description: data.description || null,
@@ -1780,8 +1780,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             genre: data.genre || null,
             status: data.status,
             user_id: currentUserId || null,
-            creator_id: currentUserId || null,   // 🔥 BYPASS TRIGGER: explicitly set
-            creator: null,                       // 🔥 PREVENT EMPTY STRING LOOKUP
+            creator_id: currentUserId || null,   // 🔥 EXPLICITLY SET - bypasses trigger
+            creator: null,                       // 🔥 PREVENTS empty string lookup issues
             created_at: new Date().toISOString(),
             content_metadata: cleanedMetadata,
             content_format: data.content_format || null,
@@ -1814,10 +1814,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // FINAL SANITIZATION: convert any empty strings to null
         const sanitizedData = sanitizeForSupabase(contentData);
         
-        console.log('=== FINAL UPLOAD OBJECT (FIXED) ===');
-        console.log('creator_id set to:', sanitizedData.creator_id);
-        console.log('creator set to:', sanitizedData.creator);
-        console.log('Full sanitized:', JSON.stringify(sanitizedData, null, 2));
+        console.log('=== FINAL UPLOAD OBJECT (TRIGGER BYPASSED) ===');
+        console.log('creator_id explicitly set to:', sanitizedData.creator_id);
+        console.log('creator explicitly set to null:', sanitizedData.creator);
+        console.log('Full sanitized payload:', JSON.stringify(sanitizedData, null, 2));
         
         const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
         if (error) throw error;
