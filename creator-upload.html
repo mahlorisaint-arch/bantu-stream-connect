@@ -742,6 +742,52 @@ color: var(--slate-grey); text-decoration: none;
 transition: color .3s ease; font-size: 14px;
 }
 .footer-links a:hover { color: var(--warm-gold); }
+
+/* ========= NEW: Tag Buttons for Upload Form ========= */
+.tag-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+}
+.tag-section {
+  margin-bottom: 8px;
+}
+.tag-section strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #F59E0B;
+}
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(148,163,184,0.3);
+  color: #F8FAFC;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tag-btn:hover {
+  background: rgba(245,158,11,0.2);
+  border-color: #F59E0B;
+}
+.tag-btn.selected {
+  background: #F59E0B;
+  color: #0A0E12;
+  border-color: #F59E0B;
+}
+
 @media (max-width: 768px) {
 .upload-card { padding: 30px 20px; }
 .action-buttons { flex-direction: column; }
@@ -827,6 +873,7 @@ transition: color .3s ease; font-size: 14px;
 <h1>UPLOAD YOUR CONTENT</h1>
 <div id="upload-form-state">
 <form id="upload-form" novalidate>
+<!-- Content Type Selector -->
 <div class="form-group">
 <label class="form-label">Content Type <span>*</span></label>
 <div class="media-type-selector">
@@ -839,16 +886,112 @@ transition: color .3s ease; font-size: 14px;
 <h4><i class="fas fa-info-circle"></i> Shorts Guidelines</h4>
 <ul><li><i class="fas fa-check"></i> Maximum duration: 60 seconds</li><li><i class="fas fa-check"></i> Recommended aspect ratio: 9:16 (vertical)</li><li><i class="fas fa-check"></i> Add trending audio for better discovery</li><li><i class="fas fa-check"></i> Use engaging thumbnails to attract viewers</li></ul>
 </div>
+
+<!-- Basic Fields -->
 <div class="form-group"><label class="form-label">Title <span>*</span></label><input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required></div>
 <div class="form-group"><label class="form-label">Description <span>*</span></label><textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea></div>
+
+<!-- Genre/Category -->
 <div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
+
+<!-- ========= NEW: Content Format Field ========= -->
+<div class="form-group">
+  <label><i class="fas fa-layer-group"></i> Content Format</label>
+  <select id="content_format" class="form-input" required>
+    <option value="">Select format...</option>
+    <option value="music">Music (Audio Only)</option>
+    <option value="music_video">Music Video</option>
+    <option value="film">Film / Movie</option>
+    <option value="documentary">Documentary</option>
+    <option value="series_episode">Series Episode</option>
+    <option value="podcast_episode">Podcast Episode</option>
+    <option value="short">Short / Short Film</option>
+    <option value="long_form">Long Form Video</option>
+  </select>
+  <small class="form-text text-muted">Select what type of content you're uploading</small>
+</div>
+
+<!-- Dynamic Genre Fields -->
 <div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
+
+<!-- ========= NEW: Music Genre Selector ========= -->
+<div class="form-group" id="music-genre-group" style="display: none;">
+  <label><i class="fas fa-music"></i> Music Genre</label>
+  <select id="music-genre" class="form-input">
+    <option value="">Select genre...</option>
+  </select>
+  <div id="subgenre-container" style="margin-top: 10px; display: none;">
+    <label>Subgenre (optional)</label>
+    <select id="music-subgenre" class="form-input">
+      <option value="">Select subgenre...</option>
+    </select>
+  </div>
+  <small class="form-text text-muted">Select the primary genre for your music content</small>
+</div>
+
+<!-- ========= NEW: Music Tags ========= -->
+<div class="form-group" id="music-tags-group" style="display: none;">
+  <label><i class="fas fa-tags"></i> Tags (Language, Mood, City)</label>
+  <div id="tag-buttons" class="tag-buttons-container">
+    <!-- Dynamic tag buttons will appear here -->
+  </div>
+  <small class="form-text text-muted">Select tags that describe your music</small>
+</div>
+
+<!-- ========= NEW: Music Metadata Fields ========= -->
+<div id="tempo-group" class="form-group" style="display: none;">
+  <label><i class="fas fa-metronome"></i> Tempo (BPM)</label>
+  <input type="number" id="tempo" class="form-input" placeholder="e.g., 112" step="1" min="40" max="220">
+  <small class="form-text text-muted">Optional: Beats per minute (112-115 for Amapiano, 125-130 for Gqom)</small>
+</div>
+
+<div id="key-group" class="form-group" style="display: none;">
+  <label><i class="fas fa-music"></i> Musical Key</label>
+  <select id="key_signature" class="form-input">
+    <option value="">Select key (optional)</option>
+    <option value="C">C Major</option>
+    <option value="Cm">C Minor</option>
+    <option value="D">D Major</option>
+    <option value="Dm">D Minor</option>
+    <option value="E">E Major</option>
+    <option value="Em">E Minor</option>
+    <option value="F">F Major</option>
+    <option value="Fm">F Minor</option>
+    <option value="G">G Major</option>
+    <option value="Gm">G Minor</option>
+    <option value="A">A Major</option>
+    <option value="Am">A Minor</option>
+    <option value="B">B Major</option>
+    <option value="Bm">B Minor</option>
+  </select>
+</div>
+
+<div id="explicit-group" class="form-group" style="display: none;">
+  <label>
+    <input type="checkbox" id="is_explicit" value="true">
+    <i class="fas fa-exclamation-triangle"></i> Contains explicit content
+  </label>
+</div>
+
+<!-- Mood Tags Section (existing) -->
 <div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and podcasts)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
+
+<!-- Chapters Section (existing) -->
 <div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
+
+<!-- Quality Checklist -->
 <div class="quality-checklist"><div class="checklist-header"><span>Upload Quality Score</span><span class="checklist-score" id="quality-score">0%</span></div><div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div><div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div><div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div><div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div><div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div><div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div></div>
+
+<!-- Media Upload -->
 <div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none"></div>
+
+<!-- Thumbnail Upload -->
 <div class="form-group thumbnail-section"><label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label><div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px"><i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.</div><div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag thumbnail image here</div><div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div></div><div id="thumbnail-preview" class="thumbnail-preview"><img id="thumbnail-image" src="" alt="Thumbnail Preview"></div><div class="thumbnail-actions"><button type="button" class="thumbnail-btn" onclick="window.openImagePicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Choose from Gallery</button><button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button></div><input type="file" id="thumbnail-file-input" accept="image/*" style="display:none"><input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none"></div>
+
+<!-- Upload Progress -->
 <div id="upload-progress" class="upload-progress"><div class="progress-header"><span>Uploading...</span><span id="progress-percentage">0%</span></div><div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div><div class="progress-stats"><span id="progress-speed">Speed: 0 MB/s</span><span id="progress-eta">ETA: --:--</span></div><div id="progress-text" style="margin-top:10px;text-align:center">Preparing upload...</div></div>
+
+<!-- Action Buttons -->
 <div class="action-buttons"><button type="button" id="save-draft-btn" class="action-btn draft" disabled><i class="fas fa-save"></i> Save Draft</button><button type="submit" id="publish-btn" class="action-btn publish" disabled><i class="fas fa-cloud-upload-alt"></i> Publish Content</button></div>
 </form>
 <div class="helper-text">Your content will be reviewed and published within 24 hours. Make sure to follow our community guidelines.<br><span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span></div>
@@ -922,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
                 { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
             ],
-            content_format: 'album_track', requires_chapters: false, requires_mood: true, uses_playlist: true, playlist_type: 'album'
+            content_format: 'music', requires_chapters: false, requires_mood: true, uses_playlist: true, playlist_type: 'album'
         },
         'Podcast': {
             title: '🎙️ Podcast Episode Details',
@@ -947,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ============================================
-    // GLOBAL VARIABLES - ALL PRESERVED
+    // GLOBAL VARIABLES
     // ============================================
     let selectedMediaFile = null, selectedThumbnailFile = null, currentUserId = null, currentSession = null;
     let isUploading = false, selectedMediaType = 'regular', extractedDuration = null, currentXhr = null;
@@ -1226,6 +1369,160 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
+    // ========= NEW: GENRE/TAG LOADING FUNCTIONS =========
+    // ============================================
+    
+    // Load genres for music upload
+    async function loadGenresForUpload() {
+      try {
+        const { data: genres, error } = await window.supabaseClient
+          .from('genres')
+          .select('id, name, slug, parent_genre_id')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (error) throw error;
+
+        const parentGenres = genres.filter(g => !g.parent_genre_id);
+        const subGenres = genres.filter(g => g.parent_genre_id);
+
+        const genreSelect = document.getElementById('music-genre');
+        if (genreSelect) {
+          genreSelect.innerHTML = '<option value="">Select genre...</option>';
+          parentGenres.forEach(genre => {
+            genreSelect.innerHTML += `<option value="${genre.id}" data-slug="${genre.slug}">${genre.name}</option>`;
+          });
+
+          genreSelect.addEventListener('change', async (e) => {
+            const genreId = e.target.value;
+            const subgenreContainer = document.getElementById('subgenre-container');
+            const subgenreSelect = document.getElementById('music-subgenre');
+            
+            if (genreId && subgenreSelect) {
+              const relevantSubgenres = subGenres.filter(sg => sg.parent_genre_id == genreId);
+              if (relevantSubgenres.length > 0) {
+                subgenreSelect.innerHTML = '<option value="">Select subgenre...</option>';
+                relevantSubgenres.forEach(sg => {
+                  subgenreSelect.innerHTML += `<option value="${sg.id}">${sg.name}</option>`;
+                });
+                subgenreContainer.style.display = 'block';
+              } else {
+                subgenreContainer.style.display = 'none';
+              }
+            } else {
+              subgenreContainer.style.display = 'none';
+            }
+          });
+        }
+
+        return { parentGenres, subGenres };
+      } catch (error) {
+        console.error('Error loading genres:', error);
+        return { parentGenres: [], subGenres: [] };
+      }
+    }
+
+    // Load tags for music upload
+    async function loadTagsForUpload() {
+      try {
+        const { data: tags, error } = await window.supabaseClient
+          .from('tags')
+          .select('id, name, tag_type')
+          .eq('is_active', true)
+          .in('tag_type', ['language', 'mood', 'city'])
+          .order('tag_type', { ascending: true })
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        const tagsByType = {
+          language: tags.filter(t => t.tag_type === 'language'),
+          mood: tags.filter(t => t.tag_type === 'mood'),
+          city: tags.filter(t => t.tag_type === 'city')
+        };
+
+        const tagContainer = document.getElementById('tag-buttons');
+        if (tagContainer) {
+          tagContainer.innerHTML = '';
+
+          if (tagsByType.language.length > 0) {
+            tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-language"></i> Language</strong><div class="tag-group">`;
+            tagsByType.language.forEach(tag => {
+              tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="language">${tag.name}</button>`;
+            });
+            tagContainer.innerHTML += `</div></div>`;
+          }
+
+          if (tagsByType.mood.length > 0) {
+            tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-face-smile"></i> Mood</strong><div class="tag-group">`;
+            tagsByType.mood.forEach(tag => {
+              tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="mood">${tag.name}</button>`;
+            });
+            tagContainer.innerHTML += `</div></div>`;
+          }
+
+          if (tagsByType.city.length > 0) {
+            tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-city"></i> City/Origin</strong><div class="tag-group">`;
+            tagsByType.city.forEach(tag => {
+              tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="city">${tag.name}</button>`;
+            });
+            tagContainer.innerHTML += `</div></div>`;
+          }
+
+          document.querySelectorAll('.tag-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              btn.classList.toggle('selected');
+            });
+          });
+        }
+
+        return tags;
+      } catch (error) {
+        console.error('Error loading tags:', error);
+        return [];
+      }
+    }
+
+    // Get selected tags
+    function getSelectedTags() {
+      const selected = [];
+      document.querySelectorAll('.tag-btn.selected').forEach(btn => {
+        selected.push({
+          tag_id: btn.dataset.tagId,
+          name: btn.datasetTagName,
+          type: btn.datasetTagType
+        });
+      });
+      return selected;
+    }
+
+    // Show/hide music fields based on content format
+    function setupContentFormatToggle() {
+      const formatSelect = document.getElementById('content_format');
+      const musicGenreGroup = document.getElementById('music-genre-group');
+      const musicTagsGroup = document.getElementById('music-tags-group');
+      const tempoGroup = document.getElementById('tempo-group');
+      const keyGroup = document.getElementById('key-group');
+      const explicitGroup = document.getElementById('explicit-group');
+      
+      if (!formatSelect) return;
+      
+      function toggleMusicFields() {
+        const selectedFormat = formatSelect.value;
+        const isMusic = selectedFormat === 'music' || selectedFormat === 'music_video';
+        
+        if (musicGenreGroup) musicGenreGroup.style.display = isMusic ? 'block' : 'none';
+        if (musicTagsGroup) musicTagsGroup.style.display = isMusic ? 'block' : 'none';
+        if (tempoGroup) tempoGroup.style.display = isMusic ? 'block' : 'none';
+        if (keyGroup) keyGroup.style.display = isMusic ? 'block' : 'none';
+        if (explicitGroup) explicitGroup.style.display = isMusic ? 'block' : 'none';
+      }
+      
+      formatSelect.addEventListener('change', toggleMusicFields);
+      toggleMusicFields();
+    }
+
+    // ============================================
     // MEDIA FUNCTIONS
     // ============================================
     function extractMediaDuration(file) {
@@ -1440,8 +1737,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         lastUpdateTime = 0;
     }
 
+    // ============================================
+    // ========= NEW: INSERT LOGIC WITH GENRE/TAGS =========
+    // ============================================
     async function createContentRecord(data) {
-        // CRITICAL FIX: content_format must match the database constraint
         const insertData = {
             title: data.title,
             description: data.description,
@@ -1453,7 +1752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             user_id: currentUserId,
             created_at: new Date().toISOString(),
             content_metadata: data.content_metadata || {},
-            content_format: data.content_format,  // KEY FIX: This resolves the 400 error
+            content_format: data.content_format,
             chapters: data.chapters || []
         };
         if (data.duration !== null && data.duration !== undefined) insertData.duration = data.duration;
@@ -1477,6 +1776,67 @@ document.addEventListener('DOMContentLoaded', async () => {
             mood_intensity: moodData.mood_intensity,
             tagged_by: moodData.tagged_by
         }]);
+    }
+
+    // ========= NEW: Insert genre/tag relationships for music =========
+    async function insertMusicGenreTags(contentId, mediaType) {
+        const isMusic = ['music', 'Music', 'audio', 'song', 'track', 'music_video'].includes(mediaType);
+        if (!isMusic) return;
+
+        const selectedGenreId = document.getElementById('music-genre')?.value;
+        const selectedSubgenreId = document.getElementById('music-subgenre')?.value;
+        
+        // Insert primary genre
+        if (selectedGenreId) {
+            await window.supabaseClient
+                .from('content_genres')
+                .insert({
+                    content_id: contentId,
+                    genre_id: selectedGenreId,
+                    is_primary: true,
+                    confidence_score: 1.0
+                });
+        }
+        
+        // Insert subgenre
+        if (selectedSubgenreId && selectedSubgenreId !== selectedGenreId) {
+            await window.supabaseClient
+                .from('content_genres')
+                .insert({
+                    content_id: contentId,
+                    genre_id: selectedSubgenreId,
+                    is_primary: false,
+                    confidence_score: 0.8
+                });
+        }
+        
+        // Insert tags
+        const selectedTags = getSelectedTags();
+        for (const tag of selectedTags) {
+            await window.supabaseClient
+                .from('content_tags')
+                .insert({
+                    content_id: contentId,
+                    tag_id: tag.tag_id,
+                    confidence_score: 1.0
+                });
+        }
+        
+        // Update Content table with primary genre ID and tag info
+        const genreSelect = document.getElementById('music-genre');
+        const genreName = genreSelect?.options[genreSelect?.selectedIndex]?.textContent || null;
+        const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
+        const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
+        
+        await window.supabaseClient
+            .from('Content')
+            .update({ 
+                primary_genre_id: selectedGenreId,
+                genre: genreName,
+                language_code: languageTag,
+                city: cityTag
+            })
+            .eq('id', contentId);
     }
 
     async function uploadContent(isDraft = false) {
@@ -1514,8 +1874,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (selectedMediaType === 'short') finalMediaType = 'short';
             if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
             
-            // CRITICAL: Set content_format based on genre config
-            let contentFormat = config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
+            // Set content_format based on genre config or manual selection
+            let contentFormat = document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
             
             progressText.textContent = 'Uploading media file...';
             const mediaUrl = await uploadFileWithProgress(selectedMediaFile, 'content-media', 'media', (l, t) => updateProgress(l, t));
@@ -1537,6 +1897,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
             if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
+            
+            // ========= NEW: Insert music genre/tag relationships =========
+            if (contentRecord.id) {
+                await insertMusicGenreTags(contentRecord.id, finalMediaType);
+            }
             
             progressFill.style.width = '100%';
             progressPercentage.textContent = '100%';
@@ -1869,6 +2234,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
 
+    // ============================================
+    // ========= NEW: INITIALIZATION FOR MUSIC EXTENSIONS =========
+    // ============================================
+    async function initMusicUploadExtensions() {
+        await loadGenresForUpload();
+        await loadTagsForUpload();
+        setupContentFormatToggle();
+    }
+
     async function initialize() {
         loadingScreen.style.display = 'flex';
         app.style.display = 'none';
@@ -1882,6 +2256,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateButtonsState();
         updateChecklist();
         loadDraftFromLocalStorage();
+        
+        // Initialize music upload extensions
+        await initMusicUploadExtensions();
+        
         loadingScreen.style.display = 'none';
         app.style.display = 'block';
     }
