@@ -481,18 +481,30 @@ transition: gap 0.3s ease;
 }
 .section-link:hover { gap: 10px; }
 
-/* ===== GENRE FILTERS ===== */
-.genre-filters {
+/* ===== SA GENRE FILTERS (HORIZONTAL SCROLL) ===== */
+.sa-genre-filters {
 display: flex;
 gap: 12px;
-flex-wrap: wrap;
-margin-bottom: 24px;
+overflow-x: auto;
 padding: 16px 0;
-border-bottom: 1px solid var(--card-border);
+margin-bottom: 24px;
+scrollbar-width: thin;
+-webkit-overflow-scrolling: touch;
 }
-.genre-chip {
-padding: 8px 20px;
-border-radius: 30px;
+.sa-genre-filters::-webkit-scrollbar {
+height: 4px;
+}
+.sa-genre-filters::-webkit-scrollbar-track {
+background: rgba(255,255,255,0.05);
+border-radius: 4px;
+}
+.sa-genre-filters::-webkit-scrollbar-thumb {
+background: var(--movie-purple);
+border-radius: 4px;
+}
+.sa-genre-chip {
+padding: 10px 24px;
+border-radius: 40px;
 background: rgba(255,255,255,0.05);
 border: 1px solid var(--card-border);
 color: var(--slate-grey);
@@ -500,15 +512,17 @@ font-size: 14px;
 font-weight: 500;
 cursor: pointer;
 transition: all 0.3s ease;
+white-space: nowrap;
 }
-.genre-chip:hover {
+.sa-genre-chip:hover {
 background: rgba(139,92,246,0.1);
 border-color: var(--movie-purple);
 color: var(--movie-purple);
+transform: translateY(-2px);
 }
-.genre-chip.active {
-background: var(--movie-purple);
-border-color: var(--movie-purple);
+.sa-genre-chip.active {
+background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));
+border-color: transparent;
 color: white;
 }
 
@@ -617,110 +631,13 @@ font-size: 11px;
 color: var(--slate-grey);
 }
 .movie-meta i { color: var(--movie-purple); margin-right: 3px; }
-
-/* ===== TRENDING IN YOUR CITY ===== */
-.city-trending {
-background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(236,72,153,0.05));
-border: 1px solid var(--card-border);
-border-radius: 24px;
-padding: 24px;
-}
-.city-header {
-display: flex;
-align-items: center;
-gap: 12px;
-margin-bottom: 20px;
-}
-.city-header i {
-font-size: 28px;
-color: var(--movie-purple);
-}
-.city-header h3 {
-font-size: 20px;
-font-weight: 700;
-}
-.city-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-gap: 16px;
-}
-.city-movie {
-display: flex;
-gap: 12px;
-padding: 12px;
-background: rgba(255,255,255,0.03);
+.language-badge {
+display: inline-block;
+background: rgba(139,92,246,0.2);
+padding: 2px 6px;
 border-radius: 12px;
-cursor: pointer;
-transition: all 0.3s ease;
-}
-.city-movie:hover {
-background: rgba(139,92,246,0.1);
-transform: translateX(5px);
-}
-.city-movie-poster {
-width: 50px;
-height: 70px;
-border-radius: 8px;
-overflow: hidden;
-flex-shrink: 0;
-}
-.city-movie-poster img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
-.city-movie-info {
-flex: 1;
-}
-.city-movie-title {
-font-weight: 600;
-font-size: 14px;
-margin-bottom: 4px;
-}
-.city-movie-stats {
-font-size: 11px;
-color: var(--slate-grey);
-}
-.city-movie-stats i { color: var(--movie-purple); margin-right: 3px; }
-
-/* ===== NOLLYWOOD EXCELLENCE ===== */
-.nollywood-section {
-background: linear-gradient(135deg, #1a0a2e, #0f172a);
-border-radius: 24px;
-padding: 30px;
-position: relative;
-overflow: hidden;
-}
-.nollywood-section::before {
-content: '';
-position: absolute;
-top: 0;
-right: 0;
-width: 300px;
-height: 300px;
-background: radial-gradient(circle, rgba(139,92,246,0.2), transparent);
-border-radius: 50%;
-}
-.nollywood-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 24px;
-flex-wrap: wrap;
-gap: 16px;
-}
-.nollywood-title {
-font-size: 24px;
-font-weight: 800;
-}
-.nollywood-title i {
-color: var(--movie-purple);
-margin-right: 10px;
-}
-.nollywood-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-gap: 20px;
+font-size: 9px;
+margin-top: 6px;
 }
 
 /* ===== CONTINUE WATCHING ===== */
@@ -796,6 +713,86 @@ width: 100%;
 }
 .continue-btn:hover {
 transform: scale(1.02);
+}
+
+/* ===== BINGE COLLECTIONS ===== */
+.binge-collections-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+gap: 20px;
+}
+.binge-card {
+background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(236,72,153,0.05));
+border: 1px solid var(--card-border);
+border-radius: 20px;
+padding: 20px;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.binge-card:hover {
+transform: translateY(-5px);
+border-color: var(--movie-purple);
+}
+.binge-icon {
+font-size: 32px;
+color: var(--movie-purple);
+margin-bottom: 12px;
+}
+.binge-title {
+font-size: 18px;
+font-weight: 700;
+margin-bottom: 8px;
+}
+.binge-count {
+font-size: 12px;
+color: var(--slate-grey);
+}
+
+/* ===== SMART FILTERS ===== */
+.smart-filters {
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+margin-bottom: 24px;
+padding: 16px 0;
+border-bottom: 1px solid var(--card-border);
+}
+.filter-group {
+display: flex;
+align-items: center;
+gap: 8px;
+background: rgba(255,255,255,0.05);
+padding: 8px 16px;
+border-radius: 40px;
+border: 1px solid var(--card-border);
+}
+.filter-group select {
+background: transparent;
+border: none;
+color: var(--soft-white);
+padding: 6px 12px;
+font-size: 13px;
+cursor: pointer;
+}
+.filter-group select option {
+background: var(--deep-black);
+}
+.filter-group i {
+color: var(--movie-purple);
+font-size: 14px;
+}
+.filter-reset {
+padding: 8px 16px;
+border-radius: 40px;
+background: rgba(239,68,68,0.1);
+border: 1px solid var(--error-color);
+color: var(--error-color);
+cursor: pointer;
+font-size: 13px;
+transition: all 0.3s ease;
+}
+.filter-reset:hover {
+background: rgba(239,68,68,0.2);
 }
 
 /* ===== TOAST ===== */
@@ -944,11 +941,11 @@ transition: all 0.2s;
 .hero-content { padding: 0 20px 40px; }
 .hero-description { font-size: 14px; }
 .movies-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.nollywood-grid { grid-template-columns: repeat(2, 1fr); }
-.city-grid { grid-template-columns: 1fr; }
 .section-title { font-size: 18px; }
 .navigation-button { gap: 0.5rem; padding: 0.375rem 0.875rem; }
 .nav-icon { width: 40px; height: 40px; font-size: 16px; }
+.smart-filters { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 12px; }
+.filter-group { flex-shrink: 0; }
 }
 
 @media (max-width: 480px) {
@@ -958,8 +955,8 @@ transition: all 0.2s;
 .hero-btn { padding: 10px 20px; font-size: 13px; }
 .movies-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .movie-title { font-size: 13px; }
-.genre-chip { padding: 6px 14px; font-size: 12px; }
-.city-header h3 { font-size: 16px; }
+.sa-genre-chip { padding: 6px 14px; font-size: 12px; }
+.binge-collections-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -1040,16 +1037,16 @@ transition: all 0.2s;
 </div>
 </header>
 
-<!-- HERO SECTION - BANTU ORIGINAL -->
-<section class="hero-section">
-<img class="hero-backdrop" src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&h=800&fit=crop" alt="Movie Backdrop">
+<!-- ADAPTIVE HERO SECTION (Dynamic based on user) -->
+<section class="hero-section" id="hero-section">
+<img class="hero-backdrop" id="hero-backdrop" src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&h=800&fit=crop" alt="Movie Backdrop">
 <div class="hero-bg"></div>
 <div class="hero-overlay"></div>
 <div class="hero-content">
-<div class="hero-badge"><i class="fas fa-crown"></i> BANTU ORIGINAL</div>
-<h1 class="hero-title">The <span>Lion's</span> Legacy</h1>
-<p class="hero-description">An epic tale of power, betrayal, and redemption set in the heart of an ancient African kingdom.</p>
-<div class="hero-meta">
+<div class="hero-badge" id="hero-badge"><i class="fas fa-fire"></i> TRENDING IN SOUTH AFRICA</div>
+<h1 class="hero-title" id="hero-title">The <span>Lion's</span> Legacy</h1>
+<p class="hero-description" id="hero-description">An epic tale of power, betrayal, and redemption set in the heart of an ancient African kingdom.</p>
+<div class="hero-meta" id="hero-meta">
 <span><i class="fas fa-star"></i> 4.9 Rating</span>
 <span><i class="fas fa-clock"></i> 2h 15min</span>
 <span><i class="fas fa-calendar"></i> 2024</span>
@@ -1063,70 +1060,113 @@ transition: all 0.2s;
 
 <main class="container">
 
-<!-- GENRE FILTERS -->
-<div class="genre-filters" id="genre-filters">
-<button class="genre-chip active" data-genre="all">All Movies</button>
-<button class="genre-chip" data-genre="drama">Drama</button>
-<button class="genre-chip" data-genre="action">Action</button>
-<button class="genre-chip" data-genre="romance">Romance</button>
-<button class="genre-chip" data-genre="comedy">Comedy</button>
-<button class="genre-chip" data-genre="thriller">Thriller</button>
-<button class="genre-chip" data-genre="supernatural">Supernatural</button>
+<!-- SMART FILTER SYSTEM (Multi-layer) -->
+<div class="smart-filters" id="smart-filters">
+<div class="filter-group">
+<i class="fas fa-globe-africa"></i>
+<select id="filter-country">
+<option value="all">All Regions</option>
+<option value="South Africa" selected>🇿🇦 South Africa</option>
+<option value="Africa">🌍 Africa</option>
+<option value="Global">🌎 Global</option>
+</select>
+</div>
+<div class="filter-group">
+<i class="fas fa-tags"></i>
+<select id="filter-genre">
+<option value="all">All Genres</option>
+<option value="Drama">Drama</option>
+<option value="Comedy">Comedy</option>
+<option value="Action">Action</option>
+<option value="Romance">Romance</option>
+<option value="Thriller">Thriller</option>
+<option value="Horror">Horror</option>
+</select>
+</div>
+<div class="filter-group">
+<i class="fas fa-smile"></i>
+<select id="filter-mood">
+<option value="all">All Moods</option>
+<option value="Emotional">Emotional</option>
+<option value="Dark">Dark</option>
+<option value="Funny">Funny</option>
+<option value="Inspirational">Inspirational</option>
+</select>
+</div>
+<div class="filter-group">
+<i class="fas fa-language"></i>
+<select id="filter-language">
+<option value="all">All Languages</option>
+<option value="Zulu">isiZulu</option>
+<option value="Xhosa">isiXhosa</option>
+<option value="English">English</option>
+<option value="Xitsonga">Xitsonga</option>
+</select>
+</div>
+<button class="filter-reset" id="filter-reset"><i class="fas fa-undo-alt"></i> Reset</button>
 </div>
 
 <!-- CONTINUE WATCHING SECTION -->
 <section class="section" id="continue-watching-section" style="display: none;">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-play-circle"></i> Continue Watching</h2>
+<a href="#" class="section-link" id="continue-all-link">View All <i class="fas fa-arrow-right"></i></a>
 </div>
 <div class="continue-grid" id="continue-grid"></div>
 </section>
 
-<!-- NOLLYWOOD EXCELLENCE -->
-<section class="section">
-<div class="nollywood-section">
-<div class="nollywood-header">
-<h2 class="nollywood-title"><i class="fas fa-star"></i> Nollywood Excellence</h2>
-<a href="#" class="section-link">View All Nollywood <i class="fas fa-arrow-right"></i></a>
-</div>
-<div class="nollywood-grid" id="nollywood-grid"></div>
-</div>
-</section>
-
-<!-- TRENDING IN YOUR CITY -->
-<section class="section">
-<div class="city-trending">
-<div class="city-header">
-<i class="fas fa-location-dot"></i>
-<h3>Trending in <span id="user-city">Johannesburg</span></h3>
-</div>
-<div class="city-grid" id="city-trending-grid"></div>
-</div>
-</section>
-
-<!-- POPULAR MOVIES -->
+<!-- TRENDING IN SOUTH AFRICA (PRIORITY ROW) -->
 <section class="section">
 <div class="section-header">
-<h2 class="section-title"><i class="fas fa-fire"></i> Popular Now</h2>
-<a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+<h2 class="section-title"><i class="fas fa-chart-line"></i> 🔥 Trending in South Africa</h2>
+<a href="#" class="section-link" id="trending-sa-link">View All <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="movies-grid" id="popular-grid"></div>
+<div class="movies-grid" id="trending-sa-grid"></div>
 </section>
 
-<!-- RECOMMENDED FOR YOU -->
-<section class="section">
+<!-- BECAUSE YOU WATCHED X (Personalized Row) -->
+<section class="section" id="personalized-section" style="display: none;">
 <div class="section-header">
-<h2 class="section-title"><i class="fas fa-thumbs-up"></i> Recommended For You</h2>
+<h2 class="section-title"><i class="fas fa-user-check"></i> <span id="personalized-reason">Because you watched</span></h2>
 </div>
-<div class="movies-grid" id="recommended-grid"></div>
+<div class="movies-grid" id="personalized-grid"></div>
 </section>
 
-<!-- BY GENRE - AFRICAN-CENTRIC -->
+<!-- SOUTH AFRICAN GENRES (Horizontal Scroll Chips + Rows) -->
+<div id="sa-genres-container"></div>
+
+<!-- TRENDING IN AFRICA -->
 <section class="section">
 <div class="section-header">
-<h2 class="section-title"><i class="fas fa-tags"></i> African Cinema</h2>
+<h2 class="section-title"><i class="fas fa-map-marked-alt"></i> 🌍 Trending in Africa</h2>
+<a href="#" class="section-link" id="trending-africa-link">View All <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="movies-grid" id="genre-grid"></div>
+<div class="movies-grid" id="trending-africa-grid"></div>
+</section>
+
+<!-- BINGE COLLECTIONS -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-layer-group"></i> 🎬 Binge Collections</h2>
+</div>
+<div class="binge-collections-grid" id="binge-collections-grid"></div>
+</section>
+
+<!-- BANTU ORIGINALS -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-crown"></i> ⚡ Bantu Originals</h2>
+<a href="#" class="section-link" id="originals-link">View All <i class="fas fa-arrow-right"></i></a>
+</div>
+<div class="movies-grid" id="originals-grid"></div>
+</section>
+
+<!-- GLOBAL PICKS (LAST ROW) -->
+<section class="section">
+<div class="section-header">
+<h2 class="section-title"><i class="fas fa-globe"></i> 🌎 Global Picks</h2>
+</div>
+<div class="movies-grid" id="global-grid"></div>
 </section>
 
 </main>
@@ -1161,158 +1201,205 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
-let currentGenre = 'all';
+let currentFilters = {
+    country: 'South Africa',
+    genre: 'all',
+    mood: 'all',
+    language: 'all'
+};
 let watchHistory = [];
+let userPreferences = null;
+let allContent = [];
 
-// ===== DEMO MOVIE CONTENT =====
-const nollywoodMovies = [
-    { id: 1, title: "The Wedding Party", year: "2023", rating: 4.8, duration: "1h 55min", genre: "romance", image: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=600&fit=crop" },
-    { id: 2, title: "Lionheart", year: "2022", rating: 4.7, duration: "1h 48min", genre: "drama", image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop" },
-    { id: 3, title: "King of Boys", year: "2023", rating: 4.9, duration: "2h 30min", genre: "thriller", image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop" },
-    { id: 4, title: "Citation", year: "2022", rating: 4.6, duration: "2h 10min", genre: "drama", image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop" },
+// ===== SA CORE GENRES (The South African Story Classification System) =====
+const SA_CORE_GENRES = [
+    { id: 'township_drama', name: 'Township Drama', icon: 'fa-city', description: 'Life in South African townships' },
+    { id: 'kasi_comedy', name: 'Kasi Comedy', icon: 'fa-laugh-squint', description: 'Hilarious township stories' },
+    { id: 'political_drama', name: 'Political Drama', icon: 'fa-landmark', description: 'Power, politics and corruption' },
+    { id: 'crime_corruption', name: 'Crime & Corruption', icon: 'fa-gavel', description: 'Underworld and justice' },
+    { id: 'street_hustle', name: 'Street Hustle', icon: 'fa-hand-holding-usd', description: 'Survival and ambition' },
+    { id: 'taxi_stories', name: 'Taxi Industry Stories', icon: 'fa-car', description: 'The taxi industry epic' },
+    { id: 'struggle_stories', name: 'Struggle Stories', icon: 'fa-fist-raised', description: 'Historical liberation tales' },
+    { id: 'modern_urban', name: 'Modern Urban Life', icon: 'fa-building', description: 'Contemporary city living' },
+    { id: 'african_futurism', name: 'African Futurism', icon: 'fa-robot', description: 'Sci-fi from an African lens' },
+    { id: 'soapies_telenovelas', name: 'Soapies & Telenovelas', icon: 'fa-tv', description: 'Dramatic series' },
+    { id: 'southern_gothic', name: 'Southern African Gothic', icon: 'fa-ghost', description: 'Horror and the supernatural' },
+    { id: 'sa_romcom', name: 'SA Romantic Comedy', icon: 'fa-heart', description: 'Love and laughter' },
+    { id: 'biopics', name: 'Biographical & Historical', icon: 'fa-history', description: 'Real life stories' },
+    { id: 'musical', name: 'Musical & Music-Driven', icon: 'fa-music', description: 'Rhythm and storytelling' },
+    { id: 'family_coming_of_age', name: 'Family & Coming-of-Age', icon: 'fa-child', description: 'Growing up South African' },
+    { id: 'indigenous_language', name: 'Indigenous Language Stories', icon: 'fa-language', description: 'Stories in mother tongues' },
+    { id: 'sports_films', name: 'Sports Films', icon: 'fa-futbol', description: 'Triumph on the field' },
+    { id: 'rural_stories', name: 'Rural / Small-Town Stories', icon: 'fa-tree', description: 'Life beyond the city' },
+    { id: 'faith_spiritual', name: 'Faith & Spiritual Narratives', icon: 'fa-pray', description: 'Belief and redemption' }
 ];
 
-const popularMovies = [
-    { id: 5, title: "Black Panther: Wakanda Forever", year: "2023", rating: 4.8, duration: "2h 41min", genre: "action", image: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop" },
-    { id: 6, title: "The Woman King", year: "2022", rating: 4.9, duration: "2h 15min", genre: "action", image: "https://images.unsplash.com/photo-1531256379415-b0c3fd49635c?w=400&h=600&fit=crop" },
-    { id: 7, title: "Anikulapo", year: "2023", rating: 4.7, duration: "2h 20min", genre: "supernatural", image: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&h=600&fit=crop" },
-    { id: 8, title: "Brotherhood", year: "2023", rating: 4.6, duration: "1h 58min", genre: "action", image: "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=400&h=600&fit=crop" },
+// ===== BINGE COLLECTIONS =====
+const BINGE_COLLECTIONS = [
+    { id: 1, title: '🔥 Weekend Binge: SA Crime Stories', icon: 'fa-gavel', count: 8, color: '#ef4444' },
+    { id: 2, title: '❤️ Love Stories from Africa', icon: 'fa-heart', count: 12, color: '#ec4899' },
+    { id: 3, title: '⚡ African Sci-Fi & Futurism', icon: 'fa-robot', count: 6, color: '#8b5cf6' },
+    { id: 4, title: '😂 Kasi Comedy Marathon', icon: 'fa-laugh-squint', count: 15, color: '#f59e0b' },
+    { id: 5, title: '📜 Struggle & Liberation Classics', icon: 'fa-fist-raised', count: 10, color: '#10b981' }
 ];
 
-const recommendedMovies = [
-    { id: 9, title: "The Ghost and the Tout", year: "2023", rating: 4.5, duration: "1h 50min", genre: "comedy", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop" },
-    { id: 10, title: "Omo Ghetto: The Saga", year: "2022", rating: 4.7, duration: "2h 5min", genre: "comedy", image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop" },
-    { id: 11, title: "Elevator Baby", year: "2023", rating: 4.6, duration: "1h 45min", genre: "drama", image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop" },
-    { id: 12, title: "Mokalik", year: "2022", rating: 4.5, duration: "1h 55min", genre: "drama", image: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=600&fit=crop" },
+// ===== DEMO MOVIE CONTENT (Structured with SA-first taxonomy) =====
+// This replaces the old demo arrays with properly structured content
+const demoMovies = [
+    // South African Content (Primary)
+    { id: 1, title: "The Lion's Legacy", year: "2024", rating: 4.9, duration: "2h 15min", genre: "Drama", saGenre: "township_drama", mood: "Emotional", language: "Zulu", country: "South Africa", region: "Southern Africa", image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop", isBantuOriginal: true, views: 125000, completionRate: 0.89 },
+    { id: 2, title: "Taxi Wars: Joburg", year: "2024", rating: 4.7, duration: "1h 55min", genre: "Action", saGenre: "taxi_stories", mood: "Dark", language: "English", country: "South Africa", region: "Southern Africa", image: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=600&fit=crop", isBantuOriginal: false, views: 89000, completionRate: 0.76 },
+    { id: 3, title: "Soweto Love Story", year: "2023", rating: 4.8, duration: "1h 48min", genre: "Romance", saGenre: "sa_romcom", mood: "Emotional", language: "English", country: "South Africa", region: "Southern Africa", image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop", isBantuOriginal: true, views: 67000, completionRate: 0.82 },
+    { id: 4, title: "The Freedom Fighter", year: "2023", rating: 4.9, duration: "2h 30min", genre: "Drama", saGenre: "struggle_stories", mood: "Inspirational", language: "Xhosa", country: "South Africa", region: "Southern Africa", image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop", isBantuOriginal: true, views: 145000, completionRate: 0.91 },
+    { id: 5, title: "Kasi Comedy Night", year: "2024", rating: 4.6, duration: "1h 30min", genre: "Comedy", saGenre: "kasi_comedy", mood: "Funny", language: "English", country: "South Africa", region: "Southern Africa", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop", isBantuOriginal: false, views: 56000, completionRate: 0.71 },
+    { id: 6, title: "Ancestral Call", year: "2024", rating: 4.8, duration: "2h 10min", genre: "Supernatural", saGenre: "southern_gothic", mood: "Dark", language: "Zulu", country: "South Africa", region: "Southern Africa", image: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&h=600&fit=crop", isBantuOriginal: true, views: 72000, completionRate: 0.79 },
+    
+    // African Content (Secondary)
+    { id: 7, title: "Lionheart", year: "2022", rating: 4.7, duration: "1h 48min", genre: "Drama", saGenre: null, mood: "Inspirational", language: "English", country: "Nigeria", region: "West Africa", image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop", isBantuOriginal: false, views: 98000, completionRate: 0.84 },
+    { id: 8, title: "The Wedding Party", year: "2023", rating: 4.8, duration: "1h 55min", genre: "Comedy", saGenre: null, mood: "Funny", language: "English", country: "Nigeria", region: "West Africa", image: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=600&fit=crop", isBantuOriginal: false, views: 112000, completionRate: 0.86 },
+    { id: 9, title: "King of Boys", year: "2023", rating: 4.9, duration: "2h 30min", genre: "Thriller", saGenre: null, mood: "Dark", language: "English", country: "Nigeria", region: "West Africa", image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop", isBantuOriginal: false, views: 156000, completionRate: 0.88 },
+    
+    // Global Content (Tertiary)
+    { id: 10, title: "Black Panther: Wakanda Forever", year: "2023", rating: 4.8, duration: "2h 41min", genre: "Action", saGenre: null, mood: "Emotional", language: "English", country: "Global", region: "Global", image: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop", isBantuOriginal: false, views: 234000, completionRate: 0.85 },
+    { id: 11, title: "The Woman King", year: "2022", rating: 4.9, duration: "2h 15min", genre: "Action", saGenre: null, mood: "Inspirational", language: "English", country: "Global", region: "Global", image: "https://images.unsplash.com/photo-1531256379415-b0c3fd49635c?w=400&h=600&fit=crop", isBantuOriginal: false, views: 178000, completionRate: 0.87 },
+    { id: 12, title: "Elevator Baby", year: "2023", rating: 4.6, duration: "1h 45min", genre: "Drama", saGenre: null, mood: "Emotional", language: "English", country: "Nigeria", region: "West Africa", image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop", isBantuOriginal: false, views: 45000, completionRate: 0.74 }
 ];
 
-const genreMovies = [
-    { id: 13, title: "Supernatural Thriller", year: "2024", rating: 4.8, duration: "2h 10min", genre: "supernatural", image: "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=400&h=600&fit=crop" },
-    { id: 14, title: "Urban Romance", year: "2023", rating: 4.6, duration: "1h 52min", genre: "romance", image: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&h=600&fit=crop" },
-    { id: 15, title: "Action Epic", year: "2024", rating: 4.9, duration: "2h 25min", genre: "action", image: "https://images.unsplash.com/photo-1531256379415-b0c3fd49635c?w=400&h=600&fit=crop" },
-    { id: 16, title: "Comedy Special", year: "2023", rating: 4.5, duration: "1h 40min", genre: "comedy", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop" },
-];
+// ===== FETCH FROM SUPABASE (Dynamic content) =====
+async function fetchMoviesFromSupabase() {
+    try {
+        let query = supabaseClient
+            .from('Content')
+            .select('*')
+            .eq('status', 'published')
+            .eq('media_type', 'movie')
+            .order('views_count', { ascending: false });
+        
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+            // Transform Supabase data to our format
+            return data.map(item => ({
+                id: item.id,
+                title: item.title || 'Untitled',
+                year: item.created_at ? new Date(item.created_at).getFullYear() : '2024',
+                rating: (item.likes_count / Math.max(item.views_count, 1) * 5).toFixed(1) || '4.0',
+                duration: formatDuration(item.duration),
+                genre: item.genre || 'Drama',
+                saGenre: item.tags?.find(t => SA_CORE_GENRES.some(g => g.name.toLowerCase() === t.toLowerCase())) || null,
+                mood: item.content_metadata?.mood || 'Emotional',
+                language: item.language || 'English',
+                country: item.region_code || 'South Africa',
+                region: item.region_code === 'South Africa' ? 'Southern Africa' : 'Africa',
+                image: item.thumbnail_url || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop',
+                isBantuOriginal: item.is_bantu_original || false,
+                views: item.views_count || 0,
+                completionRate: item.content_metadata?.completion_rate || 0.7
+            }));
+        }
+        return demoMovies;
+    } catch (err) {
+        console.warn('Error fetching from Supabase, using demo data:', err);
+        return demoMovies;
+    }
+}
 
-const cityTrending = [
-    { id: 17, title: "The Black Book", views: "12.5K", image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=100&h=140&fit=crop" },
-    { id: 18, title: "Battle on Buka Street", views: "9.8K", image: "https://images.unsplash.com/photo-1519741497674-611481863552?w=100&h=140&fit=crop" },
-    { id: 19, title: "Gangs of Lagos", views: "8.2K", image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=100&h=140&fit=crop" },
-    { id: 20, title: "Blood Sisters", views: "7.5K", image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=100&h=140&fit=crop" },
-];
+function formatDuration(seconds) {
+    if (!seconds) return '1h 30min';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+}
+
+// ===== FILTERING FUNCTIONS =====
+function filterContent(content, filters) {
+    return content.filter(item => {
+        if (filters.country !== 'all' && item.country !== filters.country && !(filters.country === 'Africa' && item.region === 'Africa')) {
+            if (!(filters.country === 'Global' && item.country === 'Global')) return false;
+        }
+        if (filters.genre !== 'all' && item.genre.toLowerCase() !== filters.genre.toLowerCase()) return false;
+        if (filters.mood !== 'all' && item.mood.toLowerCase() !== filters.mood.toLowerCase()) return false;
+        if (filters.language !== 'all' && item.language.toLowerCase() !== filters.language.toLowerCase()) return false;
+        return true;
+    });
+}
 
 // ===== RENDER FUNCTIONS =====
-function renderNollywood() {
-    const grid = document.getElementById('nollywood-grid');
-    grid.innerHTML = nollywoodMovies.map(movie => `
-        <div class="movie-card" data-id="${movie.id}">
-            <div class="movie-poster">
-                <img src="${movie.image}" alt="${movie.title}">
-                <div class="movie-overlay"></div>
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div>
-                <div class="movie-year">${movie.year}</div>
-            </div>
-            <div class="movie-info">
-                <h3 class="movie-title">${escapeHtml(movie.title)}</h3>
-                <div class="movie-meta">
-                    <span><i class="fas fa-clock"></i> ${movie.duration}</span>
-                    <span><i class="fas fa-tag"></i> ${movie.genre}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
+function renderTrendingSA() {
+    const grid = document.getElementById('trending-sa-grid');
+    const saContent = allContent.filter(c => c.country === 'South Africa').sort((a, b) => b.views - a.views).slice(0, 8);
+    grid.innerHTML = renderMovieGrid(saContent);
+    attachMovieClickHandlers();
 }
 
-function renderPopular() {
-    const grid = document.getElementById('popular-grid');
-    let filtered = [...popularMovies];
-    if (currentGenre !== 'all') {
-        filtered = filtered.filter(m => m.genre === currentGenre);
+function renderTrendingAfrica() {
+    const grid = document.getElementById('trending-africa-grid');
+    const africaContent = allContent.filter(c => c.region === 'Africa' || c.country === 'Nigeria').sort((a, b) => b.views - a.views).slice(0, 8);
+    grid.innerHTML = renderMovieGrid(africaContent);
+    attachMovieClickHandlers();
+}
+
+function renderGlobalPicks() {
+    const grid = document.getElementById('global-grid');
+    const globalContent = allContent.filter(c => c.country === 'Global').slice(0, 8);
+    grid.innerHTML = renderMovieGrid(globalContent);
+    attachMovieClickHandlers();
+}
+
+function renderBantuOriginals() {
+    const grid = document.getElementById('originals-grid');
+    const originals = allContent.filter(c => c.isBantuOriginal).slice(0, 8);
+    grid.innerHTML = renderMovieGrid(originals);
+    attachMovieClickHandlers();
+}
+
+function renderBingeCollections() {
+    const grid = document.getElementById('binge-collections-grid');
+    grid.innerHTML = BINGE_COLLECTIONS.map(collection => `
+        <div class="binge-card" data-id="${collection.id}">
+            <div class="binge-icon"><i class="fas ${collection.icon}" style="color: ${collection.color}"></i></div>
+            <div class="binge-title">${escapeHtml(collection.title)}</div>
+            <div class="binge-count">${collection.count} titles • Binge ready</div>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.binge-card').forEach(card => {
+        card.addEventListener('click', () => {
+            showToast('Loading collection...', 'info');
+        });
+    });
+}
+
+function renderPersonalizedRecommendations() {
+    const section = document.getElementById('personalized-section');
+    const grid = document.getElementById('personalized-grid');
+    
+    if (!currentUser || !watchHistory.length) {
+        section.style.display = 'none';
+        return;
     }
     
-    grid.innerHTML = filtered.map(movie => `
-        <div class="movie-card" data-id="${movie.id}">
-            <div class="movie-poster">
-                <img src="${movie.image}" alt="${movie.title}">
-                <div class="movie-overlay"></div>
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div>
-                <div class="movie-year">${movie.year}</div>
-            </div>
-            <div class="movie-info">
-                <h3 class="movie-title">${escapeHtml(movie.title)}</h3>
-                <div class="movie-meta">
-                    <span><i class="fas fa-clock"></i> ${movie.duration}</span>
-                    <span><i class="fas fa-tag"></i> ${movie.genre}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    attachMovieClickHandlers();
-}
-
-function renderRecommended() {
-    const grid = document.getElementById('recommended-grid');
-    grid.innerHTML = recommendedMovies.map(movie => `
-        <div class="movie-card" data-id="${movie.id}">
-            <div class="movie-poster">
-                <img src="${movie.image}" alt="${movie.title}">
-                <div class="movie-overlay"></div>
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div>
-                <div class="movie-year">${movie.year}</div>
-            </div>
-            <div class="movie-info">
-                <h3 class="movie-title">${escapeHtml(movie.title)}</h3>
-                <div class="movie-meta">
-                    <span><i class="fas fa-clock"></i> ${movie.duration}</span>
-                    <span><i class="fas fa-tag"></i> ${movie.genre}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    attachMovieClickHandlers();
-}
-
-function renderGenreMovies() {
-    const grid = document.getElementById('genre-grid');
-    grid.innerHTML = genreMovies.map(movie => `
-        <div class="movie-card" data-id="${movie.id}">
-            <div class="movie-poster">
-                <img src="${movie.image}" alt="${movie.title}">
-                <div class="movie-overlay"></div>
-                <div class="play-overlay"><i class="fas fa-play"></i></div>
-                <div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div>
-                <div class="movie-year">${movie.year}</div>
-            </div>
-            <div class="movie-info">
-                <h3 class="movie-title">${escapeHtml(movie.title)}</h3>
-                <div class="movie-meta">
-                    <span><i class="fas fa-clock"></i> ${movie.duration}</span>
-                    <span><i class="fas fa-tag"></i> ${movie.genre}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    attachMovieClickHandlers();
-}
-
-function renderCityTrending() {
-    const grid = document.getElementById('city-trending-grid');
-    grid.innerHTML = cityTrending.map(movie => `
-        <div class="city-movie" data-id="${movie.id}">
-            <div class="city-movie-poster">
-                <img src="${movie.image}" alt="${movie.title}">
-            </div>
-            <div class="city-movie-info">
-                <div class="city-movie-title">${escapeHtml(movie.title)}</div>
-                <div class="city-movie-stats">
-                    <span><i class="fas fa-eye"></i> ${movie.views} views this week</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    attachCityMovieHandlers();
+    // Get the last watched movie
+    const lastWatched = watchHistory[watchHistory.length - 1];
+    const lastMovie = allContent.find(c => c.id == lastWatched.id);
+    
+    if (lastMovie) {
+        section.style.display = 'block';
+        const reasonSpan = document.getElementById('personalized-reason');
+        if (reasonSpan) reasonSpan.innerHTML = `Because you watched ${escapeHtml(lastMovie.title)}`;
+        
+        // Find similar content (same genre or same SA genre)
+        const similar = allContent.filter(c => 
+            c.id != lastMovie.id && 
+            (c.genre === lastMovie.genre || (c.saGenre && c.saGenre === lastMovie.saGenre))
+        ).slice(0, 8);
+        
+        grid.innerHTML = renderMovieGrid(similar);
+        attachMovieClickHandlers();
+    } else {
+        section.style.display = 'none';
+    }
 }
 
 function renderContinueWatching() {
@@ -1325,23 +1412,27 @@ function renderContinueWatching() {
     }
     
     section.style.display = 'block';
-    grid.innerHTML = watchHistory.map(item => `
-        <div class="continue-card" data-id="${item.id}">
-            <div class="continue-poster">
-                <img src="${item.image}" alt="${item.title}">
-            </div>
-            <div class="continue-info">
-                <div class="continue-title">${escapeHtml(item.title)}</div>
-                <div class="continue-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${item.progress}%"></div>
-                    </div>
-                    <div class="progress-text">${item.progress}% complete</div>
+    grid.innerHTML = watchHistory.map(item => {
+        const movie = allContent.find(c => c.id == item.id);
+        if (!movie) return '';
+        return `
+            <div class="continue-card" data-id="${item.id}">
+                <div class="continue-poster">
+                    <img src="${movie.image}" alt="${escapeHtml(movie.title)}">
                 </div>
-                <button class="continue-btn" data-id="${item.id}">Continue Watching →</button>
+                <div class="continue-info">
+                    <div class="continue-title">${escapeHtml(movie.title)}</div>
+                    <div class="continue-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${item.progress}%"></div>
+                        </div>
+                        <div class="progress-text">${item.progress}% complete • ${formatRemainingTime(movie.duration, item.progress)} left</div>
+                    </div>
+                    <button class="continue-btn" data-id="${item.id}">Continue Watching →</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     document.querySelectorAll('.continue-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1352,89 +1443,245 @@ function renderContinueWatching() {
     });
 }
 
+function formatRemainingTime(durationStr, progress) {
+    // Parse duration like "2h 15min"
+    const match = durationStr.match(/(\d+)h\s*(\d+)?min?/);
+    if (match) {
+        const hours = parseInt(match[1]) || 0;
+        const minutes = parseInt(match[2]) || 0;
+        const totalMinutes = hours * 60 + minutes;
+        const remainingMinutes = Math.round(totalMinutes * (1 - progress / 100));
+        if (remainingMinutes >= 60) {
+            const remainingHours = Math.floor(remainingMinutes / 60);
+            const remainingMins = remainingMinutes % 60;
+            return `${remainingHours}h ${remainingMins}min`;
+        }
+        return `${remainingMinutes}min`;
+    }
+    return '30min';
+}
+
+function renderMovieGrid(movies) {
+    if (!movies || movies.length === 0) {
+        return '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-film"></i> No movies found</div>';
+    }
+    
+    return movies.map(movie => `
+        <div class="movie-card" data-id="${movie.id}">
+            <div class="movie-poster">
+                <img src="${movie.image}" alt="${escapeHtml(movie.title)}" loading="lazy">
+                <div class="movie-overlay"></div>
+                <div class="play-overlay"><i class="fas fa-play"></i></div>
+                <div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div>
+                <div class="movie-year">${movie.year}</div>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">${escapeHtml(movie.title)}</h3>
+                <div class="movie-meta">
+                    <span><i class="fas fa-clock"></i> ${movie.duration}</span>
+                    <span><i class="fas fa-tag"></i> ${movie.genre}</span>
+                </div>
+                ${movie.language !== 'English' ? `<div class="language-badge"><i class="fas fa-language"></i> ${movie.language}</div>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderSAGenreRows() {
+    const container = document.getElementById('sa-genres-container');
+    if (!container) return;
+    
+    // First, render horizontal scroll chips
+    const chipsHtml = `
+        <div class="sa-genre-filters" id="sa-genre-chips">
+            ${SA_CORE_GENRES.map(genre => `
+                <button class="sa-genre-chip" data-sa-genre="${genre.id}">
+                    <i class="fas ${genre.icon}"></i> ${genre.name}
+                </button>
+            `).join('')}
+        </div>
+        <div id="sa-genre-rows-container"></div>
+    `;
+    container.innerHTML = chipsHtml;
+    
+    // Render all genre rows (initially visible)
+    const rowsContainer = document.getElementById('sa-genre-rows-container');
+    rowsContainer.innerHTML = SA_CORE_GENRES.map(genre => {
+        const genreMovies = allContent.filter(c => c.saGenre === genre.id).slice(0, 8);
+        if (genreMovies.length === 0) return '';
+        return `
+            <section class="section" data-sa-genre="${genre.id}" style="margin-bottom: 40px;">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas ${genre.icon}"></i> ${genre.name}</h2>
+                    <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="movies-grid">
+                    ${renderMovieGrid(genreMovies)}
+                </div>
+            </section>
+        `;
+    }).join('');
+    
+    // Attach chip click handlers
+    document.querySelectorAll('.sa-genre-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const genreId = chip.dataset.saGenre;
+            document.querySelectorAll('.sa-genre-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            
+            // Scroll to the corresponding row
+            const targetRow = document.querySelector(`section[data-sa-genre="${genreId}"]`);
+            if (targetRow) {
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+    
+    attachMovieClickHandlers();
+}
+
 function attachMovieClickHandlers() {
     document.querySelectorAll('.movie-card').forEach(card => {
         card.addEventListener('click', () => {
             const id = card.dataset.id;
-            if (id) window.location.href = `content-detail.html?id=${id}`;
+            if (id) {
+                // Record watch progress
+                recordWatchStart(id);
+                window.location.href = `content-detail.html?id=${id}`;
+            }
         });
     });
 }
 
-function attachCityMovieHandlers() {
-    document.querySelectorAll('.city-movie').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.dataset.id;
-            if (id) window.location.href = `content-detail.html?id=${id}`;
-        });
-    });
+function recordWatchStart(contentId) {
+    // Store in localStorage for demo
+    let history = JSON.parse(localStorage.getItem('bantu_watch_history') || '[]');
+    const existing = history.find(h => h.id == contentId);
+    if (!existing) {
+        history.push({ id: contentId, progress: 0, lastWatched: new Date().toISOString() });
+        localStorage.setItem('bantu_watch_history', JSON.stringify(history));
+    }
+    loadWatchHistory();
 }
 
-// ===== FILTER HANDLERS =====
-function setupFilters() {
-    const filters = document.querySelectorAll('.genre-chip');
-    filters.forEach(filter => {
-        filter.addEventListener('click', () => {
-            filters.forEach(f => f.classList.remove('active'));
-            filter.classList.add('active');
-            currentGenre = filter.dataset.genre;
-            renderPopular();
-            showToast(`Showing ${currentGenre === 'all' ? 'all' : currentGenre} movies`, 'success');
-        });
-    });
-}
-
-// ===== HERO BUTTONS =====
-function setupHeroButtons() {
-    document.getElementById('watch-trailer-btn')?.addEventListener('click', () => {
-        showToast('Playing trailer...', 'info');
-        setTimeout(() => {
-            window.location.href = 'content-detail.html?id=featured';
-        }, 500);
-    });
-    
-    document.getElementById('add-to-list-btn')?.addEventListener('click', async () => {
-        if (!currentUser) {
-            showToast('Please sign in to add to My List', 'warning');
-            window.location.href = `login.html?redirect=movies.html`;
-            return;
-        }
-        showToast('Added to My List! ✨', 'success');
-    });
-}
-
-// ===== SIMULATE WATCH HISTORY =====
 function loadWatchHistory() {
-    // Simulate some watch history for demo
-    watchHistory = [
-        { id: 5, title: "Black Panther: Wakanda Forever", progress: 65, image: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=100&h=140&fit=crop" },
-        { id: 2, title: "Lionheart", progress: 32, image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=100&h=140&fit=crop" },
-    ];
+    const saved = JSON.parse(localStorage.getItem('bantu_watch_history') || '[]');
+    watchHistory = saved.slice(0, 5);
     renderContinueWatching();
+    renderPersonalizedRecommendations();
 }
 
-// ===== THEME SYSTEM =====
-function initThemeSystem() {
-    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-    applyTheme(savedTheme);
+// ===== ADAPTIVE HERO =====
+function updateAdaptiveHero() {
+    let heroContent = null;
     
-    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('theme-selector')?.classList.toggle('active');
-    });
+    if (watchHistory.length > 0 && currentUser) {
+        // Returning user - show based on last watched
+        const lastWatchedId = watchHistory[watchHistory.length - 1]?.id;
+        const lastMovie = allContent.find(c => c.id == lastWatchedId);
+        if (lastMovie) {
+            heroContent = lastMovie;
+            document.getElementById('hero-badge').innerHTML = '<i class="fas fa-play-circle"></i> BECAUSE YOU WATCHED';
+        }
+    }
     
-    document.querySelectorAll('.theme-option').forEach(option => {
-        option.addEventListener('click', () => {
-            applyTheme(option.dataset.theme);
-            document.getElementById('theme-selector')?.classList.remove('active');
-        });
+    if (!heroContent) {
+        // New user or no history - show trending SA content
+        const trendingSA = allContent.filter(c => c.country === 'South Africa').sort((a, b) => b.views - a.views)[0];
+        heroContent = trendingSA || allContent[0];
+        document.getElementById('hero-badge').innerHTML = '<i class="fas fa-fire"></i> TRENDING IN SOUTH AFRICA';
+    }
+    
+    if (heroContent) {
+        document.getElementById('hero-title').innerHTML = heroContent.title.includes('The') ? heroContent.title : heroContent.title;
+        document.getElementById('hero-description').textContent = getDescriptionForMovie(heroContent);
+        document.getElementById('hero-meta').innerHTML = `
+            <span><i class="fas fa-star"></i> ${heroContent.rating} Rating</span>
+            <span><i class="fas fa-clock"></i> ${heroContent.duration}</span>
+            <span><i class="fas fa-calendar"></i> ${heroContent.year}</span>
+            ${heroContent.language !== 'English' ? `<span><i class="fas fa-language"></i> ${heroContent.language}</span>` : ''}
+        `;
+    }
+}
+
+function getDescriptionForMovie(movie) {
+    const descriptions = {
+        1: "An epic tale of power, betrayal, and redemption set in the heart of an ancient African kingdom.",
+        2: "Two rival taxi associations battle for dominance on the streets of Johannesburg.",
+        3: "A heartwarming romance set against the vibrant backdrop of Soweto.",
+        4: "The untold story of a young freedom fighter who helped shape South Africa's destiny.",
+        5: "The biggest names in Kasi comedy come together for an unforgettable night of laughter.",
+        6: "A young woman discovers she has a powerful ancestral gift that could save her village."
+    };
+    return descriptions[movie.id] || "Experience this captivating story from Africa's finest storytellers.";
+}
+
+// ===== SMART FILTERS =====
+function setupSmartFilters() {
+    const countryFilter = document.getElementById('filter-country');
+    const genreFilter = document.getElementById('filter-genre');
+    const moodFilter = document.getElementById('filter-mood');
+    const languageFilter = document.getElementById('filter-language');
+    const resetBtn = document.getElementById('filter-reset');
+    
+    const applyFilters = () => {
+        currentFilters = {
+            country: countryFilter.value,
+            genre: genreFilter.value,
+            mood: moodFilter.value,
+            language: languageFilter.value
+        };
+        
+        // Re-render all sections with filters
+        const filteredContent = filterContent(allContent, currentFilters);
+        
+        // Update trending SA with filters
+        const saFiltered = filteredContent.filter(c => c.country === 'South Africa');
+        document.getElementById('trending-sa-grid').innerHTML = renderMovieGrid(saFiltered.slice(0, 8));
+        
+        // Update trending Africa
+        const africaFiltered = filteredContent.filter(c => c.region === 'Africa' || c.country === 'Nigeria');
+        document.getElementById('trending-africa-grid').innerHTML = renderMovieGrid(africaFiltered.slice(0, 8));
+        
+        // Update global picks
+        const globalFiltered = filteredContent.filter(c => c.country === 'Global');
+        document.getElementById('global-grid').innerHTML = renderMovieGrid(globalFiltered.slice(0, 8));
+        
+        attachMovieClickHandlers();
+        showToast(`Showing ${filteredContent.length} movies`, 'success');
+    };
+    
+    countryFilter.addEventListener('change', applyFilters);
+    genreFilter.addEventListener('change', applyFilters);
+    moodFilter.addEventListener('change', applyFilters);
+    languageFilter.addEventListener('change', applyFilters);
+    resetBtn.addEventListener('click', () => {
+        countryFilter.value = 'South Africa';
+        genreFilter.value = 'all';
+        moodFilter.value = 'all';
+        languageFilter.value = 'all';
+        applyFilters();
+        showToast('Filters reset to South Africa-first', 'info');
     });
 }
 
-function applyTheme(theme) {
-    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-    document.body.classList.add(`theme-${theme}`);
-    localStorage.setItem('bantu_theme', theme);
+// ===== UTILITY FUNCTIONS =====
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // ===== SIDEBAR & NAVIGATION =====
@@ -1497,64 +1744,98 @@ function setupScaleControls() {
     apply();
 }
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+function initThemeSystem() {
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('theme-selector')?.classList.toggle('active');
+    });
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            applyTheme(option.dataset.theme);
+            document.getElementById('theme-selector')?.classList.remove('active');
+        });
+    });
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function applyTheme(theme) {
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.body.classList.add(`theme-${theme}`);
+    localStorage.setItem('bantu_theme', theme);
 }
 
-// ===== AUTH CHECK =====
+function setupHeroButtons() {
+    document.getElementById('watch-trailer-btn')?.addEventListener('click', () => {
+        showToast('Playing trailer...', 'info');
+    });
+    document.getElementById('add-to-list-btn')?.addEventListener('click', async () => {
+        if (!currentUser) {
+            showToast('Please sign in to add to My List', 'warning');
+            window.location.href = `login.html?redirect=movies.html`;
+            return;
+        }
+        showToast('Added to My List! ✨', 'success');
+    });
+}
+
 async function checkAuth() {
     const { data } = await supabaseClient.auth.getSession();
     currentUser = data?.session?.user || null;
     if (currentUser) {
-        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url, location').eq('id', currentUser.id).maybeSingle();
+        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, location, content_preferences').eq('id', currentUser.id).maybeSingle();
         const nameEl = document.getElementById('current-profile-name');
         if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
         
-        // Update city based on user location
-        const cityEl = document.getElementById('user-city');
-        if (cityEl && profile?.location) {
-            cityEl.textContent = profile.location.split(',')[0] || 'Johannesburg';
+        // Load user preferences for personalization
+        if (profile?.content_preferences) {
+            userPreferences = profile.content_preferences;
         }
     }
 }
 
-// ===== INITIALIZE =====
+// ===== LAZY LOADING (Load only hero + first 2 rows initially) =====
 async function initialize() {
     setupSidebar();
     setupNavigation();
     setupBackToTop();
     setupScaleControls();
     initThemeSystem();
-    setupFilters();
     setupHeroButtons();
     await checkAuth();
     
-    // Load watch history from localStorage
+    // Show loading
+    const loading = document.getElementById('loading');
+    
+    // Load content from Supabase
+    allContent = await fetchMoviesFromSupabase();
+    
+    // Load watch history
     loadWatchHistory();
     
-    // Render all content
-    renderNollywood();
-    renderPopular();
-    renderRecommended();
-    renderGenreMovies();
-    renderCityTrending();
+    // Render priority rows first (Hero + first 2 rows)
+    updateAdaptiveHero();
+    renderTrendingSA();  // Priority row 1
+    renderTrendingAfrica(); // Priority row 2
     
-    const loading = document.getElementById('loading');
-    if (loading) loading.style.display = 'none';
+    // Lazy load the rest after a small delay
+    setTimeout(() => {
+        renderGlobalPicks();
+        renderBantuOriginals();
+        renderBingeCollections();
+        renderSAGenreRows();
+        setupSmartFilters();
+        renderPersonalizedRecommendations();
+        
+        if (loading) loading.style.display = 'none';
+    }, 100);
+    
+    // Hide loading after max 2 seconds
+    setTimeout(() => {
+        if (loading) loading.style.display = 'none';
+    }, 2000);
 }
 
 initialize();
