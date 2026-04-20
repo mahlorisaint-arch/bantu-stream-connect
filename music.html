@@ -13,7 +13,7 @@
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ===== CSS VARIABLES ===== */
+/* ===== CSS VARIABLES (same as before) ===== */
 :root {
 --deep-black: #0A0E12;
 --deep-navy: #0F172A;
@@ -28,7 +28,6 @@
 --ui-scale: 1;
 }
 
-/* Light Theme */
 body.theme-light {
 --deep-black: #F8FAFC;
 --deep-navy: #E2E8F0;
@@ -39,7 +38,6 @@ body.theme-light {
 background: #F1F5F9;
 }
 
-/* High Contrast Theme */
 body.theme-high-contrast {
 --deep-black: #000000;
 --deep-navy: #050505;
@@ -1185,7 +1183,7 @@ transition: all 0.2s;
 
 <!-- HERO SECTION -->
 <section class="hero-section" id="hero-section">
-<video id="wave-video" class="wave-video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=600&fit=crop">
+<video id="wave-video" class="wave-video" autoplay muted loop playsinline poster="">
 <source src="" type="video/mp4">
 </video>
 <div class="hero-overlay"></div>
@@ -1245,11 +1243,6 @@ transition: all 0.2s;
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-chart-simple"></i> The Chart (Top 20)</h2>
-<div class="sorting-options" id="sorting-options" style="display:none;">
-<button class="sort-btn active" data-sort="trending">Trending</button>
-<button class="sort-btn" data-sort="views">Most Viewed</button>
-<button class="sort-btn" data-sort="newest">Newest</button>
-</div>
 </div>
 <div class="chart-container">
 <div class="chart-header">
@@ -1272,7 +1265,7 @@ transition: all 0.2s;
 </div>
 </section>
 
-<!-- SOUND OF PROVINCES (Cultural Identity - Replaces Regional Fusion) -->
+<!-- SOUND OF PROVINCES (Cultural Identity) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-globe-africa"></i> Sound of Provinces</h2>
@@ -1281,14 +1274,9 @@ transition: all 0.2s;
 <div id="provinces-sound-container"></div>
 </section>
 
-<!-- LANGUAGE SPOTLIGHT -->
-<section class="section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-language"></i> Language Spotlight</h2>
-</div>
-<div class="scroll-container">
-<div class="horizontal-scroll" id="language-spotlight-list"><div style="padding:20px;color:var(--slate-grey);"><div class="spinner" style="width:30px;height:30px;"></div> Loading language content...</div></div>
-</div>
+<!-- GENRE ROWS -->
+<section class="section" id="genre-rows-section">
+<div id="genre-rows-container"></div>
 </section>
 
 <!-- MORE MUSIC (Dynamic Grid based on filters) -->
@@ -1335,60 +1323,457 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
-let allMusicContent = [];
 let currentFilters = {
-    genre: null,
-    mood: null,
-    province: null,
+    genre_slug: null,
     city: null,
+    province: null,
     language: null,
-    sort: 'trending'
+    mood: null,
+    sort_by: 'trending'
 };
 let currentHeroContent = null;
-let userLocation = { province: 'Gauteng', city: 'Pretoria' }; // Mock detection
+let userLocation = { province: 'Gauteng', city: 'Johannesburg' };
+let moreMusicOffset = 0;
+let moreMusicTotal = 0;
 
-// Complete list of South African music genres
-const SOUTH_AFRICAN_GENRES = [
-    'Amapiano', 'Gqom', 'Kwaito', 'House (SA)', 'Afro House', 'Hip Hop (SA)',
-    'SA R&B', 'Gospel', 'Jazz (SA)', 'Maskandi', 'Mbaqanga', 'Shangaan Electro',
-    'Bacardi House', 'Lekompo', 'Xigaza', 'Xigaza xa ma 2k', 'Bubblegum',
-    'Township Pop', 'Reggae (SA)'
-];
-
-const PROVINCES = ['Gauteng', 'Limpopo', 'KwaZulu-Natal', 'Western Cape', 'Eastern Cape', 'Mpumalanga', 'North West', 'Free State', 'Northern Cape'];
-const LANGUAGES = ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa', 'Sepedi', 'Afrikaans', 'English', 'Sesotho', 'Xitsonga'];
-const MOODS = ['Chill', 'Party', 'Spiritual', 'Energetic', 'Relaxing', 'Hype', 'Love', 'Workout'];
-
-// City mapping by province
-const CITIES_BY_PROVINCE = {
-    'Gauteng': ['Johannesburg', 'Pretoria', 'Soweto', 'Tembisa', 'Midrand'],
-    'Limpopo': ['Polokwane', 'Giyani', 'Tzaneen', 'Thohoyandou', 'Lebowakgomo'],
-    'KwaZulu-Natal': ['Durban', 'Pietermaritzburg', 'Richards Bay', 'Newcastle'],
-    'Western Cape': ['Cape Town', 'Stellenbosch', 'Paarl', 'George'],
-    'Eastern Cape': ['Gqeberha', 'East London', 'Mthatha', 'Mdantsane'],
-    'Mpumalanga': ['Nelspruit', 'Witbank', 'Secunda'],
-    'North West': ['Mahikeng', 'Rustenburg', 'Klerksdorp'],
-    'Free State': ['Bloemfontein', 'Welkom', 'Bethlehem'],
-    'Northern Cape': ['Kimberley', 'Upington', 'Springbok']
+// Genre slug mappings
+const GENRE_SLUG_MAP = {
+    'Amapiano': 'amapiano',
+    'SA Hip Hop': 'hip-hop-sa',
+    'Maskandi': 'maskandi',
+    'Gqom': 'gqom',
+    'Kwaito': 'kwaito',
+    'Afro House': 'afro-house',
+    'SA R&B': 'sa-rb',
+    'Gospel': 'gospel',
+    'Jazz': 'jazz-sa'
 };
 
-// ===== HELPER FUNCTIONS =====
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+// ===== RPC WRAPPER FUNCTIONS =====
+
+/**
+ * get_trending_music(p_genre_slug, p_city, p_language, p_limit)
+ */
+async function callGetTrendingMusic(genreSlug = null, city = null, language = null, limit = 20) {
+    try {
+        const params = {
+            p_limit: limit
+        };
+        if (genreSlug) params.p_genre_slug = genreSlug;
+        if (city) params.p_city = city;
+        if (language) params.p_language = language;
+        
+        const { data, error } = await supabaseClient.rpc('get_trending_music', params);
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('get_trending_music error:', error);
+        return [];
+    }
 }
 
+/**
+ * get_music_by_location(p_city, p_province, p_limit)
+ */
+async function callGetMusicByLocation(city = null, province = null, limit = 20) {
+    try {
+        const params = { p_limit: limit };
+        if (city) params.p_city = city;
+        if (province) params.p_province = province;
+        
+        const { data, error } = await supabaseClient.rpc('get_music_by_location', params);
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('get_music_by_location error:', error);
+        return [];
+    }
+}
+
+/**
+ * get_music_by_language(p_language, p_limit)
+ */
+async function callGetMusicByLanguage(language, limit = 20) {
+    try {
+        const { data, error } = await supabaseClient.rpc('get_music_by_language', {
+            p_language: language,
+            p_limit: limit
+        });
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('get_music_by_language error:', error);
+        return [];
+    }
+}
+
+/**
+ * get_music_by_mood(p_mood, p_limit)
+ */
+async function callGetMusicByMood(mood, limit = 20) {
+    try {
+        const { data, error } = await supabaseClient.rpc('get_music_by_mood', {
+            p_mood: mood,
+            p_limit: limit
+        });
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('get_music_by_mood error:', error);
+        return [];
+    }
+}
+
+/**
+ * discover_music(p_genre_slug, p_city, p_language, p_mood, p_sort_by, p_limit, p_offset)
+ */
+async function callDiscoverMusic(genreSlug = null, city = null, language = null, mood = null, sortBy = 'trending', limit = 24, offset = 0) {
+    try {
+        const params = {
+            p_sort_by: sortBy,
+            p_limit: limit,
+            p_offset: offset
+        };
+        if (genreSlug) params.p_genre_slug = genreSlug;
+        if (city) params.p_city = city;
+        if (language) params.p_language = language;
+        if (mood) params.p_mood = mood;
+        
+        const { data, error } = await supabaseClient.rpc('discover_music', params);
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('discover_music error:', error);
+        return [];
+    }
+}
+
+// ===== UI UPDATE FUNCTIONS =====
+
+async function updateHeroSection() {
+    try {
+        const data = await callGetTrendingMusic(null, null, null, 1);
+        if (data && data.length > 0) {
+            currentHeroContent = data[0];
+            
+            document.getElementById('hero-title').textContent = truncateText(currentHeroContent.title || 'Untitled', 50);
+            
+            // Artist info
+            const artistName = currentHeroContent.artist_name || currentHeroContent.user_profiles?.full_name || 'Unknown Artist';
+            const artistAvatar = currentHeroContent.artist_avatar || currentHeroContent.user_profiles?.avatar_url;
+            document.getElementById('hero-artist').innerHTML = artistAvatar 
+                ? `<img src="${fixMediaUrl(artistAvatar)}" alt="${escapeHtml(artistName)}"><span>${escapeHtml(artistName)}</span>`
+                : `<i class="fas fa-user-circle"></i><span>${escapeHtml(artistName)}</span>`;
+            
+            // Stats with correct views/likes
+            document.getElementById('hero-stats').innerHTML = `
+                <span><i class="fas fa-eye"></i> ${formatNumber(currentHeroContent.views_count || 0)} views</span>
+                <span><i class="fas fa-heart"></i> ${formatNumber(currentHeroContent.likes_count || 0)} likes</span>
+                <span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(currentHeroContent.trending_score || 0))}</span>
+            `;
+            
+            // Set video/thumbnail
+            const videoEl = document.getElementById('wave-video');
+            const posterImg = videoEl.querySelector('source');
+            if (currentHeroContent.file_url) {
+                const videoUrl = fixMediaUrl(currentHeroContent.file_url);
+                if (posterImg) posterImg.src = videoUrl;
+                videoEl.load();
+                videoEl.play().catch(e => console.log('Autoplay prevented'));
+            }
+            
+            // Set poster image
+            if (currentHeroContent.thumbnail_url) {
+                videoEl.poster = fixMediaUrl(currentHeroContent.thumbnail_url);
+            }
+        }
+    } catch (error) {
+        console.error('Hero section error:', error);
+    }
+}
+
+async function updateChart() {
+    const chartList = document.getElementById('chart-list');
+    if (!chartList) return;
+    
+    try {
+        const data = await callGetTrendingMusic(null, null, null, 20);
+        
+        if (!data || data.length === 0) {
+            chartList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">No trending music available</div>';
+            return;
+        }
+        
+        chartList.innerHTML = data.map((item, index) => {
+            const score = item.trending_score ? Math.round(item.trending_score) : (item.views_count || 0);
+            
+            let trendIcon = '→', trendClass = '';
+            if (item.trend_label === 'rising') { trendIcon = '↑'; trendClass = 'trend-up'; }
+            else if (item.trend_label === 'declining') { trendIcon = '↓'; trendClass = 'trend-down'; }
+            else if (item.trend_label === 'peak') { trendIcon = '★'; trendClass = 'trend-peak'; }
+            
+            return `<div class="chart-item" data-content-id="${item.id}">
+                <div class="chart-rank">#${index + 1}</div>
+                <div class="chart-info">
+                    <img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
+                    <div class="chart-details">
+                        <h4>${truncateText(escapeHtml(item.title), 35)}</h4>
+                        <p>${escapeHtml(item.artist_name || 'Artist')}</p>
+                        ${item.duration ? `<p style="font-size:10px;color:var(--slate-grey);"><i class="fas fa-clock"></i> ${formatDuration(item.duration)}</p>` : ''}
+                    </div>
+                </div>
+                <div class="chart-stats">${formatNumber(score)}</div>
+                <div class="chart-trend ${trendClass}">${trendIcon} ${item.trend_label === 'rising' ? 'Rising' : (item.trend_label === 'peak' ? 'Peak' : '')}</div>
+            </div>`;
+        }).join('');
+        
+        attachChartClickHandlers();
+    } catch (error) {
+        console.error('Chart error:', error);
+        chartList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">Failed to load chart</div>';
+    }
+}
+
+async function updateLocalAreaSection() {
+    const section = document.getElementById('local-area-section');
+    const container = document.getElementById('local-area-content');
+    
+    try {
+        // Try city first, then province
+        let localMusic = await callGetMusicByLocation(userLocation.city, null, 10);
+        if (!localMusic || localMusic.length === 0) {
+            localMusic = await callGetMusicByLocation(null, userLocation.province, 10);
+        }
+        
+        if (localMusic && localMusic.length > 0) {
+            section.style.display = 'block';
+            document.getElementById('local-area-title').innerHTML = `<i class="fas fa-location-dot"></i> 🔥 Trending in ${userLocation.city || userLocation.province}`;
+            
+            container.innerHTML = localMusic.map(item => renderContentCard(item, 'small')).join('');
+            attachContentClickHandlers(container);
+        } else {
+            section.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Local area error:', error);
+        section.style.display = 'none';
+    }
+}
+
+async function updateProvincesSoundSection() {
+    const container = document.getElementById('provinces-sound-container');
+    if (!container) return;
+    
+    const featuredProvinces = ['Gauteng', 'Limpopo', 'KwaZulu-Natal', 'Western Cape'];
+    let html = '';
+    
+    for (const province of featuredProvinces) {
+        try {
+            const tracks = await callGetMusicByLocation(null, province, 4);
+            if (tracks && tracks.length > 0) {
+                html += `
+                    <div style="margin-bottom: 40px;">
+                        <h3 style="color: var(--warm-gold); margin-bottom: 16px; font-size: 20px;">
+                            <i class="fas fa-map-pin"></i> Sound of ${province}
+                        </h3>
+                        <div class="horizontal-scroll" id="province-${province.replace(/\s/g, '')}-content">
+                            ${tracks.map(item => renderContentCard(item, 'small')).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error(`Error loading province ${province}:`, error);
+        }
+    }
+    
+    container.innerHTML = html || '<div class="empty-state"><div class="empty-icon"><i class="fas fa-music"></i></div><p>No provincial content available</p></div>';
+    
+    // Attach click handlers
+    document.querySelectorAll('#provinces-sound-container .content-card').forEach(el => {
+        el.addEventListener('click', () => {
+            const id = el.dataset.contentId;
+            if (id) window.location.href = `content-detail.html?id=${id}`;
+        });
+    });
+}
+
+async function updateGenreRows() {
+    const container = document.getElementById('genre-rows-container');
+    if (!container) return;
+    
+    const genres = [
+        { name: 'Amapiano Essentials', slug: 'amapiano' },
+        { name: 'SA Hip Hop Heat', slug: 'hip-hop-sa' },
+        { name: 'Maskandi & Roots', slug: 'maskandi' }
+    ];
+    
+    let html = '';
+    
+    for (const genre of genres) {
+        try {
+            const tracks = await callGetTrendingMusic(genre.slug, null, null, 6);
+            if (tracks && tracks.length > 0) {
+                html += `
+                    <div class="section" style="margin-bottom: 40px;">
+                        <div class="section-header">
+                            <h2 class="section-title"><i class="fas fa-music"></i> ${genre.name}</h2>
+                        </div>
+                        <div class="scroll-container">
+                            <div class="horizontal-scroll">
+                                ${tracks.map(item => renderContentCard(item, 'small')).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error(`Error loading genre ${genre.name}:`, error);
+        }
+    }
+    
+    container.innerHTML = html;
+    
+    // Attach click handlers
+    document.querySelectorAll('#genre-rows-container .content-card').forEach(el => {
+        el.addEventListener('click', () => {
+            const id = el.dataset.contentId;
+            if (id) window.location.href = `content-detail.html?id=${id}`;
+        });
+    });
+}
+
+async function updateMoreMusic(resetOffset = true) {
+    const grid = document.getElementById('more-music-grid');
+    const empty = document.getElementById('more-music-empty');
+    
+    if (!grid) return;
+    
+    if (resetOffset) moreMusicOffset = 0;
+    
+    try {
+        const data = await callDiscoverMusic(
+            currentFilters.genre_slug,
+            currentFilters.city,
+            currentFilters.language,
+            currentFilters.mood,
+            currentFilters.sort_by,
+            30,
+            moreMusicOffset
+        );
+        
+        if (!data || data.length === 0) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = 'block';
+            return;
+        }
+        
+        if (grid) grid.style.display = 'grid';
+        if (empty) empty.style.display = 'none';
+        
+        const html = data.map(item => renderContentCard(item, 'full')).join('');
+        
+        if (resetOffset) {
+            grid.innerHTML = html;
+        } else {
+            grid.insertAdjacentHTML('beforeend', html);
+        }
+        
+        attachContentClickHandlers(grid);
+        moreMusicOffset += data.length;
+        
+    } catch (error) {
+        console.error('More music error:', error);
+        if (resetOffset) {
+            grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">Failed to load music</div>';
+        }
+    }
+}
+
+// ===== RENDER CARD HELPER =====
+function renderContentCard(item, size = 'full') {
+    const avatarUrl = item.artist_avatar || item.user_profiles?.avatar_url;
+    const initials = (item.artist_name || 'A')[0].toUpperCase();
+    const isNew = item.created_at && (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000;
+    const isTrending = (item.trending_score || 0) > 1000;
+    
+    if (size === 'small') {
+        return `
+            <div class="content-card" data-content-id="${item.id}" style="min-width:200px;width:200px;">
+                <div class="card-thumbnail">
+                    <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
+                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                    <div class="card-badges">
+                        ${isTrending ? '<div class="badge-trending"><i class="fas fa-chart-line"></i> Trending</div>' : ''}
+                        ${isNew ? '<div class="badge-new">NEW</div>' : ''}
+                    </div>
+                    ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${formatDuration(item.duration)}</div>` : ''}
+                </div>
+                <div class="card-content">
+                    <div class="card-title">${truncateText(escapeHtml(item.title), 30)}</div>
+                    <div class="creator-name-small">${escapeHtml(item.artist_name || 'Artist')}</div>
+                    <div class="card-meta">
+                        <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
+                        <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Full size card
+    return `
+        <div class="content-card" data-content-id="${item.id}">
+            <div class="card-thumbnail">
+                <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                <div class="card-badges">
+                    ${isTrending ? '<div class="badge-trending"><i class="fas fa-chart-line"></i> Trending</div>' : ''}
+                    ${isNew ? '<div class="badge-new">NEW</div>' : ''}
+                </div>
+                ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${formatDuration(item.duration)}</div>` : ''}
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3>
+                <div class="creator-info-small">
+                    <div class="creator-avatar-small">${avatarUrl ? `<img src="${fixMediaUrl(avatarUrl)}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${initials}</div>`}</div>
+                    <div class="creator-name-small">${escapeHtml(item.artist_name || 'Artist')}</div>
+                </div>
+                <div class="card-meta">
+                    <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
+                    <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+                    ${item.genre ? `<span><i class="fas fa-music"></i> ${item.genre}</span>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ===== REFRESH ALL SECTIONS =====
+async function refreshAllSections() {
+    await Promise.all([
+        updateHeroSection(),
+        updateChart(),
+        updateLocalAreaSection(),
+        updateProvincesSoundSection(),
+        updateGenreRows(),
+        updateMoreMusic(true)
+    ]);
+}
+
+// ===== HELPER FUNCTIONS =====
 function formatNumber(num) { 
     if (!num || num === 0) return '0'; 
     if (num >= 1000000) return (num/1000000).toFixed(1) + 'M'; 
     if (num >= 1000) return (num/1000).toFixed(1) + 'K'; 
     return num.toString(); 
+}
+
+function formatDuration(seconds) {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function truncateText(text, maxLength) { 
@@ -1407,583 +1792,19 @@ function fixMediaUrl(url) {
     if (!url) return ''; 
     if (url.startsWith('http')) return url; 
     if (url.startsWith('data:')) return url; 
-    return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`; 
+    if (url.startsWith('/')) url = url.substring(1);
+    return `${SUPABASE_URL}/storage/v1/object/public/${url}`; 
 }
 
-// ===== LOAD ALL MUSIC CONTENT =====
-async function loadAllMusic() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select(`
-                id, title, description, thumbnail_url, file_url, views_count,
-                likes_count, shares_count, comments_count, duration, created_at,
-                user_id, genre, city, language_code, content_format,
-                user_profiles!user_id ( id, full_name, username, avatar_url )
-            `)
-            .eq('status', 'published')
-            .in('content_format', ['music', 'music_video', 'song', 'track', 'audio', 'album_track'])
-            .order('created_at', { ascending: false })
-            .limit(200);
-
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-            console.log('No music content found');
-            return [];
-        }
-        
-        // Fetch mood tags from content_tags
-        const contentIds = data.map(c => c.id);
-        const { data: tagData, error: tagError } = await supabaseClient
-            .from('content_tags')
-            .select('content_id, tag')
-            .in('content_id', contentIds);
-        
-        const tagsByContent = new Map();
-        if (tagData && !tagError) {
-            tagData.forEach(t => {
-                if (!tagsByContent.has(t.content_id)) tagsByContent.set(t.content_id, []);
-                tagsByContent.get(t.content_id).push(t.tag);
-            });
-        }
-        
-        // Fetch metrics for trending score
-        const { data: metricsData, error: metricsError } = await supabaseClient
-            .from('content_metrics_realtime')
-            .select('content_id, final_score, trend_label')
-            .in('content_id', contentIds);
-        
-        const metricsByContent = new Map();
-        if (metricsData && !metricsError) {
-            metricsData.forEach(m => {
-                metricsByContent.set(m.content_id, {
-                    final_score: m.final_score || 0,
-                    trend_label: m.trend_label
-                });
-            });
-        }
-        
-        // Transform data
-        allMusicContent = data.map(item => {
-            const tags = tagsByContent.get(item.id) || [];
-            const metrics = metricsByContent.get(item.id) || { final_score: 0, trend_label: null };
-            
-            const trendingScore = metrics.final_score > 0 ? metrics.final_score : 
-                (item.views_count || 0) * 0.4 + (item.likes_count || 0) * 0.3 + (item.shares_count || 0) * 0.3;
-            
-            // Determine province from city
-            let province = null;
-            for (const [prov, cities] of Object.entries(CITIES_BY_PROVINCE)) {
-                if (item.city && cities.some(c => c.toLowerCase() === item.city.toLowerCase())) {
-                    province = prov;
-                    break;
-                }
-            }
-            
-            return {
-                ...item,
-                mood_tags: tags.filter(t => MOODS.includes(t)),
-                language_tags: tags.filter(t => LANGUAGES.includes(t)),
-                city_tags: tags,
-                province: province,
-                trending_score: trendingScore,
-                trend_label: metrics.trend_label,
-                user_profiles: item.user_profiles
-            };
-        });
-        
-        console.log(`✅ Loaded ${allMusicContent.length} music items`);
-        return allMusicContent;
-        
-    } catch (error) {
-        console.error('Error loading music:', error);
-        showToast('Failed to load music content', 'error');
-        return [];
-    }
-}
-
-// ===== FILTER FUNCTIONS =====
-function applyFilters(items) {
-    let filtered = [...items];
-    
-    if (currentFilters.genre) {
-        filtered = filtered.filter(item => 
-            item.genre && item.genre.toLowerCase() === currentFilters.genre.toLowerCase()
-        );
-    }
-    
-    if (currentFilters.mood) {
-        filtered = filtered.filter(item => 
-            item.mood_tags && item.mood_tags.some(tag => tag.toLowerCase() === currentFilters.mood.toLowerCase())
-        );
-    }
-    
-    if (currentFilters.province) {
-        filtered = filtered.filter(item => 
-            item.province && item.province.toLowerCase() === currentFilters.province.toLowerCase()
-        );
-    }
-    
-    if (currentFilters.city) {
-        filtered = filtered.filter(item => 
-            item.city && item.city.toLowerCase() === currentFilters.city.toLowerCase()
-        );
-    }
-    
-    if (currentFilters.language) {
-        filtered = filtered.filter(item => 
-            (item.language_code && item.language_code.toLowerCase() === currentFilters.language.toLowerCase()) ||
-            (item.language_tags && item.language_tags.some(tag => tag.toLowerCase() === currentFilters.language.toLowerCase()))
-        );
-    }
-    
-    // Apply sorting
-    if (currentFilters.sort === 'trending') {
-        filtered.sort((a, b) => b.trending_score - a.trending_score);
-    } else if (currentFilters.sort === 'views') {
-        filtered.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-    } else if (currentFilters.sort === 'newest') {
-        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
-    
-    return filtered;
-}
-
-function getMusicByGenre(genre, limit = 30) {
-    return applyFilters(allMusicContent).filter(item => 
-        item.genre && item.genre.toLowerCase() === genre.toLowerCase()
-    ).slice(0, limit);
-}
-
-function getMusicByProvince(province, limit = 20) {
-    return allMusicContent.filter(item => 
-        item.province && item.province.toLowerCase() === province.toLowerCase()
-    ).sort((a, b) => b.trending_score - a.trending_score).slice(0, limit);
-}
-
-function getMusicByCity(city, limit = 20) {
-    return allMusicContent.filter(item => 
-        item.city && item.city.toLowerCase() === city.toLowerCase()
-    ).sort((a, b) => b.trending_score - a.trending_score).slice(0, limit);
-}
-
-function getMusicByLanguage(language, limit = 20) {
-    return allMusicContent.filter(item => 
-        (item.language_code && item.language_code.toLowerCase() === language.toLowerCase()) ||
-        (item.language_tags && item.language_tags.some(tag => tag.toLowerCase() === language.toLowerCase()))
-    ).sort((a, b) => b.trending_score - a.trending_score).slice(0, limit);
-}
-
-function getTrendingMusic(limit = 20) {
-    return applyFilters(allMusicContent).slice(0, limit);
-}
-
-// ===== UI UPDATE FUNCTIONS =====
-async function updateHeroSection() {
-    const trending = getTrendingMusic(1);
-    if (trending && trending.length > 0) {
-        currentHeroContent = trending[0];
-        document.getElementById('hero-title').textContent = truncateText(currentHeroContent.title, 50);
-        const creatorName = currentHeroContent.user_profiles?.full_name || currentHeroContent.user_profiles?.username || 'Unknown Artist';
-        const avatarUrl = currentHeroContent.user_profiles?.avatar_url ? fixMediaUrl(currentHeroContent.user_profiles.avatar_url) : null;
-        document.getElementById('hero-artist').innerHTML = avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}"><span>${escapeHtml(creatorName)}</span>` : `<i class="fas fa-user-circle"></i><span>${escapeHtml(creatorName)}</span>`;
-        document.getElementById('hero-stats').innerHTML = `<span><i class="fas fa-eye"></i> ${formatNumber(currentHeroContent.views_count)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(currentHeroContent.likes_count)} likes</span><span><i class="fas fa-chart-line"></i> ${formatNumber(Math.round(currentHeroContent.trending_score))}</span>`;
-        
-        if (currentHeroContent.file_url) {
-            const videoEl = document.getElementById('wave-video');
-            const source = videoEl.querySelector('source');
-            if (source) source.src = fixMediaUrl(currentHeroContent.file_url);
-            videoEl.load();
-            videoEl.play().catch(e => console.log('Autoplay prevented'));
-        }
-    }
-}
-
-async function updateChart() {
-    const chartList = document.getElementById('chart-list');
-    if (!chartList) return;
-    
-    let data = getTrendingMusic(20);
-    
-    if (data.length === 0) {
-        chartList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-grey);">No trending music available</div>';
-        return;
-    }
-    
-    chartList.innerHTML = data.map((item, index) => {
-        const score = currentFilters.sort === 'trending' ? Math.round(item.trending_score) : 
-                     (currentFilters.sort === 'views' ? formatNumber(item.views_count) : 
-                     new Date(item.created_at).toLocaleDateString());
-        
-        let trendIcon = '→', trendClass = '';
-        if (item.trend_label === 'rising') { trendIcon = '↑'; trendClass = 'trend-up'; }
-        else if (item.trend_label === 'declining') { trendIcon = '↓'; trendClass = 'trend-down'; }
-        else if (item.trend_label === 'peak') { trendIcon = '★'; trendClass = 'trend-peak'; }
-        
-        return `<div class="chart-item" data-content-id="${item.id}">
-            <div class="chart-rank">#${index + 1}</div>
-            <div class="chart-info">
-                <img class="chart-thumb" src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop'}" alt="${escapeHtml(item.title)}">
-                <div class="chart-details">
-                    <h4>${truncateText(escapeHtml(item.title), 35)}</h4>
-                    <p>${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</p>
-                    ${item.genre ? `<p style="font-size:10px;color:var(--warm-gold);">${escapeHtml(item.genre)}</p>` : ''}
-                </div>
-            </div>
-            <div class="chart-stats">${typeof score === 'number' ? formatNumber(score) : score}</div>
-            <div class="chart-trend ${trendClass}">${trendIcon} ${item.trend_label === 'rising' ? 'Rising' : (item.trend_label === 'peak' ? 'Peak' : '')}</div>
-        </div>`;
-    }).join('');
-    
-    attachChartClickHandlers();
-}
-
-async function updateLocalAreaSection() {
-    const section = document.getElementById('local-area-section');
-    const container = document.getElementById('local-area-content');
-    
-    // Get music from user's city first, then province
-    let localMusic = getMusicByCity(userLocation.city, 8);
-    if (localMusic.length < 4) {
-        localMusic = getMusicByProvince(userLocation.province, 8);
-    }
-    
-    if (localMusic.length > 0) {
-        section.style.display = 'block';
-        document.getElementById('local-area-title').innerHTML = `<i class="fas fa-location-dot"></i> 🔥 Trending in ${userLocation.city || userLocation.province}`;
-        
-        container.innerHTML = localMusic.map(item => `
-            <div class="content-card" data-content-id="${item.id}" style="min-width:200px;width:200px;">
-                <div class="card-thumbnail">
-                    <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
-                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-                </div>
-                <div class="card-content">
-                    <div class="card-title">${truncateText(escapeHtml(item.title), 35)}</div>
-                    <div class="creator-name-small">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-                    <div class="card-meta">
-                        <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
-                        <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
-        attachContentClickHandlers(container);
-    } else {
-        section.style.display = 'none';
-    }
-}
-
-async function updateProvincesSoundSection() {
-    const container = document.getElementById('provinces-sound-container');
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
     if (!container) return;
-    
-    const featuredProvinces = ['Gauteng', 'Limpopo', 'KwaZulu-Natal', 'Western Cape'];
-    let html = '';
-    
-    for (const province of featuredProvinces) {
-        const tracks = getMusicByProvince(province, 4);
-        if (tracks.length > 0) {
-            html += `
-                <div style="margin-bottom: 40px;">
-                    <h3 style="color: var(--warm-gold); margin-bottom: 16px; font-size: 20px;">
-                        <i class="fas fa-map-pin"></i> Sound of ${province}
-                    </h3>
-                    <div class="horizontal-scroll" id="province-${province.replace(/\s/g, '')}-content">
-                        ${tracks.map(item => `
-                            <div class="content-card" data-content-id="${item.id}" style="min-width: 200px; width: 200px;">
-                                <div class="card-thumbnail">
-                                    <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
-                                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-                                    ${item.city ? `<div style="position:absolute;top:8px;right:8px;background:var(--warm-gold);color:var(--deep-black);padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold;">${item.city}</div>` : ''}
-                                </div>
-                                <div class="card-content">
-                                    <div class="card-title">${truncateText(escapeHtml(item.title), 30)}</div>
-                                    <div class="creator-name-small">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-                                    <div class="card-meta">
-                                        <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-    }
-    
-    container.innerHTML = html || '<div class="empty-state"><div class="empty-icon"><i class="fas fa-music"></i></div><p>No provincial content available</p></div>';
-    
-    // Attach click handlers to all province cards
-    document.querySelectorAll('#provinces-sound-container .content-card').forEach(el => {
-        el.addEventListener('click', () => {
-            const id = el.dataset.contentId;
-            if (id) window.location.href = `content-detail.html?id=${id}`;
-        });
-    });
-}
-
-async function updateLanguageSpotlight() {
-    const container = document.getElementById('language-spotlight-list');
-    if (!container) return;
-    
-    const featuredLanguages = ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa', 'Sepedi'];
-    const results = [];
-    
-    for (const lang of featuredLanguages) {
-        const langMusic = getMusicByLanguage(lang, 3);
-        if (langMusic.length > 0) {
-            results.push({ language: lang, items: langMusic });
-        }
-    }
-    
-    if (results.length === 0) {
-        container.innerHTML = '<div style="padding:20px;color:var(--slate-grey);">No language-specific content available</div>';
-        return;
-    }
-    
-    container.innerHTML = results.map(langData => 
-        langData.items.map(item => `
-            <div class="regional-card" data-content-id="${item.id}">
-                <div class="regional-thumb">
-                    <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=200&fit=crop'}" alt="${escapeHtml(item.title)}">
-                    <div class="regional-overlay"></div>
-                    <div class="regional-badge"><i class="fas fa-language"></i> ${langData.language}</div>
-                </div>
-                <div class="regional-info">
-                    <div class="regional-title">${truncateText(escapeHtml(item.title), 25)}</div>
-                    <div class="regional-artist">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-                    <div class="regional-stats"><span><i class="fas fa-play"></i> ${formatNumber(item.views_count)}</span></div>
-                </div>
-            </div>
-        `).join('')
-    ).join('');
-    
-    attachRegionalClickHandlers();
-}
-
-async function updateMoreMusic() {
-    const grid = document.getElementById('more-music-grid');
-    const empty = document.getElementById('more-music-empty');
-    
-    if (!grid) return;
-    
-    let data = applyFilters(allMusicContent).slice(0, 30);
-    
-    if (!data || data.length === 0) {
-        if (grid) grid.style.display = 'none';
-        if (empty) empty.style.display = 'block';
-        return;
-    }
-    
-    if (grid) grid.style.display = 'grid';
-    if (empty) empty.style.display = 'none';
-    
-    grid.innerHTML = data.map(item => {
-        const avatarUrl = item.user_profiles?.avatar_url ? fixMediaUrl(item.user_profiles.avatar_url) : null;
-        const initials = (item.user_profiles?.full_name || item.user_profiles?.username || 'A')[0].toUpperCase();
-        const isNew = (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000;
-        const isTrending = item.trend_label === 'rising' || item.trending_score > 1000;
-        
-        return `<div class="content-card" data-content-id="${item.id}">
-            <div class="card-thumbnail">
-                <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" alt="${escapeHtml(item.title)}">
-                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-                <div class="card-badges">
-                    ${isTrending ? '<div class="badge-trending"><i class="fas fa-chart-line"></i> Trending</div>' : ''}
-                    ${isNew ? '<div class="badge-new">NEW</div>' : ''}
-                    ${item.language_code ? `<div class="badge-trending" style="background:rgba(29,78,216,0.9);">${item.language_code}</div>` : ''}
-                </div>
-                ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${Math.floor(item.duration/60)}:${(item.duration%60).toString().padStart(2,'0')}</div>` : ''}
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">${truncateText(escapeHtml(item.title), 35)}</h3>
-                <div class="creator-info-small">
-                    <div class="creator-avatar-small">${avatarUrl ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">${initials}</div>`}</div>
-                    <div class="creator-name-small">${escapeHtml(item.user_profiles?.full_name || item.user_profiles?.username || 'Artist')}</div>
-                </div>
-                <div class="card-meta">
-                    <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count)}</span>
-                    <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count)}</span>
-                    ${item.genre ? `<span><i class="fas fa-music"></i> ${item.genre}</span>` : ''}
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-    
-    attachContentClickHandlers(grid);
-}
-
-function refreshAllContent() {
-    updateHeroSection();
-    updateChart();
-    updateLocalAreaSection();
-    updateProvincesSoundSection();
-    updateLanguageSpotlight();
-    updateMoreMusic();
-}
-
-// ===== DROPDOWN BUILDERS =====
-function buildGenreDropdown() {
-    const genreGroups = {
-        'Electronic & Dance': ['Amapiano', 'Gqom', 'Bacardi House', 'Shangaan Electro'],
-        'Urban & Modern': ['Hip Hop (SA)', 'SA R&B', 'Afro-pop', 'Township Pop'],
-        'Traditional & Roots': ['Maskandi', 'Mbaqanga', 'Isicathamiya'],
-        'Jazz & Classics': ['Jazz (SA)', 'Marabi', 'Kwela', 'Bubblegum'],
-        'Other': ['Gospel', 'Reggae (SA)', 'Lekompo', 'Xigaza']
-    };
-    
-    let html = '';
-    for (const [group, genres] of Object.entries(genreGroups)) {
-        html += `<div class="dropdown-group">
-            <h4>${group}</h4>
-            <div class="dropdown-options">
-                ${genres.map(g => `<div class="dropdown-chip" data-filter-type="genre" data-value="${g}">${g}</div>`).join('')}
-            </div>
-        </div>`;
-    }
-    document.getElementById('genre-panel').innerHTML = html;
-    attachDropdownChipEvents();
-}
-
-function buildMoodDropdown() {
-    const moodGroups = [
-        ['Chill', 'Relaxing', 'Love'],
-        ['Party', 'Hype', 'Energetic'],
-        ['Spiritual', 'Workout']
-    ];
-    
-    let html = '';
-    for (const group of moodGroups) {
-        html += `<div class="dropdown-group">
-            <div class="dropdown-options">
-                ${group.map(m => `<div class="dropdown-chip" data-filter-type="mood" data-value="${m}">${m}</div>`).join('')}
-            </div>
-        </div>`;
-    }
-    document.getElementById('mood-panel').innerHTML = html;
-    attachDropdownChipEvents();
-}
-
-function buildProvinceDropdown() {
-    const provinces = ['Gauteng', 'Limpopo', 'KwaZulu-Natal', 'Western Cape', 'Eastern Cape', 'Mpumalanga', 'North West', 'Free State', 'Northern Cape'];
-    document.getElementById('province-panel').innerHTML = `
-        <div class="dropdown-group">
-            <div class="dropdown-options">
-                ${provinces.map(p => `<div class="dropdown-chip" data-filter-type="province" data-value="${p}">${p}</div>`).join('')}
-            </div>
-        </div>
-    `;
-    attachDropdownChipEvents();
-}
-
-function buildSortDropdown() {
-    document.getElementById('sort-panel').innerHTML = `
-        <div class="dropdown-group">
-            <div class="dropdown-options">
-                <div class="dropdown-chip ${currentFilters.sort === 'trending' ? 'active' : ''}" data-filter-type="sort" data-value="trending">Trending</div>
-                <div class="dropdown-chip ${currentFilters.sort === 'views' ? 'active' : ''}" data-filter-type="sort" data-value="views">Most Viewed</div>
-                <div class="dropdown-chip ${currentFilters.sort === 'newest' ? 'active' : ''}" data-filter-type="sort" data-value="newest">Newest</div>
-            </div>
-        </div>
-    `;
-    attachDropdownChipEvents();
-}
-
-function buildSecondaryFilters() {
-    // Languages
-    const langContainer = document.getElementById('language-tags-container');
-    langContainer.innerHTML = LANGUAGES.map(lang => 
-        `<div class="dropdown-chip ${currentFilters.language === lang ? 'active' : ''}" data-filter-type="language" data-value="${lang}">${lang}</div>`
-    ).join('');
-    
-    // Dynamic cities based on selected province
-    updateDynamicCities();
-    
-    attachDropdownChipEvents();
-}
-
-function updateDynamicCities() {
-    const cityContainer = document.getElementById('dynamic-cities-container');
-    let cities = [];
-    
-    if (currentFilters.province && CITIES_BY_PROVINCE[currentFilters.province]) {
-        cities = CITIES_BY_PROVINCE[currentFilters.province];
-    } else {
-        // Show all major cities
-        cities = ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Giyani', 'Polokwane'];
-    }
-    
-    cityContainer.innerHTML = cities.map(city => 
-        `<div class="dropdown-chip ${currentFilters.city === city ? 'active' : ''}" data-filter-type="city" data-value="${city}">${city}</div>`
-    ).join('');
-    
-    attachDropdownChipEvents();
-}
-
-function attachDropdownChipEvents() {
-    document.querySelectorAll('.dropdown-chip').forEach(chip => {
-        chip.removeEventListener('click', chip._listener);
-        const listener = () => {
-            const type = chip.dataset.filterType;
-            const value = chip.dataset.value;
-            
-            if (type === 'sort') {
-                currentFilters.sort = value;
-                document.querySelectorAll('#sort-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-            } else if (type === 'genre') {
-                currentFilters.genre = currentFilters.genre === value ? null : value;
-                document.querySelectorAll('#genre-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
-                if (currentFilters.genre) chip.classList.add('active');
-            } else if (type === 'mood') {
-                currentFilters.mood = currentFilters.mood === value ? null : value;
-                document.querySelectorAll('#mood-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
-                if (currentFilters.mood) chip.classList.add('active');
-            } else if (type === 'province') {
-                currentFilters.province = currentFilters.province === value ? null : value;
-                currentFilters.city = null; // Reset city when province changes
-                document.querySelectorAll('#province-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
-                if (currentFilters.province) chip.classList.add('active');
-                updateDynamicCities();
-            } else if (type === 'city') {
-                currentFilters.city = currentFilters.city === value ? null : value;
-                document.querySelectorAll('#dynamic-cities-container .dropdown-chip').forEach(c => c.classList.remove('active'));
-                if (currentFilters.city) chip.classList.add('active');
-            } else if (type === 'language') {
-                currentFilters.language = currentFilters.language === value ? null : value;
-                document.querySelectorAll('#language-tags-container .dropdown-chip').forEach(c => c.classList.remove('active'));
-                if (currentFilters.language) chip.classList.add('active');
-            }
-            
-            // Close all dropdowns
-            document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('active'));
-            
-            // Refresh all content
-            refreshAllContent();
-            
-            // Update active filter display
-            updateActiveFilterDisplay();
-        };
-        chip.addEventListener('click', listener);
-        chip._listener = listener;
-    });
-}
-
-function updateActiveFilterDisplay() {
-    const activeFilters = [];
-    if (currentFilters.genre) activeFilters.push(currentFilters.genre);
-    if (currentFilters.mood) activeFilters.push(currentFilters.mood);
-    if (currentFilters.province) activeFilters.push(currentFilters.province);
-    if (currentFilters.city) activeFilters.push(currentFilters.city);
-    if (currentFilters.language) activeFilters.push(currentFilters.language);
-    
-    if (activeFilters.length > 0) {
-        // Could add a visual indicator
-        console.log('Active filters:', activeFilters);
-    }
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
 // ===== CLICK HANDLERS =====
@@ -1996,18 +1817,10 @@ function attachChartClickHandlers() {
     }); 
 }
 
-function attachRegionalClickHandlers() { 
-    document.querySelectorAll('.regional-card').forEach(el => { 
-        el.addEventListener('click', () => { 
-            const id = el.dataset.contentId; 
-            if (id) window.location.href = `content-detail.html?id=${id}`; 
-        }); 
-    }); 
-}
-
 function attachContentClickHandlers(container = document) { 
     container.querySelectorAll('.content-card').forEach(el => { 
-        el.addEventListener('click', () => { 
+        el.addEventListener('click', (e) => {
+            if (e.target.closest('.play-overlay')) return;
             const id = el.dataset.contentId; 
             if (id) window.location.href = `content-detail.html?id=${id}`; 
         }); 
@@ -2028,18 +1841,181 @@ function setupHeroButtons() {
     });
 }
 
-// ===== UI SETUP FUNCTIONS =====
+// ===== FILTER DROPDOWNS =====
+function buildGenreDropdown() {
+    const genres = [
+        { name: 'Amapiano', slug: 'amapiano' },
+        { name: 'SA Hip Hop', slug: 'hip-hop-sa' },
+        { name: 'Maskandi', slug: 'maskandi' },
+        { name: 'Gqom', slug: 'gqom' },
+        { name: 'Kwaito', slug: 'kwaito' },
+        { name: 'Afro House', slug: 'afro-house' },
+        { name: 'SA R&B', slug: 'sa-rb' }
+    ];
+    
+    document.getElementById('genre-panel').innerHTML = `
+        <div class="dropdown-group">
+            <div class="dropdown-options">
+                ${genres.map(g => `<div class="dropdown-chip ${currentFilters.genre_slug === g.slug ? 'active' : ''}" data-filter-type="genre" data-value="${g.slug}" data-label="${g.name}">${g.name}</div>`).join('')}
+                <div class="dropdown-chip ${!currentFilters.genre_slug ? 'active' : ''}" data-filter-type="genre" data-value="" data-label="All">All Genres</div>
+            </div>
+        </div>
+    `;
+    attachDropdownChipEvents();
+}
+
+function buildMoodDropdown() {
+    const moods = ['Chill', 'Party', 'Spiritual', 'Energetic', 'Relaxing', 'Hype', 'Love', 'Workout'];
+    document.getElementById('mood-panel').innerHTML = `
+        <div class="dropdown-group">
+            <div class="dropdown-options">
+                ${moods.map(m => `<div class="dropdown-chip ${currentFilters.mood === m ? 'active' : ''}" data-filter-type="mood" data-value="${m}">${m}</div>`).join('')}
+                <div class="dropdown-chip ${!currentFilters.mood ? 'active' : ''}" data-filter-type="mood" data-value="">All Moods</div>
+            </div>
+        </div>
+    `;
+    attachDropdownChipEvents();
+}
+
+function buildProvinceDropdown() {
+    const provinces = ['Gauteng', 'Limpopo', 'KwaZulu-Natal', 'Western Cape', 'Eastern Cape', 'Mpumalanga', 'North West', 'Free State', 'Northern Cape'];
+    document.getElementById('province-panel').innerHTML = `
+        <div class="dropdown-group">
+            <div class="dropdown-options">
+                ${provinces.map(p => `<div class="dropdown-chip ${currentFilters.province === p ? 'active' : ''}" data-filter-type="province" data-value="${p}">${p}</div>`).join('')}
+                <div class="dropdown-chip ${!currentFilters.province ? 'active' : ''}" data-filter-type="province" data-value="">All Provinces</div>
+            </div>
+        </div>
+    `;
+    attachDropdownChipEvents();
+}
+
+function buildSortDropdown() {
+    document.getElementById('sort-panel').innerHTML = `
+        <div class="dropdown-group">
+            <div class="dropdown-options">
+                <div class="dropdown-chip ${currentFilters.sort_by === 'trending' ? 'active' : ''}" data-filter-type="sort" data-value="trending">Trending</div>
+                <div class="dropdown-chip ${currentFilters.sort_by === 'views' ? 'active' : ''}" data-filter-type="sort" data-value="views">Most Viewed</div>
+                <div class="dropdown-chip ${currentFilters.sort_by === 'newest' ? 'active' : ''}" data-filter-type="sort" data-value="newest">Newest</div>
+            </div>
+        </div>
+    `;
+    attachDropdownChipEvents();
+}
+
+function buildSecondaryFilters() {
+    const languages = ['isiZulu', 'Xitsonga', 'Setswana', 'isiXhosa', 'Sepedi', 'Afrikaans', 'English', 'Sesotho'];
+    const langContainer = document.getElementById('language-tags-container');
+    langContainer.innerHTML = languages.map(lang => 
+        `<div class="dropdown-chip ${currentFilters.language === lang ? 'active' : ''}" data-filter-type="language" data-value="${lang}">${lang}</div>`
+    ).join('');
+    
+    // Cities for selected province
+    const citiesByProvince = {
+        'Gauteng': ['Johannesburg', 'Pretoria', 'Soweto', 'Tembisa', 'Midrand'],
+        'Limpopo': ['Polokwane', 'Giyani', 'Tzaneen', 'Thohoyandou'],
+        'KwaZulu-Natal': ['Durban', 'Pietermaritzburg', 'Richards Bay', 'Newcastle'],
+        'Western Cape': ['Cape Town', 'Stellenbosch', 'Paarl', 'George']
+    };
+    
+    const cities = currentFilters.province && citiesByProvince[currentFilters.province] 
+        ? citiesByProvince[currentFilters.province]
+        : ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'];
+    
+    const cityContainer = document.getElementById('dynamic-cities-container');
+    cityContainer.innerHTML = cities.map(city => 
+        `<div class="dropdown-chip ${currentFilters.city === city ? 'active' : ''}" data-filter-type="city" data-value="${city}">${city}</div>`
+    ).join('');
+    
+    attachDropdownChipEvents();
+}
+
+function attachDropdownChipEvents() {
+    document.querySelectorAll('.dropdown-chip').forEach(chip => {
+        chip.removeEventListener('click', chip._listener);
+        const listener = () => {
+            const type = chip.dataset.filterType;
+            const value = chip.dataset.value;
+            
+            if (type === 'genre') {
+                currentFilters.genre_slug = value || null;
+                document.querySelectorAll('#genre-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
+                if (value) chip.classList.add('active');
+                else document.querySelector('#genre-panel .dropdown-chip[data-value=""]')?.classList.add('active');
+            } else if (type === 'mood') {
+                currentFilters.mood = value || null;
+                document.querySelectorAll('#mood-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
+                if (value) chip.classList.add('active');
+                else document.querySelector('#mood-panel .dropdown-chip[data-value=""]')?.classList.add('active');
+            } else if (type === 'province') {
+                currentFilters.province = value || null;
+                currentFilters.city = null; // Reset city
+                document.querySelectorAll('#province-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
+                if (value) chip.classList.add('active');
+                else document.querySelector('#province-panel .dropdown-chip[data-value=""]')?.classList.add('active');
+                buildSecondaryFilters(); // Refresh cities
+            } else if (type === 'city') {
+                currentFilters.city = value || null;
+                document.querySelectorAll('#dynamic-cities-container .dropdown-chip').forEach(c => c.classList.remove('active'));
+                if (value) chip.classList.add('active');
+            } else if (type === 'language') {
+                currentFilters.language = value || null;
+                document.querySelectorAll('#language-tags-container .dropdown-chip').forEach(c => c.classList.remove('active'));
+                if (value) chip.classList.add('active');
+            } else if (type === 'sort') {
+                currentFilters.sort_by = value;
+                document.querySelectorAll('#sort-panel .dropdown-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            }
+            
+            // Close dropdowns
+            document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('active'));
+            
+            // Refresh all content with new filters
+            refreshAllSections();
+        };
+        chip.addEventListener('click', listener);
+        chip._listener = listener;
+    });
+}
+
+// ===== UI SETUP =====
+function setupDropdownToggles() {
+    const dropdowns = ['genre', 'mood', 'province', 'sort'];
+    dropdowns.forEach(d => {
+        const btn = document.getElementById(`${d}-dropdown-btn`);
+        const panel = document.getElementById(`${d}-panel`);
+        btn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdowns.forEach(other => {
+                if (other !== d) {
+                    document.getElementById(`${other}-panel`)?.classList.remove('active');
+                }
+            });
+            panel?.classList.toggle('active');
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.filter-dropdown-btn') && !e.target.closest('.dropdown-panel')) {
+            document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('active'));
+        }
+    });
+    
+    document.getElementById('more-filters-toggle')?.addEventListener('click', () => {
+        document.getElementById('secondary-content')?.classList.toggle('open');
+    });
+}
+
 function initThemeSystem() {
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     const applyTheme = (theme) => { 
         document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast'); 
         document.body.classList.add(`theme-${theme}`); 
         localStorage.setItem('bantu_theme', theme); 
-        document.querySelectorAll('.theme-option').forEach(opt => opt.classList.toggle('active', opt.dataset.theme === theme)); 
     };
     applyTheme(savedTheme);
-    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => { 
-        e.preventDefault(); 
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', () => { 
         document.getElementById('theme-selector')?.classList.toggle('active'); 
     });
     document.querySelectorAll('.theme-option').forEach(option => { 
@@ -2047,12 +2023,6 @@ function initThemeSystem() {
             applyTheme(option.dataset.theme); 
             document.getElementById('theme-selector')?.classList.remove('active'); 
         }); 
-    });
-    document.addEventListener('click', (e) => { 
-        const selector = document.getElementById('theme-selector'); 
-        const toggle = document.getElementById('sidebar-theme-toggle'); 
-        if (selector?.classList.contains('active') && !selector.contains(e.target) && e.target !== toggle) 
-            selector.classList.remove('active'); 
     });
 }
 
@@ -2122,34 +2092,6 @@ function setupScaleControls() {
     apply();
 }
 
-function setupDropdownToggles() {
-    const dropdowns = ['genre', 'mood', 'province', 'sort'];
-    dropdowns.forEach(d => {
-        const btn = document.getElementById(`${d}-dropdown-btn`);
-        const panel = document.getElementById(`${d}-panel`);
-        btn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close other dropdowns
-            dropdowns.forEach(other => {
-                if (other !== d) {
-                    document.getElementById(`${other}-panel`)?.classList.remove('active');
-                }
-            });
-            panel?.classList.toggle('active');
-        });
-    });
-    
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.filter-dropdown-btn') && !e.target.closest('.dropdown-panel')) {
-            document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('active'));
-        }
-    });
-    
-    document.getElementById('more-filters-toggle')?.addEventListener('click', () => {
-        document.getElementById('secondary-content')?.classList.toggle('open');
-    });
-}
-
 async function checkAuth() { 
     const { data } = await supabaseClient.auth.getSession(); 
     currentUser = data?.session?.user || null; 
@@ -2161,16 +2103,10 @@ async function checkAuth() {
         if (placeholder && profile?.avatar_url) { 
             placeholder.innerHTML = `<img src="${fixMediaUrl(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`; 
         }
-        // Update user location if profile has city
         if (profile?.city) {
-            for (const [prov, cities] of Object.entries(CITIES_BY_PROVINCE)) {
-                if (cities.some(c => c.toLowerCase() === profile.city.toLowerCase())) {
-                    userLocation = { province: prov, city: profile.city };
-                    break;
-                }
-            }
-            document.getElementById('user-location-text').textContent = `${userLocation.city || userLocation.province}, SA`;
+            userLocation.city = profile.city;
         }
+        document.getElementById('user-location-text').textContent = `${userLocation.city}, SA`;
     } 
 }
 
@@ -2185,16 +2121,14 @@ async function initialize() {
     setupDropdownToggles();
     await checkAuth(); 
     
-    await loadAllMusic();
-    
-    // Build all dropdowns
+    // Build dropdowns
     buildGenreDropdown();
     buildMoodDropdown();
     buildProvinceDropdown();
     buildSortDropdown();
     buildSecondaryFilters();
     
-    refreshAllContent();
+    await refreshAllSections();
     
     const loading = document.getElementById('loading');
     if (loading) loading.style.display = 'none';
