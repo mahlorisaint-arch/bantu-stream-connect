@@ -1040,25 +1040,26 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.95); }
 
 <script>
 // ===== SUPABASE CONFIGURATION =====
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+const BANTU_SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const BANTU_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Create Supabase client with unique variable name
+const bantuSupabase = window.supabase.createClient(BANTU_SUPABASE_URL, BANTU_SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
-let currentUser = null;
-let currentFilters = {
+let bantuCurrentUser = null;
+let bantuCurrentFilters = {
     country: 'South Africa',
     genre: 'all',
     sa_genre: 'all',
     mood: 'all',
     language: 'all'
 };
-let allContent = [];
-let watchHistory = [];
+let bantuAllContent = [];
+let bantuWatchHistory = [];
 
 // ===== SA CORE GENRES =====
-const SA_CORE_GENRES = [
+const BANTU_SA_CORE_GENRES = [
     { id: 'Township Drama', icon: 'fa-city', color: '#3B82F6' },
     { id: 'Kasi Comedy', icon: 'fa-laugh-squint', color: '#F59E0B' },
     { id: 'Struggle Stories', icon: 'fa-fist-raised', color: '#EF4444' },
@@ -1070,11 +1071,12 @@ const SA_CORE_GENRES = [
 ];
 
 // ===== HELPER FUNCTIONS =====
-function showToast(message, type = 'info') {
+function showBantuToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
+    if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+    toast.innerHTML = `<span>${escapeBantuHtml(message)}</span>`;
     container.appendChild(toast);
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -1082,14 +1084,14 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-function escapeHtml(text) {
+function escapeBantuHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-function formatDuration(seconds) {
+function formatBantuDuration(seconds) {
     if (!seconds) return '1h 30min';
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -1097,17 +1099,18 @@ function formatDuration(seconds) {
 }
 
 // ===== RENDER MOVIE CARD =====
-function createMovieCard(movie) {
+function createBantuMovieCard(movie) {
     if (!movie) return '';
-    const rating = (movie.likes_count / Math.max(movie.views_count, 1) * 5).toFixed(1);
+    const rating = ((movie.likes_count || 0) / Math.max((movie.views_count || 1), 1) * 5).toFixed(1);
     const genres = movie.genres || ['Drama'];
     const isOriginal = movie.is_bantu_original || false;
     const saGenres = movie.sa_genres || [];
+    const thumbnail = movie.thumbnail_url || 'https://placehold.co/400x600/1a1a2e/FFD700?text=No+Image';
     
     return `
         <div class="movie-card" data-id="${movie.id}">
             <div class="movie-poster">
-                <img src="${movie.thumbnail_url || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop'}" alt="${escapeHtml(movie.title)}" loading="lazy">
+                <img src="${thumbnail}" alt="${escapeBantuHtml(movie.title)}" loading="lazy" onerror="this.src='https://placehold.co/400x600/1a1a2e/FFD700?text=Image+Not+Found'">
                 <div class="movie-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
@@ -1115,34 +1118,35 @@ function createMovieCard(movie) {
                 ${isOriginal ? '<div class="bantu-original-badge"><i class="fas fa-crown"></i> ORIGINAL</div>' : ''}
             </div>
             <div class="movie-info">
-                <div class="movie-title">${escapeHtml(movie.title)}</div>
+                <div class="movie-title">${escapeBantuHtml(movie.title)}</div>
                 <div class="movie-genres">
                     <i class="fas fa-tag"></i> ${genres.slice(0, 2).join(' • ')}
-                    ${saGenres.length > 0 ? `<span style="color: var(--warm-gold);"> • ${saGenres[0]}</span>` : ''}
+                    ${saGenres.length > 0 ? `<span style="color: var(--warm-gold);"> • ${escapeBantuHtml(saGenres[0])}</span>` : ''}
                 </div>
             </div>
         </div>
     `;
 }
 
-function createContinueCard(item) {
+function createBantuContinueCard(item) {
+    const thumbnail = item.thumbnail_url || 'https://placehold.co/400x225/1a1a2e/FFD700?text=No+Image';
     return `
         <div class="continue-card" data-id="${item.content_id}">
             <div class="continue-poster">
-                <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=300&fit=crop'}" alt="${escapeHtml(item.title)}" loading="lazy">
+                <img src="${thumbnail}" alt="${escapeBantuHtml(item.title)}" loading="lazy" onerror="this.src='https://placehold.co/400x225/1a1a2e/FFD700?text=No+Image'">
             </div>
             <div class="progress-container">
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: ${item.progress_percent}%"></div>
                 </div>
-                <div class="continue-title">${escapeHtml(item.title)}</div>
+                <div class="continue-title">${escapeBantuHtml(item.title)}</div>
                 <div class="progress-text">${item.progress_percent}% complete • Continue watching →</div>
             </div>
         </div>
     `;
 }
 
-function renderRow(containerId, items, isContinue = false) {
+function renderBantuRow(containerId, items, isContinue = false) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
@@ -1153,223 +1157,299 @@ function renderRow(containerId, items, isContinue = false) {
     
     const rowHtml = `
         <div class="movies-row">
-            ${items.map(item => isContinue ? createContinueCard(item) : createMovieCard(item)).join('')}
+            ${items.map(item => isContinue ? createBantuContinueCard(item) : createBantuMovieCard(item)).join('')}
         </div>
     `;
     container.innerHTML = rowHtml;
 }
 
 // ===== DATA FETCHING =====
-async function fetchTrendingSA() {
-    const { data, error } = await supabase.rpc('get_trending_sa', { limit_count: 20 });
-    if (error) { console.error('Trending SA error:', error); return []; }
-    return data || [];
+async function fetchBantuTrendingSA() {
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_trending_sa', { limit_count: 20 });
+        if (error) { console.error('Trending SA error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Trending SA exception:', e);
+        return [];
+    }
 }
 
-async function fetchTrendingAfrica() {
-    const { data, error } = await supabase.rpc('get_trending_africa', { limit_count: 20 });
-    if (error) { console.error('Trending Africa error:', error); return []; }
-    return data || [];
+async function fetchBantuTrendingAfrica() {
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_trending_africa', { limit_count: 20 });
+        if (error) { console.error('Trending Africa error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Trending Africa exception:', e);
+        return [];
+    }
 }
 
-async function fetchGlobalPicks() {
-    const { data, error } = await supabase.rpc('get_global_picks', { limit_count: 20 });
-    if (error) { console.error('Global picks error:', error); return []; }
-    return data || [];
+async function fetchBantuGlobalPicks() {
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_global_picks', { limit_count: 20 });
+        if (error) { console.error('Global picks error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Global picks exception:', e);
+        return [];
+    }
 }
 
 async function fetchBantuOriginals() {
-    const { data, error } = await supabase.rpc('get_bantu_originals', { limit_count: 20 });
-    if (error) { console.error('Bantu originals error:', error); return []; }
-    return data || [];
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_bantu_originals', { limit_count: 20 });
+        if (error) { console.error('Bantu originals error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Bantu originals exception:', e);
+        return [];
+    }
 }
 
-async function fetchContinueWatching() {
-    if (!currentUser) return [];
-    const { data, error } = await supabase.rpc('get_continue_watching', { p_user_id: currentUser.id });
-    if (error) { console.error('Continue watching error:', error); return []; }
-    return data || [];
+async function fetchBantuContinueWatching() {
+    if (!bantuCurrentUser) return [];
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_continue_watching', { p_user_id: bantuCurrentUser.id });
+        if (error) { console.error('Continue watching error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Continue watching exception:', e);
+        return [];
+    }
 }
 
-async function fetchPersonalizedRecommendations() {
-    if (!currentUser) return [];
-    const { data, error } = await supabase.rpc('get_personalized_recommendations', { 
-        p_user_id: currentUser.id, 
-        limit_count: 20 
-    });
-    if (error) { console.error('Personalized error:', error); return []; }
-    return data || [];
+async function fetchBantuPersonalizedRecommendations() {
+    if (!bantuCurrentUser) return [];
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_personalized_recommendations', { 
+            p_user_id: bantuCurrentUser.id, 
+            limit_count: 20 
+        });
+        if (error) { console.error('Personalized error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Personalized exception:', e);
+        return [];
+    }
 }
 
-async function fetchContentBySAGenre(saGenre) {
-    const { data, error } = await supabase.rpc('get_content_by_sa_genre', { 
-        p_sa_genre: saGenre, 
-        limit_count: 12 
-    });
-    if (error) { console.error(`SA Genre ${saGenre} error:`, error); return []; }
-    return data || [];
+async function fetchBantuContentBySAGenre(saGenre) {
+    try {
+        const { data, error } = await bantuSupabase.rpc('get_content_by_sa_genre', { 
+            p_sa_genre: saGenre, 
+            limit_count: 12 
+        });
+        if (error) { console.error(`SA Genre ${saGenre} error:`, error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error(`SA Genre ${saGenre} exception:`, e);
+        return [];
+    }
 }
 
-async function smartFilterContent() {
-    const { data, error } = await supabase.rpc('smart_filter_content', {
-        p_country: currentFilters.country !== 'all' ? currentFilters.country : null,
-        p_genre: currentFilters.genre !== 'all' ? currentFilters.genre : null,
-        p_sa_genre: currentFilters.sa_genre !== 'all' ? currentFilters.sa_genre : null,
-        p_mood: currentFilters.mood !== 'all' ? currentFilters.mood : null,
-        p_language: currentFilters.language !== 'all' ? currentFilters.language : null,
-        limit_count: 50
-    });
-    if (error) { console.error('Smart filter error:', error); return []; }
-    return data || [];
+async function bantuSmartFilterContent() {
+    try {
+        const { data, error } = await bantuSupabase.rpc('smart_filter_content', {
+            p_country: bantuCurrentFilters.country !== 'all' ? bantuCurrentFilters.country : null,
+            p_genre: bantuCurrentFilters.genre !== 'all' ? bantuCurrentFilters.genre : null,
+            p_sa_genre: bantuCurrentFilters.sa_genre !== 'all' ? bantuCurrentFilters.sa_genre : null,
+            p_mood: bantuCurrentFilters.mood !== 'all' ? bantuCurrentFilters.mood : null,
+            p_language: bantuCurrentFilters.language !== 'all' ? bantuCurrentFilters.language : null,
+            limit_count: 50
+        });
+        if (error) { console.error('Smart filter error:', error); return []; }
+        return data || [];
+    } catch (e) {
+        console.error('Smart filter exception:', e);
+        return [];
+    }
 }
 
 // ===== UPDATE HERO =====
-async function updateHero() {
-    const trending = await fetchTrendingSA();
-    if (trending.length === 0) return;
+async function updateBantuHero() {
+    const trending = await fetchBantuTrendingSA();
+    if (trending.length === 0) {
+        // Fallback placeholder
+        document.getElementById('hero-title').innerHTML = 'Welcome to Bantu Stream Connect';
+        document.getElementById('hero-description').innerHTML = 'Discover the best of African cinema.';
+        return;
+    }
     
     const heroContent = trending[0];
-    const rating = (heroContent.likes_count / Math.max(heroContent.views_count, 1) * 5).toFixed(1);
+    const rating = ((heroContent.likes_count || 0) / Math.max((heroContent.views_count || 1), 1) * 5).toFixed(1);
     const saGenres = heroContent.sa_genres || [];
     const moods = heroContent.moods || [];
+    const thumbnail = heroContent.thumbnail_url || 'https://placehold.co/1920x800/1a1a2e/FFD700?text=Bantu+Stream+Connect';
     
-    document.getElementById('hero-backdrop').src = heroContent.thumbnail_url || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&h=800&fit=crop';
-    document.getElementById('hero-title').innerHTML = escapeHtml(heroContent.title);
-    document.getElementById('hero-tags').innerHTML = `
-        ${saGenres.map(g => `<span class="hero-tag">${escapeHtml(g)}</span>`).join('')}
-        ${moods.map(m => `<span class="hero-tag">${escapeHtml(m)}</span>`).join('')}
-        ${heroContent.language ? `<span class="hero-tag"><i class="fas fa-language"></i> ${escapeHtml(heroContent.language)}</span>` : ''}
-    `;
-    document.getElementById('hero-description').textContent = heroContent.description || 'No description available.';
-    document.getElementById('hero-meta').innerHTML = `
-        <span><i class="fas fa-star"></i> ${rating} Rating</span>
-        <span><i class="fas fa-clock"></i> ${formatDuration(heroContent.duration)}</span>
-        <span><i class="fas fa-eye"></i> ${(heroContent.views_count || 0).toLocaleString()} views</span>
-    `;
+    const heroBackdrop = document.getElementById('hero-backdrop');
+    if (heroBackdrop) heroBackdrop.src = thumbnail;
+    
+    const heroTitle = document.getElementById('hero-title');
+    if (heroTitle) heroTitle.innerHTML = escapeBantuHtml(heroContent.title);
+    
+    const heroTags = document.getElementById('hero-tags');
+    if (heroTags) {
+        heroTags.innerHTML = `
+            ${saGenres.map(g => `<span class="hero-tag">${escapeBantuHtml(g)}</span>`).join('')}
+            ${moods.map(m => `<span class="hero-tag">${escapeBantuHtml(m)}</span>`).join('')}
+            ${heroContent.language ? `<span class="hero-tag"><i class="fas fa-language"></i> ${escapeBantuHtml(heroContent.language)}</span>` : ''}
+        `;
+    }
+    
+    const heroDescription = document.getElementById('hero-description');
+    if (heroDescription) heroDescription.textContent = heroContent.description || 'No description available.';
+    
+    const heroMeta = document.getElementById('hero-meta');
+    if (heroMeta) {
+        heroMeta.innerHTML = `
+            <span><i class="fas fa-star"></i> ${rating} Rating</span>
+            <span><i class="fas fa-clock"></i> ${formatBantuDuration(heroContent.duration)}</span>
+            <span><i class="fas fa-eye"></i> ${(heroContent.views_count || 0).toLocaleString()} views</span>
+        `;
+    }
 }
 
 // ===== RENDER ALL SECTIONS =====
-async function renderAllSections() {
+async function renderBantuAllSections() {
     // Show skeletons
-    document.querySelectorAll('.row-container').forEach(el => {
-        if (el.id !== 'continue-row-container') {
-            el.innerHTML = '<div class="movies-row"><div class="skeleton-card skeleton"></div><div class="skeleton-card skeleton"></div><div class="skeleton-card skeleton"></div></div>';
+    const containers = ['continue-row-container', 'recommended-row-container', 'originals-row-container', 'africa-row-container', 'global-row-container'];
+    containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = '<div class="movies-row"><div class="skeleton-card skeleton"></div><div class="skeleton-card skeleton"></div><div class="skeleton-card skeleton"></div><div class="skeleton-card skeleton"></div></div>';
         }
     });
     
     // Fetch data in parallel
     const [trendingSA, trendingAfrica, globalPicks, originals, continueWatching, personalized] = await Promise.all([
-        fetchTrendingSA(),
-        fetchTrendingAfrica(),
-        fetchGlobalPicks(),
+        fetchBantuTrendingSA(),
+        fetchBantuTrendingAfrica(),
+        fetchBantuGlobalPicks(),
         fetchBantuOriginals(),
-        fetchContinueWatching(),
-        fetchPersonalizedRecommendations()
+        fetchBantuContinueWatching(),
+        fetchBantuPersonalizedRecommendations()
     ]);
     
     // Continue Watching
-    if (continueWatching.length > 0) {
-        document.getElementById('continue-section').style.display = 'block';
-        renderRow('continue-row-container', continueWatching, true);
+    if (continueWatching && continueWatching.length > 0) {
+        const continueSection = document.getElementById('continue-section');
+        if (continueSection) continueSection.style.display = 'block';
+        renderBantuRow('continue-row-container', continueWatching, true);
     }
     
     // Recommended
-    if (personalized.length > 0) {
-        document.getElementById('recommended-section').style.display = 'block';
-        renderRow('recommended-row-container', personalized);
+    if (personalized && personalized.length > 0) {
+        const recommendedSection = document.getElementById('recommended-section');
+        if (recommendedSection) recommendedSection.style.display = 'block';
+        renderBantuRow('recommended-row-container', personalized);
     }
     
     // Bantu Originals
-    if (originals.length > 0) {
-        document.getElementById('originals-section').style.display = 'block';
-        renderRow('originals-row-container', originals);
+    if (originals && originals.length > 0) {
+        const originalsSection = document.getElementById('originals-section');
+        if (originalsSection) originalsSection.style.display = 'block';
+        renderBantuRow('originals-row-container', originals);
     }
     
     // SA Genre Rows
     const saGenresContainer = document.getElementById('sa-genres-container');
-    saGenresContainer.innerHTML = '';
-    
-    for (const genre of SA_CORE_GENRES) {
-        const genreContent = await fetchContentBySAGenre(genre.id);
-        if (genreContent.length > 0) {
-            const sectionHtml = `
-                <div class="section">
-                    <div class="section-header">
-                        <h2 class="section-title"><i class="fas ${genre.icon}" style="color: ${genre.color}"></i> ${genre.id}</h2>
-                        <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+    if (saGenresContainer) {
+        saGenresContainer.innerHTML = '';
+        
+        for (const genre of BANTU_SA_CORE_GENRES) {
+            const genreContent = await fetchBantuContentBySAGenre(genre.id);
+            if (genreContent && genreContent.length > 0) {
+                const sectionId = `sa-row-${genre.id.replace(/\s/g, '-')}`;
+                const sectionHtml = `
+                    <div class="section">
+                        <div class="section-header">
+                            <h2 class="section-title"><i class="fas ${genre.icon}" style="color: ${genre.color}"></i> ${genre.id}</h2>
+                            <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="row-container" id="${sectionId}"></div>
                     </div>
-                    <div class="row-container" id="sa-row-${genre.id.replace(/\s/g, '-')}"></div>
-                </div>
-            `;
-            saGenresContainer.insertAdjacentHTML('beforeend', sectionHtml);
-            renderRow(`sa-row-${genre.id.replace(/\s/g, '-')}`, genreContent);
+                `;
+                saGenresContainer.insertAdjacentHTML('beforeend', sectionHtml);
+                renderBantuRow(sectionId, genreContent);
+            }
         }
     }
     
     // Trending Africa
-    if (trendingAfrica.length > 0) {
-        document.getElementById('africa-section').style.display = 'block';
-        renderRow('africa-row-container', trendingAfrica);
+    if (trendingAfrica && trendingAfrica.length > 0) {
+        const africaSection = document.getElementById('africa-section');
+        if (africaSection) africaSection.style.display = 'block';
+        renderBantuRow('africa-row-container', trendingAfrica);
     }
     
     // Global Picks
-    if (globalPicks.length > 0) {
-        document.getElementById('global-section').style.display = 'block';
-        renderRow('global-row-container', globalPicks);
+    if (globalPicks && globalPicks.length > 0) {
+        const globalSection = document.getElementById('global-section');
+        if (globalSection) globalSection.style.display = 'block';
+        renderBantuRow('global-row-container', globalPicks);
     }
 }
 
 // ===== APPLY FILTERS =====
-async function applyFilters() {
-    showToast('Applying filters...', 'info');
-    const filtered = await smartFilterContent();
+async function applyBantuFilters() {
+    showBantuToast('Applying filters...', 'info');
+    const filtered = await bantuSmartFilterContent();
     
-    // Update all rows with filtered content
-    if (filtered.length > 0) {
-        renderRow('recommended-row-container', filtered);
-        showToast(`Found ${filtered.length} movies`, 'success');
+    if (filtered && filtered.length > 0) {
+        renderBantuRow('recommended-row-container', filtered);
+        showBantuToast(`Found ${filtered.length} movies`, 'success');
     } else {
-        showToast('No movies match your filters', 'warning');
+        showBantuToast('No movies match your filters', 'warning');
     }
 }
 
 // ===== SEARCH FUNCTION =====
-async function searchContent(query) {
+async function searchBantuContent(query) {
     if (!query || query.length < 2) {
-        document.getElementById('search-results').innerHTML = '<p style="text-align:center;color:var(--slate-grey);">Type at least 2 characters to search...</p>';
+        const searchResults = document.getElementById('search-results');
+        if (searchResults) searchResults.innerHTML = '<p style="text-align:center;color:var(--slate-grey);">Type at least 2 characters to search...</p>';
         return;
     }
     
-    const { data, error } = await supabase
-        .from('Content')
-        .select('id, title, thumbnail_url, genres, sa_genres')
-        .ilike('title', `%${query}%`)
-        .eq('status', 'published')
-        .limit(30);
-    
-    if (error) {
-        console.error('Search error:', error);
-        return;
+    try {
+        const { data, error } = await bantuSupabase
+            .from('Content')
+            .select('id, title, thumbnail_url, genres, sa_genres, likes_count, views_count, is_bantu_original')
+            .ilike('title', `%${query}%`)
+            .eq('status', 'published')
+            .limit(30);
+        
+        if (error) {
+            console.error('Search error:', error);
+            return;
+        }
+        
+        const searchResults = document.getElementById('search-results');
+        if (searchResults) {
+            const resultsHtml = `
+                <div class="movies-row" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                    ${data.map(m => createBantuMovieCard(m)).join('')}
+                </div>
+            `;
+            searchResults.innerHTML = resultsHtml || '<p style="text-align:center;color:var(--slate-grey);">No results found</p>';
+        }
+        attachBantuCardClickHandlers();
+    } catch (e) {
+        console.error('Search exception:', e);
     }
-    
-    const resultsHtml = `
-        <div class="movies-row" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-            ${data.map(m => createMovieCard(m)).join('')}
-        </div>
-    `;
-    document.getElementById('search-results').innerHTML = resultsHtml || '<p style="text-align:center;color:var(--slate-grey);">No results found</p>';
-    attachCardClickHandlers();
 }
 
 // ===== CARD CLICK HANDLER =====
-function attachCardClickHandlers() {
+function attachBantuCardClickHandlers() {
     document.querySelectorAll('.movie-card, .continue-card').forEach(card => {
-        card.removeEventListener('click', handleCardClick);
-        card.addEventListener('click', handleCardClick);
+        card.removeEventListener('click', handleBantuCardClick);
+        card.addEventListener('click', handleBantuCardClick);
     });
 }
 
-function handleCardClick(e) {
+function handleBantuCardClick(e) {
     const card = e.currentTarget;
     const id = card.dataset.id;
     if (id) {
@@ -1378,7 +1458,7 @@ function handleCardClick(e) {
 }
 
 // ===== FILTER SETUP =====
-function setupFilters() {
+function setupBantuFilters() {
     const countryFilter = document.getElementById('filter-country');
     const genreFilter = document.getElementById('filter-genre');
     const saGenreFilter = document.getElementById('filter-sa-genre');
@@ -1387,35 +1467,37 @@ function setupFilters() {
     const resetBtn = document.getElementById('filter-reset');
     
     const updateFilters = () => {
-        currentFilters = {
-            country: countryFilter.value,
-            genre: genreFilter.value,
-            sa_genre: saGenreFilter.value,
-            mood: moodFilter.value,
-            language: languageFilter.value
+        bantuCurrentFilters = {
+            country: countryFilter ? countryFilter.value : 'South Africa',
+            genre: genreFilter ? genreFilter.value : 'all',
+            sa_genre: saGenreFilter ? saGenreFilter.value : 'all',
+            mood: moodFilter ? moodFilter.value : 'all',
+            language: languageFilter ? languageFilter.value : 'all'
         };
-        applyFilters();
+        applyBantuFilters();
     };
     
-    countryFilter.addEventListener('change', updateFilters);
-    genreFilter.addEventListener('change', updateFilters);
-    saGenreFilter.addEventListener('change', updateFilters);
-    moodFilter.addEventListener('change', updateFilters);
-    languageFilter.addEventListener('change', updateFilters);
+    if (countryFilter) countryFilter.addEventListener('change', updateFilters);
+    if (genreFilter) genreFilter.addEventListener('change', updateFilters);
+    if (saGenreFilter) saGenreFilter.addEventListener('change', updateFilters);
+    if (moodFilter) moodFilter.addEventListener('change', updateFilters);
+    if (languageFilter) languageFilter.addEventListener('change', updateFilters);
     
-    resetBtn.addEventListener('click', () => {
-        countryFilter.value = 'South Africa';
-        genreFilter.value = 'all';
-        saGenreFilter.value = 'all';
-        moodFilter.value = 'all';
-        languageFilter.value = 'all';
-        updateFilters();
-        showToast('Filters reset to South Africa-first', 'info');
-    });
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (countryFilter) countryFilter.value = 'South Africa';
+            if (genreFilter) genreFilter.value = 'all';
+            if (saGenreFilter) saGenreFilter.value = 'all';
+            if (moodFilter) moodFilter.value = 'all';
+            if (languageFilter) languageFilter.value = 'all';
+            updateFilters();
+            showBantuToast('Filters reset to South Africa-first', 'info');
+        });
+    }
 }
 
 // ===== SEARCH SETUP =====
-function setupSearch() {
+function setupBantuSearch() {
     const searchTrigger = document.getElementById('search-trigger');
     const searchIconBtn = document.getElementById('search-icon-btn');
     const searchModal = document.getElementById('search-modal');
@@ -1423,89 +1505,117 @@ function setupSearch() {
     const searchInput = document.getElementById('search-input');
     
     const openSearch = () => {
-        searchModal.classList.add('active');
-        setTimeout(() => searchInput.focus(), 100);
+        if (searchModal) {
+            searchModal.classList.add('active');
+            setTimeout(() => searchInput && searchInput.focus(), 100);
+        }
     };
     
     const closeSearch = () => {
-        searchModal.classList.remove('active');
-        searchInput.value = '';
-        document.getElementById('search-results').innerHTML = '';
+        if (searchModal) {
+            searchModal.classList.remove('active');
+            if (searchInput) searchInput.value = '';
+            const searchResults = document.getElementById('search-results');
+            if (searchResults) searchResults.innerHTML = '';
+        }
     };
     
-    searchTrigger?.addEventListener('click', openSearch);
-    searchIconBtn?.addEventListener('click', openSearch);
-    searchModalClose?.addEventListener('click', closeSearch);
-    searchModal?.addEventListener('click', (e) => {
-        if (e.target === searchModal) closeSearch();
-    });
+    if (searchTrigger) searchTrigger.addEventListener('click', openSearch);
+    if (searchIconBtn) searchIconBtn.addEventListener('click', openSearch);
+    if (searchModalClose) searchModalClose.addEventListener('click', closeSearch);
+    if (searchModal) {
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal) closeSearch();
+        });
+    }
     
     let searchTimeout;
-    searchInput?.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => searchContent(e.target.value), 300);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchBantuContent(e.target.value), 300);
+        });
+    }
 }
 
 // ===== AUTH CHECK =====
-async function checkAuth() {
-    const { data } = await supabase.auth.getSession();
-    currentUser = data?.session?.user || null;
-    
-    if (currentUser) {
-        const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('full_name, username')
-            .eq('id', currentUser.id)
-            .maybeSingle();
+async function checkBantuAuth() {
+    try {
+        const { data } = await bantuSupabase.auth.getSession();
+        bantuCurrentUser = data?.session?.user || null;
         
-        const nameEl = document.getElementById('current-profile-name');
-        if (nameEl) {
-            nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+        if (bantuCurrentUser) {
+            const { data: profile } = await bantuSupabase
+                .from('user_profiles')
+                .select('full_name, username')
+                .eq('id', bantuCurrentUser.id)
+                .maybeSingle();
+            
+            const nameEl = document.getElementById('current-profile-name');
+            if (nameEl) {
+                nameEl.textContent = profile?.full_name || profile?.username || bantuCurrentUser.email?.split('@')[0] || 'User';
+            }
         }
+    } catch (e) {
+        console.error('Auth check error:', e);
     }
 }
 
 // ===== INITIALIZE =====
-async function initialize() {
+async function initializeBantuMovies() {
     // UI Setup
-    document.getElementById('menu-toggle')?.addEventListener('click', () => {
-        document.getElementById('sidebar-menu').classList.add('active');
-        document.getElementById('sidebar-overlay').classList.add('active');
-    });
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarClose = document.getElementById('sidebar-close');
     
-    document.getElementById('sidebar-close')?.addEventListener('click', () => {
-        document.getElementById('sidebar-menu').classList.remove('active');
-        document.getElementById('sidebar-overlay').classList.remove('active');
-    });
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            if (sidebarMenu) sidebarMenu.classList.add('active');
+            if (sidebarOverlay) sidebarOverlay.classList.add('active');
+        });
+    }
     
-    document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
-        document.getElementById('sidebar-menu').classList.remove('active');
-        document.getElementById('sidebar-overlay').classList.remove('active');
-    });
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', () => {
+            if (sidebarMenu) sidebarMenu.classList.remove('active');
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        });
+    }
     
-    document.getElementById('backToTopBtn')?.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            if (sidebarMenu) sidebarMenu.classList.remove('active');
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        });
+    }
+    
+    const backToTop = document.getElementById('backToTopBtn');
+    if (backToTop) {
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
     
     window.addEventListener('scroll', () => {
-        const btn = document.getElementById('backToTopBtn');
-        if (btn) btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+        if (backToTop) {
+            backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
+        }
     });
     
-    await checkAuth();
-    setupFilters();
-    setupSearch();
-    await updateHero();
-    await renderAllSections();
-    attachCardClickHandlers();
+    await checkBantuAuth();
+    setupBantuFilters();
+    setupBantuSearch();
+    await updateBantuHero();
+    await renderBantuAllSections();
+    attachBantuCardClickHandlers();
     
     const loading = document.getElementById('loading');
     if (loading) loading.style.display = 'none';
 }
 
 // Start the app
-initialize();
+initializeBantuMovies();
 </script>
 </body>
 </html>
