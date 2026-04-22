@@ -1265,875 +1265,464 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
 <div id="toast-container"></div>
 
 <script>
-// ===== SUPABASE CONFIGURATION =====
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ===== GLOBAL STATE =====
-let currentUser = null;
-let currentFilters = {
-  country: 'South Africa',
-  genre: 'all',
-  mood: 'all',
-  language: 'all'
-};
-let userPreferences = null;
-let allContent = [];
-
-// ===== SA CORE GENRES (The South African Story Classification System) =====
-const SA_CORE_GENRES = [
-  { id: 'township_drama', name: 'Township Drama', icon: 'fa-city', description: 'Life in South African townships' },
-  { id: 'kasi_comedy', name: 'Kasi Comedy', icon: 'fa-laugh-squint', description: 'Hilarious township stories' },
-  { id: 'political_drama', name: 'Political Drama', icon: 'fa-landmark', description: 'Power, politics and corruption' },
-  { id: 'crime_corruption', name: 'Crime & Corruption', icon: 'fa-gavel', description: 'Underworld and justice' },
-  { id: 'street_hustle', name: 'Street Hustle', icon: 'fa-hand-holding-usd', description: 'Survival and ambition' },
-  { id: 'taxi_stories', name: 'Taxi Industry Stories', icon: 'fa-car', description: 'The taxi industry epic' },
-  { id: 'struggle_stories', name: 'Struggle Stories', icon: 'fa-fist-raised', description: 'Historical liberation tales' },
-  { id: 'modern_urban', name: 'Modern Urban Life', icon: 'fa-building', description: 'Contemporary city living' },
-  { id: 'african_futurism', name: 'African Futurism', icon: 'fa-robot', description: 'Sci-fi from an African lens' },
-  { id: 'soapies_telenovelas', name: 'Soapies & Telenovelas', icon: 'fa-tv', description: 'Dramatic series' },
-  { id: 'southern_gothic', name: 'Southern African Gothic', icon: 'fa-ghost', description: 'Horror and the supernatural' },
-  { id: 'sa_romcom', name: 'SA Romantic Comedy', icon: 'fa-heart', description: 'Love and laughter' },
-  { id: 'biopics', name: 'Biographical & Historical', icon: 'fa-history', description: 'Real life stories' },
-  { id: 'musical', name: 'Musical & Music-Driven', icon: 'fa-music', description: 'Rhythm and storytelling' },
-  { id: 'family_coming_of_age', name: 'Family & Coming-of-Age', icon: 'fa-child', description: 'Growing up South African' },
-  { id: 'indigenous_language', name: 'Indigenous Language Stories', icon: 'fa-language', description: 'Stories in mother tongues' },
-  { id: 'sports_films', name: 'Sports Films', icon: 'fa-futbol', description: 'Triumph on the field' },
-  { id: 'rural_stories', name: 'Rural / Small-Town Stories', icon: 'fa-tree', description: 'Life beyond the city' },
-  { id: 'faith_spiritual', name: 'Faith & Spiritual Narratives', icon: 'fa-pray', description: 'Belief and redemption' }
-];
-
-// ===== BINGE COLLECTIONS (Static curated collections) =====
-const BINGE_COLLECTIONS = [
-  { id: 1, title: '🔥 Weekend Binge: SA Crime Stories', icon: 'fa-gavel', count: 8, color: '#ef4444' },
-  { id: 2, title: '❤️ Love Stories from Africa', icon: 'fa-heart', count: 12, color: '#ec4899' },
-  { id: 3, title: '⚡ African Sci-Fi & Futurism', icon: 'fa-robot', count: 6, color: '#8b5cf6' },
-  { id: 4, title: '😂 Kasi Comedy Marathon', icon: 'fa-laugh-squint', count: 15, color: '#f59e0b' },
-  { id: 5, title: '📜 Struggle & Liberation Classics', icon: 'fa-fist-raised', count: 10, color: '#10b981' }
-];
-
-// ===== UTILITY FUNCTIONS =====
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-  toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => { 
-    toast.style.opacity = '0'; 
-    toast.style.transform = 'translateX(100%)'; 
-    setTimeout(() => toast.remove(), 300); 
-  }, 3000);
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function formatDuration(seconds) {
-  if (!seconds) return '1h 30min';
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
-}
-
-function formatRemainingTime(duration, progress) {
-  if (!duration) return '30min';
-  const remainingMinutes = Math.round(duration * (1 - progress / 100) / 60);
-  if (remainingMinutes >= 60) {
-    const remainingHours = Math.floor(remainingMinutes / 60);
-    const remainingMins = remainingMinutes % 60;
-    return `${remainingHours}h ${remainingMins}min`;
-  }
-  return `${remainingMinutes}min`;
-}
-
-// ===== CONTENT TRANSFORMATION =====
-function transformContent(item) {
-  return {
-    id: item.id,
-    title: item.title || 'Untitled',
-    year: item.created_at ? new Date(item.created_at).getFullYear() : '2024',
-    rating: item.likes_count && item.views_count 
-      ? (item.likes_count / Math.max(item.views_count, 1) * 5).toFixed(1) 
-      : '4.0',
-    duration: formatDuration(item.duration),
-    duration_seconds: item.duration,
-    genre: item.genres?.[0] || 'Drama',
-    genres: item.genres || [],
-    sa_genres: item.sa_genres || [],
-    moods: item.moods || [],
-    tags: item.tags || [],
-    mood: item.moods?.[0] || 'Emotional',
-    language: item.language || 'English',
-    country: item.country || 'South Africa',
-    region: item.region || 'Africa',
-    thumbnail_url: item.thumbnail_url || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop',
-    is_bantu_original: item.is_bantu_original || false,
-    views_count: item.views_count || 0,
-    likes_count: item.likes_count || 0,
-    completion_rate: item.completion_rate || 0.7,
-    content_type: item.content_type || 'movie',
-    status: item.status || 'published'
-  };
-}
-
-// ===== SUPABASE RPC CALLS (Production-Ready) =====
-
-// Get trending content in South Africa
-async function getTrendingSA(limit = 20) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_trending_sa', { limit_count: limit });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error('Error fetching trending SA:', err);
-    showToast('Unable to load trending content', 'error');
-    return [];
-  }
-}
-
-// Get trending content in Africa
-async function getTrendingAfrica(limit = 20) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_trending_africa', { limit_count: limit });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error('Error fetching trending Africa:', err);
-    return [];
-  }
-}
-
-// Get personalized recommendations for user
-async function getPersonalizedRecommendations(userId, limit = 20) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_personalized_recommendations', { 
-        p_user_id: userId, 
-        limit_count: limit 
-      });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error('Error fetching recommendations:', err);
-    return [];
-  }
-}
-
-// Get continue watching for user
-async function getContinueWatching(userId) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_continue_watching', { p_user_id: userId });
-    
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error fetching continue watching:', err);
-    return [];
-  }
-}
-
-// Get Bantu Originals
-async function getBantuOriginals(limit = 20) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_bantu_originals', { limit_count: limit });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error('Error fetching Bantu Originals:', err);
-    return [];
-  }
-}
-
-// Get content by SA genre
-async function getContentBySAGenre(saGenre, limit = 20) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_content_by_sa_genre', { 
-        p_sa_genre: saGenre, 
-        limit_count: limit 
-      });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error(`Error fetching ${saGenre}:`, err);
-    return [];
-  }
-}
-
-// Get global picks
-async function getGlobalPicks(limit = 20) {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_global_picks', { limit_count: limit });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error('Error fetching global picks:', err);
-    return [];
-  }
-}
-
-// Smart filter content
-async function smartFilterContent(filters, limit = 50) {
-  try {
-    const { data, error } = await supabase
-      .rpc('smart_filter_content', {
-        p_country: filters.country === 'all' ? null : filters.country,
-        p_region: filters.country === 'Africa' ? 'Africa' : (filters.country === 'Global' ? 'Global' : null),
-        p_genre: filters.genre === 'all' ? null : filters.genre,
-        p_sa_genre: null, // Could add SA genre filter if needed
-        p_mood: filters.mood === 'all' ? null : filters.mood,
-        p_language: filters.language === 'all' ? null : filters.language,
-        limit_count: limit
-      });
-    
-    if (error) throw error;
-    return data.map(transformContent);
-  } catch (err) {
-    console.error('Error filtering content:', err);
-    return [];
-  }
-}
-
-// Get user preferences
-async function getUserPreferences(userId) {
-  try {
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error fetching user preferences:', err);
-    return null;
-  }
-}
-
-// ===== RENDER FUNCTIONS =====
-
-function renderMovieCard(movie, isContinueWatching = false) {
-  if (isContinueWatching) {
-    return `
-      <div class="continue-card" data-id="${movie.content_id}">
-        <div class="continue-poster">
-          <img src="${movie.thumbnail_url}" alt="${escapeHtml(movie.title)}" loading="lazy">
-        </div>
-        <div class="continue-info">
-          <div class="continue-title">${escapeHtml(movie.title)}</div>
-          <div class="continue-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: ${movie.progress_percent}%"></div>
-            </div>
-            <div class="progress-text">${Math.round(movie.progress_percent)}% complete • ${formatRemainingTime(movie.duration, movie.progress_percent)} left</div>
-          </div>
-          <button class="continue-btn" data-id="${movie.content_id}">Continue Watching →</button>
-        </div>
-      </div>
-    `;
-  }
-  
-  return `
-    <div class="movie-card" data-id="${movie.id}">
-      <div class="movie-poster">
-        <img src="${movie.thumbnail_url}" alt="${escapeHtml(movie.title)}" loading="lazy">
-        <div class="movie-overlay"></div>
-        <div class="play-overlay"><i class="fas fa-play"></i></div>
-        <div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div>
-        <div class="movie-year">${movie.year}</div>
-      </div>
-      <div class="movie-info">
-        <h3 class="movie-title">${escapeHtml(movie.title)}</h3>
-        <div class="movie-meta">
-          <span><i class="fas fa-clock"></i> ${movie.duration}</span>
-          <span><i class="fas fa-tag"></i> ${movie.genre}</span>
-        </div>
-        ${movie.language !== 'English' ? `<div class="language-badge"><i class="fas fa-language"></i> ${movie.language}</div>` : ''}
-        ${movie.is_bantu_original ? `<div class="language-badge" style="background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));"><i class="fas fa-crown"></i> Original</div>` : ''}
-      </div>
-    </div>
-  `;
-}
-
-function renderSkeletonGrid(count = 4) {
-  return Array(count).fill(0).map(() => `
-    <div class="skeleton">
-      <div class="skeleton-poster"></div>
-      <div class="skeleton-title"></div>
-      <div class="skeleton-meta"></div>
-    </div>
-  `).join('');
-}
-
-function renderMovieGrid(movies, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  
-  if (!movies || movies.length === 0) {
-    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-film"></i> No movies found</div>';
-    return;
-  }
-  
-  container.innerHTML = movies.map(movie => renderMovieCard(movie)).join('');
-  attachMovieClickHandlers();
-}
-
-function renderContinueWatchingGrid(watchData) {
-  const container = document.getElementById('continue-grid');
-  if (!container) return;
-  
-  if (!watchData || watchData.length === 0) {
-    document.getElementById('continue-watching-section').style.display = 'none';
-    return;
-  }
-  
-  document.getElementById('continue-watching-section').style.display = 'block';
-  container.innerHTML = watchData.map(item => renderMovieCard(item, true)).join('');
-  
-  document.querySelectorAll('.continue-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.id;
-      window.location.href = `content-detail.html?id=${id}`;
-    });
-  });
-}
-
-function renderBingeCollections() {
-  const grid = document.getElementById('binge-collections-grid');
-  if (!grid) return;
-  
-  grid.innerHTML = BINGE_COLLECTIONS.map(collection => `
-    <div class="binge-card" data-id="${collection.id}">
-      <div class="binge-icon"><i class="fas ${collection.icon}" style="color: ${collection.color}"></i></div>
-      <div class="binge-title">${escapeHtml(collection.title)}</div>
-      <div class="binge-count">${collection.count} titles • Binge ready</div>
-    </div>
-  `).join('');
-  
-  document.querySelectorAll('.binge-card').forEach(card => {
-    card.addEventListener('click', () => {
-      showToast('Loading collection...', 'info');
-      // In production: fetch collection contents via smart_filter_content
-    });
-  });
-}
-
-function renderSAGenreChips() {
-  const chipsContainer = document.getElementById('sa-genre-chips');
-  if (!chipsContainer) return;
-  
-  chipsContainer.innerHTML = SA_CORE_GENRES.map(genre => `
-    <button class="sa-genre-chip" data-sa-genre="${genre.id}">
-      <i class="fas ${genre.icon}"></i> ${genre.name}
-    </button>
-  `).join('');
-  
-  // Attach click handlers
-  document.querySelectorAll('.sa-genre-chip').forEach(chip => {
-    chip.addEventListener('click', async () => {
-      // Update active state
-      document.querySelectorAll('.sa-genre-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      
-      const genreId = chip.dataset.saGenre;
-      const genre = SA_CORE_GENRES.find(g => g.id === genreId);
-      
-      showToast(`Loading ${genre?.name}...`, 'info');
-      
-      // Fetch and render content for this genre
-      const content = await getContentBySAGenre(genreId, 8);
-      const rowsContainer = document.getElementById('sa-genre-rows-container');
-      
-      // Remove existing row for this genre if exists
-      const existingRow = rowsContainer.querySelector(`[data-sa-genre="${genreId}"]`);
-      if (existingRow) existingRow.remove();
-      
-      // Create new row
-      const row = document.createElement('section');
-      row.className = 'section';
-      row.dataset.saGenre = genreId;
-      row.style.marginBottom = '40px';
-      row.innerHTML = `
-        <div class="section-header">
-          <h2 class="section-title"><i class="fas ${genre?.icon}"></i> ${genre?.name}</h2>
-          <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="movies-grid" id="genre-${genreId}-grid"></div>
-      `;
-      
-      rowsContainer.appendChild(row);
-      
-      // Render content
-      const grid = row.querySelector(`#genre-${genreId}-grid`);
-      if (grid) {
-        grid.innerHTML = content.map(movie => renderMovieCard(movie)).join('');
-        attachMovieClickHandlers();
-      }
-      
-      // Scroll to row
-      row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  });
-}
-
-async function renderSAGenreRows() {
-  const rowsContainer = document.getElementById('sa-genre-rows-container');
-  if (!rowsContainer) return;
-  
-  // Render first 5 genres initially for performance
-  const initialGenres = SA_CORE_GENRES.slice(0, 5);
-  
-  for (const genre of initialGenres) {
-    const content = await getContentBySAGenre(genre.id, 8);
-    if (content.length === 0) continue;
-    
-    const row = document.createElement('section');
-    row.className = 'section';
-    row.dataset.saGenre = genre.id;
-    row.style.marginBottom = '40px';
-    row.innerHTML = `
-      <div class="section-header">
-        <h2 class="section-title"><i class="fas ${genre.icon}"></i> ${genre.name}</h2>
-        <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
-      </div>
-      <div class="movies-grid" id="genre-${genre.id}-grid"></div>
-    `;
-    
-    rowsContainer.appendChild(row);
-    
-    const grid = row.querySelector(`#genre-${genre.id}-grid`);
-    if (grid) {
-      grid.innerHTML = content.map(movie => renderMovieCard(movie)).join('');
-      attachMovieClickHandlers();
-    }
-  }
-  
-  // Lazy load remaining genres on scroll
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const genreId = entry.target.dataset.saGenre;
-        const genre = SA_CORE_GENRES.find(g => g.id === genreId);
-        if (genre && !entry.target.querySelector('.movies-grid').children.length) {
-          loadGenreRow(genre);
-        }
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { rootMargin: '200px' });
-  
-  // Observe rows for lazy loading
-  document.querySelectorAll('.section[data-sa-genre]').forEach(row => {
-    if (!row.querySelector('.movies-grid').children.length) {
-      observer.observe(row);
-    }
-  });
-}
-
-async function loadGenreRow(genre) {
-  const content = await getContentBySAGenre(genre.id, 8);
-  if (content.length === 0) return;
-  
-  const row = document.querySelector(`.section[data-sa-genre="${genre.id}"]`);
-  if (!row) return;
-  
-  const grid = row.querySelector('.movies-grid');
-  if (grid) {
-    grid.innerHTML = content.map(movie => renderMovieCard(movie)).join('');
-    attachMovieClickHandlers();
-  }
-}
-
-function attachMovieClickHandlers() {
-  document.querySelectorAll('.movie-card').forEach(card => {
-    card.addEventListener('click', async () => {
-      const id = card.dataset.id;
-      if (!id) return;
-      
-      // Record watch start (if user logged in)
-      if (currentUser) {
-        try {
-          await supabase
-            .from('watch_progress')
-            .upsert({
-              user_id: currentUser.id,
-              content_id: parseInt(id),
-              last_position: 0,
-              is_completed: false,
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id,content_id' });
-        } catch (err) {
-          console.warn('Could not record watch progress:', err);
-        }
-      }
-      
-      window.location.href = `content-detail.html?id=${id}`;
-    });
-  });
-}
-
-// ===== HERO SECTION =====
-async function updateHero() {
-  const heroTitle = document.getElementById('hero-title');
-  const heroDesc = document.getElementById('hero-description');
-  const heroRating = document.getElementById('hero-rating');
-  const heroDuration = document.getElementById('hero-duration');
-  const heroYear = document.getElementById('hero-year');
-  const heroBadge = document.getElementById('hero-badge');
-  const heroBackdrop = document.getElementById('hero-backdrop');
-  
-  try {
-    // Try personalized first if user has history
-    if (currentUser && userPreferences) {
-      const recommendations = await getPersonalizedRecommendations(currentUser.id, 1);
-      if (recommendations.length > 0) {
-        const movie = recommendations[0];
-        updateHeroContent(movie, 'Because you watched');
+// ===== FIX: Check if Supabase is loaded and ensure no duplicate declaration =====
+(function() {
+    // Wait for Supabase to be available on window
+    if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+        console.error('Supabase library not loaded, retrying...');
+        // Force a retry mechanism
+        const checkSupabase = setInterval(function() {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                clearInterval(checkSupabase);
+                initApp();
+            }
+        }, 100);
+        // Timeout after 5 seconds to show error but not break UI
+        setTimeout(function() {
+            clearInterval(checkSupabase);
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.style.display = 'none';
+            showToast('Could not connect to services. Please refresh.', 'error');
+        }, 5000);
         return;
-      }
     }
-    
-    // Fallback to trending SA
-    const trending = await getTrendingSA(1);
-    if (trending.length > 0) {
-      updateHeroContent(trending[0], 'Trending in South Africa');
-      return;
-    }
-    
-    // Final fallback
-    heroTitle.textContent = 'Welcome to Bantu Stream';
-    heroDesc.textContent = 'Discover authentic African stories, made for you.';
-    heroBadge.innerHTML = '<i class="fas fa-sparkles"></i> Welcome';
-    
-  } catch (err) {
-    console.error('Error updating hero:', err);
-    heroTitle.textContent = 'Welcome to Bantu Stream';
-    heroDesc.textContent = 'Discover authentic African stories, made for you.';
-  }
-}
+    initApp();
+})();
 
-function updateHeroContent(movie, badgeText) {
-  document.getElementById('hero-title').textContent = movie.title;
-  document.getElementById('hero-description').textContent = 
-    `${movie.genres?.join(', ') || movie.genre} • ${movie.moods?.join(', ') || movie.mood}`;
-  document.getElementById('hero-rating').textContent = movie.rating;
-  document.getElementById('hero-duration').textContent = movie.duration;
-  document.getElementById('hero-year').textContent = movie.year;
-  document.getElementById('hero-badge').innerHTML = `<i class="fas fa-fire"></i> ${badgeText}`;
-  
-  if (movie.thumbnail_url) {
-    const backdrop = document.getElementById('hero-backdrop');
-    backdrop.src = movie.thumbnail_url;
-    backdrop.style.display = 'block';
-  }
-  
-  // Update watch button
-  const watchBtn = document.getElementById('watch-trailer-btn');
-  watchBtn.onclick = () => {
-    window.location.href = `content-detail.html?id=${movie.id}`;
-  };
-  
-  // Update add to list button
-  const addToListBtn = document.getElementById('add-to-list-btn');
-  addToListBtn.onclick = async () => {
-    if (!currentUser) {
-      showToast('Please sign in to add to My List', 'warning');
-      window.location.href = `login.html?redirect=movies.html`;
-      return;
-    }
+// Global app initialization - FIXED: No duplicate supabase variable
+function initApp() {
+    // Supabase configuration (using global supabase from CDN)
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     
-    try {
-      // In production: add to user's watchlist table
-      showToast('Added to My List! ✨', 'success');
-    } catch (err) {
-      showToast('Could not add to list', 'error');
-    }
-  };
-}
+    // Create supabase client (store in window to avoid conflicts)
+    window.bantuSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = window.bantuSupabase;
 
-// ===== SMART FILTERS =====
-function setupSmartFilters() {
-  const countryFilter = document.getElementById('filter-country');
-  const genreFilter = document.getElementById('filter-genre');
-  const moodFilter = document.getElementById('filter-mood');
-  const languageFilter = document.getElementById('filter-language');
-  const resetBtn = document.getElementById('filter-reset');
-  
-  const applyFilters = async () => {
-    currentFilters = {
-      country: countryFilter.value,
-      genre: genreFilter.value,
-      mood: moodFilter.value,
-      language: languageFilter.value
+    // ===== GLOBAL STATE =====
+    let currentUser = null;
+    let currentFilters = {
+        country: 'South Africa',
+        genre: 'all',
+        mood: 'all',
+        language: 'all'
     };
-    
-    showToast('Updating results...', 'info');
-    
-    // Update trending SA with filters
-    const saFiltered = await smartFilterContent({
-      ...currentFilters,
-      country: currentFilters.country === 'South Africa' ? 'South Africa' : null,
-      region: currentFilters.country === 'Africa' ? 'Africa' : null
-    }, 8);
-    renderMovieGrid(saFiltered, 'trending-sa-grid');
-    
-    // Update trending Africa
-    const africaFiltered = await smartFilterContent({
-      ...currentFilters,
-      country: currentFilters.country === 'Africa' ? null : null,
-      region: 'Africa'
-    }, 8);
-    renderMovieGrid(africaFiltered, 'trending-africa-grid');
-    
-    // Update global picks
-    const globalFiltered = await smartFilterContent({
-      ...currentFilters,
-      country: currentFilters.country === 'Global' ? null : null,
-      region: 'Global'
-    }, 8);
-    renderMovieGrid(globalFiltered, 'global-grid');
-    
-    showToast(`Showing filtered results`, 'success');
-  };
-  
-  countryFilter.addEventListener('change', applyFilters);
-  genreFilter.addEventListener('change', applyFilters);
-  moodFilter.addEventListener('change', applyFilters);
-  languageFilter.addEventListener('change', applyFilters);
-  
-  resetBtn.addEventListener('click', () => {
-    countryFilter.value = 'South Africa';
-    genreFilter.value = 'all';
-    moodFilter.value = 'all';
-    languageFilter.value = 'all';
-    currentFilters = {
-      country: 'South Africa',
-      genre: 'all',
-      mood: 'all',
-      language: 'all'
-    };
-    // Re-initialize all sections
-    initializeContent();
-    showToast('Filters reset to South Africa-first', 'info');
-  });
-}
+    let userPreferences = null;
+    let allContent = [];
 
-// ===== AUTH & USER SETUP =====
-async function checkAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
-  currentUser = session?.user || null;
-  
-  if (currentUser) {
-    // Update UI with user info
-    const nameEl = document.getElementById('current-profile-name');
-    const sidebarNameEl = document.getElementById('sidebar-profile-name');
-    const emailEl = document.getElementById('sidebar-profile-email');
-    
-    const name = currentUser.user_metadata?.full_name || 
-                 currentUser.user_metadata?.username || 
-                 currentUser.email?.split('@')[0] || 
-                 'User';
-    
-    if (nameEl) nameEl.textContent = name;
-    if (sidebarNameEl) sidebarNameEl.textContent = name;
-    if (emailEl) emailEl.textContent = currentUser.email;
-    
-    // Load user preferences
-    userPreferences = await getUserPreferences(currentUser.id);
-  }
-}
+    // ===== SA CORE GENRES =====
+    const SA_CORE_GENRES = [
+        { id: 'township_drama', name: 'Township Drama', icon: 'fa-city', description: 'Life in South African townships' },
+        { id: 'kasi_comedy', name: 'Kasi Comedy', icon: 'fa-laugh-squint', description: 'Hilarious township stories' },
+        { id: 'political_drama', name: 'Political Drama', icon: 'fa-landmark', description: 'Power, politics and corruption' },
+        { id: 'crime_corruption', name: 'Crime & Corruption', icon: 'fa-gavel', description: 'Underworld and justice' },
+        { id: 'street_hustle', name: 'Street Hustle', icon: 'fa-hand-holding-usd', description: 'Survival and ambition' },
+        { id: 'taxi_stories', name: 'Taxi Industry Stories', icon: 'fa-car', description: 'The taxi industry epic' },
+        { id: 'struggle_stories', name: 'Struggle Stories', icon: 'fa-fist-raised', description: 'Historical liberation tales' },
+        { id: 'modern_urban', name: 'Modern Urban Life', icon: 'fa-building', description: 'Contemporary city living' },
+        { id: 'african_futurism', name: 'African Futurism', icon: 'fa-robot', description: 'Sci-fi from an African lens' },
+        { id: 'soapies_telenovelas', name: 'Soapies & Telenovelas', icon: 'fa-tv', description: 'Dramatic series' },
+        { id: 'southern_gothic', name: 'Southern African Gothic', icon: 'fa-ghost', description: 'Horror and the supernatural' },
+        { id: 'sa_romcom', name: 'SA Romantic Comedy', icon: 'fa-heart', description: 'Love and laughter' },
+        { id: 'biopics', name: 'Biographical & Historical', icon: 'fa-history', description: 'Real life stories' },
+        { id: 'musical', name: 'Musical & Music-Driven', icon: 'fa-music', description: 'Rhythm and storytelling' },
+        { id: 'family_coming_of_age', name: 'Family & Coming-of-Age', icon: 'fa-child', description: 'Growing up South African' },
+        { id: 'indigenous_language', name: 'Indigenous Language Stories', icon: 'fa-language', description: 'Stories in mother tongues' },
+        { id: 'sports_films', name: 'Sports Films', icon: 'fa-futbol', description: 'Triumph on the field' },
+        { id: 'rural_stories', name: 'Rural / Small-Town Stories', icon: 'fa-tree', description: 'Life beyond the city' },
+        { id: 'faith_spiritual', name: 'Faith & Spiritual Narratives', icon: 'fa-pray', description: 'Belief and redemption' }
+    ];
 
-// ===== MAIN CONTENT INITIALIZATION =====
-async function initializeContent() {
-  // Show loading states
-  document.querySelectorAll('.movies-grid').forEach(grid => {
-    grid.innerHTML = renderSkeletonGrid(4);
-  });
-  
-  // Load priority content first (Hero + Trending SA)
-  await updateHero();
-  
-  const trendingSA = await getTrendingSA(8);
-  renderMovieGrid(trendingSA, 'trending-sa-grid');
-  
-  // Load continue watching if user logged in
-  if (currentUser) {
-    const watchData = await getContinueWatching(currentUser.id);
-    renderContinueWatchingGrid(watchData);
-    
-    // Load personalized recommendations
-    const recommendations = await getPersonalizedRecommendations(currentUser.id, 8);
-    if (recommendations.length > 0) {
-      document.getElementById('personalized-section').style.display = 'block';
-      renderMovieGrid(recommendations, 'personalized-grid');
+    // ===== BINGE COLLECTIONS =====
+    const BINGE_COLLECTIONS = [
+        { id: 1, title: '🔥 Weekend Binge: SA Crime Stories', icon: 'fa-gavel', count: 8, color: '#ef4444' },
+        { id: 2, title: '❤️ Love Stories from Africa', icon: 'fa-heart', count: 12, color: '#ec4899' },
+        { id: 3, title: '⚡ African Sci-Fi & Futurism', icon: 'fa-robot', count: 6, color: '#8b5cf6' },
+        { id: 4, title: '😂 Kasi Comedy Marathon', icon: 'fa-laugh-squint', count: 15, color: '#f59e0b' },
+        { id: 5, title: '📜 Struggle & Liberation Classics', icon: 'fa-fist-raised', count: 10, color: '#10b981' }
+    ];
+
+    // ===== UTILITY FUNCTIONS =====
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+        toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => { 
+            toast.style.opacity = '0'; 
+            toast.style.transform = 'translateX(100%)'; 
+            setTimeout(() => toast.remove(), 300); 
+        }, 3000);
     }
-  }
-  
-  // Load remaining sections (lazy)
-  setTimeout(async () => {
-    // Trending Africa
-    const trendingAfrica = await getTrendingAfrica(8);
-    renderMovieGrid(trendingAfrica, 'trending-africa-grid');
-    
-    // Bantu Originals
-    const originals = await getBantuOriginals(8);
-    renderMovieGrid(originals, 'originals-grid');
-    
-    // Global Picks
-    const global = await getGlobalPicks(8);
-    renderMovieGrid(global, 'global-grid');
-    
-    // SA Genre rows
-    renderSAGenreChips();
-    await renderSAGenreRows();
-    
-    // Binge Collections (static)
-    renderBingeCollections();
-    
-    // Hide loading screen
-    const loading = document.getElementById('loading');
-    if (loading) loading.style.display = 'none';
-    
-  }, 300);
-}
 
-// ===== UI SETUP FUNCTIONS =====
-function setupSidebar() {
-  const menuToggle = document.getElementById('menu-toggle');
-  const sidebarClose = document.getElementById('sidebar-close');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const sidebarMenu = document.getElementById('sidebar-menu');
-  
-  menuToggle?.addEventListener('click', () => {
-    sidebarMenu?.classList.add('active');
-    sidebarOverlay?.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
-  
-  const closeSidebar = () => {
-    sidebarMenu?.classList.remove('active');
-    sidebarOverlay?.classList.remove('active');
-    document.body.style.overflow = '';
-  };
-  
-  sidebarClose?.addEventListener('click', closeSidebar);
-  sidebarOverlay?.addEventListener('click', closeSidebar);
-}
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-function setupNavigation() {
-  document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
-  document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
-  document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) window.location.href = 'creator-upload.html';
-    else window.location.href = 'login.html?redirect=creator-upload.html';
-  });
-  document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
-    document.getElementById('sidebar-menu')?.classList.add('active');
-    document.getElementById('sidebar-overlay')?.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
-}
+    function formatDuration(seconds) {
+        if (!seconds) return '1h 30min';
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+    }
 
-function setupBackToTop() {
-  const btn = document.getElementById('backToTopBtn');
-  window.addEventListener('scroll', () => {
-    btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-  });
-  btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-}
+    function formatRemainingTime(duration, progress) {
+        if (!duration) return '30min';
+        const remainingMinutes = Math.round(duration * (1 - progress / 100) / 60);
+        if (remainingMinutes >= 60) {
+            const remainingHours = Math.floor(remainingMinutes / 60);
+            const remainingMins = remainingMinutes % 60;
+            return `${remainingHours}h ${remainingMins}min`;
+        }
+        return `${remainingMinutes}min`;
+    }
 
-function setupScaleControls() {
-  const decrease = document.getElementById('scale-decrease');
-  const increase = document.getElementById('scale-increase');
-  const value = document.getElementById('scale-value');
-  let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-  
-  const apply = () => {
-    document.documentElement.style.setProperty('--ui-scale', scale);
-    localStorage.setItem('bantu_ui_scale', scale);
-    if (value) value.textContent = Math.round(scale * 100) + '%';
-  };
-  
-  decrease?.addEventListener('click', () => { 
-    if (scale > 0.7) { scale -= 0.1; apply(); } 
-  });
-  increase?.addEventListener('click', () => { 
-    if (scale < 1.4) { scale += 0.1; apply(); } 
-  });
-  
-  apply();
-}
+    function transformContent(item) {
+        return {
+            id: item.id,
+            title: item.title || 'Untitled',
+            year: item.created_at ? new Date(item.created_at).getFullYear() : '2024',
+            rating: item.likes_count && item.views_count ? (item.likes_count / Math.max(item.views_count, 1) * 5).toFixed(1) : '4.0',
+            duration: formatDuration(item.duration),
+            duration_seconds: item.duration,
+            genre: item.genres?.[0] || 'Drama',
+            genres: item.genres || [],
+            sa_genres: item.sa_genres || [],
+            moods: item.moods || [],
+            tags: item.tags || [],
+            mood: item.moods?.[0] || 'Emotional',
+            language: item.language || 'English',
+            country: item.country || 'South Africa',
+            region: item.region || 'Africa',
+            thumbnail_url: item.thumbnail_url || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop',
+            is_bantu_original: item.is_bantu_original || false,
+            views_count: item.views_count || 0,
+            likes_count: item.likes_count || 0,
+            completion_rate: item.completion_rate || 0.7,
+            content_type: item.content_type || 'movie',
+            status: item.status || 'published'
+        };
+    }
 
-function initThemeSystem() {
-  const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-  applyTheme(savedTheme);
-  
-  document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    document.getElementById('theme-selector')?.classList.toggle('active');
-  });
-  
-  document.querySelectorAll('.theme-option').forEach(option => {
-    option.addEventListener('click', () => {
-      applyTheme(option.dataset.theme);
-      document.getElementById('theme-selector')?.classList.remove('active');
-    });
-  });
-}
+    // API functions with fallbacks
+    async function getTrendingSA(limit = 20) {
+        try {
+            const { data, error } = await supabase.rpc('get_trending_sa', { limit_count: limit });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error('Error fetching trending SA:', err); return []; }
+    }
 
-function applyTheme(theme) {
-  document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-  document.body.classList.add(`theme-${theme}`);
-  localStorage.setItem('bantu_theme', theme);
-}
+    async function getTrendingAfrica(limit = 20) {
+        try {
+            const { data, error } = await supabase.rpc('get_trending_africa', { limit_count: limit });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error('Error fetching trending Africa:', err); return []; }
+    }
 
-// ===== INITIALIZATION =====
-async function initialize() {
-  // Setup UI
-  setupSidebar();
-  setupNavigation();
-  setupBackToTop();
-  setupScaleControls();
-  initThemeSystem();
-  setupSmartFilters();
-  
-  // Check auth
-  await checkAuth();
-  
-  // Load content
-  await initializeContent();
-  
-  // Setup hero buttons
-  document.getElementById('watch-trailer-btn')?.addEventListener('click', () => {
-    showToast('Loading player...', 'info');
-  });
-}
+    async function getPersonalizedRecommendations(userId, limit = 20) {
+        try {
+            const { data, error } = await supabase.rpc('get_personalized_recommendations', { p_user_id: userId, limit_count: limit });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error('Error fetching recommendations:', err); return []; }
+    }
 
-// Start the app
-document.addEventListener('DOMContentLoaded', initialize);
+    async function getContinueWatching(userId) {
+        try {
+            const { data, error } = await supabase.rpc('get_continue_watching', { p_user_id: userId });
+            if (error) throw error;
+            return data || [];
+        } catch (err) { console.error('Error fetching continue watching:', err); return []; }
+    }
+
+    async function getBantuOriginals(limit = 20) {
+        try {
+            const { data, error } = await supabase.rpc('get_bantu_originals', { limit_count: limit });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error('Error fetching Bantu Originals:', err); return []; }
+    }
+
+    async function getContentBySAGenre(saGenre, limit = 20) {
+        try {
+            const { data, error } = await supabase.rpc('get_content_by_sa_genre', { p_sa_genre: saGenre, limit_count: limit });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error(`Error fetching ${saGenre}:`, err); return []; }
+    }
+
+    async function getGlobalPicks(limit = 20) {
+        try {
+            const { data, error } = await supabase.rpc('get_global_picks', { limit_count: limit });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error('Error fetching global picks:', err); return []; }
+    }
+
+    async function smartFilterContent(filters, limit = 50) {
+        try {
+            const { data, error } = await supabase.rpc('smart_filter_content', {
+                p_country: filters.country === 'all' ? null : filters.country,
+                p_region: filters.country === 'Africa' ? 'Africa' : (filters.country === 'Global' ? 'Global' : null),
+                p_genre: filters.genre === 'all' ? null : filters.genre,
+                p_sa_genre: null,
+                p_mood: filters.mood === 'all' ? null : filters.mood,
+                p_language: filters.language === 'all' ? null : filters.language,
+                limit_count: limit
+            });
+            if (error) throw error;
+            return (data || []).map(transformContent);
+        } catch (err) { console.error('Error filtering content:', err); return []; }
+    }
+
+    async function getUserPreferences(userId) {
+        try {
+            const { data, error } = await supabase.from('user_preferences').select('*').eq('user_id', userId).maybeSingle();
+            if (error) throw error;
+            return data;
+        } catch (err) { console.error('Error fetching user preferences:', err); return null; }
+    }
+
+    // ===== RENDER FUNCTIONS =====
+    function renderMovieCard(movie, isContinueWatching = false) {
+        if (isContinueWatching) {
+            return `
+                <div class="continue-card" data-id="${movie.content_id}">
+                    <div class="continue-poster"><img src="${movie.thumbnail_url}" alt="${escapeHtml(movie.title)}" loading="lazy"></div>
+                    <div class="continue-info">
+                        <div class="continue-title">${escapeHtml(movie.title)}</div>
+                        <div class="continue-progress"><div class="progress-bar"><div class="progress-fill" style="width: ${movie.progress_percent}%"></div></div><div class="progress-text">${Math.round(movie.progress_percent)}% complete • ${formatRemainingTime(movie.duration, movie.progress_percent)} left</div></div>
+                        <button class="continue-btn" data-id="${movie.content_id}">Continue Watching →</button>
+                    </div>
+                </div>
+            `;
+        }
+        return `
+            <div class="movie-card" data-id="${movie.id}">
+                <div class="movie-poster"><img src="${movie.thumbnail_url}" alt="${escapeHtml(movie.title)}" loading="lazy"><div class="movie-overlay"></div><div class="play-overlay"><i class="fas fa-play"></i></div><div class="movie-rating"><i class="fas fa-star"></i> ${movie.rating}</div><div class="movie-year">${movie.year}</div></div>
+                <div class="movie-info"><h3 class="movie-title">${escapeHtml(movie.title)}</h3><div class="movie-meta"><span><i class="fas fa-clock"></i> ${movie.duration}</span><span><i class="fas fa-tag"></i> ${movie.genre}</span></div>${movie.language !== 'English' ? `<div class="language-badge"><i class="fas fa-language"></i> ${movie.language}</div>` : ''}${movie.is_bantu_original ? `<div class="language-badge" style="background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));"><i class="fas fa-crown"></i> Original</div>` : ''}</div>
+            </div>
+        `;
+    }
+
+    function renderSkeletonGrid(count = 4) {
+        return Array(count).fill(0).map(() => `<div class="skeleton"><div class="skeleton-poster"></div><div class="skeleton-title"></div><div class="skeleton-meta"></div></div>`).join('');
+    }
+
+    function renderMovieGrid(movies, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (!movies || movies.length === 0) { container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-film"></i> No movies found</div>'; return; }
+        container.innerHTML = movies.map(movie => renderMovieCard(movie)).join('');
+        attachMovieClickHandlers();
+    }
+
+    function renderContinueWatchingGrid(watchData) {
+        const container = document.getElementById('continue-grid');
+        if (!container) return;
+        if (!watchData || watchData.length === 0) { document.getElementById('continue-watching-section').style.display = 'none'; return; }
+        document.getElementById('continue-watching-section').style.display = 'block';
+        container.innerHTML = watchData.map(item => renderMovieCard(item, true)).join('');
+        document.querySelectorAll('.continue-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.id; window.location.href = `content-detail.html?id=${id}`; }); });
+    }
+
+    function renderBingeCollections() {
+        const grid = document.getElementById('binge-collections-grid');
+        if (!grid) return;
+        grid.innerHTML = BINGE_COLLECTIONS.map(collection => `<div class="binge-card" data-id="${collection.id}"><div class="binge-icon"><i class="fas ${collection.icon}" style="color: ${collection.color}"></i></div><div class="binge-title">${escapeHtml(collection.title)}</div><div class="binge-count">${collection.count} titles • Binge ready</div></div>`).join('');
+        document.querySelectorAll('.binge-card').forEach(card => card.addEventListener('click', () => showToast('Loading collection...', 'info')));
+    }
+
+    function renderSAGenreChips() {
+        const chipsContainer = document.getElementById('sa-genre-chips');
+        if (!chipsContainer) return;
+        chipsContainer.innerHTML = SA_CORE_GENRES.map(genre => `<button class="sa-genre-chip" data-sa-genre="${genre.id}"><i class="fas ${genre.icon}"></i> ${genre.name}</button>`).join('');
+        document.querySelectorAll('.sa-genre-chip').forEach(chip => chip.addEventListener('click', async () => {
+            document.querySelectorAll('.sa-genre-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            const genreId = chip.dataset.saGenre;
+            const genre = SA_CORE_GENRES.find(g => g.id === genreId);
+            showToast(`Loading ${genre?.name}...`, 'info');
+            const content = await getContentBySAGenre(genreId, 8);
+            const rowsContainer = document.getElementById('sa-genre-rows-container');
+            const existingRow = rowsContainer.querySelector(`[data-sa-genre="${genreId}"]`);
+            if (existingRow) existingRow.remove();
+            const row = document.createElement('section');
+            row.className = 'section'; row.dataset.saGenre = genreId; row.style.marginBottom = '40px';
+            row.innerHTML = `<div class="section-header"><h2 class="section-title"><i class="fas ${genre?.icon}"></i> ${genre?.name}</h2><a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a></div><div class="movies-grid" id="genre-${genreId}-grid"></div>`;
+            rowsContainer.appendChild(row);
+            const grid = row.querySelector(`#genre-${genreId}-grid`);
+            if (grid) { grid.innerHTML = content.map(movie => renderMovieCard(movie)).join(''); attachMovieClickHandlers(); }
+            row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }));
+    }
+
+    async function renderSAGenreRows() {
+        const rowsContainer = document.getElementById('sa-genre-rows-container');
+        if (!rowsContainer) return;
+        const initialGenres = SA_CORE_GENRES.slice(0, 5);
+        for (const genre of initialGenres) {
+            const content = await getContentBySAGenre(genre.id, 8);
+            if (content.length === 0) continue;
+            const row = document.createElement('section');
+            row.className = 'section'; row.dataset.saGenre = genre.id; row.style.marginBottom = '40px';
+            row.innerHTML = `<div class="section-header"><h2 class="section-title"><i class="fas ${genre.icon}"></i> ${genre.name}</h2><a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a></div><div class="movies-grid" id="genre-${genre.id}-grid"></div>`;
+            rowsContainer.appendChild(row);
+            const grid = row.querySelector(`#genre-${genre.id}-grid`);
+            if (grid) { grid.innerHTML = content.map(movie => renderMovieCard(movie)).join(''); attachMovieClickHandlers(); }
+        }
+    }
+
+    function attachMovieClickHandlers() {
+        document.querySelectorAll('.movie-card').forEach(card => {
+            card.addEventListener('click', async () => {
+                const id = card.dataset.id;
+                if (!id) return;
+                if (currentUser) { try { await supabase.from('watch_progress').upsert({ user_id: currentUser.id, content_id: parseInt(id), last_position: 0, is_completed: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id,content_id' }); } catch (err) { console.warn(err); } }
+                window.location.href = `content-detail.html?id=${id}`;
+            });
+        });
+    }
+
+    async function updateHero() {
+        try {
+            if (currentUser && userPreferences) {
+                const recommendations = await getPersonalizedRecommendations(currentUser.id, 1);
+                if (recommendations.length > 0) { updateHeroContent(recommendations[0], 'Because you watched'); return; }
+            }
+            const trending = await getTrendingSA(1);
+            if (trending.length > 0) { updateHeroContent(trending[0], 'Trending in South Africa'); return; }
+            document.getElementById('hero-title').textContent = 'Welcome to Bantu Stream';
+            document.getElementById('hero-description').textContent = 'Discover authentic African stories, made for you.';
+            document.getElementById('hero-badge').innerHTML = '<i class="fas fa-sparkles"></i> Welcome';
+        } catch (err) { console.error('Error updating hero:', err); }
+    }
+
+    function updateHeroContent(movie, badgeText) {
+        document.getElementById('hero-title').textContent = movie.title;
+        document.getElementById('hero-description').textContent = `${movie.genres?.join(', ') || movie.genre} • ${movie.moods?.join(', ') || movie.mood}`;
+        document.getElementById('hero-rating').textContent = movie.rating;
+        document.getElementById('hero-duration').textContent = movie.duration;
+        document.getElementById('hero-year').textContent = movie.year;
+        document.getElementById('hero-badge').innerHTML = `<i class="fas fa-fire"></i> ${badgeText}`;
+        if (movie.thumbnail_url) { const backdrop = document.getElementById('hero-backdrop'); backdrop.src = movie.thumbnail_url; backdrop.style.display = 'block'; }
+        document.getElementById('watch-trailer-btn').onclick = () => window.location.href = `content-detail.html?id=${movie.id}`;
+        document.getElementById('add-to-list-btn').onclick = async () => { if (!currentUser) { showToast('Please sign in to add to My List', 'warning'); window.location.href = `login.html?redirect=movies.html`; return; } showToast('Added to My List! ✨', 'success'); };
+    }
+
+    function setupSmartFilters() {
+        const countryFilter = document.getElementById('filter-country');
+        const genreFilter = document.getElementById('filter-genre');
+        const moodFilter = document.getElementById('filter-mood');
+        const languageFilter = document.getElementById('filter-language');
+        const resetBtn = document.getElementById('filter-reset');
+        const applyFilters = async () => {
+            currentFilters = { country: countryFilter.value, genre: genreFilter.value, mood: moodFilter.value, language: languageFilter.value };
+            showToast('Updating results...', 'info');
+            const saFiltered = await smartFilterFilter({ ...currentFilters, country: currentFilters.country === 'South Africa' ? 'South Africa' : null, region: currentFilters.country === 'Africa' ? 'Africa' : null }, 8);
+            renderMovieGrid(saFiltered, 'trending-sa-grid');
+            const africaFiltered = await smartFilterFilter({ ...currentFilters, country: currentFilters.country === 'Africa' ? null : null, region: 'Africa' }, 8);
+            renderMovieGrid(africaFiltered, 'trending-africa-grid');
+            const globalFiltered = await smartFilterFilter({ ...currentFilters, country: currentFilters.country === 'Global' ? null : null, region: 'Global' }, 8);
+            renderMovieGrid(globalFiltered, 'global-grid');
+            showToast('Showing filtered results', 'success');
+        };
+        countryFilter.addEventListener('change', applyFilters);
+        genreFilter.addEventListener('change', applyFilters);
+        moodFilter.addEventListener('change', applyFilters);
+        languageFilter.addEventListener('change', applyFilters);
+        resetBtn.addEventListener('click', () => { countryFilter.value = 'South Africa'; genreFilter.value = 'all'; moodFilter.value = 'all'; languageFilter.value = 'all'; currentFilters = { country: 'South Africa', genre: 'all', mood: 'all', language: 'all' }; initializeContent(); showToast('Filters reset to South Africa-first', 'info'); });
+    }
+    async function smartFilterFilter(filters, limit) { return smartFilterContent(filters, limit); }
+
+    async function checkAuth() {
+        const { data: { session } } = await supabase.auth.getSession();
+        currentUser = session?.user || null;
+        if (currentUser) {
+            const name = currentUser.user_metadata?.full_name || currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'User';
+            const nameEl = document.getElementById('current-profile-name'); if (nameEl) nameEl.textContent = name;
+            const sidebarNameEl = document.getElementById('sidebar-profile-name'); if (sidebarNameEl) sidebarNameEl.textContent = name;
+            const emailEl = document.getElementById('sidebar-profile-email'); if (emailEl) emailEl.textContent = currentUser.email;
+            userPreferences = await getUserPreferences(currentUser.id);
+        }
+    }
+
+    async function initializeContent() {
+        document.querySelectorAll('.movies-grid').forEach(grid => { grid.innerHTML = renderSkeletonGrid(4); });
+        await updateHero();
+        const trendingSA = await getTrendingSA(8); renderMovieGrid(trendingSA, 'trending-sa-grid');
+        if (currentUser) {
+            const watchData = await getContinueWatching(currentUser.id); renderContinueWatchingGrid(watchData);
+            const recommendations = await getPersonalizedRecommendations(currentUser.id, 8);
+            if (recommendations.length > 0) { document.getElementById('personalized-section').style.display = 'block'; renderMovieGrid(recommendations, 'personalized-grid'); }
+        }
+        setTimeout(async () => {
+            const trendingAfrica = await getTrendingAfrica(8); renderMovieGrid(trendingAfrica, 'trending-africa-grid');
+            const originals = await getBantuOriginals(8); renderMovieGrid(originals, 'originals-grid');
+            const global = await getGlobalPicks(8); renderMovieGrid(global, 'global-grid');
+            renderSAGenreChips(); await renderSAGenreRows(); renderBingeCollections();
+            const loading = document.getElementById('loading'); if (loading) loading.style.display = 'none';
+        }, 300);
+    }
+
+    function setupSidebar() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebarClose = document.getElementById('sidebar-close');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        menuToggle?.addEventListener('click', () => { sidebarMenu?.classList.add('active'); sidebarOverlay?.classList.add('active'); document.body.style.overflow = 'hidden'; });
+        const closeSidebar = () => { sidebarMenu?.classList.remove('active'); sidebarOverlay?.classList.remove('active'); document.body.style.overflow = ''; };
+        sidebarClose?.addEventListener('click', closeSidebar); sidebarOverlay?.addEventListener('click', closeSidebar);
+    }
+
+    function setupNavigation() {
+        document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+        document.getElementById('nav-create-btn')?.addEventListener('click', async () => { const { data } = await supabase.auth.getSession(); if (data?.session) window.location.href = 'creator-upload.html'; else window.location.href = 'login.html?redirect=creator-upload.html'; });
+        document.getElementById('nav-menu-btn')?.addEventListener('click', () => { document.getElementById('sidebar-menu')?.classList.add('active'); document.getElementById('sidebar-overlay')?.classList.add('active'); document.body.style.overflow = 'hidden'; });
+    }
+
+    function setupBackToTop() {
+        const btn = document.getElementById('backToTopBtn');
+        window.addEventListener('scroll', () => { btn.style.display = window.scrollY > 300 ? 'flex' : 'none'; });
+        btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+
+    function setupScaleControls() {
+        const decrease = document.getElementById('scale-decrease');
+        const increase = document.getElementById('scale-increase');
+        const value = document.getElementById('scale-value');
+        let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+        const apply = () => { document.documentElement.style.setProperty('--ui-scale', scale); localStorage.setItem('bantu_ui_scale', scale); if (value) value.textContent = Math.round(scale * 100) + '%'; };
+        decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+        increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+        apply();
+    }
+
+    function initThemeSystem() {
+        const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+        applyTheme(savedTheme);
+        document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('theme-selector')?.classList.toggle('active'); });
+        document.querySelectorAll('.theme-option').forEach(option => { option.addEventListener('click', () => { applyTheme(option.dataset.theme); document.getElementById('theme-selector')?.classList.remove('active'); }); });
+    }
+    function applyTheme(theme) { document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast'); document.body.classList.add(`theme-${theme}`); localStorage.setItem('bantu_theme', theme); }
+
+    async function initialize() {
+        setupSidebar(); setupNavigation(); setupBackToTop(); setupScaleControls(); initThemeSystem(); setupSmartFilters();
+        await checkAuth();
+        await initializeContent();
+        document.getElementById('watch-trailer-btn')?.addEventListener('click', () => showToast('Loading player...', 'info'));
+    }
+    initialize();
+}
 </script>
 </body>
 </html>
