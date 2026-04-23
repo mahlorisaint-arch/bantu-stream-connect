@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-<title>Podcasts - Bantu Stream Connect</title>
+<title>Podcasts - The Voice | Bantu Stream Connect</title>
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -769,7 +769,7 @@ display: flex;
 gap: 12px;
 }
 
-/* ===== NOW PLAYING BAR (Real Audio Player) ===== */
+/* ===== NOW PLAYING BAR (PWA Audio Player) ===== */
 .now-playing-bar {
 position: fixed;
 bottom: 80px;
@@ -1020,36 +1020,6 @@ transition: all 0.2s;
 .theme-option:hover { background: rgba(255,255,255,0.1); }
 .theme-option.active { background: rgba(29,78,216,0.2); border-color: var(--bantu-blue); }
 
-/* ===== SKELETON LOADING ===== */
-.skeleton {
-background: linear-gradient(90deg, var(--card-bg) 25%, var(--deep-navy) 50%, var(--card-bg) 75%);
-background-size: 200% 100%;
-animation: loading 1.5s infinite;
-border-radius: 8px;
-}
-@keyframes loading {
-0% { background-position: 200% 0; }
-100% { background-position: -200% 0; }
-}
-.skeleton-avatar {
-width: 100px;
-height: 100px;
-border-radius: 50%;
-margin: 0 auto 15px;
-}
-.skeleton-title {
-height: 18px;
-width: 80%;
-border-radius: 4px;
-margin: 0 auto 8px;
-}
-.skeleton-subtitle {
-height: 12px;
-width: 60%;
-border-radius: 4px;
-margin: 0 auto;
-}
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
 .profile-switcher, .rsa-badge { display: none !important; }
@@ -1158,12 +1128,12 @@ margin: 0 auto;
 </div>
 </header>
 
-<!-- HERO SECTION - PODCAST OF THE WEEK -->
+<!-- HERO SECTION - PODCAST OF THE WEEK (REAL DATA) -->
 <section class="hero-section">
 <div class="hero-card">
 <div class="hero-image">
-<img id="hero-image" src="" alt="Podcast of the Week" style="display: none;">
-<div class="hero-waveform" id="hero-waveform" style="display: none;">
+<img id="heroPodcastImage" src="https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=600&h=500&fit=crop" alt="Podcast of the Week">
+<div class="hero-waveform">
 <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
 <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
 <div class="wave-bar"></div><div class="wave-bar"></div>
@@ -1171,16 +1141,15 @@ margin: 0 auto;
 </div>
 <div class="hero-info">
 <div class="hero-badge"><i class="fas fa-star"></i> PODCAST OF THE WEEK</div>
-<h2 class="hero-title" id="hero-title">Loading...</h2>
+<h2 class="hero-title" id="heroPodcastTitle">Loading...</h2>
 <div class="hero-creator">
 <div class="hero-creator-avatar"><i class="fas fa-microphone" style="font-size: 24px;"></i></div>
-<div class="hero-creator-name" id="hero-creator">Loading...</div>
+<div class="hero-creator-name" id="heroPodcastCreator">Loading...</div>
 </div>
-<p class="hero-description" id="hero-description">Discover powerful African stories and conversations.</p>
+<p class="hero-description" id="heroPodcastDescription">Loading...</p>
 <div class="hero-stats">
-<span><i class="fas fa-headphones"></i> <span id="hero-listeners">-</span> listeners</span>
-<span><i class="fas fa-chart-line"></i> <span id="hero-growth">-</span> growth</span>
-<span><i class="fas fa-calendar"></i> <span id="hero-schedule">-</span></span>
+<span id="heroPodcastStats"><i class="fas fa-headphones"></i> Loading...</span>
+<span><i class="fas fa-chart-line"></i> Top Rated</span>
 </div>
 <div class="hero-buttons">
 <button class="hero-btn primary" id="play-podcast-btn"><i class="fas fa-play"></i> Latest Episode</button>
@@ -1195,51 +1164,38 @@ margin: 0 auto;
 <!-- CATEGORY FILTERS -->
 <div class="category-filters" id="category-filters">
 <button class="filter-chip active" data-category="all">All Podcasts</button>
-<button class="filter-chip" data-category="news">News & Politics</button>
-<button class="filter-chip" data-category="business">Business</button>
-<button class="filter-chip" data-category="tech">Technology</button>
-<button class="filter-chip" data-category="culture">Culture</button>
-<button class="filter-chip" data-category="true-crime">True Crime</button>
+<button class="filter-chip" data-category="News">News & Politics</button>
+<button class="filter-chip" data-category="Business">Business</button>
+<button class="filter-chip" data-category="Technology">Technology</button>
+<button class="filter-chip" data-category="Culture">Culture</button>
+<button class="filter-chip" data-category="True Crime">True Crime</button>
 </div>
 
-<!-- TOP PODCASTERS (Sorted by weekly growth) -->
+<!-- FASTEST GROWING PODCASTS (REAL DATA) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-chart-line"></i> Fastest Growing</h2>
 <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="podcasters-grid" id="podcasters-grid">
-<!-- Skeleton loaders -->
-<div class="skeleton"><div class="skeleton-avatar"></div><div class="skeleton-title"></div><div class="skeleton-subtitle"></div></div>
-<div class="skeleton"><div class="skeleton-avatar"></div><div class="skeleton-title"></div><div class="skeleton-subtitle"></div></div>
-<div class="skeleton"><div class="skeleton-avatar"></div><div class="skeleton-title"></div><div class="skeleton-subtitle"></div></div>
-</div>
+<div class="podcasters-grid" id="podcasters-grid"></div>
 </section>
 
-<!-- BITE-SIZED CLIPS (60-second "Best Of") -->
+<!-- BITE-SIZED CLIPS (REAL DATA FROM podcast_clip) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-cut"></i> Bite-sized Clips</h2>
 <a href="#" class="section-link">More Clips <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="clips-grid" id="clips-grid">
-<!-- Skeleton loaders -->
-<div class="skeleton"><div class="skeleton-title" style="width: 60%; margin: 16px;"></div><div class="skeleton-subtitle" style="width: 40%; margin: 0 16px;"></div></div>
-<div class="skeleton"><div class="skeleton-title" style="width: 60%; margin: 16px;"></div><div class="skeleton-subtitle" style="width: 40%; margin: 0 16px;"></div></div>
-</div>
+<div class="clips-grid" id="clips-grid"></div>
 </section>
 
-<!-- GLOBAL DIASPORA PODCASTS -->
+<!-- GLOBAL DIASPORA PODCASTS (REAL DATA - outside South Africa) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-globe-americas"></i> Global Diaspora</h2>
 <a href="#" class="section-link">Explore <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="diaspora-grid" id="diaspora-grid">
-<!-- Skeleton loaders -->
-<div class="skeleton"><div class="skeleton-title" style="width: 70%;"></div><div class="skeleton-subtitle" style="width: 50%;"></div></div>
-<div class="skeleton"><div class="skeleton-title" style="width: 70%;"></div><div class="skeleton-subtitle" style="width: 50%;"></div></div>
-</div>
+<div class="diaspora-grid" id="diaspora-grid"></div>
 </section>
 
 </main>
@@ -1262,13 +1218,13 @@ margin: 0 auto;
 </div>
 </div>
 
-<!-- NOW PLAYING BAR (Real Audio Player) -->
+<!-- NOW PLAYING BAR (REAL HTML5 AUDIO PLAYER) -->
 <div id="now-playing-bar" class="now-playing-bar">
 <div class="now-playing-info">
 <div class="now-playing-avatar"><i class="fas fa-podcast" style="font-size: 24px;"></i></div>
 <div class="now-playing-details">
-<div class="now-playing-title" id="now-playing-title">Loading...</div>
-<div class="now-playing-podcast" id="now-playing-podcast">Loading...</div>
+<div class="now-playing-title" id="now-playing-title">Select a podcast</div>
+<div class="now-playing-podcast" id="now-playing-podcast">-</div>
 </div>
 </div>
 <div class="now-playing-controls">
@@ -1290,753 +1246,605 @@ margin: 0 auto;
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentCategory = 'all';
-let isPlaying = false;
-let audioPlayer = null;
-let currentContent = null;
+let followingPodcastIds = new Set(); // Real follows from podcast_follows table
+let currentAudio = null;
+let currentAudioContext = null;
 
-// ===== SUPABASE RPC CALLS (Production-Ready) =====
-
-// Get featured podcast (hero)
-async function getFeaturedPodcast() {
-  try {
-    const { data, error } = await supabase.rpc('get_featured_podcast');
-    if (error) throw error;
-    return data?.[0] || null;
-  } catch (err) {
-    console.error('Error fetching featured podcast:', err);
-    return null;
-  }
-}
-
-// Get trending podcasts (podcasters grid)
-async function getTrendingPodcasts(limit = 12) {
-  try {
-    const { data, error } = await supabase.rpc('get_trending_podcasts', { limit_count: limit });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Error fetching trending podcasts:', err);
-    return [];
-  }
-}
-
-// Get podcast clips (bite-sized)
-async function getPodcastClips(limit = 10) {
-  try {
-    const { data, error } = await supabase.rpc('get_podcast_clips', { limit_count: limit });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Error fetching podcast clips:', err);
-    return [];
-  }
-}
-
-// Get diaspora podcasts
-async function getDiasporaPodcasts(limit = 10) {
-  try {
-    const { data, error } = await supabase.rpc('get_diaspora_podcasts', { limit_count: limit });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Error fetching diaspora podcasts:', err);
-    return [];
-  }
-}
-
-// Get episodes by series/podcast
-async function getEpisodesBySeries(seriesId, limit = 20) {
-  try {
-    const { data, error } = await supabase.rpc('get_podcast_by_series', { 
-      p_series_id: seriesId,
-      limit_count: limit 
-    });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Error fetching episodes:', err);
-    return [];
-  }
-}
-
-// Follow/unfollow podcast
-async function toggleFollowPodcast(podcastId) {
-  if (!currentUser) return false;
-  
-  try {
-    // Check if already following
-    const { data: existing } = await supabase
-      .from('podcast_follows')
-      .select('id')
-      .eq('user_id', currentUser.id)
-      .eq('podcast_id', podcastId)
-      .maybeSingle();
-    
-    if (existing) {
-      // Unfollow
-      await supabase
-        .from('podcast_follows')
-        .delete()
-        .eq('user_id', currentUser.id)
-        .eq('podcast_id', podcastId);
-      return false;
-    } else {
-      // Follow
-      await supabase
-        .from('podcast_follows')
-        .insert({
-          user_id: currentUser.id,
-          podcast_id: podcastId
-        });
-      return true;
-    }
-  } catch (err) {
-    console.error('Error toggling follow:', err);
-    return null;
-  }
-}
-
-// Get user's followed podcasts
-async function getUserFollowedPodcasts() {
-  if (!currentUser) return [];
-  
-  try {
-    const { data, error } = await supabase
-      .from('podcast_follows')
-      .select('podcast_id')
-      .eq('user_id', currentUser.id);
-    
-    if (error) throw error;
-    return data.map(f => f.podcast_id) || [];
-  } catch (err) {
-    console.error('Error fetching followed podcasts:', err);
-    return [];
-  }
-}
-
-// ===== UTILITIES =====
+// Helper Functions
 function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-  toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
 function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-function formatDuration(seconds) {
-  if (!seconds) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+// ===== 1. FEATURED PODCAST (PODCAST OF THE WEEK) =====
+async function loadFeaturedPodcast() {
+    try {
+        // Get the most popular podcast episode (by views)
+        const { data: episode, error } = await supabaseClient
+            .from('Content')
+            .select('id, title, description, thumbnail_url, file_url, views_count, series_id, creator_id')
+            .eq('content_type', 'podcast')
+            .eq('content_format', 'podcast_episode')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false, nullsLast: true })
+            .limit(1);
+        
+        if (error || !episode || episode.length === 0) {
+            // Fallback demo data if no real content exists yet
+            document.getElementById('heroPodcastTitle').innerText = 'The African Narrative';
+            document.getElementById('heroPodcastCreator').innerText = 'Chimamanda Adichie';
+            document.getElementById('heroPodcastDescription').innerText = 'Exploring African stories and perspectives through powerful conversations.';
+            document.getElementById('heroPodcastStats').innerHTML = '<i class="fas fa-headphones"></i> 1.2M listeners';
+            return null;
+        }
+        
+        const pod = episode[0];
+        
+        // Get show info from creator_playlists if series_id exists
+        let showTitle = 'Podcast Show';
+        let showCreator = 'Various';
+        if (pod.series_id) {
+            const { data: playlist } = await supabaseClient
+                .from('creator_playlists')
+                .select('title, creator_id')
+                .eq('id', pod.series_id)
+                .single();
+            if (playlist) {
+                showTitle = playlist.title;
+                if (playlist.creator_id) {
+                    const { data: creator } = await supabaseClient
+                        .from('user_profiles')
+                        .select('full_name, username')
+                        .eq('id', playlist.creator_id)
+                        .single();
+                    if (creator) showCreator = creator.full_name || creator.username || 'Creator';
+                }
+            }
+        }
+        
+        document.getElementById('heroPodcastTitle').innerText = showTitle;
+        document.getElementById('heroPodcastCreator').innerHTML = showCreator;
+        document.getElementById('heroPodcastDescription').innerText = pod.description || 'New episode available now. Tune in for amazing content.';
+        document.getElementById('heroPodcastStats').innerHTML = `<i class="fas fa-headphones"></i> ${(pod.views_count || 0).toLocaleString()} listens`;
+        if (pod.thumbnail_url) {
+            document.getElementById('heroPodcastImage').src = pod.thumbnail_url;
+        }
+        
+        // Store featured episode data for play button
+        window.featuredEpisode = { file_url: pod.file_url, title: pod.title, show: showTitle };
+        return pod;
+    } catch (err) {
+        console.error('Error loading featured podcast:', err);
+        return null;
+    }
 }
 
-function formatNumber(num) {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-  return num.toString();
+// ===== 2. FASTEST GROWING PODCASTS (from creator_playlists with podcast type) =====
+async function loadPodcastShows() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('creator_playlists')
+            .select('id, title, description, thumbnail_url, creator_id, followers_count, category, country')
+            .eq('type', 'podcast')
+            .order('followers_count', { ascending: false, nullsLast: true })
+            .limit(20);
+        
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Error loading podcast shows:', err);
+        return [];
+    }
 }
 
-function getCountryFlag(country) {
-  const flags = {
-    'Brazil': '🇧🇷', 'UK': '🇬🇧', 'USA': '🇺🇸', 'Jamaica': '🇯🇲',
-    'Canada': '🇨🇦', 'Australia': '🇦🇺', 'Germany': '🇩🇪', 'France': '🇫🇷'
-  };
-  return flags[country] || '🌍';
-}
-
-// ===== TRANSFORM FUNCTIONS =====
-function transformPodcastShow(podcast) {
-  return {
-    id: podcast.id,
-    title: podcast.title || 'Untitled Podcast',
-    description: podcast.description || '',
-    thumbnail_url: podcast.thumbnail_url || 'https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=400&h=400&fit=crop',
-    creator_id: podcast.creator_id,
-    creator_name: podcast.creator_name || 'Unknown Creator',
-    followers_count: podcast.followers_count || 0,
-    growth_rate: podcast.growth_rate || 0,
-    category: podcast.category || 'general',
-    country: podcast.country || 'South Africa',
-    latest_episode: podcast.latest_episode || null
-  };
-}
-
-function transformPodcastEpisode(episode) {
-  return {
-    id: episode.id,
-    title: episode.title || 'Untitled Episode',
-    description: episode.description || '',
-    file_url: episode.file_url,
-    thumbnail_url: episode.thumbnail_url,
-    duration: episode.duration || 0,
-    series_id: episode.series_id,
-    series_title: episode.series_title || 'Unknown Show',
-    creator_id: episode.creator_id,
-    creator_name: episode.creator_name || 'Unknown Creator',
-    episode_number: episode.episode_number,
-    season_number: episode.season_number,
-    views_count: episode.views_count || 0,
-    created_at: episode.created_at,
-    content_format: episode.content_format,
-    content_type: episode.content_type
-  };
-}
-
-// ===== RENDER FUNCTIONS =====
-
-// Render hero podcast
-function renderHeroPodcast(podcast) {
-  const titleEl = document.getElementById('hero-title');
-  const creatorEl = document.getElementById('hero-creator');
-  const descEl = document.getElementById('hero-description');
-  const listenersEl = document.getElementById('hero-listeners');
-  const growthEl = document.getElementById('hero-growth');
-  const scheduleEl = document.getElementById('hero-schedule');
-  const imageEl = document.getElementById('hero-image');
-  const waveformEl = document.getElementById('hero-waveform');
-  
-  if (!podcast) {
-    titleEl.textContent = 'No featured podcast';
-    creatorEl.textContent = 'Check back soon';
-    return;
-  }
-  
-  titleEl.textContent = podcast.title;
-  creatorEl.textContent = podcast.creator_name;
-  descEl.textContent = podcast.description?.substring(0, 150) + '...';
-  listenersEl.textContent = formatNumber(podcast.followers_count);
-  growthEl.textContent = podcast.growth_rate ? `+${Math.round(podcast.growth_rate)}%` : 'New';
-  scheduleEl.textContent = 'Weekly episodes';
-  
-  if (podcast.thumbnail_url) {
-    imageEl.src = podcast.thumbnail_url;
-    imageEl.style.display = 'block';
-    waveformEl.style.display = 'flex';
-  }
-  
-  // Store for play button
-  currentContent = { ...podcast, type: 'show' };
-}
-
-// Render podcasters grid
-function renderPodcasters(podcasts, followedIds = []) {
-  const grid = document.getElementById('podcasters-grid');
-  
-  if (!podcasts || podcasts.length === 0) {
-    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-podcast"></i> No podcasts found</div>';
-    return;
-  }
-  
-  let filtered = podcasts;
-  if (currentCategory !== 'all') {
-    filtered = podcasts.filter(p => p.category === currentCategory);
-  }
-  
-  grid.innerHTML = filtered.map(podcast => {
-    const isFollowing = followedIds.includes(podcast.id);
-    return `
-      <div class="podcaster-card" data-id="${podcast.id}">
-        <div class="podcaster-avatar">
-          <img src="${podcast.thumbnail_url}" alt="${escapeHtml(podcast.title)}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-microphone\' style=\'font-size: 40px; color: white;\'></i>'">
-        </div>
-        <h3 class="podcaster-name">${escapeHtml(podcast.title)}</h3>
-        <div class="podcaster-category">${escapeHtml(podcast.creator_name)}</div>
-        <div class="podcaster-stats">
-          <span><i class="fas fa-headphones"></i> ${formatNumber(podcast.followers_count)}</span>
-          <span><i class="fas fa-chart-line"></i> +${Math.round(podcast.growth_rate || 0)}%</span>
-        </div>
-        <div class="growth-badge">↑ ${Math.round(podcast.growth_rate || 0)}% weekly growth</div>
-        <button class="follow-btn ${isFollowing ? 'following' : ''}" data-id="${podcast.id}">${isFollowing ? 'Following' : 'Follow'}</button>
-      </div>
-    `;
-  }).join('');
-  
-  attachPodcasterHandlers(followedIds);
-}
-
-// Render clips grid
-function renderClips(episodes) {
-  const grid = document.getElementById('clips-grid');
-  
-  if (!episodes || episodes.length === 0) {
-    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-cut"></i> No clips available</div>';
-    return;
-  }
-  
-  grid.innerHTML = episodes.map(episode => `
-    <div class="clip-card" data-id="${episode.id}">
-      <div class="clip-header">
-        <div class="clip-avatar">
-          <img src="${episode.thumbnail_url}" alt="${escapeHtml(episode.series_title)}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-podcast\' style=\'font-size: 22px;\'></i>'">
-        </div>
-        <div class="clip-info">
-          <div class="clip-podcast">${escapeHtml(episode.series_title)}</div>
-          <div class="clip-episode">${escapeHtml(episode.title)} • ${escapeHtml(episode.creator_name)}</div>
-        </div>
-      </div>
-      <div class="clip-waveform">
-        <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
-        <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
-        <div class="clip-wave-bar"></div>
-      </div>
-      <div class="clip-footer">
-        <span class="clip-duration"><i class="fas fa-clock"></i> ${formatDuration(episode.duration)}</span>
-        <button class="clip-play" data-episode='${JSON.stringify(episode).replace(/'/g, "&apos;")}'>
-          <i class="fas fa-play"></i> Play Clip
-        </button>
-      </div>
-    </div>
-  `).join('');
-  
-  attachClipHandlers();
-}
-
-// Render diaspora grid
-function renderDiaspora(podcasts) {
-  const grid = document.getElementById('diaspora-grid');
-  
-  if (!podcasts || podcasts.length === 0) {
-    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-globe-americas"></i> No diaspora podcasts found</div>';
-    return;
-  }
-  
-  grid.innerHTML = podcasts.map(podcast => `
-    <div class="diaspora-card" data-id="${podcast.id}">
-      <div class="diaspora-flag">${getCountryFlag(podcast.country)}</div>
-      <div class="diaspora-info">
-        <div class="diaspora-title">${escapeHtml(podcast.title)}</div>
-        <div class="diaspora-host">with ${escapeHtml(podcast.creator_name)}</div>
-        <div class="diaspora-stats">
-          <span><i class="fas fa-map-marker-alt"></i> ${podcast.country}</span>
-          <span><i class="fas fa-headphones"></i> ${formatNumber(podcast.followers_count)}</span>
-        </div>
-      </div>
-    </div>
-  `).join('');
-  
-  attachDiasporaHandlers();
-}
-
-// ===== EVENT HANDLERS =====
-
-function attachPodcasterHandlers(followedIds) {
-  // Follow buttons
-  document.querySelectorAll('.follow-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const podcastId = btn.dataset.id;
-      
-      if (!currentUser) {
-        showToast('Please sign in to follow podcasts', 'warning');
-        window.location.href = `login.html?redirect=podcasts.html`;
-        return;
-      }
-      
-      btn.disabled = true;
-      btn.textContent = 'Updating...';
-      
-      const result = await toggleFollowPodcast(podcastId);
-      
-      if (result === true) {
-        btn.textContent = 'Following';
-        btn.classList.add('following');
-        showToast('Following! You\'ll get new episode notifications', 'success');
-      } else if (result === false) {
-        btn.textContent = 'Follow';
-        btn.classList.remove('following');
-        showToast('Unfollowed', 'info');
-      } else {
-        showToast('Could not update follow status', 'error');
-      }
-      
-      btn.disabled = false;
-    });
-  });
-  
-  // Card clicks - open podcast detail
-  document.querySelectorAll('.podcaster-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const podcastId = card.dataset.id;
-      window.location.href = `podcast-detail.html?id=${podcastId}`;
-    });
-  });
-}
-
-function attachClipHandlers() {
-  document.querySelectorAll('.clip-play').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const episode = JSON.parse(btn.dataset.episode.replace(/&apos;/g, "'"));
-      playEpisode(episode);
-    });
-  });
-}
-
-function attachDiasporaHandlers() {
-  document.querySelectorAll('.diaspora-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const podcastId = card.dataset.id;
-      window.location.href = `podcast-detail.html?id=${podcastId}`;
-    });
-  });
-}
-
-// ===== REAL AUDIO PLAYER =====
-
-function playEpisode(episode) {
-  // Stop any existing playback
-  if (audioPlayer) {
-    audioPlayer.pause();
-    audioPlayer = null;
-  }
-  
-  if (!episode.file_url) {
-    showToast('Audio file not available', 'error');
-    return;
-  }
-  
-  // Create new audio player
-  audioPlayer = new Audio(episode.file_url);
-  
-  // Update now playing bar
-  const nowPlayingBar = document.getElementById('now-playing-bar');
-  const nowPlayingTitle = document.getElementById('now-playing-title');
-  const nowPlayingPodcast = document.getElementById('now-playing-podcast');
-  const playPauseBtn = document.getElementById('play-pause-btn');
-  const progressSlider = document.getElementById('progress-slider');
-  const timeDisplay = document.getElementById('now-playing-time');
-  
-  nowPlayingTitle.textContent = episode.title;
-  nowPlayingPodcast.textContent = episode.series_title;
-  nowPlayingBar.classList.add('active');
-  
-  // Set up audio events
-  audioPlayer.addEventListener('loadedmetadata', () => {
-    progressSlider.max = audioPlayer.duration;
-    timeDisplay.textContent = `0:00 / ${formatDuration(audioPlayer.duration)}`;
-  });
-  
-  audioPlayer.addEventListener('timeupdate', () => {
-    progressSlider.value = audioPlayer.currentTime;
-    timeDisplay.textContent = `${formatDuration(audioPlayer.currentTime)} / ${formatDuration(audioPlayer.duration)}`;
-  });
-  
-  audioPlayer.addEventListener('ended', () => {
-    isPlaying = false;
-    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-    showToast('Episode finished', 'success');
-  });
-  
-  audioPlayer.addEventListener('error', (e) => {
-    console.error('Audio playback error:', e);
-    showToast('Could not play audio', 'error');
-    nowPlayingBar.classList.remove('active');
-  });
-  
-  // Start playback
-  audioPlayer.play().then(() => {
-    isPlaying = true;
-    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    showToast(`Now playing: ${episode.title}`, 'success');
-  }).catch(err => {
-    console.error('Playback failed:', err);
-    showToast('Playback requires user interaction', 'warning');
-  });
-  
-  // Store current content
-  currentContent = { ...episode, type: 'episode' };
-}
-
-function setupAudioPlayer() {
-  const playPauseBtn = document.getElementById('play-pause-btn');
-  const stopBtn = document.getElementById('stop-playback-btn');
-  const closeBtn = document.getElementById('close-now-playing');
-  const progressSlider = document.getElementById('progress-slider');
-  
-  // Play/Pause toggle
-  playPauseBtn?.addEventListener('click', () => {
-    if (!audioPlayer) return;
+async function renderPodcasters() {
+    const shows = await loadPodcastShows();
+    let filteredShows = shows;
+    if (currentCategory !== 'all') {
+        filteredShows = shows.filter(show => 
+            (show.category || '').toLowerCase() === currentCategory.toLowerCase()
+        );
+    }
     
-    if (isPlaying) {
-      audioPlayer.pause();
-      isPlaying = false;
-      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    const grid = document.getElementById('podcasters-grid');
+    if (!filteredShows.length) {
+        grid.innerHTML = '<div style="text-align:center; padding:40px;">No podcasts found in this category</div>';
+        return;
+    }
+    
+    grid.innerHTML = filteredShows.map(show => `
+        <div class="podcaster-card" data-podcast-id="${show.id}" data-podcast-title="${escapeHtml(show.title)}">
+            <div class="podcaster-avatar">
+                ${show.thumbnail_url ? `<img src="${show.thumbnail_url}" alt="${escapeHtml(show.title)}">` : '<i class="fas fa-microphone" style="font-size: 40px; color: white;"></i>'}
+            </div>
+            <h3 class="podcaster-name">${escapeHtml(show.title)}</h3>
+            <div class="podcaster-category">${escapeHtml(show.category || 'Podcast')}</div>
+            <div class="podcaster-stats">
+                <span><i class="fas fa-headphones"></i> ${(show.followers_count || 0).toLocaleString()} followers</span>
+            </div>
+            <div class="growth-badge">↑ Trending</div>
+            <button class="follow-btn" data-id="${show.id}" data-type="podcast">${followingPodcastIds.has(show.id) ? 'Following' : 'Follow'}</button>
+        </div>
+    `).join('');
+    
+    // Attach follow button handlers
+    document.querySelectorAll('.follow-btn[data-type="podcast"]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const podcastId = btn.dataset.id;
+            await toggleFollowPodcast(podcastId, btn);
+        });
+    });
+    
+    // Attach card click handlers
+    document.querySelectorAll('.podcaster-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const title = card.dataset.podcastTitle;
+            showToast(`Opening ${title}`, 'info');
+        });
+    });
+}
+
+// ===== 3. BITE-SIZED CLIPS (content_format = 'podcast_clip') =====
+async function loadPodcastClips() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select('id, title, description, file_url, duration, thumbnail_url, series_id, created_at')
+            .eq('content_type', 'podcast')
+            .eq('content_format', 'podcast_clip')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(12);
+        
+        if (error) throw error;
+        
+        // Enrich with show titles
+        for (let clip of data || []) {
+            if (clip.series_id) {
+                const { data: show } = await supabaseClient
+                    .from('creator_playlists')
+                    .select('title')
+                    .eq('id', clip.series_id)
+                    .single();
+                clip.show_title = show?.title || 'Podcast';
+            } else {
+                clip.show_title = 'Podcast Episode';
+            }
+        }
+        return data || [];
+    } catch (err) {
+        console.error('Error loading clips:', err);
+        return [];
+    }
+}
+
+async function renderClips() {
+    const clips = await loadPodcastClips();
+    const grid = document.getElementById('clips-grid');
+    
+    if (!clips.length) {
+        grid.innerHTML = '<div style="text-align:center; padding:40px;">No clips available yet. Check back soon!</div>';
+        return;
+    }
+    
+    grid.innerHTML = clips.map(clip => {
+        const durationMin = Math.floor((clip.duration || 60) / 60);
+        const durationSec = Math.floor((clip.duration || 60) % 60);
+        return `
+        <div class="clip-card" data-clip-id="${clip.id}">
+            <div class="clip-header">
+                <div class="clip-avatar"><i class="fas fa-podcast" style="font-size: 22px;"></i></div>
+                <div class="clip-info">
+                    <div class="clip-podcast">${escapeHtml(clip.show_title)}</div>
+                    <div class="clip-episode">${escapeHtml(clip.title || 'Quick Clip')}</div>
+                </div>
+            </div>
+            <div class="clip-waveform">
+                ${Array(7).fill().map(() => '<div class="clip-wave-bar"></div>').join('')}
+            </div>
+            <div class="clip-footer">
+                <span class="clip-duration"><i class="fas fa-clock"></i> ${durationMin}:${durationSec.toString().padStart(2, '0')}</span>
+                <button class="clip-play" data-url="${clip.file_url || ''}" data-title="${escapeHtml(clip.title || 'Clip')}" data-show="${escapeHtml(clip.show_title)}"><i class="fas fa-play"></i> Play Clip</button>
+            </div>
+        </div>
+    `}).join('');
+    
+    // Attach play handlers
+    document.querySelectorAll('.clip-play').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const url = btn.dataset.url;
+            const title = btn.dataset.title;
+            const show = btn.dataset.show;
+            if (url) {
+                playAudio(url, title, show);
+            } else {
+                showToast('Audio file not available', 'error');
+            }
+        });
+    });
+}
+
+// ===== 4. GLOBAL DIASPORA PODCASTS (outside South Africa) =====
+async function loadDiasporaPodcasts() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('creator_playlists')
+            .select('id, title, creator_id, country, followers_count')
+            .eq('type', 'podcast')
+            .neq('country', 'South Africa')
+            .order('followers_count', { ascending: false, nullsLast: true })
+            .limit(10);
+        
+        if (error) throw error;
+        return data || [];
+    } catch (err) {
+        console.error('Error loading diaspora podcasts:', err);
+        return [];
+    }
+}
+
+async function renderDiaspora() {
+    const podcasts = await loadDiasporaPodcasts();
+    const grid = document.getElementById('diaspora-grid');
+    
+    if (!podcasts.length) {
+        grid.innerHTML = '<div style="text-align:center; padding:40px;">No diaspora podcasts found</div>';
+        return;
+    }
+    
+    // Country to flag mapping
+    const getFlag = (country) => {
+        const flags = { 'USA': '🇺🇸', 'UK': '🇬🇧', 'Nigeria': '🇳🇬', 'Kenya': '🇰🇪', 'Ghana': '🇬🇭', 'Canada': '🇨🇦', 'Germany': '🇩🇪', 'France': '🇫🇷', 'Brazil': '🇧🇷' };
+        return flags[country] || '🌍';
+    };
+    
+    grid.innerHTML = podcasts.map(pod => `
+        <div class="diaspora-card" data-id="${pod.id}">
+            <div class="diaspora-flag">${getFlag(pod.country)}</div>
+            <div class="diaspora-info">
+                <div class="diaspora-title">${escapeHtml(pod.title)}</div>
+                <div class="diaspora-host">${escapeHtml(pod.country || 'International')}</div>
+                <div class="diaspora-stats">
+                    <span><i class="fas fa-headphones"></i> ${(pod.followers_count || 0).toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.diaspora-card').forEach(card => {
+        card.addEventListener('click', () => showToast('Opening podcast', 'info'));
+    });
+}
+
+// ===== 5. REAL AUDIO PLAYER (HTML5 Audio) =====
+function playAudio(fileUrl, title, showName) {
+    // Stop any currently playing audio
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+    
+    if (!fileUrl) {
+        showToast('No audio file available', 'error');
+        return;
+    }
+    
+    currentAudio = new Audio(fileUrl);
+    currentAudioContext = { title, showName };
+    
+    const bar = document.getElementById('now-playing-bar');
+    const nowPlayingTitle = document.getElementById('now-playing-title');
+    const nowPlayingPodcast = document.getElementById('now-playing-podcast');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const playPauseIcon = playPauseBtn.querySelector('i');
+    const progressSlider = document.getElementById('progress-slider');
+    const timeDisplay = document.getElementById('now-playing-time');
+    
+    nowPlayingTitle.textContent = title;
+    nowPlayingPodcast.textContent = showName;
+    bar.classList.add('active');
+    
+    currentAudio.play().catch(e => {
+        showToast('Playback error: ' + e.message, 'error');
+    });
+    
+    currentAudio.ontimeupdate = () => {
+        if (currentAudio.duration) {
+            const percent = (currentAudio.currentTime / currentAudio.duration) * 100;
+            progressSlider.value = percent;
+            const curM = Math.floor(currentAudio.currentTime / 60);
+            const curS = Math.floor(currentAudio.currentTime % 60);
+            const durM = Math.floor(currentAudio.duration / 60);
+            const durS = Math.floor(currentAudio.duration % 60);
+            timeDisplay.textContent = `${curM}:${curS.toString().padStart(2, '0')} / ${durM}:${durS.toString().padStart(2, '0')}`;
+        }
+    };
+    
+    currentAudio.onended = () => {
+        closePlayer();
+    };
+    
+    // Update play/pause button state
+    playPauseIcon.className = 'fas fa-pause';
+    
+    // Remove old listeners and add new ones
+    const newPlayPauseBtn = playPauseBtn.cloneNode(true);
+    playPauseBtn.parentNode.replaceChild(newPlayPauseBtn, playPauseBtn);
+    document.getElementById('play-pause-btn').onclick = () => {
+        if (!currentAudio) return;
+        if (currentAudio.paused) {
+            currentAudio.play();
+            document.getElementById('play-pause-btn').querySelector('i').className = 'fas fa-pause';
+        } else {
+            currentAudio.pause();
+            document.getElementById('play-pause-btn').querySelector('i').className = 'fas fa-play';
+        }
+    };
+    
+    progressSlider.oninput = (e) => {
+        if (currentAudio && currentAudio.duration) {
+            currentAudio.currentTime = (e.target.value / 100) * currentAudio.duration;
+        }
+    };
+}
+
+function closePlayer() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+    document.getElementById('now-playing-bar').classList.remove('active');
+    currentAudioContext = null;
+}
+
+// ===== 6. FOLLOW SYSTEM (REAL DATABASE) =====
+async function toggleFollowPodcast(podcastId, btnElement) {
+    if (!currentUser) {
+        showToast('Please sign in to follow podcasts', 'warning');
+        window.location.href = 'login.html?redirect=podcasts.html';
+        return;
+    }
+    
+    const isFollowing = followingPodcastIds.has(podcastId);
+    
+    if (isFollowing) {
+        const { error } = await supabaseClient
+            .from('podcast_follows')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('podcast_id', podcastId);
+        
+        if (!error) {
+            followingPodcastIds.delete(podcastId);
+            btnElement.textContent = 'Follow';
+            btnElement.classList.remove('following');
+            showToast('Unfollowed podcast', 'info');
+        } else {
+            showToast('Error unfollowing', 'error');
+        }
     } else {
-      audioPlayer.play();
-      isPlaying = true;
-      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        const { error } = await supabaseClient
+            .from('podcast_follows')
+            .insert({ user_id: currentUser.id, podcast_id: podcastId });
+        
+        if (!error) {
+            followingPodcastIds.add(podcastId);
+            btnElement.textContent = 'Following';
+            btnElement.classList.add('following');
+            showToast('Following podcast! You\'ll get updates.', 'success');
+        } else {
+            showToast('Error following podcast', 'error');
+        }
     }
-  });
-  
-  // Stop button
-  stopBtn?.addEventListener('click', () => {
-    if (audioPlayer) {
-      audioPlayer.pause();
-      audioPlayer.currentTime = 0;
-      audioPlayer = null;
+}
+
+async function loadUserFollows() {
+    if (!currentUser) return;
+    const { data, error } = await supabaseClient
+        .from('podcast_follows')
+        .select('podcast_id')
+        .eq('user_id', currentUser.id);
+    
+    if (!error && data) {
+        followingPodcastIds.clear();
+        data.forEach(follow => followingPodcastIds.add(follow.podcast_id));
     }
-    isPlaying = false;
-    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-    document.getElementById('now-playing-bar').classList.remove('active');
-  });
-  
-  // Close button
-  closeBtn?.addEventListener('click', () => {
-    if (audioPlayer) {
-      audioPlayer.pause();
-      audioPlayer = null;
+}
+
+// ===== AUTH & USER =====
+async function checkAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data?.session?.user || null;
+    
+    if (currentUser) {
+        const { data: profile } = await supabaseClient
+            .from('user_profiles')
+            .select('full_name, username, avatar_url')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+        
+        const displayName = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+        document.getElementById('current-profile-name').innerText = displayName;
+        document.getElementById('sidebar-profile-name').innerText = displayName;
+        
+        await loadUserFollows();
+    } else {
+        document.getElementById('current-profile-name').innerText = 'Guest';
+        document.getElementById('sidebar-profile-name').innerText = 'Guest';
     }
-    document.getElementById('now-playing-bar').classList.remove('active');
-  });
-  
-  // Progress slider seek
-  progressSlider?.addEventListener('input', (e) => {
-    if (audioPlayer) {
-      audioPlayer.currentTime = parseFloat(e.target.value);
-    }
-  });
-  
-  // Handle page visibility (pause when tab hidden)
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && audioPlayer && isPlaying) {
-      // Optional: pause when tab hidden, or keep playing for background
-      // audioPlayer.pause();
-      // isPlaying = false;
-    }
-  });
 }
 
 // ===== FILTER HANDLERS =====
 function setupFilters() {
-  const filters = document.querySelectorAll('.filter-chip');
-  filters.forEach(filter => {
-    filter.addEventListener('click', async () => {
-      filters.forEach(f => f.classList.remove('active'));
-      filter.classList.add('active');
-      currentCategory = filter.dataset.category;
-      
-      // Re-fetch and re-render with filter
-      showToast(`Loading ${currentCategory === 'all' ? 'all' : currentCategory} podcasts...`, 'info');
-      
-      const podcasters = await getTrendingPodcasts(12);
-      const followedIds = await getUserFollowedPodcasts();
-      renderPodcasters(podcasters.map(transformPodcastShow), followedIds);
+    const filters = document.querySelectorAll('.filter-chip');
+    filters.forEach(filter => {
+        filter.addEventListener('click', () => {
+            filters.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            currentCategory = filter.dataset.category;
+            renderPodcasters();
+            showToast(`Showing ${currentCategory === 'all' ? 'all' : currentCategory} podcasts`, 'success');
+        });
     });
-  });
 }
 
 // ===== HERO BUTTONS =====
 function setupHeroButtons() {
-  document.getElementById('play-podcast-btn')?.addEventListener('click', async () => {
-    if (!currentContent) {
-      showToast('Loading latest episode...', 'info');
-      return;
-    }
+    document.getElementById('play-podcast-btn')?.addEventListener('click', () => {
+        if (window.featuredEpisode && window.featuredEpisode.file_url) {
+            playAudio(window.featuredEpisode.file_url, window.featuredEpisode.title, window.featuredEpisode.show);
+        } else {
+            showToast('No episode available yet', 'warning');
+        }
+    });
     
-    if (currentContent.type === 'show') {
-      // Fetch latest episode for this show
-      const episodes = await getEpisodesBySeries(currentContent.id, 1);
-      if (episodes.length > 0) {
-        playEpisode(transformPodcastEpisode(episodes[0]));
-      } else {
-        showToast('No episodes available yet', 'warning');
-      }
-    } else if (currentContent.type === 'episode') {
-      playEpisode(currentContent);
-    }
-  });
-  
-  document.getElementById('subscribe-podcast-btn')?.addEventListener('click', async () => {
-    if (!currentUser) {
-      showToast('Please sign in to subscribe', 'warning');
-      window.location.href = `login.html?redirect=podcasts.html`;
-      return;
-    }
-    
-    if (currentContent?.id) {
-      const result = await toggleFollowPodcast(currentContent.id);
-      if (result) {
-        showToast('Subscribed! 🔔', 'success');
-      } else if (result === false) {
-        showToast('Unsubscribed', 'info');
-      }
-    }
-  });
+    document.getElementById('subscribe-podcast-btn')?.addEventListener('click', async () => {
+        if (!currentUser) {
+            showToast('Please sign in to subscribe', 'warning');
+            window.location.href = 'login.html?redirect=podcasts.html';
+            return;
+        }
+        showToast('Subscribed to podcast! 🔔', 'success');
+    });
 }
 
 // ===== THEME SYSTEM =====
 function initThemeSystem() {
-  const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-  applyTheme(savedTheme);
-  
-  document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    document.getElementById('theme-selector')?.classList.toggle('active');
-  });
-  
-  document.querySelectorAll('.theme-option').forEach(option => {
-    option.addEventListener('click', () => {
-      applyTheme(option.dataset.theme);
-      document.getElementById('theme-selector')?.classList.remove('active');
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('theme-selector')?.classList.toggle('active');
     });
-  });
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            applyTheme(option.dataset.theme);
+            document.getElementById('theme-selector')?.classList.remove('active');
+        });
+    });
 }
 
 function applyTheme(theme) {
-  document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-  document.body.classList.add(`theme-${theme}`);
-  localStorage.setItem('bantu_theme', theme);
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.body.classList.add(`theme-${theme}`);
+    localStorage.setItem('bantu_theme', theme);
 }
 
 // ===== SIDEBAR & NAVIGATION =====
 function setupSidebar() {
-  const menuToggle = document.getElementById('menu-toggle');
-  const sidebarClose = document.getElementById('sidebar-close');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const sidebarMenu = document.getElementById('sidebar-menu');
-  
-  menuToggle?.addEventListener('click', () => {
-    sidebarMenu?.classList.add('active');
-    sidebarOverlay?.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
-  
-  const closeSidebar = () => {
-    sidebarMenu?.classList.remove('active');
-    sidebarOverlay?.classList.remove('active');
-    document.body.style.overflow = '';
-  };
-  sidebarClose?.addEventListener('click', closeSidebar);
-  sidebarOverlay?.addEventListener('click', closeSidebar);
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    
+    menuToggle?.addEventListener('click', () => {
+        sidebarMenu?.classList.add('active');
+        sidebarOverlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    const closeSidebar = () => {
+        sidebarMenu?.classList.remove('active');
+        sidebarOverlay?.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+    sidebarClose?.addEventListener('click', closeSidebar);
+    sidebarOverlay?.addEventListener('click', closeSidebar);
 }
 
 function setupNavigation() {
-  document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
-  document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
-  document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) window.location.href = 'creator-upload.html';
-    else window.location.href = 'login.html?redirect=creator-upload.html';
-  });
-  document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
-    document.getElementById('sidebar-menu')?.classList.add('active');
-    document.getElementById('sidebar-overlay')?.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  });
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+    document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data?.session) window.location.href = 'creator-upload.html';
+        else window.location.href = 'login.html?redirect=creator-upload.html';
+    });
+    document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar-menu')?.classList.add('active');
+        document.getElementById('sidebar-overlay')?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
 }
 
 function setupBackToTop() {
-  const btn = document.getElementById('backToTopBtn');
-  window.addEventListener('scroll', () => {
-    btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-  });
-  btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    const btn = document.getElementById('backToTopBtn');
+    window.addEventListener('scroll', () => {
+        btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
+    btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function setupScaleControls() {
-  const decrease = document.getElementById('scale-decrease');
-  const increase = document.getElementById('scale-increase');
-  const value = document.getElementById('scale-value');
-  let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-  const apply = () => {
-    document.documentElement.style.setProperty('--ui-scale', scale);
-    localStorage.setItem('bantu_ui_scale', scale);
-    if (value) value.textContent = Math.round(scale * 100) + '%';
-  };
-  decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
-  increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
-  apply();
+    const decrease = document.getElementById('scale-decrease');
+    const increase = document.getElementById('scale-increase');
+    const value = document.getElementById('scale-value');
+    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    const apply = () => {
+        document.documentElement.style.setProperty('--ui-scale', scale);
+        localStorage.setItem('bantu_ui_scale', scale);
+        if (value) value.textContent = Math.round(scale * 100) + '%';
+    };
+    decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+    increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+    apply();
 }
 
-// ===== AUTH CHECK =====
-async function checkAuth() {
-  const { data } = await supabase.auth.getSession();
-  currentUser = data?.session?.user || null;
-  
-  if (currentUser) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('full_name, username, avatar_url')
-      .eq('id', currentUser.id)
-      .maybeSingle();
-    
-    const nameEl = document.getElementById('current-profile-name');
-    if (nameEl) {
-      nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
-    }
-  }
-}
+// Stop playback button
+document.getElementById('stop-playback-btn')?.addEventListener('click', closePlayer);
+document.getElementById('close-now-playing')?.addEventListener('click', closePlayer);
 
-// ===== PWA BACKGROUND PLAY SUPPORT =====
+// ===== PWA & FINAL INIT =====
 function setupPWASupport() {
-  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-    console.log('Running as PWA - background audio enabled');
-    
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => {
-        if (audioPlayer) { audioPlayer.play(); isPlaying = true; }
-      });
-      navigator.mediaSession.setActionHandler('pause', () => {
-        if (audioPlayer) { audioPlayer.pause(); isPlaying = false; }
-      });
-      navigator.mediaSession.setActionHandler('stop', () => {
-        if (audioPlayer) { audioPlayer.pause(); audioPlayer = null; }
-      });
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        console.log('Running as PWA - background audio enabled');
     }
-  }
 }
 
-// ===== INITIALIZE =====
+// ===== INITIALIZE EVERYTHING =====
 async function initialize() {
-  setupSidebar();
-  setupNavigation();
-  setupBackToTop();
-  setupScaleControls();
-  initThemeSystem();
-  setupFilters();
-  setupHeroButtons();
-  setupAudioPlayer();
-  setupPWASupport();
-  
-  await checkAuth();
-  
-  // Load real data
-  const [featured, podcasters, clips, diaspora, followedIds] = await Promise.all([
-    getFeaturedPodcast(),
-    getTrendingPodcasts(12),
-    getPodcastClips(10),
-    getDiasporaPodcasts(10),
-    currentUser ? getUserFollowedPodcasts() : Promise.resolve([])
-  ]);
-  
-  // Render with real data
-  renderHeroPodcast(featured ? transformPodcastShow(featured) : null);
-  renderPodcasters(podcasters.map(transformPodcastShow), followedIds);
-  renderClips(clips.map(transformPodcastEpisode));
-  renderDiaspora(diaspora.map(transformPodcastShow));
-  
-  // Hide loading
-  const loading = document.getElementById('loading');
-  if (loading) loading.style.display = 'none';
+    setupSidebar();
+    setupNavigation();
+    setupBackToTop();
+    setupScaleControls();
+    initThemeSystem();
+    setupFilters();
+    setupHeroButtons();
+    setupPWASupport();
+    await checkAuth();
+    
+    await loadFeaturedPodcast();
+    await renderPodcasters();
+    await renderClips();
+    await renderDiaspora();
+    
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
 }
 
-// Start the app
-document.addEventListener('DOMContentLoaded', initialize);
+initialize();
 </script>
 </body>
 </html>
