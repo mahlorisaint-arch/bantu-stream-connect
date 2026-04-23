@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-<title>Podcasts - The Voice | Bantu Stream Connect</title>
+<title>Podcasts - Bantu Stream Connect</title>
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -769,7 +769,7 @@ display: flex;
 gap: 12px;
 }
 
-/* ===== NOW PLAYING BAR (PWA Audio Player) ===== */
+/* ===== NOW PLAYING BAR (Real Audio Player) ===== */
 .now-playing-bar {
 position: fixed;
 bottom: 80px;
@@ -1020,6 +1020,36 @@ transition: all 0.2s;
 .theme-option:hover { background: rgba(255,255,255,0.1); }
 .theme-option.active { background: rgba(29,78,216,0.2); border-color: var(--bantu-blue); }
 
+/* ===== SKELETON LOADING ===== */
+.skeleton {
+background: linear-gradient(90deg, var(--card-bg) 25%, var(--deep-navy) 50%, var(--card-bg) 75%);
+background-size: 200% 100%;
+animation: loading 1.5s infinite;
+border-radius: 8px;
+}
+@keyframes loading {
+0% { background-position: 200% 0; }
+100% { background-position: -200% 0; }
+}
+.skeleton-avatar {
+width: 100px;
+height: 100px;
+border-radius: 50%;
+margin: 0 auto 15px;
+}
+.skeleton-title {
+height: 18px;
+width: 80%;
+border-radius: 4px;
+margin: 0 auto 8px;
+}
+.skeleton-subtitle {
+height: 12px;
+width: 60%;
+border-radius: 4px;
+margin: 0 auto;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
 .profile-switcher, .rsa-badge { display: none !important; }
@@ -1132,8 +1162,8 @@ transition: all 0.2s;
 <section class="hero-section">
 <div class="hero-card">
 <div class="hero-image">
-<img src="https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=600&h=500&fit=crop" alt="Podcast of the Week">
-<div class="hero-waveform">
+<img id="hero-image" src="" alt="Podcast of the Week" style="display: none;">
+<div class="hero-waveform" id="hero-waveform" style="display: none;">
 <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
 <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
 <div class="wave-bar"></div><div class="wave-bar"></div>
@@ -1141,16 +1171,16 @@ transition: all 0.2s;
 </div>
 <div class="hero-info">
 <div class="hero-badge"><i class="fas fa-star"></i> PODCAST OF THE WEEK</div>
-<h2 class="hero-title">The African Narrative</h2>
+<h2 class="hero-title" id="hero-title">Loading...</h2>
 <div class="hero-creator">
 <div class="hero-creator-avatar"><i class="fas fa-microphone" style="font-size: 24px;"></i></div>
-<div class="hero-creator-name">Chimamanda Adichie & Co.</div>
+<div class="hero-creator-name" id="hero-creator">Loading...</div>
 </div>
-<p class="hero-description">Exploring African stories, perspectives, and the future of the continent through powerful conversations with thought leaders, artists, and innovators.</p>
+<p class="hero-description" id="hero-description">Discover powerful African stories and conversations.</p>
 <div class="hero-stats">
-<span><i class="fas fa-headphones"></i> 1.2M monthly listeners</span>
-<span><i class="fas fa-chart-line"></i> +45% growth</span>
-<span><i class="fas fa-calendar"></i> New episode weekly</span>
+<span><i class="fas fa-headphones"></i> <span id="hero-listeners">-</span> listeners</span>
+<span><i class="fas fa-chart-line"></i> <span id="hero-growth">-</span> growth</span>
+<span><i class="fas fa-calendar"></i> <span id="hero-schedule">-</span></span>
 </div>
 <div class="hero-buttons">
 <button class="hero-btn primary" id="play-podcast-btn"><i class="fas fa-play"></i> Latest Episode</button>
@@ -1178,7 +1208,12 @@ transition: all 0.2s;
 <h2 class="section-title"><i class="fas fa-chart-line"></i> Fastest Growing</h2>
 <a href="#" class="section-link">View All <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="podcasters-grid" id="podcasters-grid"></div>
+<div class="podcasters-grid" id="podcasters-grid">
+<!-- Skeleton loaders -->
+<div class="skeleton"><div class="skeleton-avatar"></div><div class="skeleton-title"></div><div class="skeleton-subtitle"></div></div>
+<div class="skeleton"><div class="skeleton-avatar"></div><div class="skeleton-title"></div><div class="skeleton-subtitle"></div></div>
+<div class="skeleton"><div class="skeleton-avatar"></div><div class="skeleton-title"></div><div class="skeleton-subtitle"></div></div>
+</div>
 </section>
 
 <!-- BITE-SIZED CLIPS (60-second "Best Of") -->
@@ -1187,7 +1222,11 @@ transition: all 0.2s;
 <h2 class="section-title"><i class="fas fa-cut"></i> Bite-sized Clips</h2>
 <a href="#" class="section-link">More Clips <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="clips-grid" id="clips-grid"></div>
+<div class="clips-grid" id="clips-grid">
+<!-- Skeleton loaders -->
+<div class="skeleton"><div class="skeleton-title" style="width: 60%; margin: 16px;"></div><div class="skeleton-subtitle" style="width: 40%; margin: 0 16px;"></div></div>
+<div class="skeleton"><div class="skeleton-title" style="width: 60%; margin: 16px;"></div><div class="skeleton-subtitle" style="width: 40%; margin: 0 16px;"></div></div>
+</div>
 </section>
 
 <!-- GLOBAL DIASPORA PODCASTS -->
@@ -1196,7 +1235,11 @@ transition: all 0.2s;
 <h2 class="section-title"><i class="fas fa-globe-americas"></i> Global Diaspora</h2>
 <a href="#" class="section-link">Explore <i class="fas fa-arrow-right"></i></a>
 </div>
-<div class="diaspora-grid" id="diaspora-grid"></div>
+<div class="diaspora-grid" id="diaspora-grid">
+<!-- Skeleton loaders -->
+<div class="skeleton"><div class="skeleton-title" style="width: 70%;"></div><div class="skeleton-subtitle" style="width: 50%;"></div></div>
+<div class="skeleton"><div class="skeleton-title" style="width: 70%;"></div><div class="skeleton-subtitle" style="width: 50%;"></div></div>
+</div>
 </section>
 
 </main>
@@ -1219,13 +1262,13 @@ transition: all 0.2s;
 </div>
 </div>
 
-<!-- NOW PLAYING BAR (PWA Audio Player) -->
+<!-- NOW PLAYING BAR (Real Audio Player) -->
 <div id="now-playing-bar" class="now-playing-bar">
 <div class="now-playing-info">
 <div class="now-playing-avatar"><i class="fas fa-podcast" style="font-size: 24px;"></i></div>
 <div class="now-playing-details">
-<div class="now-playing-title" id="now-playing-title">The African Narrative</div>
-<div class="now-playing-podcast" id="now-playing-podcast">Chimamanda Adichie</div>
+<div class="now-playing-title" id="now-playing-title">Loading...</div>
+<div class="now-playing-podcast" id="now-playing-podcast">Loading...</div>
 </div>
 </div>
 <div class="now-playing-controls">
@@ -1247,454 +1290,753 @@ transition: all 0.2s;
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentCategory = 'all';
-let following = new Set();
 let isPlaying = false;
-let currentTime = 0;
-let duration = 1800; // 30 minutes in seconds
-let playInterval = null;
+let audioPlayer = null;
+let currentContent = null;
 
-// ===== DEMO PODCAST CONTENT =====
-const topPodcasters = [
-    { id: 1, name: "The African Narrative", host: "Chimamanda Adichie", category: "culture", listeners: "1.2M", growth: "+45%", avatar: null, following: false },
-    { id: 2, name: "Tech Africa Daily", host: "Mark Essien", category: "tech", listeners: "892K", growth: "+38%", avatar: null, following: false },
-    { id: 3, name: "Business Unusual", host: "Strive Masiyiwa", category: "business", listeners: "756K", growth: "+32%", avatar: null, following: false },
-    { id: 4, name: "The Truth Teller", host: "John Githongo", category: "news", listeners: "634K", growth: "+28%", avatar: null, following: false },
-    { id: 5, name: "Afropolitan Vibes", host: "Minna Salami", category: "culture", listeners: "567K", growth: "+25%", avatar: null, following: false },
-    { id: 6, name: "Crime Scene Africa", host: "Detective Mkhize", category: "true-crime", listeners: "489K", growth: "+52%", avatar: null, following: false },
-];
+// ===== SUPABASE RPC CALLS (Production-Ready) =====
 
-const biteClips = [
-    { id: 101, podcast: "The African Narrative", episode: "The Future of African Literature", duration: "58 sec", host: "Chimamanda Adichie" },
-    { id: 102, podcast: "Tech Africa Daily", episode: "AI in Agriculture", duration: "62 sec", host: "Mark Essien" },
-    { id: 103, podcast: "Business Unusual", episode: "Investing in African Startups", duration: "55 sec", host: "Strive Masiyiwa" },
-    { id: 104, podcast: "The Truth Teller", episode: "Election Integrity", duration: "60 sec", host: "John Githongo" },
-];
+// Get featured podcast (hero)
+async function getFeaturedPodcast() {
+  try {
+    const { data, error } = await supabase.rpc('get_featured_podcast');
+    if (error) throw error;
+    return data?.[0] || null;
+  } catch (err) {
+    console.error('Error fetching featured podcast:', err);
+    return null;
+  }
+}
 
-const diasporaPodcasts = [
-    { id: 201, title: "Afro-Latinx Stories", host: "Elena Mendez", location: "Brazil", flag: "🇧🇷", listeners: "234K" },
-    { id: 202, title: "London to Lagos", host: "Tunde Johnson", location: "UK", flag: "🇬🇧", listeners: "189K" },
-    { id: 203, title: "The African American", host: "Marcus Thompson", location: "USA", flag: "🇺🇸", listeners: "456K" },
-    { id: 204, title: "Caribbean Roots", host: "Simone Clarke", location: "Jamaica", flag: "🇯🇲", listeners: "312K" },
-];
+// Get trending podcasts (podcasters grid)
+async function getTrendingPodcasts(limit = 12) {
+  try {
+    const { data, error } = await supabase.rpc('get_trending_podcasts', { limit_count: limit });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Error fetching trending podcasts:', err);
+    return [];
+  }
+}
+
+// Get podcast clips (bite-sized)
+async function getPodcastClips(limit = 10) {
+  try {
+    const { data, error } = await supabase.rpc('get_podcast_clips', { limit_count: limit });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Error fetching podcast clips:', err);
+    return [];
+  }
+}
+
+// Get diaspora podcasts
+async function getDiasporaPodcasts(limit = 10) {
+  try {
+    const { data, error } = await supabase.rpc('get_diaspora_podcasts', { limit_count: limit });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Error fetching diaspora podcasts:', err);
+    return [];
+  }
+}
+
+// Get episodes by series/podcast
+async function getEpisodesBySeries(seriesId, limit = 20) {
+  try {
+    const { data, error } = await supabase.rpc('get_podcast_by_series', { 
+      p_series_id: seriesId,
+      limit_count: limit 
+    });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Error fetching episodes:', err);
+    return [];
+  }
+}
+
+// Follow/unfollow podcast
+async function toggleFollowPodcast(podcastId) {
+  if (!currentUser) return false;
+  
+  try {
+    // Check if already following
+    const { data: existing } = await supabase
+      .from('podcast_follows')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .eq('podcast_id', podcastId)
+      .maybeSingle();
+    
+    if (existing) {
+      // Unfollow
+      await supabase
+        .from('podcast_follows')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('podcast_id', podcastId);
+      return false;
+    } else {
+      // Follow
+      await supabase
+        .from('podcast_follows')
+        .insert({
+          user_id: currentUser.id,
+          podcast_id: podcastId
+        });
+      return true;
+    }
+  } catch (err) {
+    console.error('Error toggling follow:', err);
+    return null;
+  }
+}
+
+// Get user's followed podcasts
+async function getUserFollowedPodcasts() {
+  if (!currentUser) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('podcast_follows')
+      .select('podcast_id')
+      .eq('user_id', currentUser.id);
+    
+    if (error) throw error;
+    return data.map(f => f.podcast_id) || [];
+  } catch (err) {
+    console.error('Error fetching followed podcasts:', err);
+    return [];
+  }
+}
+
+// ===== UTILITIES =====
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+  toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+function getCountryFlag(country) {
+  const flags = {
+    'Brazil': '🇧🇷', 'UK': '🇬🇧', 'USA': '🇺🇸', 'Jamaica': '🇯🇲',
+    'Canada': '🇨🇦', 'Australia': '🇦🇺', 'Germany': '🇩🇪', 'France': '🇫🇷'
+  };
+  return flags[country] || '🌍';
+}
+
+// ===== TRANSFORM FUNCTIONS =====
+function transformPodcastShow(podcast) {
+  return {
+    id: podcast.id,
+    title: podcast.title || 'Untitled Podcast',
+    description: podcast.description || '',
+    thumbnail_url: podcast.thumbnail_url || 'https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=400&h=400&fit=crop',
+    creator_id: podcast.creator_id,
+    creator_name: podcast.creator_name || 'Unknown Creator',
+    followers_count: podcast.followers_count || 0,
+    growth_rate: podcast.growth_rate || 0,
+    category: podcast.category || 'general',
+    country: podcast.country || 'South Africa',
+    latest_episode: podcast.latest_episode || null
+  };
+}
+
+function transformPodcastEpisode(episode) {
+  return {
+    id: episode.id,
+    title: episode.title || 'Untitled Episode',
+    description: episode.description || '',
+    file_url: episode.file_url,
+    thumbnail_url: episode.thumbnail_url,
+    duration: episode.duration || 0,
+    series_id: episode.series_id,
+    series_title: episode.series_title || 'Unknown Show',
+    creator_id: episode.creator_id,
+    creator_name: episode.creator_name || 'Unknown Creator',
+    episode_number: episode.episode_number,
+    season_number: episode.season_number,
+    views_count: episode.views_count || 0,
+    created_at: episode.created_at,
+    content_format: episode.content_format,
+    content_type: episode.content_type
+  };
+}
 
 // ===== RENDER FUNCTIONS =====
-function renderPodcasters() {
-    const grid = document.getElementById('podcasters-grid');
-    let filtered = [...topPodcasters];
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(p => p.category === currentCategory);
-    }
-    
-    grid.innerHTML = filtered.map(podcaster => `
-        <div class="podcaster-card" data-id="${podcaster.id}">
-            <div class="podcaster-avatar">
-                <i class="fas fa-microphone" style="font-size: 40px; color: white;"></i>
-            </div>
-            <h3 class="podcaster-name">${escapeHtml(podcaster.name)}</h3>
-            <div class="podcaster-category">${escapeHtml(podcaster.host)}</div>
-            <div class="podcaster-stats">
-                <span><i class="fas fa-headphones"></i> ${podcaster.listeners}</span>
-                <span><i class="fas fa-chart-line"></i> ${podcaster.growth}</span>
-            </div>
-            <div class="growth-badge">↑ ${podcaster.growth} weekly growth</div>
-            <button class="follow-btn" data-id="${podcaster.id}">${following.has(podcaster.id) ? 'Following' : 'Follow'}</button>
-        </div>
-    `).join('');
-    
-    attachPodcasterHandlers();
+
+// Render hero podcast
+function renderHeroPodcast(podcast) {
+  const titleEl = document.getElementById('hero-title');
+  const creatorEl = document.getElementById('hero-creator');
+  const descEl = document.getElementById('hero-description');
+  const listenersEl = document.getElementById('hero-listeners');
+  const growthEl = document.getElementById('hero-growth');
+  const scheduleEl = document.getElementById('hero-schedule');
+  const imageEl = document.getElementById('hero-image');
+  const waveformEl = document.getElementById('hero-waveform');
+  
+  if (!podcast) {
+    titleEl.textContent = 'No featured podcast';
+    creatorEl.textContent = 'Check back soon';
+    return;
+  }
+  
+  titleEl.textContent = podcast.title;
+  creatorEl.textContent = podcast.creator_name;
+  descEl.textContent = podcast.description?.substring(0, 150) + '...';
+  listenersEl.textContent = formatNumber(podcast.followers_count);
+  growthEl.textContent = podcast.growth_rate ? `+${Math.round(podcast.growth_rate)}%` : 'New';
+  scheduleEl.textContent = 'Weekly episodes';
+  
+  if (podcast.thumbnail_url) {
+    imageEl.src = podcast.thumbnail_url;
+    imageEl.style.display = 'block';
+    waveformEl.style.display = 'flex';
+  }
+  
+  // Store for play button
+  currentContent = { ...podcast, type: 'show' };
 }
 
-function renderClips() {
-    const grid = document.getElementById('clips-grid');
-    grid.innerHTML = biteClips.map(clip => `
-        <div class="clip-card" data-id="${clip.id}">
-            <div class="clip-header">
-                <div class="clip-avatar"><i class="fas fa-podcast" style="font-size: 22px;"></i></div>
-                <div class="clip-info">
-                    <div class="clip-podcast">${escapeHtml(clip.podcast)}</div>
-                    <div class="clip-episode">${escapeHtml(clip.episode)} • ${escapeHtml(clip.host)}</div>
-                </div>
-            </div>
-            <div class="clip-waveform">
-                <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
-                <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
-                <div class="clip-wave-bar"></div>
-            </div>
-            <div class="clip-footer">
-                <span class="clip-duration"><i class="fas fa-clock"></i> ${clip.duration}</span>
-                <button class="clip-play" data-clip='${JSON.stringify(clip)}'><i class="fas fa-play"></i> Play Clip</button>
-            </div>
+// Render podcasters grid
+function renderPodcasters(podcasts, followedIds = []) {
+  const grid = document.getElementById('podcasters-grid');
+  
+  if (!podcasts || podcasts.length === 0) {
+    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-podcast"></i> No podcasts found</div>';
+    return;
+  }
+  
+  let filtered = podcasts;
+  if (currentCategory !== 'all') {
+    filtered = podcasts.filter(p => p.category === currentCategory);
+  }
+  
+  grid.innerHTML = filtered.map(podcast => {
+    const isFollowing = followedIds.includes(podcast.id);
+    return `
+      <div class="podcaster-card" data-id="${podcast.id}">
+        <div class="podcaster-avatar">
+          <img src="${podcast.thumbnail_url}" alt="${escapeHtml(podcast.title)}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-microphone\' style=\'font-size: 40px; color: white;\'></i>'">
         </div>
-    `).join('');
-    
-    attachClipHandlers();
+        <h3 class="podcaster-name">${escapeHtml(podcast.title)}</h3>
+        <div class="podcaster-category">${escapeHtml(podcast.creator_name)}</div>
+        <div class="podcaster-stats">
+          <span><i class="fas fa-headphones"></i> ${formatNumber(podcast.followers_count)}</span>
+          <span><i class="fas fa-chart-line"></i> +${Math.round(podcast.growth_rate || 0)}%</span>
+        </div>
+        <div class="growth-badge">↑ ${Math.round(podcast.growth_rate || 0)}% weekly growth</div>
+        <button class="follow-btn ${isFollowing ? 'following' : ''}" data-id="${podcast.id}">${isFollowing ? 'Following' : 'Follow'}</button>
+      </div>
+    `;
+  }).join('');
+  
+  attachPodcasterHandlers(followedIds);
 }
 
-function renderDiaspora() {
-    const grid = document.getElementById('diaspora-grid');
-    grid.innerHTML = diasporaPodcasts.map(podcast => `
-        <div class="diaspora-card" data-id="${podcast.id}">
-            <div class="diaspora-flag">${podcast.flag}</div>
-            <div class="diaspora-info">
-                <div class="diaspora-title">${escapeHtml(podcast.title)}</div>
-                <div class="diaspora-host">with ${escapeHtml(podcast.host)}</div>
-                <div class="diaspora-stats">
-                    <span><i class="fas fa-map-marker-alt"></i> ${podcast.location}</span>
-                    <span><i class="fas fa-headphones"></i> ${podcast.listeners}</span>
-                </div>
-            </div>
+// Render clips grid
+function renderClips(episodes) {
+  const grid = document.getElementById('clips-grid');
+  
+  if (!episodes || episodes.length === 0) {
+    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-cut"></i> No clips available</div>';
+    return;
+  }
+  
+  grid.innerHTML = episodes.map(episode => `
+    <div class="clip-card" data-id="${episode.id}">
+      <div class="clip-header">
+        <div class="clip-avatar">
+          <img src="${episode.thumbnail_url}" alt="${escapeHtml(episode.series_title)}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-podcast\' style=\'font-size: 22px;\'></i>'">
         </div>
-    `).join('');
-    
-    attachDiasporaHandlers();
+        <div class="clip-info">
+          <div class="clip-podcast">${escapeHtml(episode.series_title)}</div>
+          <div class="clip-episode">${escapeHtml(episode.title)} • ${escapeHtml(episode.creator_name)}</div>
+        </div>
+      </div>
+      <div class="clip-waveform">
+        <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
+        <div class="clip-wave-bar"></div><div class="clip-wave-bar"></div><div class="clip-wave-bar"></div>
+        <div class="clip-wave-bar"></div>
+      </div>
+      <div class="clip-footer">
+        <span class="clip-duration"><i class="fas fa-clock"></i> ${formatDuration(episode.duration)}</span>
+        <button class="clip-play" data-episode='${JSON.stringify(episode).replace(/'/g, "&apos;")}'>
+          <i class="fas fa-play"></i> Play Clip
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  attachClipHandlers();
 }
 
-function attachPodcasterHandlers() {
-    document.querySelectorAll('.follow-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const id = parseInt(btn.dataset.id);
-            if (!currentUser) {
-                showToast('Please sign in to follow podcasts', 'warning');
-                window.location.href = `login.html?redirect=podcasts.html`;
-                return;
-            }
-            if (following.has(id)) {
-                following.delete(id);
-                btn.textContent = 'Follow';
-                btn.classList.remove('following');
-                showToast('Unfollowed', 'info');
-            } else {
-                following.add(id);
-                btn.textContent = 'Following';
-                btn.classList.add('following');
-                showToast('Following! You\'ll get new episode notifications', 'success');
-            }
-        });
+// Render diaspora grid
+function renderDiaspora(podcasts) {
+  const grid = document.getElementById('diaspora-grid');
+  
+  if (!podcasts || podcasts.length === 0) {
+    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);"><i class="fas fa-globe-americas"></i> No diaspora podcasts found</div>';
+    return;
+  }
+  
+  grid.innerHTML = podcasts.map(podcast => `
+    <div class="diaspora-card" data-id="${podcast.id}">
+      <div class="diaspora-flag">${getCountryFlag(podcast.country)}</div>
+      <div class="diaspora-info">
+        <div class="diaspora-title">${escapeHtml(podcast.title)}</div>
+        <div class="diaspora-host">with ${escapeHtml(podcast.creator_name)}</div>
+        <div class="diaspora-stats">
+          <span><i class="fas fa-map-marker-alt"></i> ${podcast.country}</span>
+          <span><i class="fas fa-headphones"></i> ${formatNumber(podcast.followers_count)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  
+  attachDiasporaHandlers();
+}
+
+// ===== EVENT HANDLERS =====
+
+function attachPodcasterHandlers(followedIds) {
+  // Follow buttons
+  document.querySelectorAll('.follow-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const podcastId = btn.dataset.id;
+      
+      if (!currentUser) {
+        showToast('Please sign in to follow podcasts', 'warning');
+        window.location.href = `login.html?redirect=podcasts.html`;
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+      
+      const result = await toggleFollowPodcast(podcastId);
+      
+      if (result === true) {
+        btn.textContent = 'Following';
+        btn.classList.add('following');
+        showToast('Following! You\'ll get new episode notifications', 'success');
+      } else if (result === false) {
+        btn.textContent = 'Follow';
+        btn.classList.remove('following');
+        showToast('Unfollowed', 'info');
+      } else {
+        showToast('Could not update follow status', 'error');
+      }
+      
+      btn.disabled = false;
     });
-    
-    document.querySelectorAll('.podcaster-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.dataset.id;
-            const podcaster = topPodcasters.find(p => p.id == id);
-            if (podcaster) {
-                showToast(`Opening ${podcaster.name}...`, 'info');
-            }
-        });
+  });
+  
+  // Card clicks - open podcast detail
+  document.querySelectorAll('.podcaster-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const podcastId = card.dataset.id;
+      window.location.href = `podcast-detail.html?id=${podcastId}`;
     });
+  });
 }
 
 function attachClipHandlers() {
-    document.querySelectorAll('.clip-play').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const clip = JSON.parse(btn.dataset.clip);
-            playClip(clip);
-        });
+  document.querySelectorAll('.clip-play').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const episode = JSON.parse(btn.dataset.episode.replace(/&apos;/g, "'"));
+      playEpisode(episode);
     });
+  });
 }
 
 function attachDiasporaHandlers() {
-    document.querySelectorAll('.diaspora-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.dataset.id;
-            showToast(`Opening podcast...`, 'info');
-        });
+  document.querySelectorAll('.diaspora-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const podcastId = card.dataset.id;
+      window.location.href = `podcast-detail.html?id=${podcastId}`;
     });
+  });
 }
 
-// ===== AUDIO PLAYER FUNCTIONS =====
-function playClip(clip) {
-    const nowPlayingBar = document.getElementById('now-playing-bar');
-    const nowPlayingTitle = document.getElementById('now-playing-title');
-    const nowPlayingPodcast = document.getElementById('now-playing-podcast');
-    const playPauseBtn = document.getElementById('play-pause-btn');
-    const progressSlider = document.getElementById('progress-slider');
-    const timeDisplay = document.getElementById('now-playing-time');
-    
-    // Reset previous playback
-    if (playInterval) clearInterval(playInterval);
-    
-    // Update UI
-    nowPlayingTitle.textContent = clip.episode;
-    nowPlayingPodcast.textContent = clip.podcast;
-    nowPlayingBar.classList.add('active');
-    
-    // Reset state
-    currentTime = 0;
+// ===== REAL AUDIO PLAYER =====
+
+function playEpisode(episode) {
+  // Stop any existing playback
+  if (audioPlayer) {
+    audioPlayer.pause();
+    audioPlayer = null;
+  }
+  
+  if (!episode.file_url) {
+    showToast('Audio file not available', 'error');
+    return;
+  }
+  
+  // Create new audio player
+  audioPlayer = new Audio(episode.file_url);
+  
+  // Update now playing bar
+  const nowPlayingBar = document.getElementById('now-playing-bar');
+  const nowPlayingTitle = document.getElementById('now-playing-title');
+  const nowPlayingPodcast = document.getElementById('now-playing-podcast');
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  const progressSlider = document.getElementById('progress-slider');
+  const timeDisplay = document.getElementById('now-playing-time');
+  
+  nowPlayingTitle.textContent = episode.title;
+  nowPlayingPodcast.textContent = episode.series_title;
+  nowPlayingBar.classList.add('active');
+  
+  // Set up audio events
+  audioPlayer.addEventListener('loadedmetadata', () => {
+    progressSlider.max = audioPlayer.duration;
+    timeDisplay.textContent = `0:00 / ${formatDuration(audioPlayer.duration)}`;
+  });
+  
+  audioPlayer.addEventListener('timeupdate', () => {
+    progressSlider.value = audioPlayer.currentTime;
+    timeDisplay.textContent = `${formatDuration(audioPlayer.currentTime)} / ${formatDuration(audioPlayer.duration)}`;
+  });
+  
+  audioPlayer.addEventListener('ended', () => {
+    isPlaying = false;
+    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    showToast('Episode finished', 'success');
+  });
+  
+  audioPlayer.addEventListener('error', (e) => {
+    console.error('Audio playback error:', e);
+    showToast('Could not play audio', 'error');
+    nowPlayingBar.classList.remove('active');
+  });
+  
+  // Start playback
+  audioPlayer.play().then(() => {
     isPlaying = true;
-    const clipDuration = parseInt(clip.duration) || 60;
-    duration = clipDuration;
-    
-    updatePlaybackUI();
-    
-    // Start playback simulation
-    playInterval = setInterval(() => {
-        if (isPlaying && currentTime < duration) {
-            currentTime++;
-            updatePlaybackUI();
-            
-            if (currentTime >= duration) {
-                // Clip finished
-                clearInterval(playInterval);
-                isPlaying = false;
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                showToast('Clip finished playing', 'success');
-            }
-        }
-    }, 1000);
-    
-    showToast(`Now playing: ${clip.episode}`, 'success');
-}
-
-function updatePlaybackUI() {
-    const playPauseBtn = document.getElementById('play-pause-btn');
-    const progressSlider = document.getElementById('progress-slider');
-    const timeDisplay = document.getElementById('now-playing-time');
-    
-    const percent = (currentTime / duration) * 100;
-    progressSlider.value = percent;
-    
-    const currentMin = Math.floor(currentTime / 60);
-    const currentSec = currentTime % 60;
-    const durationMin = Math.floor(duration / 60);
-    const durationSec = duration % 60;
-    
-    timeDisplay.textContent = `${currentMin}:${currentSec.toString().padStart(2, '0')} / ${durationMin}:${durationSec.toString().padStart(2, '0')}`;
-    playPauseBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    showToast(`Now playing: ${episode.title}`, 'success');
+  }).catch(err => {
+    console.error('Playback failed:', err);
+    showToast('Playback requires user interaction', 'warning');
+  });
+  
+  // Store current content
+  currentContent = { ...episode, type: 'episode' };
 }
 
 function setupAudioPlayer() {
-    const playPauseBtn = document.getElementById('play-pause-btn');
-    const stopBtn = document.getElementById('stop-playback-btn');
-    const closeBtn = document.getElementById('close-now-playing');
-    const progressSlider = document.getElementById('progress-slider');
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  const stopBtn = document.getElementById('stop-playback-btn');
+  const closeBtn = document.getElementById('close-now-playing');
+  const progressSlider = document.getElementById('progress-slider');
+  
+  // Play/Pause toggle
+  playPauseBtn?.addEventListener('click', () => {
+    if (!audioPlayer) return;
     
-    playPauseBtn?.addEventListener('click', () => {
-        if (!playInterval) return;
-        isPlaying = !isPlaying;
-        updatePlaybackUI();
-    });
-    
-    stopBtn?.addEventListener('click', () => {
-        if (playInterval) {
-            clearInterval(playInterval);
-            playInterval = null;
-        }
-        isPlaying = false;
-        currentTime = 0;
-        updatePlaybackUI();
-        document.getElementById('now-playing-bar').classList.remove('active');
-    });
-    
-    closeBtn?.addEventListener('click', () => {
-        if (playInterval) {
-            clearInterval(playInterval);
-            playInterval = null;
-        }
-        document.getElementById('now-playing-bar').classList.remove('active');
-    });
-    
-    progressSlider?.addEventListener('input', (e) => {
-        if (!playInterval) return;
-        const percent = parseInt(e.target.value);
-        currentTime = (percent / 100) * duration;
-        updatePlaybackUI();
-    });
+    if (isPlaying) {
+      audioPlayer.pause();
+      isPlaying = false;
+      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    } else {
+      audioPlayer.play();
+      isPlaying = true;
+      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    }
+  });
+  
+  // Stop button
+  stopBtn?.addEventListener('click', () => {
+    if (audioPlayer) {
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      audioPlayer = null;
+    }
+    isPlaying = false;
+    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    document.getElementById('now-playing-bar').classList.remove('active');
+  });
+  
+  // Close button
+  closeBtn?.addEventListener('click', () => {
+    if (audioPlayer) {
+      audioPlayer.pause();
+      audioPlayer = null;
+    }
+    document.getElementById('now-playing-bar').classList.remove('active');
+  });
+  
+  // Progress slider seek
+  progressSlider?.addEventListener('input', (e) => {
+    if (audioPlayer) {
+      audioPlayer.currentTime = parseFloat(e.target.value);
+    }
+  });
+  
+  // Handle page visibility (pause when tab hidden)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && audioPlayer && isPlaying) {
+      // Optional: pause when tab hidden, or keep playing for background
+      // audioPlayer.pause();
+      // isPlaying = false;
+    }
+  });
 }
 
 // ===== FILTER HANDLERS =====
 function setupFilters() {
-    const filters = document.querySelectorAll('.filter-chip');
-    filters.forEach(filter => {
-        filter.addEventListener('click', () => {
-            filters.forEach(f => f.classList.remove('active'));
-            filter.classList.add('active');
-            currentCategory = filter.dataset.category;
-            renderPodcasters();
-            showToast(`Showing ${currentCategory === 'all' ? 'all' : currentCategory} podcasts`, 'success');
-        });
+  const filters = document.querySelectorAll('.filter-chip');
+  filters.forEach(filter => {
+    filter.addEventListener('click', async () => {
+      filters.forEach(f => f.classList.remove('active'));
+      filter.classList.add('active');
+      currentCategory = filter.dataset.category;
+      
+      // Re-fetch and re-render with filter
+      showToast(`Loading ${currentCategory === 'all' ? 'all' : currentCategory} podcasts...`, 'info');
+      
+      const podcasters = await getTrendingPodcasts(12);
+      const followedIds = await getUserFollowedPodcasts();
+      renderPodcasters(podcasters.map(transformPodcastShow), followedIds);
     });
+  });
 }
 
 // ===== HERO BUTTONS =====
 function setupHeroButtons() {
-    document.getElementById('play-podcast-btn')?.addEventListener('click', () => {
-        const clip = { episode: "Latest Episode: The Future of Africa", podcast: "The African Narrative", duration: "45" };
-        playClip(clip);
-    });
+  document.getElementById('play-podcast-btn')?.addEventListener('click', async () => {
+    if (!currentContent) {
+      showToast('Loading latest episode...', 'info');
+      return;
+    }
     
-    document.getElementById('subscribe-podcast-btn')?.addEventListener('click', async () => {
-        if (!currentUser) {
-            showToast('Please sign in to subscribe', 'warning');
-            window.location.href = `login.html?redirect=podcasts.html`;
-            return;
-        }
-        showToast('Subscribed to The African Narrative! 🔔', 'success');
-    });
+    if (currentContent.type === 'show') {
+      // Fetch latest episode for this show
+      const episodes = await getEpisodesBySeries(currentContent.id, 1);
+      if (episodes.length > 0) {
+        playEpisode(transformPodcastEpisode(episodes[0]));
+      } else {
+        showToast('No episodes available yet', 'warning');
+      }
+    } else if (currentContent.type === 'episode') {
+      playEpisode(currentContent);
+    }
+  });
+  
+  document.getElementById('subscribe-podcast-btn')?.addEventListener('click', async () => {
+    if (!currentUser) {
+      showToast('Please sign in to subscribe', 'warning');
+      window.location.href = `login.html?redirect=podcasts.html`;
+      return;
+    }
+    
+    if (currentContent?.id) {
+      const result = await toggleFollowPodcast(currentContent.id);
+      if (result) {
+        showToast('Subscribed! 🔔', 'success');
+      } else if (result === false) {
+        showToast('Unsubscribed', 'info');
+      }
+    }
+  });
 }
 
 // ===== THEME SYSTEM =====
 function initThemeSystem() {
-    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-    applyTheme(savedTheme);
-    
-    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('theme-selector')?.classList.toggle('active');
+  const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+  applyTheme(savedTheme);
+  
+  document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('theme-selector')?.classList.toggle('active');
+  });
+  
+  document.querySelectorAll('.theme-option').forEach(option => {
+    option.addEventListener('click', () => {
+      applyTheme(option.dataset.theme);
+      document.getElementById('theme-selector')?.classList.remove('active');
     });
-    
-    document.querySelectorAll('.theme-option').forEach(option => {
-        option.addEventListener('click', () => {
-            applyTheme(option.dataset.theme);
-            document.getElementById('theme-selector')?.classList.remove('active');
-        });
-    });
+  });
 }
 
 function applyTheme(theme) {
-    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-    document.body.classList.add(`theme-${theme}`);
-    localStorage.setItem('bantu_theme', theme);
+  document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+  document.body.classList.add(`theme-${theme}`);
+  localStorage.setItem('bantu_theme', theme);
 }
 
 // ===== SIDEBAR & NAVIGATION =====
 function setupSidebar() {
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebarClose = document.getElementById('sidebar-close');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    const sidebarMenu = document.getElementById('sidebar-menu');
-    
-    menuToggle?.addEventListener('click', () => {
-        sidebarMenu?.classList.add('active');
-        sidebarOverlay?.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    });
-    
-    const closeSidebar = () => {
-        sidebarMenu?.classList.remove('active');
-        sidebarOverlay?.classList.remove('active');
-        document.body.style.overflow = '';
-    };
-    sidebarClose?.addEventListener('click', closeSidebar);
-    sidebarOverlay?.addEventListener('click', closeSidebar);
+  const menuToggle = document.getElementById('menu-toggle');
+  const sidebarClose = document.getElementById('sidebar-close');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebarMenu = document.getElementById('sidebar-menu');
+  
+  menuToggle?.addEventListener('click', () => {
+    sidebarMenu?.classList.add('active');
+    sidebarOverlay?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+  
+  const closeSidebar = () => {
+    sidebarMenu?.classList.remove('active');
+    sidebarOverlay?.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+  sidebarClose?.addEventListener('click', closeSidebar);
+  sidebarOverlay?.addEventListener('click', closeSidebar);
 }
 
 function setupNavigation() {
-    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
-    document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
-    document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-        const { data } = await supabaseClient.auth.getSession();
-        if (data?.session) window.location.href = 'creator-upload.html';
-        else window.location.href = 'login.html?redirect=creator-upload.html';
-    });
-    document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
-        document.getElementById('sidebar-menu')?.classList.add('active');
-        document.getElementById('sidebar-overlay')?.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    });
+  document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+  document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+  document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session) window.location.href = 'creator-upload.html';
+    else window.location.href = 'login.html?redirect=creator-upload.html';
+  });
+  document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+    document.getElementById('sidebar-menu')?.classList.add('active');
+    document.getElementById('sidebar-overlay')?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
 }
 
 function setupBackToTop() {
-    const btn = document.getElementById('backToTopBtn');
-    window.addEventListener('scroll', () => {
-        btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-    });
-    btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  const btn = document.getElementById('backToTopBtn');
+  window.addEventListener('scroll', () => {
+    btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+  });
+  btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function setupScaleControls() {
-    const decrease = document.getElementById('scale-decrease');
-    const increase = document.getElementById('scale-increase');
-    const value = document.getElementById('scale-value');
-    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-    const apply = () => {
-        document.documentElement.style.setProperty('--ui-scale', scale);
-        localStorage.setItem('bantu_ui_scale', scale);
-        if (value) value.textContent = Math.round(scale * 100) + '%';
-    };
-    decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
-    increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
-    apply();
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  const decrease = document.getElementById('scale-decrease');
+  const increase = document.getElementById('scale-increase');
+  const value = document.getElementById('scale-value');
+  let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+  const apply = () => {
+    document.documentElement.style.setProperty('--ui-scale', scale);
+    localStorage.setItem('bantu_ui_scale', scale);
+    if (value) value.textContent = Math.round(scale * 100) + '%';
+  };
+  decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+  increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+  apply();
 }
 
 // ===== AUTH CHECK =====
 async function checkAuth() {
-    const { data } = await supabaseClient.auth.getSession();
-    currentUser = data?.session?.user || null;
-    if (currentUser) {
-        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
-        const nameEl = document.getElementById('current-profile-name');
-        if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+  const { data } = await supabase.auth.getSession();
+  currentUser = data?.session?.user || null;
+  
+  if (currentUser) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('full_name, username, avatar_url')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+    
+    const nameEl = document.getElementById('current-profile-name');
+    if (nameEl) {
+      nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
     }
+  }
 }
 
 // ===== PWA BACKGROUND PLAY SUPPORT =====
 function setupPWASupport() {
-    // Check if running in standalone mode (PWA)
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-        console.log('Running as PWA - background audio enabled');
-        // Prevent screen from locking during playback
-        if ('wakeLock' in navigator) {
-            let wakeLock = null;
-            const requestWakeLock = async () => {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake lock acquired');
-                } catch (err) {
-                    console.log('Wake lock failed:', err);
-                }
-            };
-            requestWakeLock();
-        }
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    console.log('Running as PWA - background audio enabled');
+    
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (audioPlayer) { audioPlayer.play(); isPlaying = true; }
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (audioPlayer) { audioPlayer.pause(); isPlaying = false; }
+      });
+      navigator.mediaSession.setActionHandler('stop', () => {
+        if (audioPlayer) { audioPlayer.pause(); audioPlayer = null; }
+      });
     }
+  }
 }
 
 // ===== INITIALIZE =====
 async function initialize() {
-    setupSidebar();
-    setupNavigation();
-    setupBackToTop();
-    setupScaleControls();
-    initThemeSystem();
-    setupFilters();
-    setupHeroButtons();
-    setupAudioPlayer();
-    setupPWASupport();
-    await checkAuth();
-    
-    renderPodcasters();
-    renderClips();
-    renderDiaspora();
-    
-    const loading = document.getElementById('loading');
-    if (loading) loading.style.display = 'none';
+  setupSidebar();
+  setupNavigation();
+  setupBackToTop();
+  setupScaleControls();
+  initThemeSystem();
+  setupFilters();
+  setupHeroButtons();
+  setupAudioPlayer();
+  setupPWASupport();
+  
+  await checkAuth();
+  
+  // Load real data
+  const [featured, podcasters, clips, diaspora, followedIds] = await Promise.all([
+    getFeaturedPodcast(),
+    getTrendingPodcasts(12),
+    getPodcastClips(10),
+    getDiasporaPodcasts(10),
+    currentUser ? getUserFollowedPodcasts() : Promise.resolve([])
+  ]);
+  
+  // Render with real data
+  renderHeroPodcast(featured ? transformPodcastShow(featured) : null);
+  renderPodcasters(podcasters.map(transformPodcastShow), followedIds);
+  renderClips(clips.map(transformPodcastEpisode));
+  renderDiaspora(diaspora.map(transformPodcastShow));
+  
+  // Hide loading
+  const loading = document.getElementById('loading');
+  if (loading) loading.style.display = 'none';
 }
 
-initialize();
+// Start the app
+document.addEventListener('DOMContentLoaded', initialize);
 </script>
 </body>
 </html>
