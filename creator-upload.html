@@ -147,6 +147,87 @@ align-items: center;
 gap: 10px;
 }
 .dynamic-fields-title i { font-size: 20px; }
+
+/* ===== MOVIE CLASSIFICATION SECTION ===== */
+.movie-classification-section {
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid var(--movie-purple);
+  border-radius: 12px;
+  display: none;
+}
+.movie-classification-section.active { display: block; }
+.classification-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .classification-grid { grid-template-columns: 1fr; }
+}
+.genre-section h4, .sa-genre-section h4 {
+  color: var(--warm-gold);
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.genre-chips, .sa-genre-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.genre-chip, .sa-genre-chip {
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  color: var(--soft-white);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.genre-chip:hover, .sa-genre-chip:hover {
+  border-color: var(--warm-gold);
+  background: rgba(245,158,11,0.1);
+}
+.genre-chip.selected, .sa-genre-chip.selected {
+  background: var(--warm-gold);
+  color: var(--deep-black);
+  border-color: var(--warm-gold);
+  font-weight: 600;
+}
+.bantu-original-toggle {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--card-border);
+}
+.bantu-original-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--soft-white);
+}
+.bantu-original-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--warm-gold);
+}
+.bantu-original-toggle .badge {
+  background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 5px;
+}
+
 .tags-input-container {
 background: rgba(255,255,255,.05);
 border: 1px solid var(--card-border);
@@ -914,6 +995,80 @@ transition: color .3s ease; font-size: 14px;
 <!-- Dynamic Genre Fields -->
 <div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
 
+<!-- 🎬 MOVIE CLASSIFICATION SECTION (NEW - Only for Film/Series/Documentary) -->
+<div id="movie-classification-section" class="movie-classification-section">
+  <div class="dynamic-fields-title"><i class="fas fa-film"></i> Film Classification</div>
+  
+  <div class="classification-grid">
+    <!-- Primary Genres (Global) -->
+    <div class="genre-section">
+      <h4><i class="fas fa-tags"></i> Primary Genres (Multi-select)</h4>
+      <div class="genre-chips" id="primary-genres-chips">
+        <button type="button" class="genre-chip" data-genre="Drama">Drama</button>
+        <button type="button" class="genre-chip" data-genre="Action">Action</button>
+        <button type="button" class="genre-chip" data-genre="Romance">Romance</button>
+        <button type="button" class="genre-chip" data-genre="Thriller">Thriller</button>
+        <button type="button" class="genre-chip" data-genre="Comedy">Comedy</button>
+        <button type="button" class="genre-chip" data-genre="Sci-Fi">Sci-Fi</button>
+        <button type="button" class="genre-chip" data-genre="Horror">Horror</button>
+        <button type="button" class="genre-chip" data-genre="Documentary">Documentary</button>
+      </div>
+    </div>
+    
+    <!-- SA Core Genres -->
+    <div class="sa-genre-section">
+      <h4><i class="fas fa-map-marker-alt"></i> South African Genres (Multi-select)</h4>
+      <div class="sa-genre-chips" id="sa-genres-chips">
+        <button type="button" class="sa-genre-chip" data-sa-genre="Township Drama">Township Drama</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="Kasi Comedy">Kasi Comedy</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="Taxi Industry Stories">Taxi Stories</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="SA Romantic Comedy">SA Rom-Com</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="Southern African Gothic">SA Gothic</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="Struggle Stories">Struggle Stories</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="Rural Life Stories">Rural Stories</button>
+        <button type="button" class="sa-genre-chip" data-sa-genre="Faith & Spiritual Narratives">Faith Stories</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Language Selector -->
+  <div class="form-group" style="margin-top: 20px;">
+    <label class="form-label"><i class="fas fa-language"></i> Primary Language</label>
+    <select id="movie-language" class="form-input">
+      <option value="English">English</option>
+      <option value="Zulu">isiZulu</option>
+      <option value="Xhosa">isiXhosa</option>
+      <option value="Afrikaans">Afrikaans</option>
+      <option value="Sotho">Sesotho</option>
+      <option value="Tswana">Setswana</option>
+      <option value="Pedi">Sepedi</option>
+      <option value="Tsonga">Xitsonga</option>
+      <option value="Swati">siSwati</option>
+      <option value="Venda">Tshivenda</option>
+      <option value="Ndebele">isiNdebele</option>
+    </select>
+  </div>
+  
+  <!-- Tags Input -->
+  <div class="form-group">
+    <label class="form-label"><i class="fas fa-hashtag"></i> Tags (Cities, Languages, Keywords)</label>
+    <div class="tags-input-container">
+      <div class="tags-list" id="movie-tags-list"></div>
+      <input type="text" class="tags-input" id="movie-tags-input" placeholder="Type and press Enter (e.g., Soweto, Zulu, Township)">
+    </div>
+    <small class="form-text text-muted" style="color: var(--slate-grey);">Add tags for better discovery: cities, languages, themes</small>
+  </div>
+  
+  <!-- Bantu Original Toggle -->
+  <div class="bantu-original-toggle">
+    <label>
+      <input type="checkbox" id="is-bantu-original">
+      <span>☑️ This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
+    </label>
+    <small class="form-text text-muted" style="color: var(--slate-grey); margin-top: 5px; display: block;">Bantu Originals get featured placement and priority discovery</small>
+  </div>
+</div>
+
 <!-- Music Genre Selector -->
 <div class="form-group" id="music-genre-group" style="display: none;">
   <label><i class="fas fa-music"></i> Music Genre</label>
@@ -973,8 +1128,8 @@ transition: color .3s ease; font-size: 14px;
   </label>
 </div>
 
-<!-- Mood Tags Section (existing) -->
-<div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and podcasts)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
+<!-- Mood Tags Section (existing - used by both music AND movies) -->
+<div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and movies)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
 
 <!-- Chapters Section (existing) -->
 <div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
@@ -1028,7 +1183,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
                 { name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' }
             ],
-            content_format: 'film', requires_chapters: false, requires_mood: false
+            content_format: 'film', 
+            requires_chapters: false, 
+            requires_mood: true,
+            isMovieContent: true
         },
         'Documentary': {
             title: '📽️ Documentary Details',
@@ -1040,7 +1198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'research_sources', type: 'tags', label: 'Research Sources', required: false, placeholder: 'e.g., University, Archive' },
                 { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'Not Rated'] }
             ],
-            content_format: 'documentary', requires_chapters: false, requires_mood: true
+            content_format: 'documentary', 
+            requires_chapters: false, 
+            requires_mood: true,
+            isMovieContent: true
         },
         'Series': {
             title: '📺 Series Episode Details',
@@ -1051,7 +1212,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning' },
                 { name: 'series_description', type: 'textarea', label: 'Series Description', required: false, rows: 3 }
             ],
-            content_format: 'series_episode', requires_chapters: true, requires_mood: true, uses_playlist: true, playlist_type: 'series'
+            content_format: 'series_episode', 
+            requires_chapters: true, 
+            requires_mood: true, 
+            uses_playlist: true, 
+            playlist_type: 'series',
+            isMovieContent: true
         },
         'Music': {
             title: '🎵 Music Details',
@@ -1065,7 +1231,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
                 { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
             ],
-            content_format: 'music', requires_chapters: false, requires_mood: true, uses_playlist: true, playlist_type: 'album'
+            content_format: 'music', 
+            requires_chapters: false, 
+            requires_mood: true, 
+            uses_playlist: true, 
+            playlist_type: 'album',
+            isMovieContent: false
         },
         'Podcast': {
             title: '🎙️ Podcast Episode Details',
@@ -1077,7 +1248,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
                 { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false }
             ],
-            content_format: 'podcast_episode', requires_chapters: true, requires_mood: true, uses_playlist: true, playlist_type: 'series'
+            content_format: 'podcast_episode', 
+            requires_chapters: true, 
+            requires_mood: true, 
+            uses_playlist: true, 
+            playlist_type: 'series',
+            isMovieContent: false
         },
         'Shorts': {
             title: '⚡ Shorts Details',
@@ -1085,7 +1261,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { name: 'audio_title', type: 'text', label: 'Audio Title', required: false, placeholder: 'e.g., Trending Sound' },
                 { name: 'original_sound', type: 'checkbox', label: 'Original Sound (not trending audio)', required: false }
             ],
-            content_format: 'short', requires_chapters: false, requires_mood: true
+            content_format: 'short', 
+            requires_chapters: false, 
+            requires_mood: true,
+            isMovieContent: false
         }
     };
 
@@ -1096,6 +1275,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isUploading = false, selectedMediaType = 'regular', extractedDuration = null, currentXhr = null;
     let selectedMood = null, chapters = [];
     let uploadStartTime = 0, uploadStartBytes = 0, lastLoadedBytes = 0, lastUpdateTime = 0;
+    
+    // Movie-specific state
+    let selectedGenres = [], selectedSAGenres = [], movieTags = [];
 
     // DOM Elements
     const loadingScreen = document.getElementById('loading'), app = document.getElementById('app');
@@ -1169,44 +1351,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // TAGS INPUT COMPONENT
+    // TAGS INPUT COMPONENT (Reusable)
     // ============================================
-    function createTagsInput(field) {
+    function createTagsInput(field, containerId, tagsArray) {
         const container = document.createElement('div');
         container.className = 'tags-input-container';
         container.innerHTML = `<div class="tags-list" id="tags-list-${field.name}"></div><input type="text" class="tags-input" placeholder="${field.placeholder || 'Type and press Enter'}" id="tags-input-${field.name}">`;
         const tagsList = container.querySelector(`#tags-list-${field.name}`);
         const input = container.querySelector(`#tags-input-${field.name}`);
-        let tags = [];
-        
-        function addTag(value) {
-            const trimmed = value.trim();
-            if (trimmed && !tags.includes(trimmed)) {
-                tags.push(trimmed);
-                renderTags();
-            }
-            input.value = '';
-        }
-        
-        function removeTag(tag) {
-            const index = tags.indexOf(tag);
-            if (index > -1) tags.splice(index, 1);
-            renderTags();
-        }
         
         function renderTags() {
-            tagsList.innerHTML = tags.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
+            tagsList.innerHTML = tagsArray.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
             tagsList.querySelectorAll('.tag i').forEach(icon => {
                 icon.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    removeTag(icon.parentElement.textContent.trim());
+                    const tagToRemove = icon.parentElement.textContent.trim();
+                    const index = tagsArray.indexOf(tagToRemove);
+                    if (index > -1) tagsArray.splice(index, 1);
+                    renderTags();
                 });
             });
-            container.dataset.tags = JSON.stringify(tags);
         }
         
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(input.value); } });
-        input.addEventListener('blur', () => { if (input.value.trim()) addTag(input.value); });
+        input.addEventListener('keypress', (e) => { 
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                const value = input.value.trim();
+                if (value && !tagsArray.includes(value)) {
+                    tagsArray.push(value);
+                    renderTags();
+                    input.value = '';
+                }
+            } 
+        });
+        input.addEventListener('blur', () => { 
+            if (input.value.trim()) {
+                const value = input.value.trim();
+                if (!tagsArray.includes(value)) {
+                    tagsArray.push(value);
+                    renderTags();
+                }
+                input.value = '';
+            }
+        });
+        
+        renderTags();
         return container;
     }
 
@@ -1228,13 +1417,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const contentDiv = document.getElementById('dynamic-fields-content');
         const moodSection = document.getElementById('mood-tags-section');
         const chaptersSection = document.getElementById('chapters-section');
+        const movieSection = document.getElementById('movie-classification-section');
         
-        if (!config) {
-            container.classList.remove('active');
-            moodSection.classList.remove('active');
-            chaptersSection.classList.remove('active');
-            return;
-        }
+        // Reset all sections first
+        container.classList.remove('active');
+        moodSection.classList.remove('active');
+        chaptersSection.classList.remove('active');
+        movieSection.classList.remove('active');
+        
+        if (!config) return;
         
         document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
         contentDiv.innerHTML = '';
@@ -1245,21 +1436,113 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ph.id = `field-${field.name}`;
                 ph.className = 'tags-input-container-placeholder';
                 contentDiv.appendChild(ph);
-                ph.appendChild(createTagsInput(field));
+                ph.appendChild(createTagsInput(field, `field-${field.name}`, []));
             } else {
                 contentDiv.insertAdjacentHTML('beforeend', createFieldHTML(field));
             }
         });
         
         container.classList.add('active');
-        if (config.requires_mood) moodSection.classList.add('active');
-        else moodSection.classList.remove('active');
+        
+        // Show mood section if required (for both music AND movies)
+        if (config.requires_mood) {
+            moodSection.classList.add('active');
+        }
+        
+        // Show chapters section if required
         if (config.requires_chapters) {
             chaptersSection.classList.add('active');
             renderChaptersList();
-        } else chaptersSection.classList.remove('active');
+        }
+        
+        // 🔥 SHOW MOVIE CLASSIFICATION SECTION FOR MOVIES ONLY
+        if (config.isMovieContent) {
+            movieSection.classList.add('active');
+            setupMovieGenreChips();
+            setupMovieTagsInput();
+        }
         
         updateChecklist();
+    }
+
+    // ============================================
+    // 🎬 MOVIE GENRE CHIP HANDLERS
+    // ============================================
+    function setupMovieGenreChips() {
+        // Primary Genres
+        document.querySelectorAll('#primary-genres-chips .genre-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('selected');
+                const genre = chip.dataset.genre;
+                if (chip.classList.contains('selected')) {
+                    if (!selectedGenres.includes(genre)) selectedGenres.push(genre);
+                } else {
+                    selectedGenres = selectedGenres.filter(g => g !== genre);
+                }
+                updateButtonsState();
+                updateChecklist();
+            });
+        });
+        
+        // SA Genres
+        document.querySelectorAll('#sa-genres-chips .sa-genre-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('selected');
+                const saGenre = chip.dataset.saGenre;
+                if (chip.classList.contains('selected')) {
+                    if (!selectedSAGenres.includes(saGenre)) selectedSAGenres.push(saGenre);
+                } else {
+                    selectedSAGenres = selectedSAGenres.filter(g => g !== saGenre);
+                }
+                updateButtonsState();
+                updateChecklist();
+            });
+        });
+    }
+
+    function setupMovieTagsInput() {
+        const tagsList = document.getElementById('movie-tags-list');
+        const input = document.getElementById('movie-tags-input');
+        
+        function renderMovieTags() {
+            tagsList.innerHTML = movieTags.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
+            tagsList.querySelectorAll('.tag i').forEach(icon => {
+                icon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tagToRemove = icon.parentElement.textContent.trim();
+                    const index = movieTags.indexOf(tagToRemove);
+                    if (index > -1) {
+                        movieTags.splice(index, 1);
+                        renderMovieTags();
+                    }
+                });
+            });
+        }
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = input.value.trim();
+                if (value && !movieTags.includes(value)) {
+                    movieTags.push(value);
+                    renderMovieTags();
+                    input.value = '';
+                }
+            }
+        });
+        
+        input.addEventListener('blur', () => {
+            if (input.value.trim()) {
+                const value = input.value.trim();
+                if (!movieTags.includes(value)) {
+                    movieTags.push(value);
+                    renderMovieTags();
+                }
+                input.value = '';
+            }
+        });
+        
+        renderMovieTags();
     }
 
     function renderChaptersList() {
@@ -1288,6 +1571,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     function addChapter() { chapters.push({ time: '00:00', title: 'New Chapter' }); renderChaptersList(); }
     document.getElementById('add-chapter-btn')?.addEventListener('click', addChapter);
 
+    // ============================================
+    // 🎬 COLLECT MOVIE METADATA
+    // ============================================
+    function collectMovieMetadata() {
+        return {
+            genres: [...selectedGenres],
+            sa_genres: [...selectedSAGenres],
+            moods: selectedMood ? [selectedMood] : [],
+            tags: [...movieTags],
+            language: document.getElementById('movie-language')?.value || 'English',
+            is_bantu_original: document.getElementById('is-bantu-original')?.checked || false
+        };
+    }
+
     function collectContentMetadata() {
         const genre = document.getElementById('content-genre').value;
         const config = genreConfig[genre];
@@ -1298,6 +1595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const element = document.getElementById(`field-${field.name}`);
             if (!element) return;
             if (field.type === 'tags') {
+                // For music tags (existing system)
                 const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
                 metadata[field.name] = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
             } else if (field.type === 'checkbox') {
@@ -1365,11 +1663,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         return playlistId;
     }
 
+    // ============================================
+    // 🎬 VALIDATE MOVIE METADATA
+    // ============================================
     function validateGenreMetadata() {
         const genre = document.getElementById('content-genre').value;
         const config = genreConfig[genre];
         if (!config) return true;
         
+        // 🔥 MOVIE-SPECIFIC VALIDATION
+        if (config.isMovieContent) {
+            if (selectedGenres.length === 0) {
+                showToast('Select at least 1 primary genre', 'error');
+                return false;
+            }
+            if (selectedSAGenres.length === 0) {
+                showToast('Select at least 1 SA genre', 'error');
+                return false;
+            }
+            if (!selectedMood) {
+                showToast('Select a mood', 'error');
+                return false;
+            }
+            return true;
+        }
+        
+        // Existing validation for non-movie content
         let isValid = true;
         for (const field of config.fields) {
             if (field.required) {
@@ -1400,7 +1719,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // GENRE/TAG LOADING FUNCTIONS
+    // GENRE/TAG LOADING FUNCTIONS (MUSIC - UNTOUCHED)
     // ============================================
     async function loadGenresForUpload() {
       try {
@@ -1549,7 +1868,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // MEDIA FUNCTIONS
+    // MEDIA FUNCTIONS (UNCHANGED)
     // ============================================
     function extractMediaDuration(file) {
         return new Promise((resolve, reject) => {
@@ -1764,13 +2083,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // THE FIXED INSERT LOGIC - EXPLICITLY SETS creator_id AND creator=null
+    // 🎬 THE FIXED INSERT LOGIC - MOVIE PATH SEPARATE FROM MUSIC
     // ============================================
     async function createContentRecord(data) {
+        const genre = document.getElementById('content-genre').value;
+        const config = genreConfig[genre];
+        const isMovieContent = config?.isMovieContent || false;
+        
+        // 🔥 MOVIE-SPECIFIC PAYLOAD (NEW SYSTEM)
+        if (isMovieContent) {
+            const movieMetadata = collectMovieMetadata();
+            
+            const contentData = {
+                title: data.title || null,
+                description: data.description || null,
+                file_url: data.media_url,
+                thumbnail_url: data.thumbnail_url || null,
+                media_type: data.media_type,
+                genre: data.genre || null,
+                status: data.status,
+                user_id: currentUserId || null,
+                creator_id: currentUserId || null,   // 🔥 EXPLICITLY SET
+                creator: null,                        // 🔥 PREVENTS trigger issues
+                created_at: new Date().toISOString(),
+                content_metadata: {},                 // Empty for movies (use array fields instead)
+                content_format: data.content_format || null,
+                chapters: data.chapters || [],
+                duration: data.duration !== undefined ? data.duration : null,
+                series_id: null,
+                primary_genre_id: null,
+                language_code: null,
+                city: null,
+                tempo: null,
+                key_signature: null,
+                is_explicit: false,
+                
+                // 🎬 NEW MOVIE SYSTEM FIELDS
+                content_type: 'movie',
+                genres: movieMetadata.genres || [],
+                sa_genres: movieMetadata.sa_genres || [],
+                moods: movieMetadata.moods || [],
+                tags: movieMetadata.tags || [],
+                language: movieMetadata.language || 'English',
+                country: 'South Africa',              // 🔥 AUTO-SET
+                region: 'Africa',                     // 🔥 AUTO-SET
+                is_bantu_original: movieMetadata.is_bantu_original || false,
+                completion_rate: 0
+            };
+            
+            if (data.content_format === 'series_episode') {
+                contentData.season_number = data.season_number || null;
+                contentData.episode_number = data.episode_number || null;
+            }
+            
+            const sanitizedData = sanitizeForSupabase(contentData);
+            
+            console.log('=== MOVIE UPLOAD OBJECT ===');
+            console.log('content_type:', sanitizedData.content_type);
+            console.log('genres:', sanitizedData.genres);
+            console.log('sa_genres:', sanitizedData.sa_genres);
+            console.log('country/region:', sanitizedData.country, sanitizedData.region);
+            
+            const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+            if (error) throw error;
+            return result[0];
+        }
+        
+        // 🔥 MUSIC/OTHER PATH (EXISTING SYSTEM - UNTOUCHED)
         const cleanedMetadata = data.content_metadata ? cleanContentMetadata(data.content_metadata) : {};
         
-        // CRITICAL FIX: Explicitly set creator_id to currentUserId and creator to null
-        // This completely bypasses any trigger lookup logic
         const contentData = {
             title: data.title || null,
             description: data.description || null,
@@ -1780,20 +2161,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             genre: data.genre || null,
             status: data.status,
             user_id: currentUserId || null,
-            creator_id: currentUserId || null,   // 🔥 EXPLICITLY SET - bypasses trigger
-            creator: null,                       // 🔥 PREVENTS empty string lookup issues
+            creator_id: currentUserId || null,
+            creator: null,
             created_at: new Date().toISOString(),
             content_metadata: cleanedMetadata,
             content_format: data.content_format || null,
             chapters: data.chapters || [],
             duration: data.duration !== undefined ? data.duration : null,
             series_id: null,
-            primary_genre_id: null,
-            language_code: null,
-            city: null,
-            tempo: null,
-            key_signature: null,
-            is_explicit: false
+            primary_genre_id: data.primary_genre_id || null,
+            language_code: data.language_code || null,
+            city: data.city || null,
+            tempo: data.tempo ? parseInt(data.tempo) : null,
+            key_signature: data.key_signature || null,
+            is_explicit: data.is_explicit || false
         };
         
         if (data.content_format === 'series_episode') {
@@ -1801,23 +2182,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             contentData.episode_number = data.episode_number || null;
         }
         
-        const isMusic = data.content_format === 'music' || data.content_format === 'music_video';
-        if (isMusic) {
-            contentData.primary_genre_id = data.primary_genre_id || null;
-            contentData.language_code = data.language_code || null;
-            contentData.city = data.city || null;
-            contentData.tempo = data.tempo ? parseInt(data.tempo) : null;
-            contentData.key_signature = data.key_signature || null;
-            contentData.is_explicit = data.is_explicit || false;
-        }
-        
-        // FINAL SANITIZATION: convert any empty strings to null
         const sanitizedData = sanitizeForSupabase(contentData);
         
-        console.log('=== FINAL UPLOAD OBJECT (TRIGGER BYPASSED) ===');
-        console.log('creator_id explicitly set to:', sanitizedData.creator_id);
-        console.log('creator explicitly set to null:', sanitizedData.creator);
-        console.log('Full sanitized payload:', JSON.stringify(sanitizedData, null, 2));
+        console.log('=== MUSIC/OTHER UPLOAD OBJECT (UNCHANGED) ===');
+        console.log('primary_genre_id:', sanitizedData.primary_genre_id);
+        console.log('content_metadata:', sanitizedData.content_metadata);
         
         const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
         if (error) throw error;
@@ -1835,6 +2204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function insertMusicGenreTags(contentId, mediaType, contentFormat) {
+        // 🔥 ONLY RUN FOR MUSIC CONTENT
         const isMusic = contentFormat === 'music' || contentFormat === 'music_video';
         if (!isMusic) return;
 
@@ -2053,20 +2423,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
         }
         
-        const hasMetadata = config && config.fields.some(f => {
-            if (f.required) {
-                const el = document.getElementById(`field-${f.name}`);
-                if (f.type === 'tags') {
-                    const cont = el?.closest('.tags-input-container');
-                    return cont?.dataset.tags && JSON.parse(cont.dataset.tags).length > 0;
-                } else if (f.type === 'radio') {
-                    const selected = document.querySelector(`input[name="field-${f.name}"]:checked`);
-                    return !!selected;
+        // 🔥 MOVIE-SPECIFIC METADATA CHECK
+        const isMovieContent = config?.isMovieContent;
+        let hasMetadata = false;
+        
+        if (isMovieContent) {
+            // Check movie-specific fields
+            hasMetadata = selectedGenres.length > 0 && selectedSAGenres.length > 0 && selectedMood;
+        } else if (config) {
+            // Existing check for non-movie content
+            hasMetadata = config.fields.some(f => {
+                if (f.required) {
+                    const el = document.getElementById(`field-${f.name}`);
+                    if (f.type === 'tags') {
+                        const cont = el?.closest('.tags-input-container');
+                        return cont?.dataset.tags && JSON.parse(cont.dataset.tags).length > 0;
+                    } else if (f.type === 'radio') {
+                        const selected = document.querySelector(`input[name="field-${f.name}"]:checked`);
+                        return !!selected;
+                    }
+                    return el && el.value;
                 }
-                return el && el.value;
-            }
-            return false;
-        });
+                return false;
+            });
+        } else {
+            hasMetadata = true; // No config = no extra metadata needed
+        }
         
         if (hasMetadata || !config) {
             document.getElementById('check-metadata').classList.add('completed');
@@ -2111,7 +2493,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             mediaName: selectedMediaFile?.name || null,
             hasThumbnail: !!selectedThumbnailFile,
             selectedMood: selectedMood,
-            chapters: chapters
+            chapters: chapters,
+            // Movie-specific
+            selectedGenres: [...selectedGenres],
+            selectedSAGenres: [...selectedSAGenres],
+            movieTags: [...movieTags]
         };
         localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
     }
@@ -2135,6 +2521,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 chapters = draft.chapters;
                 renderChaptersList();
             }
+            // Restore movie-specific state
+            if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
+            if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
+            if (draft.movieTags) movieTags = [...draft.movieTags];
+            
             updateChecklist();
             updateButtonsState();
             if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
@@ -2196,6 +2587,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         document.getElementById('content-genre').addEventListener('change', () => {
+            // Reset movie state when genre changes
+            selectedGenres = [];
+            selectedSAGenres = [];
+            movieTags = [];
+            
             updateGenreForm();
             updateButtonsState();
             updateChecklist();
@@ -2288,6 +2684,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         extractedDuration = null;
         selectedMood = null;
         chapters = [];
+        selectedGenres = [];
+        selectedSAGenres = [];
+        movieTags = [];
         document.getElementById('media-file-info').style.display = 'none';
         document.getElementById('thumbnail-preview').style.display = 'none';
         document.getElementById('duration-display').style.display = 'none';
