@@ -147,87 +147,85 @@ align-items: center;
 gap: 10px;
 }
 .dynamic-fields-title i { font-size: 20px; }
-
 /* ===== MOVIE CLASSIFICATION SECTION ===== */
 .movie-classification-section {
-  margin: 20px 0;
-  padding: 20px;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid var(--movie-purple);
-  border-radius: 12px;
-  display: none;
+margin: 20px 0;
+padding: 20px;
+background: rgba(139, 92, 246, 0.1);
+border: 1px solid var(--movie-purple);
+border-radius: 12px;
+display: none;
 }
 .movie-classification-section.active { display: block; }
 .classification-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 20px;
 }
 @media (max-width: 768px) {
-  .classification-grid { grid-template-columns: 1fr; }
+.classification-grid { grid-template-columns: 1fr; }
 }
 .genre-section h4, .sa-genre-section h4 {
-  color: var(--warm-gold);
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+color: var(--warm-gold);
+margin-bottom: 12px;
+font-size: 14px;
+font-weight: 600;
+display: flex;
+align-items: center;
+gap: 8px;
 }
 .genre-chips, .sa-genre-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
 }
 .genre-chip, .sa-genre-chip {
-  padding: 8px 16px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  color: var(--soft-white);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+padding: 8px 16px;
+background: rgba(255,255,255,0.05);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+color: var(--soft-white);
+font-size: 13px;
+cursor: pointer;
+transition: all 0.2s ease;
 }
 .genre-chip:hover, .sa-genre-chip:hover {
-  border-color: var(--warm-gold);
-  background: rgba(245,158,11,0.1);
+border-color: var(--warm-gold);
+background: rgba(245,158,11,0.1);
 }
 .genre-chip.selected, .sa-genre-chip.selected {
-  background: var(--warm-gold);
-  color: var(--deep-black);
-  border-color: var(--warm-gold);
-  font-weight: 600;
+background: var(--warm-gold);
+color: var(--deep-black);
+border-color: var(--warm-gold);
+font-weight: 600;
 }
 .bantu-original-toggle {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid var(--card-border);
+margin-top: 20px;
+padding-top: 15px;
+border-top: 1px solid var(--card-border);
 }
 .bantu-original-toggle label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--soft-white);
+display: flex;
+align-items: center;
+gap: 10px;
+cursor: pointer;
+font-size: 14px;
+color: var(--soft-white);
 }
 .bantu-original-toggle input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--warm-gold);
+width: 20px;
+height: 20px;
+accent-color: var(--warm-gold);
 }
 .bantu-original-toggle .badge {
-  background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-left: 5px;
+background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));
+color: white;
+padding: 2px 8px;
+border-radius: 12px;
+font-size: 11px;
+font-weight: 600;
+margin-left: 5px;
 }
-
 .tags-input-container {
 background: rgba(255,255,255,.05);
 border: 1px solid var(--card-border);
@@ -823,52 +821,50 @@ color: var(--slate-grey); text-decoration: none;
 transition: color .3s ease; font-size: 14px;
 }
 .footer-links a:hover { color: var(--warm-gold); }
-
 /* ========= Tag Buttons for Upload Form ========= */
 .tag-buttons-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 8px;
-  background: rgba(0,0,0,0.2);
-  border-radius: 12px;
+display: flex;
+flex-direction: column;
+gap: 16px;
+max-height: 300px;
+overflow-y: auto;
+padding: 8px;
+background: rgba(0,0,0,0.2);
+border-radius: 12px;
 }
 .tag-section {
-  margin-bottom: 8px;
+margin-bottom: 8px;
 }
 .tag-section strong {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: #F59E0B;
+display: block;
+margin-bottom: 8px;
+font-size: 13px;
+color: #F59E0B;
 }
 .tag-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
 }
 .tag-btn {
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(148,163,184,0.3);
-  color: #F8FAFC;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+padding: 6px 14px;
+border-radius: 20px;
+background: rgba(255,255,255,0.1);
+border: 1px solid rgba(148,163,184,0.3);
+color: #F8FAFC;
+font-size: 12px;
+cursor: pointer;
+transition: all 0.2s ease;
 }
 .tag-btn:hover {
-  background: rgba(245,158,11,0.2);
-  border-color: #F59E0B;
+background: rgba(245,158,11,0.2);
+border-color: #F59E0B;
 }
 .tag-btn.selected {
-  background: #F59E0B;
-  color: #0A0E12;
-  border-color: #F59E0B;
+background: #F59E0B;
+color: #0A0E12;
+border-color: #F59E0B;
 }
-
 @media (max-width: 768px) {
 .upload-card { padding: 30px 20px; }
 .action-buttons { flex-direction: column; }
@@ -967,185 +963,163 @@ transition: color .3s ease; font-size: 14px;
 <h4><i class="fas fa-info-circle"></i> Shorts Guidelines</h4>
 <ul><li><i class="fas fa-check"></i> Maximum duration: 60 seconds</li><li><i class="fas fa-check"></i> Recommended aspect ratio: 9:16 (vertical)</li><li><i class="fas fa-check"></i> Add trending audio for better discovery</li><li><i class="fas fa-check"></i> Use engaging thumbnails to attract viewers</li></ul>
 </div>
-
 <!-- Basic Fields -->
 <div class="form-group"><label class="form-label">Title <span>*</span></label><input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required></div>
 <div class="form-group"><label class="form-label">Description <span>*</span></label><textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea></div>
-
 <!-- Genre/Category -->
 <div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
-
 <!-- Content Format Field -->
 <div class="form-group">
-  <label><i class="fas fa-layer-group"></i> Content Format</label>
-  <select id="content_format" class="form-input" required>
-    <option value="">Select format...</option>
-    <option value="music">Music (Audio Only)</option>
-    <option value="music_video">Music Video</option>
-    <option value="film">Film / Movie</option>
-    <option value="documentary">Documentary</option>
-    <option value="series_episode">Series Episode</option>
-    <option value="podcast_episode">Podcast Episode</option>
-    <option value="short">Short / Short Film</option>
-    <option value="long_form">Long Form Video</option>
-  </select>
-  <small class="form-text text-muted">Select what type of content you're uploading</small>
+<label><i class="fas fa-layer-group"></i> Content Format</label>
+<select id="content_format" class="form-input" required>
+<option value="">Select format...</option>
+<option value="music">Music (Audio Only)</option>
+<option value="music_video">Music Video</option>
+<option value="film">Film / Movie</option>
+<option value="documentary">Documentary</option>
+<option value="series_episode">Series Episode</option>
+<option value="podcast_episode">Podcast Episode</option>
+<option value="short">Short / Short Film</option>
+<option value="long_form">Long Form Video</option>
+</select>
+<small class="form-text text-muted">Select what type of content you're uploading</small>
 </div>
-
 <!-- Dynamic Genre Fields -->
 <div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
-
 <!-- 🎬 MOVIE CLASSIFICATION SECTION (NEW - Only for Film/Series/Documentary) -->
 <div id="movie-classification-section" class="movie-classification-section">
-  <div class="dynamic-fields-title"><i class="fas fa-film"></i> Film Classification</div>
-  
-  <div class="classification-grid">
-    <!-- Primary Genres (Global) -->
-    <div class="genre-section">
-      <h4><i class="fas fa-tags"></i> Primary Genres (Multi-select)</h4>
-      <div class="genre-chips" id="primary-genres-chips">
-        <button type="button" class="genre-chip" data-genre="Drama">Drama</button>
-        <button type="button" class="genre-chip" data-genre="Action">Action</button>
-        <button type="button" class="genre-chip" data-genre="Romance">Romance</button>
-        <button type="button" class="genre-chip" data-genre="Thriller">Thriller</button>
-        <button type="button" class="genre-chip" data-genre="Comedy">Comedy</button>
-        <button type="button" class="genre-chip" data-genre="Sci-Fi">Sci-Fi</button>
-        <button type="button" class="genre-chip" data-genre="Horror">Horror</button>
-        <button type="button" class="genre-chip" data-genre="Documentary">Documentary</button>
-      </div>
-    </div>
-    
-    <!-- SA Core Genres -->
-    <div class="sa-genre-section">
-      <h4><i class="fas fa-map-marker-alt"></i> South African Genres (Multi-select)</h4>
-      <div class="sa-genre-chips" id="sa-genres-chips">
-        <button type="button" class="sa-genre-chip" data-sa-genre="Township Drama">Township Drama</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="Kasi Comedy">Kasi Comedy</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="Taxi Industry Stories">Taxi Stories</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="SA Romantic Comedy">SA Rom-Com</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="Southern African Gothic">SA Gothic</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="Struggle Stories">Struggle Stories</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="Rural Life Stories">Rural Stories</button>
-        <button type="button" class="sa-genre-chip" data-sa-genre="Faith & Spiritual Narratives">Faith Stories</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Language Selector -->
-  <div class="form-group" style="margin-top: 20px;">
-    <label class="form-label"><i class="fas fa-language"></i> Primary Language</label>
-    <select id="movie-language" class="form-input">
-      <option value="English">English</option>
-      <option value="Zulu">isiZulu</option>
-      <option value="Xhosa">isiXhosa</option>
-      <option value="Afrikaans">Afrikaans</option>
-      <option value="Sotho">Sesotho</option>
-      <option value="Tswana">Setswana</option>
-      <option value="Pedi">Sepedi</option>
-      <option value="Tsonga">Xitsonga</option>
-      <option value="Swati">siSwati</option>
-      <option value="Venda">Tshivenda</option>
-      <option value="Ndebele">isiNdebele</option>
-    </select>
-  </div>
-  
-  <!-- Tags Input -->
-  <div class="form-group">
-    <label class="form-label"><i class="fas fa-hashtag"></i> Tags (Cities, Languages, Keywords)</label>
-    <div class="tags-input-container">
-      <div class="tags-list" id="movie-tags-list"></div>
-      <input type="text" class="tags-input" id="movie-tags-input" placeholder="Type and press Enter (e.g., Soweto, Zulu, Township)">
-    </div>
-    <small class="form-text text-muted" style="color: var(--slate-grey);">Add tags for better discovery: cities, languages, themes</small>
-  </div>
-  
-  <!-- Bantu Original Toggle -->
-  <div class="bantu-original-toggle">
-    <label>
-      <input type="checkbox" id="is-bantu-original">
-      <span>☑️ This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
-    </label>
-    <small class="form-text text-muted" style="color: var(--slate-grey); margin-top: 5px; display: block;">Bantu Originals get featured placement and priority discovery</small>
-  </div>
+<div class="dynamic-fields-title"><i class="fas fa-film"></i> Film Classification</div>
+<div class="classification-grid">
+<!-- Primary Genres (Global) -->
+<div class="genre-section">
+<h4><i class="fas fa-tags"></i> Primary Genres (Multi-select)</h4>
+<div class="genre-chips" id="primary-genres-chips">
+<button type="button" class="genre-chip" data-genre="Drama">Drama</button>
+<button type="button" class="genre-chip" data-genre="Action">Action</button>
+<button type="button" class="genre-chip" data-genre="Romance">Romance</button>
+<button type="button" class="genre-chip" data-genre="Thriller">Thriller</button>
+<button type="button" class="genre-chip" data-genre="Comedy">Comedy</button>
+<button type="button" class="genre-chip" data-genre="Sci-Fi">Sci-Fi</button>
+<button type="button" class="genre-chip" data-genre="Horror">Horror</button>
+<button type="button" class="genre-chip" data-genre="Documentary">Documentary</button>
 </div>
-
+</div>
+<!-- SA Core Genres -->
+<div class="sa-genre-section">
+<h4><i class="fas fa-map-marker-alt"></i> South African Genres (Multi-select)</h4>
+<div class="sa-genre-chips" id="sa-genres-chips">
+<button type="button" class="sa-genre-chip" data-sa-genre="Township Drama">Township Drama</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="Kasi Comedy">Kasi Comedy</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="Taxi Industry Stories">Taxi Stories</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="SA Romantic Comedy">SA Rom-Com</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="Southern African Gothic">SA Gothic</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="Struggle Stories">Struggle Stories</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="Rural Life Stories">Rural Stories</button>
+<button type="button" class="sa-genre-chip" data-sa-genre="Faith & Spiritual Narratives">Faith Stories</button>
+</div>
+</div>
+</div>
+<!-- Language Selector -->
+<div class="form-group" style="margin-top: 20px;">
+<label class="form-label"><i class="fas fa-language"></i> Primary Language</label>
+<select id="movie-language" class="form-input">
+<option value="English">English</option>
+<option value="Zulu">isiZulu</option>
+<option value="Xhosa">isiXhosa</option>
+<option value="Afrikaans">Afrikaans</option>
+<option value="Sotho">Sesotho</option>
+<option value="Tswana">Setswana</option>
+<option value="Pedi">Sepedi</option>
+<option value="Tsonga">Xitsonga</option>
+<option value="Swati">siSwati</option>
+<option value="Venda">Tshivenda</option>
+<option value="Ndebele">isiNdebele</option>
+</select>
+</div>
+<!-- Tags Input -->
+<div class="form-group">
+<label class="form-label"><i class="fas fa-hashtag"></i> Tags (Cities, Languages, Keywords)</label>
+<div class="tags-input-container">
+<div class="tags-list" id="movie-tags-list"></div>
+<input type="text" class="tags-input" id="movie-tags-input" placeholder="Type and press Enter (e.g., Soweto, Zulu, Township)">
+</div>
+<small class="form-text text-muted" style="color: var(--slate-grey);">Add tags for better discovery: cities, languages, themes</small>
+</div>
+<!-- Bantu Original Toggle -->
+<div class="bantu-original-toggle">
+<label>
+<input type="checkbox" id="is-bantu-original">
+<span>☑️ This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
+</label>
+<small class="form-text text-muted" style="color: var(--slate-grey); margin-top: 5px; display: block;">Bantu Originals get featured placement and priority discovery</small>
+</div>
+</div>
 <!-- Music Genre Selector -->
 <div class="form-group" id="music-genre-group" style="display: none;">
-  <label><i class="fas fa-music"></i> Music Genre</label>
-  <select id="music-genre" class="form-input">
-    <option value="">Select genre...</option>
-  </select>
-  <div id="subgenre-container" style="margin-top: 10px; display: none;">
-    <label>Subgenre (optional)</label>
-    <select id="music-subgenre" class="form-input">
-      <option value="">Select subgenre...</option>
-    </select>
-  </div>
-  <small class="form-text text-muted">Select the primary genre for your music content</small>
+<label><i class="fas fa-music"></i> Music Genre</label>
+<select id="music-genre" class="form-input">
+<option value="">Select genre...</option>
+</select>
+<div id="subgenre-container" style="margin-top: 10px; display: none;">
+<label>Subgenre (optional)</label>
+<select id="music-subgenre" class="form-input">
+<option value="">Select subgenre...</option>
+</select>
 </div>
-
+<small class="form-text text-muted">Select the primary genre for your music content</small>
+</div>
 <!-- Music Tags -->
 <div class="form-group" id="music-tags-group" style="display: none;">
-  <label><i class="fas fa-tags"></i> Tags (Language, Mood, City)</label>
-  <div id="tag-buttons" class="tag-buttons-container">
-    <!-- Dynamic tag buttons will appear here -->
-  </div>
-  <small class="form-text text-muted">Select tags that describe your music</small>
+<label><i class="fas fa-tags"></i> Tags (Language, Mood, City)</label>
+<div id="tag-buttons" class="tag-buttons-container">
+<!-- Dynamic tag buttons will appear here -->
 </div>
-
+<small class="form-text text-muted">Select tags that describe your music</small>
+</div>
 <!-- Music Metadata Fields -->
 <div id="tempo-group" class="form-group" style="display: none;">
-  <label><i class="fas fa-metronome"></i> Tempo (BPM)</label>
-  <input type="number" id="tempo" class="form-input" placeholder="e.g., 112" step="1" min="40" max="220">
-  <small class="form-text text-muted">Optional: Beats per minute (112-115 for Amapiano, 125-130 for Gqom)</small>
+<label><i class="fas fa-metronome"></i> Tempo (BPM)</label>
+<input type="number" id="tempo" class="form-input" placeholder="e.g., 112" step="1" min="40" max="220">
+<small class="form-text text-muted">Optional: Beats per minute (112-115 for Amapiano, 125-130 for Gqom)</small>
 </div>
-
 <div id="key-group" class="form-group" style="display: none;">
-  <label><i class="fas fa-music"></i> Musical Key</label>
-  <select id="key_signature" class="form-input">
-    <option value="">Select key (optional)</option>
-    <option value="C">C Major</option>
-    <option value="Cm">C Minor</option>
-    <option value="D">D Major</option>
-    <option value="Dm">D Minor</option>
-    <option value="E">E Major</option>
-    <option value="Em">E Minor</option>
-    <option value="F">F Major</option>
-    <option value="Fm">F Minor</option>
-    <option value="G">G Major</option>
-    <option value="Gm">G Minor</option>
-    <option value="A">A Major</option>
-    <option value="Am">A Minor</option>
-    <option value="B">B Major</option>
-    <option value="Bm">B Minor</option>
-  </select>
+<label><i class="fas fa-music"></i> Musical Key</label>
+<select id="key_signature" class="form-input">
+<option value="">Select key (optional)</option>
+<option value="C">C Major</option>
+<option value="Cm">C Minor</option>
+<option value="D">D Major</option>
+<option value="Dm">D Minor</option>
+<option value="E">E Major</option>
+<option value="Em">E Minor</option>
+<option value="F">F Major</option>
+<option value="Fm">F Minor</option>
+<option value="G">G Major</option>
+<option value="Gm">G Minor</option>
+<option value="A">A Major</option>
+<option value="Am">A Minor</option>
+<option value="B">B Major</option>
+<option value="Bm">B Minor</option>
+</select>
 </div>
-
 <div id="explicit-group" class="form-group" style="display: none;">
-  <label>
-    <input type="checkbox" id="is_explicit" value="true">
-    <i class="fas fa-exclamation-triangle"></i> Contains explicit content
-  </label>
+<label>
+<input type="checkbox" id="is_explicit" value="true">
+<i class="fas fa-exclamation-triangle"></i> Contains explicit content
+</label>
 </div>
-
 <!-- Mood Tags Section (existing - used by both music AND movies) -->
 <div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and movies)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
-
 <!-- Chapters Section (existing) -->
 <div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
-
 <!-- Quality Checklist -->
 <div class="quality-checklist"><div class="checklist-header"><span>Upload Quality Score</span><span class="checklist-score" id="quality-score">0%</span></div><div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div><div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div><div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div><div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div><div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div><div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div></div>
-
 <!-- Media Upload -->
 <div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none"></div>
-
 <!-- Thumbnail Upload -->
 <div class="form-group thumbnail-section"><label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label><div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px"><i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.</div><div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag thumbnail image here</div><div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div></div><div id="thumbnail-preview" class="thumbnail-preview"><img id="thumbnail-image" src="" alt="Thumbnail Preview"></div><div class="thumbnail-actions"><button type="button" class="thumbnail-btn" onclick="window.openImagePicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Choose from Gallery</button><button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button></div><input type="file" id="thumbnail-file-input" accept="image/*" style="display:none"><input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none"></div>
-
 <!-- Upload Progress -->
 <div id="upload-progress" class="upload-progress"><div class="progress-header"><span>Uploading...</span><span id="progress-percentage">0%</span></div><div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div><div class="progress-stats"><span id="progress-speed">Speed: 0 MB/s</span><span id="progress-eta">ETA: --:--</span></div><div id="progress-text" style="margin-top:10px;text-align:center">Preparing upload...</div></div>
-
 <!-- Action Buttons -->
 <div class="action-buttons"><button type="button" id="save-draft-btn" class="action-btn draft" disabled><i class="fas fa-save"></i> Save Draft</button><button type="submit" id="publish-btn" class="action-btn publish" disabled><i class="fas fa-cloud-upload-alt"></i> Publish Content</button></div>
 </form>
@@ -1158,1573 +1132,1684 @@ transition: color .3s ease; font-size: 14px;
 <footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
 </div>
 <div id="toast-container"></div>
-
 <script>
 if (!window.supabaseClient) {
-    window.supabaseClient = supabase.createClient(
-        'https://ydnxqnbjoshvxteevemc.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-    );
+window.supabaseClient = supabase.createClient(
+'https://ydnxqnbjoshvxteevemc.supabase.co',
+'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+);
 }
 </script>
-
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-    // ============================================
-    // GENRE CONFIGURATION
-    // ============================================
-    const genreConfig = {
-        'Film': {
-            title: '🎬 Film Details',
-            fields: [
-                { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
-                { name: 'cast', type: 'tags', label: 'Cast', required: false, placeholder: 'e.g., Actor 1, Actor 2' },
-                { name: 'release_year', type: 'number', label: 'Release Year', required: true, min: 1900, max: new Date().getFullYear() },
-                { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
-                { name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' }
-            ],
-            content_format: 'film', 
-            requires_chapters: false, 
-            requires_mood: true,
-            isMovieContent: true
-        },
-        'Documentary': {
-            title: '📽️ Documentary Details',
-            fields: [
-                { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
-                { name: 'subject_matter', type: 'tags', label: 'Subject Matter', required: true, placeholder: 'e.g., Nature, Politics, History' },
-                { name: 'interview_subjects', type: 'tags', label: 'Interview Subjects', required: false, placeholder: 'e.g., Person 1, Person 2' },
-                { name: 'production_year', type: 'number', label: 'Production Year', required: true, min: 1900, max: new Date().getFullYear() },
-                { name: 'research_sources', type: 'tags', label: 'Research Sources', required: false, placeholder: 'e.g., University, Archive' },
-                { name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'Not Rated'] }
-            ],
-            content_format: 'documentary', 
-            requires_chapters: false, 
-            requires_mood: true,
-            isMovieContent: true
-        },
-        'Series': {
-            title: '📺 Series Episode Details',
-            fields: [
-                { name: 'show_title', type: 'text', label: 'Show Title', required: true, placeholder: 'e.g., Bantu Stories' },
-                { name: 'season_number', type: 'number', label: 'Season Number', required: true, min: 1 },
-                { name: 'episode_number', type: 'number', label: 'Episode Number', required: true, min: 1 },
-                { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning' },
-                { name: 'series_description', type: 'textarea', label: 'Series Description', required: false, rows: 3 }
-            ],
-            content_format: 'series_episode', 
-            requires_chapters: true, 
-            requires_mood: true, 
-            uses_playlist: true, 
-            playlist_type: 'series',
-            isMovieContent: true
-        },
-        'Music': {
-            title: '🎵 Music Details',
-            fields: [
-                { name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up' },
-                { name: 'artist_name', type: 'text', label: 'Artist Name', required: true, placeholder: 'e.g., Bantu Artist' },
-                { name: 'album_title', type: 'text', label: 'Album Title', required: false, placeholder: 'e.g., African Dreams' },
-                { name: 'track_number', type: 'number', label: 'Track Number', required: false, min: 1 },
-                { name: 'featured_artists', type: 'tags', label: 'Featured Artists', required: false, placeholder: 'e.g., Artist 1, Artist 2' },
-                { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
-                { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
-                { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
-            ],
-            content_format: 'music', 
-            requires_chapters: false, 
-            requires_mood: true, 
-            uses_playlist: true, 
-            playlist_type: 'album',
-            isMovieContent: false
-        },
-        'Podcast': {
-            title: '🎙️ Podcast Episode Details',
-            fields: [
-                { name: 'show_title', type: 'text', label: 'Podcast Show Title', required: true, placeholder: 'e.g., Bantu Voices' },
-                { name: 'season_number', type: 'number', label: 'Season Number', required: false, min: 1 },
-                { name: 'episode_number', type: 'number', label: 'Episode Number', required: false, min: 1 },
-                { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Journey Begins' },
-                { name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
-                { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false }
-            ],
-            content_format: 'podcast_episode', 
-            requires_chapters: true, 
-            requires_mood: true, 
-            uses_playlist: true, 
-            playlist_type: 'series',
-            isMovieContent: false
-        },
-        'Shorts': {
-            title: '⚡ Shorts Details',
-            fields: [
-                { name: 'audio_title', type: 'text', label: 'Audio Title', required: false, placeholder: 'e.g., Trending Sound' },
-                { name: 'original_sound', type: 'checkbox', label: 'Original Sound (not trending audio)', required: false }
-            ],
-            content_format: 'short', 
-            requires_chapters: false, 
-            requires_mood: true,
-            isMovieContent: false
-        }
-    };
+// ============================================
+// GENRE CONFIGURATION
+// ============================================
+const genreConfig = {
+'Film': {
+title: '🎬 Film Details',
+fields: [
+{ name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
+{ name: 'cast', type: 'tags', label: 'Cast', required: false, placeholder: 'e.g., Actor 1, Actor 2' },
+{ name: 'release_year', type: 'number', label: 'Release Year', required: true, min: 1900, max: new Date().getFullYear() },
+{ name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
+{ name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' }
+],
+content_format: 'film',
+requires_chapters: false,
+requires_mood: true,
+isMovieContent: true
+},
+'Documentary': {
+title: '📽️ Documentary Details',
+fields: [
+{ name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
+{ name: 'subject_matter', type: 'tags', label: 'Subject Matter', required: true, placeholder: 'e.g., Nature, Politics, History' },
+{ name: 'interview_subjects', type: 'tags', label: 'Interview Subjects', required: false, placeholder: 'e.g., Person 1, Person 2' },
+{ name: 'production_year', type: 'number', label: 'Production Year', required: true, min: 1900, max: new Date().getFullYear() },
+{ name: 'research_sources', type: 'tags', label: 'Research Sources', required: false, placeholder: 'e.g., University, Archive' },
+{ name: 'certification', type: 'select', label: 'Certification', required: true, options: ['G', 'PG', 'PG-13', 'R', 'Not Rated'] }
+],
+content_format: 'documentary',
+requires_chapters: false,
+requires_mood: true,
+isMovieContent: true
+},
+'Series': {
+title: '📺 Series Episode Details',
+fields: [
+{ name: 'show_title', type: 'text', label: 'Show Title', required: true, placeholder: 'e.g., Bantu Stories' },
+{ name: 'season_number', type: 'number', label: 'Season Number', required: true, min: 1 },
+{ name: 'episode_number', type: 'number', label: 'Episode Number', required: true, min: 1 },
+{ name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning' },
+{ name: 'series_description', type: 'textarea', label: 'Series Description', required: false, rows: 3 }
+],
+content_format: 'series_episode',
+requires_chapters: true,
+requires_mood: true,
+uses_playlist: true,
+playlist_type: 'series',
+isMovieContent: true
+},
+'Music': {
+title: '🎵 Music Details',
+fields: [
+{ name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up' },
+{ name: 'artist_name', type: 'text', label: 'Artist Name', required: true, placeholder: 'e.g., Bantu Artist' },
+{ name: 'album_title', type: 'text', label: 'Album Title', required: false, placeholder: 'e.g., African Dreams' },
+{ name: 'track_number', type: 'number', label: 'Track Number', required: false, min: 1 },
+{ name: 'featured_artists', type: 'tags', label: 'Featured Artists', required: false, placeholder: 'e.g., Artist 1, Artist 2' },
+{ name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
+{ name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
+{ name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
+],
+content_format: 'music',
+requires_chapters: false,
+requires_mood: true,
+uses_playlist: true,
+playlist_type: 'album',
+isMovieContent: false
+},
+'Podcast': {
+title: '🎙️ Podcast Episode Details',
+fields: [
+{ name: 'show_title', type: 'text', label: 'Podcast Show Title', required: true, placeholder: 'e.g., Bantu Voices' },
+{ name: 'season_number', type: 'number', label: 'Season Number', required: false, min: 1 },
+{ name: 'episode_number', type: 'number', label: 'Episode Number', required: false, min: 1 },
+{ name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Journey Begins' },
+{ name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
+{ name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
+{ name: 'category', type: 'select', label: 'Category', required: true, options: ['News', 'Business', 'Technology', 'Culture', 'Education', 'Entertainment', 'Health', 'Sports'] },
+{ name: 'language', type: 'select', label: 'Language', required: true, options: ['English', 'isiZulu', 'isiXhosa', 'Afrikaans', 'Sesotho', 'Setswana', 'Sepedi', 'Xitsonga', 'siSwati', 'Tshivenda', 'isiNdebele'] },
+{ name: 'country', type: 'text', label: 'Country of Origin', required: true, placeholder: 'e.g., South Africa' }
+],
+content_format: 'podcast_episode',
+requires_chapters: true,
+requires_mood: true,
+uses_playlist: true,
+playlist_type: 'podcast',
+isMovieContent: false,
+isPodcastContent: true
+},
+'Shorts': {
+title: '⚡ Shorts Details',
+fields: [
+{ name: 'audio_title', type: 'text', label: 'Audio Title', required: false, placeholder: 'e.g., Trending Sound' },
+{ name: 'original_sound', type: 'checkbox', label: 'Original Sound (not trending audio)', required: false }
+],
+content_format: 'short',
+requires_chapters: false,
+requires_mood: true,
+isMovieContent: false
+}
+};
+// ============================================
+// GLOBAL VARIABLES
+// ============================================
+let selectedMediaFile = null, selectedThumbnailFile = null, currentUserId = null, currentSession = null;
+let isUploading = false, selectedMediaType = 'regular', extractedDuration = null, currentXhr = null;
+let selectedMood = null, chapters = [];
+let uploadStartTime = 0, uploadStartBytes = 0, lastLoadedBytes = 0, lastUpdateTime = 0;
+// Movie-specific state
+let selectedGenres = [], selectedSAGenres = [], movieTags = [];
+// DOM Elements
+const loadingScreen = document.getElementById('loading'), app = document.getElementById('app');
+const authModal = document.getElementById('auth-modal');
+const publishBtn = document.getElementById('publish-btn'), saveDraftBtn = document.getElementById('save-draft-btn');
+const progressSection = document.getElementById('upload-progress'), progressFill = document.getElementById('progress-fill');
+const progressPercentage = document.getElementById('progress-percentage'), progressText = document.getElementById('progress-text');
+const progressSpeed = document.getElementById('progress-speed'), progressEta = document.getElementById('progress-eta');
+const uploadFormState = document.getElementById('upload-form-state'), processingState = document.getElementById('processing-state');
+const successState = document.getElementById('success-state');
+function showToast(message, type = 'error') {
+const toast = document.createElement('div');
+toast.className = `toast ${type}`;
+toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
+document.getElementById('toast-container').appendChild(toast);
+setTimeout(() => toast.remove(), 3000);
+}
+function formatFileSize(bytes) {
+if (bytes === 0) return '0 Bytes';
+const k = 1024;
+const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+const i = Math.floor(Math.log(bytes) / Math.log(k));
+return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+function formatTime(seconds) {
+if (!seconds && seconds !== 0) return '--:--';
+const mins = Math.floor(seconds / 60);
+const secs = Math.floor(seconds % 60);
+return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+function escapeHtml(text) {
+if (!text) return '';
+const div = document.createElement('div');
+div.textContent = text;
+return div.innerHTML;
+}
+// ============================================
+// UUID SANITIZER HELPER - CATCHES ALL EMPTY STRINGS
+// ============================================
+function sanitizeForSupabase(obj) {
+const sanitized = {};
+for (const [key, value] of Object.entries(obj)) {
+if (value === "" || value === undefined) {
+console.warn(`⚠️ Field "${key}" was empty/undefined - converting to null`);
+sanitized[key] = null;
+} else {
+sanitized[key] = value;
+}
+}
+return sanitized;
+}
+// ============================================
+// CLEAN METADATA HELPER
+// ============================================
+function cleanContentMetadata(rawMetadata) {
+return {
+track_title: rawMetadata.track_title || null,
+artist_name: rawMetadata.artist_name || null,
+album_title: rawMetadata.album_title || null,
+track_number: rawMetadata.track_number ? parseInt(rawMetadata.track_number) : null,
+featured_artists: Array.isArray(rawMetadata.featured_artists) ? rawMetadata.featured_artists : [],
+explicit: rawMetadata.explicit || false,
+record_label: rawMetadata.record_label || null
+};
+}
+// ============================================
+// TAGS INPUT COMPONENT (Reusable)
+// ============================================
+function createTagsInput(field, containerId, tagsArray) {
+const container = document.createElement('div');
+container.className = 'tags-input-container';
+container.innerHTML = `<div class="tags-list" id="tags-list-${field.name}"></div><input type="text" class="tags-input" placeholder="${field.placeholder || 'Type and press Enter'}" id="tags-input-${field.name}">`;
+const tagsList = container.querySelector(`#tags-list-${field.name}`);
+const input = container.querySelector(`#tags-input-${field.name}`);
+function renderTags() {
+tagsList.innerHTML = tagsArray.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
+tagsList.querySelectorAll('.tag i').forEach(icon => {
+icon.addEventListener('click', (e) => {
+e.stopPropagation();
+const tagToRemove = icon.parentElement.textContent.trim();
+const index = tagsArray.indexOf(tagToRemove);
+if (index > -1) tagsArray.splice(index, 1);
+renderTags();
+});
+});
+}
+input.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+e.preventDefault();
+const value = input.value.trim();
+if (value && !tagsArray.includes(value)) {
+tagsArray.push(value);
+renderTags();
+input.value = '';
+}
+}
+});
+input.addEventListener('blur', () => {
+if (input.value.trim()) {
+const value = input.value.trim();
+if (!tagsArray.includes(value)) {
+tagsArray.push(value);
+renderTags();
+}
+input.value = '';
+}
+});
+renderTags();
+return container;
+}
+function createFieldHTML(field) {
+if (field.type === 'text') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><input type="text" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></div>`;
+if (field.type === 'number') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><input type="number" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" min="${field.min || 0}" max="${field.max || ''}" ${field.required ? 'required' : ''}></div>`;
+if (field.type === 'textarea') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><textarea id="field-${field.name}" class="form-input" rows="${field.rows || 3}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></textarea></div>`;
+if (field.type === 'select') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label><select id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}><option value="">Select ${field.label}</option>${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}</select></div>`;
+if (field.type === 'tags') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><div id="field-${field.name}" class="tags-input-container-placeholder"></div></div>`;
+if (field.type === 'checkbox') return `<div class="form-group"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="field-${field.name}" style="width:20px;height:20px"><span class="form-label" style="margin:0">${field.label}</span></label></div>`;
+if (field.type === 'radio') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label><div style="display:flex;gap:15px">${field.options.map(opt => `<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="radio" name="field-${field.name}" value="${opt}" ${field.required ? 'required' : ''}><span>${opt}</span></label>`).join('')}</div></div>`;
+return '';
+}
+function updateGenreForm() {
+const genre = document.getElementById('content-genre').value;
+const config = genreConfig[genre];
+const container = document.getElementById('dynamic-fields-container');
+const contentDiv = document.getElementById('dynamic-fields-content');
+const moodSection = document.getElementById('mood-tags-section');
+const chaptersSection = document.getElementById('chapters-section');
+const movieSection = document.getElementById('movie-classification-section');
+// Reset all sections first
+container.classList.remove('active');
+moodSection.classList.remove('active');
+chaptersSection.classList.remove('active');
+movieSection.classList.remove('active');
+if (!config) return;
+document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
+contentDiv.innerHTML = '';
+config.fields.forEach(field => {
+if (field.type === 'tags') {
+const ph = document.createElement('div');
+ph.id = `field-${field.name}`;
+ph.className = 'tags-input-container-placeholder';
+contentDiv.appendChild(ph);
+ph.appendChild(createTagsInput(field, `field-${field.name}`, []));
+} else {
+contentDiv.insertAdjacentHTML('beforeend', createFieldHTML(field));
+}
+});
+container.classList.add('active');
+// Show mood section if required (for both music AND movies AND podcasts)
+if (config.requires_mood) {
+moodSection.classList.add('active');
+}
+// Show chapters section if required
+if (config.requires_chapters) {
+chaptersSection.classList.add('active');
+renderChaptersList();
+}
+// 🔥 SHOW MOVIE CLASSIFICATION SECTION FOR MOVIES ONLY
+if (config.isMovieContent) {
+movieSection.classList.add('active');
+setupMovieGenreChips();
+setupMovieTagsInput();
+}
+updateChecklist();
+}
+// ============================================
+// 🎬 MOVIE GENRE CHIP HANDLERS
+// ============================================
+function setupMovieGenreChips() {
+// Primary Genres
+document.querySelectorAll('#primary-genres-chips .genre-chip').forEach(chip => {
+chip.addEventListener('click', () => {
+chip.classList.toggle('selected');
+const genre = chip.dataset.genre;
+if (chip.classList.contains('selected')) {
+if (!selectedGenres.includes(genre)) selectedGenres.push(genre);
+} else {
+selectedGenres = selectedGenres.filter(g => g !== genre);
+}
+updateButtonsState();
+updateChecklist();
+});
+});
+// SA Genres
+document.querySelectorAll('#sa-genres-chips .sa-genre-chip').forEach(chip => {
+chip.addEventListener('click', () => {
+chip.classList.toggle('selected');
+const saGenre = chip.dataset.saGenre;
+if (chip.classList.contains('selected')) {
+if (!selectedSAGenres.includes(saGenre)) selectedSAGenres.push(saGenre);
+} else {
+selectedSAGenres = selectedSAGenres.filter(g => g !== saGenre);
+}
+updateButtonsState();
+updateChecklist();
+});
+});
+}
+function setupMovieTagsInput() {
+const tagsList = document.getElementById('movie-tags-list');
+const input = document.getElementById('movie-tags-input');
+function renderMovieTags() {
+tagsList.innerHTML = movieTags.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
+tagsList.querySelectorAll('.tag i').forEach(icon => {
+icon.addEventListener('click', (e) => {
+e.stopPropagation();
+const tagToRemove = icon.parentElement.textContent.trim();
+const index = movieTags.indexOf(tagToRemove);
+if (index > -1) {
+movieTags.splice(index, 1);
+renderMovieTags();
+}
+});
+});
+}
+input.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+e.preventDefault();
+const value = input.value.trim();
+if (value && !movieTags.includes(value)) {
+movieTags.push(value);
+renderMovieTags();
+input.value = '';
+}
+}
+});
+input.addEventListener('blur', () => {
+if (input.value.trim()) {
+const value = input.value.trim();
+if (!movieTags.includes(value)) {
+movieTags.push(value);
+renderMovieTags();
+}
+input.value = '';
+}
+});
+renderMovieTags();
+}
+function renderChaptersList() {
+const container = document.getElementById('chapters-list');
+if (!container) return;
+container.innerHTML = chapters.map((chapter, index) => `
+<div class="chapter-item">
+<input type="text" class="chapter-time" placeholder="MM:SS" value="${chapter.time}" data-index="${index}" data-field="time">
+<input type="text" class="chapter-title" placeholder="Chapter title" value="${escapeHtml(chapter.title)}" data-index="${index}" data-field="title">
+<button type="button" class="remove-chapter" data-index="${index}"><i class="fas fa-times"></i></button>
+</div>
+`).join('');
+container.querySelectorAll('.chapter-time').forEach(inp => {
+inp.addEventListener('change', (e) => { chapters[parseInt(e.target.dataset.index)].time = e.target.value; });
+});
+container.querySelectorAll('.chapter-title').forEach(inp => {
+inp.addEventListener('change', (e) => { chapters[parseInt(e.target.dataset.index)].title = e.target.value; });
+});
+container.querySelectorAll('.remove-chapter').forEach(btn => {
+btn.addEventListener('click', (e) => { chapters.splice(parseInt(e.target.dataset.index), 1); renderChaptersList(); });
+});
+}
+function addChapter() { chapters.push({ time: '00:00', title: 'New Chapter' }); renderChaptersList(); }
+document.getElementById('add-chapter-btn')?.addEventListener('click', addChapter);
+// ============================================
+// 🎬 COLLECT MOVIE METADATA
+// ============================================
+function collectMovieMetadata() {
+return {
+genres: [...selectedGenres],
+sa_genres: [...selectedSAGenres],
+moods: selectedMood ? [selectedMood] : [],
+tags: [...movieTags],
+language: document.getElementById('movie-language')?.value || 'English',
+is_bantu_original: document.getElementById('is-bantu-original')?.checked || false
+};
+}
+// ============================================
+// 🎙️ PODCAST METADATA COLLECTOR (NEW)
+// ============================================
+function collectPodcastMetadata() {
+const genre = document.getElementById('content-genre').value;
+if (genre !== 'Podcast') return null;
+return {
+show_title: document.getElementById('field-show_title')?.value || null,
+season_number: document.getElementById('field-season_number')?.value ? parseInt(document.getElementById('field-season_number').value) : null,
+episode_number: document.getElementById('field-episode_number')?.value ? parseInt(document.getElementById('field-episode_number').value) : null,
+episode_title: document.getElementById('field-episode_title')?.value || null,
+guest_names: [], // Would need tags input implementation
+explicit: document.getElementById('field-explicit')?.checked || false,
+category: document.getElementById('field-category')?.value || null,
+language: document.getElementById('field-language')?.value || 'English',
+country: document.getElementById('field-country')?.value || 'South Africa'
+};
+}
+function collectContentMetadata() {
+const genre = document.getElementById('content-genre').value;
+const config = genreConfig[genre];
+const metadata = {};
+if (!config) return metadata;
+// 🔥 PODCAST-SPECIFIC HANDLING
+if (config.isPodcastContent) {
+return collectPodcastMetadata();
+}
+config.fields.forEach(field => {
+const element = document.getElementById(`field-${field.name}`);
+if (!element) return;
+if (field.type === 'tags') {
+// For music tags (existing system)
+const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
+metadata[field.name] = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
+} else if (field.type === 'checkbox') {
+metadata[field.name] = element.checked;
+} else if (field.type === 'radio') {
+const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
+metadata[field.name] = selected ? selected.value : null;
+} else {
+metadata[field.name] = element.value;
+}
+});
+return metadata;
+}
+function collectMoodData() {
+const selectedMoodElement = document.querySelector('.mood-option.selected');
+if (!selectedMoodElement) return null;
+const intensity = parseInt(document.getElementById('mood-intensity')?.value || 7) / 10;
+return { primary_mood: selectedMoodElement.dataset.mood, mood_intensity: intensity, tagged_by: 'creator' };
+}
+async function handlePlaylistLinking(contentId, genre, metadata) {
+const config = genreConfig[genre];
+if (!config?.uses_playlist) return null;
+let playlistName = null;
+if (genre === 'Series' || genre === 'Podcast') playlistName = metadata.show_title;
+else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
+else return null;
+const { data: existing, error } = await window.supabaseClient
+.from('creator_playlists')
+.select('id')
+.eq('creator_id', currentUserId)
+.eq('name', playlistName)
+.eq('playlist_type', config.playlist_type)
+.maybeSingle();
+let playlistId = existing?.id;
+if (!playlistId) {
+const { data: newPlaylist, error } = await window.supabaseClient
+.from('creator_playlists')
+.insert([{
+creator_id: currentUserId,
+name: playlistName,
+description: `${genre}: ${playlistName}`,
+playlist_type: config.playlist_type,
+sort_order: config.playlist_type === 'series' ? 'episode_number' : 'manual',
+visibility: 'public'
+}])
+.select()
+.single();
+if (!error && newPlaylist) playlistId = newPlaylist.id;
+}
+if (playlistId) {
+await window.supabaseClient
+.from('collection_items')
+.insert([{
+collection_id: playlistId,
+content_id: contentId,
+position: genre === 'Music' ? (metadata.track_number || 0) : 0
+}]);
+}
+return playlistId;
+}
+// ============================================
+// 🎬 VALIDATE MOVIE METADATA
+// ============================================
+function validateGenreMetadata() {
+const genre = document.getElementById('content-genre').value;
+const config = genreConfig[genre];
+if (!config) return true;
+// 🔥 PODCAST-SPECIFIC VALIDATION
+if (config.isPodcastContent) {
+const podcastMeta = collectPodcastMetadata();
+if (!podcastMeta?.show_title) {
+showToast('Podcast show title is required', 'error');
+return false;
+}
+if (!podcastMeta?.category) {
+showToast('Podcast category is required', 'error');
+return false;
+}
+if (!podcastMeta?.language) {
+showToast('Podcast language is required', 'error');
+return false;
+}
+if (!podcastMeta?.country) {
+showToast('Country of origin is required', 'error');
+return false;
+}
+if (!selectedMood) {
+showToast('Select a mood', 'error');
+return false;
+}
+return true;
+}
+// 🔥 MOVIE-SPECIFIC VALIDATION
+if (config.isMovieContent) {
+if (selectedGenres.length === 0) {
+showToast('Select at least 1 primary genre', 'error');
+return false;
+}
+if (selectedSAGenres.length === 0) {
+showToast('Select at least 1 SA genre', 'error');
+return false;
+}
+if (!selectedMood) {
+showToast('Select a mood', 'error');
+return false;
+}
+return true;
+}
+// Existing validation for non-movie content
+let isValid = true;
+for (const field of config.fields) {
+if (field.required) {
+if (field.type === 'tags') {
+const element = document.getElementById(`field-${field.name}`);
+const container = element?.closest('.tags-input-container') || element?.querySelector('.tags-input-container');
+const tags = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
+if (tags.length === 0) {
+isValid = false;
+break;
+}
+} else if (field.type === 'radio') {
+const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
+if (!selected) {
+isValid = false;
+break;
+}
+} else {
+const element = document.getElementById(`field-${field.name}`);
+if (!element || !element.value) {
+isValid = false;
+break;
+}
+}
+}
+}
+return isValid;
+}
+// ============================================
+// GENRE/TAG LOADING FUNCTIONS (MUSIC - UNTOUCHED)
+// ============================================
+async function loadGenresForUpload() {
+try {
+const { data: genres, error } = await window.supabaseClient
+.from('genres')
+.select('id, name, slug, parent_genre_id')
+.eq('is_active', true)
+.order('display_order', { ascending: true });
+if (error) throw error;
+const parentGenres = genres.filter(g => !g.parent_genre_id);
+const subGenres = genres.filter(g => g.parent_genre_id);
+const genreSelect = document.getElementById('music-genre');
+if (genreSelect) {
+genreSelect.innerHTML = '<option value="">Select genre...</option>';
+parentGenres.forEach(genre => {
+genreSelect.innerHTML += `<option value="${genre.id}" data-slug="${genre.slug}">${genre.name}</option>`;
+});
+genreSelect.addEventListener('change', async (e) => {
+const genreId = e.target.value;
+const subgenreContainer = document.getElementById('subgenre-container');
+const subgenreSelect = document.getElementById('music-subgenre');
+if (genreId && subgenreSelect) {
+const relevantSubgenres = subGenres.filter(sg => sg.parent_genre_id == genreId);
+if (relevantSubgenres.length > 0) {
+subgenreSelect.innerHTML = '<option value="">Select subgenre...</option>';
+relevantSubgenres.forEach(sg => {
+subgenreSelect.innerHTML += `<option value="${sg.id}">${sg.name}</option>`;
+});
+subgenreContainer.style.display = 'block';
+} else {
+subgenreContainer.style.display = 'none';
+}
+} else {
+subgenreContainer.style.display = 'none';
+}
+});
+}
+return { parentGenres, subGenres };
+} catch (error) {
+console.error('Error loading genres:', error);
+return { parentGenres: [], subGenres: [] };
+}
+}
+async function loadTagsForUpload() {
+try {
+const { data: tags, error } = await window.supabaseClient
+.from('tags')
+.select('id, name, tag_type')
+.eq('is_active', true)
+.in('tag_type', ['language', 'mood', 'city'])
+.order('tag_type', { ascending: true })
+.order('name', { ascending: true });
+if (error) throw error;
+const tagsByType = {
+language: tags.filter(t => t.tag_type === 'language'),
+mood: tags.filter(t => t.tag_type === 'mood'),
+city: tags.filter(t => t.tag_type === 'city')
+};
+const tagContainer = document.getElementById('tag-buttons');
+if (tagContainer) {
+tagContainer.innerHTML = '';
+if (tagsByType.language.length > 0) {
+tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-language"></i> Language</strong><div class="tag-group">`;
+tagsByType.language.forEach(tag => {
+tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="language">${tag.name}</button>`;
+});
+tagContainer.innerHTML += `</div></div>`;
+}
+if (tagsByType.mood.length > 0) {
+tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-face-smile"></i> Mood</strong><div class="tag-group">`;
+tagsByType.mood.forEach(tag => {
+tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="mood">${tag.name}</button>`;
+});
+tagContainer.innerHTML += `</div></div>`;
+}
+if (tagsByType.city.length > 0) {
+tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-city"></i> City/Origin</strong><div class="tag-group">`;
+tagsByType.city.forEach(tag => {
+tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="city">${tag.name}</button>`;
+});
+tagContainer.innerHTML += `</div></div>`;
+}
+document.querySelectorAll('.tag-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+btn.classList.toggle('selected');
+});
+});
+}
+return tags;
+} catch (error) {
+console.error('Error loading tags:', error);
+return [];
+}
+}
+function getSelectedTags() {
+const selected = [];
+document.querySelectorAll('.tag-btn.selected').forEach(btn => {
+selected.push({
+tag_id: btn.dataset.tagId,
+name: btn.dataset.tagName,
+type: btn.dataset.tagType
+});
+});
+return selected;
+}
+function setupContentFormatToggle() {
+const formatSelect = document.getElementById('content_format');
+const musicGenreGroup = document.getElementById('music-genre-group');
+const musicTagsGroup = document.getElementById('music-tags-group');
+const tempoGroup = document.getElementById('tempo-group');
+const keyGroup = document.getElementById('key-group');
+const explicitGroup = document.getElementById('explicit-group');
+if (!formatSelect) return;
+function toggleMusicFields() {
+const selectedFormat = formatSelect.value;
+const isMusic = selectedFormat === 'music' || selectedFormat === 'music_video';
+if (musicGenreGroup) musicGenreGroup.style.display = isMusic ? 'block' : 'none';
+if (musicTagsGroup) musicTagsGroup.style.display = isMusic ? 'block' : 'none';
+if (tempoGroup) tempoGroup.style.display = isMusic ? 'block' : 'none';
+if (keyGroup) keyGroup.style.display = isMusic ? 'block' : 'none';
+if (explicitGroup) explicitGroup.style.display = isMusic ? 'block' : 'none';
+}
+formatSelect.addEventListener('change', toggleMusicFields);
+toggleMusicFields();
+}
+// ============================================
+// 🎙️ PODCAST UPLOAD FUNCTIONS (NEW - CLEANLY ADDED)
+// ============================================
 
-    // ============================================
-    // GLOBAL VARIABLES
-    // ============================================
-    let selectedMediaFile = null, selectedThumbnailFile = null, currentUserId = null, currentSession = null;
-    let isUploading = false, selectedMediaType = 'regular', extractedDuration = null, currentXhr = null;
-    let selectedMood = null, chapters = [];
-    let uploadStartTime = 0, uploadStartBytes = 0, lastLoadedBytes = 0, lastUpdateTime = 0;
-    
-    // Movie-specific state
-    let selectedGenres = [], selectedSAGenres = [], movieTags = [];
+// Create Podcast Series in creator_playlists
+async function createPodcastSeries(formData) {
+const { data, error } = await window.supabaseClient
+.from('creator_playlists')
+.insert({
+creator_id: currentUserId,
+name: formData.title,
+description: formData.description,
+playlist_type: 'podcast',
+custom_thumbnail_url: formData.thumbnail,
+banner_url: formData.banner,
+visibility: 'public',
+series_metadata: {
+category: formData.category,
+language: formData.language,
+country: formData.country,
+host: formData.host || null
+}
+})
+.select()
+.single();
+if (error) throw error;
+return data;
+}
 
-    // DOM Elements
-    const loadingScreen = document.getElementById('loading'), app = document.getElementById('app');
-    const authModal = document.getElementById('auth-modal');
-    const publishBtn = document.getElementById('publish-btn'), saveDraftBtn = document.getElementById('save-draft-btn');
-    const progressSection = document.getElementById('upload-progress'), progressFill = document.getElementById('progress-fill');
-    const progressPercentage = document.getElementById('progress-percentage'), progressText = document.getElementById('progress-text');
-    const progressSpeed = document.getElementById('progress-speed'), progressEta = document.getElementById('progress-eta');
-    const uploadFormState = document.getElementById('upload-form-state'), processingState = document.getElementById('processing-state');
-    const successState = document.getElementById('success-state');
+// Upload Audio File to Supabase Storage
+async function uploadPodcastAudio(file) {
+const filePath = `podcasts/${currentUserId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+const { error } = await window.supabaseClient.storage
+.from('media')
+.upload(filePath, file, {
+cacheControl: '3600',
+upsert: false,
+contentType: file.type
+});
+if (error) throw error;
+const { data } = window.supabaseClient.storage
+.from('media')
+.getPublicUrl(filePath);
+return data.publicUrl;
+}
 
-    function showToast(message, type = 'error') {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
-        document.getElementById('toast-container').appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
+// Create Podcast Episode in Content table
+async function createPodcastEpisode({
+title,
+description,
+audioUrl,
+thumbnail,
+duration,
+podcastId,
+metadata
+}) {
+const { data, error } = await window.supabaseClient
+.from('Content')
+.insert({
+title,
+description,
+file_url: audioUrl,
+thumbnail_url: thumbnail,
+creator_id: currentUserId,
+user_id: currentUserId,
+// 🔥 CRITICAL FIELDS FOR PODCASTS
+content_type: 'podcast',
+content_format: 'podcast_episode',
+series_id: podcastId,
+// Optional but powerful
+genres: ['Podcast'],
+moods: metadata?.mood ? [metadata.mood] : ['Informative'],
+tags: ['Podcast'],
+country: metadata?.country || 'South Africa',
+region: 'Africa',
+language: metadata?.language || 'English',
+duration: duration || 0,
+status: 'published',
+// Podcast-specific metadata
+season_number: metadata?.season_number || null,
+episode_number: metadata?.episode_number || null,
+is_explicit: metadata?.explicit || false
+})
+.select()
+.single();
+if (error) throw error;
+return data;
+}
 
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+// Full Podcast Upload Pipeline
+async function handlePodcastUpload(formData) {
+try {
+showLoading('Uploading podcast...');
+// 1. Create series (if new)
+let podcast = formData.podcastId;
+if (!podcast) {
+const newSeries = await createPodcastSeries(formData);
+podcast = newSeries.id;
+}
+// 2. Upload audio
+const audioUrl = await uploadPodcastAudio(formData.audioFile);
+// 3. Create episode
+const episode = await createPodcastEpisode({
+title: formData.title,
+description: formData.description,
+audioUrl,
+thumbnail: formData.thumbnail,
+duration: formData.duration,
+podcastId: podcast,
+metadata: formData.metadata
+});
+showToast('Podcast uploaded successfully 🚀', 'success');
+// Redirect to podcast page
+window.location.href = `podcast-detail.html?id=${podcast}`;
+} catch (err) {
+console.error(err);
+showToast('Upload failed: ' + (err.message || 'Unknown error'), 'error');
+} finally {
+hideLoading();
+}
+}
 
-    function formatTime(seconds) {
-        if (!seconds && seconds !== 0) return '--:--';
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
+// Auto-detect audio duration (PRO LEVEL)
+function getAudioDuration(file) {
+return new Promise((resolve) => {
+const audio = document.createElement('audio');
+audio.preload = 'metadata';
+audio.src = URL.createObjectURL(file);
+audio.addEventListener('loadedmetadata', () => {
+const duration = Math.floor(audio.duration);
+URL.revokeObjectURL(audio.src);
+resolve(duration);
+});
+audio.addEventListener('error', () => {
+URL.revokeObjectURL(audio.src);
+resolve(0);
+});
+});
+}
 
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // ============================================
-    // UUID SANITIZER HELPER - CATCHES ALL EMPTY STRINGS
-    // ============================================
-    function sanitizeForSupabase(obj) {
-        const sanitized = {};
-        for (const [key, value] of Object.entries(obj)) {
-            if (value === "" || value === undefined) {
-                console.warn(`⚠️ Field "${key}" was empty/undefined - converting to null`);
-                sanitized[key] = null;
-            } else {
-                sanitized[key] = value;
-            }
-        }
-        return sanitized;
-    }
-
-    // ============================================
-    // CLEAN METADATA HELPER
-    // ============================================
-    function cleanContentMetadata(rawMetadata) {
-        return {
-            track_title: rawMetadata.track_title || null,
-            artist_name: rawMetadata.artist_name || null,
-            album_title: rawMetadata.album_title || null,
-            track_number: rawMetadata.track_number ? parseInt(rawMetadata.track_number) : null,
-            featured_artists: Array.isArray(rawMetadata.featured_artists) ? rawMetadata.featured_artists : [],
-            explicit: rawMetadata.explicit || false,
-            record_label: rawMetadata.record_label || null
-        };
-    }
-
-    // ============================================
-    // TAGS INPUT COMPONENT (Reusable)
-    // ============================================
-    function createTagsInput(field, containerId, tagsArray) {
-        const container = document.createElement('div');
-        container.className = 'tags-input-container';
-        container.innerHTML = `<div class="tags-list" id="tags-list-${field.name}"></div><input type="text" class="tags-input" placeholder="${field.placeholder || 'Type and press Enter'}" id="tags-input-${field.name}">`;
-        const tagsList = container.querySelector(`#tags-list-${field.name}`);
-        const input = container.querySelector(`#tags-input-${field.name}`);
-        
-        function renderTags() {
-            tagsList.innerHTML = tagsArray.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
-            tagsList.querySelectorAll('.tag i').forEach(icon => {
-                icon.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const tagToRemove = icon.parentElement.textContent.trim();
-                    const index = tagsArray.indexOf(tagToRemove);
-                    if (index > -1) tagsArray.splice(index, 1);
-                    renderTags();
-                });
-            });
-        }
-        
-        input.addEventListener('keypress', (e) => { 
-            if (e.key === 'Enter') { 
-                e.preventDefault(); 
-                const value = input.value.trim();
-                if (value && !tagsArray.includes(value)) {
-                    tagsArray.push(value);
-                    renderTags();
-                    input.value = '';
-                }
-            } 
-        });
-        input.addEventListener('blur', () => { 
-            if (input.value.trim()) {
-                const value = input.value.trim();
-                if (!tagsArray.includes(value)) {
-                    tagsArray.push(value);
-                    renderTags();
-                }
-                input.value = '';
-            }
-        });
-        
-        renderTags();
-        return container;
-    }
-
-    function createFieldHTML(field) {
-        if (field.type === 'text') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><input type="text" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></div>`;
-        if (field.type === 'number') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><input type="number" id="field-${field.name}" class="form-input" placeholder="${field.placeholder || ''}" min="${field.min || 0}" max="${field.max || ''}" ${field.required ? 'required' : ''}></div>`;
-        if (field.type === 'textarea') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><textarea id="field-${field.name}" class="form-input" rows="${field.rows || 3}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></textarea></div>`;
-        if (field.type === 'select') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label><select id="field-${field.name}" class="form-input" ${field.required ? 'required' : ''}><option value="">Select ${field.label}</option>${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}</select></div>`;
-        if (field.type === 'tags') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : '<span class="optional">(Optional)</span>'}</label><div id="field-${field.name}" class="tags-input-container-placeholder"></div></div>`;
-        if (field.type === 'checkbox') return `<div class="form-group"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="field-${field.name}" style="width:20px;height:20px"><span class="form-label" style="margin:0">${field.label}</span></label></div>`;
-        if (field.type === 'radio') return `<div class="form-group"><label class="form-label">${field.label} ${field.required ? '<span>*</span>' : ''}</label><div style="display:flex;gap:15px">${field.options.map(opt => `<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="radio" name="field-${field.name}" value="${opt}" ${field.required ? 'required' : ''}><span>${opt}</span></label>`).join('')}</div></div>`;
-        return '';
-    }
-
-    function updateGenreForm() {
-        const genre = document.getElementById('content-genre').value;
-        const config = genreConfig[genre];
-        const container = document.getElementById('dynamic-fields-container');
-        const contentDiv = document.getElementById('dynamic-fields-content');
-        const moodSection = document.getElementById('mood-tags-section');
-        const chaptersSection = document.getElementById('chapters-section');
-        const movieSection = document.getElementById('movie-classification-section');
-        
-        // Reset all sections first
-        container.classList.remove('active');
-        moodSection.classList.remove('active');
-        chaptersSection.classList.remove('active');
-        movieSection.classList.remove('active');
-        
-        if (!config) return;
-        
-        document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
-        contentDiv.innerHTML = '';
-        
-        config.fields.forEach(field => {
-            if (field.type === 'tags') {
-                const ph = document.createElement('div');
-                ph.id = `field-${field.name}`;
-                ph.className = 'tags-input-container-placeholder';
-                contentDiv.appendChild(ph);
-                ph.appendChild(createTagsInput(field, `field-${field.name}`, []));
-            } else {
-                contentDiv.insertAdjacentHTML('beforeend', createFieldHTML(field));
-            }
-        });
-        
-        container.classList.add('active');
-        
-        // Show mood section if required (for both music AND movies)
-        if (config.requires_mood) {
-            moodSection.classList.add('active');
-        }
-        
-        // Show chapters section if required
-        if (config.requires_chapters) {
-            chaptersSection.classList.add('active');
-            renderChaptersList();
-        }
-        
-        // 🔥 SHOW MOVIE CLASSIFICATION SECTION FOR MOVIES ONLY
-        if (config.isMovieContent) {
-            movieSection.classList.add('active');
-            setupMovieGenreChips();
-            setupMovieTagsInput();
-        }
-        
-        updateChecklist();
-    }
-
-    // ============================================
-    // 🎬 MOVIE GENRE CHIP HANDLERS
-    // ============================================
-    function setupMovieGenreChips() {
-        // Primary Genres
-        document.querySelectorAll('#primary-genres-chips .genre-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                chip.classList.toggle('selected');
-                const genre = chip.dataset.genre;
-                if (chip.classList.contains('selected')) {
-                    if (!selectedGenres.includes(genre)) selectedGenres.push(genre);
-                } else {
-                    selectedGenres = selectedGenres.filter(g => g !== genre);
-                }
-                updateButtonsState();
-                updateChecklist();
-            });
-        });
-        
-        // SA Genres
-        document.querySelectorAll('#sa-genres-chips .sa-genre-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                chip.classList.toggle('selected');
-                const saGenre = chip.dataset.saGenre;
-                if (chip.classList.contains('selected')) {
-                    if (!selectedSAGenres.includes(saGenre)) selectedSAGenres.push(saGenre);
-                } else {
-                    selectedSAGenres = selectedSAGenres.filter(g => g !== saGenre);
-                }
-                updateButtonsState();
-                updateChecklist();
-            });
-        });
-    }
-
-    function setupMovieTagsInput() {
-        const tagsList = document.getElementById('movie-tags-list');
-        const input = document.getElementById('movie-tags-input');
-        
-        function renderMovieTags() {
-            tagsList.innerHTML = movieTags.map(tag => `<span class="tag">${escapeHtml(tag)}<i class="fas fa-times"></i></span>`).join('');
-            tagsList.querySelectorAll('.tag i').forEach(icon => {
-                icon.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const tagToRemove = icon.parentElement.textContent.trim();
-                    const index = movieTags.indexOf(tagToRemove);
-                    if (index > -1) {
-                        movieTags.splice(index, 1);
-                        renderMovieTags();
-                    }
-                });
-            });
-        }
-        
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const value = input.value.trim();
-                if (value && !movieTags.includes(value)) {
-                    movieTags.push(value);
-                    renderMovieTags();
-                    input.value = '';
-                }
-            }
-        });
-        
-        input.addEventListener('blur', () => {
-            if (input.value.trim()) {
-                const value = input.value.trim();
-                if (!movieTags.includes(value)) {
-                    movieTags.push(value);
-                    renderMovieTags();
-                }
-                input.value = '';
-            }
-        });
-        
-        renderMovieTags();
-    }
-
-    function renderChaptersList() {
-        const container = document.getElementById('chapters-list');
-        if (!container) return;
-        
-        container.innerHTML = chapters.map((chapter, index) => `
-            <div class="chapter-item">
-                <input type="text" class="chapter-time" placeholder="MM:SS" value="${chapter.time}" data-index="${index}" data-field="time">
-                <input type="text" class="chapter-title" placeholder="Chapter title" value="${escapeHtml(chapter.title)}" data-index="${index}" data-field="title">
-                <button type="button" class="remove-chapter" data-index="${index}"><i class="fas fa-times"></i></button>
-            </div>
-        `).join('');
-        
-        container.querySelectorAll('.chapter-time').forEach(inp => {
-            inp.addEventListener('change', (e) => { chapters[parseInt(e.target.dataset.index)].time = e.target.value; });
-        });
-        container.querySelectorAll('.chapter-title').forEach(inp => {
-            inp.addEventListener('change', (e) => { chapters[parseInt(e.target.dataset.index)].title = e.target.value; });
-        });
-        container.querySelectorAll('.remove-chapter').forEach(btn => {
-            btn.addEventListener('click', (e) => { chapters.splice(parseInt(e.target.dataset.index), 1); renderChaptersList(); });
-        });
-    }
-
-    function addChapter() { chapters.push({ time: '00:00', title: 'New Chapter' }); renderChaptersList(); }
-    document.getElementById('add-chapter-btn')?.addEventListener('click', addChapter);
-
-    // ============================================
-    // 🎬 COLLECT MOVIE METADATA
-    // ============================================
-    function collectMovieMetadata() {
-        return {
-            genres: [...selectedGenres],
-            sa_genres: [...selectedSAGenres],
-            moods: selectedMood ? [selectedMood] : [],
-            tags: [...movieTags],
-            language: document.getElementById('movie-language')?.value || 'English',
-            is_bantu_original: document.getElementById('is-bantu-original')?.checked || false
-        };
-    }
-
-    function collectContentMetadata() {
-        const genre = document.getElementById('content-genre').value;
-        const config = genreConfig[genre];
-        const metadata = {};
-        if (!config) return metadata;
-        
-        config.fields.forEach(field => {
-            const element = document.getElementById(`field-${field.name}`);
-            if (!element) return;
-            if (field.type === 'tags') {
-                // For music tags (existing system)
-                const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
-                metadata[field.name] = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
-            } else if (field.type === 'checkbox') {
-                metadata[field.name] = element.checked;
-            } else if (field.type === 'radio') {
-                const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
-                metadata[field.name] = selected ? selected.value : null;
-            } else {
-                metadata[field.name] = element.value;
-            }
-        });
-        return metadata;
-    }
-
-    function collectMoodData() {
-        const selectedMoodElement = document.querySelector('.mood-option.selected');
-        if (!selectedMoodElement) return null;
-        const intensity = parseInt(document.getElementById('mood-intensity')?.value || 7) / 10;
-        return { primary_mood: selectedMoodElement.dataset.mood, mood_intensity: intensity, tagged_by: 'creator' };
-    }
-
-    async function handlePlaylistLinking(contentId, genre, metadata) {
-        const config = genreConfig[genre];
-        if (!config?.uses_playlist) return null;
-        
-        let playlistName = null;
-        if (genre === 'Series' || genre === 'Podcast') playlistName = metadata.show_title;
-        else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
-        else return null;
-        
-        const { data: existing, error } = await window.supabaseClient
-            .from('creator_playlists')
-            .select('id')
-            .eq('creator_id', currentUserId)
-            .eq('name', playlistName)
-            .eq('playlist_type', config.playlist_type)
-            .maybeSingle();
-        
-        let playlistId = existing?.id;
-        if (!playlistId) {
-            const { data: newPlaylist, error } = await window.supabaseClient
-                .from('creator_playlists')
-                .insert([{
-                    creator_id: currentUserId,
-                    name: playlistName,
-                    description: `${genre}: ${playlistName}`,
-                    playlist_type: config.playlist_type,
-                    sort_order: config.playlist_type === 'series' ? 'episode_number' : 'manual',
-                    visibility: 'public'
-                }])
-                .select()
-                .single();
-            if (!error && newPlaylist) playlistId = newPlaylist.id;
-        }
-        
-        if (playlistId) {
-            await window.supabaseClient
-                .from('collection_items')
-                .insert([{
-                    collection_id: playlistId,
-                    content_id: contentId,
-                    position: genre === 'Music' ? (metadata.track_number || 0) : 0
-                }]);
-        }
-        return playlistId;
-    }
-
-    // ============================================
-    // 🎬 VALIDATE MOVIE METADATA
-    // ============================================
-    function validateGenreMetadata() {
-        const genre = document.getElementById('content-genre').value;
-        const config = genreConfig[genre];
-        if (!config) return true;
-        
-        // 🔥 MOVIE-SPECIFIC VALIDATION
-        if (config.isMovieContent) {
-            if (selectedGenres.length === 0) {
-                showToast('Select at least 1 primary genre', 'error');
-                return false;
-            }
-            if (selectedSAGenres.length === 0) {
-                showToast('Select at least 1 SA genre', 'error');
-                return false;
-            }
-            if (!selectedMood) {
-                showToast('Select a mood', 'error');
-                return false;
-            }
-            return true;
-        }
-        
-        // Existing validation for non-movie content
-        let isValid = true;
-        for (const field of config.fields) {
-            if (field.required) {
-                if (field.type === 'tags') {
-                    const element = document.getElementById(`field-${field.name}`);
-                    const container = element?.closest('.tags-input-container') || element?.querySelector('.tags-input-container');
-                    const tags = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
-                    if (tags.length === 0) {
-                        isValid = false;
-                        break;
-                    }
-                } else if (field.type === 'radio') {
-                    const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
-                    if (!selected) {
-                        isValid = false;
-                        break;
-                    }
-                } else {
-                    const element = document.getElementById(`field-${field.name}`);
-                    if (!element || !element.value) {
-                        isValid = false;
-                        break;
-                    }
-                }
-            }
-        }
-        return isValid;
-    }
-
-    // ============================================
-    // GENRE/TAG LOADING FUNCTIONS (MUSIC - UNTOUCHED)
-    // ============================================
-    async function loadGenresForUpload() {
-      try {
-        const { data: genres, error } = await window.supabaseClient
-          .from('genres')
-          .select('id, name, slug, parent_genre_id')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true });
-
-        if (error) throw error;
-
-        const parentGenres = genres.filter(g => !g.parent_genre_id);
-        const subGenres = genres.filter(g => g.parent_genre_id);
-
-        const genreSelect = document.getElementById('music-genre');
-        if (genreSelect) {
-          genreSelect.innerHTML = '<option value="">Select genre...</option>';
-          parentGenres.forEach(genre => {
-            genreSelect.innerHTML += `<option value="${genre.id}" data-slug="${genre.slug}">${genre.name}</option>`;
-          });
-
-          genreSelect.addEventListener('change', async (e) => {
-            const genreId = e.target.value;
-            const subgenreContainer = document.getElementById('subgenre-container');
-            const subgenreSelect = document.getElementById('music-subgenre');
-            
-            if (genreId && subgenreSelect) {
-              const relevantSubgenres = subGenres.filter(sg => sg.parent_genre_id == genreId);
-              if (relevantSubgenres.length > 0) {
-                subgenreSelect.innerHTML = '<option value="">Select subgenre...</option>';
-                relevantSubgenres.forEach(sg => {
-                  subgenreSelect.innerHTML += `<option value="${sg.id}">${sg.name}</option>`;
-                });
-                subgenreContainer.style.display = 'block';
-              } else {
-                subgenreContainer.style.display = 'none';
-              }
-            } else {
-              subgenreContainer.style.display = 'none';
-            }
-          });
-        }
-
-        return { parentGenres, subGenres };
-      } catch (error) {
-        console.error('Error loading genres:', error);
-        return { parentGenres: [], subGenres: [] };
-      }
-    }
-
-    async function loadTagsForUpload() {
-      try {
-        const { data: tags, error } = await window.supabaseClient
-          .from('tags')
-          .select('id, name, tag_type')
-          .eq('is_active', true)
-          .in('tag_type', ['language', 'mood', 'city'])
-          .order('tag_type', { ascending: true })
-          .order('name', { ascending: true });
-
-        if (error) throw error;
-
-        const tagsByType = {
-          language: tags.filter(t => t.tag_type === 'language'),
-          mood: tags.filter(t => t.tag_type === 'mood'),
-          city: tags.filter(t => t.tag_type === 'city')
-        };
-
-        const tagContainer = document.getElementById('tag-buttons');
-        if (tagContainer) {
-          tagContainer.innerHTML = '';
-
-          if (tagsByType.language.length > 0) {
-            tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-language"></i> Language</strong><div class="tag-group">`;
-            tagsByType.language.forEach(tag => {
-              tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="language">${tag.name}</button>`;
-            });
-            tagContainer.innerHTML += `</div></div>`;
-          }
-
-          if (tagsByType.mood.length > 0) {
-            tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-face-smile"></i> Mood</strong><div class="tag-group">`;
-            tagsByType.mood.forEach(tag => {
-              tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="mood">${tag.name}</button>`;
-            });
-            tagContainer.innerHTML += `</div></div>`;
-          }
-
-          if (tagsByType.city.length > 0) {
-            tagContainer.innerHTML += `<div class="tag-section"><strong><i class="fas fa-city"></i> City/Origin</strong><div class="tag-group">`;
-            tagsByType.city.forEach(tag => {
-              tagContainer.innerHTML += `<button type="button" class="tag-btn" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-type="city">${tag.name}</button>`;
-            });
-            tagContainer.innerHTML += `</div></div>`;
-          }
-
-          document.querySelectorAll('.tag-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              btn.classList.toggle('selected');
-            });
-          });
-        }
-
-        return tags;
-      } catch (error) {
-        console.error('Error loading tags:', error);
-        return [];
-      }
-    }
-
-    function getSelectedTags() {
-      const selected = [];
-      document.querySelectorAll('.tag-btn.selected').forEach(btn => {
-        selected.push({
-          tag_id: btn.dataset.tagId,
-          name: btn.dataset.tagName,
-          type: btn.dataset.tagType
-        });
-      });
-      return selected;
-    }
-
-    function setupContentFormatToggle() {
-      const formatSelect = document.getElementById('content_format');
-      const musicGenreGroup = document.getElementById('music-genre-group');
-      const musicTagsGroup = document.getElementById('music-tags-group');
-      const tempoGroup = document.getElementById('tempo-group');
-      const keyGroup = document.getElementById('key-group');
-      const explicitGroup = document.getElementById('explicit-group');
-      
-      if (!formatSelect) return;
-      
-      function toggleMusicFields() {
-        const selectedFormat = formatSelect.value;
-        const isMusic = selectedFormat === 'music' || selectedFormat === 'music_video';
-        
-        if (musicGenreGroup) musicGenreGroup.style.display = isMusic ? 'block' : 'none';
-        if (musicTagsGroup) musicTagsGroup.style.display = isMusic ? 'block' : 'none';
-        if (tempoGroup) tempoGroup.style.display = isMusic ? 'block' : 'none';
-        if (keyGroup) keyGroup.style.display = isMusic ? 'block' : 'none';
-        if (explicitGroup) explicitGroup.style.display = isMusic ? 'block' : 'none';
-      }
-      
-      formatSelect.addEventListener('change', toggleMusicFields);
-      toggleMusicFields();
-    }
-
-    // ============================================
-    // MEDIA FUNCTIONS (UNCHANGED)
-    // ============================================
-    function extractMediaDuration(file) {
-        return new Promise((resolve, reject) => {
-            const media = document.createElement(file.type.includes('audio') ? 'audio' : 'video');
-            media.preload = 'metadata';
-            const timeout = setTimeout(() => { URL.revokeObjectURL(media.src); reject(new Error('Duration extraction timeout')); }, 10000);
-            media.onloadedmetadata = () => { clearTimeout(timeout); const duration = Math.floor(media.duration); URL.revokeObjectURL(media.src); resolve(duration); };
-            media.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(media.src); reject(new Error('Failed to load metadata')); };
-            media.src = URL.createObjectURL(file);
-        });
-    }
-
-    async function generateVideoThumbnail(file) {
-        return new Promise((resolve, reject) => {
-            if (!file.type.includes('video')) reject(new Error('Not a video'));
-            const video = document.createElement('video');
-            video.preload = 'metadata';
-            const timeout = setTimeout(() => { URL.revokeObjectURL(video.src); reject(new Error('Timeout')); }, 10000);
-            video.onloadeddata = () => { clearTimeout(timeout); video.currentTime = Math.min(1, video.duration * 0.1); };
-            video.onseeked = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob(blob => {
-                    URL.revokeObjectURL(video.src);
-                    resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg', lastModified: Date.now() }));
-                }, 'image/jpeg', 0.9);
-            };
-            video.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(video.src); reject(new Error('Failed to load')); };
-            video.src = URL.createObjectURL(file);
-        });
-    }
-
-    async function validateMediaFile(file) {
-        const durationDisplay = document.getElementById('duration-display');
-        const durationText = document.getElementById('duration-text');
-        const durationStatus = document.getElementById('duration-status');
-        const durationBadge = document.getElementById('duration-badge');
-        extractedDuration = null;
-        
-        if (file.type.includes('video') || file.type.includes('audio')) {
-            durationDisplay.style.display = 'flex';
-            durationText.textContent = `Duration: extracting...`;
-            durationStatus.textContent = '';
-            durationBadge.style.display = 'none';
-            
-            try {
-                const duration = await extractMediaDuration(file);
-                extractedDuration = duration;
-                const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
-                durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
-                durationBadge.style.display = 'inline-block';
-                
-                if (file.type.includes('audio')) {
-                    durationDisplay.classList.add('valid');
-                    durationStatus.textContent = '✓ Audio file';
-                } else if (selectedMediaType === 'short') {
-                    if (duration > 60) {
-                        durationDisplay.classList.add('invalid');
-                        durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
-                    } else {
-                        durationDisplay.classList.add('valid');
-                        durationStatus.textContent = '✓ Valid for Shorts';
-                    }
-                }
-                
-                if (file.type.includes('video') && !selectedThumbnailFile) {
-                    try {
-                        const thumb = await generateVideoThumbnail(file);
-                        handleThumbnailFile(thumb, true);
-                    } catch(e) { console.error('Auto-thumb fail', e); }
-                }
-            } catch (error) {
-                durationText.textContent = `Duration: unknown`;
-                durationStatus.textContent = '⚠️ Could not read duration';
-                durationDisplay.classList.add('invalid');
-            }
-        } else {
-            durationDisplay.style.display = 'none';
-        }
-        updateButtonsState();
-        updateChecklist();
-    }
-
-    function handleMediaFile(file) {
-        const maxSize = 800 * 1024 * 1024;
-        if (file.size > maxSize) { showToast('File size must be less than 800MB'); return; }
-        
-        const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-        const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
-        const isValidType = [...videoTypes, ...audioTypes].some(type => file.type.includes(type.split('/')[1]) || file.type === type);
-        if (!isValidType) { showToast('Please select a valid video or audio file'); return; }
-        
-        selectedMediaFile = file;
-        const fileIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
-        document.getElementById('file-icon').innerHTML = `<i class="fas ${fileIcon}"></i>`;
-        document.getElementById('media-file-name').textContent = file.name;
-        document.getElementById('media-file-size').textContent = formatFileSize(file.size);
-        document.getElementById('media-file-info').style.display = 'flex';
-        document.getElementById('media-zone-text').textContent = 'Click to change file';
-        
-        validateMediaFile(file);
-        saveDraftToLocalStorage();
-    }
-
-    function handleThumbnailFile(file, isAutoGenerated = false) {
-        const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!imageTypes.includes(file.type)) { showToast('Please select a valid image file'); return; }
-        
-        selectedThumbnailFile = file;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('thumbnail-image').src = e.target.result;
-            document.getElementById('thumbnail-preview').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-        if (!isAutoGenerated) showToast('Thumbnail image selected', 'success');
-        updateChecklist();
-        saveDraftToLocalStorage();
-    }
-
-    async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
-                if (sessionError || !session) {
-                    const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
-                    if (refreshError || !refreshData.session) { reject(new Error('Authentication failed')); return; }
-                    session = refreshData.session;
-                }
-                
-                const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                const timestamp = Date.now();
-                const random = Math.random().toString(36).substring(7);
-                const fileName = `${timestamp}_${random}_${cleanFileName}`;
-                const filePath = `${currentUserId}/${basePath}/${fileName}`;
-                const uploadUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/${bucket}/${filePath}`;
-                
-                const xhr = new XMLHttpRequest();
-                currentXhr = xhr;
-                
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total);
-                });
-                
-                xhr.addEventListener('load', () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        resolve(`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${filePath}`);
-                    } else {
-                        reject(new Error('Upload failed'));
-                    }
-                    currentXhr = null;
-                });
-                
-                xhr.addEventListener('error', () => { reject(new Error('Network error')); currentXhr = null; });
-                xhr.open('POST', uploadUrl, true);
-                xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-                xhr.setRequestHeader('Content-Type', file.type);
-                xhr.send(file);
-            } catch (error) { reject(error); }
-        });
-    }
-
-    function updateProgress(loaded, total) {
-        if (!total) return;
-        const percentage = (loaded / total) * 100;
-        progressFill.style.width = `${percentage}%`;
-        progressPercentage.textContent = `${Math.round(percentage)}%`;
-        if (!progressSection.classList.contains('active')) progressSection.classList.add('active');
-        
-        const now = Date.now();
-        if (uploadStartTime === 0) {
-            uploadStartTime = now;
-            uploadStartBytes = loaded;
-            lastUpdateTime = now;
-            lastLoadedBytes = loaded;
-            return;
-        }
-        
-        const timeElapsed = (now - uploadStartTime) / 1000;
-        const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
-        
-        if (timeSinceLastUpdate > 0.2) {
-            const avgSpeedBps = (loaded - uploadStartBytes) / timeElapsed;
-            const avgSpeedMBps = avgSpeedBps / (1024 * 1024);
-            const instantSpeedBps = (loaded - lastLoadedBytes) / timeSinceLastUpdate;
-            const instantSpeedMBps = instantSpeedBps / (1024 * 1024);
-            const displaySpeedMBps = avgSpeedMBps * 0.3 + instantSpeedMBps * 0.7;
-            const remainingBytes = total - loaded;
-            const etaSeconds = displaySpeedMBps > 0 ? remainingBytes / (displaySpeedMBps * 1024 * 1024) : 0;
-            
-            progressSpeed.textContent = `Speed: ${displaySpeedMBps.toFixed(2)} MB/s`;
-            progressEta.textContent = `ETA: ${formatTime(etaSeconds)}`;
-            lastLoadedBytes = loaded;
-            lastUpdateTime = now;
-        }
-    }
-
-    function resetProgress() {
-        progressFill.style.width = '0%';
-        progressPercentage.textContent = '0%';
-        progressSpeed.textContent = 'Speed: 0 MB/s';
-        progressEta.textContent = 'ETA: --:--';
-        progressText.textContent = 'Preparing upload...';
-        progressSection.classList.remove('active');
-        if (currentXhr) { currentXhr.abort(); currentXhr = null; }
-        uploadStartTime = 0;
-        uploadStartBytes = 0;
-        lastLoadedBytes = 0;
-        lastUpdateTime = 0;
-    }
-
-    // ============================================
-    // 🎬 THE FIXED INSERT LOGIC - MOVIE PATH SEPARATE FROM MUSIC
-    // ============================================
-    async function createContentRecord(data) {
-        const genre = document.getElementById('content-genre').value;
-        const config = genreConfig[genre];
-        const isMovieContent = config?.isMovieContent || false;
-        
-        // 🔥 MOVIE-SPECIFIC PAYLOAD (NEW SYSTEM)
-        if (isMovieContent) {
-            const movieMetadata = collectMovieMetadata();
-            
-            const contentData = {
-                title: data.title || null,
-                description: data.description || null,
-                file_url: data.media_url,
-                thumbnail_url: data.thumbnail_url || null,
-                media_type: data.media_type,
-                genre: data.genre || null,
-                status: data.status,
-                user_id: currentUserId || null,
-                creator_id: currentUserId || null,   // 🔥 EXPLICITLY SET
-                creator: null,                        // 🔥 PREVENTS trigger issues
-                created_at: new Date().toISOString(),
-                content_metadata: {},                 // Empty for movies (use array fields instead)
-                content_format: data.content_format || null,
-                chapters: data.chapters || [],
-                duration: data.duration !== undefined ? data.duration : null,
-                series_id: null,
-                primary_genre_id: null,
-                language_code: null,
-                city: null,
-                tempo: null,
-                key_signature: null,
-                is_explicit: false,
-                
-                // 🎬 NEW MOVIE SYSTEM FIELDS
-                content_type: 'movie',
-                genres: movieMetadata.genres || [],
-                sa_genres: movieMetadata.sa_genres || [],
-                moods: movieMetadata.moods || [],
-                tags: movieMetadata.tags || [],
-                language: movieMetadata.language || 'English',
-                country: 'South Africa',              // 🔥 AUTO-SET
-                region: 'Africa',                     // 🔥 AUTO-SET
-                is_bantu_original: movieMetadata.is_bantu_original || false,
-                completion_rate: 0
-            };
-            
-            if (data.content_format === 'series_episode') {
-                contentData.season_number = data.season_number || null;
-                contentData.episode_number = data.episode_number || null;
-            }
-            
-            const sanitizedData = sanitizeForSupabase(contentData);
-            
-            console.log('=== MOVIE UPLOAD OBJECT ===');
-            console.log('content_type:', sanitizedData.content_type);
-            console.log('genres:', sanitizedData.genres);
-            console.log('sa_genres:', sanitizedData.sa_genres);
-            console.log('country/region:', sanitizedData.country, sanitizedData.region);
-            
-            const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
-            if (error) throw error;
-            return result[0];
-        }
-        
-        // 🔥 MUSIC/OTHER PATH (EXISTING SYSTEM - UNTOUCHED)
-        const cleanedMetadata = data.content_metadata ? cleanContentMetadata(data.content_metadata) : {};
-        
-        const contentData = {
-            title: data.title || null,
-            description: data.description || null,
-            file_url: data.media_url,
-            thumbnail_url: data.thumbnail_url || null,
-            media_type: data.media_type,
-            genre: data.genre || null,
-            status: data.status,
-            user_id: currentUserId || null,
-            creator_id: currentUserId || null,
-            creator: null,
-            created_at: new Date().toISOString(),
-            content_metadata: cleanedMetadata,
-            content_format: data.content_format || null,
-            chapters: data.chapters || [],
-            duration: data.duration !== undefined ? data.duration : null,
-            series_id: null,
-            primary_genre_id: data.primary_genre_id || null,
-            language_code: data.language_code || null,
-            city: data.city || null,
-            tempo: data.tempo ? parseInt(data.tempo) : null,
-            key_signature: data.key_signature || null,
-            is_explicit: data.is_explicit || false
-        };
-        
-        if (data.content_format === 'series_episode') {
-            contentData.season_number = data.season_number || null;
-            contentData.episode_number = data.episode_number || null;
-        }
-        
-        const sanitizedData = sanitizeForSupabase(contentData);
-        
-        console.log('=== MUSIC/OTHER UPLOAD OBJECT (UNCHANGED) ===');
-        console.log('primary_genre_id:', sanitizedData.primary_genre_id);
-        console.log('content_metadata:', sanitizedData.content_metadata);
-        
-        const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
-        if (error) throw error;
-        return result[0];
-    }
-
-    async function addMoodTags(contentId, moodData) {
-        if (!moodData) return;
-        await window.supabaseClient.from('content_mood_tags').insert([{
-            content_id: contentId,
-            primary_mood: moodData.primary_mood,
-            mood_intensity: moodData.mood_intensity,
-            tagged_by: moodData.tagged_by
-        }]);
-    }
-
-    async function insertMusicGenreTags(contentId, mediaType, contentFormat) {
-        // 🔥 ONLY RUN FOR MUSIC CONTENT
-        const isMusic = contentFormat === 'music' || contentFormat === 'music_video';
-        if (!isMusic) return;
-
-        const selectedGenreId = document.getElementById('music-genre')?.value || null;
-        const selectedSubgenreId = document.getElementById('music-subgenre')?.value || null;
-        
-        if (selectedGenreId) {
-            await window.supabaseClient
-                .from('content_genres')
-                .insert({
-                    content_id: contentId,
-                    genre_id: selectedGenreId,
-                    is_primary: true,
-                    confidence_score: 1.0
-                });
-        }
-        
-        if (selectedSubgenreId && selectedSubgenreId !== selectedGenreId) {
-            await window.supabaseClient
-                .from('content_genres')
-                .insert({
-                    content_id: contentId,
-                    genre_id: selectedSubgenreId,
-                    is_primary: false,
-                    confidence_score: 0.8
-                });
-        }
-        
-        const selectedTags = getSelectedTags();
-        for (const tag of selectedTags) {
-            await window.supabaseClient
-                .from('content_tags')
-                .insert({
-                    content_id: contentId,
-                    tag_id: tag.tag_id || null,
-                    confidence_score: 1.0
-                });
-        }
-        
-        const genreSelect = document.getElementById('music-genre');
-        const genreName = genreSelect?.options[genreSelect?.selectedIndex]?.textContent || null;
-        const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
-        const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
-        
-        await window.supabaseClient
-            .from('Content')
-            .update({ 
-                primary_genre_id: selectedGenreId || null,
-                genre: genreName,
-                language_code: languageTag,
-                city: cityTag
-            })
-            .eq('id', contentId);
-    }
-
-    async function uploadContent(isDraft = false) {
-        if (!currentUserId) { showToast('Please sign in to upload content'); authModal.classList.add('active'); return; }
-        
-        const title = document.getElementById('content-title').value.trim();
-        const desc = document.getElementById('content-description').value.trim();
-        const genre = document.getElementById('content-genre').value;
-        
-        if (!title || !desc || !selectedMediaFile || !genre) { showToast('Please fill all required fields'); return; }
-        
-        if (!validateGenreMetadata()) {
-            showToast('Please fill all required fields for the selected genre', 'error');
-            return;
-        }
-        
-        if (selectedMediaType === 'short' && (extractedDuration === null || extractedDuration > 60)) { showToast('Shorts must be under 60 seconds'); return; }
-        
-        isUploading = true;
-        updateButtonsState();
-        resetProgress();
-        uploadStartTime = Date.now();
-        lastLoadedBytes = 0;
-        lastUpdateTime = Date.now();
-        progressSection.classList.add('active');
-        progressText.textContent = 'Starting upload...';
-        
-        try {
-            const contentMetadata = collectContentMetadata();
-            const moodData = collectMoodData();
-            const chaptersData = chapters.length ? chapters : null;
-            const config = genreConfig[genre];
-            
-            let finalMediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-            if (selectedMediaType === 'short') finalMediaType = 'short';
-            if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
-            
-            let contentFormat = document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
-            
-            progressText.textContent = 'Uploading media file...';
-            const mediaUrl = await uploadFileWithProgress(selectedMediaFile, 'content-media', 'media', (l, t) => updateProgress(l, t));
-            
-            let thumbnailUrl = null;
-            if (selectedThumbnailFile) {
-                progressText.textContent = 'Uploading thumbnail...';
-                thumbnailUrl = await uploadFileWithProgress(selectedThumbnailFile, 'content-thumbnails', 'thumbnails', () => {});
-            }
-            
-            progressText.textContent = 'Creating content record...';
-            
-            const selectedGenreId = document.getElementById('music-genre')?.value || null;
-            const selectedTags = getSelectedTags();
-            const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
-            const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
-            const tempo = document.getElementById('tempo')?.value || null;
-            const keySignature = document.getElementById('key_signature')?.value || null;
-            const isExplicit = document.getElementById('is_explicit')?.checked || false;
-            
-            const contentRecord = await createContentRecord({
-                title, 
-                description: desc, 
-                media_url: mediaUrl, 
-                thumbnail_url: thumbnailUrl,
-                media_type: finalMediaType, 
-                genre, 
-                status: isDraft ? 'draft' : 'published',
-                duration: extractedDuration, 
-                content_metadata: contentMetadata,
-                content_format: contentFormat,
-                chapters: chaptersData, 
-                season_number: contentMetadata.season_number, 
-                episode_number: contentMetadata.episode_number,
-                primary_genre_id: selectedGenreId,
-                language_code: languageTag,
-                city: cityTag,
-                tempo: tempo,
-                key_signature: keySignature,
-                is_explicit: isExplicit
-            });
-            
-            if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
-            if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
-            if (contentRecord.id) await insertMusicGenreTags(contentRecord.id, finalMediaType, contentFormat);
-            
-            progressFill.style.width = '100%';
-            progressPercentage.textContent = '100%';
-            progressText.textContent = 'Upload complete!';
-            localStorage.removeItem(`draft_${currentUserId}`);
-            
-            uploadFormState.style.display = 'none';
-            processingState.classList.add('active');
-            progressSection.classList.remove('active');
-            
-            setTimeout(() => {
-                processingState.classList.remove('active');
-                successState.classList.add('active');
-                triggerConfetti();
-            }, 3000);
-            
-        } catch (error) {
-            console.error('Upload failed:', error);
-            showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
-            resetProgress();
-            isUploading = false;
-            updateButtonsState();
-        } finally {
-            isUploading = false;
-            currentXhr = null;
-            updateButtonsState();
-        }
-    }
-
-    function updateChecklist() {
-        const title = document.getElementById('content-title').value.trim();
-        const desc = document.getElementById('content-description').value.trim();
-        const genre = document.getElementById('content-genre').value;
-        const config = genreConfig[genre];
-        let score = 0;
-        
-        if (title.length > 5) {
-            document.getElementById('check-title').classList.add('completed');
-            document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
-            score += 15;
-        } else {
-            document.getElementById('check-title').classList.remove('completed');
-            document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
-        }
-        
-        if (desc.length > 20) {
-            document.getElementById('check-desc').classList.add('completed');
-            document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
-            score += 15;
-        } else {
-            document.getElementById('check-desc').classList.remove('completed');
-            document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
-        }
-        
-        if (selectedMediaFile) {
-            document.getElementById('check-media').classList.add('completed');
-            document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
-            score += 20;
-        } else {
-            document.getElementById('check-media').classList.remove('completed');
-            document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
-        }
-        
-        if (selectedThumbnailFile) {
-            document.getElementById('check-thumb').classList.add('completed');
-            document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-            score += 20;
-        } else {
-            document.getElementById('check-thumb').classList.remove('completed');
-            document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-            score += 10;
-        }
-        
-        if (genre) {
-            document.getElementById('check-genre').classList.add('completed');
-            document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Genre Selected';
-            score += 15;
-        } else {
-            document.getElementById('check-genre').classList.remove('completed');
-            document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
-        }
-        
-        // 🔥 MOVIE-SPECIFIC METADATA CHECK
-        const isMovieContent = config?.isMovieContent;
-        let hasMetadata = false;
-        
-        if (isMovieContent) {
-            // Check movie-specific fields
-            hasMetadata = selectedGenres.length > 0 && selectedSAGenres.length > 0 && selectedMood;
-        } else if (config) {
-            // Existing check for non-movie content
-            hasMetadata = config.fields.some(f => {
-                if (f.required) {
-                    const el = document.getElementById(`field-${f.name}`);
-                    if (f.type === 'tags') {
-                        const cont = el?.closest('.tags-input-container');
-                        return cont?.dataset.tags && JSON.parse(cont.dataset.tags).length > 0;
-                    } else if (f.type === 'radio') {
-                        const selected = document.querySelector(`input[name="field-${f.name}"]:checked`);
-                        return !!selected;
-                    }
-                    return el && el.value;
-                }
-                return false;
-            });
-        } else {
-            hasMetadata = true; // No config = no extra metadata needed
-        }
-        
-        if (hasMetadata || !config) {
-            document.getElementById('check-metadata').classList.add('completed');
-            document.getElementById('check-metadata').innerHTML = '<i class="fas fa-check-circle"></i> Genre Metadata Completed';
-            score += 15;
-        } else {
-            document.getElementById('check-metadata').classList.remove('completed');
-            document.getElementById('check-metadata').innerHTML = '<i class="far fa-circle"></i> Genre Metadata Completed';
-        }
-        
-        document.getElementById('quality-score').textContent = `${score}%`;
-    }
-
-    function updateButtonsState() {
-        const title = document.getElementById('content-title').value.trim();
-        const desc = document.getElementById('content-description').value.trim();
-        const genre = document.getElementById('content-genre').value;
-        const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
-        const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
-        const metadataValid = validateGenreMetadata();
-        
-        saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-        publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
-        
-        if (isUploading) {
-            publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-            saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        } else {
-            publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
-            saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
-        }
-    }
-
-    function saveDraftToLocalStorage() {
-        if (!currentUserId) return;
-        const draft = {
-            title: document.getElementById('content-title').value,
-            description: document.getElementById('content-description').value,
-            genre: document.getElementById('content-genre').value,
-            mediaType: selectedMediaType,
-            hasMedia: !!selectedMediaFile,
-            mediaName: selectedMediaFile?.name || null,
-            hasThumbnail: !!selectedThumbnailFile,
-            selectedMood: selectedMood,
-            chapters: chapters,
-            // Movie-specific
-            selectedGenres: [...selectedGenres],
-            selectedSAGenres: [...selectedSAGenres],
-            movieTags: [...movieTags]
-        };
-        localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
-    }
-
-    function loadDraftFromLocalStorage() {
-        if (!currentUserId) return;
-        const draftStr = localStorage.getItem(`draft_${currentUserId}`);
-        if (draftStr) {
-            const draft = JSON.parse(draftStr);
-            document.getElementById('content-title').value = draft.title || '';
-            document.getElementById('content-description').value = draft.description || '';
-            if (draft.genre) {
-                document.getElementById('content-genre').value = draft.genre;
-                updateGenreForm();
-            }
-            if (draft.selectedMood) {
-                const moodEl = document.querySelector(`.mood-option[data-mood="${draft.selectedMood}"]`);
-                if (moodEl) moodEl.click();
-            }
-            if (draft.chapters) {
-                chapters = draft.chapters;
-                renderChaptersList();
-            }
-            // Restore movie-specific state
-            if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
-            if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
-            if (draft.movieTags) movieTags = [...draft.movieTags];
-            
-            updateChecklist();
-            updateButtonsState();
-            if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
-        }
-    }
-
-    async function checkAuthentication() {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        if (session?.user) {
-            currentSession = session;
-            currentUserId = session.user.id;
-            return session.user;
-        }
-        return null;
-    }
-
-    function setupMediaTypeSelector() {
-        document.querySelectorAll('.media-type-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
-                opt.classList.add('selected');
-                selectedMediaType = opt.dataset.type;
-                document.getElementById('shorts-info').classList.toggle('active', selectedMediaType === 'short');
-                if (selectedMediaFile) validateMediaFile(selectedMediaFile);
-                updateButtonsState();
-                updateChecklist();
-            });
-        });
-    }
-
-    function setupMediaUpload() {
-        const zone = document.getElementById('media-upload-zone');
-        const input = document.getElementById('media-file-input');
-        zone.addEventListener('click', () => input.click());
-        input.addEventListener('change', (e) => { if (e.target.files.length) handleMediaFile(e.target.files[0]); });
-        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--warm-gold)'; });
-        zone.addEventListener('dragleave', () => { zone.style.borderColor = 'rgba(255,255,255,.3)'; });
-        zone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleMediaFile(e.dataTransfer.files[0]); });
-    }
-
-    function setupThumbnailUpload() {
-        const zone = document.getElementById('thumbnail-upload-zone');
-        const input = document.getElementById('thumbnail-file-input');
-        zone.addEventListener('click', () => input.click());
-        input.addEventListener('change', (e) => { if (e.target.files.length) handleThumbnailFile(e.target.files[0], false); });
-        document.getElementById('camera-file-input').addEventListener('change', (e) => { if (e.target.files.length) handleThumbnailFile(e.target.files[0], false); });
-    }
-
-    function setupListeners() {
-        document.getElementById('upload-form').addEventListener('submit', (e) => { e.preventDefault(); if (!isUploading) uploadContent(false); });
-        document.getElementById('save-draft-btn').addEventListener('click', () => { if (!isUploading) uploadContent(true); });
-        
-        ['content-title', 'content-description'].forEach(id => {
-            document.getElementById(id).addEventListener('input', () => {
-                updateButtonsState();
-                updateChecklist();
-                saveDraftToLocalStorage();
-            });
-        });
-        
-        document.getElementById('content-genre').addEventListener('change', () => {
-            // Reset movie state when genre changes
-            selectedGenres = [];
-            selectedSAGenres = [];
-            movieTags = [];
-            
-            updateGenreForm();
-            updateButtonsState();
-            updateChecklist();
-            saveDraftToLocalStorage();
-        });
-        
-        document.getElementById('auth-login-btn').addEventListener('click', () => {
-            window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-        });
-        document.getElementById('auth-cancel-btn').addEventListener('click', () => authModal.classList.remove('active'));
-        document.getElementById('back-btn').addEventListener('click', () => window.history.back());
-        document.getElementById('profile-btn').addEventListener('click', () => {
-            window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-        });
-        
-        document.querySelectorAll('.mood-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                document.querySelectorAll('.mood-option').forEach(o => o.classList.remove('selected'));
-                opt.classList.add('selected');
-                selectedMood = opt.dataset.mood;
-                saveDraftToLocalStorage();
-            });
-        });
-        
-        document.addEventListener('change', (e) => {
-            if (e.target.id && e.target.id.startsWith('field-')) {
-                updateButtonsState();
-                updateChecklist();
-                saveDraftToLocalStorage();
-            }
-        });
-        
-        const searchBtn = document.getElementById('search-btn');
-        const searchModal = document.getElementById('search-modal');
-        const closeSearchBtn = document.getElementById('close-search-btn');
-        if (searchBtn && searchModal) {
-            searchBtn.addEventListener('click', () => searchModal.classList.add('active'));
-            closeSearchBtn.addEventListener('click', () => searchModal.classList.remove('active'));
-            searchModal.addEventListener('click', (e) => { if (e.target === searchModal) searchModal.classList.remove('active'); });
-        }
-        
-        const notificationsBtn = document.getElementById('notifications-btn');
-        const notificationsPanel = document.getElementById('notifications-panel');
-        const closeNotifications = document.getElementById('close-notifications');
-        if (notificationsBtn && notificationsPanel) {
-            notificationsBtn.addEventListener('click', () => notificationsPanel.classList.add('active'));
-            closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
-        }
-    }
-
-    function triggerConfetti() {
-        const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EF4444'];
-        for (let i = 0; i < 50; i++) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-            document.body.appendChild(confetti);
-            setTimeout(() => confetti.remove(), 4000);
-        }
-    }
-
-    window.removeMediaFile = function() {
-        selectedMediaFile = null;
-        extractedDuration = null;
-        document.getElementById('media-file-info').style.display = 'none';
-        document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
-        document.getElementById('duration-display').style.display = 'none';
-        updateButtonsState();
-        updateChecklist();
-        resetProgress();
-    };
-    
-    window.openImagePicker = function() { document.getElementById('thumbnail-file-input').click(); };
-    window.captureCameraImage = function() { document.getElementById('camera-file-input').click(); };
-    window.viewContent = function() { window.location.href = 'content-library.html'; };
-    window.shareContent = function() {
-        if (navigator.share) {
-            navigator.share({ title: 'Check out my content on Bantu Stream Connect!', url: window.location.origin });
-        } else {
-            navigator.clipboard.writeText(window.location.origin);
-            showToast('Link copied to clipboard', 'success');
-        }
-    };
-    window.uploadAnother = function() {
-        document.getElementById('upload-form').reset();
-        selectedMediaFile = null;
-        selectedThumbnailFile = null;
-        extractedDuration = null;
-        selectedMood = null;
-        chapters = [];
-        selectedGenres = [];
-        selectedSAGenres = [];
-        movieTags = [];
-        document.getElementById('media-file-info').style.display = 'none';
-        document.getElementById('thumbnail-preview').style.display = 'none';
-        document.getElementById('duration-display').style.display = 'none';
-        document.getElementById('success-state').classList.remove('active');
-        document.getElementById('upload-form-state').style.display = 'block';
-        resetProgress();
-        updateGenreForm();
-        updateChecklist();
-        updateButtonsState();
-        showToast('Ready for next upload!', 'success');
-    };
-    window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
-
-    async function initMusicUploadExtensions() {
-        await loadGenresForUpload();
-        await loadTagsForUpload();
-        setupContentFormatToggle();
-    }
-
-    async function initialize() {
-        loadingScreen.style.display = 'flex';
-        app.style.display = 'none';
-        const user = await checkAuthentication();
-        if (!user) authModal.classList.add('active');
-        setupMediaTypeSelector();
-        setupMediaUpload();
-        setupThumbnailUpload();
-        setupListeners();
-        updateGenreForm();
-        updateButtonsState();
-        updateChecklist();
-        loadDraftFromLocalStorage();
-        await initMusicUploadExtensions();
-        loadingScreen.style.display = 'none';
-        app.style.display = 'block';
-    }
-    
-    initialize();
+// ============================================
+// MEDIA FUNCTIONS (UNCHANGED)
+// ============================================
+function extractMediaDuration(file) {
+return new Promise((resolve, reject) => {
+const media = document.createElement(file.type.includes('audio') ? 'audio' : 'video');
+media.preload = 'metadata';
+const timeout = setTimeout(() => { URL.revokeObjectURL(media.src); reject(new Error('Duration extraction timeout')); }, 10000);
+media.onloadedmetadata = () => { clearTimeout(timeout); const duration = Math.floor(media.duration); URL.revokeObjectURL(media.src); resolve(duration); };
+media.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(media.src); reject(new Error('Failed to load metadata')); };
+media.src = URL.createObjectURL(file);
+});
+}
+async function generateVideoThumbnail(file) {
+return new Promise((resolve, reject) => {
+if (!file.type.includes('video')) reject(new Error('Not a video'));
+const video = document.createElement('video');
+video.preload = 'metadata';
+const timeout = setTimeout(() => { URL.revokeObjectURL(video.src); reject(new Error('Timeout')); }, 10000);
+video.onloadeddata = () => { clearTimeout(timeout); video.currentTime = Math.min(1, video.duration * 0.1); };
+video.onseeked = () => {
+const canvas = document.createElement('canvas');
+canvas.width = video.videoWidth;
+canvas.height = video.videoHeight;
+canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+canvas.toBlob(blob => {
+URL.revokeObjectURL(video.src);
+resolve(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg', lastModified: Date.now() }));
+}, 'image/jpeg', 0.9);
+};
+video.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(video.src); reject(new Error('Failed to load')); };
+video.src = URL.createObjectURL(file);
+});
+}
+async function validateMediaFile(file) {
+const durationDisplay = document.getElementById('duration-display');
+const durationText = document.getElementById('duration-text');
+const durationStatus = document.getElementById('duration-status');
+const durationBadge = document.getElementById('duration-badge');
+extractedDuration = null;
+if (file.type.includes('video') || file.type.includes('audio')) {
+durationDisplay.style.display = 'flex';
+durationText.textContent = `Duration: extracting...`;
+durationStatus.textContent = '';
+durationBadge.style.display = 'none';
+try {
+const duration = await extractMediaDuration(file);
+extractedDuration = duration;
+const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
+durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
+durationBadge.style.display = 'inline-block';
+if (file.type.includes('audio')) {
+durationDisplay.classList.add('valid');
+durationStatus.textContent = '✓ Audio file';
+} else if (selectedMediaType === 'short') {
+if (duration > 60) {
+durationDisplay.classList.add('invalid');
+durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
+} else {
+durationDisplay.classList.add('valid');
+durationStatus.textContent = '✓ Valid for Shorts';
+}
+}
+if (file.type.includes('video') && !selectedThumbnailFile) {
+try {
+const thumb = await generateVideoThumbnail(file);
+handleThumbnailFile(thumb, true);
+} catch(e) { console.error('Auto-thumb fail', e); }
+}
+} catch (error) {
+durationText.textContent = `Duration: unknown`;
+durationStatus.textContent = '⚠️ Could not read duration';
+durationDisplay.classList.add('invalid');
+}
+} else {
+durationDisplay.style.display = 'none';
+}
+updateButtonsState();
+updateChecklist();
+}
+function handleMediaFile(file) {
+const maxSize = 800 * 1024 * 1024;
+if (file.size > maxSize) { showToast('File size must be less than 800MB'); return; }
+const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
+const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
+const isValidType = [...videoTypes, ...audioTypes].some(type => file.type.includes(type.split('/')[1]) || file.type === type);
+if (!isValidType) { showToast('Please select a valid video or audio file'); return; }
+selectedMediaFile = file;
+const fileIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
+document.getElementById('file-icon').innerHTML = `<i class="fas ${fileIcon}"></i>`;
+document.getElementById('media-file-name').textContent = file.name;
+document.getElementById('media-file-size').textContent = formatFileSize(file.size);
+document.getElementById('media-file-info').style.display = 'flex';
+document.getElementById('media-zone-text').textContent = 'Click to change file';
+validateMediaFile(file);
+saveDraftToLocalStorage();
+}
+function handleThumbnailFile(file, isAutoGenerated = false) {
+const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+if (!imageTypes.includes(file.type)) { showToast('Please select a valid image file'); return; }
+selectedThumbnailFile = file;
+const reader = new FileReader();
+reader.onload = function(e) {
+document.getElementById('thumbnail-image').src = e.target.result;
+document.getElementById('thumbnail-preview').style.display = 'block';
+};
+reader.readAsDataURL(file);
+if (!isAutoGenerated) showToast('Thumbnail image selected', 'success');
+updateChecklist();
+saveDraftToLocalStorage();
+}
+async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
+return new Promise(async (resolve, reject) => {
+try {
+let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+if (sessionError || !session) {
+const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+if (refreshError || !refreshData.session) { reject(new Error('Authentication failed')); return; }
+session = refreshData.session;
+}
+const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+const timestamp = Date.now();
+const random = Math.random().toString(36).substring(7);
+const fileName = `${timestamp}_${random}_${cleanFileName}`;
+const filePath = `${currentUserId}/${basePath}/${fileName}`;
+const uploadUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/${bucket}/${filePath}`;
+const xhr = new XMLHttpRequest();
+currentXhr = xhr;
+xhr.upload.addEventListener('progress', (e) => {
+if (e.lengthComputable && onProgress) onProgress(e.loaded, e.total);
+});
+xhr.addEventListener('load', () => {
+if (xhr.status >= 200 && xhr.status < 300) {
+resolve(`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${filePath}`);
+} else {
+reject(new Error('Upload failed'));
+}
+currentXhr = null;
+});
+xhr.addEventListener('error', () => { reject(new Error('Network error')); currentXhr = null; });
+xhr.open('POST', uploadUrl, true);
+xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+xhr.setRequestHeader('Content-Type', file.type);
+xhr.send(file);
+} catch (error) { reject(error); }
+});
+}
+function updateProgress(loaded, total) {
+if (!total) return;
+const percentage = (loaded / total) * 100;
+progressFill.style.width = `${percentage}%`;
+progressPercentage.textContent = `${Math.round(percentage)}%`;
+if (!progressSection.classList.contains('active')) progressSection.classList.add('active');
+const now = Date.now();
+if (uploadStartTime === 0) {
+uploadStartTime = now;
+uploadStartBytes = loaded;
+lastUpdateTime = now;
+lastLoadedBytes = loaded;
+return;
+}
+const timeElapsed = (now - uploadStartTime) / 1000;
+const timeSinceLastUpdate = (now - lastUpdateTime) / 1000;
+if (timeSinceLastUpdate > 0.2) {
+const avgSpeedBps = (loaded - uploadStartBytes) / timeElapsed;
+const avgSpeedMBps = avgSpeedBps / (1024 * 1024);
+const instantSpeedBps = (loaded - lastLoadedBytes) / timeSinceLastUpdate;
+const instantSpeedMBps = instantSpeedBps / (1024 * 1024);
+const displaySpeedMBps = avgSpeedMBps * 0.3 + instantSpeedMBps * 0.7;
+const remainingBytes = total - loaded;
+const etaSeconds = displaySpeedMBps > 0 ? remainingBytes / (displaySpeedMBps * 1024 * 1024) : 0;
+progressSpeed.textContent = `Speed: ${displaySpeedMBps.toFixed(2)} MB/s`;
+progressEta.textContent = `ETA: ${formatTime(etaSeconds)}`;
+lastLoadedBytes = loaded;
+lastUpdateTime = now;
+}
+}
+function resetProgress() {
+progressFill.style.width = '0%';
+progressPercentage.textContent = '0%';
+progressSpeed.textContent = 'Speed: 0 MB/s';
+progressEta.textContent = 'ETA: --:--';
+progressText.textContent = 'Preparing upload...';
+progressSection.classList.remove('active');
+if (currentXhr) { currentXhr.abort(); currentXhr = null; }
+uploadStartTime = 0;
+uploadStartBytes = 0;
+lastLoadedBytes = 0;
+lastUpdateTime = 0;
+}
+// ============================================
+// 🎬 THE FIXED INSERT LOGIC - MOVIE PATH SEPARATE FROM MUSIC & PODCAST
+// ============================================
+async function createContentRecord(data) {
+const genre = document.getElementById('content-genre').value;
+const config = genreConfig[genre];
+const isMovieContent = config?.isMovieContent || false;
+const isPodcastContent = config?.isPodcastContent || false;
+// 🔥 PODCAST-SPECIFIC PAYLOAD (NEW SYSTEM)
+if (isPodcastContent) {
+const podcastMeta = collectPodcastMetadata();
+const contentData = {
+title: data.title || null,
+description: data.description || null,
+file_url: data.media_url,
+thumbnail_url: data.thumbnail_url || null,
+media_type: data.media_type,
+genre: data.genre || null,
+status: data.status,
+user_id: currentUserId || null,
+creator_id: currentUserId || null,
+creator: null,
+created_at: new Date().toISOString(),
+content_metadata: {},
+content_format: data.content_format || 'podcast_episode',
+chapters: data.chapters || [],
+duration: data.duration !== undefined ? data.duration : null,
+series_id: data.series_id || null,
+primary_genre_id: null,
+language_code: podcastMeta?.language || null,
+city: null,
+tempo: null,
+key_signature: null,
+is_explicit: podcastMeta?.explicit || false,
+// 🎙️ NEW PODCAST SYSTEM FIELDS
+content_type: 'podcast',
+genres: ['Podcast'],
+sa_genres: [],
+moods: podcastMeta?.mood ? [podcastMeta.mood] : [],
+tags: [],
+language: podcastMeta?.language || 'English',
+country: podcastMeta?.country || 'South Africa',
+region: 'Africa',
+is_bantu_original: false,
+completion_rate: 0,
+// Podcast episode metadata
+season_number: podcastMeta?.season_number || null,
+episode_number: podcastMeta?.episode_number || null
+};
+const sanitizedData = sanitizeForSupabase(contentData);
+console.log('=== PODCAST UPLOAD OBJECT ===');
+console.log('content_type:', sanitizedData.content_type);
+console.log('content_format:', sanitizedData.content_format);
+console.log('series_id:', sanitizedData.series_id);
+const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+if (error) throw error;
+return result[0];
+}
+// 🔥 MOVIE-SPECIFIC PAYLOAD (EXISTING)
+if (isMovieContent) {
+const movieMetadata = collectMovieMetadata();
+const contentData = {
+title: data.title || null,
+description: data.description || null,
+file_url: data.media_url,
+thumbnail_url: data.thumbnail_url || null,
+media_type: data.media_type,
+genre: data.genre || null,
+status: data.status,
+user_id: currentUserId || null,
+creator_id: currentUserId || null,
+creator: null,
+created_at: new Date().toISOString(),
+content_metadata: {},
+content_format: data.content_format || null,
+chapters: data.chapters || [],
+duration: data.duration !== undefined ? data.duration : null,
+series_id: null,
+primary_genre_id: null,
+language_code: null,
+city: null,
+tempo: null,
+key_signature: null,
+is_explicit: false,
+// 🎬 NEW MOVIE SYSTEM FIELDS
+content_type: 'movie',
+genres: movieMetadata.genres || [],
+sa_genres: movieMetadata.sa_genres || [],
+moods: movieMetadata.moods || [],
+tags: movieMetadata.tags || [],
+language: movieMetadata.language || 'English',
+country: 'South Africa',
+region: 'Africa',
+is_bantu_original: movieMetadata.is_bantu_original || false,
+completion_rate: 0
+};
+if (data.content_format === 'series_episode') {
+contentData.season_number = data.season_number || null;
+contentData.episode_number = data.episode_number || null;
+}
+const sanitizedData = sanitizeForSupabase(contentData);
+console.log('=== MOVIE UPLOAD OBJECT ===');
+console.log('content_type:', sanitizedData.content_type);
+console.log('genres:', sanitizedData.genres);
+console.log('sa_genres:', sanitizedData.sa_genres);
+console.log('country/region:', sanitizedData.country, sanitizedData.region);
+const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+if (error) throw error;
+return result[0];
+}
+// 🔥 MUSIC/OTHER PATH (EXISTING SYSTEM - UNTOUCHED)
+const cleanedMetadata = data.content_metadata ? cleanContentMetadata(data.content_metadata) : {};
+const contentData = {
+title: data.title || null,
+description: data.description || null,
+file_url: data.media_url,
+thumbnail_url: data.thumbnail_url || null,
+media_type: data.media_type,
+genre: data.genre || null,
+status: data.status,
+user_id: currentUserId || null,
+creator_id: currentUserId || null,
+creator: null,
+created_at: new Date().toISOString(),
+content_metadata: cleanedMetadata,
+content_format: data.content_format || null,
+chapters: data.chapters || [],
+duration: data.duration !== undefined ? data.duration : null,
+series_id: null,
+primary_genre_id: data.primary_genre_id || null,
+language_code: data.language_code || null,
+city: data.city || null,
+tempo: data.tempo ? parseInt(data.tempo) : null,
+key_signature: data.key_signature || null,
+is_explicit: data.is_explicit || false
+};
+if (data.content_format === 'series_episode') {
+contentData.season_number = data.season_number || null;
+contentData.episode_number = data.episode_number || null;
+}
+const sanitizedData = sanitizeForSupabase(contentData);
+console.log('=== MUSIC/OTHER UPLOAD OBJECT (UNCHANGED) ===');
+console.log('primary_genre_id:', sanitizedData.primary_genre_id);
+console.log('content_metadata:', sanitizedData.content_metadata);
+const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+if (error) throw error;
+return result[0];
+}
+async function addMoodTags(contentId, moodData) {
+if (!moodData) return;
+await window.supabaseClient.from('content_mood_tags').insert([{
+content_id: contentId,
+primary_mood: moodData.primary_mood,
+mood_intensity: moodData.mood_intensity,
+tagged_by: moodData.tagged_by
+}]);
+}
+async function insertMusicGenreTags(contentId, mediaType, contentFormat) {
+// 🔥 ONLY RUN FOR MUSIC CONTENT
+const isMusic = contentFormat === 'music' || contentFormat === 'music_video';
+if (!isMusic) return;
+const selectedGenreId = document.getElementById('music-genre')?.value || null;
+const selectedSubgenreId = document.getElementById('music-subgenre')?.value || null;
+if (selectedGenreId) {
+await window.supabaseClient
+.from('content_genres')
+.insert({
+content_id: contentId,
+genre_id: selectedGenreId,
+is_primary: true,
+confidence_score: 1.0
+});
+}
+if (selectedSubgenreId && selectedSubgenreId !== selectedGenreId) {
+await window.supabaseClient
+.from('content_genres')
+.insert({
+content_id: contentId,
+genre_id: selectedSubgenreId,
+is_primary: false,
+confidence_score: 0.8
+});
+}
+const selectedTags = getSelectedTags();
+for (const tag of selectedTags) {
+await window.supabaseClient
+.from('content_tags')
+.insert({
+content_id: contentId,
+tag_id: tag.tag_id || null,
+confidence_score: 1.0
+});
+}
+const genreSelect = document.getElementById('music-genre');
+const genreName = genreSelect?.options[genreSelect?.selectedIndex]?.textContent || null;
+const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
+const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
+await window.supabaseClient
+.from('Content')
+.update({
+primary_genre_id: selectedGenreId || null,
+genre: genreName,
+language_code: languageTag,
+city: cityTag
+})
+.eq('id', contentId);
+}
+async function uploadContent(isDraft = false) {
+if (!currentUserId) { showToast('Please sign in to upload content'); authModal.classList.add('active'); return; }
+const title = document.getElementById('content-title').value.trim();
+const desc = document.getElementById('content-description').value.trim();
+const genre = document.getElementById('content-genre').value;
+if (!title || !desc || !selectedMediaFile || !genre) { showToast('Please fill all required fields'); return; }
+if (!validateGenreMetadata()) {
+showToast('Please fill all required fields for the selected genre', 'error');
+return;
+}
+if (selectedMediaType === 'short' && (extractedDuration === null || extractedDuration > 60)) { showToast('Shorts must be under 60 seconds'); return; }
+isUploading = true;
+updateButtonsState();
+resetProgress();
+uploadStartTime = Date.now();
+lastLoadedBytes = 0;
+lastUpdateTime = Date.now();
+progressSection.classList.add('active');
+progressText.textContent = 'Starting upload...';
+try {
+const contentMetadata = collectContentMetadata();
+const moodData = collectMoodData();
+const chaptersData = chapters.length ? chapters : null;
+const config = genreConfig[genre];
+let finalMediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
+if (selectedMediaType === 'short') finalMediaType = 'short';
+if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
+let contentFormat = document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
+progressText.textContent = 'Uploading media file...';
+const mediaUrl = await uploadFileWithProgress(selectedMediaFile, 'content-media', 'media', (l, t) => updateProgress(l, t));
+let thumbnailUrl = null;
+if (selectedThumbnailFile) {
+progressText.textContent = 'Uploading thumbnail...';
+thumbnailUrl = await uploadFileWithProgress(selectedThumbnailFile, 'content-thumbnails', 'thumbnails', () => {});
+}
+progressText.textContent = 'Creating content record...';
+const selectedGenreId = document.getElementById('music-genre')?.value || null;
+const selectedTags = getSelectedTags();
+const languageTag = selectedTags.find(t => t.type === 'language')?.name || null;
+const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
+const tempo = document.getElementById('tempo')?.value || null;
+const keySignature = document.getElementById('key_signature')?.value || null;
+const isExplicit = document.getElementById('is_explicit')?.checked || false;
+// 🔥 PODCAST SERIES HANDLING
+let seriesId = null;
+if (config?.isPodcastContent && contentMetadata?.show_title) {
+// Check if series exists, or create new one
+const { data: existingSeries } = await window.supabaseClient
+.from('creator_playlists')
+.select('id')
+.eq('creator_id', currentUserId)
+.eq('name', contentMetadata.show_title)
+.eq('playlist_type', 'podcast')
+.maybeSingle();
+if (existingSeries) {
+seriesId = existingSeries.id;
+} else {
+// Create new podcast series
+const { data: newSeries } = await window.supabaseClient
+.from('creator_playlists')
+.insert({
+creator_id: currentUserId,
+name: contentMetadata.show_title,
+description: desc,
+playlist_type: 'podcast',
+custom_thumbnail_url: thumbnailUrl,
+visibility: 'public',
+series_metadata: {
+category: contentMetadata.category,
+language: contentMetadata.language,
+country: contentMetadata.country
+}
+})
+.select()
+.single();
+if (newSeries) seriesId = newSeries.id;
+}
+}
+const contentRecord = await createContentRecord({
+title,
+description: desc,
+media_url: mediaUrl,
+thumbnail_url: thumbnailUrl,
+media_type: finalMediaType,
+genre,
+status: isDraft ? 'draft' : 'published',
+duration: extractedDuration,
+content_metadata: contentMetadata,
+content_format: contentFormat,
+chapters: chaptersData,
+season_number: contentMetadata.season_number,
+episode_number: contentMetadata.episode_number,
+primary_genre_id: selectedGenreId,
+language_code: languageTag,
+city: cityTag,
+tempo: tempo,
+key_signature: keySignature,
+is_explicit: isExplicit,
+series_id: seriesId
+});
+if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
+if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
+if (contentRecord.id) await insertMusicGenreTags(contentRecord.id, finalMediaType, contentFormat);
+progressFill.style.width = '100%';
+progressPercentage.textContent = '100%';
+progressText.textContent = 'Upload complete!';
+localStorage.removeItem(`draft_${currentUserId}`);
+uploadFormState.style.display = 'none';
+processingState.classList.add('active');
+progressSection.classList.remove('active');
+setTimeout(() => {
+processingState.classList.remove('active');
+successState.classList.add('active');
+triggerConfetti();
+}, 3000);
+} catch (error) {
+console.error('Upload failed:', error);
+showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
+resetProgress();
+isUploading = false;
+updateButtonsState();
+} finally {
+isUploading = false;
+currentXhr = null;
+updateButtonsState();
+}
+}
+function updateChecklist() {
+const title = document.getElementById('content-title').value.trim();
+const desc = document.getElementById('content-description').value.trim();
+const genre = document.getElementById('content-genre').value;
+const config = genreConfig[genre];
+let score = 0;
+if (title.length > 5) {
+document.getElementById('check-title').classList.add('completed');
+document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
+score += 15;
+} else {
+document.getElementById('check-title').classList.remove('completed');
+document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
+}
+if (desc.length > 20) {
+document.getElementById('check-desc').classList.add('completed');
+document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
+score += 15;
+} else {
+document.getElementById('check-desc').classList.remove('completed');
+document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
+}
+if (selectedMediaFile) {
+document.getElementById('check-media').classList.add('completed');
+document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
+score += 20;
+} else {
+document.getElementById('check-media').classList.remove('completed');
+document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
+}
+if (selectedThumbnailFile) {
+document.getElementById('check-thumb').classList.add('completed');
+document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
+score += 20;
+} else {
+document.getElementById('check-thumb').classList.remove('completed');
+document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
+score += 10;
+}
+if (genre) {
+document.getElementById('check-genre').classList.add('completed');
+document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Genre Selected';
+score += 15;
+} else {
+document.getElementById('check-genre').classList.remove('completed');
+document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
+}
+// 🔥 PODCAST/MOVIE-SPECIFIC METADATA CHECK
+const isMovieContent = config?.isMovieContent;
+const isPodcastContent = config?.isPodcastContent;
+let hasMetadata = false;
+if (isPodcastContent) {
+// Check podcast-specific fields
+const podcastMeta = collectPodcastMetadata();
+hasMetadata = podcastMeta?.show_title && podcastMeta?.category && podcastMeta?.language && podcastMeta?.country;
+} else if (isMovieContent) {
+// Check movie-specific fields
+hasMetadata = selectedGenres.length > 0 && selectedSAGenres.length > 0 && selectedMood;
+} else if (config) {
+// Existing check for non-movie/podcast content
+hasMetadata = config.fields.some(f => {
+if (f.required) {
+const el = document.getElementById(`field-${f.name}`);
+if (f.type === 'tags') {
+const cont = el?.closest('.tags-input-container');
+return cont?.dataset.tags && JSON.parse(cont.dataset.tags).length > 0;
+} else if (f.type === 'radio') {
+const selected = document.querySelector(`input[name="field-${f.name}"]:checked`);
+return !!selected;
+}
+return el && el.value;
+}
+return false;
+});
+} else {
+hasMetadata = true; // No config = no extra metadata needed
+}
+if (hasMetadata || !config) {
+document.getElementById('check-metadata').classList.add('completed');
+document.getElementById('check-metadata').innerHTML = '<i class="fas fa-check-circle"></i> Genre Metadata Completed';
+score += 15;
+} else {
+document.getElementById('check-metadata').classList.remove('completed');
+document.getElementById('check-metadata').innerHTML = '<i class="far fa-circle"></i> Genre Metadata Completed';
+}
+document.getElementById('quality-score').textContent = `${score}%`;
+}
+function updateButtonsState() {
+const title = document.getElementById('content-title').value.trim();
+const desc = document.getElementById('content-description').value.trim();
+const genre = document.getElementById('content-genre').value;
+const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
+const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
+const metadataValid = validateGenreMetadata();
+saveDraftBtn.disabled = !title || isUploading || !currentUserId;
+publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
+if (isUploading) {
+publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+} else {
+publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
+saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+}
+}
+function saveDraftToLocalStorage() {
+if (!currentUserId) return;
+const draft = {
+title: document.getElementById('content-title').value,
+description: document.getElementById('content-description').value,
+genre: document.getElementById('content-genre').value,
+mediaType: selectedMediaType,
+hasMedia: !!selectedMediaFile,
+mediaName: selectedMediaFile?.name || null,
+hasThumbnail: !!selectedThumbnailFile,
+selectedMood: selectedMood,
+chapters: chapters,
+// Movie-specific
+selectedGenres: [...selectedGenres],
+selectedSAGenres: [...selectedSAGenres],
+movieTags: [...movieTags]
+};
+localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
+}
+function loadDraftFromLocalStorage() {
+if (!currentUserId) return;
+const draftStr = localStorage.getItem(`draft_${currentUserId}`);
+if (draftStr) {
+const draft = JSON.parse(draftStr);
+document.getElementById('content-title').value = draft.title || '';
+document.getElementById('content-description').value = draft.description || '';
+if (draft.genre) {
+document.getElementById('content-genre').value = draft.genre;
+updateGenreForm();
+}
+if (draft.selectedMood) {
+const moodEl = document.querySelector(`.mood-option[data-mood="${draft.selectedMood}"]`);
+if (moodEl) moodEl.click();
+}
+if (draft.chapters) {
+chapters = draft.chapters;
+renderChaptersList();
+}
+// Restore movie-specific state
+if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
+if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
+if (draft.movieTags) movieTags = [...draft.movieTags];
+updateChecklist();
+updateButtonsState();
+if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
+}
+}
+async function checkAuthentication() {
+const { data: { session } } = await window.supabaseClient.auth.getSession();
+if (session?.user) {
+currentSession = session;
+currentUserId = session.user.id;
+return session.user;
+}
+return null;
+}
+function setupMediaTypeSelector() {
+document.querySelectorAll('.media-type-option').forEach(opt => {
+opt.addEventListener('click', () => {
+document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
+opt.classList.add('selected');
+selectedMediaType = opt.dataset.type;
+document.getElementById('shorts-info').classList.toggle('active', selectedMediaType === 'short');
+if (selectedMediaFile) validateMediaFile(selectedMediaFile);
+updateButtonsState();
+updateChecklist();
+});
+});
+}
+function setupMediaUpload() {
+const zone = document.getElementById('media-upload-zone');
+const input = document.getElementById('media-file-input');
+zone.addEventListener('click', () => input.click());
+input.addEventListener('change', (e) => { if (e.target.files.length) handleMediaFile(e.target.files[0]); });
+zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--warm-gold)'; });
+zone.addEventListener('dragleave', () => { zone.style.borderColor = 'rgba(255,255,255,.3)'; });
+zone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleMediaFile(e.dataTransfer.files[0]); });
+}
+function setupThumbnailUpload() {
+const zone = document.getElementById('thumbnail-upload-zone');
+const input = document.getElementById('thumbnail-file-input');
+zone.addEventListener('click', () => input.click());
+input.addEventListener('change', (e) => { if (e.target.files.length) handleThumbnailFile(e.target.files[0], false); });
+document.getElementById('camera-file-input').addEventListener('change', (e) => { if (e.target.files.length) handleThumbnailFile(e.target.files[0], false); });
+}
+function setupListeners() {
+document.getElementById('upload-form').addEventListener('submit', (e) => { e.preventDefault(); if (!isUploading) uploadContent(false); });
+document.getElementById('save-draft-btn').addEventListener('click', () => { if (!isUploading) uploadContent(true); });
+['content-title', 'content-description'].forEach(id => {
+document.getElementById(id).addEventListener('input', () => {
+updateButtonsState();
+updateChecklist();
+saveDraftToLocalStorage();
+});
+});
+document.getElementById('content-genre').addEventListener('change', () => {
+// Reset movie/podcast state when genre changes
+selectedGenres = [];
+selectedSAGenres = [];
+movieTags = [];
+updateGenreForm();
+updateButtonsState();
+updateChecklist();
+saveDraftToLocalStorage();
+});
+document.getElementById('auth-login-btn').addEventListener('click', () => {
+window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+});
+document.getElementById('auth-cancel-btn').addEventListener('click', () => authModal.classList.remove('active'));
+document.getElementById('back-btn').addEventListener('click', () => window.history.back());
+document.getElementById('profile-btn').addEventListener('click', () => {
+window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+});
+document.querySelectorAll('.mood-option').forEach(opt => {
+opt.addEventListener('click', () => {
+document.querySelectorAll('.mood-option').forEach(o => o.classList.remove('selected'));
+opt.classList.add('selected');
+selectedMood = opt.dataset.mood;
+saveDraftToLocalStorage();
+});
+});
+document.addEventListener('change', (e) => {
+if (e.target.id && e.target.id.startsWith('field-')) {
+updateButtonsState();
+updateChecklist();
+saveDraftToLocalStorage();
+}
+});
+const searchBtn = document.getElementById('search-btn');
+const searchModal = document.getElementById('search-modal');
+const closeSearchBtn = document.getElementById('close-search-btn');
+if (searchBtn && searchModal) {
+searchBtn.addEventListener('click', () => searchModal.classList.add('active'));
+closeSearchBtn.addEventListener('click', () => searchModal.classList.remove('active'));
+searchModal.addEventListener('click', (e) => { if (e.target === searchModal) searchModal.classList.remove('active'); });
+}
+const notificationsBtn = document.getElementById('notifications-btn');
+const notificationsPanel = document.getElementById('notifications-panel');
+const closeNotifications = document.getElementById('close-notifications');
+if (notificationsBtn && notificationsPanel) {
+notificationsBtn.addEventListener('click', () => notificationsPanel.classList.add('active'));
+closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
+}
+}
+function triggerConfetti() {
+const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EF4444'];
+for (let i = 0; i < 50; i++) {
+const confetti = document.createElement('div');
+confetti.className = 'confetti';
+confetti.style.left = Math.random() * 100 + 'vw';
+confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+document.body.appendChild(confetti);
+setTimeout(() => confetti.remove(), 4000);
+}
+}
+window.removeMediaFile = function() {
+selectedMediaFile = null;
+extractedDuration = null;
+document.getElementById('media-file-info').style.display = 'none';
+document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
+document.getElementById('duration-display').style.display = 'none';
+updateButtonsState();
+updateChecklist();
+resetProgress();
+};
+window.openImagePicker = function() { document.getElementById('thumbnail-file-input').click(); };
+window.captureCameraImage = function() { document.getElementById('camera-file-input').click(); };
+window.viewContent = function() { window.location.href = 'content-library.html'; };
+window.shareContent = function() {
+if (navigator.share) {
+navigator.share({ title: 'Check out my content on Bantu Stream Connect!', url: window.location.origin });
+} else {
+navigator.clipboard.writeText(window.location.origin);
+showToast('Link copied to clipboard', 'success');
+}
+};
+window.uploadAnother = function() {
+document.getElementById('upload-form').reset();
+selectedMediaFile = null;
+selectedThumbnailFile = null;
+extractedDuration = null;
+selectedMood = null;
+chapters = [];
+selectedGenres = [];
+selectedSAGenres = [];
+movieTags = [];
+document.getElementById('media-file-info').style.display = 'none';
+document.getElementById('thumbnail-preview').style.display = 'none';
+document.getElementById('duration-display').style.display = 'none';
+document.getElementById('success-state').classList.remove('active');
+document.getElementById('upload-form-state').style.display = 'block';
+resetProgress();
+updateGenreForm();
+updateChecklist();
+updateButtonsState();
+showToast('Ready for next upload!', 'success');
+};
+window.goToDashboard = function() { window.location.href = 'creator-dashboard.html'; };
+async function initMusicUploadExtensions() {
+await loadGenresForUpload();
+await loadTagsForUpload();
+setupContentFormatToggle();
+}
+async function initialize() {
+loadingScreen.style.display = 'flex';
+app.style.display = 'none';
+const user = await checkAuthentication();
+if (!user) authModal.classList.add('active');
+setupMediaTypeSelector();
+setupMediaUpload();
+setupThumbnailUpload();
+setupListeners();
+updateGenreForm();
+updateButtonsState();
+updateChecklist();
+loadDraftFromLocalStorage();
+await initMusicUploadExtensions();
+loadingScreen.style.display = 'none';
+app.style.display = 'block';
+}
+initialize();
 });
 </script>
 </body>
