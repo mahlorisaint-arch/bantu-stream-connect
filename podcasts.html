@@ -1309,15 +1309,13 @@ transition: all 0.2s;
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentCategory = 'all';
 let connectedPodcastIds = new Set();
-
-// Dynamic player - supports both audio and video
-let currentMediaElement = null; // Can be Audio or Video element
+let currentMediaElement = null;
 let currentEpisode = null;
 let isPlaying = false;
 let isVideoPodcast = false;
@@ -1382,79 +1380,12 @@ function isVideoPodcastContent(content) {
   return hasVideoExt || hasVideoFlag;
 }
 
-// ===== PLAYER FUNCTIONS (Audio/Video Switch) =====
+// ===== PLAYER FUNCTIONS =====
 function cleanupCurrentPlayer() {
   if (currentMediaElement) {
     currentMediaElement.pause();
     currentMediaElement.src = '';
     currentMediaElement = null;
-  }
-}
-
-function showVideoModal(videoUrl) {
-  const modal = document.getElementById('video-modal');
-  const videoEl = document.getElementById('fullscreen-video');
-  if (!modal || !videoEl) return;
-  
-  videoEl.src = videoUrl;
-  videoEl.load();
-  videoEl.play().catch(e => console.warn('Video autoplay blocked:', e));
-  modal.classList.add('active');
-  
-  document.getElementById('close-video-modal').onclick = () => {
-    videoEl.pause();
-    modal.classList.remove('active');
-    videoEl.src = '';
-  };
-}
-
-function playPodcastEpisode(episode, autoPlay = true) {
-  try {
-    const audioUrl = episode.file_url || episode.hls_manifest_url || episode.data_saver_url;
-    if (!audioUrl) {
-      showToast('Media file not available', 'error');
-      return;
-    }
-
-    cleanupCurrentPlayer();
-    
-    isVideoPodcast = isVideoPodcastContent(episode);
-    
-    if (isVideoPodcast) {
-      // For video podcasts, open in modal or embed
-      showVideoModal(audioUrl);
-      currentEpisode = episode;
-      showNowPlayingBar(episode);
-      savePlayerState();
-      isPlaying = true;
-      
-      // Update now playing bar for video (can't control video from bar easily, but we show info)
-      updatePlayButton(true);
-      showToast(`Now playing video: ${episode.title}`, 'success');
-    } else {
-      // Audio podcast - use Audio element
-      const audio = new Audio();
-      audio.src = audioUrl;
-      audio.load();
-      
-      if (autoPlay) {
-        audio.play().catch(err => {
-          console.error('Playback error:', err);
-          showToast('Playback failed: ' + (err.message || 'Unknown error'), 'error');
-        });
-      }
-      
-      currentMediaElement = audio;
-      currentEpisode = episode;
-      isPlaying = autoPlay;
-      showNowPlayingBar(episode);
-      updatePlayButton(autoPlay);
-      savePlayerState();
-      setupAudioEventListeners(audio, episode);
-    }
-  } catch (err) {
-    console.error('Play error:', err);
-    showToast('Error playing episode', 'error');
   }
 }
 
@@ -1492,10 +1423,71 @@ function setupAudioEventListeners(audio, episode) {
   }
 }
 
+function playPodcastEpisode(episode, autoPlay = true) {
+  try {
+    const mediaUrl = episode.file_url || episode.hls_manifest_url || episode.data_saver_url;
+    
+    if (!mediaUrl) {
+      showToast('Media file not available', 'error');
+      return;
+    }
+
+    cleanupCurrentPlayer();
+    
+    const isVideo = isVideoPodcastContent(episode);
+    
+    if (isVideo) {
+      const modal = document.getElementById('video-modal');
+      const videoEl = document.getElementById('fullscreen-video');
+      if (modal && videoEl) {
+        videoEl.src = mediaUrl;
+        videoEl.load();
+        videoEl.play().catch(e => console.warn('Autoplay blocked:', e));
+        modal.classList.add('active');
+        
+        document.getElementById('close-video-modal').onclick = () => {
+          videoEl.pause();
+          modal.classList.remove('active');
+          videoEl.src = '';
+        };
+      }
+      
+      currentEpisode = episode;
+      isVideoPodcast = true;
+      showNowPlayingBar(episode);
+      showToast(`Now playing video: ${episode.title}`, 'success');
+      savePlayerState();
+    } else {
+      const audio = new Audio();
+      audio.src = mediaUrl;
+      audio.load();
+      
+      if (autoPlay) {
+        audio.play().catch(err => {
+          console.error('Playback error:', err);
+          showToast('Playback failed: ' + (err.message || 'Unknown error'), 'error');
+        });
+      }
+      
+      currentMediaElement = audio;
+      currentEpisode = episode;
+      isPlaying = autoPlay;
+      isVideoPodcast = false;
+      showNowPlayingBar(episode);
+      updatePlayButton(autoPlay);
+      setupAudioEventListeners(audio, episode);
+      savePlayerState();
+    }
+  } catch (err) {
+    console.error('Play error:', err);
+    showToast('Error playing episode', 'error');
+  }
+}
+
 function togglePlayPause() {
   if (!currentMediaElement || isVideoPodcast) {
     if (isVideoPodcast && currentEpisode) {
-      showVideoModal(currentEpisode.file_url);
+      playPodcastEpisode(currentEpisode, true);
     } else {
       showToast('No audio playing', 'warning');
     }
@@ -1543,7 +1535,13 @@ function showNowPlayingBar(episode) {
   bar.style.display = 'flex';
   setTimeout(() => bar.classList.add('active'), 10);
   document.getElementById('now-playing-title').textContent = episode.title || 'Untitled Episode';
-  document.getElementById('now-playing-podcast').textContent = episode.show_name || 'Podcast Episode';
+  
+  const creator = episode.creators?.user_profiles?.full_name || 
+                  episode.creators?.user_profiles?.username || 
+                  episode.creators?.username || 
+                  episode.show_name || 
+                  'Podcast Episode';
+  document.getElementById('now-playing-podcast').textContent = creator;
 }
 
 function savePlayerState() {
@@ -1566,7 +1564,6 @@ function restorePlayerState() {
     const { episode, isVideo, time, isPlaying: wasPlaying } = JSON.parse(saved);
     if (episode && episode.id) {
       if (isVideo) {
-        // Don't auto-restore video, just show info
         currentEpisode = episode;
         isVideoPodcast = true;
         showNowPlayingBar(episode);
@@ -1581,7 +1578,6 @@ function restorePlayerState() {
         showNowPlayingBar(episode);
         updatePlayButton(wasPlaying);
         setupAudioEventListeners(audio, episode);
-        audio.currentTime = time;
       }
     }
   } catch (err) {
@@ -1589,10 +1585,10 @@ function restorePlayerState() {
   }
 }
 
-// ===== DATA FETCHING WITH CREATOR JOINS =====
+// ===== DATA FETCHING WITH PROPER JOINS =====
 async function loadFeaturedPodcast() {
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('Content')
       .select(`
         id,
@@ -1604,9 +1600,13 @@ async function loadFeaturedPodcast() {
         views_count,
         content_metadata,
         creators:creator_id (
-          full_name,
+          id,
           username,
-          avatar_url
+          user_profiles (
+            full_name,
+            username,
+            avatar_url
+          )
         )
       `)
       .eq('content_type', 'podcast')
@@ -1620,29 +1620,63 @@ async function loadFeaturedPodcast() {
     
     if (data) {
       renderHeroPodcast(data);
+      window.featuredEpisode = data;
     }
   } catch (err) {
     console.error('Featured podcast error:', err);
+    showToast('Could not load featured podcast', 'warning');
   }
 }
 
 function renderHeroPodcast(podcast) {
+  if (!podcast) {
+    document.getElementById('heroPodcastTitle').textContent = 'No featured podcast';
+    return;
+  }
+
+  const creator = 
+    podcast.creators?.user_profiles?.full_name ||
+    podcast.creators?.user_profiles?.username ||
+    podcast.creators?.username ||
+    'Unknown Creator';
+
+  const isVideo = isVideoPodcastContent(podcast);
+
   document.getElementById('heroPodcastTitle').textContent = podcast.title || 'Podcast Title';
-  const creatorName = podcast.creators?.full_name || podcast.creators?.username || 'Unknown Creator';
-  document.getElementById('heroPodcastCreator').textContent = creatorName;
+  document.getElementById('heroPodcastCreator').textContent = creator;
   document.getElementById('heroPodcastDescription').textContent = podcast.description || '';
   document.getElementById('heroPodcastStats').innerHTML = `<i class="fas fa-headphones"></i> ${formatNumber(podcast.views_count || 0)} plays`;
   
-  if (podcast.thumbnail_url) {
-    document.getElementById('heroPodcastImage').src = podcast.thumbnail_url;
+  const heroImageContainer = document.getElementById('hero-image-container');
+  if (heroImageContainer) {
+    if (isVideo && podcast.file_url) {
+      heroImageContainer.innerHTML = `
+        <video autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover;">
+          <source src="${podcast.file_url}" type="video/mp4">
+        </video>
+        <div class="hero-waveform">
+          ${Array(10).fill().map(() => '<div class="wave-bar"></div>').join('')}
+        </div>
+      `;
+    } else {
+      heroImageContainer.innerHTML = `
+        <img id="heroPodcastImage" src="${podcast.thumbnail_url || 'https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=600&h=500&fit=crop'}" alt="Podcast of the Week">
+        <div class="hero-waveform">
+          ${Array(10).fill().map(() => '<div class="wave-bar"></div>').join('')}
+        </div>
+      `;
+    }
   }
-  
-  window.featuredEpisode = podcast;
+
+  const creatorAvatar = document.getElementById('hero-creator-avatar-img');
+  if (creatorAvatar && podcast.creators?.user_profiles?.avatar_url) {
+    creatorAvatar.innerHTML = `<img src="${podcast.creators.user_profiles.avatar_url}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+  }
 }
 
 async function loadFastestGrowingPodcasts() {
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('creator_playlists')
       .select(`
         id,
@@ -1693,11 +1727,27 @@ function renderPodcasters(podcasts) {
 
 async function playPodcastByShowId(showId) {
   try {
-    const { data: episodes } = await supabaseClient
+    const { data: episodes } = await supabase
       .from('Content')
       .select(`
-        id, title, file_url, hls_manifest_url, data_saver_url, duration, series_id, thumbnail_url, content_metadata,
-        creators:creator_id (full_name, username, avatar_url)
+        id, 
+        title, 
+        file_url, 
+        hls_manifest_url, 
+        data_saver_url, 
+        duration, 
+        series_id, 
+        thumbnail_url, 
+        content_metadata,
+        creators:creator_id (
+          id,
+          username,
+          user_profiles (
+            full_name,
+            username,
+            avatar_url
+          )
+        )
       `)
       .eq('series_id', showId)
       .eq('content_format', 'podcast_episode')
@@ -1707,7 +1757,10 @@ async function playPodcastByShowId(showId) {
     
     if (episodes && episodes[0]) {
       const episode = episodes[0];
-      episode.show_name = episode.creators?.full_name || episode.creators?.username || 'Podcast';
+      episode.show_name = episode.creators?.user_profiles?.full_name || 
+                          episode.creators?.user_profiles?.username || 
+                          episode.creators?.username || 
+                          'Podcast';
       playPodcastEpisode(episode, true);
     } else {
       showToast('No episodes available yet', 'warning');
@@ -1720,19 +1773,26 @@ async function playPodcastByShowId(showId) {
 
 async function loadPodcastClips() {
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('Content')
       .select(`
         id,
         title,
         thumbnail_url,
         duration,
-        series_id,
         file_url,
         hls_manifest_url,
         data_saver_url,
         content_metadata,
-        creators:creator_id (full_name, username, avatar_url)
+        creators:creator_id (
+          id,
+          username,
+          user_profiles (
+            full_name,
+            username,
+            avatar_url
+          )
+        )
       `)
       .eq('content_type', 'podcast')
       .eq('content_format', 'podcast_episode')
@@ -1752,39 +1812,52 @@ async function loadPodcastClips() {
 function renderClips(clips) {
   const grid = document.getElementById('clips-grid');
   if (!grid) return;
+  
   if (!clips || clips.length === 0) {
     grid.innerHTML = '<div style="text-align:center; padding:40px; grid-column: 1/-1;">No short clips available yet</div>';
     return;
   }
-  grid.innerHTML = clips.map(c => {
-    const isVideo = isVideoPodcastContent(c);
-    const episodeData = JSON.stringify(c).replace(/'/g, "\\'");
-    const creatorName = c.creators?.full_name || c.creators?.username || 'Creator';
+  
+  grid.innerHTML = clips.map(clip => {
+    const creator = 
+      clip.creators?.user_profiles?.full_name ||
+      clip.creators?.user_profiles?.username ||
+      clip.creators?.username ||
+      'Creator';
+      
+    const isVideo = isVideoPodcastContent(clip);
+      
+    const episodeData = JSON.stringify({
+      ...clip,
+      show_name: creator
+    }).replace(/'/g, "\\'");
+    
     return `
-    <div class="clip-card">
-      <div class="clip-header">
-        <div class="clip-avatar"><i class="fas fa-microphone"></i></div>
-        <div class="clip-info">
-          <div class="clip-podcast">${escapeHtml(creatorName)}${isVideo ? '<span class="video-badge"><i class="fas fa-video"></i> Video</span>' : ''}</div>
-          <div class="clip-episode">${escapeHtml(c.title)}</div>
+      <div class="clip-card">
+        <div class="clip-header">
+          <div class="clip-avatar"><i class="fas fa-microphone"></i></div>
+          <div class="clip-info">
+            <div class="clip-podcast">${escapeHtml(creator)}${isVideo ? '<span class="video-badge"><i class="fas fa-video"></i> Video</span>' : ''}</div>
+            <div class="clip-episode">${escapeHtml(clip.title)}</div>
+          </div>
+        </div>
+        <div class="clip-waveform">
+          ${Array(7).fill().map((_, i) => `<div class="clip-wave-bar" style="animation-delay: ${i * 0.15}s"></div>`).join('')}
+        </div>
+        <div class="clip-footer">
+          <span class="clip-duration"><i class="far fa-clock"></i> ${formatTime(clip.duration)}</span>
+          <button class="clip-play" onclick='window.playPodcastEpisode(${episodeData}, true)'>
+            <i class="fas fa-play"></i> Play ${isVideo ? 'Video' : 'Clip'}
+          </button>
         </div>
       </div>
-      <div class="clip-waveform">
-        ${Array(7).fill().map((_, i) => `<div class="clip-wave-bar" style="animation-delay: ${i * 0.15}s"></div>`).join('')}
-      </div>
-      <div class="clip-footer">
-        <span class="clip-duration"><i class="far fa-clock"></i> ${formatTime(c.duration)}</span>
-        <button class="clip-play" onclick='playPodcastEpisode(${episodeData}, true)'>
-          <i class="fas fa-play"></i> Play ${isVideo ? 'Video' : 'Clip'}
-        </button>
-      </div>
-    </div>
-  `}).join('');
+    `;
+  }).join('');
 }
 
 async function loadDiasporaPodcasts() {
   try {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from('creator_playlists')
       .select(`
         id,
@@ -1859,23 +1932,38 @@ function updateConnectButtons() {
 
 async function checkAuth() {
   try {
-    const { data } = await supabaseClient.auth.getSession();
-    currentUser = data.session?.user || null;
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Auth error:', error);
+      currentUser = null;
+      return;
+    }
+    
+    currentUser = session?.user || null;
+    
     if (currentUser) {
-      const { data: profile } = await supabaseClient
+      const { data: profile } = await supabase
         .from('user_profiles')
-        .select('full_name, username')
+        .select('full_name, username, avatar_url')
         .eq('id', currentUser.id)
         .maybeSingle();
+      
       const displayName = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
       document.getElementById('current-profile-name').textContent = displayName;
       document.getElementById('sidebar-profile-name').textContent = displayName;
+      
+      if (profile?.avatar_url) {
+        const avatarImg = document.getElementById('userProfilePlaceholder');
+        if (avatarImg) avatarImg.innerHTML = `<img src="${profile.avatar_url}" style="width:100%; height:100%; border-radius:50%;">`;
+      }
     } else {
       document.getElementById('current-profile-name').textContent = 'Guest';
       document.getElementById('sidebar-profile-name').textContent = 'Guest';
     }
   } catch (err) {
     console.warn('Auth check failed:', err);
+    currentUser = null;
   }
 }
 
@@ -1912,6 +2000,7 @@ function setupUI() {
   });
 }
 
+// Make functions globally available
 window.playPodcastEpisode = playPodcastEpisode;
 window.playPodcastByShowId = playPodcastByShowId;
 window.toggleConnectPodcast = toggleConnectPodcast;
