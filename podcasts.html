@@ -1240,14 +1240,14 @@ transition: all 0.2s;
 <div id="toast-container"></div>
 
 <script>
-// ===== SUPABASE CONFIGURATION (SAFE INIT) =====
+// ===== SUPABASE CONFIGURATION =====
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-// ✅ Safe: Use existing supabase client if already declared, otherwise create new one
-const supabase = window.supabaseClient || window.supabase || 
-  window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+// Check if supabase already exists to avoid redeclaration
+if (typeof supabase === 'undefined') {
+    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentCategory = 'all';
@@ -1258,7 +1258,7 @@ let audioPlayer = new Audio();
 let currentEpisode = null;
 let isPlaying = false;
 
-// ===== UTILITIES =====
+// ===== UTILITIES (REQUIRED) =====
 function formatNumber(num) {
   if (!num) return "0";
   if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
@@ -1303,13 +1303,12 @@ function showLoading() {
   const el = document.getElementById('loading');
   if (el) el.style.removeProperty('display'); 
 }
-
 function hideLoading() { 
   const el = document.getElementById('loading');
   if (el) el.style.setProperty('display', 'none'); 
 }
 
-// ===== MAIN LOADER (with error safety) =====
+// ===== MAIN LOADER =====
 async function loadPodcastsPage() {
   try {
     showLoading();
@@ -1323,38 +1322,49 @@ async function loadPodcastsPage() {
     console.error('Podcast load error:', err);
     showToast('Failed to load podcasts', 'error');
   } finally {
-    // ✅ Always hide loading, even on error
     hideLoading();
   }
 }
 
-// ===== 1. HERO SECTION =====
+// ===== 1. HERO SECTION (Podcast of the Week) =====
 async function loadFeaturedPodcast() {
-  try {
-    const { data, error } = await supabase
-      .from('creator_playlists')
-      .select(`id, name, description, custom_thumbnail_url, play_count, series_metadata`)
-      .eq('playlist_type', 'podcast')
-      .order('play_count', { ascending: false })
-      .limit(1)
-      .single();
+  const { data, error } = await supabase
+    .from('creator_playlists')
+    .select(`
+      id,
+      name,
+      description,
+      custom_thumbnail_url,
+      play_count,
+      series_metadata
+    `)
+    .eq('playlist_type', 'podcast')
+    .order('play_count', { ascending: false })
+    .limit(1)
+    .single();
 
-    if (error) throw error;
-    renderHeroPodcast(data);
-  } catch (err) {
-    console.warn('Hero podcast fallback:', err);
+  if (error) {
+    console.error('Hero podcast error:', error);
+    // Fallback content
     renderHeroPodcast({
       id: 'fallback',
       name: 'The African Narrative',
-      description: 'Exploring African stories and perspectives.',
+      description: 'Exploring African stories and perspectives through powerful conversations.',
       custom_thumbnail_url: 'https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=600&h=500&fit=crop',
       play_count: 0,
       series_metadata: { host: 'Featured Creator' }
     });
+    return;
   }
+
+  renderHeroPodcast(data);
 }
 
 function renderHeroPodcast(podcast) {
+  const el = document.getElementById('hero-podcast')?.closest('.hero-card') || document.querySelector('.hero-card');
+  if (!el) return;
+
+  // Update DOM elements
   document.getElementById('heroPodcastTitle').textContent = podcast.name || 'Podcast Title';
   document.getElementById('heroPodcastCreator').textContent = podcast.series_metadata?.host || 'Unknown Host';
   document.getElementById('heroPodcastDescription').textContent = podcast.description || '';
@@ -1363,25 +1373,33 @@ function renderHeroPodcast(podcast) {
   if (podcast.custom_thumbnail_url) {
     document.getElementById('heroPodcastImage').src = podcast.custom_thumbnail_url;
   }
+
+  // Store for play button
   window.featuredPodcastId = podcast.id;
 }
 
-// ===== 2. FASTEST GROWING =====
+// ===== 2. FASTEST GROWING PODCASTS =====
 async function loadFastestGrowingPodcasts() {
-  try {
-    const { data, error } = await supabase
-      .from('creator_playlists')
-      .select(`id, name, custom_thumbnail_url, play_count, series_metadata`)
-      .eq('playlist_type', 'podcast')
-      .order('play_count', { ascending: false })
-      .limit(20);
+  const { data, error } = await supabase
+    .from('creator_playlists')
+    .select(`
+      id,
+      name,
+      custom_thumbnail_url,
+      play_count,
+      series_metadata
+    `)
+    .eq('playlist_type', 'podcast')
+    .order('play_count', { ascending: false })
+    .limit(20);
 
-    if (error) throw error;
-    renderPodcasters(data);
-  } catch (err) {
-    console.error('Growing podcasts error:', err);
-    document.getElementById('podcasters-grid').innerHTML = '<div style="text-align:center; padding:40px; grid-column: 1/-1;">Unable to load podcasts</div>';
+  if (error) {
+    console.error('Growing podcasts error:', error);
+    return [];
   }
+
+  renderPodcasters(data);
+  return data;
 }
 
 function renderPodcasters(podcasts) {
@@ -1398,49 +1416,61 @@ function renderPodcasters(podcasts) {
       <img src="${p.custom_thumbnail_url || 'https://via.placeholder.com/100?text=Podcast'}" 
            alt="${escapeHtml(p.name)}" 
            onerror="this.src='https://via.placeholder.com/100?text=Podcast'">
+
       <h3>${escapeHtml(p.name)}</h3>
       <p>${escapeHtml(p.series_metadata?.host || 'Unknown Host')}</p>
+
       <div class="stats">
         <span>${formatNumber(p.play_count)} listeners</span>
         <span class="growth">+${randomGrowth()}%</span>
       </div>
+
       <button class="follow-btn" onclick="connectPodcast('${p.id}')">${followingPodcastIds.has(p.id) ? 'Connected' : 'Connect'}</button>
     </div>
   `).join('');
 }
 
-// ===== 3. BITE-SIZED CLIPS =====
+// ===== 3. BITE-SIZED CLIPS (REAL EPISODES <= 60s) =====
 async function loadPodcastClips() {
-  try {
-    const { data, error } = await supabase
-      .from('Content')
-      .select(`id, title, thumbnail_url, duration, series_id, file_url, hls_manifest_url, data_saver_url`)
-      .eq('content_type', 'podcast')
-      .eq('content_format', 'podcast_episode')
-      .lte('duration', 60)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(20);
+  const { data, error } = await supabase
+    .from('Content')
+    .select(`
+      id,
+      title,
+      thumbnail_url,
+      duration,
+      series_id,
+      file_url,
+      hls_manifest_url,
+      data_saver_url
+    `)
+    .eq('content_type', 'podcast')
+    .eq('content_format', 'podcast_episode')
+    .lte('duration', 60)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(20);
 
-    if (error) throw error;
-
-    const enriched = await Promise.all(data.map(async clip => {
-      if (clip.series_id) {
-        const { data: show } = await supabase
-          .from('creator_playlists')
-          .select('name')
-          .eq('id', clip.series_id)
-          .single();
-        return { ...clip, show_name: show?.name || 'Podcast' };
-      }
-      return { ...clip, show_name: 'Podcast Episode' };
-    }));
-
-    renderClips(enriched);
-  } catch (err) {
-    console.error('Clips error:', err);
-    document.getElementById('clips-grid').innerHTML = '<div style="text-align:center; padding:40px; grid-column: 1/-1;">Unable to load clips</div>';
+  if (error) {
+    console.error('Clips error:', error);
+    return [];
   }
+
+  // Enrich with show titles
+  const enriched = await Promise.all(data.map(async clip => {
+    if (clip.series_id) {
+      const { data: show } = await supabase
+        .from('creator_playlists')
+        .select('name')
+        .eq('id', clip.series_id)
+        .single();
+      return { ...clip, show_name: show?.name || 'Podcast' };
+    }
+    return { ...clip, show_name: 'Podcast Episode' };
+  }));
+
+  renderClips(enriched);
+  return enriched;
 }
 
 function renderClips(clips) {
@@ -1453,46 +1483,53 @@ function renderClips(clips) {
   }
 
   grid.innerHTML = clips.map(c => {
+    // Priority: HLS > file_url > data_saver
     const audioUrl = c.hls_manifest_url || c.file_url || c.data_saver_url;
-    // Escape single quotes for inline onclick
-    const safeClip = JSON.stringify(c).replace(/'/g, "\\'");
     
     return `
     <div class="clip-card">
       <img src="${c.thumbnail_url || 'https://via.placeholder.com/300x200?text=Clip'}" 
            alt="${escapeHtml(c.title)}"
            onerror="this.src='https://via.placeholder.com/300x200?text=Clip'">
+
       <h4>${escapeHtml(c.title)}</h4>
       <span style="color: var(--slate-grey); font-size: 12px;">${escapeHtml(c.show_name)}</span>
       <span>${formatTime(c.duration)}</span>
-      <button class="clip-play" onclick='playPodcastEpisode(${JSON.stringify(c)})'>
+
+      <button class="clip-play" onclick="playPodcastEpisode(${JSON.stringify(c).replace(/'/g, "\\'")})">
         <i class="fas fa-play"></i> Play Clip
       </button>
     </div>
   `}).join('');
 }
 
-// ===== 4. DIASPORA PODCASTS =====
+// ===== 4. DIASPORA PODCASTS (SMART FILTER) =====
 async function loadDiasporaPodcasts() {
-  try {
-    const { data, error } = await supabase
-      .from('creator_playlists')
-      .select(`id, name, custom_thumbnail_url, play_count, series_metadata`)
-      .eq('playlist_type', 'podcast')
-      .limit(20);
+  const { data, error } = await supabase
+    .from('creator_playlists')
+    .select(`
+      id,
+      name,
+      custom_thumbnail_url,
+      play_count,
+      series_metadata
+    `)
+    .eq('playlist_type', 'podcast')
+    .limit(20);
 
-    if (error) throw error;
-
-    const diaspora = data.filter(p => {
-      return p.series_metadata?.country && 
-             p.series_metadata.country.trim().toLowerCase() !== 'south africa';
-    });
-
-    renderDiaspora(diaspora);
-  } catch (err) {
-    console.error('Diaspora error:', err);
-    document.getElementById('diaspora-grid').innerHTML = '<div style="text-align:center; padding:40px; grid-column: 1/-1;">Unable to load diaspora podcasts</div>';
+  if (error) {
+    console.error('Diaspora error:', error);
+    return [];
   }
+
+  // Filter: country exists AND not South Africa
+  const diaspora = data.filter(p => {
+    return p.series_metadata?.country && 
+           p.series_metadata.country.trim().toLowerCase() !== 'south africa';
+  });
+
+  renderDiaspora(diaspora);
+  return diaspora;
 }
 
 function renderDiaspora(podcasts) {
@@ -1519,6 +1556,7 @@ function renderDiaspora(podcasts) {
       <img src="${p.custom_thumbnail_url || 'https://via.placeholder.com/60?text=🎙️'}" 
            style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover;"
            alt="${escapeHtml(p.name)}">
+
       <div>
         <h4>${escapeHtml(p.name)}</h4>
         <p style="color: var(--podcast-amber); font-size: 12px;">${escapeHtml(p.series_metadata?.country || 'Global')}</p>
@@ -1528,22 +1566,28 @@ function renderDiaspora(podcasts) {
   `).join('');
 }
 
-// ===== 5. CONNECT SYSTEM =====
+// ===== 5. CONNECT SYSTEM (REPLACES FOLLOW) =====
 async function connectPodcast(podcastId) {
   if (!currentUser) {
     showToast('Login required to connect', 'warning');
+    // Optionally redirect: window.location.href = 'login.html?redirect=podcasts.html';
     return;
   }
 
   try {
     const { error } = await supabase
       .from('podcast_follows')
-      .insert({ user_id: currentUser.id, podcast_id: podcastId });
+      .insert({
+        user_id: currentUser.id,
+        podcast_id: podcastId
+      });
 
     if (error) {
+      // Might be duplicate - show info instead of error
       showToast('Already connected!', 'info');
     } else {
       followingPodcastIds.add(podcastId);
+      // Re-render to update button state
       const btn = document.querySelector(`.podcaster-card[data-id="${podcastId}"] .follow-btn`);
       if (btn) btn.textContent = 'Connected';
       showToast('Connected! You\'ll get updates.', 'success');
@@ -1554,23 +1598,29 @@ async function connectPodcast(podcastId) {
   }
 }
 
-// ===== 6. REAL AUDIO PLAYER =====
+// ===== 6. REAL AUDIO PLAYER ENGINE =====
+
+// Get best available audio URL with priority
 function getBestAudioUrl(episode) {
   return episode.hls_manifest_url || episode.file_url || episode.data_saver_url;
 }
 
+// Play Podcast Episode (REAL)
 function playPodcastEpisode(episode) {
   try {
     const audioUrl = getBestAudioUrl(episode);
+
     if (!audioUrl) {
       showToast('Audio file not available', 'error');
       return;
     }
 
+    // Stop any existing playback
     if (audioPlayer && !audioPlayer.paused) {
       audioPlayer.pause();
     }
 
+    // Load new audio
     audioPlayer.src = audioUrl;
     audioPlayer.load();
 
@@ -1583,7 +1633,12 @@ function playPodcastEpisode(episode) {
       })
       .catch(err => {
         console.error('Playback error:', err);
-        showToast('Playback failed - check file permissions', 'error');
+        // Handle CORS/private bucket issues
+        if (err.name === 'NotSupportedError' || err.message.includes('CORS')) {
+          showToast('Audio format not supported or file access restricted', 'error');
+        } else {
+          showToast('Playback failed', 'error');
+        }
       });
 
   } catch (err) {
@@ -1592,11 +1647,15 @@ function playPodcastEpisode(episode) {
   }
 }
 
+// Show Now Playing Bar with real data
 function showNowPlayingBar(episode) {
   const bar = document.getElementById('now-playing-bar');
   if (!bar) return;
+
   bar.style.display = 'flex';
+  // Small delay to allow display:flex to apply before adding active class for transition
   setTimeout(() => bar.classList.add('active'), 10);
+
   document.getElementById('now-playing-title').textContent = episode.title || 'Untitled Episode';
   document.getElementById('now-playing-podcast').textContent = episode.show_name || 'Podcast Episode';
 }
@@ -1605,38 +1664,49 @@ function hideNowPlayingBar() {
   const bar = document.getElementById('now-playing-bar');
   if (!bar) return;
   bar.classList.remove('active');
-  setTimeout(() => { if (!isPlaying) bar.style.display = 'none'; }, 300);
+  setTimeout(() => {
+    if (!isPlaying) bar.style.display = 'none';
+  }, 300);
 }
 
 function updatePlayButton(playing) {
   const icon = document.getElementById('play-pause-btn')?.querySelector('i');
-  if (icon) icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+  if (icon) {
+    icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+  }
 }
 
-// ===== AUDIO EVENT LISTENERS =====
+// ===== REAL PROGRESS TRACKING =====
 function setupAudioListeners() {
+  // Time update - progress bar
   audioPlayer.addEventListener('timeupdate', () => {
     if (!audioPlayer.duration || isNaN(audioPlayer.duration)) return;
+
     const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
     const slider = document.getElementById('progress-slider');
     if (slider) slider.value = progress;
+
     const timeEl = document.getElementById('now-playing-time');
     if (timeEl) {
       timeEl.textContent = `${formatTime(audioPlayer.currentTime)} / ${formatTime(audioPlayer.duration)}`;
     }
   });
 
+  // Seek support
   const progressBar = document.getElementById('progress-slider');
   if (progressBar) {
     progressBar.addEventListener('input', (e) => {
       if (audioPlayer.duration) {
-        audioPlayer.currentTime = (e.target.value / 100) * audioPlayer.duration;
+        const percent = e.target.value / 100;
+        audioPlayer.currentTime = percent * audioPlayer.duration;
       }
     });
   }
 
+  // Play/Pause toggle
   document.getElementById('play-pause-btn')?.addEventListener('click', () => {
     if (!audioPlayer.src) return;
+    
     if (audioPlayer.paused) {
       audioPlayer.play();
       isPlaying = true;
@@ -1648,22 +1718,33 @@ function setupAudioListeners() {
     }
   });
 
-  document.getElementById('stop-playback-btn')?.addEventListener('click', stopPlayback);
-  document.getElementById('close-now-playing')?.addEventListener('click', stopPlayback);
+  // Stop
+  document.getElementById('stop-playback-btn')?.addEventListener('click', () => {
+    stopPlayback();
+  });
 
+  // Close
+  document.getElementById('close-now-playing')?.addEventListener('click', () => {
+    stopPlayback();
+  });
+
+  // Auto end handling
   audioPlayer.addEventListener('ended', () => {
     showToast('Episode finished', 'success');
     stopPlayback();
   });
 
+  // Error handling
   audioPlayer.addEventListener('error', (e) => {
     console.error('Audio error:', audioPlayer.error);
     showToast('Audio playback error', 'error');
     hideNowPlayingBar();
   });
 
+  // Pause event - save watch progress
   audioPlayer.addEventListener('pause', async () => {
     if (!currentEpisode || !currentUser) return;
+    
     try {
       await supabase.from('watch_progress').upsert({
         user_id: currentUser.id,
@@ -1689,7 +1770,7 @@ function stopPlayback() {
   hideNowPlayingBar();
 }
 
-// ===== HERO BUTTONS =====
+// ===== HERO BUTTONS SETUP =====
 function setupHeroButtons() {
   document.getElementById('play-podcast-btn')?.addEventListener('click', async () => {
     if (!window.featuredPodcastId) {
@@ -1697,31 +1778,28 @@ function setupHeroButtons() {
       return;
     }
     
-    try {
-      const { data: episodes } = await supabase
-        .from('Content')
-        .select('id, title, file_url, hls_manifest_url, data_saver_url, duration, series_id')
-        .eq('series_id', window.featuredPodcastId)
-        .eq('content_format', 'podcast_episode')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(1);
+    // Fetch latest episode for this podcast
+    const { data: episodes } = await supabase
+      .from('Content')
+      .select('id, title, file_url, hls_manifest_url, data_saver_url, duration, series_id')
+      .eq('series_id', window.featuredPodcastId)
+      .eq('content_format', 'podcast_episode')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (episodes && episodes[0]) {
+      // Enrich with show name
+      const { data: show } = await supabase
+        .from('creator_playlists')
+        .select('name')
+        .eq('id', window.featuredPodcastId)
+        .single();
       
-      if (episodes && episodes[0]) {
-        const { data: show } = await supabase
-          .from('creator_playlists')
-          .select('name')
-          .eq('id', window.featuredPodcastId)
-          .single();
-        
-        const episode = { ...episodes[0], show_name: show?.name || 'Podcast' };
-        playPodcastEpisode(episode);
-      } else {
-        showToast('No episodes available yet', 'warning');
-      }
-    } catch (err) {
-      console.error('Hero play error:', err);
-      showToast('Could not load episode', 'error');
+      const episode = { ...episodes[0], show_name: show?.name || 'Podcast' };
+      playPodcastEpisode(episode);
+    } else {
+      showToast('No episodes available yet', 'warning');
     }
   });
 
@@ -1732,7 +1810,7 @@ function setupHeroButtons() {
   });
 }
 
-// ===== FILTERS =====
+// ===== FILTER HANDLERS =====
 function setupFilters() {
   const filters = document.querySelectorAll('.filter-chip');
   filters.forEach(filter => {
@@ -1741,34 +1819,33 @@ function setupFilters() {
       filter.classList.add('active');
       currentCategory = filter.dataset.category;
       
+      // Re-fetch with category filter if needed
       if (currentCategory !== 'all') {
-        try {
-          const { data } = await supabase
-            .from('creator_playlists')
-            .select('id, name, custom_thumbnail_url, play_count, series_metadata')
-            .eq('playlist_type', 'podcast')
-            .eq('series_metadata->>category', currentCategory)
-            .order('play_count', { ascending: false })
-            .limit(20);
-          renderPodcasters(data || []);
-        } catch (err) {
-          console.error('Filter error:', err);
-        }
+        const { data } = await supabase
+          .from('creator_playlists')
+          .select('id, name, custom_thumbnail_url, play_count, series_metadata')
+          .eq('playlist_type', 'podcast')
+          .eq('series_metadata->>category', currentCategory)
+          .order('play_count', { ascending: false })
+          .limit(20);
+        renderPodcasters(data || []);
       } else {
         loadFastestGrowingPodcasts();
       }
+      
       showToast(`Showing ${currentCategory === 'all' ? 'all' : currentCategory} podcasts`, 'success');
     });
   });
 }
 
-// ===== AUTH =====
+// ===== AUTH & USER STATE =====
 async function checkAuth() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     currentUser = session?.user || null;
     
     if (currentUser) {
+      // Load user profile
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('full_name, username')
@@ -1779,6 +1856,7 @@ async function checkAuth() {
       document.getElementById('current-profile-name').textContent = displayName;
       document.getElementById('sidebar-profile-name').textContent = displayName;
       
+      // Load followed podcasts
       const { data: follows } = await supabase
         .from('podcast_follows')
         .select('podcast_id')
@@ -1796,7 +1874,7 @@ async function checkAuth() {
   }
 }
 
-// ===== THEME =====
+// ===== THEME SYSTEM =====
 function initThemeSystem() {
   const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
   applyTheme(savedTheme);
@@ -1812,6 +1890,17 @@ function initThemeSystem() {
       document.getElementById('theme-selector')?.classList.remove('active');
     });
   });
+  
+  // Close theme selector when clicking outside
+  document.addEventListener('click', (e) => {
+    const selector = document.getElementById('theme-selector');
+    const toggle = document.getElementById('sidebar-theme-toggle');
+    if (selector?.classList.contains('active') && 
+        !selector.contains(e.target) && 
+        !toggle?.contains(e.target)) {
+      selector.classList.remove('active');
+    }
+  });
 }
 
 function applyTheme(theme) {
@@ -1820,7 +1909,7 @@ function applyTheme(theme) {
   localStorage.setItem('bantu_theme', theme);
 }
 
-// ===== SIDEBAR & NAV =====
+// ===== SIDEBAR & NAVIGATION =====
 function setupSidebar() {
   const menuToggle = document.getElementById('menu-toggle');
   const sidebarClose = document.getElementById('sidebar-close');
@@ -1832,6 +1921,7 @@ function setupSidebar() {
     sidebarOverlay?.classList.add('active');
     document.body.style.overflow = 'hidden';
   };
+  
   const closeSidebar = () => {
     sidebarMenu?.classList.remove('active');
     sidebarOverlay?.classList.remove('active');
@@ -1881,30 +1971,33 @@ function setupScaleControls() {
     if (value) value.textContent = Math.round(scale * 100) + '%';
   };
   
-  decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
-  increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+  decrease?.addEventListener('click', () => { 
+    if (scale > 0.7) { scale -= 0.1; apply(); } 
+  });
+  increase?.addEventListener('click', () => { 
+    if (scale < 1.4) { scale += 0.1; apply(); } 
+  });
+  
   apply();
 }
 
-// ===== MAIN INIT (SAFE) =====
+// ===== MAIN INITIALIZATION =====
 async function initialize() {
-  try {
-    setupSidebar();
-    setupNavigation();
-    setupBackToTop();
-    setupScaleControls();
-    initThemeSystem();
-    setupFilters();
-    setupHeroButtons();
-    setupAudioListeners();
-    
-    await checkAuth();
-    await loadPodcastsPage();
-  } catch (err) {
-    console.error('Init error:', err);
-    hideLoading(); // ✅ Ensure loading screen hides even on fatal error
-    showToast('Failed to initialize page', 'error');
-  }
+  // Setup UI
+  setupSidebar();
+  setupNavigation();
+  setupBackToTop();
+  setupScaleControls();
+  initThemeSystem();
+  setupFilters();
+  setupHeroButtons();
+  setupAudioListeners();
+  
+  // Check auth first
+  await checkAuth();
+  
+  // Load all podcast data
+  await loadPodcastsPage();
 }
 
 // Run on DOM ready
