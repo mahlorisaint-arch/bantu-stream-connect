@@ -349,6 +349,19 @@ width: 100%;
 height: 100%;
 object-fit: cover;
 }
+.hero-video {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.hero-overlay {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+}
 .hero-waveform {
 position: absolute;
 bottom: 0;
@@ -1200,12 +1213,7 @@ transition: all 0.2s;
 <section class="hero-section">
 <div class="hero-card" id="hero-card">
 <div class="hero-image" id="hero-image-container">
-<img id="heroPodcastImage" src="https://images.unsplash.com/photo-1478737270239-2f02f77fc618?w=600&h=500&fit=crop" alt="Podcast of the Week">
-<div class="hero-waveform">
-<div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-<div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-<div class="wave-bar"></div><div class="wave-bar"></div>
-</div>
+  <!-- MEDIA WILL BE INJECTED HERE BY JS -->
 </div>
 <div class="hero-info">
 <div class="hero-badge"><i class="fas fa-star"></i> PODCAST OF THE WEEK</div>
@@ -1374,41 +1382,102 @@ async function toggleConnectPodcast(id) {
   renderPodcasters(window.cachedPodcasts || []);
 }
 
-// ===== HERO =====
-async function loadFeaturedPodcast() {
-  const { data } = await supabaseClient
-    .from('Content')
-    .select(`
-      id,title,description,file_url,thumbnail_url,views_count,content_metadata,
-      creators:creator_id (
-        user_profiles (full_name, username, avatar_url)
-      )
-    `)
-    .eq('content_type','podcast')
-    .eq('content_format','podcast_episode')
-    .eq('status','published')
-    .order('views_count',{ascending:false})
-    .limit(1)
-    .single();
+// ===== HERO MEDIA RENDERER (CRITICAL FIX) =====
+function renderHeroMedia(podcast) {
+  const container = document.getElementById('hero-image-container');
+  if (!container) return; // 🛑 prevents crash
 
-  if (!data) return;
+  const isVideo = isVideoPodcastContent(podcast);
 
-  const creator = data.creators?.user_profiles;
-  document.getElementById('heroPodcastTitle').textContent = data.title;
-  document.getElementById('heroPodcastCreator').textContent =
-    creator?.full_name || creator?.username || 'Creator';
-
-  renderHeroMedia(data);
-  window.featuredEpisode = data;
+  if (isVideo) {
+    container.innerHTML = `
+      <video autoplay muted loop playsinline class="hero-video">
+        <source src="${podcast.file_url}" type="video/mp4">
+      </video>
+      <div class="hero-overlay"></div>
+    `;
+  } else {
+    container.innerHTML = `
+      <img 
+        src="${podcast.thumbnail_url || 'https://via.placeholder.com/600x500?text=Podcast'}" 
+        class="hero-image-img"
+        alt="Podcast thumbnail"
+      >
+      <div class="hero-waveform">
+        ${Array(10).fill().map(() => `<div class="wave-bar"></div>`).join('')}
+      </div>
+    `;
+  }
 }
 
-function renderHeroMedia(p) {
-  const el = document.getElementById('heroMediaContainer');
-  if (isVideoPodcastContent(p)) {
-    el.innerHTML = `<video src="${p.file_url}" autoplay muted loop class="hero-video"></video>`;
-  } else {
-    el.innerHTML = `<img src="${p.thumbnail_url}" class="hero-image"/>`;
+// ===== HERO =====
+async function loadFeaturedPodcast() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('Content')
+      .select(`
+        id,
+        title,
+        description,
+        file_url,
+        thumbnail_url,
+        creator_id,
+        views_count,
+        content_metadata,
+        user_profiles:creator_id (
+          full_name,
+          username,
+          avatar_url
+        )
+      `)
+      .eq('content_type', 'podcast')
+      .eq('content_format', 'podcast_episode')
+      .eq('status', 'published')
+      .order('views_count', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) throw error;
+
+    renderHeroPodcast(data);
+
+  } catch (err) {
+    console.error('Featured podcast error:', err);
   }
+}
+
+function renderHeroPodcast(podcast) {
+  if (!podcast) return;
+
+  renderHeroMedia(podcast); // 🔥 THIS WAS MISSING
+
+  document.getElementById('heroPodcastTitle').textContent =
+    podcast.title || 'Podcast Title';
+
+  const creatorName =
+    podcast.user_profiles?.full_name ||
+    podcast.user_profiles?.username ||
+    'Unknown Creator';
+
+  document.getElementById('heroPodcastCreator').textContent = creatorName;
+
+  document.getElementById('heroPodcastDescription').textContent =
+    podcast.description || '';
+
+  document.getElementById('heroPodcastStats').innerHTML =
+    `<i class="fas fa-headphones"></i> ${formatNumber(podcast.views_count || 0)} plays`;
+
+  // Avatar fix
+  const avatar = document.getElementById('hero-creator-avatar-img');
+  if (avatar) {
+    if (podcast.user_profiles?.avatar_url) {
+      avatar.innerHTML = `<img src="${podcast.user_profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    } else {
+      avatar.innerHTML = `<i class="fas fa-microphone"></i>`;
+    }
+  }
+
+  window.featuredEpisode = podcast;
 }
 
 // ===== PODCAST SHOWS =====
@@ -1428,12 +1497,17 @@ function renderPodcasters(list=[]) {
 
   grid.innerHTML = list.map(p => `
     <div class="podcaster-card" onclick="playPodcastByShowId('${p.id}')">
-      <img src="${p.custom_thumbnail_url || ''}" class="avatar"/>
-      <h3>${escapeHtml(p.name)}</h3>
-      <p>${formatNumber(p.play_count)} plays</p>
+      <div class="podcaster-avatar">
+        <img src="${p.custom_thumbnail_url || ''}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-podcast\' style=\'font-size:40px;color:white\'></i>'"/>
+      </div>
+      <h3 class="podcaster-name">${escapeHtml(p.name)}</h3>
+      <div class="podcaster-stats">
+        <span><i class="fas fa-headphones"></i> ${formatNumber(p.play_count)} plays</span>
+      </div>
 
-      <button onclick="event.stopPropagation(); toggleConnectPodcast('${p.id}')">
-        ${connectedPodcastIds.has(p.id) ? 'Connected' : 'Connect'}
+      <button class="follow-btn ${connectedPodcastIds.has(p.id) ? 'following' : ''}" 
+              onclick="event.stopPropagation(); toggleConnectPodcast('${p.id}')">
+        ${connectedPodcastIds.has(p.id) ? '✓ Connected' : '+ Connect'}
       </button>
     </div>
   `).join('');
@@ -1445,8 +1519,8 @@ async function playPodcastByShowId(id) {
     .from('Content')
     .select(`
       id,title,file_url,thumbnail_url,content_metadata,
-      creators:creator_id (
-        user_profiles (full_name, username)
+      user_profiles:creator_id (
+        full_name, username
       )
     `)
     .eq('series_id', id)
@@ -1457,7 +1531,7 @@ async function playPodcastByShowId(id) {
   if (!data?.length) return;
 
   const ep = data[0];
-  ep.show_name = ep.creators?.user_profiles?.full_name || 'Podcast';
+  ep.show_name = ep.user_profiles?.full_name || ep.user_profiles?.username || 'Podcast';
 
   playPodcastEpisode(ep);
 }
@@ -1480,16 +1554,17 @@ function playPodcastEpisode(ep) {
 
   currentEpisode = ep;
   document.getElementById('now-playing-title').textContent = ep.title;
+  document.getElementById('now-playing-bar').classList.add('active');
 }
 
-// ===== CLIPS =====
+// ===== CLIPS (FIXED: user_profiles join) =====
 async function loadClips() {
   const { data } = await supabaseClient
     .from('Content')
     .select(`
       id,title,file_url,duration,content_metadata,
-      creators:creator_id (
-        user_profiles (full_name, username)
+      user_profiles:creator_id (
+        full_name, username
       )
     `)
     .eq('content_type','podcast')
@@ -1498,21 +1573,151 @@ async function loadClips() {
 
   const grid = document.getElementById('clips-grid');
 
+  if (!data || data.length === 0) {
+    grid.innerHTML = '<div class="clip-card">No clips available yet.</div>';
+    return;
+  }
+
   grid.innerHTML = data.map(c => {
-    const creator = c.creators?.user_profiles;
-    const name = creator?.full_name || creator?.username || 'Creator';
+    const creator = c.user_profiles;
+    const creatorName =
+      creator?.full_name ||
+      creator?.username ||
+      'Creator';
 
     return `
-      <div class="clip-card">
-        <h4>${escapeHtml(c.title)}</h4>
-        <p>${escapeHtml(name)}</p>
-        <button onclick='playPodcastEpisode(${JSON.stringify(c)})'>
-          Play
-        </button>
+      <div class="clip-card" onclick='playPodcastEpisode(${JSON.stringify(c).replace(/'/g, "\\'")})'>
+        <div class="clip-header">
+          <div class="clip-avatar">
+            <i class="fas fa-podcast" style="font-size:20px;color:white;"></i>
+          </div>
+          <div class="clip-info">
+            <div class="clip-podcast">${escapeHtml(c.title)}</div>
+            <div class="clip-episode">${escapeHtml(creatorName)}</div>
+          </div>
+        </div>
+        <div class="clip-waveform">
+          ${Array(7).fill().map((_, i) => `<div class="clip-wave-bar" style="animation-delay:${i*0.15}s"></div>`).join('')}
+        </div>
+        <div class="clip-footer">
+          <span class="clip-duration">${formatTime(c.duration || 0)}</span>
+          <button class="clip-play"><i class="fas fa-play"></i> Play</button>
+        </div>
       </div>
     `;
   }).join('');
 }
+
+// ===== DIASPORA PODCASTS =====
+async function loadDiasporaPodcasts() {
+  const { data } = await supabaseClient
+    .from('Content')
+    .select(`
+      id,title,description,thumbnail_url,views_count,
+      user_profiles:creator_id (
+        full_name, username
+      )
+    `)
+    .eq('content_type','podcast')
+    .eq('content_format','podcast_episode')
+    .eq('status','published')
+    .limit(12);
+
+  const grid = document.getElementById('diaspora-grid');
+
+  if (!data || data.length === 0) {
+    grid.innerHTML = '<div class="diaspora-card">No diaspora podcasts yet.</div>';
+    return;
+  }
+
+  grid.innerHTML = data.map(p => {
+    const creator = p.user_profiles;
+    const creatorName =
+      creator?.full_name ||
+      creator?.username ||
+      'Creator';
+
+    return `
+      <div class="diaspora-card" onclick='playPodcastEpisode(${JSON.stringify(p).replace(/'/g, "\\'")})'>
+        <div class="diaspora-flag">🌍</div>
+        <div class="diaspora-info">
+          <div class="diaspora-title">${escapeHtml(p.title)}</div>
+          <div class="diaspora-host">${escapeHtml(creatorName)}</div>
+          <div class="diaspora-stats">
+            <span><i class="fas fa-headphones"></i> ${formatNumber(p.views_count || 0)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== EVENT LISTENERS =====
+document.getElementById('close-video-modal').addEventListener('click', () => {
+  document.getElementById('video-modal').classList.remove('active');
+  document.getElementById('fullscreen-video').pause();
+  document.getElementById('fullscreen-video').src = '';
+});
+
+document.getElementById('play-podcast-btn').addEventListener('click', () => {
+  if (window.featuredEpisode) {
+    playPodcastEpisode(window.featuredEpisode);
+  }
+});
+
+document.getElementById('subscribe-podcast-btn').addEventListener('click', () => {
+  if (window.featuredEpisode?.id) {
+    toggleConnectPodcast(window.featuredEpisode.id);
+  }
+});
+
+document.getElementById('close-now-playing').addEventListener('click', () => {
+  document.getElementById('now-playing-bar').classList.remove('active');
+  if (currentMediaElement) {
+    currentMediaElement.pause();
+    currentMediaElement = null;
+  }
+});
+
+document.getElementById('play-pause-btn').addEventListener('click', () => {
+  if (currentMediaElement) {
+    if (isPlaying) {
+      currentMediaElement.pause();
+      document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i>';
+    } else {
+      currentMediaElement.play();
+      document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-pause"></i>';
+    }
+    isPlaying = !isPlaying;
+  }
+});
+
+document.getElementById('stop-playback-btn').addEventListener('click', () => {
+  if (currentMediaElement) {
+    currentMediaElement.pause();
+    currentMediaElement.currentTime = 0;
+    document.getElementById('progress-slider').value = 0;
+    document.getElementById('now-playing-time').textContent = '0:00 / 0:00';
+    document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i>';
+    isPlaying = false;
+  }
+});
+
+document.getElementById('progress-slider').addEventListener('input', (e) => {
+  if (currentMediaElement) {
+    const percent = e.target.value / 100;
+    currentMediaElement.currentTime = percent * currentMediaElement.duration;
+  }
+});
+
+// Category filters
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', (e) => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    // In a real app, filter podcasts here
+  });
+});
 
 // ===== INIT =====
 async function init() {
@@ -1521,9 +1726,37 @@ async function init() {
   await loadFeaturedPodcast();
   await loadPodcasts();
   await loadClips();
+  await loadDiasporaPodcasts();
+  
+  // Hide loading screen
+  document.getElementById('loading').style.display = 'none';
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Back to top button
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTopBtn');
+  if (window.scrollY > 300) {
+    btn.style.display = 'flex';
+  } else {
+    btn.style.display = 'none';
+  }
+});
+
+document.getElementById('backToTopBtn').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Toast notification helper
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle'}"></i> ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
 </script>
 </body>
 </html>
