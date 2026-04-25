@@ -151,6 +151,10 @@ margin-right: 40px;
 color: var(--soft-white);
 font-size: 14px;
 font-weight: 500;
+cursor: pointer;
+}
+.ticker-item:hover {
+color: var(--news-red);
 }
 .ticker-item i {
 color: var(--news-red);
@@ -612,6 +616,41 @@ transition: transform 0.3s ease;
 .story-card:hover .story-image img {
 transform: scale(1.05);
 }
+
+/* ===== VIDEO & ARTICLE BADGES (NEW) ===== */
+.video-badge {
+position: absolute;
+top: 10px;
+right: 10px;
+background: var(--news-red);
+color: white;
+width: 36px;
+height: 36px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+z-index: 2;
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.article-badge {
+position: absolute;
+top: 10px;
+right: 10px;
+background: rgba(0, 0, 0, 0.75);
+backdrop-filter: blur(4px);
+color: var(--soft-white);
+padding: 6px 12px;
+font-size: 11px;
+font-weight: 700;
+border-radius: 20px;
+letter-spacing: 0.5px;
+z-index: 2;
+font-family: 'Inter', sans-serif;
+}
+
 .story-category {
 position: absolute;
 top: 12px;
@@ -622,6 +661,7 @@ padding: 4px 12px;
 border-radius: 20px;
 font-size: 10px;
 font-weight: 700;
+z-index: 2;
 }
 .story-time {
 position: absolute;
@@ -635,6 +675,7 @@ font-size: 10px;
 display: flex;
 align-items: center;
 gap: 4px;
+z-index: 2;
 }
 .story-info {
 padding: 20px;
@@ -953,6 +994,8 @@ transition: all 0.2s;
 .section-title { font-size: 18px; }
 .navigation-button { gap: 0.5rem; padding: 0.375rem 0.875rem; }
 .nav-icon { width: 40px; height: 40px; font-size: 16px; }
+.video-badge { width: 30px; height: 30px; font-size: 12px; top: 8px; right: 8px; }
+.article-badge { padding: 4px 8px; font-size: 9px; top: 8px; right: 8px; }
 }
 
 @media (max-width: 480px) {
@@ -966,6 +1009,8 @@ transition: all 0.2s;
 .story-title { font-size: 16px; }
 .journalists-grid { grid-template-columns: 1fr; }
 .category-chip { padding: 6px 14px; font-size: 12px; }
+.video-badge { width: 28px; height: 28px; font-size: 10px; }
+.article-badge { padding: 3px 6px; font-size: 8px; }
 }
 </style>
 </head>
@@ -1167,10 +1212,18 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function formatNumber(num) {
+    if (!num) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
+
 function timeAgo(date) {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
     const hours = Math.floor(seconds / 3600);
-    if (hours < 1) return 'Just now';
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (hours < 24) return `${hours}h ago`;
     return `${Math.floor(hours / 24)}d ago`;
 }
@@ -1196,6 +1249,33 @@ function hideLoading() {
     if (loading) loading.style.display = 'none';
 }
 
+function getFlag(country) {
+    const flags = {
+        'nigeria': '🇳🇬', 'kenya': '🇰🇪', 'south africa': '🇿🇦', 'ghana': '🇬🇭',
+        'rwanda': '🇷🇼', 'egypt': '🇪🇬', 'senegal': '🇸🇳', 'ethiopia': '🇪🇹',
+        'tanzania': '🇹🇿', 'uganda': '🇺🇬', 'morocco': '🇲🇦', 'algeria': '🇩🇿',
+        'congo': '🇨🇩', 'angola': '🇦🇴', 'zimbabwe': '🇿🇼', 'zambia': '🇿🇲',
+        'mali': '🇲🇱', 'sudan': '🇸🇩', 'libya': '🇱🇾', 'tunisia': '🇹🇳'
+    };
+    if (!country) return '🌍';
+    const countryLower = country.toLowerCase();
+    return flags[countryLower] || '🌍';
+}
+
+// ===== UNIVERSAL ROUTER FUNCTION (NEW) =====
+function openNewsContent(content) {
+    if (!content || !content.id) return;
+    
+    // 🎥 Video detection (ONLY real media file)
+    const isVideo = !!content.file_url;
+    
+    if (isVideo) {
+        window.location.href = `/content-detail?id=${content.id}`;
+    } else {
+        window.location.href = `/news-detail?id=${content.id}`;
+    }
+}
+
 // ===== AUTH CACHE (ONE CALL PER PAGE) =====
 async function initAuth() {
     if (currentUser !== null) return currentUser;
@@ -1211,7 +1291,7 @@ async function initAuth() {
     }
 }
 
-// ===== STEP 3: SMART NEWS RANKING (views + recency) =====
+// ===== SMART NEWS RANKING (views + recency) =====
 function rankNews(newsItems) {
     if (!newsItems || newsItems.length === 0) return [];
     
@@ -1222,16 +1302,12 @@ function rankNews(newsItems) {
         const timeB = new Date(b.created_at || 0).getTime();
         const maxTime = Date.now();
         
-        // Normalize views (0-1)
         const maxViews = Math.max(viewsA, viewsB, 1000);
         const scoreViewsA = viewsA / maxViews;
         const scoreViewsB = viewsB / maxViews;
-        
-        // Normalize time (0-1, newer = higher)
         const scoreTimeA = timeA / maxTime;
         const scoreTimeB = timeB / maxTime;
         
-        // Weighted score: 60% views, 40% recency
         const scoreA = (scoreViewsA * 0.6) + (scoreTimeA * 0.4);
         const scoreB = (scoreViewsB * 0.6) + (scoreTimeB * 0.4);
         
@@ -1249,6 +1325,7 @@ async function loadBreakingNews() {
             .select(`
                 id,
                 title,
+                file_url,
                 created_at,
                 content_metadata
             `)
@@ -1275,6 +1352,7 @@ async function loadTopStories() {
                 title,
                 description,
                 thumbnail_url,
+                file_url,
                 views_count,
                 created_at,
                 content_metadata,
@@ -1290,7 +1368,6 @@ async function loadTopStories() {
 
         if (error) throw error;
         
-        // Apply smart ranking algorithm
         const rankedStories = rankNews(data || []);
         renderTopStories(rankedStories.slice(0, 12));
     } catch (err) {
@@ -1309,6 +1386,7 @@ async function loadTopStoriesByCategory(category) {
                 title,
                 description,
                 thumbnail_url,
+                file_url,
                 views_count,
                 created_at,
                 content_metadata,
@@ -1343,6 +1421,7 @@ async function loadPanAfricanNews() {
                 title,
                 description,
                 country,
+                file_url,
                 created_at,
                 content_metadata
             `)
@@ -1360,7 +1439,7 @@ async function loadPanAfricanNews() {
     }
 }
 
-// 5. VERIFIED JOURNALISTS (FIXED: uses creators table with is_journalist flag)
+// 5. VERIFIED JOURNALISTS
 async function loadJournalists() {
     try {
         const { data, error } = await supabaseClient
@@ -1383,7 +1462,7 @@ async function loadJournalists() {
     }
 }
 
-// ===== RENDER FUNCTIONS =====
+// ===== RENDER FUNCTIONS (UPDATED) =====
 
 function renderTicker(newsItems) {
     const ticker = document.getElementById('ticker-content');
@@ -1395,11 +1474,11 @@ function renderTicker(newsItems) {
     }
     
     const items = [...newsItems, ...newsItems];
-    const tickerHtml = items.map(item => {
-        const title = item.title || 'Untitled';
-        const time = timeAgo(item.created_at);
-        return `<span class="ticker-item"><i class="fas fa-newspaper"></i><strong>BREAKING:</strong> ${escapeHtml(title)} • ${time}</span>`;
-    }).join('');
+    const tickerHtml = items.map(item => `
+        <span class="ticker-item" onclick='openNewsContent(${JSON.stringify(item).replace(/'/g, "\\'")})'>
+            🔴 ${escapeHtml(item.title || 'Untitled')}
+        </span>
+    `).join('');
     
     ticker.innerHTML = tickerHtml;
 }
@@ -1414,35 +1493,33 @@ function renderTopStories(stories) {
     }
     
     grid.innerHTML = stories.map(story => {
-        const creatorName = story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal';
-        const category = story.content_metadata?.category || 'General';
+        const category = story.content_metadata?.category || 'News';
         const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
-        const timeDisplay = timeAgo(story.created_at);
-        const thumbnail = story.thumbnail_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=400&fit=crop';
-        const views = story.views_count || 0;
-        const viewDisplay = views >= 1000 ? `${(views/1000).toFixed(1)}K` : views;
-        const description = story.description || 'Click to read full story';
+        const thumbnail = story.thumbnail_url || 'https://via.placeholder.com/400x250';
+        const hasVideo = !!story.file_url;
         
         return `
-            <div class="story-card" data-story-id="${story.id}">
+            <div class="story-card" onclick='openNewsContent(${JSON.stringify(story).replace(/'/g, "\\'")})'>
                 <div class="story-image">
                     <img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(story.title)}" loading="lazy">
                     <div class="story-category">${escapeHtml(categoryDisplay)}</div>
-                    <div class="story-time"><i class="fas fa-clock"></i> ${timeDisplay}</div>
+                    ${hasVideo 
+                        ? `<div class="video-badge"><i class="fas fa-play"></i></div>`
+                        : `<div class="article-badge">READ</div>`
+                    }
+                    <div class="story-time"><i class="fas fa-clock"></i> ${timeAgo(story.created_at)}</div>
                 </div>
                 <div class="story-info">
                     <h3 class="story-title">${escapeHtml(story.title)}</h3>
-                    <p class="story-excerpt">${escapeHtml(description.substring(0, 100))}${description.length > 100 ? '...' : ''}</p>
+                    <p class="story-excerpt">${escapeHtml((story.description || '').substring(0, 100))}${(story.description || '').length > 100 ? '...' : ''}</p>
                     <div class="story-footer">
-                        <div class="story-source"><i class="fas fa-user-circle"></i> ${escapeHtml(creatorName)}</div>
-                        <div class="story-stats"><span><i class="fas fa-eye"></i> ${viewDisplay}</span></div>
+                        <div class="story-source"><i class="fas fa-user-circle"></i> ${escapeHtml(story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal')}</div>
+                        <div class="story-stats"><span><i class="fas fa-eye"></i> ${formatNumber(story.views_count || 0)}</span></div>
                     </div>
                 </div>
             </div>
         `;
     }).join('');
-    
-    attachStoryClickHandlers();
 }
 
 function renderPanAfricanNews(newsItems) {
@@ -1454,33 +1531,19 @@ function renderPanAfricanNews(newsItems) {
         return;
     }
     
-    const countryFlags = {
-        'nigeria': '🇳🇬', 'kenya': '🇰🇪', 'south africa': '🇿🇦', 'ghana': '🇬🇭',
-        'rwanda': '🇷🇼', 'egypt': '🇪🇬', 'senegal': '🇸🇳', 'ethiopia': '🇪🇹',
-        'tanzania': '🇹🇿', 'uganda': '🇺🇬', 'morocco': '🇲🇦', 'algeria': '🇩🇿'
-    };
-    
-    grid.innerHTML = newsItems.map(news => {
-        const country = news.country || 'Africa';
-        const countryLower = country.toLowerCase();
-        const flag = countryFlags[countryLower] || '🌍';
-        const timeDisplay = timeAgo(news.created_at);
-        const description = news.description || 'Click to read more about this story';
-        
-        return `
-            <div class="panafrican-card" data-news-id="${news.id}">
-                <div class="panafrican-flag">${flag}</div>
-                <h3 class="panafrican-title">${escapeHtml(news.title)}</h3>
-                <p class="panafrican-excerpt">${escapeHtml(description.substring(0, 80))}${description.length > 80 ? '...' : ''}</p>
-                <div class="panafrican-time"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(country)} • ${timeDisplay}</div>
+    grid.innerHTML = newsItems.map(item => `
+        <div class="panafrican-card" onclick='openNewsContent(${JSON.stringify(item).replace(/'/g, "\\'")})'>
+            <div class="panafrican-flag">${getFlag(item.country)}</div>
+            <h3 class="panafrican-title">${escapeHtml(item.title)}</h3>
+            <p class="panafrican-excerpt">${escapeHtml((item.description || '').substring(0, 80))}${(item.description || '').length > 80 ? '...' : ''}</p>
+            <div class="panafrican-time">
+                <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.country || 'Africa')}</span>
+                <span><i class="fas fa-clock"></i> ${timeAgo(item.created_at)}</span>
             </div>
-        `;
-    }).join('');
-    
-    attachPanAfricanClickHandlers();
+        </div>
+    `).join('');
 }
 
-// ===== STEP 4: UPDATED RENDER JOURNALISTS (Verified journalists only) =====
 function renderJournalists(journalists) {
     const grid = document.getElementById('journalists-grid');
     if (!grid) return;
@@ -1532,24 +1595,8 @@ function renderJournalists(journalists) {
 }
 
 // ===== CLICK HANDLERS =====
-
-function attachStoryClickHandlers() {
-    document.querySelectorAll('.story-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.dataset.storyId;
-            if (id) window.location.href = `content-detail.html?id=${id}`;
-        });
-    });
-}
-
-function attachPanAfricanClickHandlers() {
-    document.querySelectorAll('.panafrican-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.dataset.newsId;
-            if (id) window.location.href = `content-detail.html?id=${id}`;
-        });
-    });
-}
+// NOTE: attachStoryClickHandlers and attachPanAfricanClickHandlers are OBSOLETE
+// They are NOT needed anymore because onclick is now inline with openNewsContent()
 
 function attachJournalistClickHandlers() {
     document.querySelectorAll('.journalist-follow').forEach(btn => {
@@ -1571,9 +1618,8 @@ function attachJournalistClickHandlers() {
     });
 }
 
-// ===== STEP 6: REAL-TIME BREAKING NEWS SUBSCRIPTION =====
+// ===== REAL-TIME BREAKING NEWS SUBSCRIPTION =====
 function subscribeToBreakingNews() {
-    // Clean up existing subscription if any
     if (breakingNewsChannel) {
         supabaseClient.removeChannel(breakingNewsChannel);
     }
@@ -1603,25 +1649,19 @@ function prependBreakingNews(newsItem) {
     const ticker = document.getElementById('ticker-content');
     if (!ticker) return;
     
-    const title = newsItem.title || 'Untitled news';
-    const time = 'Just now';
-    
     const newItemHtml = `
-        <span class="ticker-item" style="background: rgba(220,38,38,0.2); padding: 4px 8px; border-radius: 4px;">
-            <i class="fas fa-circle" style="color: var(--news-red); font-size: 8px;"></i>
-            <strong>NEW:</strong> ${escapeHtml(title)} • ${time}
+        <span class="ticker-item" style="background: rgba(220,38,38,0.2); padding: 4px 8px; border-radius: 4px;" onclick='openNewsContent(${JSON.stringify(newsItem).replace(/'/g, "\\'")})'>
+            🔴 NEW: ${escapeHtml(newsItem.title || 'Untitled news')}
         </span>
     `;
     
     ticker.insertAdjacentHTML('afterbegin', newItemHtml);
     
-    // Keep ticker manageable (remove last item if too many)
     const items = ticker.children;
     if (items.length > 30) {
         items[items.length - 1].remove();
     }
     
-    // Flash effect on ticker
     const tickerContainer = document.querySelector('.breaking-ticker');
     if (tickerContainer) {
         tickerContainer.style.backgroundColor = 'rgba(220,38,38,0.3)';
@@ -1804,27 +1844,24 @@ function setupProfileDropdown() {
     }
 }
 
-// ===== STEP 8: INITIALIZE EVERYTHING =====
+// ===== INITIALIZE EVERYTHING =====
 async function initializeNewsPage() {
     showLoading();
     
-    // Single auth call for entire page
     await initAuth();
     await updateAuthUI();
     
-    // Load all data sequentially (no parallel auth conflicts)
     await loadBreakingNews();
     await loadTopStories();
     await loadPanAfricanNews();
     await loadJournalists();
     
-    // Set up real-time breaking news subscription
     subscribeToBreakingNews();
     
     setupFilters();
     hideLoading();
     
-    console.log('✅ News page initialized with verified journalists + real-time updates');
+    console.log('✅ News page initialized with universal router (video/article separation)');
 }
 
 // ===== SETUP ADDITIONAL UI =====
