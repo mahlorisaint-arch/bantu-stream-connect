@@ -865,6 +865,51 @@ background: #F59E0B;
 color: #0A0E12;
 border-color: #F59E0B;
 }
+/* ===== NEWS FIELDS SECTION ===== */
+#news-fields {
+background: rgba(29, 78, 216, 0.1);
+border: 1px solid var(--bantu-blue);
+border-radius: 16px;
+padding: 20px;
+margin: 20px 0;
+display: none;
+}
+#news-fields.active { display: block; }
+.news-fields-title {
+font-size: 18px;
+font-weight: 600;
+margin-bottom: 20px;
+color: var(--warm-gold);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.news-fields-title i { font-size: 20px; }
+#news-fields .form-group { margin-bottom: 20px; }
+#article-body {
+min-height: 200px;
+resize: vertical;
+font-family: 'Inter', sans-serif;
+}
+.breaking-news-toggle {
+display: flex;
+align-items: center;
+gap: 10px;
+margin: 15px 0;
+}
+.breaking-news-toggle input[type="checkbox"] {
+width: 20px;
+height: 20px;
+accent-color: var(--error-color);
+}
+.read-time-input {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.read-time-input input {
+max-width: 100px;
+}
 @media (max-width: 768px) {
 .upload-card { padding: 30px 20px; }
 .action-buttons { flex-direction: column; }
@@ -956,6 +1001,7 @@ border-color: #F59E0B;
 <div class="media-type-selector">
 <div class="media-type-option selected" data-type="regular"><i class="fas fa-video"></i>Regular Video</div>
 <div class="media-type-option" data-type="short"><i class="fas fa-bolt"></i>Short/Reel</div>
+<div class="media-type-option" data-type="news"><i class="fas fa-newspaper"></i>News Article</div>
 </div>
 <div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Shorts are vertical videos under 60 seconds that appear in the Quick Bits section</div>
 </div>
@@ -983,6 +1029,44 @@ border-color: #F59E0B;
 <option value="long_form">Long Form Video</option>
 </select>
 <small class="form-text text-muted">Select what type of content you're uploading</small>
+</div>
+<!-- 🔥 NEWS FIELDS SECTION (NEW) -->
+<div id="news-fields">
+<div class="news-fields-title"><i class="fas fa-newspaper"></i> News Article Details</div>
+<div class="form-group">
+<label class="form-label">Source <span>*</span></label>
+<input type="text" id="news-source" class="form-input" placeholder="Source (e.g. Bantu News, Reuters)" required>
+</div>
+<div class="form-group">
+<label class="form-label">Category <span>*</span></label>
+<select id="news-category" class="form-input" required>
+<option value="">Select category</option>
+<option value="politics">Politics</option>
+<option value="business">Business</option>
+<option value="technology">Technology</option>
+<option value="health">Health</option>
+<option value="sports">Sports</option>
+<option value="entertainment">Entertainment</option>
+<option value="culture">Culture</option>
+<option value="other">Other</option>
+</select>
+</div>
+<div class="form-group read-time-input">
+<label class="form-label">Read Time (minutes)</label>
+<input type="number" id="read-time" class="form-input" placeholder="3" min="1" max="60" value="3">
+<small class="form-text text-muted" style="color: var(--slate-grey); margin-left: 10px;">Auto-calculated if left blank</small>
+</div>
+<div class="breaking-news-toggle">
+<label>
+<input type="checkbox" id="is-breaking" />
+<span style="font-weight: 600; color: var(--error-color);">🔥 Breaking News</span>
+</label>
+</div>
+<div class="form-group">
+<label class="form-label">Article Body <span>*</span></label>
+<textarea id="article-body" class="form-input" placeholder="Write your article content here. Each paragraph on a new line." rows="10" required></textarea>
+<small class="form-text text-muted" style="color: var(--slate-grey);">Tip: Press Enter for new paragraphs. Content will be structured automatically.</small>
+</div>
 </div>
 <!-- Dynamic Genre Fields -->
 <div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
@@ -1379,11 +1463,13 @@ const contentDiv = document.getElementById('dynamic-fields-content');
 const moodSection = document.getElementById('mood-tags-section');
 const chaptersSection = document.getElementById('chapters-section');
 const movieSection = document.getElementById('movie-classification-section');
+const newsFields = document.getElementById('news-fields');
 // Reset all sections first
 container.classList.remove('active');
 moodSection.classList.remove('active');
 chaptersSection.classList.remove('active');
 movieSection.classList.remove('active');
+newsFields.classList.remove('active');
 if (!config) return;
 document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
 contentDiv.innerHTML = '';
@@ -1961,6 +2047,74 @@ resolve(0);
 }
 
 // ============================================
+// 📰 NEWS UPLOAD FUNCTIONS (NEW - INTEGRATED)
+// ============================================
+
+// Build structured article body from textarea input
+function buildArticleBody(text) {
+if (!text) return [];
+return text.split('\n')
+.map(p => ({
+type: 'paragraph',
+text: p.trim()
+}))
+.filter(p => p.text && p.text.length > 0);
+}
+
+// Estimate read time based on word count (avg 200 words/min)
+function estimateReadTime(text) {
+if (!text) return 3;
+const words = text.split(/\s+/).filter(w => w.length > 0).length;
+return Math.max(1, Math.ceil(words / 200));
+}
+
+// Check if user is verified journalist
+async function isUserJournalist(userId) {
+if (!userId) return false;
+try {
+const { data } = await window.supabaseClient
+.from('creators')
+.select('is_journalist')
+.eq('id', userId)
+.single();
+return data?.is_journalist === true;
+} catch (error) {
+console.error('Journalist check error:', error);
+return false;
+}
+}
+
+// Collect news-specific metadata
+function collectNewsMetadata() {
+return {
+source_name: document.getElementById('news-source')?.value?.trim() || null,
+category: document.getElementById('news-category')?.value || null,
+read_time: parseInt(document.getElementById('read-time')?.value) || null,
+is_breaking: document.getElementById('is-breaking')?.checked || false
+};
+}
+
+// Validate news-specific fields
+function validateNewsFields() {
+const source = document.getElementById('news-source')?.value?.trim();
+const category = document.getElementById('news-category')?.value;
+const articleBody = document.getElementById('article-body')?.value?.trim();
+if (!source) {
+showToast('News source is required', 'error');
+return false;
+}
+if (!category) {
+showToast('Please select a news category', 'error');
+return false;
+}
+if (!articleBody) {
+showToast('Article content is required', 'error');
+return false;
+}
+return true;
+}
+
+// ============================================
 // MEDIA FUNCTIONS (UNCHANGED)
 // ============================================
 function extractMediaDuration(file) {
@@ -2158,6 +2312,65 @@ const genre = document.getElementById('content-genre').value;
 const config = genreConfig[genre];
 const isMovieContent = config?.isMovieContent || false;
 const isPodcastContent = config?.isPodcastContent || false;
+const isNewsContent = selectedMediaType === 'news';
+// 🔥 NEWS-SPECIFIC PAYLOAD (NEW SYSTEM)
+if (isNewsContent) {
+const newsMeta = collectNewsMetadata();
+const rawBody = document.getElementById('article-body')?.value || '';
+const estimatedReadTime = newsMeta.read_time || estimateReadTime(rawBody);
+const contentData = {
+title: data.title || null,
+description: data.description || null,
+file_url: data.media_url || null,
+thumbnail_url: data.thumbnail_url || null,
+media_type: 'article',
+genre: 'News',
+status: data.status,
+user_id: currentUserId || null,
+creator_id: currentUserId || null,
+creator: null,
+created_at: new Date().toISOString(),
+content_metadata: {
+category: newsMeta.category,
+source_name: newsMeta.source_name,
+is_breaking: newsMeta.is_breaking
+},
+content_format: 'long_form',
+chapters: null,
+duration: null,
+series_id: null,
+primary_genre_id: null,
+language_code: null,
+city: null,
+tempo: null,
+key_signature: null,
+is_explicit: false,
+// 📰 NEW NEWS SYSTEM FIELDS
+content_type: 'news',
+genres: ['News'],
+sa_genres: [],
+moods: [],
+tags: [],
+language: 'English',
+country: 'South Africa',
+region: 'Africa',
+is_bantu_original: false,
+completion_rate: 0,
+// News article specific
+source_name: newsMeta.source_name,
+read_time: estimatedReadTime,
+is_breaking: newsMeta.is_breaking,
+article_body: buildArticleBody(rawBody)
+};
+const sanitizedData = sanitizeForSupabase(contentData);
+console.log('=== NEWS UPLOAD OBJECT ===');
+console.log('content_type:', sanitizedData.content_type);
+console.log('content_format:', sanitizedData.content_format);
+console.log('article_body preview:', sanitizedData.article_body?.slice(0, 2));
+const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+if (error) throw error;
+return result[0];
+}
 // 🔥 PODCAST-SPECIFIC PAYLOAD (NEW SYSTEM)
 if (isPodcastContent) {
 const podcastMeta = collectPodcastMetadata();
@@ -2362,8 +2575,25 @@ if (!currentUserId) { showToast('Please sign in to upload content'); authModal.c
 const title = document.getElementById('content-title').value.trim();
 const desc = document.getElementById('content-description').value.trim();
 const genre = document.getElementById('content-genre').value;
-if (!title || !desc || !selectedMediaFile || !genre) { showToast('Please fill all required fields'); return; }
-if (!validateGenreMetadata()) {
+// 🔥 NEWS-SPECIFIC VALIDATION
+if (selectedMediaType === 'news') {
+// Check if user is verified journalist
+const isJournalist = await isUserJournalist(currentUserId);
+if (!isJournalist) {
+showToast('Only verified journalists can publish news articles', 'error');
+return;
+}
+// Validate news fields
+if (!validateNewsFields()) {
+showToast('Please fill all required news fields', 'error');
+return;
+}
+}
+if (!title || !desc || (selectedMediaType !== 'news' && !selectedMediaFile) || !genre) { 
+showToast('Please fill all required fields'); 
+return; 
+}
+if (selectedMediaType !== 'news' && !validateGenreMetadata()) {
 showToast('Please fill all required fields for the selected genre', 'error');
 return;
 }
@@ -2377,14 +2607,44 @@ lastUpdateTime = Date.now();
 progressSection.classList.add('active');
 progressText.textContent = 'Starting upload...';
 try {
-const contentMetadata = collectContentMetadata();
-const moodData = collectMoodData();
-const chaptersData = chapters.length ? chapters : null;
+const contentMetadata = selectedMediaType === 'news' ? {} : collectContentMetadata();
+const moodData = selectedMediaType === 'news' ? null : collectMoodData();
+const chaptersData = selectedMediaType === 'news' ? null : (chapters.length ? chapters : null);
 const config = genreConfig[genre];
-let finalMediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
+let finalMediaType = selectedMediaType === 'news' ? 'article' : (selectedMediaFile?.type.includes('video') ? 'video' : 'audio');
 if (selectedMediaType === 'short') finalMediaType = 'short';
 if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
-let contentFormat = document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form');
+let contentFormat = selectedMediaType === 'news' ? 'long_form' : (document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form'));
+// 🔥 NEWS UPLOAD PATH (no media file upload needed)
+if (selectedMediaType === 'news') {
+progressText.textContent = 'Creating news article...';
+const contentRecord = await createContentRecord({
+title,
+description: desc,
+media_url: null,
+thumbnail_url: selectedThumbnailFile ? await uploadFileWithProgress(selectedThumbnailFile, 'content-thumbnails', 'thumbnails', () => {}) : null,
+media_type: 'article',
+genre: 'News',
+status: isDraft ? 'draft' : 'published',
+duration: null,
+content_metadata: {},
+content_format: 'long_form',
+chapters: null,
+season_number: null,
+episode_number: null,
+primary_genre_id: null,
+language_code: null,
+city: null,
+tempo: null,
+key_signature: null,
+is_explicit: false,
+series_id: null
+});
+// Redirect to news detail page
+window.location.href = `news-detail.html?id=${contentRecord.id}`;
+return;
+}
+// 🔥 REGULAR MEDIA UPLOAD PATH
 progressText.textContent = 'Uploading media file...';
 const mediaUrl = await uploadFileWithProgress(selectedMediaFile, 'content-media', 'media', (l, t) => updateProgress(l, t));
 let thumbnailUrl = null;
@@ -2506,7 +2766,8 @@ score += 15;
 document.getElementById('check-desc').classList.remove('completed');
 document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
 }
-if (selectedMediaFile) {
+// News doesn't require media file
+if (selectedMediaType === 'news' || selectedMediaFile) {
 document.getElementById('check-media').classList.add('completed');
 document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
 score += 20;
@@ -2531,11 +2792,15 @@ score += 15;
 document.getElementById('check-genre').classList.remove('completed');
 document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
 }
-// 🔥 PODCAST/MOVIE-SPECIFIC METADATA CHECK
+// 🔥 PODCAST/MOVIE/NEWS-SPECIFIC METADATA CHECK
 const isMovieContent = config?.isMovieContent;
 const isPodcastContent = config?.isPodcastContent;
+const isNews = selectedMediaType === 'news';
 let hasMetadata = false;
-if (isPodcastContent) {
+if (isNews) {
+// Check news-specific fields
+hasMetadata = validateNewsFields();
+} else if (isPodcastContent) {
 // Check podcast-specific fields
 const podcastMeta = collectPodcastMetadata();
 hasMetadata = podcastMeta?.show_title && podcastMeta?.category && podcastMeta?.language && podcastMeta?.country;
@@ -2575,11 +2840,13 @@ function updateButtonsState() {
 const title = document.getElementById('content-title').value.trim();
 const desc = document.getElementById('content-description').value.trim();
 const genre = document.getElementById('content-genre').value;
+const isNews = selectedMediaType === 'news';
 const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
 const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
-const metadataValid = validateGenreMetadata();
+const metadataValid = isNews ? validateNewsFields() : validateGenreMetadata();
 saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
+// News doesn't require media file
+publishBtn.disabled = !title || !desc || (!isNews && !selectedMediaFile) || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
 if (isUploading) {
 publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
 saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -2603,7 +2870,13 @@ chapters: chapters,
 // Movie-specific
 selectedGenres: [...selectedGenres],
 selectedSAGenres: [...selectedSAGenres],
-movieTags: [...movieTags]
+movieTags: [...movieTags],
+// News-specific
+newsSource: document.getElementById('news-source')?.value || '',
+newsCategory: document.getElementById('news-category')?.value || '',
+readTime: document.getElementById('read-time')?.value || '3',
+isBreaking: document.getElementById('is-breaking')?.checked || false,
+articleBody: document.getElementById('article-body')?.value || ''
 };
 localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
 }
@@ -2630,6 +2903,12 @@ renderChaptersList();
 if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
 if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
 if (draft.movieTags) movieTags = [...draft.movieTags];
+// Restore news-specific state
+if (draft.newsSource) document.getElementById('news-source').value = draft.newsSource;
+if (draft.newsCategory) document.getElementById('news-category').value = draft.newsCategory;
+if (draft.readTime) document.getElementById('read-time').value = draft.readTime;
+if (draft.isBreaking) document.getElementById('is-breaking').checked = draft.isBreaking;
+if (draft.articleBody) document.getElementById('article-body').value = draft.articleBody;
 updateChecklist();
 updateButtonsState();
 if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
@@ -2650,7 +2929,25 @@ opt.addEventListener('click', () => {
 document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
 opt.classList.add('selected');
 selectedMediaType = opt.dataset.type;
+// Toggle shorts info
 document.getElementById('shorts-info').classList.toggle('active', selectedMediaType === 'short');
+// 🔥 Toggle news fields
+const newsFields = document.getElementById('news-fields');
+if (selectedMediaType === 'news') {
+newsFields.classList.add('active');
+// Auto-calculate read time when article body changes
+const articleBody = document.getElementById('article-body');
+const readTimeInput = document.getElementById('read-time');
+if (articleBody && readTimeInput) {
+articleBody.addEventListener('input', () => {
+if (!readTimeInput.value || readTimeInput.value === '3') {
+readTimeInput.value = estimateReadTime(articleBody.value);
+}
+});
+}
+} else {
+newsFields.classList.remove('active');
+}
 if (selectedMediaFile) validateMediaFile(selectedMediaFile);
 updateButtonsState();
 updateChecklist();
