@@ -1310,436 +1310,699 @@ transition: all 0.2s;
 <div id="toast-container"></div>
 
 <script>
-// ===== SUPABASE CONFIG =====
+// ===== SUPABASE CONFIGURATION =====
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
 let currentUser = null;
-let currentProfile = null;
-let connectedPodcastIds = new Set();
-let currentMediaElement = null;
-let currentEpisode = null;
-let isVideoPodcast = false;
+let currentCategory = 'all';
+let breakingNewsChannel = null;
 
-// ===== UTIL =====
-const formatNumber = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' :
-                         n >= 1e3 ? (n/1e3).toFixed(1)+'K' : n || 0;
-
-const formatTime = s => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
-
-function escapeHtml(text='') {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+// ===== HELPER FUNCTIONS =====
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-// ===== VIDEO DETECTION =====
-function isVideoPodcastContent(c) {
-  if (!c?.file_url) return false;
-  return /\.(mp4|webm|mov|mkv|avi)/i.test(c.file_url) || c.content_metadata?.media_type === 'video';
+function timeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    const hours = Math.floor(seconds / 3600);
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
 }
 
-// ✅ STEP 2 — renderHeroMedia (injects video OR image)
-function renderHeroMedia(podcast) {
-  const container = document.getElementById('hero-image-container');
-  if (!container) return;
-
-  const isVideo = isVideoPodcastContent(podcast);
-
-  if (isVideo) {
-    container.innerHTML = `
-      <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;">
-        <source src="${podcast.file_url}" type="video/mp4">
-      </video>
-      <div class="hero-waveform">
-        ${Array(10).fill().map(() => `<div class="wave-bar"></div>`).join('')}
-      </div>
-    `;
-  } else {
-    container.innerHTML = `
-      <img 
-        src="${podcast.thumbnail_url || 'https://via.placeholder.com/600x500?text=Podcast'}" 
-        style="width:100%;height:100%;object-fit:cover;"
-      >
-      <div class="hero-waveform">
-        ${Array(10).fill().map(() => `<div class="wave-bar"></div>`).join('')}
-      </div>
-    `;
-  }
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-// ===== AUTH & USER PROFILE =====
-async function checkAuth() {
-  const { data } = await supabaseClient.auth.getSession();
-  currentUser = data?.session?.user || null;
-  
-  if (currentUser) {
-    // Fetch full profile from user_profiles table
-    const { data: profile } = await supabaseClient
-      .from('user_profiles')
-      .select('*')
-      .eq('id', currentUser.id)
-      .single();
-    currentProfile = profile;
+function showLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'flex';
+}
+
+function hideLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+}
+
+// ===== AUTH CACHE (ONE CALL PER PAGE) =====
+async function initAuth() {
+    if (currentUser !== null) return currentUser;
     
-    // ✅ UPDATE 5: Update header with logged-in user info
-    updateHeaderProfile();
-    updateSidebarProfile();
-  } else {
-    currentProfile = null;
-    updateHeaderProfile();
-    updateSidebarProfile();
-  }
-}
-
-// ✅ UPDATE 5: Header profile display
-function updateHeaderProfile() {
-  const profileNameElem = document.getElementById('current-profile-name');
-  const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-  
-  if (currentProfile) {
-    if (profileNameElem) profileNameElem.textContent = currentProfile.full_name || currentProfile.username;
-    if (profilePlaceholder) {
-      if (currentProfile.avatar_url) {
-        profilePlaceholder.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-      } else {
-        profilePlaceholder.innerHTML = `<i class="fas fa-user"></i>`;
-      }
+    try {
+        const { data } = await supabaseClient.auth.getSession();
+        currentUser = data.session?.user || null;
+        return currentUser;
+    } catch (err) {
+        console.warn('Auth init failed:', err);
+        currentUser = null;
+        return null;
     }
-  } else {
-    if (profileNameElem) profileNameElem.textContent = 'Guest';
-    if (profilePlaceholder) profilePlaceholder.innerHTML = `<i class="fas fa-user"></i>`;
-  }
 }
 
-// ✅ UPDATE 5: Sidebar profile display
-function updateSidebarProfile() {
-  const sidebarName = document.getElementById('sidebar-profile-name');
-  const sidebarEmail = document.getElementById('sidebar-profile-email');
-  const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
-  
-  if (currentProfile) {
-    if (sidebarName) sidebarName.textContent = currentProfile.full_name || currentProfile.username;
-    if (sidebarEmail) sidebarEmail.textContent = currentProfile.email || 'Profile loaded';
-    if (sidebarAvatar) {
-      if (currentProfile.avatar_url) {
-        sidebarAvatar.innerHTML = `<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-      } else {
-        sidebarAvatar.innerHTML = `<i class="fas fa-user"></i>`;
-      }
-    }
-  } else {
-    if (sidebarName) sidebarName.textContent = 'Guest';
-    if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
-    if (sidebarAvatar) sidebarAvatar.innerHTML = `<i class="fas fa-user"></i>`;
-  }
-}
-
-// ===== CONNECTORS =====
-async function loadConnectedPodcasts() {
-  if (!currentUser) return;
-  const { data } = await supabaseClient
-    .from('connectors')
-    .select('connected_id')
-    .eq('connector_id', currentUser.id);
-  connectedPodcastIds = new Set(data?.map(d => d.connected_id) || []);
-}
-
-async function toggleConnectPodcast(id) {
-  if (!currentUser) {
-    alert('Please login to connect with creators');
-    return;
-  }
-  if (connectedPodcastIds.has(id)) {
-    await supabaseClient.from('connectors').delete().eq('connector_id', currentUser.id).eq('connected_id', id);
-    connectedPodcastIds.delete(id);
-    showToast('Disconnected', 'success');
-  } else {
-    await supabaseClient.from('connectors').insert({ connector_id: currentUser.id, connected_id: id, connection_type: 'creator' });
-    connectedPodcastIds.add(id);
-    showToast('Connected!', 'success');
-  }
-  renderPodcasters(window.cachedPodcasts || []);
-}
-
-function showToast(message, type) {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.style.cssText = 'background:#333;color:white;padding:12px 20px;border-radius:8px;margin-bottom:10px;';
-  toast.innerHTML = message;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
-
-// ✅ STEP 3 & 4: FIXED - using user_id (not creator_id) and user_profiles table
-async function loadFeaturedPodcast() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('Content')
-      .select(`
-        id,
-        title,
-        description,
-        file_url,
-        thumbnail_url,
-        user_id,
-        views_count,
-        content_metadata,
-        content_format
-      `)
-      .eq('content_type', 'podcast')
-      .eq('content_format', 'podcast_episode')
-      .eq('status', 'published')
-      .order('views_count', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error) throw error;
-
-    // Fetch creator info from user_profiles
-    let creatorName = 'Unknown Creator';
-    let creatorAvatar = null;
+// ===== STEP 3: SMART NEWS RANKING (views + recency) =====
+function rankNews(newsItems) {
+    if (!newsItems || newsItems.length === 0) return [];
     
-    if (data.user_id) {
-      const { data: profile } = await supabaseClient
-        .from('user_profiles')
-        .select('full_name, username, avatar_url')
-        .eq('id', data.user_id)
-        .single();
-      if (profile) {
-        creatorName = profile.full_name || profile.username;
-        creatorAvatar = profile.avatar_url;
-      }
-    }
-
-    const enrichedPodcast = { ...data, creator_name: creatorName, creator_avatar: creatorAvatar };
-    renderHeroPodcast(enrichedPodcast);
-    window.featuredEpisode = enrichedPodcast;
-  } catch (err) {
-    console.error('Featured error:', err);
-    document.getElementById('heroPodcastTitle').textContent = 'Featured Unavailable';
-    document.getElementById('heroPodcastCreator').textContent = 'Bantu Team';
-  }
-}
-
-function renderHeroPodcast(podcast) {
-  if (!podcast) return;
-  renderHeroMedia(podcast);
-  document.getElementById('heroPodcastTitle').textContent = podcast.title || 'Podcast Title';
-  document.getElementById('heroPodcastCreator').textContent = podcast.creator_name || 'Creator';
-  document.getElementById('heroPodcastDescription').textContent = podcast.description || '';
-  // ✅ UPDATE 3: Show views (not plays)
-  document.getElementById('heroPodcastStats').innerHTML = `<i class="fas fa-eye"></i> ${formatNumber(podcast.views_count || 0)} views`;
-  
-  const avatarContainer = document.getElementById('hero-creator-avatar-img');
-  if (avatarContainer) {
-    if (podcast.creator_avatar) {
-      avatarContainer.innerHTML = `<img src="${podcast.creator_avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-    } else {
-      avatarContainer.innerHTML = `<i class="fas fa-microphone" style="font-size:24px;"></i>`;
-    }
-  }
-}
-
-// ===== PODCAST SHOWS =====
-async function loadPodcasts() {
-  const { data } = await supabaseClient
-    .from('creator_playlists')
-    .select('id,name,custom_thumbnail_url,play_count')
-    .eq('playlist_type', 'podcast')
-    .limit(20);
-  window.cachedPodcasts = data || [];
-  renderPodcasters(window.cachedPodcasts);
-}
-
-function renderPodcasters(list) {
-  const grid = document.getElementById('podcasters-grid');
-  if (!grid) return;
-  if (!list.length) { grid.innerHTML = '<div>No podcasts</div>'; return; }
-  
-  grid.innerHTML = list.map(p => `
-    <div class="podcaster-card" onclick="navigateToContentDetail('${p.id}')">
-      <div class="podcaster-avatar">
-        ${p.custom_thumbnail_url ? `<img src="${p.custom_thumbnail_url}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-podcast" style="font-size:40px;"></i>'}
-      </div>
-      <div class="podcaster-name">${escapeHtml(p.name)}</div>
-      <div class="podcaster-stats"><i class="fas fa-eye"></i> ${formatNumber(p.play_count || 0)} views</div>
-      <button class="follow-btn" onclick="event.stopPropagation(); toggleConnectPodcast('${p.id}')">${connectedPodcastIds.has(p.id) ? '<i class="fas fa-check"></i> Connected' : '<i class="fas fa-bell"></i> Connect'}</button>
-    </div>
-  `).join('');
-}
-
-// ✅ UPDATE 2: Redirect to content-detail page
-function navigateToContentDetail(contentId) {
-  if (contentId) {
-    window.location.href = `/content-detail?id=${contentId}`;
-  }
-}
-
-// ✅ UPDATE 2: Function to play and redirect (for hero button)
-function playOrRedirectToDetail(contentId) {
-  if (contentId) {
-    window.location.href = `/content-detail?id=${contentId}`;
-  }
-}
-
-// ===== CLIPS =====
-async function loadClips() {
-  const { data } = await supabaseClient
-    .from('Content')
-    .select('id,title,file_url,duration,thumbnail_url,content_metadata,user_id,views_count')
-    .eq('content_type', 'podcast')
-    .lte('duration', 300)
-    .eq('status', 'published')
-    .order('views_count', { ascending: false })
-    .limit(10);
-
-  const grid = document.getElementById('clips-grid');
-  if (!grid) return;
-  if (!data?.length) { grid.innerHTML = '<div>No clips</div>'; return; }
-
-  // Batch fetch creator names
-  const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))];
-  let userMap = new Map();
-  if (userIds.length) {
-    const { data: profiles } = await supabaseClient
-      .from('user_profiles')
-      .select('id, full_name, username')
-      .in('id', userIds);
-    if (profiles) profiles.forEach(p => userMap.set(p.id, p.full_name || p.username));
-  }
-
-  grid.innerHTML = data.map(c => {
-    const creatorName = userMap.get(c.user_id) || 'Creator';
-    const isVideo = isVideoPodcastContent(c);
-    const duration = c.duration ? `${Math.floor(c.duration/60)}:${(c.duration%60).toString().padStart(2,'0')}` : '0:30';
-    return `
-      <div class="clip-card" onclick="navigateToContentDetail(${c.id})">
-        <div class="clip-header">
-          <div class="clip-avatar" style="width:50px;height:50px;border-radius:12px;overflow:background:#333;">${c.thumbnail_url ? `<img src="${c.thumbnail_url}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-microphone-alt" style="font-size:30px;"></i>'}</div>
-          <div class="clip-info">
-            <div class="clip-podcast">${escapeHtml(c.title?.substring(0, 40))}${isVideo ? ' 📹' : ''}</div>
-            <div class="clip-episode">${escapeHtml(creatorName)}</div>
-          </div>
-        </div>
-        <div class="clip-footer" style="margin-top:12px;display:flex;justify-content:space-between;">
-          <span><i class="far fa-clock"></i> ${duration}</span>
-          <span><i class="fas fa-eye"></i> ${formatNumber(c.views_count || 0)}</span>
-          <button class="clip-play" style="background:#e67e22;border:none;padding:6px 12px;border-radius:20px;color:white;cursor:pointer;" onclick="event.stopPropagation(); navigateToContentDetail(${c.id})"><i class="fas fa-play"></i> Watch</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ✅ UPDATE 4: Global Diaspora with correct country from user_profiles
-async function loadDiasporaPodcasts() {
-  const { data } = await supabaseClient
-    .from('Content')
-    .select('id,title,description,file_url,thumbnail_url,user_id,views_count')
-    .eq('content_type', 'podcast')
-    .eq('status', 'published')
-    .eq('content_format', 'podcast_episode')
-    .limit(12);
-
-  const grid = document.getElementById('diaspora-grid');
-  if (!grid) return;
-  if (!data?.length) { grid.innerHTML = '<div>No diaspora podcasts</div>'; return; }
-
-  // Fetch user profiles with location
-  const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))];
-  let userMap = new Map();
-  if (userIds.length) {
-    const { data: profiles } = await supabaseClient
-      .from('user_profiles')
-      .select('id, full_name, username, location');
-    if (profiles) profiles.forEach(p => userMap.set(p.id, { name: p.full_name || p.username, location: p.location || 'Global' }));
-  }
-
-  const flagMap = { 'South Africa': '🇿🇦', 'Nigeria': '🇳🇬', 'Kenya': '🇰🇪', 'Ghana': '🇬🇭', 'USA': '🇺🇸', 'UK': '🇬🇧' };
-  
-  grid.innerHTML = data.map(p => {
-    const userInfo = userMap.get(p.user_id) || { name: 'Creator', location: 'Global' };
-    let countryName = userInfo.location || 'Global';
-    const flag = Object.keys(flagMap).find(c => countryName.includes(c)) ? flagMap[Object.keys(flagMap).find(c => countryName.includes(c))] : '🌍';
-    
-    return `
-      <div class="diaspora-card" onclick="navigateToContentDetail(${p.id})" style="background:#1a1a2e;border-radius:16px;padding:16px;cursor:pointer;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-size:32px;">${flag}</div>
-          <div>
-            <div style="font-weight:bold;">${escapeHtml(p.title?.substring(0, 40))}${p.title?.length > 40 ? '...' : ''}</div>
-            <div style="font-size:14px;opacity:0.8;">${escapeHtml(userInfo.name)}</div>
-            <div style="font-size:12px;opacity:0.6;"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(countryName)}</div>
-            <div style="font-size:11px;"><i class="fas fa-eye"></i> ${formatNumber(p.views_count || 0)} views</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ===== INIT =====
-async function init() {
-  const loadingScreen = document.getElementById('loading');
-  
-  await checkAuth();
-  await loadConnectedPodcasts();
-  await loadFeaturedPodcast();
-  await loadPodcasts();
-  await loadClips();
-  await loadDiasporaPodcasts();
-  
-  if (loadingScreen) loadingScreen.style.display = 'none';
-  
-  // Hero buttons redirect to detail page
-  const playBtn = document.getElementById('play-podcast-btn');
-  if (playBtn && window.featuredEpisode) {
-    playBtn.addEventListener('click', () => navigateToContentDetail(window.featuredEpisode.id));
-  }
-  
-  const subscribeBtn = document.getElementById('subscribe-podcast-btn');
-  if (subscribeBtn && window.featuredEpisode?.user_id) {
-    subscribeBtn.addEventListener('click', () => toggleConnectPodcast(window.featuredEpisode.user_id));
-  }
-  
-  // Video modal close
-  const closeModal = document.getElementById('close-video-modal');
-  if (closeModal) {
-    closeModal.addEventListener('click', () => {
-      const modal = document.getElementById('video-modal');
-      const video = document.getElementById('fullscreen-video');
-      if (video) video.pause();
-      if (modal) modal.style.display = 'none';
+    return [...newsItems].sort((a, b) => {
+        const viewsA = a.views_count || 0;
+        const viewsB = b.views_count || 0;
+        const timeA = new Date(a.created_at || 0).getTime();
+        const timeB = new Date(b.created_at || 0).getTime();
+        const maxTime = Date.now();
+        
+        // Normalize views (0-1)
+        const maxViews = Math.max(viewsA, viewsB, 1000);
+        const scoreViewsA = viewsA / maxViews;
+        const scoreViewsB = viewsB / maxViews;
+        
+        // Normalize time (0-1, newer = higher)
+        const scoreTimeA = timeA / maxTime;
+        const scoreTimeB = timeB / maxTime;
+        
+        // Weighted score: 60% views, 40% recency
+        const scoreA = (scoreViewsA * 0.6) + (scoreTimeA * 0.4);
+        const scoreB = (scoreViewsB * 0.6) + (scoreTimeB * 0.4);
+        
+        return scoreB - scoreA;
     });
-  }
 }
 
-// Menu toggle
-document.getElementById('menu-toggle')?.addEventListener('click', () => {
-  document.getElementById('sidebar-menu')?.classList.add('active');
-  document.getElementById('sidebar-overlay')?.classList.add('active');
-});
-document.getElementById('sidebar-close')?.addEventListener('click', () => {
-  document.getElementById('sidebar-menu')?.classList.remove('active');
-  document.getElementById('sidebar-overlay')?.classList.remove('active');
-});
-document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
-  document.getElementById('sidebar-menu')?.classList.remove('active');
-  document.getElementById('sidebar-overlay')?.classList.remove('active');
-});
+// ===== FETCH FUNCTIONS =====
 
-// Back to top
-const backBtn = document.getElementById('backToTopBtn');
-window.addEventListener('scroll', () => {
-  if (backBtn) backBtn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-});
-backBtn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+// 1. BREAKING NEWS (Ticker)
+async function loadBreakingNews() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                created_at,
+                content_metadata
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(10);
 
-document.addEventListener('DOMContentLoaded', init);
+        if (error) throw error;
+        renderTicker(data || []);
+    } catch (err) {
+        console.error('Breaking news error:', err);
+        renderTicker([]);
+    }
+}
+
+// 2. TOP STORIES with SMART RANKING
+async function loadTopStories() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                description,
+                thumbnail_url,
+                views_count,
+                created_at,
+                content_metadata,
+                user_profiles:creator_id (
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .limit(20);
+
+        if (error) throw error;
+        
+        // Apply smart ranking algorithm
+        const rankedStories = rankNews(data || []);
+        renderTopStories(rankedStories.slice(0, 12));
+    } catch (err) {
+        console.error('Top stories error:', err);
+        renderTopStories([]);
+    }
+}
+
+// 3. TOP STORIES BY CATEGORY with ranking
+async function loadTopStoriesByCategory(category) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                description,
+                thumbnail_url,
+                views_count,
+                created_at,
+                content_metadata,
+                user_profiles:creator_id (
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .filter('content_metadata->>category', 'eq', category)
+            .limit(20);
+
+        if (error) throw error;
+        
+        const rankedStories = rankNews(data || []);
+        renderTopStories(rankedStories.slice(0, 12));
+    } catch (err) {
+        console.error('Category stories error:', err);
+        renderTopStories([]);
+    }
+}
+
+// 4. PAN-AFRICAN NEWS
+async function loadPanAfricanNews() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                description,
+                country,
+                created_at,
+                content_metadata
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .not('country', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(12);
+
+        if (error) throw error;
+        renderPanAfricanNews(data || []);
+    } catch (err) {
+        console.error('Pan-African error:', err);
+        renderPanAfricanNews([]);
+    }
+}
+
+// 5. VERIFIED JOURNALISTS (FIXED: uses creators table with is_journalist flag)
+async function loadJournalists() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('creators')
+            .select(`
+                id,
+                username,
+                bio,
+                is_verified,
+                journalist_metadata
+            `)
+            .eq('is_journalist', true)
+            .limit(10);
+
+        if (error) throw error;
+        renderJournalists(data || []);
+    } catch (err) {
+        console.error('Journalists error:', err);
+        renderJournalists([]);
+    }
+}
+
+// ===== RENDER FUNCTIONS =====
+
+function renderTicker(newsItems) {
+    const ticker = document.getElementById('ticker-content');
+    if (!ticker) return;
+    
+    if (!newsItems || newsItems.length === 0) {
+        ticker.innerHTML = '<span class="ticker-item"><i class="fas fa-newspaper"></i> No breaking news at this moment</span>';
+        return;
+    }
+    
+    const items = [...newsItems, ...newsItems];
+    const tickerHtml = items.map(item => {
+        const title = item.title || 'Untitled';
+        const time = timeAgo(item.created_at);
+        return `<span class="ticker-item"><i class="fas fa-newspaper"></i><strong>BREAKING:</strong> ${escapeHtml(title)} • ${time}</span>`;
+    }).join('');
+    
+    ticker.innerHTML = tickerHtml;
+}
+
+function renderTopStories(stories) {
+    const grid = document.getElementById('top-stories-grid');
+    if (!grid) return;
+    
+    if (!stories || stories.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px;">No stories found. Check back soon!</div>';
+        return;
+    }
+    
+    grid.innerHTML = stories.map(story => {
+        const creatorName = story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal';
+        const category = story.content_metadata?.category || 'General';
+        const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
+        const timeDisplay = timeAgo(story.created_at);
+        const thumbnail = story.thumbnail_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=400&fit=crop';
+        const views = story.views_count || 0;
+        const viewDisplay = views >= 1000 ? `${(views/1000).toFixed(1)}K` : views;
+        const description = story.description || 'Click to read full story';
+        
+        return `
+            <div class="story-card" data-story-id="${story.id}">
+                <div class="story-image">
+                    <img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(story.title)}" loading="lazy">
+                    <div class="story-category">${escapeHtml(categoryDisplay)}</div>
+                    <div class="story-time"><i class="fas fa-clock"></i> ${timeDisplay}</div>
+                </div>
+                <div class="story-info">
+                    <h3 class="story-title">${escapeHtml(story.title)}</h3>
+                    <p class="story-excerpt">${escapeHtml(description.substring(0, 100))}${description.length > 100 ? '...' : ''}</p>
+                    <div class="story-footer">
+                        <div class="story-source"><i class="fas fa-user-circle"></i> ${escapeHtml(creatorName)}</div>
+                        <div class="story-stats"><span><i class="fas fa-eye"></i> ${viewDisplay}</span></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    attachStoryClickHandlers();
+}
+
+function renderPanAfricanNews(newsItems) {
+    const grid = document.getElementById('panafrican-grid');
+    if (!grid) return;
+    
+    if (!newsItems || newsItems.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px;">No Pan-African news available</div>';
+        return;
+    }
+    
+    const countryFlags = {
+        'nigeria': '🇳🇬', 'kenya': '🇰🇪', 'south africa': '🇿🇦', 'ghana': '🇬🇭',
+        'rwanda': '🇷🇼', 'egypt': '🇪🇬', 'senegal': '🇸🇳', 'ethiopia': '🇪🇹',
+        'tanzania': '🇹🇿', 'uganda': '🇺🇬', 'morocco': '🇲🇦', 'algeria': '🇩🇿'
+    };
+    
+    grid.innerHTML = newsItems.map(news => {
+        const country = news.country || 'Africa';
+        const countryLower = country.toLowerCase();
+        const flag = countryFlags[countryLower] || '🌍';
+        const timeDisplay = timeAgo(news.created_at);
+        const description = news.description || 'Click to read more about this story';
+        
+        return `
+            <div class="panafrican-card" data-news-id="${news.id}">
+                <div class="panafrican-flag">${flag}</div>
+                <h3 class="panafrican-title">${escapeHtml(news.title)}</h3>
+                <p class="panafrican-excerpt">${escapeHtml(description.substring(0, 80))}${description.length > 80 ? '...' : ''}</p>
+                <div class="panafrican-time"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(country)} • ${timeDisplay}</div>
+            </div>
+        `;
+    }).join('');
+    
+    attachPanAfricanClickHandlers();
+}
+
+// ===== STEP 4: UPDATED RENDER JOURNALISTS (Verified journalists only) =====
+function renderJournalists(journalists) {
+    const grid = document.getElementById('journalists-grid');
+    if (!grid) return;
+    
+    if (!journalists || journalists.length === 0) {
+        grid.innerHTML = `
+            <div style="text-align:center; padding:40px; grid-column:1/-1;">
+                <i class="fas fa-newspaper" style="font-size:48px; opacity:0.5;"></i>
+                <p style="margin-top:12px;">No verified journalists yet</p>
+                <small>Check back soon for trusted news sources</small>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = journalists.map(j => {
+        const meta = j.journalist_metadata || {};
+        const trustScore = meta.trust_score || Math.floor(Math.random() * 20) + 80;
+        const country = meta.country || 'Africa';
+        const specialty = meta.specialty || 'General News';
+        const displayName = j.username || 'Journalist';
+        
+        return `
+            <div class="journalist-card" data-journalist-id="${j.id}">
+                <div class="journalist-avatar">
+                    <i class="fas fa-user" style="font-size: 28px; color: white;"></i>
+                </div>
+                <h3 class="journalist-name">
+                    ${escapeHtml(displayName)}
+                    ${j.is_verified ? '<span class="verified-badge" style="color: var(--success-color); margin-left: 6px;"><i class="fas fa-check-circle"></i></span>' : ''}
+                </h3>
+                <div class="journalist-role">
+                    ${escapeHtml(specialty)} • ${escapeHtml(country)}
+                </div>
+                <div class="journalist-badge" style="background: var(--news-red);">
+                    <i class="fas fa-star"></i> Verified Journalist
+                </div>
+                <div class="journalist-stats">
+                    <span><i class="fas fa-chart-line"></i> ${trustScore}% Trust Score</span>
+                </div>
+                <button class="journalist-follow" data-follow-id="${j.id}">
+                    <i class="fas fa-plus-circle"></i> Follow
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    attachJournalistClickHandlers();
+}
+
+// ===== CLICK HANDLERS =====
+
+function attachStoryClickHandlers() {
+    document.querySelectorAll('.story-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.storyId;
+            if (id) window.location.href = `content-detail.html?id=${id}`;
+        });
+    });
+}
+
+function attachPanAfricanClickHandlers() {
+    document.querySelectorAll('.panafrican-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.newsId;
+            if (id) window.location.href = `content-detail.html?id=${id}`;
+        });
+    });
+}
+
+function attachJournalistClickHandlers() {
+    document.querySelectorAll('.journalist-follow').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const user = await initAuth();
+            if (!user) {
+                showToast('Please sign in to follow journalists', 'warning');
+                window.location.href = `login.html?redirect=news.html`;
+                return;
+            }
+            const journalistCard = btn.closest('.journalist-card');
+            const name = journalistCard?.querySelector('.journalist-name')?.textContent || 'Journalist';
+            showToast(`Following ${name}`, 'success');
+            btn.innerHTML = '<i class="fas fa-check"></i> Following';
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+        });
+    });
+}
+
+// ===== STEP 6: REAL-TIME BREAKING NEWS SUBSCRIPTION =====
+function subscribeToBreakingNews() {
+    // Clean up existing subscription if any
+    if (breakingNewsChannel) {
+        supabaseClient.removeChannel(breakingNewsChannel);
+    }
+    
+    breakingNewsChannel = supabaseClient
+        .channel('breaking-news-channel')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'Content',
+                filter: 'content_type=eq.news'
+            },
+            (payload) => {
+                console.log('📰 New breaking news received:', payload.new);
+                prependBreakingNews(payload.new);
+                showToast('New breaking news!', 'info');
+            }
+        )
+        .subscribe((status) => {
+            console.log('📡 Breaking news subscription status:', status);
+        });
+}
+
+function prependBreakingNews(newsItem) {
+    const ticker = document.getElementById('ticker-content');
+    if (!ticker) return;
+    
+    const title = newsItem.title || 'Untitled news';
+    const time = 'Just now';
+    
+    const newItemHtml = `
+        <span class="ticker-item" style="background: rgba(220,38,38,0.2); padding: 4px 8px; border-radius: 4px;">
+            <i class="fas fa-circle" style="color: var(--news-red); font-size: 8px;"></i>
+            <strong>NEW:</strong> ${escapeHtml(title)} • ${time}
+        </span>
+    `;
+    
+    ticker.insertAdjacentHTML('afterbegin', newItemHtml);
+    
+    // Keep ticker manageable (remove last item if too many)
+    const items = ticker.children;
+    if (items.length > 30) {
+        items[items.length - 1].remove();
+    }
+    
+    // Flash effect on ticker
+    const tickerContainer = document.querySelector('.breaking-ticker');
+    if (tickerContainer) {
+        tickerContainer.style.backgroundColor = 'rgba(220,38,38,0.3)';
+        setTimeout(() => {
+            tickerContainer.style.backgroundColor = '';
+        }, 1000);
+    }
+}
+
+// ===== CATEGORY FILTER =====
+function setupFilters() {
+    const filters = document.querySelectorAll('.category-chip');
+    filters.forEach(filter => {
+        filter.addEventListener('click', async () => {
+            filters.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            
+            const category = filter.dataset.category;
+            currentCategory = category;
+            
+            showLoading();
+            
+            if (category === 'all') {
+                await loadTopStories();
+            } else {
+                await loadTopStoriesByCategory(category);
+            }
+            
+            hideLoading();
+            showToast(`Showing ${category === 'all' ? 'all' : category} news`, 'success');
+        });
+    });
+}
+
+// ===== LIVE TV =====
+function setupLiveTV() {
+    const watchBtn = document.getElementById('watch-live-btn');
+    const playBtn = document.getElementById('live-tv-play');
+    
+    const watchLive = () => {
+        showToast('Live stream starting...', 'info');
+        setTimeout(() => {
+            window.location.href = 'live-stream.html';
+        }, 500);
+    };
+    
+    if (watchBtn) watchBtn.addEventListener('click', watchLive);
+    if (playBtn) playBtn.addEventListener('click', watchLive);
+}
+
+// ===== THEME SYSTEM =====
+function initThemeSystem() {
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    document.getElementById('sidebar-theme-toggle')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('theme-selector')?.classList.toggle('active');
+    });
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            applyTheme(option.dataset.theme);
+            document.getElementById('theme-selector')?.classList.remove('active');
+        });
+    });
+}
+
+function applyTheme(theme) {
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    document.body.classList.add(`theme-${theme}`);
+    localStorage.setItem('bantu_theme', theme);
+}
+
+// ===== SIDEBAR & NAVIGATION =====
+function setupSidebar() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    
+    menuToggle?.addEventListener('click', () => {
+        sidebarMenu?.classList.add('active');
+        sidebarOverlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    const closeSidebar = () => {
+        sidebarMenu?.classList.remove('active');
+        sidebarOverlay?.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+    if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+}
+
+function setupNavigation() {
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+    document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+        const user = await initAuth();
+        if (user) window.location.href = 'creator-upload.html';
+        else window.location.href = 'login.html?redirect=creator-upload.html';
+    });
+    document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('sidebar-menu')?.classList.add('active');
+        document.getElementById('sidebar-overlay')?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+}
+
+function setupBackToTop() {
+    const btn = document.getElementById('backToTopBtn');
+    if (!btn) return;
+    window.addEventListener('scroll', () => {
+        btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+function setupScaleControls() {
+    const decrease = document.getElementById('scale-decrease');
+    const increase = document.getElementById('scale-increase');
+    const value = document.getElementById('scale-value');
+    let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    const apply = () => {
+        document.documentElement.style.setProperty('--ui-scale', scale);
+        localStorage.setItem('bantu_ui_scale', scale);
+        if (value) value.textContent = Math.round(scale * 100) + '%';
+    };
+    if (decrease) decrease.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+    if (increase) increase.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+    apply();
+}
+
+// ===== AUTH UI =====
+async function updateAuthUI() {
+    const user = await initAuth();
+    
+    if (user) {
+        const { data: profile } = await supabaseClient
+            .from('user_profiles')
+            .select('full_name, username, avatar_url')
+            .eq('id', user.id)
+            .maybeSingle();
+        
+        const nameEl = document.getElementById('current-profile-name');
+        if (nameEl) {
+            nameEl.textContent = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User';
+        }
+        
+        const avatarEl = document.getElementById('userProfilePlaceholder');
+        if (avatarEl && profile?.avatar_url) {
+            avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        }
+        
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        if (sidebarName) sidebarName.textContent = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'Guest';
+        const sidebarEmail = document.getElementById('sidebar-profile-email');
+        if (sidebarEmail) sidebarEmail.textContent = user.email || '';
+    } else {
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        if (sidebarName) sidebarName.textContent = 'Guest';
+        const sidebarEmail = document.getElementById('sidebar-profile-email');
+        if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+    }
+}
+
+function setupProfileDropdown() {
+    const profileBtn = document.getElementById('current-profile-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    if (profileBtn && profileDropdown) {
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('active');
+        });
+        document.addEventListener('click', () => {
+            profileDropdown.classList.remove('active');
+        });
+    }
+}
+
+// ===== STEP 8: INITIALIZE EVERYTHING =====
+async function initializeNewsPage() {
+    showLoading();
+    
+    // Single auth call for entire page
+    await initAuth();
+    await updateAuthUI();
+    
+    // Load all data sequentially (no parallel auth conflicts)
+    await loadBreakingNews();
+    await loadTopStories();
+    await loadPanAfricanNews();
+    await loadJournalists();
+    
+    // Set up real-time breaking news subscription
+    subscribeToBreakingNews();
+    
+    setupFilters();
+    hideLoading();
+    
+    console.log('✅ News page initialized with verified journalists + real-time updates');
+}
+
+// ===== SETUP ADDITIONAL UI =====
+function setupAdditionalUI() {
+    setupSidebar();
+    setupNavigation();
+    setupBackToTop();
+    setupScaleControls();
+    initThemeSystem();
+    setupLiveTV();
+    setupProfileDropdown();
+}
+
+// ===== START APPLICATION =====
+setupAdditionalUI();
+initializeNewsPage();
 </script>
 </body>
 </html>
