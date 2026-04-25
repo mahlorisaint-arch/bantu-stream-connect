@@ -1157,112 +1157,330 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentCategory = 'all';
-let newsContent = [];
 
-// ===== DEMO NEWS CONTENT =====
-const breakingNews = [
-    { title: "African Union Summit Begins in Addis Ababa", time: "2 min ago", category: "politics" },
-    { title: "New Pan-African Payment System Launched", time: "15 min ago", category: "business" },
-    { title: "Tech Innovation Hub Opens in Kigali", time: "32 min ago", category: "technology" },
-    { title: "Climate Resilience Summit Concludes in Nairobi", time: "1 hour ago", category: "environment" },
-];
-
-const topStories = [
-    { id: 1, title: "African Leaders Unite for Continental Free Trade Agreement Implementation", excerpt: "Historic agreement set to boost intra-African trade by 52% by 2030", category: "politics", time: "2 hours ago", source: "AU News", sourceIcon: "🏛️", views: "12.5K", image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=600&h=400&fit=crop" },
-    { id: 2, title: "Fintech Revolution: How African Startups Are Leading Digital Payments", excerpt: "Mobile money transactions exceed $1 trillion across the continent", category: "business", time: "4 hours ago", source: "Tech Africa", sourceIcon: "📱", views: "8.2K", image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&h=400&fit=crop" },
-    { id: 3, title: "New Malaria Vaccine Shows 75% Efficacy in Trials Across West Africa", excerpt: "Breakthrough could save millions of lives annually", category: "health", time: "6 hours ago", source: "WHO Africa", sourceIcon: "⚕️", views: "15.3K", image: "https://images.unsplash.com/photo-1579154204601-0152f6e967be?w=600&h=400&fit=crop" },
-    { id: 4, title: "Green Energy Revolution: Solar Power Transforming Rural Communities", excerpt: "Off-grid solutions bringing electricity to millions for first time", category: "environment", time: "8 hours ago", source: "Eco Watch", sourceIcon: "🌱", views: "6.7K", image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=400&fit=crop" },
-    { id: 5, title: "African Space Agency Launches First Satellite Constellation", excerpt: "A new era for African space exploration and telecommunications", category: "technology", time: "12 hours ago", source: "Space Africa", sourceIcon: "🚀", views: "22.1K", image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&h=400&fit=crop" },
-    { id: 6, title: "Cultural Renaissance: African Art Market Hits Record High", excerpt: "Global demand for contemporary African art surges", category: "culture", time: "14 hours ago", source: "Art News", sourceIcon: "🎨", views: "5.4K", image: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600&h=400&fit=crop" },
-];
-
-const panAfricanNews = [
-    { id: 101, country: "Nigeria", flag: "🇳🇬", title: "Lagos Launches Africa's Largest Tech Hub", excerpt: "New innovation district to create 50,000 jobs", time: "3 hours ago" },
-    { id: 102, country: "Kenya", flag: "🇰🇪", title: "Nairobi Named Top African Startup Ecosystem", excerpt: "Rising hub for fintech and agritech innovation", time: "5 hours ago" },
-    { id: 103, country: "South Africa", flag: "🇿🇦", title: "Cape Town Leads Green Energy Transition", excerpt: "Renewable projects attract billions in investment", time: "7 hours ago" },
-    { id: 104, country: "Ghana", flag: "🇬🇭", title: "Accra's Creative Economy Booms", excerpt: "Music and film industries drive economic growth", time: "9 hours ago" },
-    { id: 105, country: "Rwanda", flag: "🇷🇼", title: "Kigali's Smart City Initiative Wins Award", excerpt: "Model for African urban development recognized globally", time: "11 hours ago" },
-    { id: 106, country: "Egypt", flag: "🇪🇬", title: "Cairo's Tech Scene Attracts Major Investment", excerpt: "$500M fund for North African startups", time: "13 hours ago" },
-];
-
-const independentJournalists = [
-    { id: 201, name: "Fatima Ahmed", role: "Investigative Journalist", country: "Nigeria", trustScore: 98, followers: "125K", verified: true, avatar: null },
-    { id: 202, name: "James Mwangi", role: "Political Correspondent", country: "Kenya", trustScore: 96, followers: "89K", verified: true, avatar: null },
-    { id: 203, name: "Thabo Nkosi", role: "Economic Analyst", country: "South Africa", trustScore: 97, followers: "76K", verified: true, avatar: null },
-    { id: 204, name: "Amina Diallo", role: "Environmental Reporter", country: "Senegal", trustScore: 95, followers: "54K", verified: false, avatar: null },
-];
-
-// ===== RENDER FUNCTIONS =====
-function renderTicker() {
-    const ticker = document.getElementById('ticker-content');
-    const tickerItems = [...breakingNews, ...breakingNews].map(item => 
-        `<span class="ticker-item"><i class="fas fa-newspaper"></i><strong>BREAKING:</strong> ${item.title} • ${item.time}</span>`
-    ).join('');
-    ticker.innerHTML = tickerItems;
+// ===== HELPER FUNCTIONS =====
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-function renderTopStories() {
-    const grid = document.getElementById('top-stories-grid');
-    let filtered = [...topStories];
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(story => story.category === currentCategory);
+function timeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    const hours = Math.floor(seconds / 3600);
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function showLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'flex';
+}
+
+function hideLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+}
+
+// ===== STEP 1: REMOVE DEMO DATA - DELETED ALL DEMO ARRAYS =====
+// breakingNews, topStories, panAfricanNews, independentJournalists are GONE
+
+// ===== STEP 2: REAL SUPABASE FETCH FUNCTIONS =====
+
+// 1. BREAKING NEWS (Ticker)
+async function loadBreakingNews() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                created_at,
+                content_metadata
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        renderTicker(data || []);
+    } catch (err) {
+        console.error('Breaking news error:', err);
+        renderTicker([]);
+    }
+}
+
+// 2. TOP STORIES (Most Viewed)
+async function loadTopStories() {
+    try {
+        let query = supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                description,
+                thumbnail_url,
+                views_count,
+                created_at,
+                content_metadata,
+                user_profiles:creator_id (
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .limit(12);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        renderTopStories(data || []);
+    } catch (err) {
+        console.error('Top stories error:', err);
+        renderTopStories([]);
+    }
+}
+
+// 3. TOP STORIES BY CATEGORY (Filter)
+async function loadTopStoriesByCategory(category) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                description,
+                thumbnail_url,
+                views_count,
+                created_at,
+                content_metadata,
+                user_profiles:creator_id (
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .filter('content_metadata->>category', 'eq', category)
+            .order('views_count', { ascending: false })
+            .limit(12);
+
+        if (error) throw error;
+        renderTopStories(data || []);
+    } catch (err) {
+        console.error('Category stories error:', err);
+        renderTopStories([]);
+    }
+}
+
+// 4. PAN-AFRICAN NEWS
+async function loadPanAfricanNews() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                id,
+                title,
+                description,
+                country,
+                created_at,
+                content_metadata
+            `)
+            .eq('content_type', 'news')
+            .eq('status', 'published')
+            .not('country', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(12);
+
+        if (error) throw error;
+        renderPanAfricanNews(data || []);
+    } catch (err) {
+        console.error('Pan-African error:', err);
+        renderPanAfricanNews([]);
+    }
+}
+
+// 5. JOURNALISTS (REAL USERS)
+async function loadJournalists() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_profiles')
+            .select(`
+                id,
+                full_name,
+                username,
+                avatar_url,
+                bio
+            `)
+            .eq('role', 'creator')
+            .limit(10);
+
+        if (error) throw error;
+        renderJournalists(data || []);
+    } catch (err) {
+        console.error('Journalists error:', err);
+        renderJournalists([]);
+    }
+}
+
+// ===== STEP 3: RENDER FUNCTIONS WITH FIXES =====
+
+// Render Breaking News Ticker
+function renderTicker(newsItems) {
+    const ticker = document.getElementById('ticker-content');
+    if (!ticker) return;
+    
+    if (!newsItems || newsItems.length === 0) {
+        ticker.innerHTML = '<span class="ticker-item"><i class="fas fa-newspaper"></i> No breaking news at this moment</span>';
+        return;
     }
     
-    grid.innerHTML = filtered.map(story => `
-        <div class="story-card" data-story-id="${story.id}">
-            <div class="story-image">
-                <img src="${story.image}" alt="${story.title}">
-                <div class="story-category">${story.category.toUpperCase()}</div>
-                <div class="story-time"><i class="fas fa-clock"></i> ${story.time}</div>
-            </div>
-            <div class="story-info">
-                <h3 class="story-title">${escapeHtml(story.title)}</h3>
-                <p class="story-excerpt">${escapeHtml(story.excerpt)}</p>
-                <div class="story-footer">
-                    <div class="story-source"><i class="fas fa-check-circle" style="color: var(--success-color);"></i> ${story.source}</div>
-                    <div class="story-stats"><span><i class="fas fa-eye"></i> ${story.views}</span></div>
+    // Duplicate for seamless loop
+    const items = [...newsItems, ...newsItems];
+    const tickerHtml = items.map(item => {
+        const title = item.title || 'Untitled';
+        const time = timeAgo(item.created_at);
+        return `<span class="ticker-item"><i class="fas fa-newspaper"></i><strong>BREAKING:</strong> ${escapeHtml(title)} • ${time}</span>`;
+    }).join('');
+    
+    ticker.innerHTML = tickerHtml;
+}
+
+// Render Top Stories Grid
+function renderTopStories(stories) {
+    const grid = document.getElementById('top-stories-grid');
+    if (!grid) return;
+    
+    if (!stories || stories.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px;">No stories found. Check back soon!</div>';
+        return;
+    }
+    
+    grid.innerHTML = stories.map(story => {
+        // FIXED: creator name from user_profiles (was creators?.full_name before)
+        const creatorName = story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal';
+        // FIXED: category from content_metadata
+        const category = story.content_metadata?.category || 'General';
+        const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
+        const timeDisplay = timeAgo(story.created_at);
+        const thumbnail = story.thumbnail_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=400&fit=crop';
+        const views = story.views_count || 0;
+        const viewDisplay = views >= 1000 ? `${(views/1000).toFixed(1)}K` : views;
+        const description = story.description || 'Click to read full story';
+        
+        return `
+            <div class="story-card" data-story-id="${story.id}">
+                <div class="story-image">
+                    <img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(story.title)}" loading="lazy">
+                    <div class="story-category">${escapeHtml(categoryDisplay)}</div>
+                    <div class="story-time"><i class="fas fa-clock"></i> ${timeDisplay}</div>
+                </div>
+                <div class="story-info">
+                    <h3 class="story-title">${escapeHtml(story.title)}</h3>
+                    <p class="story-excerpt">${escapeHtml(description.substring(0, 100))}${description.length > 100 ? '...' : ''}</p>
+                    <div class="story-footer">
+                        <div class="story-source"><i class="fas fa-user-circle"></i> ${escapeHtml(creatorName)}</div>
+                        <div class="story-stats"><span><i class="fas fa-eye"></i> ${viewDisplay}</span></div>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     attachStoryClickHandlers();
 }
 
-function renderPanAfricanNews() {
+// Render Pan-African News
+function renderPanAfricanNews(newsItems) {
     const grid = document.getElementById('panafrican-grid');
-    grid.innerHTML = panAfricanNews.map(news => `
-        <div class="panafrican-card" data-news-id="${news.id}">
-            <div class="panafrican-flag">${news.flag}</div>
-            <h3 class="panafrican-title">${escapeHtml(news.title)}</h3>
-            <p class="panafrican-excerpt">${escapeHtml(news.excerpt)}</p>
-            <div class="panafrican-time"><i class="fas fa-map-marker-alt"></i> ${news.country} • ${news.time}</div>
-        </div>
-    `).join('');
+    if (!grid) return;
+    
+    if (!newsItems || newsItems.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px;">No Pan-African news available</div>';
+        return;
+    }
+    
+    // Country to flag mapping
+    const countryFlags = {
+        'nigeria': '🇳🇬', 'kenya': '🇰🇪', 'south africa': '🇿🇦', 'ghana': '🇬🇭',
+        'rwanda': '🇷🇼', 'egypt': '🇪🇬', 'senegal': '🇸🇳', 'ethiopia': '🇪🇹',
+        'tanzania': '🇹🇿', 'uganda': '🇺🇬', 'morocco': '🇲🇦', 'algeria': '🇩🇿'
+    };
+    
+    grid.innerHTML = newsItems.map(news => {
+        const country = news.country || 'Africa';
+        const countryLower = country.toLowerCase();
+        const flag = countryFlags[countryLower] || '🌍';
+        const timeDisplay = timeAgo(news.created_at);
+        const description = news.description || 'Click to read more about this story';
+        
+        return `
+            <div class="panafrican-card" data-news-id="${news.id}">
+                <div class="panafrican-flag">${flag}</div>
+                <h3 class="panafrican-title">${escapeHtml(news.title)}</h3>
+                <p class="panafrican-excerpt">${escapeHtml(description.substring(0, 80))}${description.length > 80 ? '...' : ''}</p>
+                <div class="panafrican-time"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(country)} • ${timeDisplay}</div>
+            </div>
+        `;
+    }).join('');
     
     attachPanAfricanClickHandlers();
 }
 
-function renderJournalists() {
+// Render Journalists
+function renderJournalists(journalists) {
     const grid = document.getElementById('journalists-grid');
-    grid.innerHTML = independentJournalists.map(journalist => `
-        <div class="journalist-card" data-journalist-id="${journalist.id}">
-            <div class="journalist-avatar">
-                <i class="fas fa-user" style="font-size: 32px; color: white;"></i>
+    if (!grid) return;
+    
+    if (!journalists || journalists.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px;">No journalists found</div>';
+        return;
+    }
+    
+    grid.innerHTML = journalists.map(journalist => {
+        const name = journalist.full_name || journalist.username || 'Creator';
+        const bio = journalist.bio || 'Independent journalist covering African stories';
+        const avatar = journalist.avatar_url;
+        const initial = name.charAt(0).toUpperCase();
+        
+        return `
+            <div class="journalist-card" data-journalist-id="${journalist.id}">
+                <div class="journalist-avatar">
+                    ${avatar ? `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(name)}">` : `<i class="fas fa-user" style="font-size: 32px; color: white;"></i>`}
+                </div>
+                <h3 class="journalist-name">${escapeHtml(name)}</h3>
+                <div class="journalist-role">Independent Journalist</div>
+                <div class="journalist-badge"><i class="fas fa-check-circle"></i> Creator</div>
+                <div class="journalist-stats">
+                    <span><i class="fas fa-newspaper"></i> Active</span>
+                    <span><i class="fas fa-star"></i> Trusted Source</span>
+                </div>
+                <button class="journalist-follow" data-follow-id="${journalist.id}">Follow</button>
             </div>
-            <h3 class="journalist-name">${escapeHtml(journalist.name)}</h3>
-            <div class="journalist-role">${journalist.role}</div>
-            ${journalist.verified ? '<div class="journalist-badge"><i class="fas fa-check-circle"></i> Verified Source</div>' : ''}
-            <div class="journalist-stats">
-                <span><i class="fas fa-users"></i> ${journalist.followers}</span>
-                <span><i class="fas fa-star"></i> ${journalist.trustScore}% Trust</span>
-            </div>
-            <button class="journalist-follow" data-follow-id="${journalist.id}">Follow</button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     attachJournalistClickHandlers();
 }
+
+// ===== CLICK HANDLERS =====
 
 function attachStoryClickHandlers() {
     document.querySelectorAll('.story-card').forEach(card => {
@@ -1291,28 +1509,42 @@ function attachJournalistClickHandlers() {
                 window.location.href = `login.html?redirect=news.html`;
                 return;
             }
-            showToast(`Following ${btn.closest('.journalist-card')?.querySelector('.journalist-name')?.textContent}`, 'success');
+            const journalistCard = btn.closest('.journalist-card');
+            const name = journalistCard?.querySelector('.journalist-name')?.textContent || 'Journalist';
+            showToast(`Following ${name}`, 'success');
             btn.textContent = 'Following';
             btn.disabled = true;
+            btn.style.opacity = '0.6';
         });
     });
 }
 
-// ===== FILTER HANDLERS =====
+// ===== STEP 4: CATEGORY FILTER (REAL) =====
 function setupFilters() {
     const filters = document.querySelectorAll('.category-chip');
     filters.forEach(filter => {
-        filter.addEventListener('click', () => {
+        filter.addEventListener('click', async () => {
             filters.forEach(f => f.classList.remove('active'));
             filter.classList.add('active');
-            currentCategory = filter.dataset.category;
-            renderTopStories();
-            showToast(`Showing ${currentCategory === 'all' ? 'all' : currentCategory} news`, 'success');
+            
+            const category = filter.dataset.category;
+            currentCategory = category;
+            
+            showLoading();
+            
+            if (category === 'all') {
+                await loadTopStories();
+            } else {
+                await loadTopStoriesByCategory(category);
+            }
+            
+            hideLoading();
+            showToast(`Showing ${category === 'all' ? 'all' : category} news`, 'success');
         });
     });
 }
 
-// ===== LIVE TV BUTTON =====
+// ===== LIVETV SETUP =====
 function setupLiveTV() {
     const watchBtn = document.getElementById('watch-live-btn');
     const playBtn = document.getElementById('live-tv-play');
@@ -1324,8 +1556,8 @@ function setupLiveTV() {
         }, 500);
     };
     
-    watchBtn?.addEventListener('click', watchLive);
-    playBtn?.addEventListener('click', watchLive);
+    if (watchBtn) watchBtn.addEventListener('click', watchLive);
+    if (playBtn) playBtn.addEventListener('click', watchLive);
 }
 
 // ===== THEME SYSTEM =====
@@ -1370,8 +1602,8 @@ function setupSidebar() {
         sidebarOverlay?.classList.remove('active');
         document.body.style.overflow = '';
     };
-    sidebarClose?.addEventListener('click', closeSidebar);
-    sidebarOverlay?.addEventListener('click', closeSidebar);
+    if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
 }
 
 function setupNavigation() {
@@ -1391,10 +1623,11 @@ function setupNavigation() {
 
 function setupBackToTop() {
     const btn = document.getElementById('backToTopBtn');
+    if (!btn) return;
     window.addEventListener('scroll', () => {
         btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
     });
-    btn?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function setupScaleControls() {
@@ -1407,82 +1640,89 @@ function setupScaleControls() {
         localStorage.setItem('bantu_ui_scale', scale);
         if (value) value.textContent = Math.round(scale * 100) + '%';
     };
-    decrease?.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
-    increase?.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
+    if (decrease) decrease.addEventListener('click', () => { if (scale > 0.7) { scale -= 0.1; apply(); } });
+    if (increase) increase.addEventListener('click', () => { if (scale < 1.4) { scale += 0.1; apply(); } });
     apply();
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// ===== AUTO-REFRESH NEWS =====
-function setupAutoRefresh() {
-    // Simulate new news every 30 seconds
-    setInterval(() => {
-        // Update timestamps
-        const timeElements = document.querySelectorAll('.story-time');
-        timeElements.forEach(el => {
-            const currentTime = el.textContent;
-            if (currentTime.includes('hour')) {
-                const hours = parseInt(currentTime);
-                if (!isNaN(hours) && hours < 12) {
-                    el.innerHTML = `<i class="fas fa-clock"></i> ${hours + 1} hours ago`;
-                }
-            }
-        });
-    }, 30000);
 }
 
 // ===== AUTH CHECK =====
 async function checkAuth() {
     const { data } = await supabaseClient.auth.getSession();
     currentUser = data?.session?.user || null;
+    
     if (currentUser) {
-        const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
+        const { data: profile } = await supabaseClient
+            .from('user_profiles')
+            .select('full_name, username, avatar_url')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+        
         const nameEl = document.getElementById('current-profile-name');
-        if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+        if (nameEl) {
+            nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+        }
+        
+        const avatarEl = document.getElementById('userProfilePlaceholder');
+        if (avatarEl && profile?.avatar_url) {
+            avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        }
+        
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        if (sidebarName) sidebarName.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'Guest';
+        const sidebarEmail = document.getElementById('sidebar-profile-email');
+        if (sidebarEmail) sidebarEmail.textContent = currentUser.email || '';
+    } else {
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        if (sidebarName) sidebarName.textContent = 'Guest';
+        const sidebarEmail = document.getElementById('sidebar-profile-email');
+        if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
     }
 }
 
-// ===== INITIALIZE =====
-async function initialize() {
+// ===== STEP 5: INITIALIZE EVERYTHING =====
+async function initializeNewsPage() {
+    showLoading();
+    
+    await checkAuth();
+    
+    // Load all sections in parallel
+    await Promise.all([
+        loadBreakingNews(),
+        loadTopStories(),
+        loadPanAfricanNews(),
+        loadJournalists()
+    ]);
+    
+    setupFilters();
+    hideLoading();
+}
+
+// ===== SETUP ADDITIONAL UI =====
+function setupAdditionalUI() {
     setupSidebar();
     setupNavigation();
     setupBackToTop();
     setupScaleControls();
     initThemeSystem();
-    setupFilters();
     setupLiveTV();
-    setupAutoRefresh();
-    await checkAuth();
     
-    // Render all content
-    renderTicker();
-    renderTopStories();
-    renderPanAfricanNews();
-    renderJournalists();
-    
-    // Hide loading screen
-    const loading = document.getElementById('loading');
-    if (loading) loading.style.display = 'none';
+    // Profile dropdown handling
+    const profileBtn = document.getElementById('current-profile-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    if (profileBtn && profileDropdown) {
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('active');
+        });
+        document.addEventListener('click', () => {
+            profileDropdown.classList.remove('active');
+        });
+    }
 }
 
-initialize();
+// ===== START APPLICATION =====
+setupAdditionalUI();
+initializeNewsPage();
 </script>
 </body>
 </html>
