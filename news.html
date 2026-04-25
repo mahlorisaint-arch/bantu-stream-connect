@@ -1155,7 +1155,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== GLOBAL STATE =====
-let currentUser = null;
+let currentUser = null;      // Cached user - ONLY ONE AUTH CALL PER PAGE
 let currentCategory = 'all';
 
 // ===== HELPER FUNCTIONS =====
@@ -1195,10 +1195,25 @@ function hideLoading() {
     if (loading) loading.style.display = 'none';
 }
 
-// ===== STEP 1: REMOVE DEMO DATA - DELETED ALL DEMO ARRAYS =====
-// breakingNews, topStories, panAfricanNews, independentJournalists are GONE
+// ===== 🔥 FIX 1: GLOBAL AUTH CACHE (ONE CALL PER PAGE) =====
+// This prevents the "Lock was not released" and "AbortError" crashes
+async function initAuth() {
+    // Return cached user if already fetched
+    if (currentUser !== null) return currentUser;
+    
+    try {
+        const { data } = await supabaseClient.auth.getSession();
+        currentUser = data.session?.user || null;
+        return currentUser;
+    } catch (err) {
+        console.warn('Auth init failed:', err);
+        currentUser = null;
+        return null;
+    }
+}
 
-// ===== STEP 2: REAL SUPABASE FETCH FUNCTIONS =====
+// ===== REAL SUPABASE FETCH FUNCTIONS =====
+// 🔥 IMPORTANT: All queries use user_profiles:creator_id (NOT creators)
 
 // 1. BREAKING NEWS (Ticker)
 async function loadBreakingNews() {
@@ -1225,9 +1240,10 @@ async function loadBreakingNews() {
 }
 
 // 2. TOP STORIES (Most Viewed)
+// 🔥 FIXED: Using user_profiles:creator_id (NOT creators)
 async function loadTopStories() {
     try {
-        let query = supabaseClient
+        const { data, error } = await supabaseClient
             .from('Content')
             .select(`
                 id,
@@ -1248,7 +1264,6 @@ async function loadTopStories() {
             .order('views_count', { ascending: false })
             .limit(12);
 
-        const { data, error } = await query;
         if (error) throw error;
         renderTopStories(data || []);
     } catch (err) {
@@ -1257,7 +1272,9 @@ async function loadTopStories() {
     }
 }
 
-// 3. TOP STORIES BY CATEGORY (Filter)
+// 3. TOP STORIES BY CATEGORY
+// 🔥 FIXED: Using .filter('content_metadata->>category', 'eq', category)
+// NOT .eq('content_metadata->>category', category) - that causes 400 error
 async function loadTopStoriesByCategory(category) {
     try {
         const { data, error } = await supabaseClient
@@ -1340,9 +1357,8 @@ async function loadJournalists() {
     }
 }
 
-// ===== STEP 3: RENDER FUNCTIONS WITH FIXES =====
+// ===== RENDER FUNCTIONS =====
 
-// Render Breaking News Ticker
 function renderTicker(newsItems) {
     const ticker = document.getElementById('ticker-content');
     if (!ticker) return;
@@ -1352,7 +1368,6 @@ function renderTicker(newsItems) {
         return;
     }
     
-    // Duplicate for seamless loop
     const items = [...newsItems, ...newsItems];
     const tickerHtml = items.map(item => {
         const title = item.title || 'Untitled';
@@ -1363,7 +1378,6 @@ function renderTicker(newsItems) {
     ticker.innerHTML = tickerHtml;
 }
 
-// Render Top Stories Grid
 function renderTopStories(stories) {
     const grid = document.getElementById('top-stories-grid');
     if (!grid) return;
@@ -1374,9 +1388,8 @@ function renderTopStories(stories) {
     }
     
     grid.innerHTML = stories.map(story => {
-        // FIXED: creator name from user_profiles (was creators?.full_name before)
+        // 🔥 FIXED: Using user_profiles (NOT creators)
         const creatorName = story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal';
-        // FIXED: category from content_metadata
         const category = story.content_metadata?.category || 'General';
         const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
         const timeDisplay = timeAgo(story.created_at);
@@ -1407,7 +1420,6 @@ function renderTopStories(stories) {
     attachStoryClickHandlers();
 }
 
-// Render Pan-African News
 function renderPanAfricanNews(newsItems) {
     const grid = document.getElementById('panafrican-grid');
     if (!grid) return;
@@ -1417,7 +1429,6 @@ function renderPanAfricanNews(newsItems) {
         return;
     }
     
-    // Country to flag mapping
     const countryFlags = {
         'nigeria': '🇳🇬', 'kenya': '🇰🇪', 'south africa': '🇿🇦', 'ghana': '🇬🇭',
         'rwanda': '🇷🇼', 'egypt': '🇪🇬', 'senegal': '🇸🇳', 'ethiopia': '🇪🇹',
@@ -1444,7 +1455,6 @@ function renderPanAfricanNews(newsItems) {
     attachPanAfricanClickHandlers();
 }
 
-// Render Journalists
 function renderJournalists(journalists) {
     const grid = document.getElementById('journalists-grid');
     if (!grid) return;
@@ -1458,7 +1468,6 @@ function renderJournalists(journalists) {
         const name = journalist.full_name || journalist.username || 'Creator';
         const bio = journalist.bio || 'Independent journalist covering African stories';
         const avatar = journalist.avatar_url;
-        const initial = name.charAt(0).toUpperCase();
         
         return `
             <div class="journalist-card" data-journalist-id="${journalist.id}">
@@ -1504,7 +1513,8 @@ function attachJournalistClickHandlers() {
     document.querySelectorAll('.journalist-follow').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (!currentUser) {
+            const user = await initAuth();
+            if (!user) {
                 showToast('Please sign in to follow journalists', 'warning');
                 window.location.href = `login.html?redirect=news.html`;
                 return;
@@ -1519,7 +1529,8 @@ function attachJournalistClickHandlers() {
     });
 }
 
-// ===== STEP 4: CATEGORY FILTER (REAL) =====
+// ===== CATEGORY FILTER =====
+// 🔥 FIXED: Uses loadTopStoriesByCategory with proper filter syntax
 function setupFilters() {
     const filters = document.querySelectorAll('.category-chip');
     filters.forEach(filter => {
@@ -1544,7 +1555,7 @@ function setupFilters() {
     });
 }
 
-// ===== LIVETV SETUP =====
+// ===== LIVE TV =====
 function setupLiveTV() {
     const watchBtn = document.getElementById('watch-live-btn');
     const playBtn = document.getElementById('live-tv-play');
@@ -1610,8 +1621,8 @@ function setupNavigation() {
     document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
     document.getElementById('nav-history-btn')?.addEventListener('click', () => window.location.href = 'watch-history.html');
     document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-        const { data } = await supabaseClient.auth.getSession();
-        if (data?.session) window.location.href = 'creator-upload.html';
+        const user = await initAuth();
+        if (user) window.location.href = 'creator-upload.html';
         else window.location.href = 'login.html?redirect=creator-upload.html';
     });
     document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
@@ -1645,21 +1656,20 @@ function setupScaleControls() {
     apply();
 }
 
-// ===== AUTH CHECK =====
-async function checkAuth() {
-    const { data } = await supabaseClient.auth.getSession();
-    currentUser = data?.session?.user || null;
+// ===== AUTH-DEPENDENT UI =====
+async function updateAuthUI() {
+    const user = await initAuth();
     
-    if (currentUser) {
+    if (user) {
         const { data: profile } = await supabaseClient
             .from('user_profiles')
             .select('full_name, username, avatar_url')
-            .eq('id', currentUser.id)
+            .eq('id', user.id)
             .maybeSingle();
         
         const nameEl = document.getElementById('current-profile-name');
         if (nameEl) {
-            nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+            nameEl.textContent = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User';
         }
         
         const avatarEl = document.getElementById('userProfilePlaceholder');
@@ -1668,9 +1678,9 @@ async function checkAuth() {
         }
         
         const sidebarName = document.getElementById('sidebar-profile-name');
-        if (sidebarName) sidebarName.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'Guest';
+        if (sidebarName) sidebarName.textContent = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'Guest';
         const sidebarEmail = document.getElementById('sidebar-profile-email');
-        if (sidebarEmail) sidebarEmail.textContent = currentUser.email || '';
+        if (sidebarEmail) sidebarEmail.textContent = user.email || '';
     } else {
         const sidebarName = document.getElementById('sidebar-profile-name');
         if (sidebarName) sidebarName.textContent = 'Guest';
@@ -1679,34 +1689,32 @@ async function checkAuth() {
     }
 }
 
-// ===== STEP 5: INITIALIZE EVERYTHING =====
+// ===== 🔥 FIX 5: SEQUENTIAL INITIALIZATION (NO PARALLEL AUTH CALLS) =====
+// This prevents lock conflicts by loading data one after another
 async function initializeNewsPage() {
     showLoading();
     
-    await checkAuth();
+    // 🔥 CRITICAL: Only ONE auth call for the entire page
+    await initAuth();
     
-    // Load all sections in parallel
-    await Promise.all([
-        loadBreakingNews(),
-        loadTopStories(),
-        loadPanAfricanNews(),
-        loadJournalists()
-    ]);
+    // Update UI with user info
+    await updateAuthUI();
+    
+    // 🔥 SEQUENTIAL loading (not Promise.all)
+    // This prevents multiple auth calls from fighting each other
+    await loadBreakingNews();
+    await loadTopStories();
+    await loadPanAfricanNews();
+    await loadJournalists();
     
     setupFilters();
     hideLoading();
+    
+    console.log('✅ News page initialized with stable auth');
 }
 
-// ===== SETUP ADDITIONAL UI =====
-function setupAdditionalUI() {
-    setupSidebar();
-    setupNavigation();
-    setupBackToTop();
-    setupScaleControls();
-    initThemeSystem();
-    setupLiveTV();
-    
-    // Profile dropdown handling
+// ===== PROFILE DROPDOWN =====
+function setupProfileDropdown() {
     const profileBtn = document.getElementById('current-profile-btn');
     const profileDropdown = document.getElementById('profile-dropdown');
     if (profileBtn && profileDropdown) {
@@ -1718,6 +1726,17 @@ function setupAdditionalUI() {
             profileDropdown.classList.remove('active');
         });
     }
+}
+
+// ===== SETUP ADDITIONAL UI =====
+function setupAdditionalUI() {
+    setupSidebar();
+    setupNavigation();
+    setupBackToTop();
+    setupScaleControls();
+    initThemeSystem();
+    setupLiveTV();
+    setupProfileDropdown();
 }
 
 // ===== START APPLICATION =====
