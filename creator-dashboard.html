@@ -93,41 +93,46 @@
                 </div>
             </section>
 
-            <!-- Stats Row - UPDATED TO USE MATERIALIZED VIEW DATA (4 cards) -->
+            <!-- Stats Row -->
             <section class="dashboard-section">
                 <div class="stats-row">
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                         <div id="totalUploads" class="stat-value">0</div>
                         <div class="stat-label">Uploads</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-eye"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-eye"></i></div>
                         <div id="totalViews" class="stat-value">0</div>
                         <div class="stat-label">Total Views</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
                         <div id="totalEarnings" class="stat-value">R0.00</div>
                         <div class="stat-label">Earnings</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
                         <div id="totalConnectors" class="stat-value">0</div>
                         <div class="stat-label">Connectors</div>
                     </div>
                 </div>
             </section>
 
-            <!-- My Uploads Section - SEE ALL BUTTON UPDATED to direct link -->
+            <!-- JOURNALIST VERIFICATION MODULE -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-newspaper" style="margin-right: 10px;"></i>
+                        Journalist Verification
+                    </h2>
+                </div>
+                <div id="journalist-verification-container" class="journalist-verification">
+                    <!-- Dynamic content loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- My Uploads Section -->
             <section class="dashboard-section">
                 <div class="section-header">
                     <h2 class="section-title">My Uploads</h2>
@@ -164,68 +169,44 @@
                 </div>
                 <div class="quick-actions">
                     <div class="action-card" id="quickUpload">
-                        <div class="action-icon">
-                            <i class="fas fa-cloud-upload"></i>
-                        </div>
+                        <div class="action-icon"><i class="fas fa-cloud-upload"></i></div>
                         <div class="action-title">Upload Content</div>
                     </div>
                     <div class="action-card" id="viewAnalytics">
-                        <div class="action-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
+                        <div class="action-icon"><i class="fas fa-chart-line"></i></div>
                         <div class="action-title">View Analytics</div>
                     </div>
                     <div class="action-card payout-action" id="payoutRequest">
-                        <div class="action-icon">
-                            <i class="fas fa-wallet"></i>
-                        </div>
+                        <div class="action-icon"><i class="fas fa-wallet"></i></div>
                         <div class="action-title">Payout Request</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Messages & Notifications - UPDATED TO USE NOTIFICATIONS TABLE -->
+            <!-- Messages & Notifications -->
             <section class="dashboard-section">
                 <div class="section-header">
                     <h2 class="section-title">Messages & Notifications</h2>
                 </div>
                 <div class="messages-section">
-                    <div class="messages-icon">
-                        <i class="fas fa-bell"></i>
-                    </div>
-                    <p id="notificationsSummary" class="messages-text">
-                        Loading your notifications...
-                    </p>
+                    <div class="messages-icon"><i class="fas fa-bell"></i></div>
+                    <p id="notificationsSummary" class="messages-text">Loading your notifications...</p>
                 </div>
             </section>
         </main>
 
         <!-- Global Navigation -->
         <nav class="global-nav">
-            <a href="index.html" class="nav-item">
-                <i class="fas fa-home"></i>
-                Home
-            </a>
-            <a href="trending_screen.html" class="nav-item">
-                <i class="fas fa-fire"></i>
-                Trending
-            </a>
-            <a href="content-library.html" class="nav-item">
-                <i class="fas fa-th-large"></i>
-                Library
-            </a>
-            <a href="creator-dashboard.html" class="nav-item active">
-                <i class="fas fa-user"></i>
-                Creator
-            </a>
+            <a href="index.html" class="nav-item"><i class="fas fa-home"></i> Home</a>
+            <a href="trending_screen.html" class="nav-item"><i class="fas fa-fire"></i> Trending</a>
+            <a href="content-library.html" class="nav-item"><i class="fas fa-th-large"></i> Library</a>
+            <a href="creator-dashboard.html" class="nav-item active"><i class="fas fa-user"></i> Creator</a>
         </nav>
     </div>
 
     <!-- Error State -->
     <div id="errorState" class="error-state" style="display: none;">
-        <div class="error-icon">
-            <i class="fas fa-exclamation-triangle"></i>
-        </div>
+        <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
         <h2 class="error-title" id="errorTitle">Connection Error</h2>
         <p class="error-message" id="errorMessage">Your account is ready, but we're having trouble loading your dashboard.</p>
         <div class="error-actions">
@@ -249,18 +230,12 @@
     <div id="payoutModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-icon">
-                    <i class="fas fa-wallet"></i>
-                </div>
+                <div class="modal-icon"><i class="fas fa-wallet"></i></div>
                 <div class="modal-title">Payout Request</div>
-                <button class="modal-close" id="closePayoutModal">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button class="modal-close" id="closePayoutModal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div style="color: var(--slate-grey); font-size: 14px; margin-bottom: 10px;">
-                    Available Balance:
-                </div>
+                <div style="color: var(--slate-grey); font-size: 14px; margin-bottom: 10px;">Available Balance:</div>
                 <div id="payoutAmount" class="payout-amount">R0.00</div>
                 <div class="modal-note">
                     Minimum payout amount: R100.00<br><br>
@@ -268,17 +243,77 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button class="modal-btn secondary" id="cancelPayout">
-                    Cancel
-                </button>
-                <button class="modal-btn primary" id="requestPayout">
-                    Request Payout
-                </button>
+                <button class="modal-btn secondary" id="cancelPayout">Cancel</button>
+                <button class="modal-btn primary" id="requestPayout">Request Payout</button>
             </div>
         </div>
     </div>
 
-    <!-- Search Modal (from explore-screen.html) -->
+    <!-- JOURNALIST APPLICATION MODAL -->
+    <div id="journalistModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon"><i class="fas fa-user-graduate"></i></div>
+                <div class="modal-title" id="journalistModalTitle">Journalist Application</div>
+                <button class="modal-close" id="closeJournalistModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="journalistApplicationForm" class="application-form">
+                    <div class="form-group">
+                        <label>Full Name <span class="required">*</span></label>
+                        <input type="text" id="journalistFullName" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Bio <span class="required">*</span></label>
+                        <textarea id="journalistBio" placeholder="Tell us about yourself and your journalism experience" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Country <span class="required">*</span></label>
+                        <select id="journalistCountry" required>
+                            <option value="">Select your country</option>
+                            <option value="South Africa">South Africa</option>
+                            <option value="Nigeria">Nigeria</option>
+                            <option value="Kenya">Kenya</option>
+                            <option value="Ghana">Ghana</option>
+                            <option value="Egypt">Egypt</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Publication/Organization <span class="required">*</span></label>
+                        <input type="text" id="journalistPublication" placeholder="Name of publication or organization" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Portfolio Links <span class="required">*</span></label>
+                        <div class="portfolio-section">
+                            <div id="portfolioLinksContainer"></div>
+                            <button type="button" id="addPortfolioLink" class="add-link-btn">
+                                <i class="fas fa-plus"></i> Add Portfolio Link
+                            </button>
+                            <div class="modal-note-text">Add links to your published articles or professional portfolio</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Supporting Document <span class="required">*</span></label>
+                        <div class="document-upload" id="uploadDocument">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Click to upload (PDF, DOC, or image)</p>
+                            <input type="file" id="documentFile" accept=".pdf,.doc,.docx,.jpg,.png" class="hidden-input">
+                        </div>
+                        <input type="hidden" id="documentUrl">
+                        <div class="document-url" id="documentUrlDisplay"></div>
+                    </div>
+                    <div class="modal-note-text">Your information will be reviewed within 3-5 business days</div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="cancelApplication">Cancel</button>
+                <button class="modal-btn primary" id="submitApplication">Submit Application</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
     <div id="search-modal" class="modal-overlay">
         <div style="width:90%;max-width:800px;background:var(--card-bg);border-radius:20px;padding:30px;backdrop-filter:blur(10px);">
             <div class="search-modal-header">
@@ -286,9 +321,7 @@
                     <i class="search-icon fas fa-search"></i>
                     <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
                 </div>
-                <button id="close-search-btn" class="modal-close">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button id="close-search-btn" class="modal-close"><i class="fas fa-times"></i></button>
             </div>
             <div class="search-filters">
                 <div class="filter-group">
@@ -315,25 +348,19 @@
                 </div>
             </div>
             <div class="search-results">
-                <div id="search-results-grid" class="search-results-grid">
-                    <!-- Results loaded here -->
-                </div>
+                <div id="search-results-grid" class="search-results-grid"></div>
             </div>
         </div>
     </div>
 
-    <!-- Notifications Panel (from explore-screen.html) -->
+    <!-- Notifications Panel -->
     <div id="notifications-panel" class="modal-overlay" style="display:none;justify-content:flex-end;">
         <div style="width:400px;height:100%;background:var(--card-bg);border-left:1px solid var(--card-border);box-shadow:-5px 0 25px rgba(0,0,0,0.3);backdrop-filter:blur(10px);">
             <div class="notifications-header" style="padding:20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center">
                 <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;margin:0;color:var(--soft-white)">Notifications</h2>
-                <button id="close-notifications" class="modal-close">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button id="close-notifications" class="modal-close"><i class="fas fa-times"></i></button>
             </div>
-            <div class="notifications-list" id="notifications-list" style="max-height:calc(100vh-150px);overflow-y:auto;padding:20px">
-                <!-- Notifications loaded here -->
-            </div>
+            <div class="notifications-list" id="notifications-list" style="max-height:calc(100vh-150px);overflow-y:auto;padding:20px"></div>
             <div class="notifications-footer" style="padding:20px;border-top:1px solid var(--card-border);display:flex;gap:15px">
                 <button id="mark-all-read" class="modal-btn secondary" style="flex:1">Mark all as read</button>
                 <button id="notification-settings" class="modal-btn secondary" style="flex:1">Settings</button>
@@ -344,62 +371,33 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- ============================================ -->
-    <!-- PHASE 5A + 5B: SCRIPT LOADING ORDER         -->
-    <!-- ============================================ -->
-
-    <!-- Phase 5: Creator Analytics Module (MUST load BEFORE dashboard) -->
+    <!-- Scripts -->
     <script src="js/creator-analytics.js"></script>
-
-    <!-- Main Dashboard Script (loads AFTER creator-analytics.js) -->
     <script src="js/creator-dashboard.js"></script>
     
-    <!-- ============================================ -->
-    <!-- PHASE 5: DIAGNOSTIC SCRIPT (REMOVE IN PROD) -->
-    <!-- ============================================ -->
     <script>
-    // Phase 5: Diagnostic check - Remove this in production
     (function() {
-        console.log('🔍 Phase 5A + 5B Diagnostic Check');
-        console.log('----------------------------------');
-        
-        // Check if creator-analytics.js loaded
+        console.log('🔍 Diagnostic Check');
         if (typeof window.CreatorAnalytics !== 'undefined') {
             console.log('✅ CreatorAnalytics module: LOADED');
-            console.log('📊 CreatorAnalytics class:', window.CreatorAnalytics);
         } else {
             console.error('❌ CreatorAnalytics module: NOT LOADED');
-            console.log('⚠️ Check that js/creator-analytics.js exists and is loading correctly');
         }
         
-        // Check script loading order
-        const scripts = document.querySelectorAll('script[src]');
-        let analyticsIndex = -1;
-        let dashboardIndex = -1;
+        // Document upload handler
+        const uploadDocument = document.getElementById('uploadDocument');
+        const documentFile = document.getElementById('documentFile');
+        const documentUrlDisplay = document.getElementById('documentUrlDisplay');
         
-        scripts.forEach((script, index) => {
-            if (script.src.includes('creator-analytics.js')) {
-                analyticsIndex = index;
-                console.log(`📄 creator-analytics.js found at position ${index}`);
-            }
-            if (script.src.includes('creator-dashboard.js')) {
-                dashboardIndex = index;
-                console.log(`📄 creator-dashboard.js found at position ${index}`);
-            }
-        });
-        
-        if (analyticsIndex === -1) {
-            console.error('❌ creator-analytics.js script tag not found!');
-        } else if (dashboardIndex === -1) {
-            console.error('❌ creator-dashboard.js script tag not found!');
-        } else if (analyticsIndex < dashboardIndex) {
-            console.log('✅ Script loading order is CORRECT (analytics before dashboard)');
-        } else {
-            console.error('❌ Script loading order is INCORRECT!');
-            console.log('   creator-analytics.js should come BEFORE creator-dashboard.js');
+        if (uploadDocument && documentFile) {
+            uploadDocument.addEventListener('click', () => documentFile.click());
+            documentFile.addEventListener('change', (e) => {
+                if (e.target.files[0] && documentUrlDisplay) {
+                    documentUrlDisplay.textContent = `Selected: ${e.target.files[0].name}`;
+                    documentUrlDisplay.style.color = 'var(--success-color)';
+                }
+            });
         }
-        
-        console.log('----------------------------------');
     })();
     </script>
 </body>
