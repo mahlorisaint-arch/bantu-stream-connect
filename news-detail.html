@@ -885,7 +885,7 @@ body {
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_CLIENT = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================
 // GLOBAL STATE
@@ -990,7 +990,7 @@ function timeAgo(date) {
 async function getSessionSafe() {
     if (cachedSession) return cachedSession;
     try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await SUPABASE_CLIENT.auth.getSession();
         cachedSession = data.session;
         return cachedSession;
     } catch (err) {
@@ -1079,7 +1079,7 @@ async function loadArticleDetail() {
     
     try {
         // IMPORTANT: Only fetch news content_type, no views_count tracking
-        const { data, error } = await supabase
+        const { data, error } = await SUPABASE_CLIENT
             .from('Content')
             .select(`
                 id,
@@ -1272,7 +1272,7 @@ async function toggleLike() {
     
     try {
         if (isLiked) {
-            const { error } = await supabase
+            const { error } = await SUPABASE_CLIENT
                 .from('content_likes')
                 .delete()
                 .eq('content_id', currentContentId)
@@ -1281,7 +1281,7 @@ async function toggleLike() {
             if (error) throw error;
             isLiked = false;
         } else {
-            const { error } = await supabase
+            const { error } = await SUPABASE_CLIENT
                 .from('content_likes')
                 .insert({ content_id: currentContentId, user_id: currentUser.id });
             
@@ -1290,7 +1290,7 @@ async function toggleLike() {
         }
         
         // Refresh like count from database
-        const { data, error } = await supabase
+        const { data, error } = await SUPABASE_CLIENT
             .from('Content')
             .select('likes_count')
             .eq('id', currentContentId)
@@ -1324,7 +1324,7 @@ async function checkIfLiked() {
     if (!currentUser) return;
     
     try {
-        const { data, error } = await supabase
+        const { data, error } = await SUPABASE_CLIENT
             .from('content_likes')
             .select('id')
             .eq('content_id', currentContentId)
@@ -1388,7 +1388,7 @@ async function saveArticle() {
     }
     
     try {
-        const { error } = await supabase
+        const { error } = await SUPABASE_CLIENT
             .from('favorites')
             .insert({ 
                 user_id: currentUser.id, 
@@ -1415,7 +1415,7 @@ async function saveArticle() {
 // ============================================
 async function loadComments(contentId) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await SUPABASE_CLIENT
             .from('comments')
             .select('id, comment_text, created_at, author_name, author_avatar, user_id')
             .eq('content_id', contentId)
@@ -1478,7 +1478,7 @@ async function postComment() {
     }
     
     try {
-        const { error } = await supabase
+        const { error } = await SUPABASE_CLIENT
             .from('comments')
             .insert({
                 content_id: currentContentId,
@@ -1496,7 +1496,7 @@ async function postComment() {
         await loadComments(currentContentId);
         
         // Update comment count
-        const { data } = await supabase
+        const { data } = await SUPABASE_CLIENT
             .from('Content')
             .select('comments_count')
             .eq('id', currentContentId)
@@ -1521,7 +1521,7 @@ async function postComment() {
 async function loadRelatedNews(article) {
     try {
         const category = article.content_metadata?.category;
-        let query = supabase
+        let query = SUPABASE_CLIENT
             .from('Content')
             .select('id, title, thumbnail_url')
             .eq('content_type', 'news')
@@ -1582,7 +1582,7 @@ async function followJournalist(creatorId) {
     }
     
     try {
-        const { error } = await supabase
+        const { error } = await SUPABASE_CLIENT
             .from('connectors')
             .insert({
                 connector_id: currentUser.id,
