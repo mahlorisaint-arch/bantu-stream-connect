@@ -28,7 +28,6 @@
     --news-blue: #2563EB;
     --card-bg: rgba(15, 23, 42, 0.6);
     --card-border: rgba(148, 163, 184, 0.2);
-    --ui-scale: 1;
 }
 
 body.theme-light {
@@ -183,11 +182,22 @@ body {
     border-radius: 12px;
     font-style: italic;
 }
-.article-body blockquote span {
+.article-body blockquote cite {
     display: block;
     margin-top: 12px;
     font-size: 14px;
     color: var(--news-red);
+    font-style: normal;
+}
+.article-image {
+    margin: 24px 0;
+}
+.article-image span {
+    display: block;
+    font-size: 14px;
+    color: var(--slate-grey);
+    margin-top: 8px;
+    text-align: center;
 }
 
 /* ===== JOURNALIST BOX ===== */
@@ -410,6 +420,7 @@ body {
 }
 .toast.success { background: var(--success-color); }
 .toast.error { background: var(--error-color); }
+.toast.warning { background: var(--warm-gold); color: #000; }
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
@@ -450,7 +461,6 @@ body {
             <div class="article-category" id="article-category">Loading...</div>
             <h1 class="article-title" id="article-title">Loading article...</h1>
             <div class="article-meta" id="article-meta">
-                <span><i class="fas fa-eye"></i> <span id="view-count">0</span> views</span>
                 <span><i class="fas fa-calendar"></i> <span id="publish-date">-</span></span>
                 <span><i class="fas fa-clock"></i> <span id="read-time">3</span> min read</span>
                 <span><i class="fas fa-newspaper"></i> <span id="source-name">The Signal</span></span>
@@ -507,6 +517,7 @@ let currentUser = null;
 let currentArticle = null;
 let currentContentId = null;
 let isLiked = false;
+let cachedSession = null;
 
 // ===== HELPER FUNCTIONS =====
 function escapeHtml(text) {
@@ -519,7 +530,7 @@ function escapeHtml(text) {
 function formatNumber(num) {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
+    return num?.toString() || '0';
 }
 
 function showToast(message, type = 'info') {
@@ -527,7 +538,8 @@ function showToast(message, type = 'info') {
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${escapeHtml(message)}`;
+    const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i> ${escapeHtml(message)}`;
     container.appendChild(toast);
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -545,14 +557,61 @@ function hideLoading() {
     if (loading) loading.style.display = 'none';
 }
 
-// ===== AUTH =====
-async function initAuth() {
+// ===== AUTH WITH CACHING (fixes lock issues) =====
+async function getSessionSafe() {
+    if (cachedSession) return cachedSession;
     const { data } = await supabaseClient.auth.getSession();
-    currentUser = data.session?.user || null;
+    cachedSession = data.session;
+    return cachedSession;
+}
+
+async function initAuth() {
+    const session = await getSessionSafe();
+    currentUser = session?.user || null;
     return currentUser;
 }
 
-// ===== LOAD ARTICLE DETAIL =====
+// ===== SAFE ARTICLE BODY RENDERER (JSON blocks) =====
+function renderArticleBody(blocks) {
+    if (!blocks) return '<p>No content available.</p>';
+    
+    // Handle string fallback
+    if (typeof blocks === 'string') {
+        return blocks.split('\n').map(p => `<p>${escapeHtml(p)}</p>`).join('');
+    }
+    
+    // Handle array of blocks
+    if (Array.isArray(blocks) && blocks.length > 0) {
+        return blocks.map(block => {
+            switch (block.type) {
+                case 'paragraph':
+                    return `<p>${escapeHtml(block.text || '')}</p>`;
+                case 'heading':
+                    return `<h2>${escapeHtml(block.text || '')}</h2>`;
+                case 'image':
+                    return `
+                        <div class="article-image">
+                            <img src="${escapeHtml(block.url || '')}" alt="${escapeHtml(block.alt || '')}">
+                            ${block.caption ? `<span>${escapeHtml(block.caption)}</span>` : ''}
+                        </div>
+                    `;
+                case 'quote':
+                    return `
+                        <blockquote>
+                            ${escapeHtml(block.text || '')}
+                            ${block.author ? `<cite>— ${escapeHtml(block.author)}</cite>` : ''}
+                        </blockquote>
+                    `;
+                default:
+                    return `<p>${escapeHtml(block.text || '')}</p>`;
+            }
+        }).join('');
+    }
+    
+    return '<p>Content is being prepared.</p>';
+}
+
+// ===== LOAD ARTICLE (CLEAN, NO VIEW TRACKING, NO REAL-TIME) =====
 async function loadArticleDetail() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -566,6 +625,7 @@ async function loadArticleDetail() {
     currentContentId = parseInt(id);
     
     try {
+        // IMPORTANT: Only fetch news content_type, no views tracking
         const { data, error } = await supabaseClient
             .from('Content')
             .select(`
@@ -573,36 +633,36 @@ async function loadArticleDetail() {
                 title,
                 description,
                 thumbnail_url,
-                views_count,
+                created_at,
                 likes_count,
                 comments_count,
-                created_at,
                 content_metadata,
                 article_body,
                 read_time,
                 source_name,
                 creator_id,
-                creators:creator_id (
+                user_profiles:creator_id (
                     id,
+                    full_name,
                     username,
-                    is_verified,
-                    journalist_metadata,
-                    bio
+                    avatar_url,
+                    bio,
+                    is_journalist,
+                    journalist_metadata
                 )
             `)
             .eq('id', currentContentId)
+            .eq('content_type', 'news')
             .single();
         
         if (error) throw error;
+        if (!data) throw new Error('Article not found');
         
         currentArticle = data;
         renderArticle(data);
-        loadComments(currentContentId);
-        loadRelatedNews(data);
-        subscribeToArticleUpdates(currentContentId);
-        
-        // Increment view count
-        await incrementViewCount(currentContentId);
+        await loadComments(currentContentId);
+        await loadRelatedNews(data);
+        await checkIfLiked();
         
     } catch (err) {
         console.error('Article load error:', err);
@@ -615,18 +675,15 @@ async function loadArticleDetail() {
 function renderArticle(article) {
     document.title = `${article.title} | The Signal`;
     
-    // Category
+    // Category from metadata
     const category = article.content_metadata?.category || 'News';
     document.getElementById('article-category').textContent = category.toUpperCase();
-    
-    // Title
     document.getElementById('article-title').textContent = article.title;
     
-    // Meta
+    // Date formatting
     const date = new Date(article.created_at).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
-    document.getElementById('view-count').textContent = formatNumber(article.views_count || 0);
     document.getElementById('publish-date').textContent = date;
     document.getElementById('read-time').textContent = article.read_time || 3;
     document.getElementById('source-name').textContent = article.source_name || 'The Signal';
@@ -634,79 +691,49 @@ function renderArticle(article) {
     document.getElementById('comment-count').textContent = article.comments_count || 0;
     
     // Thumbnail
-    const thumbnail = document.getElementById('article-thumbnail').querySelector('img');
-    if (thumbnail) {
-        thumbnail.src = article.thumbnail_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&h=600&fit=crop';
-        thumbnail.alt = article.title;
+    const thumbnailImg = document.querySelector('#article-thumbnail img');
+    if (thumbnailImg) {
+        thumbnailImg.src = article.thumbnail_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&h=600&fit=crop';
+        thumbnailImg.alt = article.title;
     }
     
-    // Article Body
-    renderArticleBody(article.article_body || article.description);
+    // Article body
+    const bodyContainer = document.getElementById('article-body');
+    bodyContainer.innerHTML = renderArticleBody(article.article_body);
     
-    // Journalist Info
-    renderJournalistInfo(article.creators);
+    // Render journalist ONLY if user_profiles exists AND is_journalist === true
+    renderJournalistInfo(article.user_profiles);
     
     hideLoading();
 }
 
-// ===== RICH ARTICLE BODY =====
-function renderArticleBody(body) {
-    const container = document.getElementById('article-body');
-    
-    if (!body) {
-        container.innerHTML = '<p>No content available</p>';
-        return;
-    }
-    
-    // Handle JSONB array format
-    if (Array.isArray(body) && body.length > 0) {
-        container.innerHTML = body.map(block => {
-            switch (block.type) {
-                case 'paragraph':
-                    return `<p>${escapeHtml(block.text || '')}</p>`;
-                case 'heading':
-                    return `<h2>${escapeHtml(block.text || '')}</h2>`;
-                case 'image':
-                    return `<img src="${escapeHtml(block.url || '')}" alt="${escapeHtml(block.alt || '')}">`;
-                case 'quote':
-                    return `<blockquote>${escapeHtml(block.text || '')}<span>- ${escapeHtml(block.author || 'Unknown')}</span></blockquote>`;
-                default:
-                    return `<p>${escapeHtml(block.text || '')}</p>`;
-            }
-        }).join('');
-    } else if (typeof body === 'string') {
-        container.innerHTML = body.split('\n').map(p => `<p>${escapeHtml(p)}</p>`).join('');
-    } else {
-        container.innerHTML = `<p>${escapeHtml(article.description || 'No content available')}</p>`;
-    }
-}
-
-// ===== RENDER JOURNALIST INFO =====
+// ===== JOURNALIST RENDER (filtered correctly) =====
 function renderJournalistInfo(creator) {
     const container = document.getElementById('journalist-container');
     
-    if (!creator) {
+    // CRITICAL FIX: Only show if creator exists AND is officially a journalist
+    if (!creator || !creator.is_journalist) {
         container.innerHTML = '';
         return;
     }
     
     const meta = creator.journalist_metadata || {};
-    const specialty = meta.specialty || 'Journalist';
+    const specialty = meta.specialty || 'Investigative Journalist';
     const country = meta.country || 'Africa';
-    const trustScore = meta.trust_score || 92;
-    const isVerified = creator.is_verified || false;
-    const displayName = creator.username || 'Journalist';
-    const bio = creator.bio || 'Independent journalist covering important stories from across Africa.';
+    const trustScore = meta.trust_score || 94;
+    const displayName = creator.full_name || creator.username || 'Journalist';
+    const bio = creator.bio || 'Independent journalist committed to factual reporting from across the continent.';
+    const avatarUrl = creator.avatar_url;
     
     container.innerHTML = `
         <div class="journalist-box">
             <div class="journalist-avatar-large">
-                <i class="fas fa-user"></i>
+                ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(displayName)}">` : '<i class="fas fa-user"></i>'}
             </div>
             <div class="journalist-info-large">
                 <h3>
                     ${escapeHtml(displayName)}
-                    ${isVerified ? '<span class="verified-badge"><i class="fas fa-check-circle"></i></span>' : ''}
+                    <span class="verified-badge"><i class="fas fa-check-circle"></i></span>
                 </h3>
                 <div class="journalist-specialty">${escapeHtml(specialty)} • ${escapeHtml(country)} • ${trustScore}% Trust Score</div>
                 <div class="journalist-bio">${escapeHtml(bio)}</div>
@@ -720,28 +747,7 @@ function renderJournalistInfo(creator) {
     document.getElementById('follow-journalist-btn')?.addEventListener('click', () => followJournalist(creator.id));
 }
 
-// ===== INCREMENT VIEW COUNT =====
-async function incrementViewCount(contentId) {
-    try {
-        await supabaseClient.rpc('increment_views', { content_id: contentId });
-    } catch (err) {
-        // Fallback if RPC doesn't exist
-        const { data } = await supabaseClient
-            .from('Content')
-            .select('views_count')
-            .eq('id', contentId)
-            .single();
-        
-        if (data) {
-            await supabaseClient
-                .from('Content')
-                .update({ views_count: (data.views_count || 0) + 1 })
-                .eq('id', contentId);
-        }
-    }
-}
-
-// ===== LIKE TOGGLE =====
+// ===== LIKE TOGGLE (no view increment) =====
 async function toggleLike() {
     if (!currentUser) {
         showToast('Please sign in to like articles', 'warning');
@@ -788,10 +794,8 @@ async function toggleLike() {
     }
 }
 
-// ===== CHECK IF USER LIKED =====
 async function checkIfLiked() {
     if (!currentUser) return;
-    
     try {
         const { data } = await supabaseClient
             .from('content_likes')
@@ -799,21 +803,16 @@ async function checkIfLiked() {
             .eq('content_id', currentContentId)
             .eq('user_id', currentUser.id)
             .maybeSingle();
-        
         isLiked = !!data;
-        if (isLiked) {
-            document.getElementById('like-btn')?.classList.add('liked');
-        }
+        if (isLiked) document.getElementById('like-btn')?.classList.add('liked');
     } catch (err) {
         console.error('Check like error:', err);
     }
 }
 
-// ===== SHARE ARTICLE =====
 function shareArticle() {
     const url = window.location.href;
     const title = currentArticle?.title || 'Check out this article';
-    
     if (navigator.share) {
         navigator.share({ title, url }).catch(() => {});
     } else {
@@ -822,67 +821,42 @@ function shareArticle() {
     }
 }
 
-// ===== SAVE ARTICLE =====
 async function saveArticle() {
     if (!currentUser) {
         showToast('Please sign in to save articles', 'warning');
         window.location.href = `login.html?redirect=news-detail.html?id=${currentContentId}`;
         return;
     }
-    
     try {
-        await supabaseClient
-            .from('favorites')
-            .insert({ user_id: currentUser.id, content_id: currentContentId });
+        await supabaseClient.from('favorites').insert({ user_id: currentUser.id, content_id: currentContentId });
         showToast('Article saved to your favorites!', 'success');
     } catch (err) {
-        if (err.code === '23505') {
-            showToast('Article already saved', 'info');
-        } else {
-            showToast('Failed to save article', 'error');
-        }
+        if (err.code === '23505') showToast('Article already saved', 'info');
+        else showToast('Failed to save article', 'error');
     }
 }
 
-// ===== LOAD COMMENTS =====
+// ===== COMMENTS =====
 async function loadComments(contentId) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('comments')
-            .select(`
-                id,
-                comment_text,
-                created_at,
-                author_name,
-                author_avatar,
-                user_id
-            `)
-            .eq('content_id', contentId)
-            .order('created_at', { ascending: false })
-            .limit(50);
-        
-        if (error) throw error;
-        renderComments(data || []);
-    } catch (err) {
-        console.error('Load comments error:', err);
-    }
+    const { data, error } = await supabaseClient
+        .from('comments')
+        .select('id, comment_text, created_at, author_name, author_avatar, user_id')
+        .eq('content_id', contentId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+    if (!error) renderComments(data || []);
 }
 
-// ===== RENDER COMMENTS =====
 function renderComments(comments) {
     const container = document.getElementById('comment-list');
-    
-    if (!comments || comments.length === 0) {
+    if (!comments.length) {
         container.innerHTML = '<p style="color: var(--slate-grey); text-align: center;">No comments yet. Be the first!</p>';
         return;
     }
-    
     container.innerHTML = comments.map(comment => `
         <div class="comment-item">
             <div class="comment-header">
-                <div class="comment-avatar">
-                    ${comment.author_avatar ? `<img src="${comment.author_avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : comment.author_name?.charAt(0) || 'U'}
-                </div>
+                <div class="comment-avatar">${comment.author_name?.charAt(0) || 'U'}</div>
                 <span class="comment-author">${escapeHtml(comment.author_name || 'Anonymous')}</span>
                 <span class="comment-time">${timeAgo(comment.created_at)}</span>
             </div>
@@ -891,147 +865,52 @@ function renderComments(comments) {
     `).join('');
 }
 
-// ===== POST COMMENT =====
 async function postComment() {
-    const commentInput = document.getElementById('comment-input');
-    const commentText = commentInput.value.trim();
-    
-    if (!commentText) {
-        showToast('Please enter a comment', 'warning');
-        return;
-    }
-    
+    const commentText = document.getElementById('comment-input').value.trim();
+    if (!commentText) return showToast('Please enter a comment', 'warning');
     if (!currentUser) {
         showToast('Please sign in to comment', 'warning');
         window.location.href = `login.html?redirect=news-detail.html?id=${currentContentId}`;
         return;
     }
-    
-    try {
-        const { error } = await supabaseClient
-            .from('comments')
-            .insert({
-                content_id: currentContentId,
-                user_id: currentUser.id,
-                author_name: currentUser.email?.split('@')[0] || 'User',
-                comment_text: commentText
-            });
-        
-        if (error) throw error;
-        
-        commentInput.value = '';
-        showToast('Comment posted!', 'success');
-        loadComments(currentContentId);
-        
-        // Update comment count
-        const { data } = await supabaseClient
-            .from('Content')
-            .select('comments_count')
-            .eq('id', currentContentId)
-            .single();
-        
-        if (data) {
-            document.getElementById('comment-count').textContent = data.comments_count || 0;
-        }
-        
-    } catch (err) {
-        console.error('Post comment error:', err);
-        showToast('Failed to post comment', 'error');
-    }
+    const { error } = await supabaseClient.from('comments').insert({
+        content_id: currentContentId, user_id: currentUser.id,
+        author_name: currentUser.email?.split('@')[0] || 'User', comment_text: commentText
+    });
+    if (error) return showToast('Failed to post comment', 'error');
+    document.getElementById('comment-input').value = '';
+    showToast('Comment posted!', 'success');
+    loadComments(currentContentId);
+    const { data } = await supabaseClient.from('Content').select('comments_count').eq('id', currentContentId).single();
+    if (data) document.getElementById('comment-count').textContent = data.comments_count || 0;
 }
 
-// ===== LOAD RELATED NEWS =====
+// ===== RELATED NEWS (same category, no videos) =====
 async function loadRelatedNews(article) {
-    try {
-        const category = article.content_metadata?.category;
-        let query = supabaseClient
-            .from('Content')
-            .select('id, title, thumbnail_url, views_count')
-            .eq('content_type', 'news')
-            .eq('status', 'published')
-            .neq('id', article.id)
-            .limit(6);
-        
-        if (category) {
-            query = query.filter('content_metadata->>category', 'eq', category);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        renderRelatedNews(data || []);
-    } catch (err) {
-        console.error('Related news error:', err);
-        document.getElementById('related-grid').innerHTML = '<p style="color: var(--slate-grey);">No related content found</p>';
-    }
+    const category = article.content_metadata?.category;
+    let query = supabaseClient.from('Content').select('id, title, thumbnail_url').eq('content_type', 'news').neq('id', article.id).limit(6);
+    if (category) query = query.filter('content_metadata->>category', 'eq', category);
+    const { data, error } = await query;
+    if (!error) renderRelatedNews(data || []);
+    else document.getElementById('related-grid').innerHTML = '<p style="color: var(--slate-grey);">No related content found</p>';
 }
 
-// ===== RENDER RELATED NEWS =====
 function renderRelatedNews(newsItems) {
     const container = document.getElementById('related-grid');
-    
-    if (!newsItems || newsItems.length === 0) {
+    if (!newsItems.length) {
         container.innerHTML = '<p style="color: var(--slate-grey);">No related content found</p>';
         return;
     }
-    
     container.innerHTML = newsItems.map(item => `
         <div class="related-card" onclick="window.location.href='news-detail.html?id=${item.id}'">
             <img src="${escapeHtml(item.thumbnail_url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=200&fit=crop')}" alt="${escapeHtml(item.title)}">
             <div class="related-card-info">
                 <h4 class="related-card-title">${escapeHtml(item.title)}</h4>
-                <div class="related-card-stats"><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)} views</div>
             </div>
         </div>
     `).join('');
 }
 
-// ===== REAL-TIME SUBSCRIPTION =====
-function subscribeToArticleUpdates(contentId) {
-    supabaseClient
-        .channel(`article-${contentId}`)
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'Content',
-            filter: `id=eq.${contentId}`
-        }, payload => {
-            if (payload.new) {
-                document.getElementById('view-count').textContent = formatNumber(payload.new.views_count || 0);
-                document.getElementById('like-count').textContent = formatNumber(payload.new.likes_count || 0);
-                document.getElementById('comment-count').textContent = payload.new.comments_count || 0;
-            }
-        })
-        .subscribe();
-}
-
-// ===== FOLLOW JOURNALIST =====
-async function followJournalist(creatorId) {
-    if (!currentUser) {
-        showToast('Please sign in to follow journalists', 'warning');
-        window.location.href = `login.html?redirect=news-detail.html?id=${currentContentId}`;
-        return;
-    }
-    
-    try {
-        await supabaseClient
-            .from('connectors')
-            .insert({
-                connector_id: currentUser.id,
-                connected_id: creatorId,
-                connection_type: 'creator'
-            });
-        showToast('Now following this journalist!', 'success');
-    } catch (err) {
-        if (err.code === '23505') {
-            showToast('Already following this journalist', 'info');
-        } else {
-            showToast('Failed to follow', 'error');
-        }
-    }
-}
-
-// ===== TIME AGO =====
 function timeAgo(date) {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
     if (seconds < 60) return 'just now';
@@ -1044,11 +923,24 @@ function timeAgo(date) {
     return new Date(date).toLocaleDateString();
 }
 
-// ===== THEME =====
+async function followJournalist(creatorId) {
+    if (!currentUser) {
+        showToast('Please sign in to follow journalists', 'warning');
+        window.location.href = `login.html?redirect=news-detail.html?id=${currentContentId}`;
+        return;
+    }
+    try {
+        await supabaseClient.from('connectors').insert({ connector_id: currentUser.id, connected_id: creatorId, connection_type: 'creator' });
+        showToast('Now following this journalist!', 'success');
+    } catch (err) {
+        if (err.code === '23505') showToast('Already following this journalist', 'info');
+        else showToast('Failed to follow', 'error');
+    }
+}
+
 function initTheme() {
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     document.body.classList.add(`theme-${savedTheme}`);
-    
     document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
         const isDark = document.body.classList.contains('theme-dark');
         document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
@@ -1058,15 +950,11 @@ function initTheme() {
     });
 }
 
-// ===== INITIALIZE =====
 async function initialize() {
     showLoading();
     initTheme();
     await initAuth();
     await loadArticleDetail();
-    await checkIfLiked();
-    
-    // Setup event listeners
     document.getElementById('like-btn')?.addEventListener('click', toggleLike);
     document.getElementById('share-btn')?.addEventListener('click', shareArticle);
     document.getElementById('save-btn')?.addEventListener('click', saveArticle);
