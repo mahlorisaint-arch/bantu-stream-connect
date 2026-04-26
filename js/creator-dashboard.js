@@ -1,5 +1,5 @@
 // js/creator-dashboard.js - Creator Dashboard JavaScript
-// WITH ALL CRITICAL FIXES APPLIED INCLUDING PHASE 5A + 5B ENHANCEMENTS
+// WITH JOURNALIST VERIFICATION MODULE + PHASE 5A + 5B ENHANCEMENTS
 
 (function() {
     'use strict';
@@ -13,7 +13,9 @@
     let dashboardData = null;
     let isLoading = true;
     let notifications = [];
-    let analyticsManager = null; // For Phase 5 analytics integration
+    let analyticsManager = null;
+    let journalistApplication = null;
+    let creatorProfile = null;
 
     // ============================================
     // DOM ELEMENTS
@@ -69,6 +71,27 @@
     const markAllReadBtn = document.getElementById('mark-all-read');
     const notificationsList = document.getElementById('notifications-list');
 
+    // Journalist Verification Elements
+    const journalistVerificationContainer = document.getElementById('journalist-verification-container');
+    const journalistModal = document.getElementById('journalistModal');
+    const closeJournalistModal = document.getElementById('closeJournalistModal');
+    const cancelApplication = document.getElementById('cancelApplication');
+    const submitApplication = document.getElementById('submitApplication');
+    const journalistFullName = document.getElementById('journalistFullName');
+    const journalistBio = document.getElementById('journalistBio');
+    const journalistCountry = document.getElementById('journalistCountry');
+    const journalistPublication = document.getElementById('journalistPublication');
+    const portfolioLinks = document.getElementById('portfolioLinks');
+    const addPortfolioLink = document.getElementById('addPortfolioLink');
+    const portfolioLinksContainer = document.getElementById('portfolioLinksContainer');
+    const documentFile = document.getElementById('documentFile');
+    const uploadDocument = document.getElementById('uploadDocument');
+    const documentUrl = document.getElementById('documentUrl');
+    const applicationStatusText = document.getElementById('applicationStatusText');
+    const applicationSubmittedDate = document.getElementById('applicationSubmittedDate');
+    const rejectionReason = document.getElementById('rejectionReason');
+    const reapplyBtn = document.getElementById('reapplyBtn');
+
     // ============================================
     // INITIALIZE SUPABASE CLIENT
     // ============================================
@@ -84,7 +107,6 @@
     // HELPER FUNCTIONS
     // ============================================
 
-    // ✅ SHOW/HIDE LOADING
     function setLoading(loading, text = '') {
         isLoading = loading;
         if (text && loadingText) loadingText.textContent = text;
@@ -101,7 +123,6 @@
         }
     }
 
-    // ✅ SHOW ERROR STATE
     function showError(title, message) {
         if (errorTitle) errorTitle.textContent = title;
         if (errorMessage) errorMessage.textContent = message;
@@ -110,7 +131,6 @@
         if (errorState) errorState.style.display = 'block';
     }
 
-    // ✅ SHOW TOAST MESSAGE
     function showToast(message, type = 'error') {
         const container = document.getElementById('toast-container');
         if (!container) {
@@ -134,19 +154,16 @@
         }, 3000);
     }
 
-    // ✅ FORMAT CURRENCY (ZAR)
     function formatCurrency(amount) {
         return 'R' + parseFloat(amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
-    // ✅ FORMAT NUMBER
     function formatNumber(num) {
         if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
         if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
         return (num || 0).toString();
     }
 
-    // ✅ FORMAT WATCH TIME
     function formatWatchTime(seconds) {
         if (!seconds) return '0h 0m';
         const hours = Math.floor(seconds / 3600);
@@ -155,14 +172,12 @@
         return mins + 'm';
     }
 
-    // ✅ GET INITIALS FROM EMAIL
     function getInitials(email) {
         if (!email) return 'U';
         const parts = email.split('@')[0];
         return parts.substring(0, 2).toUpperCase();
     }
 
-    // ✅ GET INITIALS FROM FULL NAME
     function getInitialsFromName(fullName) {
         if (!fullName) return 'U';
         const names = fullName.split(' ');
@@ -172,7 +187,6 @@
         return fullName.charAt(0).toUpperCase();
     }
 
-    // ✅ FORMAT NOTIFICATION TIME
     function formatNotificationTime(timestamp) {
         if (!timestamp) return 'Just now';
         const diffMs = Date.now() - new Date(timestamp).getTime();
@@ -187,7 +201,6 @@
         return new Date(timestamp).toLocaleDateString();
     }
 
-    // ✅ GET NOTIFICATION ICON
     function getNotificationIcon(type) {
         switch(type) {
             case 'like': return 'fas fa-heart';
@@ -199,7 +212,6 @@
         }
     }
 
-    // ✅ ESCAPE HTML
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -207,14 +219,12 @@
         return div.innerHTML;
     }
 
-    // ✅ TRUNCATE TEXT
     function truncateText(text, maxLength) {
         if (!text) return '';
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     }
 
-    // ✅ DEBOUNCE FUNCTION
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -228,10 +238,381 @@
     }
 
     // ============================================
+    // JOURNALIST VERIFICATION MODULE
+    // ============================================
+
+    let portfolioLinksArray = [];
+
+    function addPortfolioLinkField() {
+        const linkDiv = document.createElement('div');
+        linkDiv.className = 'portfolio-link-item';
+        linkDiv.style.cssText = 'display:flex;gap:10px;margin-bottom:10px';
+        linkDiv.innerHTML = `
+            <input type="url" class="portfolio-link-input" placeholder="https://..." style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.1);border:1px solid var(--card-border);color:var(--soft-white)">
+            <button type="button" class="remove-link-btn" style="padding:0 15px;border-radius:10px;background:rgba(239,68,68,0.2);border:1px solid var(--error-color);color:var(--error-color);cursor:pointer">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        const removeBtn = linkDiv.querySelector('.remove-link-btn');
+        removeBtn.addEventListener('click', () => linkDiv.remove());
+        
+        portfolioLinksContainer.appendChild(linkDiv);
+    }
+
+    function collectPortfolioLinks() {
+        const inputs = document.querySelectorAll('.portfolio-link-input');
+        const links = [];
+        inputs.forEach(input => {
+            if (input.value && input.value.trim()) {
+                links.push(input.value.trim());
+            }
+        });
+        return links;
+    }
+
+    async function uploadDocumentFile(file) {
+        if (!file) return null;
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
+        const filePath = `journalist_documents/${fileName}`;
+        
+        const { data, error } = await window.supabaseClient.storage
+            .from('creator-content')
+            .upload(filePath, file);
+        
+        if (error) {
+            console.error('Document upload error:', error);
+            return null;
+        }
+        
+        const { data: { publicUrl } } = window.supabaseClient.storage
+            .from('creator-content')
+            .getPublicUrl(filePath);
+        
+        return publicUrl;
+    }
+
+    async function loadJournalistStatus() {
+        try {
+            // Get creator profile
+            const { data: profile, error: profileError } = await window.supabaseClient
+                .from('creators')
+                .select('is_journalist, is_verified, journalist_metadata')
+                .eq('id', currentUser.id)
+                .maybeSingle();
+            
+            if (profileError) throw profileError;
+            creatorProfile = profile;
+            
+            // Get application if exists
+            const { data: application, error: appError } = await window.supabaseClient
+                .from('journalist_applications')
+                .select('*')
+                .eq('creator_id', currentUser.id)
+                .maybeSingle();
+            
+            if (appError && appError.code !== 'PGRST116') throw appError;
+            journalistApplication = application;
+            
+            // Render journalist verification UI based on state
+            renderJournalistVerificationUI();
+            
+        } catch (error) {
+            console.error('Error loading journalist status:', error);
+        }
+    }
+
+    function renderJournalistVerificationUI() {
+        if (!journalistVerificationContainer) return;
+        
+        // STATE 4: Verified Journalist
+        if (creatorProfile && creatorProfile.is_journalist && creatorProfile.is_verified) {
+            journalistVerificationContainer.innerHTML = `
+                <div class="journalist-state verified-state">
+                    <div class="verified-badge-large">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Verified Journalist</span>
+                    </div>
+                    <div class="verified-info">
+                        <p><i class="fas fa-newspaper"></i> You are a verified journalist on Bantu Stream Connect</p>
+                        <p><i class="fas fa-badge-check"></i> Your content will display a verified badge</p>
+                        <p><i class="fas fa-chart-line"></i> Access to exclusive journalist features</p>
+                    </div>
+                    <div class="verified-metadata">
+                        <small>Verified on: ${creatorProfile.journalist_metadata?.verified_at ? new Date(creatorProfile.journalist_metadata.verified_at).toLocaleDateString() : 'Recently'}</small>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // STATE 2: Application Pending
+        if (journalistApplication && journalistApplication.status === 'pending') {
+            journalistVerificationContainer.innerHTML = `
+                <div class="journalist-state pending-state">
+                    <div class="pending-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <h3>Your application is under review</h3>
+                    <p>Submitted: ${new Date(journalistApplication.created_at).toLocaleDateString()}</p>
+                    <p>We'll notify you once it's reviewed.</p>
+                    <button class="view-submission-btn" id="viewSubmissionBtn">
+                        <i class="fas fa-file-alt"></i> View Submission
+                    </button>
+                </div>
+            `;
+            
+            const viewSubmissionBtn = document.getElementById('viewSubmissionBtn');
+            if (viewSubmissionBtn) {
+                viewSubmissionBtn.addEventListener('click', () => {
+                    showJournalistApplicationModal(true);
+                });
+            }
+            return;
+        }
+        
+        // STATE 3: Rejected
+        if (journalistApplication && journalistApplication.status === 'rejected') {
+            journalistVerificationContainer.innerHTML = `
+                <div class="journalist-state rejected-state">
+                    <div class="rejected-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h3>Your application was not approved</h3>
+                    <div class="rejection-reason">
+                        <strong>Reason:</strong> ${journalistApplication.rejection_reason || 'Insufficient portfolio or documentation'}
+                    </div>
+                    <button class="reapply-btn" id="reapplyJournalistBtn">
+                        <i class="fas fa-redo-alt"></i> Re-apply
+                    </button>
+                </div>
+            `;
+            
+            const reapplyJournalistBtn = document.getElementById('reapplyJournalistBtn');
+            if (reapplyJournalistBtn) {
+                reapplyJournalistBtn.addEventListener('click', () => {
+                    showJournalistApplicationModal(false);
+                });
+            }
+            return;
+        }
+        
+        // STATE 1: Not a Journalist (Show CTA)
+        journalistVerificationContainer.innerHTML = `
+            <div class="journalist-state cta-state">
+                <div class="cta-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h3>Become a Verified Journalist</h3>
+                <p>✓ Publish news articles</p>
+                <p>✓ Build credibility</p>
+                <p>✓ Reach wider audience</p>
+                <button class="apply-now-btn" id="applyJournalistBtn">
+                    <i class="fas fa-pen-fancy"></i> Apply Now
+                </button>
+            </div>
+        `;
+        
+        const applyJournalistBtn = document.getElementById('applyJournalistBtn');
+        if (applyJournalistBtn) {
+            applyJournalistBtn.addEventListener('click', () => {
+                showJournalistApplicationModal(false);
+            });
+        }
+    }
+
+    function showJournalistApplicationModal(viewOnly = false) {
+        if (!journalistModal) return;
+        
+        if (viewOnly && journalistApplication) {
+            // View only mode - show existing application
+            document.getElementById('journalistModalTitle').textContent = 'Your Application';
+            document.getElementById('journalistFullName').value = journalistApplication.full_name || '';
+            document.getElementById('journalistBio').value = journalistApplication.bio || '';
+            document.getElementById('journalistCountry').value = journalistApplication.country || '';
+            document.getElementById('journalistPublication').value = journalistApplication.publication || '';
+            
+            // Display portfolio links
+            const links = journalistApplication.portfolio_links || [];
+            portfolioLinksContainer.innerHTML = '';
+            links.forEach(link => {
+                const linkDiv = document.createElement('div');
+                linkDiv.className = 'portfolio-link-item';
+                linkDiv.style.cssText = 'display:flex;gap:10px;margin-bottom:10px';
+                linkDiv.innerHTML = `
+                    <input type="url" class="portfolio-link-input" value="${escapeHtml(link)}" placeholder="https://..." style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.1);border:1px solid var(--card-border);color:var(--soft-white)" readonly>
+                    <button type="button" class="remove-link-btn" style="display:none">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                portfolioLinksContainer.appendChild(linkDiv);
+            });
+            
+            if (journalistApplication.document_url) {
+                document.getElementById('documentUrl').value = journalistApplication.document_url;
+                document.getElementById('uploadDocument').style.display = 'none';
+            }
+            
+            // Disable inputs
+            document.querySelectorAll('#journalistApplicationForm input, #journalistApplicationForm textarea, #journalistApplicationForm select')
+                .forEach(el => el.disabled = true);
+            
+            submitApplication.style.display = 'none';
+            cancelApplication.textContent = 'Close';
+        } else {
+            // New application mode
+            document.getElementById('journalistModalTitle').textContent = 'Journalist Application';
+            document.querySelectorAll('#journalistApplicationForm input, #journalistApplicationForm textarea, #journalistApplicationForm select')
+                .forEach(el => el.disabled = false);
+            
+            // Clear form
+            journalistFullName.value = '';
+            journalistBio.value = '';
+            journalistCountry.value = '';
+            journalistPublication.value = '';
+            portfolioLinksContainer.innerHTML = '';
+            documentUrl.value = '';
+            documentFile.value = '';
+            uploadDocument.style.display = 'block';
+            
+            submitApplication.style.display = 'block';
+            cancelApplication.textContent = 'Cancel';
+            submitApplication.textContent = 'Submit Application';
+        }
+        
+        journalistModal.style.display = 'flex';
+    }
+
+    async function submitJournalistApplication() {
+        // Validate required fields
+        if (!journalistFullName.value) {
+            showToast('Please enter your full name', 'error');
+            return;
+        }
+        if (!journalistBio.value) {
+            showToast('Please enter your bio', 'error');
+            return;
+        }
+        if (!journalistCountry.value) {
+            showToast('Please select your country', 'error');
+            return;
+        }
+        if (!journalistPublication.value) {
+            showToast('Please enter your publication', 'error');
+            return;
+        }
+        
+        const portfolioLinksArray = collectPortfolioLinks();
+        if (portfolioLinksArray.length === 0) {
+            showToast('Please add at least one portfolio link', 'error');
+            return;
+        }
+        
+        let finalDocumentUrl = documentUrl.value;
+        
+        // Upload document if new file selected
+        if (documentFile && documentFile.files && documentFile.files[0]) {
+            const uploadedUrl = await uploadDocumentFile(documentFile.files[0]);
+            if (uploadedUrl) {
+                finalDocumentUrl = uploadedUrl;
+            } else {
+                showToast('Failed to upload document. Please try again.', 'error');
+                return;
+            }
+        }
+        
+        if (!finalDocumentUrl) {
+            showToast('Please upload a supporting document', 'error');
+            return;
+        }
+        
+        setLoading(true, 'Submitting application...');
+        
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('journalist_applications')
+                .insert({
+                    creator_id: currentUser.id,
+                    full_name: journalistFullName.value,
+                    bio: journalistBio.value,
+                    country: journalistCountry.value,
+                    publication: journalistPublication.value,
+                    portfolio_links: portfolioLinksArray,
+                    document_url: finalDocumentUrl,
+                    status: 'pending'
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            
+            journalistApplication = data;
+            journalistModal.style.display = 'none';
+            renderJournalistVerificationUI();
+            showToast('Application submitted successfully!', 'success');
+            
+        } catch (error) {
+            console.error('Submission error:', error);
+            showToast('Failed to submit application. Please try again.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function setupJournalistVerification() {
+        if (!journalistVerificationContainer) return;
+        
+        await loadJournalistStatus();
+        
+        // Modal close handlers
+        if (closeJournalistModal) {
+            closeJournalistModal.addEventListener('click', () => {
+                journalistModal.style.display = 'none';
+            });
+        }
+        
+        if (cancelApplication) {
+            cancelApplication.addEventListener('click', () => {
+                journalistModal.style.display = 'none';
+            });
+        }
+        
+        if (submitApplication) {
+            submitApplication.addEventListener('click', submitJournalistApplication);
+        }
+        
+        if (addPortfolioLink) {
+            addPortfolioLink.addEventListener('click', addPortfolioLinkField);
+        }
+        
+        if (uploadDocumentBtn) {
+            uploadDocumentBtn.addEventListener('click', () => {
+                documentFile.click();
+            });
+        }
+        
+        if (documentFile) {
+            documentFile.addEventListener('change', (e) => {
+                if (e.target.files[0]) {
+                    documentUrl.value = e.target.files[0].name;
+                }
+            });
+        }
+        
+        // Close modal on outside click
+        journalistModal.addEventListener('click', (e) => {
+            if (e.target === journalistModal) {
+                journalistModal.style.display = 'none';
+            }
+        });
+    }
+
+    // ============================================
     // PHASE 5: ANALYTICS INTEGRATION
     // ============================================
 
-    // ✅ Initialize Analytics Manager (Phase 5) - FIXED CONFIG
     async function initializeAnalyticsManager() {
         if (!window.CreatorAnalytics) {
             console.warn('⚠️ CreatorAnalytics module not loaded, using fallback');
@@ -242,7 +623,7 @@
         
         try {
             const analytics = new window.CreatorAnalytics({
-                supabase: window.supabaseClient,  // ✅ CORRECT property name
+                supabase: window.supabaseClient,
                 userId: currentUser.id,
                 onDataLoaded: (data) => {
                     console.log('📊 Analytics data loaded:', data);
@@ -260,7 +641,6 @@
         }
     }
 
-    // ✅ Load detailed analytics for a content item (Phase 5)
     async function loadContentAnalytics(contentId) {
         if (!analyticsManager) return null;
         
@@ -273,54 +653,10 @@
         }
     }
 
-    // ✅ Get top performing content (Phase 5)
-    async function getTopContent(limit = 5, timeRange = '30days') {
-        if (!analyticsManager) return [];
-        
-        try {
-            const data = await analyticsManager.getTopContent(limit, timeRange);
-            return data;
-        } catch (error) {
-            console.error('❌ Failed to get top content:', error);
-            return [];
-        }
-    }
-
-    // ✅ Export analytics (Phase 5)
-    async function exportAnalytics(format = 'csv', timeRange = '30days') {
-        if (!analyticsManager) {
-            showToast('Analytics manager not initialized', 'error');
-            return null;
-        }
-        
-        try {
-            const result = await analyticsManager.exportAnalytics(format, timeRange);
-            
-            if (format === 'csv' && result.csv) {
-                const blob = new Blob([result.csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = result.filename || 'analytics-export.csv';
-                a.click();
-                window.URL.revokeObjectURL(url);
-                showToast('Analytics exported successfully', 'success');
-                return true;
-            }
-            
-            return result;
-        } catch (error) {
-            console.error('❌ Export failed:', error);
-            showToast('Export failed', 'error');
-            return null;
-        }
-    }
-
     // ============================================
     // MAIN DASHBOARD FUNCTIONS
     // ============================================
 
-    // ✅ LOAD DASHBOARD DATA USING MATERIALIZED VIEW
     async function loadDashboardData() {
         try {
             setLoading(true, 'Loading dashboard data...');
@@ -328,7 +664,6 @@
             let analyticsData = null;
             let content = [];
             
-            // STEP 1: Try to use analytics manager if available (Phase 5)
             if (analyticsManager) {
                 try {
                     const dashboardResult = await analyticsManager.getDashboardData('30days');
@@ -349,33 +684,9 @@
                 }
             }
             
-            // STEP 2: If analytics manager failed, try materialized view
             if (!analyticsData) {
                 try {
-                    console.log('Attempting to fetch from creator_analytics_summary...');
                     const { data, error } = await window.supabaseClient
-                        .from('creator_analytics_summary')
-                        .select('*')
-                        .eq('creator_id', currentUser.id)
-                        .maybeSingle();
-                    
-                    if (error) {
-                        console.warn('Analytics view query error:', error);
-                        throw new Error('View unavailable');
-                    }
-                    
-                    if (data) {
-                        analyticsData = data;
-                        console.log('✅ Analytics data loaded from materialized view:', analyticsData);
-                    } else {
-                        console.warn('No analytics data found in view');
-                        throw new Error('No data in view');
-                    }
-                } catch (viewError) {
-                    console.warn('Falling back to Content table query:', viewError);
-                    
-                    // STEP 3: Fallback method using Content table
-                    const { data: contentData, error: contentError } = await window.supabaseClient
                         .from('Content')
                         .select('*, user_profiles!user_id(*)')
                         .eq('user_id', currentUser.id)
@@ -383,15 +694,13 @@
                         .order('created_at', { ascending: false })
                         .limit(50);
                     
-                    if (contentError) throw contentError;
+                    if (error) throw error;
                     
-                    content = contentData || [];
+                    content = data || [];
                     
-                    // Calculate analytics manually with REAL view counts
                     let totalViewsCount = 0;
                     let totalEarningsAmount = 0;
                     
-                    // Enrich with real view counts
                     for (const item of content) {
                         const { count } = await window.supabaseClient
                             .from('content_views')
@@ -400,11 +709,10 @@
                         
                         const viewsCount = count || 0;
                         totalViewsCount += viewsCount;
-                        totalEarningsAmount += viewsCount * 0.01; // R0.01 per view
+                        totalEarningsAmount += viewsCount * 0.01;
                         item.real_views = viewsCount;
                     }
                     
-                    // Get connectors count
                     const { count: connectorsCount } = await window.supabaseClient
                         .from('connectors')
                         .select('*', { count: 'exact', head: true })
@@ -419,11 +727,13 @@
                         engagement_percentage: content.length > 0 ? (totalViewsCount / content.length) : 0,
                         is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
                     };
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    throw error;
                 }
             }
             
-            // STEP 4: If we didn't get content from fallback, get it now for display
-            if (content.length === 0) {
+            if (content.length === 0 && analyticsData.total_uploads > 0) {
                 const { data: contentData, error: contentError } = await window.supabaseClient
                     .from('Content')
                     .select('*, user_profiles!user_id(*)')
@@ -432,29 +742,26 @@
                     .order('created_at', { ascending: false })
                     .limit(20);
                 
-                if (contentError) throw contentError;
-                content = contentData || [];
-                
-                // Enrich with real view counts if not already done
-                if (content.length > 0 && !content[0].real_views) {
+                if (!contentError && contentData) {
+                    content = contentData;
                     for (const item of content) {
-                        const { count } = await window.supabaseClient
-                            .from('content_views')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('content_id', item.id);
-                        item.real_views = count || 0;
+                        if (!item.real_views) {
+                            const { count } = await window.supabaseClient
+                                .from('content_views')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('content_id', item.id);
+                            item.real_views = count || 0;
+                        }
                     }
                 }
             }
             
-            // STEP 5: Get user profile for display name/avatar
             const { data: userProfile } = await window.supabaseClient
                 .from('user_profiles')
                 .select('*')
                 .eq('id', currentUser.id)
                 .maybeSingle();
             
-            // STEP 6: Build dashboard data
             dashboardData = {
                 user: {
                     name: userProfile?.full_name || 
@@ -464,15 +771,8 @@
                     avatar_url: userProfile?.avatar_url,
                     is_founder: userProfile?.is_founder || false
                 },
-                analytics: {
-                    total_uploads: analyticsData.total_uploads || 0,
-                    total_views: analyticsData.total_views || 0,
-                    total_earnings: analyticsData.total_earnings || 0,
-                    total_connectors: analyticsData.total_connectors || 0,
-                    engagement_percentage: analyticsData.engagement_percentage || 0,
-                    is_eligible_for_monetization: analyticsData.is_eligible_for_monetization || false
-                },
-                content: (content || []).map(item => ({
+                analytics: analyticsData,
+                content: (content || []).slice(0, 5).map(item => ({
                     id: item.id,
                     title: item.title || 'Untitled',
                     description: item.description || '',
@@ -485,12 +785,10 @@
             
             console.log('✅ Dashboard data loaded:', dashboardData);
             
-            // Update UI
             updateUserInfo();
             updateStats();
             updateUploads();
             
-            // Show monetization eligibility toast
             if (dashboardData.analytics.is_eligible_for_monetization) {
                 showToast('🎉 You\'re eligible for monetization!', 'success');
             }
@@ -502,17 +800,14 @@
         }
     }
 
-    // ✅ Update user info
     function updateUserInfo() {
         if (!dashboardData) return;
         
         const user = dashboardData.user;
         
-        // Set creator name
         const displayName = user.name || (currentUser?.email?.split('@')[0]) || 'Creator';
         if (creatorName) creatorName.textContent = displayName;
         
-        // Set avatar
         if (user.avatar_url && creatorAvatar) {
             let avatarUrl = user.avatar_url;
             if (!avatarUrl.startsWith('http')) {
@@ -525,19 +820,16 @@
             creatorAvatar.src = avatarUrl;
         }
         
-        // Set connector count from analytics
         const connectors = dashboardData.analytics.total_connectors || 10;
         if (connectorCount) {
             connectorCount.textContent = `${formatNumber(connectors)} Connector${connectors !== 1 ? 's' : ''}`;
         }
         
-        // Show founder badge if applicable
         if (founderBadge && user.is_founder) {
             founderBadge.style.display = 'flex';
         }
     }
 
-    // ✅ Update stats with materialized view fields
     function updateStats() {
         if (!dashboardData) return;
         
@@ -549,7 +841,6 @@
         if (totalConnectors) totalConnectors.textContent = formatNumber(analytics.total_connectors);
     }
 
-    // ✅ Update uploads
     function updateUploads() {
         if (!dashboardData || !uploadsContent) return;
         
@@ -569,9 +860,7 @@
             return;
         }
         
-        // Show only first 2 items
-        const displayContent = content.slice(0, 2);
-        uploadsContent.innerHTML = displayContent.map(item => {
+        uploadsContent.innerHTML = content.map(item => {
             const statusClass = item.status === 'published' ? 'status-published' : 'status-draft';
             const statusText = item.status === 'published' ? 'Published' : 'Draft';
             return `
@@ -586,38 +875,19 @@
             `;
         }).join('');
         
-        // Add click handlers to upload cards (Phase 5 enhancement)
         document.querySelectorAll('.upload-card').forEach(card => {
             card.addEventListener('click', async () => {
                 const contentId = card.dataset.contentId;
                 if (contentId) {
-                    // Try to use Phase 5 analytics
                     if (analyticsManager) {
-                        const analytics = await loadContentAnalytics(contentId);
-                        if (analytics) {
-                            showToast(`Analytics loaded for content`, 'info');
-                        }
+                        await loadContentAnalytics(contentId);
                     }
-                    // Navigate to content detail
                     window.location.href = `content-detail.html?id=${contentId}`;
                 }
             });
         });
-        
-        // Add message about managing content
-        if (content.length > 2) {
-            uploadsContent.innerHTML += `
-                <div class="empty-state" style="padding: 20px;">
-                    <p class="empty-text">
-                        Showing ${displayContent.length} of ${content.length} uploads.<br>
-                        Click "See All" to manage all your content.
-                    </p>
-                </div>
-            `;
-        }
     }
 
-    // ✅ UPDATE NOTIFICATIONS SUMMARY USING NOTIFICATIONS TABLE
     async function updateNotificationsSummary() {
         const summaryEl = document.getElementById('notificationsSummary');
         if (!summaryEl) return;
@@ -628,7 +898,6 @@
                 return;
             }
             
-            // Query notifications table with proper schema fields
             const { data: notificationsData, error } = await window.supabaseClient
                 .from('notifications')
                 .select('id, type, title, message, is_read, created_at, content_id, content_title, sender_name')
@@ -645,7 +914,6 @@
                 return;
             }
             
-            // Build summary with proper schema fields
             let summaryHTML = `<div style="text-align:left">`;
             
             if (unreadCount > 0) {
@@ -657,7 +925,6 @@
                 const timeAgo = formatNotificationTime(notification.created_at);
                 const title = notification.title || 'Notification';
                 const message = notification.message || '';
-                const contentTitle = notification.content_title ? ` (${notification.content_title})` : '';
                 
                 summaryHTML += `
                     <div style="padding:8px 0;border-bottom:1px solid var(--card-border)">
@@ -667,7 +934,7 @@
                             </div>
                             <div style="flex:1;min-width:0">
                                 <div style="font-weight:500;color:var(--soft-white);font-size:14px">${escapeHtml(title)}</div>
-                                <div style="color:var(--slate-grey);font-size:13px;margin-top:2px">${escapeHtml(message)}${escapeHtml(contentTitle)}</div>
+                                <div style="color:var(--slate-grey);font-size:13px;margin-top:2px">${escapeHtml(message)}</div>
                                 <div style="color:var(--warm-gold);font-size:12px;margin-top:4px">${timeAgo}</div>
                             </div>
                         </div>
@@ -688,7 +955,6 @@
         }
     }
 
-    // ✅ Load profile picture
     async function loadUserProfilePicture(user) {
         try {
             if (!user || !profileBtn) return;
@@ -696,14 +962,12 @@
             const placeholder = document.getElementById('userProfilePlaceholder');
             if (!placeholder) return;
             
-            // Clear existing content safely
             while (placeholder.firstChild) {
                 placeholder.removeChild(placeholder.firstChild);
             }
             
             const userInitials = getInitials(user.email);
             
-            // Fetch user profile from database
             const { data: profile, error: profileError } = await window.supabaseClient
                 .from('user_profiles')
                 .select('*')
@@ -711,8 +975,6 @@
                 .maybeSingle();
             
             if (profileError) {
-                console.log('Profile query error:', profileError);
-                // Fallback to email initials
                 const fallback = document.createElement('div');
                 fallback.className = 'profile-placeholder';
                 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
@@ -723,13 +985,10 @@
             
             if (profile) {
                 const displayName = profile.full_name || profile.username || user.email || 'User';
-                const initial = getInitials(displayName);
                 
-                // If avatar URL exists, display it
                 if (profile.avatar_url) {
                     let avatarUrl = profile.avatar_url;
                     
-                    // Construct full URL safely
                     try {
                         if (!avatarUrl.startsWith('http')) {
                             if (avatarUrl.startsWith('avatars/')) {
@@ -739,16 +998,13 @@
                             }
                         }
                         
-                        // Create image element with proper styling
                         const img = document.createElement('img');
                         img.className = 'profile-img';
                         img.alt = displayName;
                         img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
                         img.src = avatarUrl;
                         
-                        // Fallback to initials if image fails to load
                         img.onerror = () => {
-                            console.log('Avatar image failed to load, falling back to initials');
                             const fallbackInitials = profile.full_name ? getInitialsFromName(profile.full_name) : userInitials;
                             const fallback = document.createElement('div');
                             fallback.className = 'profile-placeholder';
@@ -760,16 +1016,13 @@
                         
                         placeholder.appendChild(img);
                     } catch (e) {
-                        console.error('Error constructing avatar URL:', e);
-                        // Fallback to initials
                         const fallback = document.createElement('div');
                         fallback.className = 'profile-placeholder';
                         fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                        fallback.textContent = initial;
+                        fallback.textContent = getInitialsFromName(displayName);
                         placeholder.appendChild(fallback);
                     }
                 } else {
-                    // If no avatar but full name exists, use name initials
                     const nameInitials = profile.full_name ? getInitialsFromName(profile.full_name) : userInitials;
                     const fallback = document.createElement('div');
                     fallback.className = 'profile-placeholder';
@@ -778,7 +1031,6 @@
                     placeholder.appendChild(fallback);
                 }
             } else {
-                // No profile found, use email initials
                 const fallback = document.createElement('div');
                 fallback.className = 'profile-placeholder';
                 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
@@ -787,21 +1039,9 @@
             }
         } catch (error) {
             console.error('Error loading user profile picture:', error);
-            // Fallback to email initials
-            const placeholder = document.getElementById('userProfilePlaceholder');
-            if (placeholder) {
-                const userInitials = getInitials(user.email);
-                const fallback = document.createElement('div');
-                fallback.className = 'profile-placeholder';
-                fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                fallback.textContent = userInitials;
-                placeholder.innerHTML = '';
-                placeholder.appendChild(fallback);
-            }
         }
     }
 
-    // ✅ Check authentication
     async function checkAuthentication() {
         try {
             setLoading(true, 'Checking authentication...');
@@ -819,7 +1059,6 @@
             currentUser = session.user;
             console.log('✅ User authenticated:', currentUser.email);
             
-            // Load user profile picture
             await loadUserProfilePicture(currentUser);
             
             return true;
@@ -829,7 +1068,6 @@
         }
     }
 
-    // ✅ Load notifications
     async function loadNotifications() {
         try {
             if (!currentUser) {
@@ -856,7 +1094,6 @@
         }
     }
 
-    // ✅ Update notification badge
     function updateNotificationBadge(count = null) {
         const badge = document.getElementById('notification-count');
         if (!badge) return;
@@ -869,7 +1106,6 @@
         badge.style.display = count > 0 ? 'flex' : 'none';
     }
 
-    // ✅ Render notifications
     function renderNotifications() {
         if (!notificationsList) return;
         
@@ -907,7 +1143,6 @@
             </div>
         `).join('');
         
-        // Add click handlers
         notificationsList.querySelectorAll('.notification-item').forEach(item => {
             item.addEventListener('click', async () => {
                 const id = item.dataset.id;
@@ -920,7 +1155,6 @@
         });
     }
 
-    // ✅ Mark notification as read
     async function markNotificationAsRead(notificationId) {
         try {
             const { error } = await window.supabaseClient
@@ -930,7 +1164,6 @@
             
             if (error) throw error;
             
-            // Update UI
             const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
             if (item) {
                 item.classList.remove('unread');
@@ -939,7 +1172,6 @@
                 if (dot) dot.remove();
             }
             
-            // Update badge and summary
             await loadNotifications();
             await updateNotificationsSummary();
         } catch (error) {
@@ -947,7 +1179,6 @@
         }
     }
 
-    // ✅ Mark all notifications as read
     async function markAllNotificationsAsRead() {
         try {
             if (!currentUser) return;
@@ -960,7 +1191,6 @@
             
             if (error) throw error;
             
-            // Update UI
             document.querySelectorAll('.notification-item.unread').forEach(item => {
                 item.classList.remove('unread');
                 item.classList.add('read');
@@ -968,7 +1198,6 @@
                 if (dot) dot.remove();
             });
             
-            // Update badge and summary
             await loadNotifications();
             await updateNotificationsSummary();
             showToast('All notifications marked as read', 'success');
@@ -978,7 +1207,6 @@
         }
     }
 
-    // ✅ Search content
     async function searchContent(query, category = '', sortBy = 'newest') {
         try {
             let queryBuilder = window.supabaseClient
@@ -999,7 +1227,6 @@
             
             if (error) throw error;
             
-            // Enrich with real counts from source tables
             const enriched = await Promise.all(
                 (data || []).map(async (item) => {
                     const { count } = await window.supabaseClient
@@ -1016,7 +1243,6 @@
                 })
             );
             
-            // Additional sorting for popularity/trending
             if (sortBy === 'popular') {
                 enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
             } else if (sortBy === 'trending') {
@@ -1034,7 +1260,6 @@
         }
     }
 
-    // ✅ Render search results
     function renderSearchResults(results) {
         const grid = document.getElementById('search-results-grid');
         if (!grid) return;
@@ -1087,7 +1312,6 @@
             `;
         }).join('');
         
-        // Add click handlers to cards
         grid.querySelectorAll('.content-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.creator-btn')) return;
@@ -1095,7 +1319,6 @@
                 if (id) window.location.href = `content-detail.html?id=${id}`;
             });
             
-            // Hover effects
             card.addEventListener('mouseenter', () => {
                 card.style.transform = 'translateY(-8px)';
                 card.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
@@ -1122,11 +1345,9 @@
         });
     }
 
-    // ✅ Setup search modal
     function setupSearchModal() {
         if (!searchBtn || !searchModal || !closeSearchBtn) return;
         
-        // Open search modal
         searchBtn.addEventListener('click', () => {
             searchModal.style.display = 'flex';
             setTimeout(() => {
@@ -1134,7 +1355,6 @@
             }, 300);
         });
         
-        // Close search modal
         closeSearchBtn.addEventListener('click', () => {
             searchModal.style.display = 'none';
             if (searchInput) searchInput.value = '';
@@ -1142,7 +1362,6 @@
             if (grid) grid.innerHTML = '';
         });
         
-        // Close when clicking outside modal content
         searchModal.addEventListener('click', (e) => {
             if (e.target === searchModal) {
                 searchModal.style.display = 'none';
@@ -1152,7 +1371,6 @@
             }
         });
         
-        // Live search with debounce
         if (searchInput) {
             searchInput.addEventListener('input', debounce(async (e) => {
                 const query = e.target.value.trim();
@@ -1179,7 +1397,6 @@
             }, 300));
         }
         
-        // Filter change triggers search
         const categoryFilter = document.getElementById('category-filter');
         if (categoryFilter) {
             categoryFilter.addEventListener('change', () => {
@@ -1199,22 +1416,18 @@
         }
     }
 
-    // ✅ Setup notifications panel
     function setupNotificationsPanel() {
         if (!notificationsBtn || !notificationsPanel || !closeNotifications) return;
         
-        // Open notifications panel
         notificationsBtn.addEventListener('click', () => {
             notificationsPanel.style.display = 'flex';
             loadNotifications();
         });
         
-        // Close notifications panel
         closeNotifications.addEventListener('click', () => {
             notificationsPanel.style.display = 'none';
         });
         
-        // Close when clicking outside panel
         document.addEventListener('click', (e) => {
             if (notificationsPanel.style.display === 'flex' &&
                 !notificationsPanel.contains(e.target) &&
@@ -1223,15 +1436,12 @@
             }
         });
         
-        // Mark all as read
         if (markAllReadBtn) {
             markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
         }
     }
 
-    // ✅ Setup event listeners
     function setupEventListeners() {
-        // Profile button
         if (profileBtn) {
             profileBtn.addEventListener('click', async () => {
                 const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -1243,7 +1453,6 @@
             });
         }
         
-        // Upload content buttons
         if (uploadContentBtn) {
             uploadContentBtn.addEventListener('click', () => {
                 window.location.href = 'creator-upload.html';
@@ -1256,14 +1465,12 @@
             });
         }
         
-        // View analytics button - Phase 5 enhancement (Navigate to dedicated analytics page)
         if (viewAnalytics) {
             viewAnalytics.addEventListener('click', () => {
                 window.location.href = 'creator-analytics.html';
             });
         }
         
-        // Payout request button
         if (payoutRequest) {
             payoutRequest.addEventListener('click', () => {
                 if (dashboardData && dashboardData.analytics) {
@@ -1274,7 +1481,6 @@
             });
         }
         
-        // Modal close buttons
         if (closePayoutModal) {
             closePayoutModal.addEventListener('click', () => {
                 if (payoutModal) payoutModal.style.display = 'none';
@@ -1287,7 +1493,6 @@
             });
         }
         
-        // Request payout button
         if (requestPayout) {
             requestPayout.addEventListener('click', () => {
                 const earnings = dashboardData?.analytics?.total_earnings || 0;
@@ -1300,7 +1505,6 @@
             });
         }
         
-        // Error state buttons
         if (retryBtn) {
             retryBtn.addEventListener('click', () => {
                 if (errorState) errorState.style.display = 'none';
@@ -1315,7 +1519,6 @@
             });
         }
         
-        // Close modal when clicking outside
         if (payoutModal) {
             payoutModal.addEventListener('click', (e) => {
                 if (e.target === payoutModal) {
@@ -1324,7 +1527,6 @@
             });
         }
         
-        // Navigation items
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 if (item.classList.contains('active')) {
@@ -1334,43 +1536,30 @@
         });
     }
 
-    // ✅ Initialize dashboard
     async function initializeDashboard() {
-        console.log('👑 Initializing Creator Dashboard with Phase 5 enhancements...');
+        console.log('👑 Initializing Creator Dashboard with Journalist Verification...');
         
-        // Check authentication FIRST
         const isAuthenticated = await checkAuthentication();
-        if (!isAuthenticated) {
-            return;
-        }
+        if (!isAuthenticated) return;
         
-        // Initialize Phase 5 Analytics Manager
         analyticsManager = await initializeAnalyticsManager();
-        
-        // Load dashboard data (now using analytics manager)
         await loadDashboardData();
-        
-        // Load notifications for summary
         await updateNotificationsSummary();
+        await setupJournalistVerification();
         
-        // Setup modals and panels
         setupSearchModal();
         setupNotificationsPanel();
-        
-        // Setup event listeners
         setupEventListeners();
         
-        console.log('✅ Creator Dashboard initialized successfully with Phase 5');
+        console.log('✅ Creator Dashboard initialized successfully');
     }
 
-    // Start initialization when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initializeDashboard);
     } else {
         initializeDashboard();
     }
 
-    // Auth state change listener
     window.supabaseClient.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event);
         
@@ -1379,6 +1568,7 @@
             loadUserProfilePicture(currentUser);
             loadNotifications();
             updateNotificationsSummary();
+            loadJournalistStatus();
             showToast('Welcome back!', 'success');
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
