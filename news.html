@@ -13,7 +13,7 @@
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ===== CSS VARIABLES - MATCHING CREATOR CHANNEL ===== */
+/* ===== CSS VARIABLES ===== */
 :root {
 --deep-black: #0A0E12;
 --deep-navy: #0F172A;
@@ -617,7 +617,7 @@ transition: transform 0.3s ease;
 transform: scale(1.05);
 }
 
-/* ===== VIDEO & ARTICLE BADGES (NEW) ===== */
+/* ===== VIDEO & ARTICLE BADGES ===== */
 .video-badge {
 position: absolute;
 top: 10px;
@@ -1262,21 +1262,55 @@ function getFlag(country) {
     return flags[countryLower] || '🌍';
 }
 
-// ===== UNIVERSAL ROUTER FUNCTION (NEW) =====
+// ===== UNIVERSAL ROUTER FUNCTION =====
 function openNewsContent(content) {
     if (!content || !content.id) return;
     
-    // 🎥 Video detection (ONLY real media file)
+    // Check if it's a video by looking for file_url
     const isVideo = !!content.file_url;
     
     if (isVideo) {
-        window.location.href = `/content-detail?id=${content.id}`;
+        window.location.href = `content-detail.html?id=${content.id}`;
     } else {
-        window.location.href = `/news-detail?id=${content.id}`;
+        window.location.href = `news-detail.html?id=${content.id}`;
     }
 }
 
-// ===== AUTH CACHE (ONE CALL PER PAGE) =====
+// ===== FETCH CREATOR PROFILE (FIXED - NO BROKEN JOIN) =====
+async function fetchCreatorInfo(creatorId) {
+    if (!creatorId) return null;
+    
+    try {
+        // First try user_profiles table
+        const { data: profileData, error: profileError } = await supabaseClient
+            .from('user_profiles')
+            .select('full_name, username, avatar_url')
+            .eq('id', creatorId)
+            .maybeSingle();
+        
+        if (!profileError && profileData) {
+            return profileData;
+        }
+        
+        // Fallback to creators table
+        const { data: creatorData, error: creatorError } = await supabaseClient
+            .from('creators')
+            .select('username, bio')
+            .eq('id', creatorId)
+            .maybeSingle();
+        
+        if (!creatorError && creatorData) {
+            return { full_name: creatorData.username, username: creatorData.username };
+        }
+        
+        return null;
+    } catch (err) {
+        console.warn('Error fetching creator:', err);
+        return null;
+    }
+}
+
+// ===== AUTH =====
 async function initAuth() {
     if (currentUser !== null) return currentUser;
     
@@ -1291,7 +1325,7 @@ async function initAuth() {
     }
 }
 
-// ===== SMART NEWS RANKING (views + recency) =====
+// ===== SMART NEWS RANKING =====
 function rankNews(newsItems) {
     if (!newsItems || newsItems.length === 0) return [];
     
@@ -1315,7 +1349,7 @@ function rankNews(newsItems) {
     });
 }
 
-// ===== FETCH FUNCTIONS =====
+// ===== FETCH FUNCTIONS (FIXED - NO BROKEN JOINS) =====
 
 // 1. BREAKING NEWS (Ticker)
 async function loadBreakingNews() {
@@ -1342,10 +1376,11 @@ async function loadBreakingNews() {
     }
 }
 
-// 2. TOP STORIES with SMART RANKING
+// 2. TOP STORIES - Fetch with creator_id, then get profile separately
 async function loadTopStories() {
     try {
-        const { data, error } = await supabaseClient
+        // First fetch the news content
+        const { data: newsData, error: newsError } = await supabaseClient
             .from('Content')
             .select(`
                 id,
@@ -1356,19 +1391,37 @@ async function loadTopStories() {
                 views_count,
                 created_at,
                 content_metadata,
-                user_profiles:creator_id (
-                    full_name,
-                    username,
-                    avatar_url
-                )
+                creator_id
             `)
             .eq('content_type', 'news')
             .eq('status', 'published')
             .limit(20);
 
-        if (error) throw error;
+        if (newsError) throw newsError;
         
-        const rankedStories = rankNews(data || []);
+        if (!newsData || newsData.length === 0) {
+            renderTopStories([]);
+            return;
+        }
+        
+        // Fetch creator profiles for each unique creator_id
+        const uniqueCreatorIds = [...new Set(newsData.map(item => item.creator_id).filter(id => id))];
+        const creatorProfiles = {};
+        
+        await Promise.all(uniqueCreatorIds.map(async (creatorId) => {
+            const profile = await fetchCreatorInfo(creatorId);
+            if (profile) {
+                creatorProfiles[creatorId] = profile;
+            }
+        }));
+        
+        // Attach creator info to each news item
+        const enrichedNews = newsData.map(item => ({
+            ...item,
+            user_profiles: creatorProfiles[item.creator_id] || null
+        }));
+        
+        const rankedStories = rankNews(enrichedNews || []);
         renderTopStories(rankedStories.slice(0, 12));
     } catch (err) {
         console.error('Top stories error:', err);
@@ -1376,10 +1429,10 @@ async function loadTopStories() {
     }
 }
 
-// 3. TOP STORIES BY CATEGORY with ranking
+// 3. TOP STORIES BY CATEGORY
 async function loadTopStoriesByCategory(category) {
     try {
-        const { data, error } = await supabaseClient
+        const { data: newsData, error: newsError } = await supabaseClient
             .from('Content')
             .select(`
                 id,
@@ -1390,20 +1443,37 @@ async function loadTopStoriesByCategory(category) {
                 views_count,
                 created_at,
                 content_metadata,
-                user_profiles:creator_id (
-                    full_name,
-                    username,
-                    avatar_url
-                )
+                creator_id
             `)
             .eq('content_type', 'news')
             .eq('status', 'published')
             .filter('content_metadata->>category', 'eq', category)
             .limit(20);
 
-        if (error) throw error;
+        if (newsError) throw newsError;
         
-        const rankedStories = rankNews(data || []);
+        if (!newsData || newsData.length === 0) {
+            renderTopStories([]);
+            return;
+        }
+        
+        // Fetch creator profiles
+        const uniqueCreatorIds = [...new Set(newsData.map(item => item.creator_id).filter(id => id))];
+        const creatorProfiles = {};
+        
+        await Promise.all(uniqueCreatorIds.map(async (creatorId) => {
+            const profile = await fetchCreatorInfo(creatorId);
+            if (profile) {
+                creatorProfiles[creatorId] = profile;
+            }
+        }));
+        
+        const enrichedNews = newsData.map(item => ({
+            ...item,
+            user_profiles: creatorProfiles[item.creator_id] || null
+        }));
+        
+        const rankedStories = rankNews(enrichedNews || []);
         renderTopStories(rankedStories.slice(0, 12));
     } catch (err) {
         console.error('Category stories error:', err);
@@ -1420,14 +1490,13 @@ async function loadPanAfricanNews() {
                 id,
                 title,
                 description,
-                country,
                 file_url,
                 created_at,
                 content_metadata
             `)
             .eq('content_type', 'news')
             .eq('status', 'published')
-            .not('country', 'is', null)
+            .not('content_metadata->country', 'is', null)
             .order('created_at', { ascending: false })
             .limit(12);
 
@@ -1439,7 +1508,7 @@ async function loadPanAfricanNews() {
     }
 }
 
-// 5. VERIFIED JOURNALISTS
+// 5. JOURNALISTS - From creators table
 async function loadJournalists() {
     try {
         const { data, error } = await supabaseClient
@@ -1462,7 +1531,7 @@ async function loadJournalists() {
     }
 }
 
-// ===== RENDER FUNCTIONS (UPDATED) =====
+// ===== RENDER FUNCTIONS =====
 
 function renderTicker(newsItems) {
     const ticker = document.getElementById('ticker-content');
@@ -1497,6 +1566,7 @@ function renderTopStories(stories) {
         const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
         const thumbnail = story.thumbnail_url || 'https://via.placeholder.com/400x250';
         const hasVideo = !!story.file_url;
+        const authorName = story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal';
         
         return `
             <div class="story-card" onclick='openNewsContent(${JSON.stringify(story).replace(/'/g, "\\'")})'>
@@ -1513,7 +1583,7 @@ function renderTopStories(stories) {
                     <h3 class="story-title">${escapeHtml(story.title)}</h3>
                     <p class="story-excerpt">${escapeHtml((story.description || '').substring(0, 100))}${(story.description || '').length > 100 ? '...' : ''}</p>
                     <div class="story-footer">
-                        <div class="story-source"><i class="fas fa-user-circle"></i> ${escapeHtml(story.user_profiles?.full_name || story.user_profiles?.username || 'The Signal')}</div>
+                        <div class="story-source"><i class="fas fa-user-circle"></i> ${escapeHtml(authorName)}</div>
                         <div class="story-stats"><span><i class="fas fa-eye"></i> ${formatNumber(story.views_count || 0)}</span></div>
                     </div>
                 </div>
@@ -1531,17 +1601,20 @@ function renderPanAfricanNews(newsItems) {
         return;
     }
     
-    grid.innerHTML = newsItems.map(item => `
-        <div class="panafrican-card" onclick='openNewsContent(${JSON.stringify(item).replace(/'/g, "\\'")})'>
-            <div class="panafrican-flag">${getFlag(item.country)}</div>
-            <h3 class="panafrican-title">${escapeHtml(item.title)}</h3>
-            <p class="panafrican-excerpt">${escapeHtml((item.description || '').substring(0, 80))}${(item.description || '').length > 80 ? '...' : ''}</p>
-            <div class="panafrican-time">
-                <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.country || 'Africa')}</span>
-                <span><i class="fas fa-clock"></i> ${timeAgo(item.created_at)}</span>
+    grid.innerHTML = newsItems.map(item => {
+        const country = item.content_metadata?.country || 'Africa';
+        return `
+            <div class="panafrican-card" onclick='openNewsContent(${JSON.stringify(item).replace(/'/g, "\\'")})'>
+                <div class="panafrican-flag">${getFlag(country)}</div>
+                <h3 class="panafrican-title">${escapeHtml(item.title)}</h3>
+                <p class="panafrican-excerpt">${escapeHtml((item.description || '').substring(0, 80))}${(item.description || '').length > 80 ? '...' : ''}</p>
+                <div class="panafrican-time">
+                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(country)}</span>
+                    <span><i class="fas fa-clock"></i> ${timeAgo(item.created_at)}</span>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function renderJournalists(journalists) {
@@ -1595,9 +1668,6 @@ function renderJournalists(journalists) {
 }
 
 // ===== CLICK HANDLERS =====
-// NOTE: attachStoryClickHandlers and attachPanAfricanClickHandlers are OBSOLETE
-// They are NOT needed anymore because onclick is now inline with openNewsContent()
-
 function attachJournalistClickHandlers() {
     document.querySelectorAll('.journalist-follow').forEach(btn => {
         btn.addEventListener('click', async (e) => {
