@@ -28,7 +28,6 @@
     --news-blue: #2563EB;
     --card-bg: rgba(15, 23, 42, 0.6);
     --card-border: rgba(148, 163, 184, 0.2);
-    --ui-scale: 1;
 }
 
 body.theme-light {
@@ -386,10 +385,6 @@ body {
     margin-bottom: 6px;
     color: var(--soft-white);
 }
-.related-card-stats {
-    font-size: 11px;
-    color: var(--slate-grey);
-}
 
 /* ===== TOAST ===== */
 #toast-container {
@@ -504,6 +499,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentArticle = null;
+let currentCreatorProfile = null;
 let currentContentId = null;
 let isLiked = false;
 
@@ -551,7 +547,7 @@ async function initAuth() {
     return currentUser;
 }
 
-// ===== SAFE ARTICLE BODY RENDERER (JSON blocks) =====
+// ===== SAFE ARTICLE BODY RENDERER =====
 function renderArticleBody(blocks) {
     if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
         return '<p>No content available.</p>';
@@ -578,7 +574,46 @@ function renderArticleBody(blocks) {
     }).join('');
 }
 
-// ===== LOAD ARTICLE (CLEAN VERSION - NO VIEW TRACKING, NO REAL-TIME) =====
+// ===== FETCH CREATOR PROFILE SEPARATELY =====
+async function fetchCreatorProfile(creatorId) {
+    if (!creatorId) return null;
+    
+    try {
+        // First try user_profiles table
+        const { data: profileData, error: profileError } = await supabaseClient
+            .from('user_profiles')
+            .select('id, full_name, username, avatar_url, bio, location')
+            .eq('id', creatorId)
+            .single();
+        
+        if (!profileError && profileData) {
+            return profileData;
+        }
+        
+        // Fallback to creators table if user_profiles fails
+        const { data: creatorData, error: creatorError } = await supabaseClient
+            .from('creators')
+            .select('id, username, bio')
+            .eq('id', creatorId)
+            .single();
+        
+        if (!creatorError && creatorData) {
+            return {
+                id: creatorData.id,
+                full_name: creatorData.username,
+                username: creatorData.username,
+                bio: creatorData.bio
+            };
+        }
+        
+        return null;
+    } catch (err) {
+        console.error('Error fetching creator profile:', err);
+        return null;
+    }
+}
+
+// ===== LOAD ARTICLE =====
 async function loadArticleDetail() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -592,8 +627,8 @@ async function loadArticleDetail() {
     currentContentId = parseInt(id);
     
     try {
-        // Fetch article with safe fields only — no realtime, no view increment on load
-        const { data, error } = await supabaseClient
+        // Fetch article without trying to join user_profiles (avoid 400 error)
+        const { data: articleData, error: articleError } = await supabaseClient
             .from('Content')
             .select(`
                 id,
@@ -607,32 +642,29 @@ async function loadArticleDetail() {
                 article_body,
                 read_time,
                 source_name,
-                creator_id,
-                user_profiles:creator_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url,
-                    bio,
-                    location,
-                    is_verified
-                )
+                creator_id
             `)
             .eq('id', currentContentId)
             .eq('content_type', 'news')
             .single();
         
-        if (error || !data) {
-            console.error('Article load error or not found:', error);
+        if (articleError || !articleData) {
+            console.error('Article load error:', articleError);
             showToast('Article not found', 'error');
             window.location.href = 'news.html';
             return;
         }
         
-        currentArticle = data;
-        renderArticle(data);
+        currentArticle = articleData;
+        
+        // Fetch creator profile separately if creator_id exists
+        if (currentArticle.creator_id) {
+            currentCreatorProfile = await fetchCreatorProfile(currentArticle.creator_id);
+        }
+        
+        renderArticle(currentArticle, currentCreatorProfile);
         loadComments(currentContentId);
-        loadRelatedNews(data);
+        loadRelatedNews(currentArticle);
         
     } catch (err) {
         console.error('Unexpected error:', err);
@@ -641,8 +673,8 @@ async function loadArticleDetail() {
     }
 }
 
-// ===== RENDER ARTICLE (NO VIEWS DISPLAY) =====
-function renderArticle(article) {
+// ===== RENDER ARTICLE =====
+function renderArticle(article, creatorProfile) {
     document.title = `${article.title} | The Signal`;
     
     // Category from metadata
@@ -652,7 +684,7 @@ function renderArticle(article) {
     // Title
     document.getElementById('article-title').textContent = article.title;
     
-    // Meta (removed views count entirely per architecture)
+    // Meta (no views)
     const date = new Date(article.created_at).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -669,7 +701,7 @@ function renderArticle(article) {
         thumbnail.alt = article.title;
     }
     
-    // Article Body (JSON blocks)
+    // Article Body
     const articleBodyJson = article.article_body;
     let finalHtml = '';
     if (articleBodyJson && typeof articleBodyJson === 'object' && !Array.isArray(articleBodyJson) && articleBodyJson.blocks) {
@@ -683,25 +715,24 @@ function renderArticle(article) {
     }
     document.getElementById('article-body').innerHTML = finalHtml;
     
-    // Journalist Profile (only show if user_profiles exists and ideally journalist)
-    renderJournalistInfo(article.user_profiles);
+    // Journalist Profile
+    renderJournalistInfo(creatorProfile);
     
     hideLoading();
 }
 
-// ===== RENDER JOURNALIST INFO (FILTERED — only real journalist profiles) =====
+// ===== RENDER JOURNALIST INFO =====
 function renderJournalistInfo(profile) {
     const container = document.getElementById('journalist-container');
     
-    if (!profile || !profile.username) {
+    if (!profile) {
         container.innerHTML = '';
         return;
     }
     
-    // Optionally: you could check profile.role === 'journalist' or is_verified flag
-    const displayName = profile.full_name || profile.username;
+    // Use full_name if available, otherwise username
+    const displayName = profile.full_name || profile.username || 'Journalist';
     const specialty = profile.location ? `Based in ${profile.location}` : 'Independent Journalist';
-    const trustBadge = profile.is_verified ? '<span class="verified-badge"><i class="fas fa-check-circle"></i></span>' : '';
     const bio = profile.bio || 'Journalist covering important stories from across Africa for The Signal.';
     
     container.innerHTML = `
@@ -712,7 +743,6 @@ function renderJournalistInfo(profile) {
             <div class="journalist-info-large">
                 <h3>
                     ${escapeHtml(displayName)}
-                    ${trustBadge}
                 </h3>
                 <div class="journalist-specialty">${escapeHtml(specialty)}</div>
                 <div class="journalist-bio">${escapeHtml(bio)}</div>
@@ -726,7 +756,7 @@ function renderJournalistInfo(profile) {
     document.getElementById('follow-journalist-btn')?.addEventListener('click', () => followJournalist(profile.id));
 }
 
-// ===== LIKE TOGGLE (standard, no realtime subscription) =====
+// ===== LIKE TOGGLE =====
 async function toggleLike() {
     if (!currentUser) {
         showToast('Please sign in to like articles', 'warning');
@@ -865,7 +895,7 @@ function renderComments(comments) {
         <div class="comment-item">
             <div class="comment-header">
                 <div class="comment-avatar">
-                    ${comment.author_avatar ? `<img src="${comment.author_avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : comment.author_name?.charAt(0) || 'U'}
+                    ${comment.author_avatar ? `<img src="${comment.author_avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : (comment.author_name?.charAt(0) || 'U')}
                 </div>
                 <span class="comment-author">${escapeHtml(comment.author_name || 'Anonymous')}</span>
                 <span class="comment-time">${timeAgo(comment.created_at)}</span>
@@ -923,7 +953,7 @@ async function postComment() {
     }
 }
 
-// ===== LOAD RELATED NEWS (same category, exclude current, only news articles) =====
+// ===== LOAD RELATED NEWS =====
 async function loadRelatedNews(article) {
     try {
         const category = article.content_metadata?.category;
@@ -988,6 +1018,7 @@ async function followJournalist(creatorId) {
         if (err.code === '23505') {
             showToast('Already following this journalist', 'info');
         } else {
+            console.error('Follow error:', err);
             showToast('Failed to follow', 'error');
         }
     }
