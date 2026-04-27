@@ -862,7 +862,7 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- SIDEBAR MENU (Enhanced with proper overflow handling)               -->
+    <!-- SIDEBAR MENU - ENHANCED YOUTUBE-STYLE WITH COLLAPSIBLE SECTIONS     -->
     <!-- =================================================================== -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
@@ -890,50 +890,165 @@
             <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
         </div>
         
-        <!-- Navigation Items - Scrollable area -->
+        <!-- Navigation Items - Scrollable area with collapsible sections (YouTube Style) -->
         <nav class="sidebar-nav">
-            <a href="index.html" class="sidebar-nav-item active">
-                <i class="fas fa-home"></i>
-                <span>Home</span>
-            </a>
-            <a href="explore-screen.html" class="sidebar-nav-item">
-                <i class="fas fa-compass"></i>
-                <span>Explore</span>
-            </a>
-            <!-- Watch History in Sidebar -->
-            <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
-                <i class="fas fa-history"></i>
-                <span>Watch History</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
-                <i class="fas fa-chart-line"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-                <i class="fas fa-bell"></i>
-                <span>Notifications</span>
-                <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-                <i class="fas fa-medal"></i>
-                <span>My Badges</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-                <i class="fas fa-users"></i>
-                <span>Watch Party</span>
-            </a>
-            <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-                <i class="fas fa-plus-circle"></i>
-                <span>Create</span>
-            </a>
-            <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="manage-profiles.html" class="sidebar-nav-item">
-                <i class="fas fa-user-cog"></i>
-                <span>Manage Profiles</span>
-            </a>
+            
+            <!-- MAIN SECTION -->
+            <div class="sidebar-section" data-section="main">
+                <button class="sidebar-section-header" onclick="toggleSidebarSection('main')">
+                    <span>MAIN</span>
+                    <i class="fas fa-chevron-down section-toggle-icon"></i>
+                </button>
+                <div class="sidebar-section-content" id="section-main">
+                    <a href="index.html" class="sidebar-nav-item active" data-page="home">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore">
+                        <i class="fas fa-compass"></i>
+                        <span>Explore</span>
+                    </a>
+                    <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending">
+                        <i class="fas fa-fire"></i>
+                        <span>Trending</span>
+                    </a>
+                    <a href="creators.html" class="sidebar-nav-item" data-page="discover">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Discover Creators</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- CATEGORIES SECTION -->
+            <div class="sidebar-section" data-section="categories">
+                <button class="sidebar-section-header" onclick="toggleSidebarSection('categories')">
+                    <span>CATEGORIES</span>
+                    <i class="fas fa-chevron-down section-toggle-icon"></i>
+                </button>
+                <div class="sidebar-section-content" id="section-categories">
+                    <a href="https://bantustreamconnect.com/category/music" class="sidebar-nav-item" data-category="music">
+                        <i class="fas fa-music"></i>
+                        <span>Music</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/stem" class="sidebar-nav-item" data-category="stem">
+                        <i class="fas fa-atom"></i>
+                        <span>STEM</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/culture" class="sidebar-nav-item" data-category="culture">
+                        <i class="fas fa-drum"></i>
+                        <span>Culture</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/news" class="sidebar-nav-item" data-category="news">
+                        <i class="fas fa-newspaper"></i>
+                        <span>News</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/sports" class="sidebar-nav-item" data-category="sports">
+                        <i class="fas fa-futbol"></i>
+                        <span>Sports</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/movies" class="sidebar-nav-item" data-category="movies">
+                        <i class="fas fa-film"></i>
+                        <span>Movies</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/documentaries" class="sidebar-nav-item" data-category="documentaries">
+                        <i class="fas fa-video"></i>
+                        <span>Documentaries</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/category/podcasts" class="sidebar-nav-item" data-category="podcasts">
+                        <i class="fas fa-microphone-alt"></i>
+                        <span>Podcasts</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- YOU SECTION (Personalized) -->
+            <div class="sidebar-section" data-section="you">
+                <button class="sidebar-section-header" onclick="toggleSidebarSection('you')">
+                    <span>YOU</span>
+                    <i class="fas fa-chevron-down section-toggle-icon"></i>
+                </button>
+                <div class="sidebar-section-content" id="section-you">
+                    <a href="content-library.html" class="sidebar-nav-item" data-page="library">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Library</span>
+                    </a>
+                    <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history">
+                        <i class="fas fa-history"></i>
+                        <span>Watch History</span>
+                    </a>
+                    <a href="my-uploads.html" class="sidebar-nav-item" data-page="uploads">
+                        <i class="fas fa-upload"></i>
+                        <span>My Uploads</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- CREATOR SECTION (Conditional - only visible if user is creator) -->
+            <div class="sidebar-section creator-only" data-section="creator" style="display: none;">
+                <button class="sidebar-section-header" onclick="toggleSidebarSection('creator')">
+                    <span>CREATOR</span>
+                    <i class="fas fa-chevron-down section-toggle-icon"></i>
+                </button>
+                <div class="sidebar-section-content" id="section-creator">
+                    <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="creator-analytics.html" class="sidebar-nav-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Creator Analytics</span>
+                    </a>
+                    <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Create</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- COMMUNITY SECTION -->
+            <div class="sidebar-section" data-section="community">
+                <button class="sidebar-section-header" onclick="toggleSidebarSection('community')">
+                    <span>COMMUNITY</span>
+                    <i class="fas fa-chevron-down section-toggle-icon"></i>
+                </button>
+                <div class="sidebar-section-content" id="section-community">
+                    <a href="index.html#community-pulse-section" class="sidebar-nav-item" data-page="pulse">
+                        <i class="fas fa-bolt"></i>
+                        <span>Community Pulse</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/watch-party" class="sidebar-nav-item" id="sidebar-watch-party">
+                        <i class="fas fa-users"></i>
+                        <span>Watch Party</span>
+                    </a>
+                    <a href="https://bantustreamconnect.com/my-badges" class="sidebar-nav-item" id="sidebar-badges">
+                        <i class="fas fa-medal"></i>
+                        <span>My Badges</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- ACCOUNT SECTION -->
+            <div class="sidebar-section" data-section="account">
+                <button class="sidebar-section-header" onclick="toggleSidebarSection('account')">
+                    <span>ACCOUNT</span>
+                    <i class="fas fa-chevron-down section-toggle-icon"></i>
+                </button>
+                <div class="sidebar-section-content" id="section-account">
+                    <a href="manage-profiles.html" class="sidebar-nav-item">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Manage Profiles</span>
+                    </a>
+                    <a href="settings.html" class="sidebar-nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="#" class="sidebar-nav-item" id="sidebar-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            
         </nav>
         
         <!-- Footer: Theme & Scale (Fixed at bottom with safe area support) -->
