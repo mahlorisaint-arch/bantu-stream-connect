@@ -805,6 +805,150 @@ font-size: 11px;
 color: var(--error-color);
 }
 
+/* ===== MATCH HUB (Phase 4 - AI Highlight Engine) ===== */
+.match-hub {
+background: linear-gradient(135deg, rgba(16,185,129,0.15), var(--card-bg));
+border: 2px solid var(--sports-green);
+border-radius: 28px;
+padding: 24px;
+margin-bottom: 40px;
+backdrop-filter: blur(10px);
+}
+.match-hub-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+flex-wrap: wrap;
+gap: 16px;
+margin-bottom: 20px;
+}
+.match-teams-large {
+font-size: 24px;
+font-weight: 800;
+}
+.match-score-large {
+font-size: 48px;
+font-weight: 900;
+color: var(--sports-green);
+font-family: 'Orbitron', sans-serif;
+}
+.match-timeline {
+display: flex;
+gap: 12px;
+overflow-x: auto;
+padding: 16px 0;
+margin-bottom: 20px;
+}
+.timeline-event {
+background: rgba(255,255,255,0.08);
+border-radius: 40px;
+padding: 8px 20px;
+font-size: 13px;
+white-space: nowrap;
+border-left: 3px solid var(--sports-green);
+}
+.match-hub-stats {
+display: flex;
+gap: 32px;
+flex-wrap: wrap;
+padding-top: 16px;
+border-top: 1px solid var(--card-border);
+}
+.hub-stat {
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 14px;
+}
+.hub-stat i { color: var(--sports-green); font-size: 18px; }
+
+/* ===== LIVE CHAT PANEL (Phase 3.2) ===== */
+.live-chat-panel {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+margin-bottom: 30px;
+overflow: hidden;
+}
+.chat-header {
+padding: 16px;
+background: rgba(0,0,0,0.3);
+border-bottom: 1px solid var(--card-border);
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.chat-messages {
+height: 300px;
+overflow-y: auto;
+padding: 16px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.chat-message {
+display: flex;
+gap: 12px;
+padding: 8px;
+border-radius: 12px;
+background: rgba(255,255,255,0.03);
+}
+.chat-avatar {
+width: 32px;
+height: 32px;
+border-radius: 50%;
+background: var(--sports-green);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 12px;
+flex-shrink: 0;
+}
+.chat-content { flex: 1; }
+.chat-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.chat-text { font-size: 13px; color: var(--slate-grey); }
+.chat-time { font-size: 10px; color: var(--slate-grey); margin-left: 8px; }
+.chat-input-area {
+display: flex;
+padding: 16px;
+gap: 12px;
+border-top: 1px solid var(--card-border);
+}
+.chat-input {
+flex: 1;
+padding: 12px;
+border-radius: 30px;
+background: rgba(255,255,255,0.1);
+border: 1px solid var(--card-border);
+color: var(--soft-white);
+outline: none;
+}
+.chat-send {
+padding: 12px 24px;
+border-radius: 30px;
+background: var(--sports-green);
+border: none;
+color: var(--deep-black);
+font-weight: 700;
+cursor: pointer;
+}
+
+/* ===== PREMIUM BADGE (Phase 6) ===== */
+.premium-badge {
+background: linear-gradient(135deg, #FFD700, #FFA500);
+color: var(--deep-black);
+padding: 2px 8px;
+border-radius: 20px;
+font-size: 10px;
+font-weight: 700;
+margin-left: 8px;
+}
+.verified-badge {
+color: var(--sports-blue);
+margin-left: 6px;
+font-size: 14px;
+}
+
 /* ===== TOAST ===== */
 #toast-container {
 position: fixed;
@@ -971,6 +1115,8 @@ color: var(--sports-green);
 .navigation-button { gap: 0.5rem; padding: 0.375rem 0.875rem; }
 .nav-icon { width: 40px; height: 40px; font-size: 16px; }
 .data-mode-toggle { bottom: 80px; left: 10px; padding: 6px 12px; }
+.match-teams-large { font-size: 18px; }
+.match-score-large { font-size: 32px; }
 }
 
 @media (max-width: 480px) {
@@ -1086,16 +1232,34 @@ color: var(--sports-green);
 </div>
 </section>
 
-<!-- LIVE SCORES TICKER -->
+<!-- LIVE SCORES TICKER (REAL-TIME via Supabase - Phase 2) -->
 <div class="live-scores">
 <div class="live-scores-header">
 <i class="fas fa-circle"></i>
 <span><strong>LIVE SCORES</strong> • Updated in real-time</span>
 </div>
 <div class="live-scores-scroll" id="live-scores-scroll">
-<div class="score-item"><div class="score-teams"><span class="score-team">Kaizer Chiefs</span><span>VS</span><span class="score-team">Orlando Pirates</span></div><div class="score-result">2 - 1</div><div class="score-status">65'</div></div>
-<div class="score-item"><div class="score-teams"><span class="score-team">Al Ahly</span><span>VS</span><span class="score-team">Wydad</span></div><div class="score-result">1 - 0</div><div class="score-status">78'</div></div>
-<div class="score-item"><div class="score-teams"><span class="score-team">Nigeria</span><span>VS</span><span class="score-team">Ghana</span></div><div class="score-result">0 - 0</div><div class="score-status">Halftime</div></div>
+<!-- Dynamic content -->
+</div>
+</div>
+
+<!-- MATCH HUB (Phase 4 - AI Highlight Engine) -->
+<div class="match-hub" id="matchHub">
+<div class="match-hub-header">
+<div class="match-teams-large"><i class="fas fa-trophy"></i> Kaizer Chiefs vs Orlando Pirates</div>
+<div class="match-score-large" id="hubLiveScore">2 - 1</div>
+</div>
+<div class="match-timeline" id="matchTimeline">
+<div class="timeline-event">🔥 23' Goal: Chivaviro (Chiefs)</div>
+<div class="timeline-event">⚽ 45+2' Penalty: Mokoena (Pirates)</div>
+<div class="timeline-event">🟨 67' Yellow Card: Mthethwa</div>
+<div class="timeline-event">📹 78' Highlight: Near Miss</div>
+</div>
+<div class="match-hub-stats">
+<div class="hub-stat"><i class="fas fa-video"></i> 6 Highlights</div>
+<div class="hub-stat"><i class="fas fa-comments"></i> 1,234 Fan Reactions</div>
+<div class="hub-stat"><i class="fas fa-microphone"></i> 3 Creator Videos</div>
+<div class="hub-stat"><i class="fas fa-chart-line"></i> 45K Match Views</div>
 </div>
 </div>
 
@@ -1131,11 +1295,50 @@ color: var(--sports-green);
 </div>
 </section>
 
+<!-- LIVE CHAT PANEL (Phase 3.2 - Twitch-style) -->
+<div class="live-chat-panel" id="liveChatPanel">
+<div class="chat-header">
+<i class="fas fa-comments" style="color: var(--sports-purple);"></i>
+<span><strong>Fan Zone Live Chat</strong> • 1,234 watching now</span>
+<span class="premium-badge">PREMIUM ROOM</span>
+</div>
+<div class="chat-messages" id="chatMessages">
+<div class="chat-message">
+<div class="chat-avatar"><i class="fas fa-user"></i></div>
+<div class="chat-content">
+<div class="chat-name">SoccerFan23 <span class="verified-badge"><i class="fas fa-check-circle"></i></span></div>
+<div class="chat-text">What a goal from Chivaviro! 🔥⚽</div>
+<div class="chat-time">Just now</div>
+</div>
+</div>
+<div class="chat-message">
+<div class="chat-avatar"><i class="fas fa-user"></i></div>
+<div class="chat-content">
+<div class="chat-name">ChiefsKingdom</div>
+<div class="chat-text">Pirates getting nervous now!</div>
+<div class="chat-time">2 min ago</div>
+</div>
+</div>
+<div class="chat-message">
+<div class="chat-avatar"><i class="fas fa-user"></i></div>
+<div class="chat-content">
+<div class="chat-name">RefereeRSA <i class="fas fa-microphone" style="color: var(--sports-green); font-size: 10px;"></i></div>
+<div class="chat-text">VAR check coming up...</div>
+<div class="chat-time">3 min ago</div>
+</div>
+</div>
+</div>
+<div class="chat-input-area">
+<input type="text" class="chat-input" placeholder="Join the conversation..." id="chatInput">
+<button class="chat-send" id="chatSendBtn"><i class="fas fa-paper-plane"></i> Send</button>
+</div>
+</div>
+
 <!-- FAN ZONES - WATCH-ALONGS -->
 <section class="section">
 <div class="section-header">
-<h2 class="section-title"><i class="fas fa-users"></i> Fan Zones</h2>
-<a href="#" class="section-link">Watch Parties <i class="fas fa-arrow-right"></i></a>
+<h2 class="section-title"><i class="fas fa-users"></i> Fan Zones • Watch-Alongs</h2>
+<a href="#" class="section-link">Start Your Own <i class="fas fa-plus-circle"></i></a>
 </div>
 <div class="fanzone-grid" id="fanzone-grid">
 <!-- Will be populated by JS -->
@@ -1145,11 +1348,12 @@ color: var(--sports-green);
 </main>
 
 <footer class="footer">
-<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+<p>Bantu Stream Connect © 2026 • Built in South Africa • Africa's First Creator-Powered Sports Network</p>
 <div class="footer-links">
 <a href="privacy-policy.html">Privacy Policy</a>
 <a href="terms-of-service.html">Terms of Service</a>
 <a href="support.html">Support</a>
+<a href="creator-signup.html"><i class="fas fa-rocket"></i> Become a Creator</a>
 </div>
 </footer>
 
@@ -1176,35 +1380,41 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let currentUser = null;
 let currentSport = 'all';
 let lowDataMode = localStorage.getItem('sports_low_data_mode') === 'true';
+let realtimeChannel = null;
+let liveMatches = [
+    { id: "chiefs_vs_pirates", home_team: "Kaizer Chiefs", away_team: "Orlando Pirates", home_score: 2, away_score: 1, status: "live", minute: 67, league: "PSL" },
+    { id: "al_ahly_vs_wydad", home_team: "Al Ahly", away_team: "Wydad", home_score: 1, away_score: 0, status: "live", minute: 78, league: "CAF CL" },
+    { id: "nigeria_vs_ghana", home_team: "Nigeria", away_team: "Ghana", home_score: 0, away_score: 0, status: "halftime", minute: 45, league: "AFCON" }
+];
 
-// ===== DEMO SPORTS CONTENT =====
+// ===== DEMO SPORTS CONTENT with enhanced metadata (Phase 1.1) =====
 const highlights = [
-    { id: 1, title: "Mokwena's Stunning Bicycle Kick - Orlando Pirates vs Kaizer Chiefs", duration: "3:24", views: "1.2M", sport: "football", image: "https://images.unsplash.com/photo-1431324155620-5687f5e4342f?w=600&h=350&fit=crop" },
-    { id: 2, title: "Springboks vs All Blacks - Match Highlights", duration: "5:12", views: "892K", sport: "rugby", image: "https://images.unsplash.com/photo-1628779238951-be2c9f2a59f0?w=600&h=350&fit=crop" },
-    { id: 3, title: "Nigeria's Osimhen Hat-trick vs Cameroon", duration: "4:08", views: "2.1M", sport: "football", image: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=600&h=350&fit=crop" },
-    { id: 4, title: "AfroBasket Final - Best Moments", duration: "6:45", views: "456K", sport: "basketball", image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&h=350&fit=crop" },
-    { id: 5, title: "Ferdinand Omanyala - African Sprint Record", duration: "2:15", views: "678K", sport: "athletics", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&h=350&fit=crop" },
-    { id: 6, title: "SA vs Australia T20 Highlights", duration: "7:30", views: "345K", sport: "cricket", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600&h=350&fit=crop" },
+    { id: 1, title: "Mokwena's Stunning Bicycle Kick - Orlando Pirates vs Kaizer Chiefs", duration: "3:24", views: "1.2M", sport: "football", image: "https://images.unsplash.com/photo-1431324155620-5687f5e4342f?w=600&h=350&fit=crop", match_id: "chiefs_vs_pirates_2026", event_type: "highlight", is_premium: false },
+    { id: 2, title: "Springboks vs All Blacks - Match Highlights", duration: "5:12", views: "892K", sport: "rugby", image: "https://images.unsplash.com/photo-1628779238951-be2c9f2a59f0?w=600&h=350&fit=crop", match_id: "springboks_vs_allblacks", event_type: "highlight", is_premium: false },
+    { id: 3, title: "Nigeria's Osimhen Hat-trick vs Cameroon", duration: "4:08", views: "2.1M", sport: "football", image: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=600&h=350&fit=crop", match_id: "nigeria_vs_cameroon", event_type: "highlight", is_premium: true },
+    { id: 4, title: "AfroBasket Final - Best Moments", duration: "6:45", views: "456K", sport: "basketball", image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&h=350&fit=crop", match_id: "afrobasket_final", event_type: "highlight", is_premium: false },
+    { id: 5, title: "Ferdinand Omanyala - African Sprint Record", duration: "2:15", views: "678K", sport: "athletics", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&h=350&fit=crop", match_id: "athletics_champs", event_type: "highlight", is_premium: false },
+    { id: 6, title: "SA vs Australia T20 Highlights", duration: "7:30", views: "345K", sport: "cricket", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600&h=350&fit=crop", match_id: "sa_vs_aus_t20", event_type: "highlight", is_premium: true }
 ];
 
 const risingStars = [
-    { id: 1, name: "Lamine Yamal", position: "Forward", club: "Barcelona", country: "Spain", goals: 8, assists: 5, avatar: null },
-    { id: 2, name: "Victor Osimhen", position: "Striker", club: "Napoli", country: "Nigeria", goals: 15, assists: 3, avatar: null },
-    { id: 3, name: "Jude Bellingham", position: "Midfielder", club: "Real Madrid", country: "England", goals: 12, assists: 6, avatar: null },
-    { id: 4, name: "Kobbie Mainoo", position: "Midfielder", club: "Man United", country: "England", goals: 3, assists: 2, avatar: null },
+    { id: 1, name: "Lamine Yamal", position: "Forward", club: "Barcelona", country: "Spain", goals: 8, assists: 5, verified: true, avatar: null },
+    { id: 2, name: "Victor Osimhen", position: "Striker", club: "Napoli", country: "Nigeria", goals: 15, assists: 3, verified: true, avatar: null },
+    { id: 3, name: "Jude Bellingham", position: "Midfielder", club: "Real Madrid", country: "England", goals: 12, assists: 6, verified: true, avatar: null },
+    { id: 4, name: "Kobbie Mainoo", position: "Midfielder", club: "Man United", country: "England", goals: 3, assists: 2, verified: false, avatar: null }
 ];
 
 const fanZones = [
-    { id: 1, creator: "SoccerStrike SA", match: "SA vs Nigeria - AFCON Qualifier", viewers: "2.3K", live: true, avatar: null },
-    { id: 2, creator: "Ballerz Only", match: "EPL Highlights Review", viewers: "1.1K", live: false, avatar: null },
-    { id: 3, creator: "The Referee", match: "Match Analysis: Kaizer Chiefs", viewers: "892", live: true, avatar: null },
-    { id: 4, creator: "Football Fiesta", match: "Transfer News & Rumors", viewers: "654", live: false, avatar: null },
+    { id: 1, creator: "SoccerStrike SA", match: "SA vs Nigeria - AFCON Qualifier", viewers: "2.3K", live: true, is_premium: false, avatar: null, creator_verified: true },
+    { id: 2, creator: "Ballerz Only", match: "EPL Highlights Review", viewers: "1.1K", live: false, is_premium: false, avatar: null, creator_verified: false },
+    { id: 3, creator: "The Referee", match: "Match Analysis: Kaizer Chiefs", viewers: "892", live: true, is_premium: true, avatar: null, creator_verified: true },
+    { id: 4, creator: "Football Fiesta", match: "Transfer News & Rumors", viewers: "654", live: false, is_premium: false, avatar: null, creator_verified: false }
 ];
 
 // ===== COUNTDOWN TIMER =====
 function startCountdown() {
     const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + 3); // 3 days from now
+    targetDate.setDate(targetDate.getDate() + 3);
     targetDate.setHours(19, 0, 0, 0);
     
     function updateTimer() {
@@ -1234,6 +1444,56 @@ function startCountdown() {
     setInterval(updateTimer, 1000);
 }
 
+// ===== LIVE SCORES (Phase 2 - Real-time) =====
+function renderLiveScores() {
+    const scrollContainer = document.getElementById('live-scores-scroll');
+    if (!scrollContainer) return;
+    
+    scrollContainer.innerHTML = liveMatches.map(match => `
+        <div class="score-item" data-match-id="${match.id}">
+            <div class="score-teams">
+                <span class="score-team">${match.home_team}</span>
+                <span>VS</span>
+                <span class="score-team">${match.away_team}</span>
+            </div>
+            <div class="score-result">${match.home_score} - ${match.away_score}</div>
+            <div class="score-status">${match.status === 'live' ? match.minute + "'" : match.status}</div>
+        </div>
+    `).join('');
+    
+    // Update Match Hub score
+    const chiefsMatch = liveMatches.find(m => m.home_team === "Kaizer Chiefs");
+    const hubScore = document.getElementById('hubLiveScore');
+    if (hubScore && chiefsMatch) {
+        hubScore.textContent = `${chiefsMatch.home_score} - ${chiefsMatch.away_score}`;
+    }
+}
+
+// Simulate real-time updates (Phase 2.2)
+function setupRealtimeScores() {
+    renderLiveScores();
+    
+    // Simulate Supabase realtime subscription
+    setInterval(() => {
+        liveMatches = liveMatches.map(match => {
+            if (match.status === 'live' && Math.random() > 0.85) {
+                const randomGoal = Math.random() > 0.6;
+                if (randomGoal) {
+                    match.home_score += 1;
+                    showToast(`${match.home_team} SCORES! ${match.home_score} - ${match.away_score}`, 'success');
+                } else if (Math.random() > 0.7) {
+                    match.away_score += 1;
+                    showToast(`${match.away_team} SCORES! ${match.home_score} - ${match.away_score}`, 'success');
+                }
+                match.minute = Math.min(match.minute + 2, 90);
+                if (match.minute >= 90) match.status = 'finished';
+            }
+            return match;
+        });
+        renderLiveScores();
+    }, 15000);
+}
+
 // ===== RENDER FUNCTIONS =====
 function renderHighlights() {
     const grid = document.getElementById('highlights-grid');
@@ -1243,15 +1503,16 @@ function renderHighlights() {
     }
     
     grid.innerHTML = filtered.map(highlight => `
-        <div class="highlight-card" data-id="${highlight.id}">
+        <div class="highlight-card" data-id="${highlight.id}" data-match-id="${highlight.match_id}">
             <div class="highlight-video">
                 <img src="${lowDataMode ? '' : highlight.image}" alt="${highlight.title}" ${lowDataMode ? 'style="display:none;"' : ''}>
                 ${lowDataMode ? `<div class="highlight-thumb-placeholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--deep-navy);"><i class="fas fa-headphones" style="font-size:48px;color:var(--sports-green);"></i><span style="margin-left:10px;">Radio Mode</span></div>` : ''}
                 <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
                 <div class="highlight-duration">${highlight.duration}</div>
+                ${highlight.is_premium ? '<div class="premium-badge" style="position:absolute;top:12px;right:12px;">PREMIUM</div>' : ''}
             </div>
             <div class="highlight-info">
-                <h3 class="highlight-title">${escapeHtml(highlight.title)}</h3>
+                <h3 class="highlight-title">${escapeHtml(highlight.title)} ${highlight.is_premium ? '<i class="fas fa-crown" style="color:#FFD700; font-size:12px;"></i>' : ''}</h3>
                 <div class="highlight-meta">
                     <span><i class="fas fa-eye"></i> ${highlight.views} views</span>
                     <span><i class="fas fa-clock"></i> ${highlight.duration}</span>
@@ -1269,9 +1530,10 @@ function renderRisingStars() {
         <div class="star-card" data-id="${star.id}">
             <div class="star-avatar">
                 <i class="fas fa-user" style="font-size: 28px; color: white;"></i>
+                ${star.verified ? '<i class="fas fa-check-circle" style="position:absolute;bottom:0;right:0;color:var(--sports-blue);background:var(--deep-black);border-radius:50%;font-size:14px;"></i>' : ''}
             </div>
             <div class="star-info">
-                <h3 class="star-name">${escapeHtml(star.name)}</h3>
+                <h3 class="star-name">${escapeHtml(star.name)} ${star.verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</h3>
                 <div class="star-position">${star.position} • ${star.club}</div>
                 <div class="star-stats">
                     <span><i class="fas fa-futbol"></i> ${star.goals} goals</span>
@@ -1291,10 +1553,11 @@ function renderFanZones() {
             <div class="fanzone-header">
                 <div class="fanzone-avatar"><i class="fas fa-microphone" style="font-size: 24px; color: white;"></i></div>
                 <div class="fanzone-info">
-                    <div class="fanzone-creator">${escapeHtml(zone.creator)}</div>
+                    <div class="fanzone-creator">${escapeHtml(zone.creator)} ${zone.creator_verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</div>
                     <div class="fanzone-match">${escapeHtml(zone.match)}</div>
                     <div class="fanzone-stats"><span><i class="fas fa-users"></i> ${zone.viewers} watching</span></div>
                 </div>
+                ${zone.is_premium ? '<div class="premium-badge">PREMIUM</div>' : ''}
             </div>
             <div class="fanzone-thumb">
                 <img src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=400&h=200&fit=crop" alt="Watch Party">
@@ -1302,7 +1565,7 @@ function renderFanZones() {
             </div>
             <div class="fanzone-footer">
                 <span class="fanzone-views"><i class="fas fa-comment"></i> ${Math.floor(zone.viewers * 0.3)} chatting</span>
-                <button class="fanzone-join" data-zone-id="${zone.id}">Join Watch-Along</button>
+                <button class="fanzone-join" data-zone-id="${zone.id}" data-premium="${zone.is_premium}">${zone.is_premium ? '<i class="fas fa-crown"></i> Unlock' : 'Join Watch-Along'}</button>
             </div>
         </div>
     `).join('');
@@ -1314,7 +1577,12 @@ function attachHighlightClickHandlers() {
     document.querySelectorAll('.highlight-card').forEach(card => {
         card.addEventListener('click', () => {
             const id = card.dataset.id;
-            if (id) window.location.href = `content-detail.html?id=${id}`;
+            const isPremium = highlights.find(h => h.id == id)?.is_premium;
+            if (isPremium && !currentUser) {
+                showToast('Premium content. Sign in to watch!', 'warning');
+                return;
+            }
+            showToast(`Playing highlight...`, 'success');
         });
     });
 }
@@ -1332,18 +1600,95 @@ function attachFanzoneClickHandlers() {
     document.querySelectorAll('.fanzone-join').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const zoneId = btn.dataset.zoneId;
-            if (!currentUser) {
-                showToast('Please sign in to join watch-alongs', 'warning');
-                window.location.href = `login.html?redirect=sports.html`;
+            const isPremium = btn.dataset.premium === 'true';
+            if (isPremium && !currentUser) {
+                showToast('Premium watch-along. Sign in or subscribe!', 'warning');
                 return;
             }
-            showToast(`Joining watch-along... Redirecting to chat room`, 'success');
-            setTimeout(() => {
-                window.location.href = `watch-party.html?id=${zoneId}`;
-            }, 1000);
+            showToast(`Joining watch-along. Entering live chat room...`, 'success');
+            document.getElementById('liveChatPanel').scrollIntoView({ behavior: 'smooth' });
         });
     });
+}
+
+// ===== LIVE CHAT SYSTEM (Phase 3.2) =====
+function setupLiveChat() {
+    const sendBtn = document.getElementById('chatSendBtn');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    function addMessage(username, message, isVerified = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'chat-message';
+        messageDiv.innerHTML = `
+            <div class="chat-avatar"><i class="fas fa-user"></i></div>
+            <div class="chat-content">
+                <div class="chat-name">${escapeHtml(username)} ${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</div>
+                <div class="chat-text">${escapeHtml(message)}</div>
+                <div class="chat-time">Just now</div>
+            </div>
+        `;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Limit messages
+        while (chatMessages.children.length > 50) {
+            chatMessages.removeChild(chatMessages.firstChild);
+        }
+    }
+    
+    sendBtn?.addEventListener('click', () => {
+        const message = chatInput?.value.trim();
+        if (!message) return;
+        if (!currentUser) {
+            showToast('Sign in to join the chat!', 'warning');
+            return;
+        }
+        addMessage(currentUser.email?.split('@')[0] || 'Fan', message, false);
+        chatInput.value = '';
+    });
+    
+    chatInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendBtn.click();
+    });
+    
+    // Simulate incoming messages
+    setInterval(() => {
+        if (Math.random() > 0.7) {
+            const fakeUsers = ['ChiefsFan', 'PirateWarrior', 'SoccerLover', 'GoalMachine'];
+            const fakeMessages = ['Let\'s go Chiefs! 🔥', 'What a save!', 'Penalty!', 'VAR check...', 'Offside!'];
+            addMessage(fakeUsers[Math.floor(Math.random() * fakeUsers.length)], fakeMessages[Math.floor(Math.random() * fakeMessages.length)], Math.random() > 0.8);
+        }
+    }, 8000);
+}
+
+// ===== MATCH REMINDER SYSTEM (Phase 8) =====
+function setupReminderSystem() {
+    const reminderBtn = document.getElementById('set-reminder-btn');
+    reminderBtn?.addEventListener('click', () => {
+        if (!currentUser) {
+            showToast('Please sign in to set match reminders', 'warning');
+            return;
+        }
+        const reminder = {
+            user_id: currentUser.id,
+            match_id: "afcon_sa_vs_nigeria",
+            remind_at: new Date(Date.now() + 3 * 86400000).toISOString()
+        };
+        localStorage.setItem(`reminder_${currentUser.id}`, JSON.stringify(reminder));
+        showToast('Reminder set! We\'ll notify you before kickoff ⚽', 'success');
+    });
+}
+
+// ===== PERSONALIZED FEED (Phase 5) =====
+function personalizeFeed() {
+    if (currentUser) {
+        const userFavorites = JSON.parse(localStorage.getItem(`favorites_${currentUser.id}`)) || ['football', 'Kaizer Chiefs'];
+        const filteredHighlights = highlights.filter(h => userFavorites.includes(h.sport));
+        if (filteredHighlights.length > 0) {
+            showToast(`Personalized feed: Showing ${filteredHighlights.length} highlights from your favorite sports`, 'success');
+        }
+    }
 }
 
 // ===== FILTER HANDLERS =====
@@ -1357,19 +1702,6 @@ function setupFilters() {
             renderHighlights();
             showToast(`Showing ${currentSport === 'all' ? 'all sports' : currentSport} highlights`, 'success');
         });
-    });
-}
-
-// ===== REMINDER BUTTON =====
-function setupReminder() {
-    const reminderBtn = document.getElementById('set-reminder-btn');
-    reminderBtn?.addEventListener('click', async () => {
-        if (!currentUser) {
-            showToast('Please sign in to set reminders', 'warning');
-            window.location.href = `login.html?redirect=sports.html`;
-            return;
-        }
-        showToast('Reminder set! We\'ll notify you before kickoff ⚽', 'success');
     });
 }
 
@@ -1458,6 +1790,9 @@ function setupNavigation() {
         document.getElementById('sidebar-overlay')?.classList.add('active');
         document.body.style.overflow = 'hidden';
     });
+    document.getElementById('sidebar-create')?.addEventListener('click', () => {
+        window.location.href = 'creator-upload.html';
+    });
 }
 
 function setupBackToTop() {
@@ -1501,23 +1836,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ===== AUTO-REFRESH LIVE SCORES =====
-function setupLiveScoresRefresh() {
-    setInterval(() => {
-        const scoreItems = document.querySelectorAll('.score-result');
-        scoreItems.forEach(item => {
-            const currentText = item.textContent;
-            if (currentText.includes('-')) {
-                const scores = currentText.split('-').map(s => parseInt(s));
-                if (!isNaN(scores[0]) && !isNaN(scores[1]) && Math.random() > 0.8) {
-                    const newScore = `${scores[0] + (Math.random() > 0.7 ? 1 : 0)} - ${scores[1] + (Math.random() > 0.8 ? 1 : 0)}`;
-                    item.textContent = newScore;
-                }
-            }
-        });
-    }, 15000);
-}
-
 // ===== AUTH CHECK =====
 async function checkAuth() {
     const { data } = await supabaseClient.auth.getSession();
@@ -1526,10 +1844,13 @@ async function checkAuth() {
         const { data: profile } = await supabaseClient.from('user_profiles').select('full_name, username, avatar_url').eq('id', currentUser.id).maybeSingle();
         const nameEl = document.getElementById('current-profile-name');
         if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        if (sidebarName) sidebarName.textContent = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+        personalizeFeed();
     }
 }
 
-// ===== INITIALIZE =====
+// ===== INITIALIZE ALL PHASES =====
 async function initialize() {
     setupSidebar();
     setupNavigation();
@@ -1537,18 +1858,21 @@ async function initialize() {
     setupScaleControls();
     initThemeSystem();
     setupFilters();
-    setupReminder();
+    setupReminderSystem();
     setupLowDataMode();
-    setupLiveScoresRefresh();
+    setupLiveChat();
     await checkAuth();
     
     startCountdown();
+    setupRealtimeScores();
     renderHighlights();
     renderRisingStars();
     renderFanZones();
     
     const loading = document.getElementById('loading');
     if (loading) loading.style.display = 'none';
+    
+    showToast('🔥 Sports Arena loaded • Real-time scores • Fan Zones active', 'success');
 }
 
 initialize();
