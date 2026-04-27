@@ -87,7 +87,7 @@ function escapeHtml(text) {
 /**
  * Truncate text to specified length
  * @param {string} text - Text to truncate
- * @returns {string} Truncated text
+ *returns {string} Truncated text
  */
 function truncateText(text, maxLength) {
     if (!text || text.length <= maxLength) return text;
@@ -218,7 +218,7 @@ function showAllSkeletons() {
     });
 }
 
-// ✅ NEW FUNCTION: Load all cached sections at once
+// ✅ Load all cached sections at once
 function loadAllCachedSections() {
     const sections = {
         'continue-watching-grid': 'feed_continueWatching',
@@ -246,7 +246,7 @@ function loadAllCachedSections() {
     });
 }
 
-// ✅ NEW FUNCTION: Check and retry empty sections
+// ✅ Check and retry empty sections
 function checkAndRetryEmptySections() {
     const sections = [
         { id: 'continue-watching-grid', loader: loadContinueWatchingSection, name: 'Continue Watching' },
@@ -513,6 +513,10 @@ async function initializeHomeFeed() {
         renderCategoryTabs();
         setupNavigationButtons();
         
+        // ✅ Load sidebar section states
+        loadSidebarSectionStates();
+        checkCreatorStatus();
+        
         // ✅ 7. Wait for all sections to complete (or fail gracefully)
         const results = await Promise.allSettled(sectionPromises);
         
@@ -542,7 +546,7 @@ async function initializeHomeFeed() {
 // ============================================
 // AUTH STATE LISTENER - FIX FOR WELCOME MESSAGE
 // ============================================
-// ✅ NEW FUNCTION: Listen for auth state changes
+// ✅ Listen for auth state changes
 function setupAuthStateListener() {
     if (!window.supabaseAuth) return;
     
@@ -568,6 +572,9 @@ function setupAuthStateListener() {
                 loadFollowingSection();
                 loadContinueWatchingSection();
                 
+                // Re-check creator status
+                checkCreatorStatus();
+                
                 showToast(`Welcome back, ${session.user.user_metadata?.full_name || 'User'}!`, 'success');
             }).catch(console.warn);
         }
@@ -588,13 +595,17 @@ function setupAuthStateListener() {
             if (followingSection) followingSection.style.display = 'none';
             if (continueSection) continueSection.style.display = 'none';
             
+            // Hide creator section
+            const creatorSection = document.querySelector('.sidebar-section[data-section="creator"]');
+            if (creatorSection) creatorSection.style.display = 'none';
+            
             showToast('Signed out successfully', 'info');
         }
     });
 }
 
 // ============================================
-// GLOBAL IMAGE ERROR HANDLER (NEW)
+// GLOBAL IMAGE ERROR HANDLER
 // ============================================
 function setupGlobalImageErrorHandler() {
     // Add global image error listener for profile images
@@ -620,6 +631,70 @@ function setupGlobalImageErrorHandler() {
             }
         }
     }, true);
+}
+
+// ============================================
+// SIDEBAR SECTION TOGGLE - YOUTUBE STYLE
+// ============================================
+function toggleSidebarSection(sectionName) {
+    const section = document.querySelector(`.sidebar-section[data-section="${sectionName}"]`);
+    const content = section?.querySelector('.sidebar-section-content');
+    const header = section?.querySelector('.sidebar-section-header');
+    
+    if (!content || !header) return;
+    
+    const isCollapsed = content.classList.toggle('collapsed');
+    header.classList.toggle('collapsed', isCollapsed);
+    
+    // Save preference
+    localStorage.setItem(`sidebar_${sectionName}_collapsed`, isCollapsed);
+    
+    // Update icon
+    const icon = header.querySelector('.section-toggle-icon');
+    if (icon) {
+        icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0)';
+    }
+}
+
+// Load saved section states on init
+function loadSidebarSectionStates() {
+    ['main', 'categories', 'you', 'creator', 'community', 'account'].forEach(section => {
+        const collapsed = localStorage.getItem(`sidebar_${section}_collapsed`) === 'true';
+        if (collapsed) {
+            const content = document.querySelector(`#section-${section}`);
+            const header = document.querySelector(`[data-section="${section}"] .sidebar-section-header`);
+            content?.classList.add('collapsed');
+            header?.classList.add('collapsed');
+            const icon = header?.querySelector('.section-toggle-icon');
+            if (icon) icon.style.transform = 'rotate(-90deg)';
+        }
+    });
+}
+
+// Show creator section if user is a creator
+function checkCreatorStatus() {
+    if (!window.currentUser) return;
+    
+    // Check if user has creator role or uploaded content
+    supabaseAuth
+        .from('Content')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', window.currentUser.id)
+        .limit(1)
+        .then(({ count, error }) => {
+            if (error) {
+                console.warn('Creator check error:', error);
+                return;
+            }
+            if (count > 0) {
+                const creatorSection = document.querySelector('.sidebar-section[data-section="creator"]');
+                if (creatorSection) {
+                    creatorSection.style.display = 'block';
+                    console.log('✅ Creator section enabled');
+                }
+            }
+        })
+        .catch(err => console.warn('Creator check failed:', err));
 }
 
 // ============================================
@@ -1984,7 +2059,7 @@ async function loadCinematicHero() {
     }
 }
 
-// ✅ NEW FUNCTION: Rotate hero content
+// ✅ Rotate hero content
 async function rotateHeroContent() {
     console.log('🔄 Rotating hero content...');
     
@@ -2025,7 +2100,7 @@ async function rotateHeroContent() {
     console.log('🔄 Hero rotated to:', newContent.title);
 }
 
-// ✅ NEW FUNCTION: Render hero content (separated for rotation)
+// ✅ Render hero content (separated for rotation)
 async function renderHeroContent(content) {
     if (!content) {
         console.error('No content to render in hero');
@@ -2204,7 +2279,7 @@ async function renderHeroContent(content) {
     console.log('✅ Hero content rendered successfully');
 }
 
-// ✅ NEW FUNCTION: Show video play button overlay
+// ✅ Show video play button overlay
 function showVideoPlayButton() {
     const heroSection = document.querySelector('.cinematic-hero');
     if (!heroSection) return;
@@ -2251,7 +2326,7 @@ function showVideoPlayButton() {
     }, 5000);
 }
 
-// ✅ NEW FUNCTION: Setup hero audio control
+// ✅ Setup hero audio control
 function setupHeroAudioControl(heroVideo) {
     const audioControl = document.getElementById('hero-audio-control');
     if (!audioControl || !heroVideo) return;
@@ -2286,7 +2361,7 @@ function setupHeroAudioControl(heroVideo) {
     });
 }
 
-// ✅ NEW FUNCTION: Show placeholder when no content exists
+// ✅ Show placeholder when no content exists
 function showHeroPlaceholder() {
     console.log('🎬 Showing hero placeholder');
     
@@ -3209,7 +3284,7 @@ function setupSidebarNavigation() {
         }
     });
     
-    // ✅ NEW: Watch History
+    // ✅ Watch History
     document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -3268,7 +3343,7 @@ function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
     const navCreateBtn = document.getElementById('nav-create-btn');
     const navMenuBtn = document.getElementById('nav-menu-btn');
-    const navHistoryBtn = document.getElementById('nav-history-btn'); // ✅ NEW
+    const navHistoryBtn = document.getElementById('nav-history-btn');
     
     if (navHomeBtn) {
         navHomeBtn.addEventListener('click', () => {
@@ -3288,7 +3363,7 @@ function setupNavigationButtons() {
         });
     }
     
-    // ✅ NEW: Watch History navigation
+    // ✅ Watch History navigation
     if (navHistoryBtn) {
         navHistoryBtn.addEventListener('click', () => {
             if (!window.currentUser) {
