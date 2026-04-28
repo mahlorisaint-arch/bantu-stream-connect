@@ -50,6 +50,143 @@
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* ============================================ */
+        /* 🚀 YOUTUBE-STYLE SKELETON LOADER STYLES      */
+        /* ============================================ */
+        .content-skeleton {
+            animation: fadeIn 0.2s ease;
+            margin-bottom: 2rem;
+        }
+        .skeleton-hero {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        .skeleton-poster {
+            height: 220px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            animation: pulse 1.5s infinite;
+        }
+        .skeleton-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .skeleton-title {
+            height: 28px;
+            width: 70%;
+            background: rgba(255,255,255,0.08);
+            border-radius: 6px;
+            animation: pulse 1.5s infinite;
+        }
+        .skeleton-meta {
+            height: 16px;
+            width: 50%;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            animation: pulse 1.5s infinite 0.2s;
+        }
+        .skeleton-description {
+            height: 14px;
+            width: 90%;
+            background: rgba(255,255,255,0.04);
+            border-radius: 4px;
+            animation: pulse 1.5s infinite 0.4s;
+        }
+        .skeleton-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .skeleton-btn {
+            height: 36px;
+            width: 100px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 8px;
+            animation: pulse 1.5s infinite 0.6s;
+        }
+        .skeleton-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 2rem;
+        }
+        .skeleton-card {
+            height: 140px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            animation: pulse 1.5s infinite 0.8s;
+        }
+        .skeleton-creator {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+        }
+        .skeleton-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            animation: pulse 1.5s infinite;
+        }
+        .skeleton-creator-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .skeleton-creator-name {
+            height: 18px;
+            width: 40%;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px;
+            animation: pulse 1.5s infinite;
+        }
+        .skeleton-creator-sub {
+            height: 12px;
+            width: 25%;
+            background: rgba(255,255,255,0.04);
+            border-radius: 4px;
+            animation: pulse 1.5s infinite 0.2s;
+        }
+        .skeleton-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin: 1.5rem 0;
+        }
+        .skeleton-stat-card {
+            height: 80px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.3; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .skeleton-hero {
+                grid-template-columns: 1fr;
+            }
+            .skeleton-poster {
+                height: 200px;
+            }
+            .skeleton-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
@@ -236,6 +373,66 @@
         
         <!-- Main Content -->
         <main class="container">
+            <!-- 🚀 YOUTUBE-STYLE SKELETON LOADER (Shown instantly, hidden when real data loads) -->
+            <div id="content-skeleton" class="content-skeleton" style="display: none;">
+                <!-- Hero Skeleton -->
+                <div class="skeleton-hero">
+                    <div class="skeleton-poster"></div>
+                    <div class="skeleton-info">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-meta"></div>
+                        <div class="skeleton-description"></div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Creator Skeleton -->
+                <div class="skeleton-creator">
+                    <div class="skeleton-avatar"></div>
+                    <div class="skeleton-creator-info">
+                        <div class="skeleton-creator-name"></div>
+                        <div class="skeleton-creator-sub"></div>
+                    </div>
+                </div>
+                
+                <!-- Stats Skeleton -->
+                <div class="skeleton-stats">
+                    <div class="skeleton-stat-card"></div>
+                    <div class="skeleton-stat-card"></div>
+                    <div class="skeleton-stat-card"></div>
+                    <div class="skeleton-stat-card"></div>
+                </div>
+                
+                <!-- Description Skeleton -->
+                <div class="skeleton-info" style="margin: 1.5rem 0;">
+                    <div class="skeleton-title" style="width: 200px; height: 20px;"></div>
+                    <div class="skeleton-description" style="width: 100%;"></div>
+                    <div class="skeleton-description" style="width: 95%;"></div>
+                    <div class="skeleton-description" style="width: 80%;"></div>
+                </div>
+                
+                <!-- Comments Section Skeleton -->
+                <div class="skeleton-info" style="margin: 2rem 0;">
+                    <div class="skeleton-title" style="width: 150px; height: 20px;"></div>
+                    <div class="skeleton-actions">
+                        <div class="skeleton-btn" style="width: 60px; height: 32px;"></div>
+                    </div>
+                </div>
+                
+                <!-- Related Content Skeleton -->
+                <div class="skeleton-grid">
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+            </div>
+            
             <!-- 🎯 VIDEO PLAYER - NOW BEFORE HERO (Appears on Play) -->
             <!-- ✅ COMPACT VIDEO PLAYER - NO HEADER, NO CLOSE BUTTON -->
             <div class="inline-player" id="inlinePlayer" style="display: none;">
