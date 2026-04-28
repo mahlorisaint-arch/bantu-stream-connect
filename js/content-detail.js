@@ -31,7 +31,10 @@
 // 🔧 CRITICAL FIX: Added session_id to view recording system (YouTube-style validation)
 // 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
 // 🔧 CRITICAL FIX: ADDED profile_id to content_views inserts (required column)
+// 🚀 PERFORMANCE: YouTube-style skeleton loading, critical data parallelization, lazy heavy features
+
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
+
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
@@ -44,6 +47,7 @@ let playlistModal = null; // PHASE 2 POLISH: Playlist modal
 let isInitialized = false;
 let currentUserId = null;
 let viewValidationTimer = null; // 🔧 NEW: Timer for view validation
+let _heavyVideoLoaded = false; // 🚀 Flag for lazy video features
 
 // TEMPORARILY DISABLE the recent view check for testing
 function hasViewedContentRecently(contentId) {
@@ -52,10 +56,20 @@ function hasViewedContentRecently(contentId) {
 }
 
 // ============================================
-// Initialize when DOM is ready
+// 🚀 OPTIMIZED: Initialize when DOM is ready with YouTube-style loading
+// ============================================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('✅ DOM loaded, starting initialization with home feed UI...');
+    console.log('🎬 Content Detail: Starting optimized load sequence...');
+
+    // 1. SHOW SKELETON INSTANTLY (0-50ms)
+    const skeleton = document.getElementById('content-skeleton');
+    const loadingScreen = document.getElementById('loading');
+    const app = document.getElementById('app');
     
+    if (loadingScreen) loadingScreen.style.display = 'none';
+    if (app) app.style.display = 'block';
+    if (skeleton) skeleton.style.display = 'block';
+
     // Initialize Supabase client
     if (!window.supabaseClient) {
         window.supabaseClient = supabase.createClient(
@@ -64,148 +78,286 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
     }
 
-    // Load helpers
-    if (!window.SupabaseHelper) await import('./js/supabase-helper.js');
-    if (!window.AuthHelper) await import('./js/auth-helper.js');
+    // 2. LOAD HELPERS (No await - let them load in background)
+    if (!window.SupabaseHelper) {
+        import('./js/supabase-helper.js').catch(err => console.warn('Helper load error:', err));
+    }
+    if (!window.AuthHelper) {
+        import('./js/auth-helper.js').catch(err => console.warn('Helper load error:', err));
+    }
     
-    // Wait for helpers
-    await waitForHelpers();
+    // Wait briefly for helpers (max 200ms)
+    await Promise.race([
+        waitForHelpers(),
+        new Promise(resolve => setTimeout(resolve, 200))
+    ]);
 
-    // Setup auth listeners
-    setupAuthListeners();
-
-    // Load content
-    await loadContentFromURL();
-
-    // Setup UI
-    setupEventListeners();
-
-    // Initialize video player
-    initializeEnhancedVideoPlayer();
-
-    // Initialize streaming manager (PHASE 4)
-    await initializeStreamingManager();
-
-    // Initialize all modals/panels
-    initAnalyticsModal();
-    initSearchModal();
-    initNotificationsPanel();
-    initThemeSelector(); // ✅ FIXED: Now this function exists!
+    // 3. INIT LIGHTWEIGHT UI SYSTEMS (NO AWAIT)
+    initThemeSelector();
     initGlobalNavigation();
-
-    // ============================================
-    // HOME FEED UI INTEGRATION - SETUP SIDEBAR, HEADER, NAVIGATION
-    // ============================================
-    // Initialize UI Scale Controller
-    window.uiScaleController = new UIScaleController();
-    window.uiScaleController.init();
-
-    // Setup complete sidebar
     setupCompleteSidebar();
-    
-    // Setup sidebar navigation
-    setupSidebarNavigation();
-    
-    // Update sidebar profile
-    await updateSidebarProfile();
-    
-    // Update header profile
-    await updateHeaderProfile();
-    
-    // Update profile switcher
-    updateProfileSwitcher();
-    
-    // Setup navigation buttons
     setupNavigationButtons();
     setupNavButtonScrollAnimation();
+    window.uiScaleController = new UIScaleController();
+    window.uiScaleController.init();
+    setupAuthListeners(); // Setup listeners only, don't wait for auth
 
-    // ✅ After auth initialization, update sidebar profile again if needed
-    if (window.AuthHelper?.isAuthenticated?.()) {
-        await updateSidebarProfile();
-    }
+    // 4. LOAD CRITICAL CONTENT IN PARALLEL (0.3s - 0.8s)
+    try {
+        await Promise.all([
+            loadCriticalContentData(),
+            updateSidebarProfile(),
+            updateHeaderProfile()
+        ]);
 
-    // ✅ FIX: Update comment input state after a brief delay to ensure auth is ready
-    setTimeout(updateCommentInputState, 1500);
-    
-    // Also update when auth state changes
-    if (window.supabaseClient?.auth) {
-        window.supabaseClient.auth.onAuthStateChange(async () => {
-            setTimeout(updateCommentInputState, 300);
-        });
-    }
+        // 5. HIDE SKELETON, SHOW REAL UI
+        if (skeleton) skeleton.style.display = 'none';
+        updateProfileSwitcher();
+        
+        // Update comment input state after auth is ready
+        setTimeout(updateCommentInputState, 300);
 
-    // PHASE 1: Load Continue Watching section (SINGLE SECTION - now below comments)
-    if (currentUserId) {
-        await loadContinueWatching(currentUserId);
-        setupContinueWatchingRefresh();
-    }
-
-    // PHASE 2: Initialize Playlist Manager after auth is ready
-    if (window.PlaylistManager && currentUserId) {
-        await initializePlaylistManager();
-    }
-
-    // ============================================
-    // PHASE 3: Initialize Recommendation Engine
-    // ============================================
-    if (currentContent?.id) {
-        await initializeRecommendationEngine();
-    }
-
-    // ============================================
-    // PHASE 1 POLISH: Initialize keyboard shortcuts after video player
-    // ============================================
-    setTimeout(() => {
-        if (enhancedVideoPlayer?.video) {
-            initializeKeyboardShortcuts();
+        // Setup auth state change listener for comment input
+        if (window.supabaseClient?.auth) {
+            window.supabaseClient.auth.onAuthStateChange(async () => {
+                setTimeout(updateCommentInputState, 300);
+            });
         }
-    }, 1000);
 
-    // ============================================
-    // PHASE 2 POLISH: Initialize playlist modal
-    // ============================================
-    if (currentUserId && currentContent?.id) {
+        // Initialize modals/panels (non-critical)
+        initAnalyticsModal();
+        initSearchModal();
+        initNotificationsPanel();
+
+        // PHASE 2: Initialize Playlist Manager after auth is ready
+        if (window.PlaylistManager && currentUserId) {
+            await initializePlaylistManager();
+        }
+
+        // PHASE 3: Initialize Recommendation Engine
+        if (currentContent?.id) {
+            await initializeRecommendationEngine();
+        }
+
+        // PHASE 1 POLISH: Initialize keyboard shortcuts after video player
         setTimeout(() => {
-            initializePlaylistModal();
-        }, 500);
-    }
+            if (enhancedVideoPlayer?.video) {
+                initializeKeyboardShortcuts();
+            }
+        }, 1000);
 
-    // Show app with fallback timeout
-    setTimeout(() => {
-        const loading = document.getElementById('loading');
-        const app = document.getElementById('app');
-        if (loading && app) {
-            loading.style.display = 'none';
-            app.style.display = 'block';
+        // PHASE 2 POLISH: Initialize playlist modal
+        if (currentUserId && currentContent?.id) {
+            setTimeout(() => {
+                initializePlaylistModal();
+            }, 500);
         }
-    }, 3000); // Fallback after 3 seconds
 
-    // Hide loading and show app
-    const loading = document.getElementById('loading');
-    const app = document.getElementById('app');
-    if (loading && app) {
-        loading.style.display = 'none';
-        app.style.display = 'block';
+        // Apply mobile header styles
+        applyMobileHeaderStyles();
+
+    } catch (err) {
+        console.error('❌ Critical load failed:', err);
+        showToast('Failed to load content. Retrying...', 'error');
+        if (skeleton) skeleton.style.display = 'none';
+        
+        // Fallback: try to load with old method
+        try {
+            await loadContentFromURL();
+        } catch (fallbackErr) {
+            console.error('Fallback also failed:', fallbackErr);
+            document.getElementById('contentTitle').textContent = 'Content Unavailable';
+        }
     }
 
-    // ✅ Apply mobile header styles after everything is loaded
-    applyMobileHeaderStyles();
+    // 6. LAZY LOAD NON-CRITICAL FEATURES (Background after UI renders)
+    requestIdleCallback(() => {
+        setupEventListeners();
+        loadSecondaryContentData(); // Comments, recommendations, continue watching
+        initializeVideoPlayerSkeleton(); // Prep element, DON'T load heavy HLS yet
+    }, { timeout: 2000 });
 
-    console.log('✅ Content Detail fully initialized with RLS-compliant fixes, PHASE 4 Streaming, and HOME FEED UI');
+    // Fallback: Force hide skeleton if something stalls
+    setTimeout(() => {
+        if (skeleton && skeleton.style.display !== 'none') {
+            console.warn('⚠️ Forcing skeleton hide after timeout');
+            skeleton.style.display = 'none';
+        }
+        const loading = document.getElementById('loading');
+        const appElem = document.getElementById('app');
+        if (loading && appElem && loading.style.display !== 'none') {
+            loading.style.display = 'none';
+            appElem.style.display = 'block';
+        }
+    }, 5000);
+
+    console.log('✅ Content Detail initialization complete with optimized loading');
 });
 
-// FINAL SAFETY: Ensure loading screen hides even if errors occur
-setTimeout(() => {
-    const loading = document.getElementById('loading');
-    const app = document.getElementById('app');
-    if (loading && app && loading.style.display !== 'none') {
-        console.warn('⚠️ Forcing app display after timeout');
-        loading.style.display = 'none';
-        app.style.display = 'block';
-    }
-}, 5000); // 5 second fallback
+// Helper to wait for helpers
+async function waitForHelpers() {
+    return new Promise((resolve) => {
+        const check = setInterval(() => {
+            if (window.SupabaseHelper?.isInitialized && window.AuthHelper?.isInitialized) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 50);
+        setTimeout(() => {
+            clearInterval(check);
+            resolve();
+        }, 500);
+    });
+}
 
+// 🚀 NEW: Load only what's needed to render the page
+async function loadCriticalContentData() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const contentId = urlParams.get('id') || '68';
+    
+    // Check cache first
+    const cached = localStorage.getItem(`content_${contentId}`);
+    if (cached) {
+        try {
+            const parsed = JSON.parse(cached);
+            // Validate cache age (5 minutes)
+            if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
+                currentContent = parsed;
+                updateContentUI(currentContent);
+                console.log('📦 Loaded from cache:', contentId);
+                
+                // Still refresh in background
+                refreshContentInBackground(contentId);
+                return;
+            }
+        } catch(e) { console.warn('Cache parse error:', e); }
+    }
+
+    // Fetch critical data in PARALLEL
+    const [contentRes, viewsRes, likesRes] = await Promise.all([
+        window.supabaseClient.from('Content').select(`
+            *, user_profiles!user_id(id, full_name, username, avatar_url)
+        `).eq('id', contentId).single(),
+        window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
+        window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', contentId)
+    ]);
+
+    if (contentRes.error) throw contentRes.error;
+
+    // Get watch progress if user is logged in
+    let watchProgress = null;
+    if (currentUserId) {
+        const { data: progressData } = await window.supabaseClient
+            .from('watch_progress')
+            .select('last_position, is_completed')
+            .eq('user_id', currentUserId)
+            .eq('content_id', contentId)
+            .maybeSingle();
+        watchProgress = progressData;
+    }
+
+    // Get quality profiles and HLS manifest URL (PHASE 4)
+    const { data: streamingData } = await window.supabaseClient
+        .from('Content')
+        .select('quality_profiles, hls_manifest_url, data_saver_url')
+        .eq('id', contentId)
+        .single();
+
+    currentContent = {
+        id: contentRes.data.id,
+        title: contentRes.data.title || 'Untitled',
+        description: contentRes.data.description || '',
+        thumbnail_url: contentRes.data.thumbnail_url,
+        file_url: contentRes.data.file_url,
+        media_type: contentRes.data.media_type || 'video',
+        genre: contentRes.data.genre || 'General',
+        created_at: contentRes.data.created_at,
+        duration: contentRes.data.duration || contentRes.data.duration_seconds || 3600,
+        language: contentRes.data.language || 'English',
+        views_count: viewsRes.count || 0,
+        likes_count: likesRes.count || 0,
+        favorites_count: contentRes.data.favorites_count || 0,
+        comments_count: contentRes.data.comments_count || 0,
+        creator: contentRes.data.user_profiles?.full_name || contentRes.data.user_profiles?.username || 'Creator',
+        creator_display_name: contentRes.data.user_profiles?.full_name || contentRes.data.user_profiles?.username || 'Creator',
+        creator_id: contentRes.data.user_profiles?.id || contentRes.data.user_id,
+        user_id: contentRes.data.user_id,
+        user_profiles: contentRes.data.user_profiles,
+        watch_progress: watchProgress?.last_position || 0,
+        is_completed: watchProgress?.is_completed || false,
+        quality_profiles: streamingData?.quality_profiles || [],
+        hls_manifest_url: streamingData?.hls_manifest_url || null,
+        data_saver_url: streamingData?.data_saver_url || null,
+        _cachedAt: Date.now()
+    };
+
+    // Cache for 5 minutes
+    localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
+    
+    updateContentUI(currentContent);
+    if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
+        addResumeButton(currentContent.watch_progress);
+    }
+    
+    // Initialize like/favorite buttons if user is logged in
+    if (currentUserId) {
+        await initializeLikeButton(contentId, currentUserId);
+        await initializeFavoriteButton(contentId, currentUserId);
+    }
+    
+    if (playlistManager) {
+        await updateWatchLaterButtonState();
+    }
+}
+
+// Background refresh to keep cache fresh
+async function refreshContentInBackground(contentId) {
+    try {
+        const [viewsRes, likesRes] = await Promise.all([
+            window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
+            window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', contentId)
+        ]);
+        
+        if (currentContent) {
+            currentContent.views_count = viewsRes.count || 0;
+            currentContent.likes_count = likesRes.count || 0;
+            updateCountsUI(currentContent);
+            // Update cache
+            currentContent._cachedAt = Date.now();
+            localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
+        }
+    } catch(e) { console.warn('Background refresh failed:', e); }
+}
+
+// Update only counts in UI
+function updateCountsUI(content) {
+    const viewsEl = document.getElementById('viewsCount');
+    const viewsFullEl = document.getElementById('viewsCountFull');
+    const likesEl = document.getElementById('likesCount');
+    
+    if (viewsEl) viewsEl.textContent = formatNumber(content.views_count) + ' views';
+    if (viewsFullEl) viewsFullEl.textContent = formatNumber(content.views_count);
+    if (likesEl) likesEl.textContent = formatNumber(content.likes_count);
+}
+
+// 🚀 NEW: Load non-critical data in background
+async function loadSecondaryContentData() {
+    if (!currentContent?.id) return;
+    
+    const contentId = currentContent.id;
+    
+    // Run non-blocking
+    Promise.all([
+        loadComments(contentId),
+        loadRelatedContent(contentId),
+        currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
+        currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
+    ]).catch(err => console.warn('⚠️ Secondary data load failed:', err));
+}
+
+// ============================================
 // PHASE 1: Import WatchSession class
+// ============================================
 if (!window.WatchSession) {
     console.warn('⚠️ WatchSession not loaded, will attempt to load dynamically');
     const script = document.createElement('script');
@@ -369,103 +521,135 @@ function handlePlay() {
             }
         });
 
-    // Continue with video playback setup
-    player.style.display = 'block';
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) placeholder.style.display = 'none';
-    const heroPoster = document.getElementById('heroPoster');
-    if (heroPoster) heroPoster.style.opacity = '0.3';
-    const closeFromHero = document.getElementById('closePlayerFromHero');
-    if (closeFromHero) closeFromHero.style.display = 'flex';
-    videoElement.muted = false;
-    videoElement.defaultMuted = false;
-    videoElement.volume = 1.0;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 🚀 Load heavy video features on-demand
+    loadHeavyVideoFeatures().then(() => {
+        // Continue with video playback setup
+        player.style.display = 'block';
+        const placeholder = document.getElementById('videoPlaceholder');
+        if (placeholder) placeholder.style.display = 'none';
+        const heroPoster = document.getElementById('heroPoster');
+        if (heroPoster) heroPoster.style.opacity = '0.3';
+        const closeFromHero = document.getElementById('closePlayerFromHero');
+        if (closeFromHero) closeFromHero.style.display = 'flex';
+        videoElement.muted = false;
+        videoElement.defaultMuted = false;
+        videoElement.volume = 1.0;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Video source setup (keep your existing working code)
-    let fileUrl = currentContent.file_url;
-    console.log('📥 Raw file_url from database:', fileUrl);
-    if (fileUrl && !fileUrl.startsWith('http')) {
-        if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
-        fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
-    }
-    if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined' || fileUrl === '') {
-        if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
-            const cleanPath = currentContent.thumbnail_url.startsWith('/') ? currentContent.thumbnail_url.substring(1) : currentContent.thumbnail_url;
-            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+        // Video source setup (keep your existing working code)
+        let fileUrl = currentContent.file_url;
+        console.log('📥 Raw file_url from database:', fileUrl);
+        if (fileUrl && !fileUrl.startsWith('http')) {
+            if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
+            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
         }
-    }
-    console.log('🎵 Final file URL:', fileUrl);
-
-    const isAudioFile = fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac') || fileUrl.includes('.m4a'));
-    const isVideoFile = fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
-
-    if (!fileUrl || (!isAudioFile && !isVideoFile)) {
-        console.error('❌ Invalid file format:', fileUrl);
-        showToast('Invalid file format', 'error');
-        return;
-    }
-
-    if (isAudioFile && currentContent.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
-        videoElement.setAttribute('poster', imgUrl);
-    } else {
-        videoElement.removeAttribute('poster');
-    }
-
-    const videoContainer = document.querySelector('.video-container');
-    if (videoContainer) {
-        videoContainer.setAttribute('data-media-type', isAudioFile ? 'audio' : 'video');
-    }
-
-    if (enhancedVideoPlayer) {
-        try { enhancedVideoPlayer.destroy(); } catch(e) {}
-        enhancedVideoPlayer = null;
-    }
-    if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-    }
-
-    while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
-    videoElement.removeAttribute('src');
-    videoElement.src = '';
-
-    const source = document.createElement('source');
-    source.src = fileUrl;
-    if (isAudioFile) {
-        if (fileUrl.endsWith('.mp3')) source.type = 'audio/mpeg';
-        else if (fileUrl.endsWith('.wav')) source.type = 'audio/wav';
-        else if (fileUrl.endsWith('.ogg')) source.type = 'audio/ogg';
-        else source.type = 'audio/mpeg';
-    } else {
-        if (fileUrl.endsWith('.mp4')) source.type = 'video/mp4';
-        else if (fileUrl.endsWith('.webm')) source.type = 'video/webm';
-        else source.type = 'video/mp4';
-    }
-    videoElement.appendChild(source);
-    videoElement.load();
-
-    initializeEnhancedVideoPlayer();
-    setTimeout(() => {
-        if (streamingManager) {
-            streamingManager.destroy();
-            streamingManager = null;
+        if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined' || fileUrl === '') {
+            if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
+                const cleanPath = currentContent.thumbnail_url.startsWith('/') ? currentContent.thumbnail_url.substring(1) : currentContent.thumbnail_url;
+                fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+            }
         }
-        initializeStreamingManager();
-    }, 100);
+        console.log('🎵 Final file URL:', fileUrl);
 
-    setTimeout(() => {
-        if (enhancedVideoPlayer) {
-            enhancedVideoPlayer.play().catch(err => console.error('Play failed:', err));
+        const isAudioFile = fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac') || fileUrl.includes('.m4a'));
+        const isVideoFile = fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
+
+        if (!fileUrl || (!isAudioFile && !isVideoFile)) {
+            console.error('❌ Invalid file format:', fileUrl);
+            showToast('Invalid file format', 'error');
+            return;
+        }
+
+        if (isAudioFile && currentContent.thumbnail_url) {
+            const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
+            videoElement.setAttribute('poster', imgUrl);
         } else {
-            videoElement.play().catch(err => console.error('Autoplay failed:', err));
+            videoElement.removeAttribute('poster');
         }
-    }, 500);
 
-    setTimeout(() => {
-        player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+        const videoContainer = document.querySelector('.video-container');
+        if (videoContainer) {
+            videoContainer.setAttribute('data-media-type', isAudioFile ? 'audio' : 'video');
+        }
+
+        if (enhancedVideoPlayer) {
+            try { enhancedVideoPlayer.destroy(); } catch(e) {}
+            enhancedVideoPlayer = null;
+        }
+        if (watchSession) {
+            watchSession.stop();
+            watchSession = null;
+        }
+
+        while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
+        videoElement.removeAttribute('src');
+        videoElement.src = '';
+
+        const source = document.createElement('source');
+        source.src = fileUrl;
+        if (isAudioFile) {
+            if (fileUrl.endsWith('.mp3')) source.type = 'audio/mpeg';
+            else if (fileUrl.endsWith('.wav')) source.type = 'audio/wav';
+            else if (fileUrl.endsWith('.ogg')) source.type = 'audio/ogg';
+            else source.type = 'audio/mpeg';
+        } else {
+            if (fileUrl.endsWith('.mp4')) source.type = 'video/mp4';
+            else if (fileUrl.endsWith('.webm')) source.type = 'video/webm';
+            else source.type = 'video/mp4';
+        }
+        videoElement.appendChild(source);
+        videoElement.load();
+
+        initializeEnhancedVideoPlayer();
+        setTimeout(() => {
+            if (streamingManager) {
+                streamingManager.destroy();
+                streamingManager = null;
+            }
+            initializeStreamingManager();
+        }, 100);
+
+        setTimeout(() => {
+            if (enhancedVideoPlayer) {
+                enhancedVideoPlayer.play().catch(err => console.error('Play failed:', err));
+            } else {
+                videoElement.play().catch(err => console.error('Autoplay failed:', err));
+            }
+        }, 500);
+
+        setTimeout(() => {
+            player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }).catch(err => {
+        console.error('Failed to load video features:', err);
+        showToast('Video player error', 'error');
+    });
+}
+
+// 🚀 Prepares video element without heavy libraries
+function initializeVideoPlayerSkeleton() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    if (videoElement) {
+        videoElement.preload = 'none'; // ⚡ CRITICAL: Don't fetch video on load
+        videoElement.controls = false;
+        console.log('🎥 Video skeleton ready (preload=none)');
+    }
+}
+
+// 🚀 Load heavy video features on-demand (called inside handlePlay)
+async function loadHeavyVideoFeatures() {
+    if (_heavyVideoLoaded) return;
+    _heavyVideoLoaded = true;
+
+    console.log('🚀 Loading heavy video features on-demand...');
+    try {
+        await initializeEnhancedVideoPlayer();
+        await initializeStreamingManager();
+        console.log('✅ Heavy video features ready');
+    } catch (error) {
+        console.error('❌ Failed to load heavy video features:', error);
+        _heavyVideoLoaded = false; // Allow retry
+    }
 }
 
 // ============================================
@@ -536,17 +720,6 @@ function initializePlaylistModal() {
     } catch (error) {
         console.error('❌ Failed to initialize playlist modal:', error);
     }
-}
-
-async function waitForHelpers() {
-    return new Promise((resolve) => {
-        const check = setInterval(() => {
-            if (window.SupabaseHelper?.isInitialized && window.AuthHelper?.isInitialized) {
-                clearInterval(check);
-                resolve();
-            }
-        }, 100);
-    });
 }
 
 // ============================================
@@ -930,7 +1103,7 @@ function resetHeaderProfile() {
 }
 
 // ============================================
-// FIXED: Load content with ACCURATE counts from source tables
+// FALLBACK: Load content with ACCURATE counts from source tables (used if critical fails)
 // ✅ CRITICAL: Include user_profiles with avatar_url
 // ============================================
 async function loadContentFromURL() {
@@ -2836,7 +3009,6 @@ window.streamingManager = streamingManager;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
 window.closeVideoPlayer = closeVideoPlayer; // ✅ Export close function
-window.debugSessionData = debugSessionData; // 🔧 Export debug function
 
 // 🔧 PHASE 1: Page unload handler - clean up watch session and validation timer
 window.addEventListener('beforeunload', function() {
@@ -2854,4 +3026,4 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, and HOME FEED UI INTEGRATION');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
