@@ -32,6 +32,8 @@
 // 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
 // 🔧 CRITICAL FIX: ADDED profile_id to content_views inserts (required column)
 // 🚀 PERFORMANCE: YouTube-style skeleton loading, critical data parallelization, lazy heavy features
+// 🔐 AUTH FIX: Ensured AuthHelper is fully initialized before UI updates
+// 🔐 AUTH FIX: Added waitForAuthHelper() to prevent timing issues
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -78,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
     }
 
-    // 2. LOAD HELPERS (No await - let them load in background)
+    // 2. LOAD HELPERS and WAIT for Auth Helper
     if (!window.SupabaseHelper) {
         import('./js/supabase-helper.js').catch(err => console.warn('Helper load error:', err));
     }
@@ -86,11 +88,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         import('./js/auth-helper.js').catch(err => console.warn('Helper load error:', err));
     }
     
-    // Wait briefly for helpers (max 200ms)
-    await Promise.race([
-        waitForHelpers(),
-        new Promise(resolve => setTimeout(resolve, 200))
-    ]);
+    // Wait for AuthHelper to be ready (CRITICAL FIX)
+    await waitForAuthHelper();
+    
+    // Initialize AuthHelper if needed
+    if (window.AuthHelper && !window.AuthHelper.isInitialized) {
+        await window.AuthHelper.initialize();
+    }
+    
+    // Get current user ID
+    currentUserId = window.AuthHelper?.getUserProfile?.()?.id || null;
+    console.log('👤 Current user ID:', currentUserId || 'Guest');
 
     // 3. INIT LIGHTWEIGHT UI SYSTEMS (NO AWAIT)
     initThemeSelector();
@@ -102,17 +110,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.uiScaleController.init();
     setupAuthListeners(); // Setup listeners only, don't wait for auth
 
+    // Force immediate profile updates (CRITICAL FIX)
+    await updateSidebarProfile();
+    await updateHeaderProfile();
+    updateProfileSwitcher();
+
     // 4. LOAD CRITICAL CONTENT IN PARALLEL (0.3s - 0.8s)
     try {
         await Promise.all([
             loadCriticalContentData(),
-            updateSidebarProfile(),
+            updateSidebarProfile(), // Double-check after content loads
             updateHeaderProfile()
         ]);
 
         // 5. HIDE SKELETON, SHOW REAL UI
         if (skeleton) skeleton.style.display = 'none';
-        updateProfileSwitcher();
         
         // Update comment input state after auth is ready
         setTimeout(updateCommentInputState, 300);
@@ -121,6 +133,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (window.supabaseClient?.auth) {
             window.supabaseClient.auth.onAuthStateChange(async () => {
                 setTimeout(updateCommentInputState, 300);
+                // Re-update profiles on auth change
+                await updateSidebarProfile();
+                await updateHeaderProfile();
+                updateProfileSwitcher();
             });
         }
 
@@ -194,7 +210,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ Content Detail initialization complete with optimized loading');
 });
 
-// Helper to wait for helpers
+// Helper function to wait for AuthHelper
+async function waitForAuthHelper() {
+    return new Promise((resolve) => {
+        const check = setInterval(() => {
+            if (window.AuthHelper && window.AuthHelper.isInitialized) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 50);
+        // Timeout after 2 seconds
+        setTimeout(() => {
+            clearInterval(check);
+            console.warn('⚠️ AuthHelper not loaded within timeout, continuing anyway');
+            resolve();
+        }, 2000);
+    });
+}
+
+// Helper to wait for helpers (legacy)
 async function waitForHelpers() {
     return new Promise((resolve) => {
         const check = setInterval(() => {
@@ -921,6 +955,155 @@ function setupDataSaverToggle() {
     });
 }
 
+// ============================================
+// AUTHENTICATION & PROFILE FUNCTIONS (CRITICAL FIXES)
+// ============================================
+
+// Update sidebar profile with logged-in user info
+async function updateSidebarProfile() {
+    const avatar = document.getElementById('sidebar-profile-avatar');
+    const name = document.getElementById('sidebar-profile-name');
+    const email = document.getElementById('sidebar-profile-email');
+    
+    if (!avatar || !name || !email) return;
+    
+    if (window.AuthHelper?.isAuthenticated?.()) {
+        const userProfile = window.AuthHelper.getUserProfile();
+        const displayName = window.AuthHelper.getDisplayName();
+        const userEmail = userProfile?.email || 'User';
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            avatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        } else {
+            const initial = displayName.charAt(0).toUpperCase();
+            avatar.innerHTML = `<div style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg, #1D4ED8, #F59E0B); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:1.5rem;">${initial}</div>`;
+        }
+        name.textContent = displayName;
+        email.textContent = userEmail;
+    } else {
+        avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
+        name.textContent = 'Guest';
+        email.textContent = 'Sign in to continue';
+    }
+}
+
+// Update header profile with logged-in user info
+async function updateHeaderProfile() {
+    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+    const profileName = document.getElementById('current-profile-name');
+    
+    if (!profilePlaceholder) return;
+    
+    if (window.AuthHelper?.isAuthenticated?.()) {
+        const displayName = window.AuthHelper.getDisplayName();
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        const initial = displayName.charAt(0).toUpperCase();
+        
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            profilePlaceholder.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">`;
+        } else {
+            profilePlaceholder.innerHTML = `<div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #1D4ED8, #F59E0B); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:14px;">${initial}</div>`;
+        }
+        if (profileName) profileName.textContent = displayName;
+    } else {
+        profilePlaceholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+        if (profileName) profileName.textContent = 'Guest';
+    }
+    
+    // Apply mobile header styles after updating
+    applyMobileHeaderStyles();
+}
+
+// Update profile switcher dropdown
+function updateProfileSwitcher() {
+    const profileList = document.getElementById('profile-list');
+    if (!profileList) return;
+    
+    if (window.AuthHelper?.isAuthenticated?.()) {
+        const displayName = window.AuthHelper.getDisplayName();
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        const initial = displayName.charAt(0).toUpperCase();
+        
+        let avatarHtml = '';
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        } else {
+            avatarHtml = `<div style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg, #1D4ED8, #F59E0B); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">${initial}</div>`;
+        }
+        
+        profileList.innerHTML = `
+            <div class="profile-item active" data-profile="main">
+                <div class="profile-avatar">
+                    ${avatarHtml}
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">${escapeHtml(displayName)}</div>
+                    <div class="profile-type">Main Profile</div>
+                </div>
+            </div>
+        `;
+    } else {
+        profileList.innerHTML = `
+            <div class="profile-item" onclick="window.location.href='login.html'">
+                <div class="profile-avatar">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">Sign In</div>
+                    <div class="profile-type">To access your profile</div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Update comment input state based on authentication
+function updateCommentInputState() {
+    const commentInput = document.getElementById('commentInput');
+    const sendBtn = document.getElementById('sendCommentBtn');
+    const commentAuthMessage = document.getElementById('commentAuthMessage');
+    
+    if (!commentInput) return;
+    
+    const isAuthenticated = window.AuthHelper?.isAuthenticated?.();
+    
+    if (isAuthenticated) {
+        commentInput.disabled = false;
+        commentInput.placeholder = 'Add a comment...';
+        if (sendBtn) sendBtn.disabled = false;
+        if (commentAuthMessage) commentAuthMessage.style.display = 'none';
+    } else {
+        commentInput.disabled = true;
+        commentInput.placeholder = 'Sign in to comment';
+        if (sendBtn) sendBtn.disabled = true;
+        if (commentAuthMessage) commentAuthMessage.style.display = 'block';
+    }
+}
+
+// Reset sidebar profile for guest state
+function resetSidebarProfile() {
+    const avatar = document.getElementById('sidebar-profile-avatar');
+    const name = document.getElementById('sidebar-profile-name');
+    const email = document.getElementById('sidebar-profile-email');
+    if (name) name.textContent = 'Guest';
+    if (email) email.textContent = 'Sign in to continue';
+    if (avatar) avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
+}
+
+// Reset header profile for guest state
+function resetHeaderProfile() {
+    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+    const currentProfileName = document.getElementById('current-profile-name');
+    if (profilePlaceholder) {
+        profilePlaceholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+    }
+    if (currentProfileName) {
+        currentProfileName.textContent = 'Guest';
+    }
+    applyMobileHeaderStyles();
+}
+
 // Authentication setup
 function setupAuthListeners() {
     window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -954,7 +1137,7 @@ function setupAuthListeners() {
             await updateHeaderProfile();
             updateProfileSwitcher();
             
-            // ✅ Update comment input state after sign in
+            // Update comment input state after sign in
             setTimeout(updateCommentInputState, 300);
 
         } else if (event === 'SIGNED_OUT') {
@@ -990,7 +1173,7 @@ function setupAuthListeners() {
             resetSidebarProfile();
             resetHeaderProfile();
             
-            // ✅ Update comment input state after sign out
+            // Update comment input state after sign out
             setTimeout(updateCommentInputState, 300);
         }
     });
@@ -1002,7 +1185,7 @@ function setupAuthListeners() {
         resetProfileUI();
     }
     
-    // ✅ Initial comment input state update
+    // Initial comment input state update
     setTimeout(updateCommentInputState, 500);
 }
 
@@ -1017,7 +1200,7 @@ function updateProfileUI() {
         const avatarUrl = window.AuthHelper.getAvatarUrl();
         const initial = displayName.charAt(0).toUpperCase();
 
-        if (avatarUrl) {
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
             userProfilePlaceholder.innerHTML = `
                 <img src="${avatarUrl}" alt="${displayName}"
                      class="profile-img"
@@ -1053,9 +1236,9 @@ function updateProfileUI() {
         };
     }
     
-    // ✅ Apply mobile header styles after updating profile UI
+    // Apply mobile header styles after updating profile UI
     applyMobileHeaderStyles();
-    // ✅ Update comment input state directly (no duplicate check)
+    // Update comment input state directly
     updateCommentInputState();
 }
 
@@ -1072,35 +1255,40 @@ function resetProfileUI() {
     profileBtn.onclick = () => {
         window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
     };
-    // ✅ Apply mobile header styles after reset
+    // Apply mobile header styles after reset
     applyMobileHeaderStyles();
-    // ✅ Update comment input state for guest
+    // Update comment input state for guest
     updateCommentInputState();
 }
 
-// Reset sidebar profile for guest state
-function resetSidebarProfile() {
-    const avatar = document.getElementById('sidebar-profile-avatar');
-    const name = document.getElementById('sidebar-profile-name');
-    const email = document.getElementById('sidebar-profile-email');
-    if (name) name.textContent = 'Guest';
-    if (email) email.textContent = 'Sign in to continue';
-    if (avatar) avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
+// Apply mobile header styles (hide profile picture on mobile, keep RSA badge)
+function applyMobileHeaderStyles() {
+    const headerProfile = document.querySelector('.header-profile');
+    if (!headerProfile) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        // On mobile: hide the profile picture/avatar, keep the RSA badge and user name
+        const profileImg = headerProfile.querySelector('#userProfilePlaceholder img, #userProfilePlaceholder .profile-placeholder');
+        if (profileImg) {
+            profileImg.style.display = 'none';
+        }
+        // Ensure RSA badge is visible
+        const rsaBadge = headerProfile.querySelector('.rsa-badge');
+        if (rsaBadge) {
+            rsaBadge.style.display = 'flex';
+        }
+    } else {
+        // On desktop: show the profile picture
+        const profileImg = headerProfile.querySelector('#userProfilePlaceholder img, #userProfilePlaceholder .profile-placeholder');
+        if (profileImg) {
+            profileImg.style.display = '';
+        }
+    }
 }
 
-// Reset header profile for guest state
-function resetHeaderProfile() {
-    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-    const currentProfileName = document.getElementById('current-profile-name');
-    if (profilePlaceholder) {
-        profilePlaceholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
-    }
-    if (currentProfileName) {
-        currentProfileName.textContent = 'Guest';
-    }
-    // ✅ Apply mobile header styles after reset
-    applyMobileHeaderStyles();
-}
+// Listen for window resize to re-apply mobile header styles
+window.addEventListener('resize', applyMobileHeaderStyles);
 
 // ============================================
 // FALLBACK: Load content with ACCURATE counts from source tables (used if critical fails)
@@ -3026,4 +3214,4 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
