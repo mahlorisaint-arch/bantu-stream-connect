@@ -4,6 +4,7 @@
 /* PLATFORM CONSISTENCY: Integrated with home feed UI system */
 /* 🎯 FIXED: Mobile header no horizontal scroll, correct icons only */
 /* 🎯 FIXED: Computer header untouched (working perfectly) */
+/* 🎯 YOUTUBE-LEVEL SIDEBAR STRUCTURE ADDED */
 /* ============================================ */
 
 /* CSS VARIABLES & THEME SUPPORT */
@@ -650,8 +651,136 @@ body {
 }
 
 /* ============================================ */
-/* SIDEBAR MENU - HOME FEED INTEGRATION */
+/* YOUTUBE-LEVEL SIDEBAR STRUCTURE */
 /* ============================================ */
+
+/* Section Headers */
+.sidebar-section {
+  margin-bottom: 12px;
+}
+
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  color: var(--slate-grey);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.sidebar-section-header:hover {
+  color: var(--soft-white);
+}
+
+.sidebar-section-header .toggle-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-section-header.collapsed .toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 500px;
+  opacity: 1;
+}
+
+.sidebar-section-items.collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 8px;
+  margin: 0;
+}
+
+/* Navigation Items - Active State */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 0 24px 24px 0;
+  color: var(--soft-white);
+  text-decoration: none;
+  font-size: var(--font-base);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+/* ✅ YouTube-style active state */
+.sidebar-nav-item.active {
+  background: rgba(29, 78, 216, 0.15);
+  border-left-color: var(--bantu-blue);
+  color: var(--bantu-blue);
+  font-weight: 600;
+}
+
+.sidebar-nav-item.active i {
+  color: var(--bantu-blue);
+}
+
+.sidebar-nav-item i {
+  width: 20px;
+  text-align: center;
+  font-size: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--slate-grey);
+  transition: color 0.2s ease;
+}
+
+.sidebar-nav-item:hover i {
+  color: var(--soft-white);
+}
+
+/* Category-specific icon colors */
+.sidebar-nav-item[data-category="music"] i { color: #EC4899; }
+.sidebar-nav-item[data-category="stem"] i { color: #3B82F6; }
+.sidebar-nav-item[data-category="culture"] i { color: #F59E0B; }
+.sidebar-nav-item[data-category="news"] i { color: #EF4444; }
+.sidebar-nav-item[data-category="sports"] i { color: #10B981; }
+.sidebar-nav-item[data-category="movies"] i { color: #8B5CF6; }
+.sidebar-nav-item[data-category="documentaries"] i { color: #6366F1; }
+.sidebar-nav-item[data-category="podcasts"] i { color: #14B8A6; }
+
+/* Creator Mode Toggle */
+.creator-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+}
+
+.creator-mode-toggle .toggle-label {
+  font-size: 13px;
+  color: var(--soft-white);
+  font-weight: 500;
+}
+
+/* SIDEBAR MENU - HOME FEED INTEGRATION (Base styles) */
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -684,7 +813,8 @@ body {
   transition: left 0.3s ease;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.25rem;
 }
 
@@ -819,36 +949,7 @@ body {
   border-radius: 3px;
 }
 
-.sidebar-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  border-radius: 0.75rem;
-  color: var(--soft-white);
-  text-decoration: none;
-  font-size: var(--font-base);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.sidebar-nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateX(0.25rem);
-}
-
-.sidebar-nav-item.active {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-}
-
-.sidebar-nav-item i {
-  width: 1.25rem;
-  text-align: center;
-  font-size: var(--icon-md);
-  flex-shrink: 0;
-}
-
+/* Badge styles */
 .sidebar-nav-item .badge {
   margin-left: auto;
   background: var(--error-color);
@@ -947,6 +1048,22 @@ body {
 
 /* Mobile sidebar adjustments */
 @media (max-width: 768px) {
+  .sidebar-section-header {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+  
+  .sidebar-nav-item {
+    padding: 8px 12px;
+    font-size: 14px;
+    gap: 10px;
+  }
+  
+  .sidebar-nav-item i {
+    width: 18px;
+    font-size: 14px;
+  }
+
   .sidebar-scale-control {
     padding: 0.5rem;
   }
