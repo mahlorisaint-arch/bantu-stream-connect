@@ -11,6 +11,8 @@ console.log('🎬 Content Detail Features Loading...');
 // 🔧 FIXED: Added profile_id - required column
 // ============================================
 
+let viewValidationTimer = null;
+
 // Generate new session ID for each play
 function generateNewSession() {
     const newSessionId = crypto.randomUUID();
@@ -518,14 +520,36 @@ function applyTheme(theme) {
 }
 
 // ============================================
-// SIDEBAR SETUP & FUNCTIONS (from home feed)
+// SIDEBAR SETUP & FUNCTIONS (from home feed) - YOUTUBE-LEVEL ENHANCED
 // ============================================
 function setupCompleteSidebar() {
     setupMobileSidebar();
     fixSidebarProfileTruncation();
     setupSidebarScaleControls();
     optimizeMobileSidebar();
+    
+    // Initialize collapsible sections and navigation
+    setupSidebarNavigation();
+    
     window.addEventListener('resize', () => optimizeMobileSidebar());
+    
+    // Close all sections on mobile open for cleaner UX
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    if (sidebarMenu) {
+        const observer = new MutationObserver(() => {
+            if (sidebarMenu.classList.contains('active') && window.innerWidth <= 768) {
+                // Collapse non-essential sections on mobile open
+                document.querySelectorAll('.sidebar-section-items').forEach(items => {
+                    if (!items.id.includes('main')) {
+                        items.classList.add('collapsed');
+                        const header = document.querySelector(`[data-toggle="${items.id.replace('section-', '')}"] .toggle-icon`);
+                        if (header) header.classList.add('collapsed');
+                    }
+                });
+            }
+        });
+        observer.observe(sidebarMenu, { attributes: true, attributeFilter: ['class'] });
+    }
 }
 
 // ✅ FIXED: Header menu button - Opens sidebar ONLY (no redirect)
@@ -573,7 +597,7 @@ function setupMobileSidebar() {
 
     // Handle safe area insets for modern mobile devices
     if (window.CSS && CSS.supports('padding-bottom', 'env(safe-area-inset-bottom)')) {
-        const sidebarFooter = document.getElementById('sidebar-footer');
+        const sidebarFooter = document.querySelector('.sidebar-footer');
         if (sidebarFooter) {
             sidebarFooter.style.paddingBottom = 'max(16px, env(safe-area-inset-bottom))';
         }
@@ -631,7 +655,77 @@ function setupSidebarScaleControls() {
     document.addEventListener('scaleChanged', updateDisplay);
 }
 
+// ============================================
+// 🎯 YOUTUBE-LEVEL SIDEBAR NAVIGATION
+// ============================================
 function setupSidebarNavigation() {
+    // ===== COLLAPSIBLE SECTIONS =====
+    document.querySelectorAll('.sidebar-section-header[data-toggle]').forEach(header => {
+        header.addEventListener('click', function(e) {
+            e.preventDefault();
+            const section = this.dataset.toggle;
+            const items = document.getElementById(`section-${section}`);
+            const icon = this.querySelector('.toggle-icon');
+            
+            if (items && icon) {
+                items.classList.toggle('collapsed');
+                this.classList.toggle('collapsed');
+                
+                // Save preference
+                localStorage.setItem(`sidebar_${section}_collapsed`, items.classList.contains('collapsed'));
+            }
+        });
+        
+        // Restore saved state
+        const section = header.dataset.toggle;
+        const items = document.getElementById(`section-${section}`);
+        const icon = header.querySelector('.toggle-icon');
+        const isCollapsed = localStorage.getItem(`sidebar_${section}_collapsed`) === 'true';
+        
+        if (isCollapsed && items && icon) {
+            items.classList.add('collapsed');
+            header.classList.add('collapsed');
+        }
+    });
+
+    // ===== ACTIVE STATE HIGHLIGHTING =====
+    function setActiveNavItem(pageId) {
+        document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.page === pageId || item.dataset.category === pageId) {
+                item.classList.add('active');
+            }
+        });
+    }
+
+    // Set active based on current page
+    const currentPath = window.location.pathname;
+    const currentHash = window.location.hash;
+    
+    if (currentPath.includes('index.html') && currentHash.includes('community-pulse')) {
+        setActiveNavItem('pulse');
+    } else if (currentPath.includes('explore')) {
+        setActiveNavItem('explore');
+    } else if (currentPath.includes('trending')) {
+        setActiveNavItem('trending');
+    } else if (currentPath.includes('creators')) {
+        setActiveNavItem('creators');
+    } else if (currentPath.includes('library')) {
+        setActiveNavItem('library');
+    } else if (currentPath.includes('my-uploads')) {
+        setActiveNavItem('uploads');
+    } else if (currentPath.includes('creator-dashboard')) {
+        setActiveNavItem('dashboard');
+    } else if (currentPath.includes('creator-analytics')) {
+        setActiveNavItem('analytics');
+    } else if (currentPath.includes('manage-profiles')) {
+        setActiveNavItem('profiles');
+    } else {
+        setActiveNavItem('home'); // Default
+    }
+
+    // ===== NAVIGATION CLICK HANDLERS =====
+    
     // Analytics
     document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -643,7 +737,7 @@ function setupSidebarNavigation() {
         const analyticsModal = document.getElementById('analytics-modal');
         if (analyticsModal) {
             analyticsModal.classList.add('active');
-            loadPersonalAnalytics();
+            if (typeof loadPersonalAnalytics === 'function') loadPersonalAnalytics();
         }
     });
 
@@ -654,7 +748,7 @@ function setupSidebarNavigation() {
         const notificationsPanel = document.getElementById('notifications-panel');
         if (notificationsPanel) {
             notificationsPanel.classList.add('active');
-            renderNotifications();
+            if (typeof renderNotifications === 'function') renderNotifications();
         }
     });
 
@@ -669,7 +763,7 @@ function setupSidebarNavigation() {
         const badgesModal = document.getElementById('badges-modal');
         if (badgesModal) {
             badgesModal.classList.add('active');
-            loadUserBadges();
+            if (typeof loadUserBadges === 'function') loadUserBadges();
         }
     });
 
@@ -681,11 +775,7 @@ function setupSidebarNavigation() {
             showToast('Please sign in to start a watch party', 'warning');
             return;
         }
-        const watchPartyModal = document.getElementById('watch-party-modal');
-        if (watchPartyModal) {
-            watchPartyModal.classList.add('active');
-            loadWatchPartyContent();
-        }
+        window.location.href = 'https://bantustreamconnect.com/watch-party';
     });
 
     // Create Content
@@ -725,8 +815,88 @@ function setupSidebarNavigation() {
         }
         window.location.href = 'watch-history.html';
     });
+
+    // Logout
+    document.getElementById('sidebar-logout')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        await window.supabaseClient.auth.signOut();
+        window.location.href = 'index.html';
+    });
+
+    // ===== CREATOR MODE TOGGLE (POWER MOVE) =====
+    const creatorModeToggle = document.getElementById('creatorModeToggle');
+    const creatorModeSwitch = document.getElementById('creatorModeSwitch');
+    const creatorSection = document.querySelector('.sidebar-section[data-section="creator"]');
+    
+    if (creatorModeToggle && creatorModeSwitch && creatorSection) {
+        // Check if user is a creator
+        async function checkCreatorStatus() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                creatorModeToggle.style.display = 'none';
+                creatorSection.style.display = 'none';
+                return;
+            }
+            
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                creatorModeToggle.style.display = 'none';
+                creatorSection.style.display = 'none';
+                return;
+            }
+            
+            // Check if user has creator role or uploads
+            const { data: uploads } = await window.supabaseClient
+                .from('Content')
+                .select('id')
+                .eq('user_id', userProfile.id)
+                .limit(1);
+            
+            const isCreator = uploads && uploads.length > 0;
+            
+            if (isCreator) {
+                creatorModeToggle.style.display = 'flex';
+                creatorSection.style.display = 'block';
+                
+                // Restore saved mode
+                const savedMode = localStorage.getItem('creator_mode') === 'true';
+                creatorModeSwitch.checked = savedMode;
+                creatorSection.style.display = savedMode ? 'block' : 'none';
+            } else {
+                creatorModeToggle.style.display = 'none';
+                creatorSection.style.display = 'none';
+            }
+        }
+        
+        checkCreatorStatus();
+        
+        // Toggle handler
+        creatorModeSwitch.addEventListener('change', function() {
+            creatorSection.style.display = this.checked ? 'block' : 'none';
+            localStorage.setItem('creator_mode', this.checked);
+            showToast(this.checked ? 'Creator Mode ON' : 'Viewer Mode', 'info');
+        });
+    }
+
+    // ===== CATEGORY LINKS - Prevent default if no backend yet =====
+    document.querySelectorAll('.sidebar-nav-item[data-category]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            const category = this.dataset.category;
+            // If category pages aren't built yet, show toast
+            if (!window.categoryPagesReady) {
+                e.preventDefault();
+                showToast(`🚧 ${category} page coming soon!`, 'info');
+            } else {
+                // Let the link work normally
+                setActiveNavItem(category);
+            }
+        });
+    });
 }
 
+// ============================================
+// SIDEBAR PROFILE UPDATE
+// ============================================
 // ✅ FIXED: Sidebar Profile - Shows logged-in user correctly
 async function updateSidebarProfile() {
     const avatar = document.getElementById('sidebar-profile-avatar');
@@ -1002,8 +1172,8 @@ function updateProfileSwitcher() {
                 window.currentProfile = profile;
                 localStorage.setItem('currentProfileId', profileId);
                 updateProfileSwitcher();
-                await loadContinueWatchingSection();
-                await loadForYouSection();
+                if (typeof loadContinueWatchingSection === 'function') await loadContinueWatchingSection();
+                if (typeof loadForYouSection === 'function') await loadForYouSection();
                 showToast(`Switched to ${profile.name}`, 'success');
             }
         });
