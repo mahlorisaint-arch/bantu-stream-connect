@@ -1,5 +1,5 @@
 // Wait for DOM to be ready
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
 console.log('🚀 Explore Screen v2.0 Initializing - Structured Discovery Mode');
 
 // ============================================
@@ -11,7 +11,7 @@ class CacheManager {
     this.ttl = 5 * 60 * 1000; 
   }
   set(key, data, ttl) {
-    this.cache.set(key, { data, timestamp: Date.now(), ttl: ttl || this.ttl });
+    this.cache.set(key, { data: data, timestamp: Date.now(), ttl: ttl || this.ttl });
   }
   get(key) {
     var item = this.cache.get(key);
@@ -56,7 +56,7 @@ function showToast(message, type) {
   container.appendChild(toast);
   setTimeout(function() { 
     toast.style.opacity = '0'; 
-    setTimeout(function() { toast.remove(); }, 300); 
+    setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 300); 
   }, 3000);
 }
 
@@ -85,14 +85,14 @@ function getInitials(name) {
 
 function setLoading(loading, text) {
   isLoading = loading;
-  if (text) loadingText.textContent = text;
+  if (text && loadingText) loadingText.textContent = text;
   if (loading) { 
-    loadingScreen.style.display = 'flex'; 
-    app.style.display = 'none'; 
+    if(loadingScreen) loadingScreen.style.display = 'flex'; 
+    if(app) app.style.display = 'none'; 
   } else { 
     setTimeout(function() { 
-      loadingScreen.style.display = 'none'; 
-      app.style.display = 'block'; 
+      if(loadingScreen) loadingScreen.style.display = 'none'; 
+      if(app) app.style.display = 'block'; 
     }, 300); 
   }
 }
@@ -171,16 +171,16 @@ function setupSidebar() {
     if (sidebarOverlay) sidebarOverlay.classList.add('active'); 
     document.body.style.overflow = 'hidden'; 
   }
-  function closeSidebar() { 
+  function closeSidebarFn() { 
     if (sidebarMenu) sidebarMenu.classList.remove('active'); 
     if (sidebarOverlay) sidebarOverlay.classList.remove('active'); 
     document.body.style.overflow = ''; 
   }
   
   if (menuToggle) menuToggle.addEventListener('click', function(e) { e.stopPropagation(); openSidebar(); });
-  if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
-  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && sidebarMenu && sidebarMenu.classList.contains('active')) closeSidebar(); });
+  if (sidebarClose) sidebarClose.addEventListener('click', closeSidebarFn);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebarFn);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && sidebarMenu && sidebarMenu.classList.contains('active')) closeSidebarFn(); });
   
   updateSidebarProfile();
   setupSidebarNavigation();
@@ -194,21 +194,18 @@ function updateSidebarProfile() {
   var emailEl = document.getElementById('sidebar-profile-email');
   if (!avatar || !nameEl || !emailEl) return;
   
-  if (window.currentUser) {
-    var supabase = window.supabaseAuth;
-    if (supabase) {
-      supabase.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle().then(function(result) {
-        var profile = result.data;
-        if (!profile) return;
-        nameEl.textContent = profile.full_name || profile.username || 'User';
-        emailEl.textContent = window.currentUser.email;
-        if (profile.avatar_url && window.contentSupabase) {
-          avatar.innerHTML = '<img src="' + window.contentSupabase.fixMediaUrl(profile.avatar_url) + '" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
-        } else {
-          avatar.innerHTML = '<span>' + getInitials(profile.full_name) + '</span>';
-        }
-      });
-    }
+  if (window.currentUser && window.supabaseAuth) {
+    window.supabaseAuth.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle().then(function(result) {
+      var profile = result.data;
+      if (!profile) return;
+      nameEl.textContent = profile.full_name || profile.username || 'User';
+      emailEl.textContent = window.currentUser.email;
+      if (profile.avatar_url && window.contentSupabase) {
+        avatar.innerHTML = '<img src="' + window.contentSupabase.fixMediaUrl(profile.avatar_url) + '" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+      } else {
+        avatar.innerHTML = '<span>' + getInitials(profile.full_name) + '</span>';
+      }
+    }).catch(function(e) { console.warn('Profile fetch error:', e); });
   } else { 
     nameEl.textContent = 'Guest'; 
     emailEl.textContent = 'Sign in to continue'; 
@@ -243,6 +240,24 @@ function setupSidebarNavigation() {
       if (panel) { panel.classList.add('active'); renderNotifications(); } 
     });
   }
+  var badgesBtn = document.getElementById('sidebar-badges');
+  if (badgesBtn) {
+    badgesBtn.addEventListener('click', function(e) { 
+      e.preventDefault(); 
+      closeSidebar(); 
+      var modal = document.getElementById('badges-modal'); 
+      if (modal && window.currentUser) { modal.classList.add('active'); loadUserBadges(); } 
+    });
+  }
+  var watchPartyBtn = document.getElementById('sidebar-watch-party');
+  if (watchPartyBtn) {
+    watchPartyBtn.addEventListener('click', function(e) { 
+      e.preventDefault(); 
+      closeSidebar(); 
+      var modal = document.getElementById('watch-party-modal'); 
+      if (modal && window.currentUser) { modal.classList.add('active'); loadWatchPartyContent(); } 
+    });
+  }
   var createBtn = document.getElementById('sidebar-create');
   if (createBtn) {
     createBtn.addEventListener('click', async function(e) { 
@@ -254,6 +269,20 @@ function setupSidebarNavigation() {
           showToast('Please sign in to upload content', 'warning'); 
           window.location.href = 'login.html?redirect=creator-upload.html'; 
         } else window.location.href = 'creator-upload.html';
+      }
+    });
+  }
+  var dashboardBtn = document.getElementById('sidebar-dashboard');
+  if (dashboardBtn) {
+    dashboardBtn.addEventListener('click', async function(e) { 
+      e.preventDefault(); 
+      closeSidebar(); 
+      if (window.supabaseAuth) {
+        var sessionData = await window.supabaseAuth.auth.getSession();
+        if (!sessionData.data?.session) { 
+          showToast('Please sign in to access dashboard', 'warning'); 
+          window.location.href = 'login.html?redirect=creator-dashboard.html'; 
+        } else window.location.href = 'creator-dashboard.html';
       }
     });
   }
@@ -293,11 +322,10 @@ async function fetchPlatformInsights() {
   try {
     var supabase = window.supabaseAuth;
     if (!supabase) return;
-    var [creatorsRes, contentRes, activeRes] = await Promise.all([
-      supabase.from('user_profiles').select('id', { count: 'exact' }).eq('role', 'creator'),
-      supabase.from('Content').select('id', { count: 'exact' }).eq('status', 'published'),
-      supabase.from('connectors').select('connector_id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 86400000).toISOString())
-    ]);
+    var creatorsRes = await supabase.from('user_profiles').select('id', { count: 'exact' }).eq('role', 'creator');
+    var contentRes = await supabase.from('Content').select('id', { count: 'exact' }).eq('status', 'published');
+    var activeRes = await supabase.from('connectors').select('connector_id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 86400000).toISOString());
+    
     var insightsCreators = document.getElementById('insight-creators');
     var insightsContent = document.getElementById('insight-content');
     var insightsActive = document.getElementById('insight-active');
@@ -340,7 +368,7 @@ async function fetchCreators(type) {
   type = type || 'verified';
   var grid = document.getElementById('creators-grid');
   if (!grid) return;
-  grid.innerHTML = '<div class="skeleton-card" style="grid-column:1/-1;height:200px"></div>';
+  grid.innerHTML = '<div class="skeleton-card" style="grid-column:1/-1;height:200px">Loading creators...</div>';
   try {
     var supabase = window.supabaseAuth;
     if (!supabase) throw new Error('Supabase not initialized');
@@ -358,7 +386,7 @@ async function fetchCreators(type) {
     grid.innerHTML = data.map(function(c) {
       var avatar = c.avatar_url && window.contentSupabase ? window.contentSupabase.fixMediaUrl(c.avatar_url) : null;
       return '<div class="creator-discovery-card" onclick="window.location.href=\'creator-channel.html?id=' + c.id + '\'">' +
-        '<div class="creator-avatar-sm">' + (avatar ? '<img src="' + avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : getInitials(c.full_name)) + '</div>' +
+        '<div class="creator-avatar-sm">' + (avatar ? '<img src="' + avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : getInitials(c.full_name || c.username)) + '</div>' +
         '<div class="creator-name-sm">' + (c.full_name || c.username) + '</div>' +
         '<div class="creator-role-sm">' + (c.location || 'Creator') + '</div>' +
         '<button class="creator-follow-btn" onclick="event.stopPropagation(); showToast(\'Followed!\', \'success\')">Follow</button>' +
@@ -413,13 +441,13 @@ async function fetchLiveExperiences(type) {
   type = type || 'streams';
   var grid = document.getElementById('live-content-grid');
   if (!grid) return;
-  grid.innerHTML = '<div class="skeleton-card" style="grid-column:1/-1;height:150px"></div>';
+  grid.innerHTML = '<div class="skeleton-card" style="grid-column:1/-1;height:150px">Loading live content...</div>';
   try {
     var supabase = window.supabaseAuth;
     var items = [];
     if (type === 'streams' && supabase) {
       var result = await supabase.from('Content').select('id, title, creator_display_name, thumbnail_url').eq('media_type', 'live').eq('status', 'published').limit(6);
-      items = (result.data || []).map(function(d) { return { type: 'Stream', title: d.title, meta: d.creator_display_name || 'Live Creator' }; });
+      items = (result.data || []).map(function(d) { return { type: 'Stream', title: d.title || 'Live Stream', meta: d.creator_display_name || 'Live Creator' }; });
     } else if (type === 'parties' && supabase) {
       var partyResult = await supabase.from('watch_parties').select('id, title, participant_count').eq('status', 'waiting').limit(6);
       items = (partyResult.data || []).map(function(d) { return { type: 'Watch Party', title: d.title || 'Community Watch Party', meta: (d.participant_count || 1) + ' watching' }; });
@@ -621,12 +649,11 @@ async function loadPlatformAnalytics() {
   try {
     var supabase = window.supabaseAuth;
     if (!supabase) return;
-    var [viewsRes, contentRes, creatorsRes, connectorsRes] = await Promise.all([
-      supabase.from('content_views').select('*', { count: 'exact', head: true }),
-      supabase.from('Content').select('*', { count: 'exact', head: true }).eq('status', 'published'),
-      supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('role', 'creator'),
-      supabase.from('connectors').select('*', { count: 'exact', head: true })
-    ]);
+    var viewsRes = await supabase.from('content_views').select('*', { count: 'exact', head: true });
+    var contentRes = await supabase.from('Content').select('*', { count: 'exact', head: true }).eq('status', 'published');
+    var creatorsRes = await supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('role', 'creator');
+    var connectorsRes = await supabase.from('connectors').select('*', { count: 'exact', head: true });
+    
     var totalViews = document.getElementById('total-views');
     var totalContentAnalytics = document.getElementById('total-content-analytics');
     var activeCreators = document.getElementById('active-creators');
@@ -695,6 +722,7 @@ function setupBackToTop() {
 // INITIALIZATION SEQUENCE
 // ============================================
 async function initializeExploreScreen() {
+  console.log('Initializing Explore Screen...');
   setLoading(true, 'Preparing your discovery journey...');
   if (window.uiScaleController) window.uiScaleController.init();
   renderExploreWorlds();
@@ -716,6 +744,7 @@ async function initializeExploreScreen() {
     fetchLiveExperiences('streams')
   ]);
   setLoading(false);
+  console.log('Explore Screen Initialized Successfully');
 }
 
 // Start everything
@@ -737,3 +766,5 @@ if (window.supabaseAuth) {
     }
   });
 }
+
+}); // END OF DOMContentLoaded - THIS CLOSING BRACKET WAS MISSING
