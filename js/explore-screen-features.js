@@ -6,18 +6,34 @@
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🎬 Initializing Explore Screen with REAL DATA...');
   
+  // Wait for fetchers to be available
+  let retries = 0;
+  while (!window.fetchers && retries < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    retries++;
+  }
+  
+  if (!window.fetchers) {
+    console.error('❌ Fetchers not available after 5 seconds');
+    document.getElementById('loading')?.remove();
+    const app = document.getElementById('app');
+    if (app) {
+      app.style.display = 'block';
+      app.innerHTML = '<div class="error-screen"><h2>Loading Error</h2><p>Please refresh the page to continue.</p><button onclick="location.reload()">Refresh</button></div>';
+    }
+    return;
+  }
+  
+  console.log('✅ Fetchers available, initializing UI...');
+  
   // DOM Elements
   const worldsContainer = document.getElementById('worldsContainer');
   const creatorsContainer = document.getElementById('creatorEcosystems');
   const liveContainer = document.getElementById('liveGrid');
   const culturalContainer = document.getElementById('culturalGrid');
   const editorialContainer = document.getElementById('editorialGrid');
-  const trendingContainer = document.getElementById('trendingContentGrid');
   const energyText = document.getElementById('energyText');
   const energyTicker = document.getElementById('energyTicker');
-  
-  // Loading states
-  let isLoading = true;
   
   // ============================================
   // 1. RENDER DISCOVERY WORLDS (From Genres)
@@ -47,34 +63,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         'Podcast': { icon: 'fa-podcast', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' }
       };
       
-      // Limit to top 6 genres
-      const topGenres = genres.slice(0, 6);
+      // Limit to top 6 genres or use fallback
+      const topGenres = (genres && genres.length) ? genres.slice(0, 6) : [];
       
-      if (topGenres.length === 0) {
+      if (!topGenres.length) {
         // Fallback to default worlds
         const defaultWorlds = [
-          { name: 'Music World', icon: 'fa-music', description: 'Discover trending tracks and artists', color: '#EC4899', gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)' },
-          { name: 'Film World', icon: 'fa-film', description: 'Nollywood, African cinema, and more', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
-          { name: 'STEM World', icon: 'fa-flask', description: 'Innovation and education', color: '#06B6D4', gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)' },
-          { name: 'Culture World', icon: 'fa-drumstick-bite', description: 'Heritage and traditions', color: '#F59E0B', gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)' },
-          { name: 'Sports World', icon: 'fa-futbol', description: 'Live matches and highlights', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' },
-          { name: 'News World', icon: 'fa-newspaper', description: 'Breaking stories from Africa', color: '#EF4444', gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)' }
+          { name: 'Music World', icon: 'fa-music', desc: 'Discover trending tracks and artists', color: '#EC4899', gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)' },
+          { name: 'Film World', icon: 'fa-film', desc: 'Nollywood, African cinema, and more', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
+          { name: 'STEM World', icon: 'fa-flask', desc: 'Innovation and education', color: '#06B6D4', gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)' },
+          { name: 'Culture World', icon: 'fa-drumstick-bite', desc: 'Heritage and traditions', color: '#F59E0B', gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)' },
+          { name: 'Sports World', icon: 'fa-futbol', desc: 'Live matches and highlights', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' },
+          { name: 'News World', icon: 'fa-newspaper', desc: 'Breaking stories from Africa', color: '#EF4444', gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)' }
         ];
         
         worldsContainer.innerHTML = defaultWorlds.map(world => `
-          <div class="world-card" data-world="${world.name.toLowerCase()}" style="--world-color: ${world.color}">
+          <div class="world-card" data-world="${world.name.toLowerCase().replace(' world', '')}" style="--world-color: ${world.color}">
             <div class="world-card-bg" style="background: ${world.gradient}"></div>
             <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
             <div class="world-icon"><i class="fas ${world.icon}"></i></div>
             <div class="world-info">
               <h3 class="world-name">${world.name}</h3>
-              <p class="world-desc">${world.description}</p>
+              <p class="world-desc">${world.desc}</p>
               <div class="world-stats">
                 <span class="explore-link">Explore <i class="fas fa-arrow-right"></i></span>
               </div>
             </div>
           </div>
         `).join('');
+        
+        // Add click handlers
+        document.querySelectorAll('.world-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const world = card.dataset.world;
+            window.location.href = `content-library.html?genre=${encodeURIComponent(world)}`;
+          });
+        });
         return;
       }
       
@@ -84,12 +108,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         let contentCount = 0;
         
         try {
-          const { count } = await window.supabaseClient
-            .from('Content')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', 'published')
-            .eq('genre', genre.name);
-          contentCount = count || 0;
+          if (window.supabaseClient) {
+            const { count } = await window.supabaseClient
+              .from('Content')
+              .select('id', { count: 'exact', head: true })
+              .eq('status', 'published')
+              .eq('genre', genre.name);
+            contentCount = count || 0;
+          } else {
+            contentCount = Math.floor(Math.random() * 500) + 100;
+          }
         } catch (e) {
           contentCount = Math.floor(Math.random() * 500) + 100;
         }
@@ -98,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           id: genre.id,
           name: `${genre.name} World`,
           icon: config.icon,
-          description: genre.description || `Explore ${genre.name} content from African creators`,
+          desc: genre.description || `Explore ${genre.name} content from African creators`,
           color: config.color,
           gradient: config.gradient,
           contentCount: contentCount,
@@ -107,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       }));
       
       worldsContainer.innerHTML = worldsWithCounts.map(world => `
-        <div class="world-card" data-world="${world.name.toLowerCase()}" data-genre="${world.name.replace(' World', '')}" style="--world-color: ${world.color}">
+        <div class="world-card" data-world="${world.name.toLowerCase().replace(' world', '')}" data-genre="${world.name.replace(' World', '')}" style="--world-color: ${world.color}">
           <div class="world-card-bg" style="background: ${world.gradient}"></div>
           <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
           <div class="world-icon"><i class="fas ${world.icon}"></i></div>
@@ -137,12 +165,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       
     } catch (error) {
       console.error('Error rendering discovery worlds:', error);
-      worldsContainer.innerHTML = '<div class="error-state">Failed to load worlds. Please refresh.</div>';
+      if (worldsContainer) {
+        worldsContainer.innerHTML = '<div class="error-state">Failed to load worlds. Please refresh.</div>';
+      }
     }
   }
   
   // ============================================
-  // 2. RENDER CREATOR UNIVERSES (From user_profiles)
+  // 2. RENDER CREATOR UNIVERSES
   // ============================================
   async function renderCreatorUniverses() {
     if (!creatorsContainer) return;
@@ -161,12 +191,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
       }
       
-      // Group creators by primary craft or location
       const creatorGroups = [
-        { name: 'Trending Now', icon: 'fa-chart-line', color: '#F59E0B', creators: creators.slice(0, 3) },
-        { name: 'Rising Stars', icon: 'fa-star', color: '#EC4899', creators: creators.slice(3, 6) },
-        { name: 'Verified Creators', icon: 'fa-check-circle', color: '#10B981', creators: creators.slice(6, 8) }
-      ];
+        { name: 'Trending Now', icon: 'fa-chart-line', color: '#F59E0B', creators: creators.slice(0, Math.min(3, creators.length)) },
+        { name: 'Rising Stars', icon: 'fa-star', color: '#EC4899', creators: creators.slice(3, Math.min(6, creators.length)) },
+        { name: 'Top Creators', icon: 'fa-trophy', color: '#10B981', creators: creators.slice(6, 8) }
+      ].filter(group => group.creators.length > 0);
       
       creatorsContainer.innerHTML = creatorGroups.map(group => `
         <div class="creator-group">
@@ -185,14 +214,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                   }
                 </div>
                 <div class="eco-info">
-                  <h4>${creator.full_name || creator.username || 'Creator'}</h4>
-                  <p>${creator.bio ? creator.bio.substring(0, 60) : (creator.location || 'African Creator')}</p>
+                  <h4>${window.escapeHtml(creator.full_name || creator.username || 'Creator')}</h4>
+                  <p>${creator.bio ? window.escapeHtml(creator.bio.substring(0, 60)) : (creator.location || 'African Creator')}</p>
                   <div class="eco-stats">
                     ${creator.pulse_score ? `<span><i class="fas fa-bolt"></i> Score: ${Math.round(creator.pulse_score)}</span>` : ''}
-                    ${creator.trend_label ? `<span class="eco-trend">🔥 ${creator.trend_label}</span>` : ''}
+                    ${creator.trend_label ? `<span class="eco-trend">🔥 ${window.escapeHtml(creator.trend_label)}</span>` : ''}
                   </div>
                 </div>
-                <button class="follow-creator-btn" data-creator="${creator.id}" onclick="event.stopPropagation(); window.showToast('Following ${creator.full_name || creator.username}', 'success')">
+                <button class="follow-creator-btn" data-creator="${creator.id}" onclick="event.stopPropagation(); if(window.showToast) window.showToast('Following ${window.escapeHtml(creator.full_name || creator.username)}', 'success')">
                   Follow
                 </button>
               </div>
@@ -203,12 +232,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       
     } catch (error) {
       console.error('Error rendering creator universes:', error);
-      creatorsContainer.innerHTML = '<div class="empty-state">Failed to load creators</div>';
+      if (creatorsContainer) creatorsContainer.innerHTML = '<div class="empty-state">Failed to load creators</div>';
     }
   }
   
   // ============================================
-  // 3. RENDER LIVE EXPERIENCES (From Content)
+  // 3. RENDER LIVE EXPERIENCES
   // ============================================
   async function renderLiveExperiences() {
     if (!liveContainer) return;
@@ -233,13 +262,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             <span class="live-dot"></span>
             ${item.is_live ? 'LIVE NOW' : 'TRENDING'}
           </div>
-          <div class="live-thumbnail">
-            <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${item.title}">
-            ${item.is_live ? `<span class="live-viewers"><i class="fas fa-eye"></i> ${window.formatNumber(item.live_views || Math.floor(Math.random() * 1000) + 100)}</span>` : ''}
+          <div class="live-thumbnail" style="position:relative">
+            <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${window.escapeHtml(item.title)}" style="width:100%;border-radius:12px;aspect-ratio:16/9;object-fit:cover">
+            ${item.is_live ? `<span class="live-viewers" style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.7);padding:2px 8px;border-radius:12px;font-size:11px"><i class="fas fa-eye"></i> ${window.formatNumber(item.live_views || Math.floor(Math.random() * 1000) + 100)}</span>` : ''}
           </div>
           <div class="live-info">
-            <h4>${item.title || 'Untitled'}</h4>
-            <p><i class="fas fa-user"></i> ${item.creator_display_name || 'Creator'}</p>
+            <h4>${window.escapeHtml(item.title) || 'Untitled'}</h4>
+            <p><i class="fas fa-user"></i> ${window.escapeHtml(item.creator_display_name || 'Creator')}</p>
             <div class="live-stats">
               <span><i class="fas fa-calendar"></i> ${window.formatRelativeTime(item.created_at)}</span>
               ${item.views_count ? `<span><i class="fas fa-chart-line"></i> ${window.formatNumber(item.views_count)} views</span>` : ''}
@@ -251,12 +280,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       
     } catch (error) {
       console.error('Error rendering live experiences:', error);
-      liveContainer.innerHTML = '<div class="empty-state">Failed to load live content</div>';
+      if (liveContainer) liveContainer.innerHTML = '<div class="empty-state">Failed to load live content</div>';
     }
   }
   
   // ============================================
-  // 4. RENDER CULTURAL HUB (From Movements)
+  // 4. RENDER CULTURAL HUB
   // ============================================
   async function renderCulturalHub() {
     if (!culturalContainer) return;
@@ -270,55 +299,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
       const movements = await window.fetchers.fetchCulturalMovements(6);
       
-      // Map movements to cultural features
-      const culturalFeatures = movements.map(movement => ({
+      const fallbackFeatures = [
+        { title: 'Sounds of Africa', description: 'Discover regional music movements', icon: 'fa-headphones', color: '#EC4899' },
+        { title: 'Township Stories', description: 'Real stories from African communities', icon: 'fa-home', color: '#F59E0B' },
+        { title: 'African Futurism', description: 'Sci-fi and future African storytelling', icon: 'fa-rocket', color: '#06B6D4' },
+        { title: 'Indigenous Voices', description: 'Language-first discovery experiences', icon: 'fa-language', color: '#10B981' },
+        { title: 'Women of African Creativity', description: 'Highlighting women creators', icon: 'fa-female', color: '#EC4899' },
+        { title: 'Rising African Animators', description: 'Next generation of animation', icon: 'fa-paintbrush', color: '#8B5CF6' }
+      ];
+      
+      const culturalFeatures = (movements && movements.length) ? movements.map(movement => ({
         title: movement.name,
         description: movement.description || `Explore the ${movement.name} movement${movement.era_start ? ` (${movement.era_start}${movement.era_end ? `-${movement.era_end}` : ''})` : ''}`,
         icon: getIconForMovement(movement.name),
         color: getColorForMovement(movement.name),
         region: movement.region || movement.city,
         id: movement.id
-      }));
-      
-      // If no movements, use fallback
-      if (culturalFeatures.length === 0) {
-        const fallbackFeatures = [
-          { title: 'Sounds of Africa', description: 'Discover regional music movements', icon: 'fa-headphones', color: '#EC4899' },
-          { title: 'Township Stories', description: 'Real stories from African communities', icon: 'fa-home', color: '#F59E0B' },
-          { title: 'African Futurism', description: 'Sci-fi and future African storytelling', icon: 'fa-rocket', color: '#06B6D4' },
-          { title: 'Indigenous Voices', description: 'Language-first discovery experiences', icon: 'fa-language', color: '#10B981' },
-          { title: 'Women of African Creativity', description: 'Highlighting women creators', icon: 'fa-female', color: '#EC4899' },
-          { title: 'Rising African Animators', description: 'Next generation of animation', icon: 'fa-paintbrush', color: '#8B5CF6' }
-        ];
-        
-        culturalContainer.innerHTML = fallbackFeatures.map(feature => `
-          <div class="cultural-card" style="--cultural-color: ${feature.color}">
-            <div class="cultural-card-inner">
-              <i class="fas ${feature.icon}"></i>
-              <h3>${feature.title}</h3>
-              <p>${feature.description}</p>
-              <button class="explore-cultural-btn">Explore <i class="fas fa-arrow-right"></i></button>
-            </div>
-          </div>
-        `).join('');
-        return;
-      }
+      })) : fallbackFeatures;
       
       culturalContainer.innerHTML = culturalFeatures.map(feature => `
-        <div class="cultural-card" style="--cultural-color: ${feature.color}" data-movement-id="${feature.id}">
+        <div class="cultural-card" style="--cultural-color: ${feature.color}" data-movement-id="${feature.id || ''}">
           <div class="cultural-card-inner">
             <i class="fas ${feature.icon}"></i>
-            <h3>${feature.title}</h3>
-            <p>${feature.description}</p>
-            ${feature.region ? `<div class="cultural-region"><i class="fas fa-map-marker-alt"></i> ${feature.region}</div>` : ''}
-            <button class="explore-cultural-btn">Explore Movement <i class="fas fa-arrow-right"></i></button>
+            <h3>${window.escapeHtml(feature.title)}</h3>
+            <p>${window.escapeHtml(feature.description)}</p>
+            ${feature.region ? `<div class="cultural-region"><i class="fas fa-map-marker-alt"></i> ${window.escapeHtml(feature.region)}</div>` : ''}
+            <button class="explore-cultural-btn">Explore <i class="fas fa-arrow-right"></i></button>
           </div>
         </div>
       `).join('');
       
     } catch (error) {
       console.error('Error rendering cultural hub:', error);
-      culturalContainer.innerHTML = '<div class="empty-state">Failed to load cultural content</div>';
+      if (culturalContainer) culturalContainer.innerHTML = '<div class="empty-state">Failed to load cultural content</div>';
     }
   }
   
@@ -329,7 +342,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       'Amapiano': 'fa-music',
       'Nollywood': 'fa-film',
       'Kwaito': 'fa-music',
-      'Burna Boy': 'fa-music',
       'African Renaissance': 'fa-africa',
       'ubuntu': 'fa-heart'
     };
@@ -353,9 +365,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   
   // ============================================
-  // 5. RENDER EDITORIAL / TRENDING CONTENT
+  // 5. RENDER TRENDING EDITORIAL
   // ============================================
   async function renderTrendingEditorial() {
+    const editorialContainer = document.getElementById('editorialGrid');
     if (!editorialContainer) return;
     
     editorialContainer.innerHTML = `
@@ -372,14 +385,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
       }
       
-      // Show top 4 trending items as editorial
       const editorialItems = trending.slice(0, 4);
       
       editorialContainer.innerHTML = editorialItems.map((item, index) => `
         <div class="editorial-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
           <div class="editorial-category">${item.content_type || item.genre || 'TRENDING'}</div>
-          <h3>${item.title || 'Untitled'}</h3>
-          <p>${item.description ? item.description.substring(0, 100) : `Watch this trending content with ${window.formatNumber(item.views_count || 0)} views`}</p>
+          <h3>${window.escapeHtml(item.title) || 'Untitled'}</h3>
+          <p>${item.description ? window.escapeHtml(item.description.substring(0, 100)) : `Watch this trending content with ${window.formatNumber(item.views_count || 0)} views`}</p>
           <div class="editorial-stats">
             <span><i class="fas fa-eye"></i> ${window.formatNumber(item.views_count || 0)}</span>
             <span><i class="fas fa-heart"></i> ${window.formatNumber(item.likes_count || 0)}</span>
@@ -391,42 +403,34 @@ document.addEventListener('DOMContentLoaded', async function() {
       
     } catch (error) {
       console.error('Error rendering editorial:', error);
-      editorialContainer.innerHTML = '<div class="empty-state">Failed to load trending content</div>';
+      if (editorialContainer) editorialContainer.innerHTML = '<div class="empty-state">Failed to load trending content</div>';
     }
   }
   
   // ============================================
-  // 6. UPDATE ENERGY BAR (Real-time stats)
+  // 6. UPDATE ENERGY BAR
   // ============================================
   async function updateEnergyBar() {
     try {
       const stats = await window.fetchers.fetchPlatformStats();
       
-      // Update static energy text
       if (energyText) {
         const randomActive = Math.floor(Math.random() * 500) + 800;
         energyText.textContent = `${randomActive.toLocaleString()} active viewers now`;
       }
       
-      // Update ticker with real data
       if (energyTicker) {
-        const trendingByRegion = await Promise.all([
-          window.fetchers.getTrendingByRegion('South Africa', 1),
-          window.fetchers.getTrendingByRegion('Nigeria', 1),
-          window.fetchers.getTrendingByRegion('Kenya', 1)
-        ]);
-        
         const tickerItems = [
-          `🔥 ${stats.totalViews.toLocaleString()} total views`,
-          `📍 Trending in Johannesburg`,
-          `🎵 ${stats.totalContent.toLocaleString()} pieces of content`,
-          `⭐ ${stats.totalCreators.toLocaleString()} creators`,
+          `🔥 ${(stats.totalViews || 0).toLocaleString()} total views`,
+          `📍 Trending across Africa`,
+          `🎵 ${(stats.totalContent || 0).toLocaleString()} pieces of content`,
+          `⭐ ${(stats.totalCreators || 0).toLocaleString()} creators`,
           `📺 ${Math.floor(Math.random() * 50) + 20} live streams active`,
-          `🚀 ${Math.floor(Math.random() * 200) + 100} new comments`
+          `🚀 ${Math.floor(Math.random() * 200) + 100} new interactions`
         ];
         
         const tickerHTML = tickerItems.map(item => `<span>${item}</span>`).join('');
-        energyTicker.innerHTML = tickerHTML + tickerHTML; // Duplicate for seamless loop
+        energyTicker.innerHTML = tickerHTML + tickerHTML;
       }
       
     } catch (error) {
@@ -435,7 +439,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   
   // ============================================
-  // 7. RENDER AFRICA MAP (With real regional data)
+  // 7. RENDER AFRICA MAP
   // ============================================
   async function renderAfricaMap() {
     const canvas = document.getElementById('africaMapCanvas');
@@ -444,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const ctx = canvas.getContext('2d');
     const container = canvas.parentElement;
-    const width = container.clientWidth;
+    const width = Math.min(container.clientWidth, 800);
     const height = 400;
     canvas.width = width;
     canvas.height = height;
@@ -459,7 +463,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     ctx.shadowBlur = 10;
     ctx.shadowColor = '#F59E0B';
     
-    // Simplified Africa shape
     ctx.moveTo(width * 0.35, height * 0.3);
     ctx.lineTo(width * 0.45, height * 0.25);
     ctx.lineTo(width * 0.55, height * 0.28);
@@ -474,19 +477,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     ctx.lineTo(width * 0.35, height * 0.3);
     ctx.stroke();
     
-    // Fetch regional trending data
     const regions = [
       { name: 'Lagos', x: width * 0.68, y: height * 0.4, country: 'Nigeria' },
       { name: 'Johannesburg', x: width * 0.55, y: height * 0.55, country: 'South Africa' },
       { name: 'Nairobi', x: width * 0.6, y: height * 0.45, country: 'Kenya' },
-      { name: 'Accra', x: width * 0.62, y: height * 0.48, country: 'Ghana' },
-      { name: 'Cape Town', x: width * 0.52, y: height * 0.62, country: 'South Africa' },
-      { name: 'Dar es Salaam', x: width * 0.64, y: height * 0.52, country: 'Tanzania' }
+      { name: 'Accra', x: width * 0.62, y: height * 0.48, country: 'Ghana' }
     ];
     
-    // Draw hotspots and fetch real trends
-    const trendingItems = await Promise.all(regions.map(async (region) => {
-      // Draw dot
+    const trendingItems = [];
+    for (const region of regions) {
       ctx.beginPath();
       ctx.fillStyle = '#F59E0B';
       ctx.arc(region.x, region.y, 8, 0, Math.PI * 2);
@@ -497,7 +496,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       ctx.arc(region.x, region.y, 15, 0, Math.PI * 2);
       ctx.fill();
       
-      // Fetch real trending content for this region
       let trendText = 'Trending content';
       try {
         const trending = await window.fetchers.getTrendingByRegion(region.country, 1);
@@ -508,19 +506,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         trendText = 'New content rising';
       }
       
-      return `
+      trendingItems.push(`
         <div class="trending-item" style="border-left-color: #F59E0B">
           <span class="trending-city">📍 ${region.name}</span>
-          <span class="trending-trend">${trendText}</span>
+          <span class="trending-trend">${window.escapeHtml(trendText)}</span>
         </div>
-      `;
-    }));
+      `);
+    }
     
     trendingContainer.innerHTML = trendingItems.join('');
   }
   
   // ============================================
-  // 8. SMART SEARCH (Real search)
+  // 8. SMART SEARCH
   // ============================================
   function setupSmartSearch() {
     const searchInput = document.getElementById('searchInput');
@@ -531,7 +529,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (!searchInput) return;
     
-    // Open search
     if (searchBtn) {
       searchBtn.addEventListener('click', () => {
         if (searchModal) searchModal.classList.add('active');
@@ -557,7 +554,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       });
     }
     
-    // Real-time search
     let searchTimeout;
     searchInput.addEventListener('input', async (e) => {
       const query = e.target.value.trim();
@@ -571,7 +567,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       
       searchTimeout = setTimeout(async () => {
         if (!searchResults) return;
-        
         searchResults.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
         
         const results = await window.fetchers.searchContent(query);
@@ -588,10 +583,10 @@ document.addEventListener('DOMContentLoaded', async function() {
           <div class="search-results-grid">
             ${results.map(item => `
               <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                <img src="${item.thumbnail_url || 'https://via.placeholder.com/80x45'}" alt="${item.title}">
+                <img src="${item.thumbnail_url || 'https://via.placeholder.com/80x45'}" alt="${window.escapeHtml(item.title)}" style="width:80px;height:45px;border-radius:8px;object-fit:cover">
                 <div class="search-result-info">
                   <h4>${window.escapeHtml(item.title) || 'Untitled'}</h4>
-                  <p>${item.creator_display_name || 'Creator'} • ${window.formatNumber(item.views_count || 0)} views</p>
+                  <p>${window.escapeHtml(item.creator_display_name || 'Creator')} • ${window.formatNumber(item.views_count || 0)} views</p>
                   <span class="search-result-tag">${item.genre || item.content_type || 'Content'}</span>
                 </div>
               </div>
@@ -600,293 +595,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
       }, 300);
     });
-    
-    // Category search suggestions
-    const categories = document.querySelectorAll('.search-category');
-    categories.forEach(cat => {
-      cat.addEventListener('click', () => {
-        const category = cat.dataset.cat;
-        searchInput.value = category;
-        searchInput.dispatchEvent(new Event('input'));
-      });
-    });
-    
-    // Suggestion clicks
-    const suggestions = document.querySelectorAll('.search-suggestion');
-    suggestions.forEach(sug => {
-      sug.addEventListener('click', () => {
-        const query = sug.dataset.query;
-        if (query) {
-          searchInput.value = query;
-          searchInput.dispatchEvent(new Event('input'));
-        }
-      });
-    });
   }
   
   // ============================================
-  // 9. JOURNEY BUILDER (Using real data)
+  // 9. SIDEBAR SETUP
   // ============================================
-  function setupJourneyBuilder() {
-    const moodOptions = document.getElementById('moodOptions');
-    const regionOptions = document.getElementById('regionOptions');
-    const languageOptions = document.getElementById('languageOptions');
-    const formatOptions = document.getElementById('formatOptions');
-    const generateBtn = document.getElementById('generateJourneyBtn');
-    const resultsContainer = document.getElementById('journeyResults');
-    
-    if (!moodOptions) return;
-    
-    // Moods (based on content_mood_tags table)
-    const moods = [
-      { id: 'feel-good', name: 'Feel Good', icon: 'fa-sun', color: '#F59E0B' },
-      { id: 'inspiring', name: 'Inspiring', icon: 'fa-star', color: '#8B5CF6' },
-      { id: 'educational', name: 'Educational', icon: 'fa-graduation-cap', color: '#06B6D4' },
-      { id: 'thrilling', name: 'Thrilling', icon: 'fa-bolt', color: '#EF4444' },
-      { id: 'relaxing', name: 'Relaxing', icon: 'fa-spa', color: '#10B981' },
-      { id: 'energetic', name: 'Energetic', icon: 'fa-fire', color: '#F59E0B' }
-    ];
-    
-    moodOptions.innerHTML = moods.map(mood => `
-      <button class="journey-option" data-type="mood" data-value="${mood.id}" style="--option-color: ${mood.color}">
-        <i class="fas ${mood.icon}"></i>
-        <span>${mood.name}</span>
-      </button>
-    `).join('');
-    
-    // Regions (from Content table distinct countries)
-    (async () => {
-      if (!regionOptions) return;
-      try {
-        const { data } = await window.supabaseClient
-          .from('Content')
-          .select('country')
-          .eq('status', 'published')
-          .not('country', 'is', null);
-        
-        const uniqueCountries = [...new Set((data || []).map(c => c.country).filter(Boolean))];
-        const regions = uniqueCountries.slice(0, 7).map(country => ({
-          id: country.toLowerCase().replace(/\s+/g, '-'),
-          name: country,
-          flag: '🌍'
-        }));
-        
-        if (regions.length === 0) {
-          const fallbackRegions = ['South Africa', 'Nigeria', 'Kenya', 'Ghana', 'Tanzania', 'Zimbabwe', 'Pan-African'];
-          regions.push(...fallbackRegions.map(r => ({ id: r.toLowerCase(), name: r, flag: '🌍' })));
-        }
-        
-        regionOptions.innerHTML = regions.map(region => `
-          <button class="journey-option" data-type="region" data-value="${region.id}">
-            <span class="region-flag">${region.flag}</span>
-            <span>${region.name}</span>
-          </button>
-        `).join('');
-      } catch (e) {
-        regionOptions.innerHTML = `
-          <button class="journey-option" data-type="region" data-value="south-africa">🇿🇦 South Africa</button>
-          <button class="journey-option" data-type="region" data-value="nigeria">🇳🇬 Nigeria</button>
-          <button class="journey-option" data-type="region" data-value="kenya">🇰🇪 Kenya</button>
-        `;
-      }
-    })();
-    
-    // Languages (from Content table distinct languages)
-    (async () => {
-      if (!languageOptions) return;
-      try {
-        const { data } = await window.supabaseClient
-          .from('Content')
-          .select('language')
-          .eq('status', 'published')
-          .not('language', 'is', null);
-        
-        const uniqueLangs = [...new Set((data || []).map(c => c.language).filter(Boolean))];
-        const languages = uniqueLangs.slice(0, 7).map(code => {
-          const langMap = { en: 'English', zu: 'Zulu', xh: 'Xhosa', sw: 'Swahili', fr: 'French', pt: 'Portuguese' };
-          return { id: code, name: langMap[code] || code.toUpperCase(), native: langMap[code] || code };
-        });
-        
-        if (languages.length === 0) {
-          const fallbackLangs = ['en', 'zu', 'xh', 'sw', 'fr', 'pt'];
-          languages.push(...fallbackLangs.map(code => ({ id: code, name: code.toUpperCase(), native: code })));
-        }
-        
-        languageOptions.innerHTML = languages.map(lang => `
-          <button class="journey-option" data-type="language" data-value="${lang.id}">
-            <i class="fas fa-language"></i>
-            <span>${lang.native}</span>
-            <small>${lang.name}</small>
-          </button>
-        `).join('');
-      } catch (e) {
-        languageOptions.innerHTML = `
-          <button class="journey-option" data-type="language" data-value="en">🇬🇧 English</button>
-          <button class="journey-option" data-type="language" data-value="zu">🇿🇦 Zulu</button>
-          <button class="journey-option" data-type="language" data-value="xh">🇿🇦 Xhosa</button>
-        `;
-      }
-    })();
-    
-    // Formats
-    const formats = [
-      { id: 'film', name: 'Film', icon: 'fa-film' },
-      { id: 'music', name: 'Music', icon: 'fa-music' },
-      { id: 'podcast', name: 'Podcast', icon: 'fa-podcast' },
-      { id: 'short', name: 'Short-form', icon: 'fa-photo-video' }
-    ];
-    
-    if (formatOptions) {
-      formatOptions.innerHTML = formats.map(format => `
-        <button class="journey-option" data-type="format" data-value="${format.id}">
-          <i class="fas ${format.icon}"></i>
-          <span>${format.name}</span>
-        </button>
-      `).join('');
-    }
-    
-    // Add click handlers for journey options
-    document.querySelectorAll('.journey-option').forEach(opt => {
-      opt.addEventListener('click', () => {
-        const parent = opt.parentElement;
-        parent.querySelectorAll('.journey-option').forEach(o => o.classList.remove('active'));
-        opt.classList.add('active');
-        
-        const type = opt.dataset.type;
-        const value = opt.dataset.value;
-        window.appState.journeySelections = window.appState.journeySelections || {};
-        window.appState.journeySelections[type] = value;
-      });
-    });
-    
-    // Generate button
-    if (generateBtn) {
-      generateBtn.addEventListener('click', async () => {
-        const selections = window.appState.journeySelections || {};
-        const required = ['mood', 'region', 'language', 'format'];
-        const missing = required.filter(r => !selections[r]);
-        
-        if (missing.length > 0) {
-          window.showToast(`Please select: ${missing.join(', ')}`, 'warning');
-          return;
-        }
-        
-        if (!resultsContainer) return;
-        
-        resultsContainer.style.display = 'block';
-        resultsContainer.innerHTML = `
-          <div class="journey-result-card">
-            <div class="result-header">
-              <i class="fas fa-magic"></i>
-              <h3>Finding content for you...</h3>
-            </div>
-            <div class="result-loading">
-              <i class="fas fa-spinner fa-spin"></i>
-            </div>
-          </div>
-        `;
-        
-        try {
-          // Search for content matching selections
-          const searchResults = await window.fetchers.searchContent(selections.mood);
-          const filteredResults = searchResults.filter(item => 
-            item.genre?.toLowerCase().includes(selections.format) ||
-            item.content_type?.toLowerCase().includes(selections.format)
-          ).slice(0, 5);
-          
-          setTimeout(() => {
-            resultsContainer.innerHTML = `
-              <div class="journey-result-card">
-                <div class="result-header">
-                  <i class="fas fa-magic"></i>
-                  <h3>Your Personalized Discovery World</h3>
-                </div>
-                <div class="result-badges">
-                  <span class="result-badge">${selections.mood}</span>
-                  <span class="result-badge">${selections.region}</span>
-                  <span class="result-badge">${selections.language}</span>
-                  <span class="result-badge">${selections.format}</span>
-                </div>
-                <div class="result-content">
-                  <p>Found ${filteredResults.length} pieces of content matching your journey:</p>
-                  <div class="result-recommendations">
-                    ${filteredResults.map(item => `
-                      <div class="rec-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                        <img src="${item.thumbnail_url || 'https://via.placeholder.com/60x60'}" style="width:60px;height:60px;border-radius:8px;object-fit:cover">
-                        <div>
-                          <strong>${item.title || 'Untitled'}</strong>
-                          <p>${item.creator_display_name || 'Creator'}</p>
-                        </div>
-                      </div>
-                    `).join('')}
-                    ${filteredResults.length === 0 ? '<p class="no-results">No exact matches found. Try different selections!</p>' : ''}
-                  </div>
-                </div>
-                <button class="explore-result-btn" onclick="window.location.href='content-library.html'">
-                  Explore More <i class="fas fa-arrow-right"></i>
-                </button>
-              </div>
-            `;
-          }, 1000);
-          
-        } catch (error) {
-          resultsContainer.innerHTML = `
-            <div class="journey-result-card">
-              <div class="result-header">
-                <i class="fas fa-exclamation-circle"></i>
-                <h3>Discovery in Progress</h3>
-              </div>
-              <div class="result-content">
-                <p>We're building your personalized world. Check back soon!</p>
-              </div>
-              <button class="explore-result-btn" onclick="window.location.href='content-library.html'">
-                Explore Content Library <i class="fas fa-arrow-right"></i>
-              </button>
-            </div>
-          `;
-        }
-      });
-    }
-  }
-  
-  // ============================================
-  // 10. INITIALIZE ALL
-  // ============================================
-  async function initialize() {
-    console.log('Initializing Explore Screen with REAL DATA...');
-    
-    // Show loading state
-    document.body.classList.add('loading');
-    
-    try {
-      // Run all render functions in parallel for speed
-      await Promise.all([
-        renderDiscoveryWorlds(),
-        renderCreatorUniverses(),
-        renderLiveExperiences(),
-        renderCulturalHub(),
-        renderTrendingEditorial(),
-        updateEnergyBar(),
-        renderAfricaMap()
-      ]);
-      
-      // Setup interactive features
-      setupSmartSearch();
-      setupJourneyBuilder();
-      setupSidebar();
-      
-      console.log('✅ Explore Screen initialized with real data');
-      window.showToast('Welcome to Discovery Worlds', 'success');
-      
-    } catch (error) {
-      console.error('Error initializing explore screen:', error);
-      window.showToast('Some content failed to load. Please refresh.', 'error');
-    } finally {
-      document.body.classList.remove('loading');
-    }
-  }
-  
-  // Sidebar setup (keep existing)
   function setupSidebar() {
     const menuBtn = document.getElementById('menuToggleBtn');
     const closeBtn = document.getElementById('sidebarClose');
@@ -908,31 +621,66 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
     
-    // Update sidebar with user data if logged in
-    loadUserDataToSidebar();
+    // Try to load user data
+    if (window.supabaseClient) {
+      window.supabaseClient.auth.getSession().then(({ data: session }) => {
+        if (session?.session?.user) {
+          window.supabaseClient.from('user_profiles')
+            .select('full_name, avatar_url')
+            .eq('id', session.session.user.id)
+            .single()
+            .then(({ data: profile }) => {
+              if (profile) {
+                const nameEl = document.getElementById('sidebarName');
+                const avatarEl = document.getElementById('sidebarAvatar');
+                if (nameEl) nameEl.textContent = profile.full_name || 'User';
+                if (avatarEl && profile.avatar_url) {
+                  avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+                }
+              }
+            }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
   }
   
-  async function loadUserDataToSidebar() {
+  // ============================================
+  // 10. INITIALIZE ALL
+  // ============================================
+  async function initialize() {
+    console.log('Initializing Explore Screen with REAL DATA...');
+    
+    // Hide loading screen
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    
     try {
-      const { data: session } = await window.supabaseClient?.auth.getSession();
-      if (session?.session?.user) {
-        const { data: profile } = await window.supabaseClient
-          .from('user_profiles')
-          .select('full_name, avatar_url')
-          .eq('id', session.session.user.id)
-          .single();
-        
-        if (profile) {
-          const nameEl = document.getElementById('sidebarName');
-          const avatarEl = document.getElementById('sidebarAvatar');
-          if (nameEl) nameEl.textContent = profile.full_name || 'User';
-          if (avatarEl && profile.avatar_url) {
-            avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Could not load user data for sidebar');
+      // Run all render functions in parallel
+      await Promise.all([
+        renderDiscoveryWorlds(),
+        renderCreatorUniverses(),
+        renderLiveExperiences(),
+        renderCulturalHub(),
+        renderTrendingEditorial(),
+        updateEnergyBar(),
+        renderAfricaMap()
+      ]);
+      
+      // Setup interactive features
+      setupSmartSearch();
+      setupSidebar();
+      
+      // Show app
+      if (loading) loading.style.display = 'none';
+      if (app) app.style.display = 'block';
+      
+      console.log('✅ Explore Screen initialized with real data');
+      if (window.showToast) window.showToast('Welcome to Discovery Worlds', 'success');
+      
+    } catch (error) {
+      console.error('Error initializing explore screen:', error);
+      if (loading) loading.style.display = 'none';
+      if (app) app.style.display = 'block';
     }
   }
   
