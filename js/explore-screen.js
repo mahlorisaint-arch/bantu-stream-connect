@@ -1,6 +1,6 @@
 /**
- * BANTU STREAM CONNECT - EXPLORE SCREEN CORE v3.0
- * Discovery Worlds Architecture
+ * BANTU STREAM CONNECT - EXPLORE SCREEN CORE v4.0
+ * REAL DATA INTEGRATION - No Mock Data
  */
 
 // ============================================
@@ -10,7 +10,11 @@ const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
 // Initialize Supabase
-window.supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase = null;
+if (typeof window.supabase !== 'undefined') {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabaseClient = supabase;
+}
 
 // ============================================
 // 2. GLOBAL STATE
@@ -19,182 +23,478 @@ window.appState = {
   currentUser: null,
   currentProfile: null,
   languageFilter: 'all',
-  journeySelections: {
-    mood: null,
-    region: null,
-    language: null,
-    format: null
-  },
-  currentWorld: null,
+  trendingContent: [],
+  featuredCreators: [],
+  liveStreams: [],
+  culturalMovements: [],
+  genres: [],
   isLoading: false,
-  notifications: []
+  cachedData: new Map()
 };
 
+// Cache TTL (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
 // ============================================
-// 3. DISCOVERY WORLDS DATA
+// 3. REAL DATA FETCHERS
 // ============================================
-window.discoveryWorlds = [
-  {
-    id: 'film',
-    name: 'Film World',
-    icon: 'fa-film',
-    description: 'Cinematic stories from Africa',
-    color: '#8B5CF6',
-    gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-    genres: ['Nollywood', 'African Sci-Fi', 'Township Dramas', 'Documentaries'],
-    activeCount: 234
-  },
-  {
-    id: 'music',
-    name: 'Music World',
-    icon: 'fa-music',
-    description: 'Rhythms that move the continent',
-    color: '#EC4899',
-    gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)',
-    genres: ['Amapiano', 'Afrobeats', 'Afro-jazz', 'Gospel'],
-    activeCount: 567
-  },
-  {
-    id: 'podcast',
-    name: 'Podcast World',
-    icon: 'fa-podcast',
-    description: 'Conversations that matter',
-    color: '#10B981',
-    gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)',
-    genres: ['Business', 'Storytelling', 'Culture', 'Interviews'],
-    activeCount: 189
-  },
-  {
-    id: 'creator',
-    name: 'Creator World',
-    icon: 'fa-user-astronaut',
-    description: 'Meet the architects of culture',
-    color: '#F59E0B',
-    gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)',
-    genres: ['Rising Stars', 'Verified', 'Trending', 'Collaborations'],
-    activeCount: 892
-  },
-  {
-    id: 'anime',
-    name: 'Anime & Animation',
-    icon: 'fa-dragon',
-    description: 'African animation rising',
-    color: '#06B6D4',
-    gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)',
-    genres: ['African Anime', 'Animation', 'Fantasy', 'Illustration'],
-    activeCount: 145
-  },
-  {
-    id: 'culture',
-    name: 'Culture World',
-    icon: 'fa-drumstick-bite',
-    description: 'Heritage, traditions, and futures',
-    color: '#EF4444',
-    gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)',
-    genres: ['Fashion', 'Languages', 'Traditions', 'Storytelling'],
-    activeCount: 312
+
+/**
+ * Fetch trending content with momentum scores
+ */
+async function fetchTrendingContent(limit = 12) {
+  const cacheKey = 'trending_content';
+  const cached = window.appState.cachedData.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
   }
-];
 
-// ============================================
-// 4. JOURNEY OPTIONS
-// ============================================
-window.journeyOptions = {
-  moods: [
-    { id: 'inspirational', name: 'Inspirational', icon: 'fa-sun', color: '#F59E0B' },
-    { id: 'energetic', name: 'Energetic', icon: 'fa-bolt', color: '#EF4444' },
-    { id: 'deep', name: 'Deep Stories', icon: 'fa-book-open', color: '#8B5CF6' },
-    { id: 'futuristic', name: 'Futuristic', icon: 'fa-robot', color: '#06B6D4' },
-    { id: 'funny', name: 'Funny', icon: 'fa-laugh', color: '#10B981' },
-    { id: 'emotional', name: 'Emotional', icon: 'fa-heart', color: '#EC4899' },
-    { id: 'educational', name: 'Educational', icon: 'fa-graduation-cap', color: '#3B82F6' },
-    { id: 'spiritual', name: 'Spiritual', icon: 'fa-pray', color: '#A855F7' }
-  ],
-  regions: [
-    { id: 'south-africa', name: 'South Africa', flag: '🇿🇦' },
-    { id: 'nigeria', name: 'Nigeria', flag: '🇳🇬' },
-    { id: 'kenya', name: 'Kenya', flag: '🇰🇪' },
-    { id: 'ghana', name: 'Ghana', flag: '🇬🇭' },
-    { id: 'tanzania', name: 'Tanzania', flag: '🇹🇿' },
-    { id: 'zimbabwe', name: 'Zimbabwe', flag: '🇿🇼' },
-    { id: 'pan-african', name: 'Pan-African', flag: '🌍' }
-  ],
-  languages: [
-    { id: 'en', name: 'English', native: 'English' },
-    { id: 'zu', name: 'Zulu', native: 'isiZulu' },
-    { id: 'xh', name: 'Xhosa', native: 'isiXhosa' },
-    { id: 'sw', name: 'Swahili', native: 'Kiswahili' },
-    { id: 'yo', name: 'Yoruba', native: 'Yorùbá' },
-    { id: 'fr', name: 'French', native: 'Français' },
-    { id: 'pt', name: 'Portuguese', native: 'Português' }
-  ],
-  formats: [
-    { id: 'film', name: 'Film', icon: 'fa-film' },
-    { id: 'music', name: 'Music', icon: 'fa-music' },
-    { id: 'podcast', name: 'Podcast', icon: 'fa-podcast' },
-    { id: 'live', name: 'Live Stream', icon: 'fa-broadcast-tower' },
-    { id: 'animation', name: 'Animation', icon: 'fa-dragon' },
-    { id: 'short', name: 'Short-form', icon: 'fa-photo-video' }
-  ]
-};
-
-// ============================================
-// 5. CULTURAL HUB DATA
-// ============================================
-window.culturalFeatures = [
-  {
-    title: 'Sounds of Africa',
-    description: 'Discover regional music movements from Cape Town to Cairo',
-    icon: 'fa-headphones',
-    color: '#EC4899',
-    image: null
-  },
-  {
-    title: 'Township Stories',
-    description: 'Real stories from African communities',
-    icon: 'fa-home',
-    color: '#F59E0B',
-    image: null
-  },
-  {
-    title: 'African Futurism',
-    description: 'Sci-fi, tech, and future African storytelling',
-    icon: 'fa-rocket',
-    color: '#06B6D4',
-    image: null
-  },
-  {
-    title: 'Indigenous Voices',
-    description: "Language-first discovery experiences in Africa's 2000+ languages",
-    icon: 'fa-language',
-    color: '#10B981',
-    image: null
-  },
-  {
-    title: 'Women of African Creativity',
-    description: 'Highlighting women creators and innovators',
-    icon: 'fa-female',
-    color: '#EC4899',
-    image: null
-  },
-  {
-    title: 'Rising African Animators',
-    description: 'The next generation of animation storytellers',
-    icon: 'fa-paintbrush',
-    color: '#8B5CF6',
-    image: null
+  try {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    // Fetch from mv_trending_scores materialized view (pre-calculated)
+    const { data: trendingData, error: trendingError } = await supabase
+      .from('mv_trending_scores')
+      .select('*')
+      .order('trending_score', { ascending: false })
+      .limit(limit);
+    
+    if (trendingError) throw trendingError;
+    
+    // If no data from mv_trending_scores, fallback to Content table
+    if (!trendingData || trendingData.length === 0) {
+      const { data: contentData, error: contentError } = await supabase
+        .from('Content')
+        .select(`
+          id,
+          title,
+          description,
+          thumbnail_url,
+          genre,
+          views_count,
+          likes_count,
+          shares_count,
+          comments_count,
+          created_at,
+          duration,
+          creator_display_name,
+          user_id,
+          content_type,
+          moods,
+          tags,
+          country,
+          region,
+          is_bantu_original
+        `)
+        .eq('status', 'published')
+        .order('views_count', { ascending: false })
+        .limit(limit);
+      
+      if (contentError) throw contentError;
+      
+      const processed = (contentData || []).map(item => ({
+        ...item,
+        trending_score: (item.views_count || 0) * 1 + 
+                        (item.likes_count || 0) * 3 + 
+                        (item.shares_count || 0) * 5,
+        content_type: item.content_type || item.genre || 'video'
+      }));
+      
+      window.appState.cachedData.set(cacheKey, { data: processed, timestamp: Date.now() });
+      window.appState.trendingContent = processed;
+      return processed;
+    }
+    
+    // Enrich with full Content data
+    const contentIds = trendingData.map(t => t.content_id);
+    const { data: contentDetails, error: detailsError } = await supabase
+      .from('Content')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        genre,
+        views_count,
+        likes_count,
+        shares_count,
+        comments_count,
+        created_at,
+        duration,
+        creator_display_name,
+        user_id,
+        content_type,
+        moods,
+        tags,
+        country,
+        region,
+        is_bantu_original
+      `)
+      .in('id', contentIds)
+      .eq('status', 'published');
+    
+    if (detailsError) throw detailsError;
+    
+    const contentMap = new Map();
+    (contentDetails || []).forEach(c => contentMap.set(c.id, c));
+    
+    const enriched = trendingData.map(trend => ({
+      ...contentMap.get(trend.content_id),
+      trending_score: trend.trending_score,
+      global_rank: trend.global_rank
+    })).filter(item => item.id);
+    
+    window.appState.cachedData.set(cacheKey, { data: enriched, timestamp: Date.now() });
+    window.appState.trendingContent = enriched;
+    return enriched;
+    
+  } catch (error) {
+    console.error('Error fetching trending content:', error);
+    return [];
   }
-];
+}
+
+/**
+ * Fetch featured creators (verified + high momentum)
+ */
+async function fetchFeaturedCreators(limit = 12) {
+  const cacheKey = 'featured_creators';
+  const cached = window.appState.cachedData.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    // Fetch from creator_pulse_score for trending creators
+    const { data: pulseData, error: pulseError } = await supabase
+      .from('creator_pulse_score')
+      .select(`
+        creator_id,
+        final_pulse_score,
+        velocity_score,
+        momentum_score,
+        trend_stage,
+        trend_label,
+        global_rank
+      `)
+      .order('final_pulse_score', { ascending: false })
+      .limit(limit);
+    
+    if (pulseError) throw pulseError;
+    
+    if (!pulseData || pulseData.length === 0) {
+      // Fallback to user_profiles
+      const { data: profiles, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id, username, full_name, avatar_url, bio, location, role')
+        .eq('role', 'creator')
+        .limit(limit);
+      
+      if (profileError) throw profileError;
+      
+      window.appState.cachedData.set(cacheKey, { data: profiles || [], timestamp: Date.now() });
+      window.appState.featuredCreators = profiles || [];
+      return profiles || [];
+    }
+    
+    // Get creator details
+    const creatorIds = pulseData.map(p => p.creator_id);
+    const { data: profiles, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id, username, full_name, avatar_url, bio, location, role')
+      .in('id', creatorIds);
+    
+    if (profileError) throw profileError;
+    
+    const profileMap = new Map();
+    (profiles || []).forEach(p => profileMap.set(p.id, p));
+    
+    const enriched = pulseData.map(pulse => ({
+      ...profileMap.get(pulse.creator_id),
+      pulse_score: pulse.final_pulse_score,
+      velocity_score: pulse.velocity_score,
+      trend_stage: pulse.trend_stage,
+      trend_label: pulse.trend_label,
+      global_rank: pulse.global_rank
+    })).filter(item => item.id);
+    
+    window.appState.cachedData.set(cacheKey, { data: enriched, timestamp: Date.now() });
+    window.appState.featuredCreators = enriched;
+    return enriched;
+    
+  } catch (error) {
+    console.error('Error fetching featured creators:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch live streams from Content table
+ */
+async function fetchLiveStreams(limit = 6) {
+  const cacheKey = 'live_streams';
+  const cached = window.appState.cachedData.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    // Check for live content
+    const { data, error } = await supabase
+      .from('Content')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        creator_display_name,
+        user_id,
+        live_views,
+        created_at,
+        content_type,
+        tags
+      `)
+      .eq('media_type', 'live')
+      .eq('status', 'published')
+      .order('live_views', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    
+    // If no live streams, get recent popular content as "live-like"
+    if (!data || data.length === 0) {
+      const { data: popular, error: popError } = await supabase
+        .from('Content')
+        .select(`id, title, description, thumbnail_url, creator_display_name, user_id, views_count, created_at, content_type`)
+        .eq('status', 'published')
+        .order('views_count', { ascending: false })
+        .limit(limit);
+      
+      if (popError) throw popError;
+      
+      const processed = (popular || []).map(item => ({ ...item, is_live: false }));
+      window.appState.cachedData.set(cacheKey, { data: processed, timestamp: Date.now() });
+      window.appState.liveStreams = processed;
+      return processed;
+    }
+    
+    const processed = data.map(item => ({ ...item, is_live: true }));
+    window.appState.cachedData.set(cacheKey, { data: processed, timestamp: Date.now() });
+    window.appState.liveStreams = processed;
+    return processed;
+    
+  } catch (error) {
+    console.error('Error fetching live streams:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch genres for discovery worlds
+ */
+async function fetchGenres() {
+  const cacheKey = 'genres';
+  const cached = window.appState.cachedData.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    const { data, error } = await supabase
+      .from('genres')
+      .select('id, name, slug, description, origin_region, origin_city, is_active, metadata')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    
+    if (error) throw error;
+    
+    window.appState.cachedData.set(cacheKey, { data: data || [], timestamp: Date.now() });
+    window.appState.genres = data || [];
+    return data || [];
+    
+  } catch (error) {
+    console.error('Error fetching genres:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch cultural movements
+ */
+async function fetchCulturalMovements(limit = 6) {
+  const cacheKey = 'cultural_movements';
+  const cached = window.appState.cachedData.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    const { data, error } = await supabase
+      .from('movements')
+      .select('id, name, slug, description, era_start, era_end, region, city, is_active, metadata')
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+      .limit(limit);
+    
+    if (error) throw error;
+    
+    window.appState.cachedData.set(cacheKey, { data: data || [], timestamp: Date.now() });
+    window.appState.culturalMovements = data || [];
+    return data || [];
+    
+  } catch (error) {
+    console.error('Error fetching cultural movements:', error);
+    return [];
+  }
+}
+
+/**
+ * Search content across multiple tables
+ */
+async function searchContent(query, category = null) {
+  if (!query || query.length < 2) return [];
+  
+  try {
+    if (!supabase) return [];
+    
+    let searchQuery = supabase
+      .from('Content')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        creator_display_name,
+        genre,
+        views_count,
+        created_at,
+        content_type,
+        tags
+      `)
+      .eq('status', 'published')
+      .ilike('title', `%${query}%`);
+    
+    if (category && category !== 'all') {
+      searchQuery = searchQuery.eq('genre', category);
+    }
+    
+    const { data, error } = await searchQuery.limit(20);
+    
+    if (error) throw error;
+    return data || [];
+    
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get content by world/type
+ */
+async function getContentByType(contentType, limit = 10) {
+  try {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('Content')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        creator_display_name,
+        genre,
+        views_count,
+        likes_count,
+        shares_count,
+        created_at,
+        duration,
+        content_type,
+        moods,
+        tags
+      `)
+      .eq('status', 'published')
+      .eq('content_type', contentType)
+      .order('views_count', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return data || [];
+    
+  } catch (error) {
+    console.error(`Error fetching content by type ${contentType}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get platform stats
+ */
+async function fetchPlatformStats() {
+  try {
+    if (!supabase) return { totalContent: 0, totalCreators: 0, totalViews: 0 };
+    
+    const [contentRes, creatorsRes, viewsRes] = await Promise.all([
+      supabase.from('Content').select('id', { count: 'exact', head: true }).eq('status', 'published'),
+      supabase.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'creator'),
+      supabase.from('content_views').select('id', { count: 'exact', head: true }).eq('counted_as_view', true)
+    ]);
+    
+    return {
+      totalContent: contentRes.count || 0,
+      totalCreators: creatorsRes.count || 0,
+      totalViews: viewsRes.count || 0
+    };
+    
+  } catch (error) {
+    console.error('Error fetching platform stats:', error);
+    return { totalContent: 0, totalCreators: 0, totalViews: 0 };
+  }
+}
+
+/**
+ * Get trending by region
+ */
+async function getTrendingByRegion(region, limit = 5) {
+  try {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('Content')
+      .select(`id, title, thumbnail_url, region, views_count, creator_display_name`)
+      .eq('status', 'published')
+      .eq('region', region)
+      .order('views_count', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return data || [];
+    
+  } catch (error) {
+    console.error(`Error fetching trending by region ${region}:`, error);
+    return [];
+  }
+}
 
 // ============================================
-// 6. UTILITY FUNCTIONS
+// 4. UTILITY FUNCTIONS
 // ============================================
 window.showToast = function(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span>${message}</span>`;
+  const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+  toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
@@ -203,10 +503,23 @@ window.showToast = function(message, type = 'info') {
 };
 
 window.formatNumber = function(num) {
-  if (!num) return '0';
+  if (!num && num !== 0) return '0';
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
   return num.toString();
+};
+
+window.formatRelativeTime = function(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+  
+  if (diffHours < 1) return 'Just now';
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+  return date.toLocaleDateString();
 };
 
 window.escapeHtml = function(text) {
@@ -216,7 +529,17 @@ window.escapeHtml = function(text) {
   return div.innerHTML;
 };
 
-// ============================================
-// 7. EXPORT FOR FEATURES FILE
-// ============================================
-console.log('🚀 Explore Screen Core v3.0 Loaded - Discovery Worlds Architecture');
+// Export fetchers to window
+window.fetchers = {
+  fetchTrendingContent,
+  fetchFeaturedCreators,
+  fetchLiveStreams,
+  fetchGenres,
+  fetchCulturalMovements,
+  searchContent,
+  getContentByType,
+  fetchPlatformStats,
+  getTrendingByRegion
+};
+
+console.log('🚀 Explore Screen Core v4.0 Loaded - REAL DATA MODE');
