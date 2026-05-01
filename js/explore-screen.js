@@ -9,11 +9,14 @@
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-// Initialize Supabase
-let supabase = null;
-if (typeof window.supabase !== 'undefined') {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  window.supabaseClient = supabase;
+// Initialize Supabase client (check if not already defined)
+if (typeof window.supabaseClient === 'undefined') {
+  if (typeof window.supabase !== 'undefined') {
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else {
+    console.error('Supabase SDK not loaded');
+    window.supabaseClient = null;
+  }
 }
 
 // ============================================
@@ -50,10 +53,10 @@ async function fetchTrendingContent(limit = 12) {
   }
 
   try {
-    if (!supabase) throw new Error('Supabase not initialized');
+    if (!window.supabaseClient) throw new Error('Supabase not initialized');
     
     // Fetch from mv_trending_scores materialized view (pre-calculated)
-    const { data: trendingData, error: trendingError } = await supabase
+    const { data: trendingData, error: trendingError } = await window.supabaseClient
       .from('mv_trending_scores')
       .select('*')
       .order('trending_score', { ascending: false })
@@ -63,7 +66,7 @@ async function fetchTrendingContent(limit = 12) {
     
     // If no data from mv_trending_scores, fallback to Content table
     if (!trendingData || trendingData.length === 0) {
-      const { data: contentData, error: contentError } = await supabase
+      const { data: contentData, error: contentError } = await window.supabaseClient
         .from('Content')
         .select(`
           id,
@@ -107,7 +110,7 @@ async function fetchTrendingContent(limit = 12) {
     
     // Enrich with full Content data
     const contentIds = trendingData.map(t => t.content_id);
-    const { data: contentDetails, error: detailsError } = await supabase
+    const { data: contentDetails, error: detailsError } = await window.supabaseClient
       .from('Content')
       .select(`
         id,
@@ -165,10 +168,10 @@ async function fetchFeaturedCreators(limit = 12) {
   }
 
   try {
-    if (!supabase) throw new Error('Supabase not initialized');
+    if (!window.supabaseClient) throw new Error('Supabase not initialized');
     
     // Fetch from creator_pulse_score for trending creators
-    const { data: pulseData, error: pulseError } = await supabase
+    const { data: pulseData, error: pulseError } = await window.supabaseClient
       .from('creator_pulse_score')
       .select(`
         creator_id,
@@ -186,7 +189,7 @@ async function fetchFeaturedCreators(limit = 12) {
     
     if (!pulseData || pulseData.length === 0) {
       // Fallback to user_profiles
-      const { data: profiles, error: profileError } = await supabase
+      const { data: profiles, error: profileError } = await window.supabaseClient
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio, location, role')
         .eq('role', 'creator')
@@ -201,7 +204,7 @@ async function fetchFeaturedCreators(limit = 12) {
     
     // Get creator details
     const creatorIds = pulseData.map(p => p.creator_id);
-    const { data: profiles, error: profileError } = await supabase
+    const { data: profiles, error: profileError } = await window.supabaseClient
       .from('user_profiles')
       .select('id, username, full_name, avatar_url, bio, location, role')
       .in('id', creatorIds);
@@ -241,10 +244,10 @@ async function fetchLiveStreams(limit = 6) {
   }
 
   try {
-    if (!supabase) throw new Error('Supabase not initialized');
+    if (!window.supabaseClient) throw new Error('Supabase not initialized');
     
     // Check for live content
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
       .from('Content')
       .select(`
         id,
@@ -256,7 +259,8 @@ async function fetchLiveStreams(limit = 6) {
         live_views,
         created_at,
         content_type,
-        tags
+        tags,
+        views_count
       `)
       .eq('media_type', 'live')
       .eq('status', 'published')
@@ -267,7 +271,7 @@ async function fetchLiveStreams(limit = 6) {
     
     // If no live streams, get recent popular content as "live-like"
     if (!data || data.length === 0) {
-      const { data: popular, error: popError } = await supabase
+      const { data: popular, error: popError } = await window.supabaseClient
         .from('Content')
         .select(`id, title, description, thumbnail_url, creator_display_name, user_id, views_count, created_at, content_type`)
         .eq('status', 'published')
@@ -304,9 +308,9 @@ async function fetchGenres() {
   }
 
   try {
-    if (!supabase) throw new Error('Supabase not initialized');
+    if (!window.supabaseClient) throw new Error('Supabase not initialized');
     
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
       .from('genres')
       .select('id, name, slug, description, origin_region, origin_city, is_active, metadata')
       .eq('is_active', true)
@@ -335,9 +339,9 @@ async function fetchCulturalMovements(limit = 6) {
   }
 
   try {
-    if (!supabase) throw new Error('Supabase not initialized');
+    if (!window.supabaseClient) throw new Error('Supabase not initialized');
     
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
       .from('movements')
       .select('id, name, slug, description, era_start, era_end, region, city, is_active, metadata')
       .eq('is_active', true)
@@ -363,9 +367,9 @@ async function searchContent(query, category = null) {
   if (!query || query.length < 2) return [];
   
   try {
-    if (!supabase) return [];
+    if (!window.supabaseClient) return [];
     
-    let searchQuery = supabase
+    let searchQuery = window.supabaseClient
       .from('Content')
       .select(`
         id,
@@ -402,9 +406,9 @@ async function searchContent(query, category = null) {
  */
 async function getContentByType(contentType, limit = 10) {
   try {
-    if (!supabase) return [];
+    if (!window.supabaseClient) return [];
     
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
       .from('Content')
       .select(`
         id,
@@ -441,12 +445,12 @@ async function getContentByType(contentType, limit = 10) {
  */
 async function fetchPlatformStats() {
   try {
-    if (!supabase) return { totalContent: 0, totalCreators: 0, totalViews: 0 };
+    if (!window.supabaseClient) return { totalContent: 0, totalCreators: 0, totalViews: 0 };
     
     const [contentRes, creatorsRes, viewsRes] = await Promise.all([
-      supabase.from('Content').select('id', { count: 'exact', head: true }).eq('status', 'published'),
-      supabase.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'creator'),
-      supabase.from('content_views').select('id', { count: 'exact', head: true }).eq('counted_as_view', true)
+      window.supabaseClient.from('Content').select('id', { count: 'exact', head: true }).eq('status', 'published'),
+      window.supabaseClient.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'creator'),
+      window.supabaseClient.from('content_views').select('id', { count: 'exact', head: true }).eq('counted_as_view', true)
     ]);
     
     return {
@@ -466,9 +470,9 @@ async function fetchPlatformStats() {
  */
 async function getTrendingByRegion(region, limit = 5) {
   try {
-    if (!supabase) return [];
+    if (!window.supabaseClient) return [];
     
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
       .from('Content')
       .select(`id, title, thumbnail_url, region, views_count, creator_display_name`)
       .eq('status', 'published')
@@ -529,7 +533,7 @@ window.escapeHtml = function(text) {
   return div.innerHTML;
 };
 
-// Export fetchers to window
+// Register fetchers to window BEFORE features file loads
 window.fetchers = {
   fetchTrendingContent,
   fetchFeaturedCreators,
@@ -543,3 +547,5 @@ window.fetchers = {
 };
 
 console.log('🚀 Explore Screen Core v4.0 Loaded - REAL DATA MODE');
+console.log('📡 Supabase client ready:', !!window.supabaseClient);
+console.log('🔧 Fetchers registered:', Object.keys(window.fetchers).length);
