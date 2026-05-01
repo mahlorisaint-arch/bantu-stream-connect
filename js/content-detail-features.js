@@ -11,14 +11,6 @@ console.log('🎬 Content Detail Features Loading...');
 // 🔧 FIXED: Added profile_id - required column
 // ============================================
 
-// Generate new session ID for each play
-function generateNewSession() {
-    const newSessionId = crypto.randomUUID();
-    sessionStorage.setItem('bantu_view_session', newSessionId);
-    console.log('🎬 Generated new session ID:', newSessionId);
-    return newSessionId;
-}
-
 // ============================================
 // 🔧 FIXED: Record view in content_views table with session_id
 // ✅ REMOVED: creator_id (column doesn't exist)
@@ -41,15 +33,14 @@ async function recordContentView(contentId) {
             console.log('👤 Guest user');
         }
 
-        // Generate or get session ID
+        // ✅ ONLY GET existing session ID - NEVER CREATE
         let sessionId = sessionStorage.getItem('bantu_view_session');
         if (!sessionId) {
-            sessionId = crypto.randomUUID();
-            sessionStorage.setItem('bantu_view_session', sessionId);
-            console.log('🔑 Generated new session ID:', sessionId);
-        } else {
-            console.log('🔑 Using existing session ID:', sessionId);
+            // This should never happen if handlePlay() created it first
+            console.error('❌ CRITICAL: No session ID found in storage!');
+            return null;
         }
+        console.log('🔑 Using existing session ID:', sessionId);
 
         const contentIdNum = parseInt(contentId);
         if (isNaN(contentIdNum)) {
@@ -198,7 +189,8 @@ async function refreshCountsFromSource() {
         const { count: newViews } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id);
+            .eq('content_id', currentContent.id)
+            .eq('counted_as_view', true);  // ✅ ONLY count validated views
 
         const { count: newLikes } = await window.supabaseClient
             .from('content_likes')
