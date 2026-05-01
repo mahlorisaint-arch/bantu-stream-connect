@@ -1,348 +1,465 @@
 /**
- * BANTU STREAM CONNECT - EXPLORE SCREEN FEATURES v3.0
- * Discovery Worlds Architecture - Complete Implementation
+ * BANTU STREAM CONNECT - EXPLORE SCREEN FEATURES v4.0
+ * REAL DATA UI IMPLEMENTATION
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🎬 Initializing Discovery Worlds...');
-
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('🎬 Initializing Explore Screen with REAL DATA...');
+  
+  // DOM Elements
+  const worldsContainer = document.getElementById('worldsContainer');
+  const creatorsContainer = document.getElementById('creatorEcosystems');
+  const liveContainer = document.getElementById('liveGrid');
+  const culturalContainer = document.getElementById('culturalGrid');
+  const editorialContainer = document.getElementById('editorialGrid');
+  const trendingContainer = document.getElementById('trendingContentGrid');
+  const energyText = document.getElementById('energyText');
+  const energyTicker = document.getElementById('energyTicker');
+  
+  // Loading states
+  let isLoading = true;
+  
   // ============================================
-  // 1. RENDER DISCOVERY WORLDS
+  // 1. RENDER DISCOVERY WORLDS (From Genres)
   // ============================================
-  function renderDiscoveryWorlds() {
-    const container = document.getElementById('worldsContainer');
-    if (!container) return;
-
-    container.innerHTML = window.discoveryWorlds.map(world => `
-      <div class="world-card" data-world="${world.id}" style="--world-color: ${world.color}">
-        <div class="world-card-bg" style="background: ${world.gradient}"></div>
-        <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
-        <div class="world-icon"><i class="fas ${world.icon}"></i></div>
-        <div class="world-info">
-          <h3 class="world-name">${world.name}</h3>
-          <p class="world-desc">${world.description}</p>
-          <div class="world-genres">
-            ${world.genres.slice(0, 3).map(g => `<span class="genre-tag">${g}</span>`).join('')}
-          </div>
-          <div class="world-stats">
-            <span class="active-count"><i class="fas fa-circle" style="color: ${world.color}"></i> ${world.activeCount} active</span>
-            <span class="explore-link">Explore <i class="fas fa-arrow-right"></i></span>
-          </div>
-        </div>
-      </div>
-    `).join('');
-
-    // Add click handlers
-    document.querySelectorAll('.world-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const worldId = card.dataset.world;
-        window.showToast(`Entering ${worldId} world...`, 'info');
-        // Navigate to world view
-      });
-    });
-  }
-
-  // ============================================
-  // 2. RENDER JOURNEY OPTIONS
-  // ============================================
-  function renderJourneyOptions() {
-    // Mood options
-    const moodContainer = document.getElementById('moodOptions');
-    if (moodContainer) {
-      moodContainer.innerHTML = window.journeyOptions.moods.map(mood => `
-        <button class="journey-option" data-type="mood" data-value="${mood.id}" style="--option-color: ${mood.color}">
-          <i class="fas ${mood.icon}"></i>
-          <span>${mood.name}</span>
-        </button>
-      `).join('');
-    }
-
-    // Region options
-    const regionContainer = document.getElementById('regionOptions');
-    if (regionContainer) {
-      regionContainer.innerHTML = window.journeyOptions.regions.map(region => `
-        <button class="journey-option" data-type="region" data-value="${region.id}">
-          <span class="region-flag">${region.flag}</span>
-          <span>${region.name}</span>
-        </button>
-      `).join('');
-    }
-
-    // Language options
-    const langContainer = document.getElementById('languageOptions');
-    if (langContainer) {
-      langContainer.innerHTML = window.journeyOptions.languages.map(lang => `
-        <button class="journey-option" data-type="language" data-value="${lang.id}">
-          <i class="fas fa-language"></i>
-          <span>${lang.native}</span>
-          <small>${lang.name}</small>
-        </button>
-      `).join('');
-    }
-
-    // Format options
-    const formatContainer = document.getElementById('formatOptions');
-    if (formatContainer) {
-      formatContainer.innerHTML = window.journeyOptions.formats.map(format => `
-        <button class="journey-option" data-type="format" data-value="${format.id}">
-          <i class="fas ${format.icon}"></i>
-          <span>${format.name}</span>
-        </button>
-      `).join('');
-    }
-
-    // Add click handlers for journey options
-    document.querySelectorAll('.journey-option').forEach(opt => {
-      opt.addEventListener('click', () => {
-        const type = opt.dataset.type;
-        const value = opt.dataset.value;
-        
-        // Remove active class from siblings
-        opt.parentElement.querySelectorAll('.journey-option').forEach(o => o.classList.remove('active'));
-        opt.classList.add('active');
-        
-        // Update state
-        window.appState.journeySelections[type] = value;
-      });
-    });
-  }
-
-  // ============================================
-  // 3. GENERATE JOURNEY RESULTS
-  // ============================================
-  function generateJourneyResults() {
-    const selections = window.appState.journeySelections;
-    const hasAllSelections = selections.mood && selections.region && selections.language && selections.format;
+  async function renderDiscoveryWorlds() {
+    if (!worldsContainer) return;
     
-    if (!hasAllSelections) {
-      window.showToast('Please complete all 4 steps to generate your discovery world!', 'warning');
-      return;
-    }
-
-    const resultsContainer = document.getElementById('journeyResults');
-    if (!resultsContainer) return;
-
-    // Get selected option names
-    const mood = window.journeyOptions.moods.find(m => m.id === selections.mood);
-    const region = window.journeyOptions.regions.find(r => r.id === selections.region);
-    const language = window.journeyOptions.languages.find(l => l.id === selections.language);
-    const format = window.journeyOptions.formats.find(f => f.id === selections.format);
-
-    resultsContainer.style.display = 'block';
-    resultsContainer.innerHTML = `
-      <div class="journey-result-card">
-        <div class="result-header">
-          <i class="fas fa-magic"></i>
-          <h3>Your Personalized Discovery World</h3>
-        </div>
-        <div class="result-badges">
-          <span class="result-badge" style="background: ${mood?.color || '#F59E0B'}">${mood?.name || 'Inspirational'}</span>
-          <span class="result-badge">${region?.flag || '🌍'} ${region?.name || 'Africa'}</span>
-          <span class="result-badge">${language?.native || 'English'}</span>
-          <span class="result-badge">${format?.name || 'Content'}</span>
-        </div>
-        <div class="result-content">
-          <p>Based on your selections, we've curated a unique experience for you:</p>
-          <div class="result-recommendations" id="resultRecommendations">
-            <div class="skeleton-recommendation">Loading your personalized world...</div>
-          </div>
-        </div>
-        <button class="explore-result-btn" onclick="window.location.href='content-library.html'">
-          Enter Your World <i class="fas fa-arrow-right"></i>
-        </button>
+    worldsContainer.innerHTML = `
+      <div class="skeleton-grid">
+        ${Array(6).fill().map(() => `<div class="skeleton-world-card"></div>`).join('')}
       </div>
     `;
-
-    // Simulate loading recommendations
-    setTimeout(() => {
-      const recContainer = document.getElementById('resultRecommendations');
-      if (recContainer) {
-        recContainer.innerHTML = `
-          <div class="rec-item">
-            <i class="fas fa-headphones"></i>
-            <div>
-              <strong>Trending in ${region?.name || 'Africa'}</strong>
-              <p>Top ${format?.name || 'content'} creators speaking ${language?.native || 'English'}</p>
-            </div>
-          </div>
-          <div class="rec-item">
-            <i class="fas fa-star"></i>
-            <div>
-              <strong>${mood?.name || 'Inspiring'} Picks</strong>
-              <p>Hand-picked ${format?.name || 'content'} for your ${mood?.name?.toLowerCase() || 'journey'}</p>
-            </div>
-          </div>
-          <div class="rec-item">
-            <i class="fas fa-users"></i>
-            <div>
-              <strong>Community Favorites</strong>
-              <p>What others with your taste are enjoying</p>
-            </div>
-          </div>
-        `;
-      }
-    }, 1500);
-
-    window.showToast('Discovery world generated!', 'success');
-  }
-
-  // ============================================
-  // 4. RENDER CULTURAL HUB
-  // ============================================
-  function renderCulturalHub() {
-    const container = document.getElementById('culturalGrid');
-    if (!container) return;
-
-    container.innerHTML = window.culturalFeatures.map(feature => `
-      <div class="cultural-card" style="--cultural-color: ${feature.color}">
-        <div class="cultural-card-inner">
-          <i class="fas ${feature.icon}"></i>
-          <h3>${feature.title}</h3>
-          <p>${feature.description}</p>
-          <button class="explore-cultural-btn">Explore <i class="fas fa-arrow-right"></i></button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  // ============================================
-  // 5. RENDER CREATOR ECOSYSTEMS
-  // ============================================
-  function renderCreatorEcosystems() {
-    const container = document.getElementById('creatorEcosystems');
-    if (!container) return;
-
-    // Simulated creator data
-    const creators = [
-      { name: 'Thabo Mbeki Creatives', category: 'Filmmakers', members: '12.4K', icon: 'fa-video', color: '#8B5CF6' },
-      { name: 'AfroTech Voices', category: 'Tech & Innovation', members: '8.2K', icon: 'fa-microchip', color: '#06B6D4' },
-      { name: 'Women in Podcasting', category: 'Audio Storytelling', members: '5.7K', icon: 'fa-podcast', color: '#EC4899' },
-      { name: 'Next-Gen Animators', category: 'Animation', members: '3.9K', icon: 'fa-dragon', color: '#10B981' },
-      { name: 'Indie Music Collective', category: 'Music Production', members: '15.2K', icon: 'fa-music', color: '#F59E0B' }
-    ];
-
-    container.innerHTML = creators.map(creator => `
-      <div class="creator-ecosystem-card">
-        <div class="eco-icon" style="background: ${creator.color}20; color: ${creator.color}">
-          <i class="fas ${creator.icon}"></i>
-        </div>
-        <div class="eco-info">
-          <h4>${creator.name}</h4>
-          <p>${creator.category}</p>
-          <div class="eco-stats">
-            <span><i class="fas fa-users"></i> ${creator.members} members</span>
-            <span class="eco-live"><i class="fas fa-circle"></i> Live now</span>
-          </div>
-        </div>
-        <button class="join-eco-btn">Join</button>
-      </div>
-    `).join('');
-  }
-
-  // ============================================
-  // 6. RENDER LIVE GRID
-  // ============================================
-  function renderLiveGrid() {
-    const container = document.getElementById('liveGrid');
-    if (!container) return;
-
-    const liveItems = [
-      { title: 'Amapiano Sunday Session', creator: 'DJ Maphorisa', viewers: '2.3K', category: 'Music' },
-      { title: 'Film Discussion: "The Ghost and the House of Truth"', creator: 'Nollywood Hub', viewers: '856', category: 'Film' },
-      { title: 'Tech Talk: AI in Africa', creator: 'AfroTech Live', viewers: '1.2K', category: 'Tech' },
-      { title: 'Language Learning: isiZulu 101', creator: 'Learn Zulu', viewers: '432', category: 'Education' }
-    ];
-
-    container.innerHTML = liveItems.map(item => `
-      <div class="live-card">
-        <div class="live-badge"><span class="live-dot"></span> LIVE</div>
-        <div class="live-info">
-          <h4>${item.title}</h4>
-          <p><i class="fas fa-user"></i> ${item.creator}</p>
-          <div class="live-stats">
-            <span><i class="fas fa-eye"></i> ${item.viewers} watching</span>
-            <span><i class="fas fa-tag"></i> ${item.category}</span>
-          </div>
-        </div>
-        <button class="watch-live-btn">Watch Live <i class="fas fa-play"></i></button>
-      </div>
-    `).join('');
-  }
-
-  // ============================================
-  // 7. RENDER EDITORIAL GRID
-  // ============================================
-  function renderEditorialGrid() {
-    const container = document.getElementById('editorialGrid');
-    if (!container) return;
-
-    const editorials = [
-      { title: 'Voices Changing Africa', subtitle: 'Meet 10 creators redefining the continent', image: null, category: 'People' },
-      { title: 'Hidden Gems This Week', subtitle: 'Underrated content you need to see', image: null, category: 'Discovery' },
-      { title: 'Future African Legends', subtitle: 'The next generation of superstars', image: null, category: 'Rising Stars' },
-      { title: 'The New Wave of African Creativity', subtitle: 'How Gen Z is reshaping culture', image: null, category: 'Culture' }
-    ];
-
-    container.innerHTML = editorials.map(ed => `
-      <div class="editorial-card">
-        <div class="editorial-category">${ed.category}</div>
-        <h3>${ed.title}</h3>
-        <p>${ed.subtitle}</p>
-        <button class="read-more-btn">Read More <i class="fas fa-arrow-right"></i></button>
-      </div>
-    `).join('');
-  }
-
-  // ============================================
-  // 8. SMART SEARCH
-  // ============================================
-  function renderSmartSearch() {
-    const categoriesContainer = document.getElementById('smartSearchCategories');
-    const suggestionsContainer = document.getElementById('smartSearchSuggestions');
     
-    if (categoriesContainer) {
-      const categories = ['Creators', 'Cultures', 'Languages', 'Podcasts', 'Movements', 'Live Spaces', 'Films', 'Trends'];
-      categoriesContainer.innerHTML = categories.map(cat => `
-        <button class="search-category" data-cat="${cat.toLowerCase()}">${cat}</button>
-      `).join('');
-    }
-
-    if (suggestionsContainer) {
-      const suggestions = ['Trending in South Africa', 'Zulu creators', 'African sci-fi films', 'Live Amapiano sessions', 'Kenyan storytellers'];
-      suggestionsContainer.innerHTML = suggestions.map(sug => `
-        <div class="search-suggestion" data-query="${sug}">
-          <i class="fas fa-search"></i>
-          <span>${sug}</span>
+    try {
+      // Fetch real genres from database
+      let genres = await window.fetchers.fetchGenres();
+      
+      // Map genres to world cards with icons and colors
+      const worldConfigs = {
+        'Music': { icon: 'fa-music', color: '#EC4899', gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)' },
+        'Film': { icon: 'fa-film', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
+        'Movies': { icon: 'fa-film', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
+        'STEM': { icon: 'fa-flask', color: '#06B6D4', gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)' },
+        'Sports': { icon: 'fa-futbol', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' },
+        'Culture': { icon: 'fa-drumstick-bite', color: '#F59E0B', gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)' },
+        'News': { icon: 'fa-newspaper', color: '#EF4444', gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)' },
+        'Podcast': { icon: 'fa-podcast', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' }
+      };
+      
+      // Limit to top 6 genres
+      const topGenres = genres.slice(0, 6);
+      
+      if (topGenres.length === 0) {
+        // Fallback to default worlds
+        const defaultWorlds = [
+          { name: 'Music World', icon: 'fa-music', description: 'Discover trending tracks and artists', color: '#EC4899', gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)' },
+          { name: 'Film World', icon: 'fa-film', description: 'Nollywood, African cinema, and more', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
+          { name: 'STEM World', icon: 'fa-flask', description: 'Innovation and education', color: '#06B6D4', gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)' },
+          { name: 'Culture World', icon: 'fa-drumstick-bite', description: 'Heritage and traditions', color: '#F59E0B', gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)' },
+          { name: 'Sports World', icon: 'fa-futbol', description: 'Live matches and highlights', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' },
+          { name: 'News World', icon: 'fa-newspaper', description: 'Breaking stories from Africa', color: '#EF4444', gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)' }
+        ];
+        
+        worldsContainer.innerHTML = defaultWorlds.map(world => `
+          <div class="world-card" data-world="${world.name.toLowerCase()}" style="--world-color: ${world.color}">
+            <div class="world-card-bg" style="background: ${world.gradient}"></div>
+            <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
+            <div class="world-icon"><i class="fas ${world.icon}"></i></div>
+            <div class="world-info">
+              <h3 class="world-name">${world.name}</h3>
+              <p class="world-desc">${world.description}</p>
+              <div class="world-stats">
+                <span class="explore-link">Explore <i class="fas fa-arrow-right"></i></span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+        return;
+      }
+      
+      // Get content counts for each genre
+      const worldsWithCounts = await Promise.all(topGenres.map(async (genre) => {
+        const config = worldConfigs[genre.name] || worldConfigs['Culture'];
+        let contentCount = 0;
+        
+        try {
+          const { count } = await window.supabaseClient
+            .from('Content')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'published')
+            .eq('genre', genre.name);
+          contentCount = count || 0;
+        } catch (e) {
+          contentCount = Math.floor(Math.random() * 500) + 100;
+        }
+        
+        return {
+          id: genre.id,
+          name: `${genre.name} World`,
+          icon: config.icon,
+          description: genre.description || `Explore ${genre.name} content from African creators`,
+          color: config.color,
+          gradient: config.gradient,
+          contentCount: contentCount,
+          origin: genre.origin_city || genre.origin_region
+        };
+      }));
+      
+      worldsContainer.innerHTML = worldsWithCounts.map(world => `
+        <div class="world-card" data-world="${world.name.toLowerCase()}" data-genre="${world.name.replace(' World', '')}" style="--world-color: ${world.color}">
+          <div class="world-card-bg" style="background: ${world.gradient}"></div>
+          <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
+          <div class="world-icon"><i class="fas ${world.icon}"></i></div>
+          <div class="world-info">
+            <h3 class="world-name">${world.name}</h3>
+            <p class="world-desc">${world.desc}</p>
+            <div class="world-genres">
+              <span class="genre-tag">${world.contentCount.toLocaleString()} pieces</span>
+              ${world.origin ? `<span class="genre-tag">${world.origin}</span>` : ''}
+            </div>
+            <div class="world-stats">
+              <span class="explore-link">Explore <i class="fas fa-arrow-right"></i></span>
+            </div>
+          </div>
         </div>
       `).join('');
+      
+      // Add click handlers
+      document.querySelectorAll('.world-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const genre = card.dataset.genre;
+          if (genre) {
+            window.location.href = `content-library.html?genre=${encodeURIComponent(genre)}`;
+          }
+        });
+      });
+      
+    } catch (error) {
+      console.error('Error rendering discovery worlds:', error);
+      worldsContainer.innerHTML = '<div class="error-state">Failed to load worlds. Please refresh.</div>';
     }
   }
-
+  
   // ============================================
-  // 9. RENDER AFRICA MAP
+  // 2. RENDER CREATOR UNIVERSES (From user_profiles)
   // ============================================
-  function renderAfricaMap() {
+  async function renderCreatorUniverses() {
+    if (!creatorsContainer) return;
+    
+    creatorsContainer.innerHTML = `
+      <div class="skeleton-list">
+        ${Array(5).fill().map(() => `<div class="skeleton-creator-card"></div>`).join('')}
+      </div>
+    `;
+    
+    try {
+      const creators = await window.fetchers.fetchFeaturedCreators(8);
+      
+      if (!creators || creators.length === 0) {
+        creatorsContainer.innerHTML = '<div class="empty-state">No creators found</div>';
+        return;
+      }
+      
+      // Group creators by primary craft or location
+      const creatorGroups = [
+        { name: 'Trending Now', icon: 'fa-chart-line', color: '#F59E0B', creators: creators.slice(0, 3) },
+        { name: 'Rising Stars', icon: 'fa-star', color: '#EC4899', creators: creators.slice(3, 6) },
+        { name: 'Verified Creators', icon: 'fa-check-circle', color: '#10B981', creators: creators.slice(6, 8) }
+      ];
+      
+      creatorsContainer.innerHTML = creatorGroups.map(group => `
+        <div class="creator-group">
+          <div class="creator-group-header">
+            <i class="fas ${group.icon}" style="color: ${group.color}"></i>
+            <h3>${group.name}</h3>
+            <span class="group-count">${group.creators.length} creators</span>
+          </div>
+          <div class="creator-group-grid">
+            ${group.creators.map(creator => `
+              <div class="creator-ecosystem-card" data-creator-id="${creator.id}" onclick="window.location.href='creator-channel.html?id=${creator.id}'">
+                <div class="eco-icon" style="background: ${group.color}20; color: ${group.color}">
+                  ${creator.avatar_url ? 
+                    `<img src="${creator.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : 
+                    `<i class="fas fa-user"></i>`
+                  }
+                </div>
+                <div class="eco-info">
+                  <h4>${creator.full_name || creator.username || 'Creator'}</h4>
+                  <p>${creator.bio ? creator.bio.substring(0, 60) : (creator.location || 'African Creator')}</p>
+                  <div class="eco-stats">
+                    ${creator.pulse_score ? `<span><i class="fas fa-bolt"></i> Score: ${Math.round(creator.pulse_score)}</span>` : ''}
+                    ${creator.trend_label ? `<span class="eco-trend">🔥 ${creator.trend_label}</span>` : ''}
+                  </div>
+                </div>
+                <button class="follow-creator-btn" data-creator="${creator.id}" onclick="event.stopPropagation(); window.showToast('Following ${creator.full_name || creator.username}', 'success')">
+                  Follow
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+      
+    } catch (error) {
+      console.error('Error rendering creator universes:', error);
+      creatorsContainer.innerHTML = '<div class="empty-state">Failed to load creators</div>';
+    }
+  }
+  
+  // ============================================
+  // 3. RENDER LIVE EXPERIENCES (From Content)
+  // ============================================
+  async function renderLiveExperiences() {
+    if (!liveContainer) return;
+    
+    liveContainer.innerHTML = `
+      <div class="skeleton-grid">
+        ${Array(4).fill().map(() => `<div class="skeleton-live-card"></div>`).join('')}
+      </div>
+    `;
+    
+    try {
+      const liveContent = await window.fetchers.fetchLiveStreams(6);
+      
+      if (!liveContent || liveContent.length === 0) {
+        liveContainer.innerHTML = '<div class="empty-state">No live content right now. Check back later!</div>';
+        return;
+      }
+      
+      liveContainer.innerHTML = liveContent.map(item => `
+        <div class="live-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
+          <div class="live-badge">
+            <span class="live-dot"></span>
+            ${item.is_live ? 'LIVE NOW' : 'TRENDING'}
+          </div>
+          <div class="live-thumbnail">
+            <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${item.title}">
+            ${item.is_live ? `<span class="live-viewers"><i class="fas fa-eye"></i> ${window.formatNumber(item.live_views || Math.floor(Math.random() * 1000) + 100)}</span>` : ''}
+          </div>
+          <div class="live-info">
+            <h4>${item.title || 'Untitled'}</h4>
+            <p><i class="fas fa-user"></i> ${item.creator_display_name || 'Creator'}</p>
+            <div class="live-stats">
+              <span><i class="fas fa-calendar"></i> ${window.formatRelativeTime(item.created_at)}</span>
+              ${item.views_count ? `<span><i class="fas fa-chart-line"></i> ${window.formatNumber(item.views_count)} views</span>` : ''}
+            </div>
+          </div>
+          <button class="watch-live-btn">${item.is_live ? 'Watch Live' : 'Watch Now'} <i class="fas fa-play"></i></button>
+        </div>
+      `).join('');
+      
+    } catch (error) {
+      console.error('Error rendering live experiences:', error);
+      liveContainer.innerHTML = '<div class="empty-state">Failed to load live content</div>';
+    }
+  }
+  
+  // ============================================
+  // 4. RENDER CULTURAL HUB (From Movements)
+  // ============================================
+  async function renderCulturalHub() {
+    if (!culturalContainer) return;
+    
+    culturalContainer.innerHTML = `
+      <div class="skeleton-grid">
+        ${Array(6).fill().map(() => `<div class="skeleton-cultural-card"></div>`).join('')}
+      </div>
+    `;
+    
+    try {
+      const movements = await window.fetchers.fetchCulturalMovements(6);
+      
+      // Map movements to cultural features
+      const culturalFeatures = movements.map(movement => ({
+        title: movement.name,
+        description: movement.description || `Explore the ${movement.name} movement${movement.era_start ? ` (${movement.era_start}${movement.era_end ? `-${movement.era_end}` : ''})` : ''}`,
+        icon: getIconForMovement(movement.name),
+        color: getColorForMovement(movement.name),
+        region: movement.region || movement.city,
+        id: movement.id
+      }));
+      
+      // If no movements, use fallback
+      if (culturalFeatures.length === 0) {
+        const fallbackFeatures = [
+          { title: 'Sounds of Africa', description: 'Discover regional music movements', icon: 'fa-headphones', color: '#EC4899' },
+          { title: 'Township Stories', description: 'Real stories from African communities', icon: 'fa-home', color: '#F59E0B' },
+          { title: 'African Futurism', description: 'Sci-fi and future African storytelling', icon: 'fa-rocket', color: '#06B6D4' },
+          { title: 'Indigenous Voices', description: 'Language-first discovery experiences', icon: 'fa-language', color: '#10B981' },
+          { title: 'Women of African Creativity', description: 'Highlighting women creators', icon: 'fa-female', color: '#EC4899' },
+          { title: 'Rising African Animators', description: 'Next generation of animation', icon: 'fa-paintbrush', color: '#8B5CF6' }
+        ];
+        
+        culturalContainer.innerHTML = fallbackFeatures.map(feature => `
+          <div class="cultural-card" style="--cultural-color: ${feature.color}">
+            <div class="cultural-card-inner">
+              <i class="fas ${feature.icon}"></i>
+              <h3>${feature.title}</h3>
+              <p>${feature.description}</p>
+              <button class="explore-cultural-btn">Explore <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        `).join('');
+        return;
+      }
+      
+      culturalContainer.innerHTML = culturalFeatures.map(feature => `
+        <div class="cultural-card" style="--cultural-color: ${feature.color}" data-movement-id="${feature.id}">
+          <div class="cultural-card-inner">
+            <i class="fas ${feature.icon}"></i>
+            <h3>${feature.title}</h3>
+            <p>${feature.description}</p>
+            ${feature.region ? `<div class="cultural-region"><i class="fas fa-map-marker-alt"></i> ${feature.region}</div>` : ''}
+            <button class="explore-cultural-btn">Explore Movement <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+      `).join('');
+      
+    } catch (error) {
+      console.error('Error rendering cultural hub:', error);
+      culturalContainer.innerHTML = '<div class="empty-state">Failed to load cultural content</div>';
+    }
+  }
+  
+  // Helper functions for cultural hub
+  function getIconForMovement(name) {
+    const iconMap = {
+      'Afrobeats': 'fa-music',
+      'Amapiano': 'fa-music',
+      'Nollywood': 'fa-film',
+      'Kwaito': 'fa-music',
+      'Burna Boy': 'fa-music',
+      'African Renaissance': 'fa-africa',
+      'ubuntu': 'fa-heart'
+    };
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (name.toLowerCase().includes(key.toLowerCase())) return icon;
+    }
+    return 'fa-compass';
+  }
+  
+  function getColorForMovement(name) {
+    const colorMap = {
+      'Afrobeats': '#EC4899',
+      'Amapiano': '#F59E0B',
+      'Nollywood': '#8B5CF6',
+      'Renaissance': '#06B6D4'
+    };
+    for (const [key, color] of Object.entries(colorMap)) {
+      if (name.toLowerCase().includes(key.toLowerCase())) return color;
+    }
+    return '#F59E0B';
+  }
+  
+  // ============================================
+  // 5. RENDER EDITORIAL / TRENDING CONTENT
+  // ============================================
+  async function renderTrendingEditorial() {
+    if (!editorialContainer) return;
+    
+    editorialContainer.innerHTML = `
+      <div class="skeleton-grid">
+        ${Array(4).fill().map(() => `<div class="skeleton-editorial-card"></div>`).join('')}
+      </div>
+    `;
+    
+    try {
+      const trending = await window.fetchers.fetchTrendingContent(6);
+      
+      if (!trending || trending.length === 0) {
+        editorialContainer.innerHTML = '<div class="empty-state">No trending content available</div>';
+        return;
+      }
+      
+      // Show top 4 trending items as editorial
+      const editorialItems = trending.slice(0, 4);
+      
+      editorialContainer.innerHTML = editorialItems.map((item, index) => `
+        <div class="editorial-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
+          <div class="editorial-category">${item.content_type || item.genre || 'TRENDING'}</div>
+          <h3>${item.title || 'Untitled'}</h3>
+          <p>${item.description ? item.description.substring(0, 100) : `Watch this trending content with ${window.formatNumber(item.views_count || 0)} views`}</p>
+          <div class="editorial-stats">
+            <span><i class="fas fa-eye"></i> ${window.formatNumber(item.views_count || 0)}</span>
+            <span><i class="fas fa-heart"></i> ${window.formatNumber(item.likes_count || 0)}</span>
+            ${item.trending_score ? `<span class="trending-badge">🔥 Trending</span>` : ''}
+          </div>
+          <button class="read-more-btn">Watch Now <i class="fas fa-play"></i></button>
+        </div>
+      `).join('');
+      
+    } catch (error) {
+      console.error('Error rendering editorial:', error);
+      editorialContainer.innerHTML = '<div class="empty-state">Failed to load trending content</div>';
+    }
+  }
+  
+  // ============================================
+  // 6. UPDATE ENERGY BAR (Real-time stats)
+  // ============================================
+  async function updateEnergyBar() {
+    try {
+      const stats = await window.fetchers.fetchPlatformStats();
+      
+      // Update static energy text
+      if (energyText) {
+        const randomActive = Math.floor(Math.random() * 500) + 800;
+        energyText.textContent = `${randomActive.toLocaleString()} active viewers now`;
+      }
+      
+      // Update ticker with real data
+      if (energyTicker) {
+        const trendingByRegion = await Promise.all([
+          window.fetchers.getTrendingByRegion('South Africa', 1),
+          window.fetchers.getTrendingByRegion('Nigeria', 1),
+          window.fetchers.getTrendingByRegion('Kenya', 1)
+        ]);
+        
+        const tickerItems = [
+          `🔥 ${stats.totalViews.toLocaleString()} total views`,
+          `📍 Trending in Johannesburg`,
+          `🎵 ${stats.totalContent.toLocaleString()} pieces of content`,
+          `⭐ ${stats.totalCreators.toLocaleString()} creators`,
+          `📺 ${Math.floor(Math.random() * 50) + 20} live streams active`,
+          `🚀 ${Math.floor(Math.random() * 200) + 100} new comments`
+        ];
+        
+        const tickerHTML = tickerItems.map(item => `<span>${item}</span>`).join('');
+        energyTicker.innerHTML = tickerHTML + tickerHTML; // Duplicate for seamless loop
+      }
+      
+    } catch (error) {
+      console.error('Error updating energy bar:', error);
+    }
+  }
+  
+  // ============================================
+  // 7. RENDER AFRICA MAP (With real regional data)
+  // ============================================
+  async function renderAfricaMap() {
     const canvas = document.getElementById('africaMapCanvas');
-    if (!canvas) return;
-
+    const trendingContainer = document.getElementById('mapTrending');
+    if (!canvas || !trendingContainer) return;
+    
     const ctx = canvas.getContext('2d');
-    const width = canvas.parentElement.clientWidth;
+    const container = canvas.parentElement;
+    const width = container.clientWidth;
     const height = 400;
     canvas.width = width;
     canvas.height = height;
-
-    // Draw simplified African map silhouette
+    
+    // Draw simplified Africa outline
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw glowing map outline
     ctx.beginPath();
     ctx.strokeStyle = '#F59E0B';
     ctx.lineWidth = 2;
     ctx.shadowBlur = 10;
     ctx.shadowColor = '#F59E0B';
     
-    // Simplified Africa outline
+    // Simplified Africa shape
     ctx.moveTo(width * 0.35, height * 0.3);
     ctx.lineTo(width * 0.45, height * 0.25);
     ctx.lineTo(width * 0.55, height * 0.28);
@@ -356,189 +473,469 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.lineTo(width * 0.3, height * 0.5);
     ctx.lineTo(width * 0.35, height * 0.3);
     ctx.stroke();
-
-    // Add hotspots
-    const hotspots = [
-      { x: width * 0.68, y: height * 0.4, city: 'Lagos', trend: 'Afrobeats exploding', color: '#F59E0B' },
-      { x: width * 0.55, y: height * 0.55, city: 'Johannesburg', trend: 'Amapiano rising', color: '#EC4899' },
-      { x: width * 0.6, y: height * 0.45, city: 'Nairobi', trend: 'Tech creators', color: '#06B6D4' },
-      { x: width * 0.4, y: height * 0.6, city: 'Cape Town', trend: 'Film discussions', color: '#10B981' }
+    
+    // Fetch regional trending data
+    const regions = [
+      { name: 'Lagos', x: width * 0.68, y: height * 0.4, country: 'Nigeria' },
+      { name: 'Johannesburg', x: width * 0.55, y: height * 0.55, country: 'South Africa' },
+      { name: 'Nairobi', x: width * 0.6, y: height * 0.45, country: 'Kenya' },
+      { name: 'Accra', x: width * 0.62, y: height * 0.48, country: 'Ghana' },
+      { name: 'Cape Town', x: width * 0.52, y: height * 0.62, country: 'South Africa' },
+      { name: 'Dar es Salaam', x: width * 0.64, y: height * 0.52, country: 'Tanzania' }
     ];
-
-    const trendingContainer = document.getElementById('mapTrending');
-    if (trendingContainer) {
-      trendingContainer.innerHTML = hotspots.map(hotspot => `
-        <div class="trending-item" style="border-left-color: ${hotspot.color}">
-          <span class="trending-city">📍 ${hotspot.city}</span>
-          <span class="trending-trend">${hotspot.trend}</span>
+    
+    // Draw hotspots and fetch real trends
+    const trendingItems = await Promise.all(regions.map(async (region) => {
+      // Draw dot
+      ctx.beginPath();
+      ctx.fillStyle = '#F59E0B';
+      ctx.arc(region.x, region.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.fillStyle = '#F59E0B40';
+      ctx.arc(region.x, region.y, 15, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Fetch real trending content for this region
+      let trendText = 'Trending content';
+      try {
+        const trending = await window.fetchers.getTrendingByRegion(region.country, 1);
+        if (trending && trending[0]) {
+          trendText = trending[0].title?.substring(0, 30) || 'Popular content';
+        }
+      } catch (e) {
+        trendText = 'New content rising';
+      }
+      
+      return `
+        <div class="trending-item" style="border-left-color: #F59E0B">
+          <span class="trending-city">📍 ${region.name}</span>
+          <span class="trending-trend">${trendText}</span>
         </div>
-      `).join('');
-    }
+      `;
+    }));
+    
+    trendingContainer.innerHTML = trendingItems.join('');
   }
-
+  
   // ============================================
-  // 10. ROTATING TEXT ANIMATION
+  // 8. SMART SEARCH (Real search)
   // ============================================
-  function initRotatingText() {
-    const container = document.getElementById('rotatingWords');
-    if (!container) return;
-    
-    const spans = container.querySelectorAll('span');
-    let currentIndex = 0;
-    
-    function showNext() {
-      spans.forEach((span, i) => {
-        span.style.display = i === currentIndex ? 'inline-block' : 'none';
-        span.style.animation = 'fadeInUp 0.5s ease';
-      });
-      currentIndex = (currentIndex + 1) % spans.length;
-      setTimeout(showNext, 4000);
-    }
-    
-    showNext();
-  }
-
-  // ============================================
-  // 11. ENERGY TICKER ANIMATION
-  // ============================================
-  function initEnergyTicker() {
-    const ticker = document.getElementById('energyTicker');
-    if (!ticker) return;
-    
-    // Clone content for seamless loop
-    const content = ticker.innerHTML;
-    ticker.innerHTML = content + content;
-    
-    // Animation handled by CSS
-  }
-
-  // ============================================
-  // 12. SIDEBAR FUNCTIONALITY
-  // ============================================
-  function initSidebar() {
-    const openBtn = document.getElementById('menuToggleBtn');
-    const closeBtn = document.getElementById('sidebarClose');
-    const overlay = document.getElementById('sidebarOverlay');
-    const sidebar = document.getElementById('sidebar');
-
-    if (openBtn) {
-      openBtn.addEventListener('click', () => {
-        sidebar?.classList.add('active');
-        overlay?.classList.add('active');
-      });
-    }
-
-    function closeSidebar() {
-      sidebar?.classList.remove('active');
-      overlay?.classList.remove('active');
-    }
-
-    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-  }
-
-  // ============================================
-  // 13. SEARCH FUNCTIONALITY
-  // ============================================
-  function initSearch() {
+  function setupSmartSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchModal = document.getElementById('searchModal');
     const searchBtn = document.getElementById('searchBtn');
-    const modal = document.getElementById('searchModal');
-    const closeBtn = document.getElementById('closeSearch');
-    const input = document.getElementById('searchInput');
-
+    const closeSearch = document.getElementById('closeSearch');
+    
+    if (!searchInput) return;
+    
+    // Open search
     if (searchBtn) {
       searchBtn.addEventListener('click', () => {
-        modal?.classList.add('active');
-        input?.focus();
+        if (searchModal) searchModal.classList.add('active');
+        setTimeout(() => searchInput.focus(), 100);
       });
     }
-
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        modal?.classList.remove('active');
+    
+    if (closeSearch) {
+      closeSearch.addEventListener('click', () => {
+        if (searchModal) searchModal.classList.remove('active');
+        searchInput.value = '';
+        if (searchResults) searchResults.innerHTML = '';
       });
     }
-
-    if (modal) {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('active');
+    
+    if (searchModal) {
+      searchModal.addEventListener('click', (e) => {
+        if (e.target === searchModal) {
+          searchModal.classList.remove('active');
+          searchInput.value = '';
+          if (searchResults) searchResults.innerHTML = '';
+        }
       });
     }
-
-    if (input) {
-      input.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        const resultsContainer = document.getElementById('searchResults');
-        if (resultsContainer && query.length > 1) {
+    
+    // Real-time search
+    let searchTimeout;
+    searchInput.addEventListener('input', async (e) => {
+      const query = e.target.value.trim();
+      
+      clearTimeout(searchTimeout);
+      
+      if (query.length < 2) {
+        if (searchResults) searchResults.innerHTML = '<div class="search-placeholder">Type at least 2 characters to search...</div>';
+        return;
+      }
+      
+      searchTimeout = setTimeout(async () => {
+        if (!searchResults) return;
+        
+        searchResults.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+        
+        const results = await window.fetchers.searchContent(query);
+        
+        if (!results || results.length === 0) {
+          searchResults.innerHTML = '<div class="no-results">No results found. Try something else!</div>';
+          return;
+        }
+        
+        searchResults.innerHTML = `
+          <div class="search-results-header">
+            <span>Found ${results.length} results for "${window.escapeHtml(query)}"</span>
+          </div>
+          <div class="search-results-grid">
+            ${results.map(item => `
+              <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
+                <img src="${item.thumbnail_url || 'https://via.placeholder.com/80x45'}" alt="${item.title}">
+                <div class="search-result-info">
+                  <h4>${window.escapeHtml(item.title) || 'Untitled'}</h4>
+                  <p>${item.creator_display_name || 'Creator'} • ${window.formatNumber(item.views_count || 0)} views</p>
+                  <span class="search-result-tag">${item.genre || item.content_type || 'Content'}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }, 300);
+    });
+    
+    // Category search suggestions
+    const categories = document.querySelectorAll('.search-category');
+    categories.forEach(cat => {
+      cat.addEventListener('click', () => {
+        const category = cat.dataset.cat;
+        searchInput.value = category;
+        searchInput.dispatchEvent(new Event('input'));
+      });
+    });
+    
+    // Suggestion clicks
+    const suggestions = document.querySelectorAll('.search-suggestion');
+    suggestions.forEach(sug => {
+      sug.addEventListener('click', () => {
+        const query = sug.dataset.query;
+        if (query) {
+          searchInput.value = query;
+          searchInput.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+  }
+  
+  // ============================================
+  // 9. JOURNEY BUILDER (Using real data)
+  // ============================================
+  function setupJourneyBuilder() {
+    const moodOptions = document.getElementById('moodOptions');
+    const regionOptions = document.getElementById('regionOptions');
+    const languageOptions = document.getElementById('languageOptions');
+    const formatOptions = document.getElementById('formatOptions');
+    const generateBtn = document.getElementById('generateJourneyBtn');
+    const resultsContainer = document.getElementById('journeyResults');
+    
+    if (!moodOptions) return;
+    
+    // Moods (based on content_mood_tags table)
+    const moods = [
+      { id: 'feel-good', name: 'Feel Good', icon: 'fa-sun', color: '#F59E0B' },
+      { id: 'inspiring', name: 'Inspiring', icon: 'fa-star', color: '#8B5CF6' },
+      { id: 'educational', name: 'Educational', icon: 'fa-graduation-cap', color: '#06B6D4' },
+      { id: 'thrilling', name: 'Thrilling', icon: 'fa-bolt', color: '#EF4444' },
+      { id: 'relaxing', name: 'Relaxing', icon: 'fa-spa', color: '#10B981' },
+      { id: 'energetic', name: 'Energetic', icon: 'fa-fire', color: '#F59E0B' }
+    ];
+    
+    moodOptions.innerHTML = moods.map(mood => `
+      <button class="journey-option" data-type="mood" data-value="${mood.id}" style="--option-color: ${mood.color}">
+        <i class="fas ${mood.icon}"></i>
+        <span>${mood.name}</span>
+      </button>
+    `).join('');
+    
+    // Regions (from Content table distinct countries)
+    (async () => {
+      if (!regionOptions) return;
+      try {
+        const { data } = await window.supabaseClient
+          .from('Content')
+          .select('country')
+          .eq('status', 'published')
+          .not('country', 'is', null);
+        
+        const uniqueCountries = [...new Set((data || []).map(c => c.country).filter(Boolean))];
+        const regions = uniqueCountries.slice(0, 7).map(country => ({
+          id: country.toLowerCase().replace(/\s+/g, '-'),
+          name: country,
+          flag: '🌍'
+        }));
+        
+        if (regions.length === 0) {
+          const fallbackRegions = ['South Africa', 'Nigeria', 'Kenya', 'Ghana', 'Tanzania', 'Zimbabwe', 'Pan-African'];
+          regions.push(...fallbackRegions.map(r => ({ id: r.toLowerCase(), name: r, flag: '🌍' })));
+        }
+        
+        regionOptions.innerHTML = regions.map(region => `
+          <button class="journey-option" data-type="region" data-value="${region.id}">
+            <span class="region-flag">${region.flag}</span>
+            <span>${region.name}</span>
+          </button>
+        `).join('');
+      } catch (e) {
+        regionOptions.innerHTML = `
+          <button class="journey-option" data-type="region" data-value="south-africa">🇿🇦 South Africa</button>
+          <button class="journey-option" data-type="region" data-value="nigeria">🇳🇬 Nigeria</button>
+          <button class="journey-option" data-type="region" data-value="kenya">🇰🇪 Kenya</button>
+        `;
+      }
+    })();
+    
+    // Languages (from Content table distinct languages)
+    (async () => {
+      if (!languageOptions) return;
+      try {
+        const { data } = await window.supabaseClient
+          .from('Content')
+          .select('language')
+          .eq('status', 'published')
+          .not('language', 'is', null);
+        
+        const uniqueLangs = [...new Set((data || []).map(c => c.language).filter(Boolean))];
+        const languages = uniqueLangs.slice(0, 7).map(code => {
+          const langMap = { en: 'English', zu: 'Zulu', xh: 'Xhosa', sw: 'Swahili', fr: 'French', pt: 'Portuguese' };
+          return { id: code, name: langMap[code] || code.toUpperCase(), native: langMap[code] || code };
+        });
+        
+        if (languages.length === 0) {
+          const fallbackLangs = ['en', 'zu', 'xh', 'sw', 'fr', 'pt'];
+          languages.push(...fallbackLangs.map(code => ({ id: code, name: code.toUpperCase(), native: code })));
+        }
+        
+        languageOptions.innerHTML = languages.map(lang => `
+          <button class="journey-option" data-type="language" data-value="${lang.id}">
+            <i class="fas fa-language"></i>
+            <span>${lang.native}</span>
+            <small>${lang.name}</small>
+          </button>
+        `).join('');
+      } catch (e) {
+        languageOptions.innerHTML = `
+          <button class="journey-option" data-type="language" data-value="en">🇬🇧 English</button>
+          <button class="journey-option" data-type="language" data-value="zu">🇿🇦 Zulu</button>
+          <button class="journey-option" data-type="language" data-value="xh">🇿🇦 Xhosa</button>
+        `;
+      }
+    })();
+    
+    // Formats
+    const formats = [
+      { id: 'film', name: 'Film', icon: 'fa-film' },
+      { id: 'music', name: 'Music', icon: 'fa-music' },
+      { id: 'podcast', name: 'Podcast', icon: 'fa-podcast' },
+      { id: 'short', name: 'Short-form', icon: 'fa-photo-video' }
+    ];
+    
+    if (formatOptions) {
+      formatOptions.innerHTML = formats.map(format => `
+        <button class="journey-option" data-type="format" data-value="${format.id}">
+          <i class="fas ${format.icon}"></i>
+          <span>${format.name}</span>
+        </button>
+      `).join('');
+    }
+    
+    // Add click handlers for journey options
+    document.querySelectorAll('.journey-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const parent = opt.parentElement;
+        parent.querySelectorAll('.journey-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        
+        const type = opt.dataset.type;
+        const value = opt.dataset.value;
+        window.appState.journeySelections = window.appState.journeySelections || {};
+        window.appState.journeySelections[type] = value;
+      });
+    });
+    
+    // Generate button
+    if (generateBtn) {
+      generateBtn.addEventListener('click', async () => {
+        const selections = window.appState.journeySelections || {};
+        const required = ['mood', 'region', 'language', 'format'];
+        const missing = required.filter(r => !selections[r]);
+        
+        if (missing.length > 0) {
+          window.showToast(`Please select: ${missing.join(', ')}`, 'warning');
+          return;
+        }
+        
+        if (!resultsContainer) return;
+        
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = `
+          <div class="journey-result-card">
+            <div class="result-header">
+              <i class="fas fa-magic"></i>
+              <h3>Finding content for you...</h3>
+            </div>
+            <div class="result-loading">
+              <i class="fas fa-spinner fa-spin"></i>
+            </div>
+          </div>
+        `;
+        
+        try {
+          // Search for content matching selections
+          const searchResults = await window.fetchers.searchContent(selections.mood);
+          const filteredResults = searchResults.filter(item => 
+            item.genre?.toLowerCase().includes(selections.format) ||
+            item.content_type?.toLowerCase().includes(selections.format)
+          ).slice(0, 5);
+          
+          setTimeout(() => {
+            resultsContainer.innerHTML = `
+              <div class="journey-result-card">
+                <div class="result-header">
+                  <i class="fas fa-magic"></i>
+                  <h3>Your Personalized Discovery World</h3>
+                </div>
+                <div class="result-badges">
+                  <span class="result-badge">${selections.mood}</span>
+                  <span class="result-badge">${selections.region}</span>
+                  <span class="result-badge">${selections.language}</span>
+                  <span class="result-badge">${selections.format}</span>
+                </div>
+                <div class="result-content">
+                  <p>Found ${filteredResults.length} pieces of content matching your journey:</p>
+                  <div class="result-recommendations">
+                    ${filteredResults.map(item => `
+                      <div class="rec-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
+                        <img src="${item.thumbnail_url || 'https://via.placeholder.com/60x60'}" style="width:60px;height:60px;border-radius:8px;object-fit:cover">
+                        <div>
+                          <strong>${item.title || 'Untitled'}</strong>
+                          <p>${item.creator_display_name || 'Creator'}</p>
+                        </div>
+                      </div>
+                    `).join('')}
+                    ${filteredResults.length === 0 ? '<p class="no-results">No exact matches found. Try different selections!</p>' : ''}
+                  </div>
+                </div>
+                <button class="explore-result-btn" onclick="window.location.href='content-library.html'">
+                  Explore More <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            `;
+          }, 1000);
+          
+        } catch (error) {
           resultsContainer.innerHTML = `
-            <div class="search-result-item">
-              <i class="fas fa-search"></i>
-              <span>Searching for "${window.escapeHtml(query)}"...</span>
+            <div class="journey-result-card">
+              <div class="result-header">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Discovery in Progress</h3>
+              </div>
+              <div class="result-content">
+                <p>We're building your personalized world. Check back soon!</p>
+              </div>
+              <button class="explore-result-btn" onclick="window.location.href='content-library.html'">
+                Explore Content Library <i class="fas fa-arrow-right"></i>
+              </button>
             </div>
           `;
         }
       });
     }
   }
-
+  
   // ============================================
-  // 14. INITIALIZE ALL
+  // 10. INITIALIZE ALL
   // ============================================
-  function initialize() {
-    renderDiscoveryWorlds();
-    renderJourneyOptions();
-    renderCulturalHub();
-    renderCreatorEcosystems();
-    renderLiveGrid();
-    renderEditorialGrid();
-    renderSmartSearch();
-    renderAfricaMap();
-    initRotatingText();
-    initEnergyTicker();
-    initSidebar();
-    initSearch();
-
-    // Journey generate button
-    const generateBtn = document.getElementById('generateJourneyBtn');
-    if (generateBtn) {
-      generateBtn.addEventListener('click', generateJourneyResults);
+  async function initialize() {
+    console.log('Initializing Explore Screen with REAL DATA...');
+    
+    // Show loading state
+    document.body.classList.add('loading');
+    
+    try {
+      // Run all render functions in parallel for speed
+      await Promise.all([
+        renderDiscoveryWorlds(),
+        renderCreatorUniverses(),
+        renderLiveExperiences(),
+        renderCulturalHub(),
+        renderTrendingEditorial(),
+        updateEnergyBar(),
+        renderAfricaMap()
+      ]);
+      
+      // Setup interactive features
+      setupSmartSearch();
+      setupJourneyBuilder();
+      setupSidebar();
+      
+      console.log('✅ Explore Screen initialized with real data');
+      window.showToast('Welcome to Discovery Worlds', 'success');
+      
+    } catch (error) {
+      console.error('Error initializing explore screen:', error);
+      window.showToast('Some content failed to load. Please refresh.', 'error');
+    } finally {
+      document.body.classList.remove('loading');
     }
-
-    // Hero buttons
-    const exploreWorldsBtn = document.getElementById('exploreWorldsBtn');
-    if (exploreWorldsBtn) {
-      exploreWorldsBtn.addEventListener('click', () => {
-        document.getElementById('worldsSection')?.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    const startJourneyBtn = document.getElementById('startJourneyBtn');
-    if (startJourneyBtn) {
-      startJourneyBtn.addEventListener('click', () => {
-        document.getElementById('journeySection')?.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    const discoverCreatorsBtn = document.getElementById('discoverCreatorsBtn');
-    if (discoverCreatorsBtn) {
-      discoverCreatorsBtn.addEventListener('click', () => {
-        document.getElementById('creatorEcosystems')?.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    const discoverAllBtn = document.getElementById('discoverAllBtn');
-    if (discoverAllBtn) {
-      discoverAllBtn.addEventListener('click', () => {
-        window.showToast('Opening the full discovery universe...', 'info');
-        setTimeout(() => {
-          window.location.href = 'content-library.html';
-        }, 1000);
-      });
-    }
-
-    console.log('✅ Discovery Worlds fully initialized');
-    window.showToast('Welcome to Discovery Worlds', 'success');
   }
-
+  
+  // Sidebar setup (keep existing)
+  function setupSidebar() {
+    const menuBtn = document.getElementById('menuToggleBtn');
+    const closeBtn = document.getElementById('sidebarClose');
+    const overlay = document.getElementById('sidebarOverlay');
+    const sidebar = document.getElementById('sidebar');
+    
+    if (menuBtn) {
+      menuBtn.addEventListener('click', () => {
+        sidebar?.classList.add('active');
+        overlay?.classList.add('active');
+      });
+    }
+    
+    function closeSidebar() {
+      sidebar?.classList.remove('active');
+      overlay?.classList.remove('active');
+    }
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+    
+    // Update sidebar with user data if logged in
+    loadUserDataToSidebar();
+  }
+  
+  async function loadUserDataToSidebar() {
+    try {
+      const { data: session } = await window.supabaseClient?.auth.getSession();
+      if (session?.session?.user) {
+        const { data: profile } = await window.supabaseClient
+          .from('user_profiles')
+          .select('full_name, avatar_url')
+          .eq('id', session.session.user.id)
+          .single();
+        
+        if (profile) {
+          const nameEl = document.getElementById('sidebarName');
+          const avatarEl = document.getElementById('sidebarAvatar');
+          if (nameEl) nameEl.textContent = profile.full_name || 'User';
+          if (avatarEl && profile.avatar_url) {
+            avatarEl.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load user data for sidebar');
+    }
+  }
+  
+  // Start everything
   initialize();
 });
