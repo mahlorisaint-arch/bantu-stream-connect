@@ -335,6 +335,12 @@ const SupabaseHelper = {
     
     // Record view
     recordView: async function(contentId, userId) {
+        // ✅ GUARD: Skip if unified view system is active (prevents duplicate recording)
+        if (window._usingUnifiedViewSystem) {
+            console.log('⚠️ Using unified view system, skipping duplicate record in supabase-helper');
+            return false;
+        }
+        
         if (!this.isInitialized) return false;
         
         try {
