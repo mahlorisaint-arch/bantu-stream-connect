@@ -4,6 +4,7 @@
 // ✅ FIXED: REMOVED creator_id from content_views operations (column doesn't exist)
 // ✅ FIXED: ADDED profile_id to content_views inserts (required column)
 // ✅ FIXED: Proper session tracking with session_id
+// ✅ UPDATED: Session ID is ONLY read from storage - NEVER created in WatchSession
 
 (function() {
   'use strict';
@@ -25,8 +26,12 @@
     this.viewThreshold = config.viewThreshold || 20;
     this.completionThreshold = config.completionThreshold || 0.9;
     
-    // ✅ Store session ID from config or generate new one
-    this.sessionId = config.sessionId || this._generateSessionId();
+    // ✅ Store session ID from config or read from storage - NEVER generate new
+    this.sessionId = config.sessionId || sessionStorage.getItem('bantu_view_session');
+    if (!this.sessionId) {
+      console.warn('⚠️ WatchSession: No session ID provided or found in storage');
+      // Don't generate - just log warning
+    }
     this.lastSyncTime = 0;
     this.lastSavedPosition = 0;
     this.totalWatchTime = 0; // Track cumulative watch time
@@ -41,7 +46,7 @@
     this.onComplete = config.onComplete || null;
     this.onError = config.onError || null;
     
-    console.log('✅ WatchSession initialized: ' + this.sessionId);
+    console.log('✅ WatchSession initialized with session ID:', this.sessionId || 'NONE');
   }
 
   // ============================================
@@ -113,12 +118,14 @@
   // ============================================
 
   WatchSession.prototype._generateSessionId = function() {
-    try {
-      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return crypto.randomUUID();
-      }
-    } catch (e) {}
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    // ✅ ONLY read existing session from storage - NEVER create new
+    const existingSessionId = sessionStorage.getItem('bantu_view_session');
+    if (!existingSessionId) {
+      console.warn('⚠️ WatchSession: No session ID found in storage');
+      return null;
+    }
+    console.log('🔑 WatchSession using existing session ID:', existingSessionId);
+    return existingSessionId;
   };
 
   WatchSession.prototype._initializeProgress = function() {
@@ -340,6 +347,12 @@
     var self = this;
     if (!this.userId) return Promise.resolve();
     
+    // ✅ Check if we have a valid session ID
+    if (!this.sessionId) {
+      console.error('❌ Cannot record view: No session ID available');
+      return Promise.reject(new Error('No session ID available'));
+    }
+    
     // ✅ CORRECT INSERT - NO creator_id
     return this.supabase
       .from('content_views')
@@ -480,5 +493,5 @@
     window.WatchSession = WatchSession;
   }
   
-  console.log('✅ WatchSession module loaded successfully - creator_id removed, profile_id added');
+  console.log('✅ WatchSession module loaded successfully - session ID is ONLY read from storage, never created');
 })();
