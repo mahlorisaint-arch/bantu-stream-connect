@@ -426,6 +426,9 @@ if (!window.StreamingManager) {
 // ============================================
 // PHASE 1 UPDATED: Initialize watch session with session ID and profile ID
 // ============================================
+// ============================================
+// PHASE 1 UPDATED: Initialize watch session with existing session ID only
+// ============================================
 function initializeWatchSessionOnPlay() {
     if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
         console.log('🚫 Cannot initialize watch session: missing content, user, or video');
@@ -443,11 +446,10 @@ function initializeWatchSessionOnPlay() {
             return;
         }
 
-        // ✅ Get or create session ID
-        let sessionId = sessionStorage.getItem('bantu_view_session');
+        // ✅ ONLY GET existing session ID - NEVER CREATE
+        const sessionId = sessionStorage.getItem('bantu_view_session');
         if (!sessionId) {
-            sessionId = crypto.randomUUID();
-            sessionStorage.setItem('bantu_view_session', sessionId);
+            console.warn('⚠️ No session ID found - view may not be recorded correctly');
         }
 
         console.log('🎬 Initializing WatchSession with session:', sessionId);
@@ -456,7 +458,7 @@ function initializeWatchSessionOnPlay() {
             userId: currentUserId,
             supabase: window.supabaseClient,
             videoElement: enhancedVideoPlayer.video,
-            sessionId: sessionId, // ✅ Pass session ID
+            sessionId: sessionId, // ✅ Pass session ID (may be null)
             syncInterval: 10000,
             viewThreshold: 20,
             completionThreshold: 0.9,
@@ -498,6 +500,11 @@ function initializeWatchSessionOnPlay() {
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
 // ✅ ADDED: profile_id to insert
 // ============================================
+// ============================================
+// 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
+// ✅ ADDED: profile_id to insert
+// ✅ UPDATED: Session ID generation removed - now using existing session only
+// ============================================
 function handlePlay() {
     console.log('🎬 handlePlay CALLED - Starting view recording...');
     if (!currentContent) {
@@ -512,9 +519,7 @@ function handlePlay() {
         return;
     }
 
-    // ✅ GENERATE NEW SESSION FOR THIS PLAY
-    const sessionId = generateNewSession();
-    console.log('🎬 New viewing session:', sessionId);
+    // ✅ REMOVED: Session ID generation - now using existing session only
 
     // ✅ UPDATE UI OPTIMISTICALLY
     const viewsEl = document.getElementById('viewsCount');
