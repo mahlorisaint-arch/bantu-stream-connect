@@ -5,6 +5,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
 const PROJECT_REF = 'ydnxqnbjoshvxteevemc'
+// Flag to indicate unified view system is active (prevents duplicate view recording from supabase-client)
+window._usingUnifiedViewSystem = true;
 
 // Initialize Supabase client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -1290,6 +1292,12 @@ async function validateAndFixCreatorRecord(userId, userEmail) {
 
 // ✅ RECORD CONTENT VIEW (from recordContentView in Dart)
 export async function recordContentView(contentId, viewDuration = 0) {
+    // ✅ GUARD: Skip if unified view system is active (prevents duplicate recording)
+    if (window._usingUnifiedViewSystem) {
+        console.log('⚠️ Using unified view system, skipping duplicate record in supabase-client');
+        return;
+    }
+    
     try {
         const user = getCurrentUser()
         const client = getClient()
@@ -1311,7 +1319,6 @@ export async function recordContentView(contentId, viewDuration = 0) {
         console.log('❌ Record content view error:', error)
     }
 }
-
 // ============ CONNECTOR METHODS ============
 
 // ✅ CONNECT WITH USER (from connectWithUser in Dart)
