@@ -466,7 +466,7 @@ body {
 
 .section-subtitle {
   color: var(--slate-grey);
-  margin-top: var(--spacing-xs);
+  margin-top: var(--спасing-xs);
 }
 
 .section-view-all {
@@ -590,12 +590,78 @@ body {
   font-size: 8px;
 }
 
-.explore-link {
+.explore-world-btn {
   font-size: var(--font-sm);
   color: var(--warm-gold);
+  background: none;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* ============================================
+   SKELETON LOADERS
+   ============================================ */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.skeleton-world-card {
+  height: 280px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 24px;
+}
+
+.skeleton-creator-card {
+  height: 100px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 16px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-live-card {
+  height: 300px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 20px;
+}
+
+.skeleton-cultural-card {
+  height: 200px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 20px;
+}
+
+.skeleton-editorial-card {
+  height: 250px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 20px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.empty-state, .error-state {
+  text-align: center;
+  padding: var(--spacing-3xl);
+  color: var(--slate-grey);
+  background: rgba(255,255,255,0.03);
+  border-radius: 20px;
 }
 
 /* Continue in next message for remaining CSS... */
