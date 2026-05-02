@@ -6,8 +6,10 @@
 <title>Explore - Bantu Stream Connect | Discovery Worlds</title>
 
 <!-- PERFORMANCE: Preload Critical Resources -->
+<link rel="preload" href="css/shared-components.css" as="style">
 <link rel="preload" href="css/explore-screen.css" as="style">
 <link rel="preload" href="css/explore-screen-features.css" as="style">
+<link rel="preload" href="js/shared-components.js" as="script">
 <link rel="preload" href="js/explore-screen.js" as="script">
 <link rel="preload" href="js/explore-screen-features.js" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,20 +26,103 @@
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- CSS Files -->
+<!-- SHARED COMPONENTS CSS - Platform-wide consistency -->
+<link rel="stylesheet" href="css/shared-components.css">
+
+<!-- Page-specific CSS -->
 <link rel="stylesheet" href="css/explore-screen.css">
 <link rel="stylesheet" href="css/explore-screen-features.css">
 
-<!-- Critical inline styles for loading -->
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0A0E12; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-  .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0A0E12; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; transition: opacity 0.5s ease; }
-  .loading-spinner { width: 60px; height: 60px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: #F59E0B; animation: spin 1s linear infinite; margin-bottom: 20px; }
-  .loading-text { color: #94A3B8; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #app { opacity: 0; transition: opacity 0.5s ease; }
-  #app.visible { opacity: 1; }
+  /* Additional explore-specific styles that complement shared components */
+  .discovery-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+  }
+  
+  .bg-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(245, 158, 11, 0.3);
+    border-radius: 50%;
+    animation: float 20s infinite linear;
+  }
+  
+  .bg-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    animation: glowPulse 8s infinite alternate;
+  }
+  
+  .glow-1 { width: 400px; height: 400px; background: #1D4ED8; top: 10%; left: -100px; }
+  .glow-2 { width: 300px; height: 300px; background: #F59E0B; bottom: 20%; right: -50px; }
+  .glow-3 { width: 250px; height: 250px; background: #10B981; top: 50%; left: 50%; }
+  
+  @keyframes float {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+  }
+  
+  @keyframes glowPulse {
+    0% { transform: scale(1); opacity: 0.1; }
+    100% { transform: scale(1.5); opacity: 0.2; }
+  }
+  
+  /* Loading screen - matches shared styling */
+  .loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--deep-black);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    transition: opacity 0.5s ease;
+  }
+  
+  .loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    border-top-color: var(--warm-gold);
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+  }
+  
+  .loading-text {
+    color: var(--slate-grey);
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  #app {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  
+  #app.visible {
+    opacity: 1;
+  }
 </style>
 </head>
 <body>
@@ -61,46 +146,335 @@
     <div class="bg-glow glow-3"></div>
   </div>
 
-  <!-- Header -->
-  <header class="discovery-header">
-    <div class="header-left">
-      <button class="menu-btn" id="menuToggleBtn" aria-label="Menu">
+  <!-- ============================================ -->
+  <!-- SHARED HEADER - Platform-wide consistent -->
+  <!-- ============================================ -->
+  <header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+      <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="logo" onclick="window.location.href='index.html'">
-        <div class="logo-icon">
-          <i class="fas fa-film"></i>
-        </div>
-        <span class="logo-text">BANTU</span>
+      <div class="logo-icon">
+        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
       </div>
+      <div class="logo-text">BANTU STREAM CONNECT</div>
     </div>
-    <div class="header-center">
-      <div class="live-energy-bar">
-        <span class="live-pulse"></span>
-        <span class="energy-text" id="energyText">1,204 creators live now</span>
-      </div>
-    </div>
-    <div class="header-right">
-      <button class="icon-btn" id="searchBtn" aria-label="Search">
+    <div class="header-actions">
+      <!-- Voice Search Button -->
+      <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+        <i class="fas fa-microphone"></i>
+      </button>
+      <!-- Analytics Button -->
+      <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+        <i class="fas fa-chart-line"></i>
+      </button>
+      <!-- Search Button -->
+      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
         <i class="fas fa-search"></i>
       </button>
-      <button class="icon-btn" id="notificationsBtn" aria-label="Notifications">
+      <!-- Notifications Button -->
+      <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
         <i class="fas fa-bell"></i>
-        <span class="badge" id="notifBadge" style="display:none">3</span>
+        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
       </button>
-      <div class="profile-menu" id="profileMenu">
-        <button class="profile-btn" id="profileBtn">
-          <div class="profile-avatar" id="profileAvatar">
+      <!-- Profile Switcher -->
+      <div class="profile-switcher">
+        <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+          <div class="profile-placeholder" id="userProfilePlaceholder">
             <i class="fas fa-user"></i>
           </div>
-          <span class="profile-name" id="profileName">Guest</span>
+          <span class="profile-name" id="current-profile-name">Guest</span>
           <i class="fas fa-chevron-down"></i>
         </button>
+        <div class="profile-dropdown" id="profile-dropdown">
+          <div class="profile-dropdown-header">
+            <h4>Switch Profile</h4>
+          </div>
+          <div class="profile-list" id="profile-list"></div>
+          <div class="profile-dropdown-footer">
+            <button class="text-btn" id="manage-profiles-btn">
+              <i class="fas fa-user-cog"></i> Manage Profiles
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- RSA Badge -->
+      <div class="rsa-badge" title="Proudly South African">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>RSA</span>
       </div>
     </div>
   </header>
 
-  <main class="discovery-main">
+  <!-- ============================================ -->
+  <!-- SHARED SIDEBAR MENU - Platform-wide consistent -->
+  <!-- ============================================ -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="sidebar-menu" id="sidebar-menu">
+    <div class="sidebar-header">
+      <div class="sidebar-logo" onclick="window.location.href='index.html'">
+        <div class="logo-icon">
+          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+        </div>
+        <span class="sidebar-logo-text">BANTU</span>
+      </div>
+      <button class="sidebar-close" id="sidebar-close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-profile" id="sidebar-profile">
+      <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="sidebar-profile-info">
+        <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+        <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+      </div>
+      <i class="fas fa-chevron-right"></i>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- MAIN NAVIGATION -->
+      <div class="sidebar-section" data-section="main">
+        <div class="sidebar-section-header" data-toggle="main">
+          <span>MAIN</span>
+          <i class="fas fa-chevron-up toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-items" id="section-main">
+          <a href="index.html" class="sidebar-nav-item" data-page="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </a>
+          <a href="explore-screen.html" class="sidebar-nav-item active" data-page="explore">
+            <i class="fas fa-compass"></i>
+            <span>Explore</span>
+          </a>
+          <a href="trending.html" class="sidebar-nav-item" data-page="trending">
+            <i class="fas fa-fire"></i>
+            <span>Trending</span>
+          </a>
+          <a href="creators.html" class="sidebar-nav-item" data-page="creators">
+            <i class="fas fa-users"></i>
+            <span>Discover Creators</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CONTENT CATEGORIES -->
+      <div class="sidebar-section" data-section="categories">
+        <div class="sidebar-section-header" data-toggle="categories">
+          <span>CATEGORIES</span>
+          <i class="fas fa-chevron-up toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-items" id="section-categories">
+          <a href="#" class="sidebar-nav-item" data-category="music">
+            <i class="fas fa-music"></i>
+            <span>Music</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="stem">
+            <i class="fas fa-atom"></i>
+            <span>STEM</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="culture">
+            <i class="fas fa-palette"></i>
+            <span>Culture</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="news">
+            <i class="fas fa-newspaper"></i>
+            <span>News</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="sports">
+            <i class="fas fa-futbol"></i>
+            <span>Sports</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="movies">
+            <i class="fas fa-film"></i>
+            <span>Movies</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="documentaries">
+            <i class="fas fa-video"></i>
+            <span>Documentaries</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" data-category="podcasts">
+            <i class="fas fa-microphone-alt"></i>
+            <span>Podcasts</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- YOUR CONTENT -->
+      <div class="sidebar-section" data-section="your-content">
+        <div class="sidebar-section-header" data-toggle="your-content">
+          <span>YOU</span>
+          <i class="fas fa-chevron-up toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-items" id="section-your-content">
+          <a href="library.html" class="sidebar-nav-item" data-page="library">
+            <i class="fas fa-book"></i>
+            <span>Library</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
+            <i class="fas fa-history"></i>
+            <span>Watch History</span>
+          </a>
+          <a href="my-uploads.html" class="sidebar-nav-item" data-page="uploads">
+            <i class="fas fa-upload"></i>
+            <span>My Uploads</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CREATOR ZONE -->
+      <div class="sidebar-section creator-only" data-section="creator" style="display: none;">
+        <div class="sidebar-section-header" data-toggle="creator">
+          <span>CREATOR</span>
+          <i class="fas fa-chevron-up toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-items" id="section-creator">
+          <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="creator-analytics.html" class="sidebar-nav-item" data-page="analytics">
+            <i class="fas fa-chart-line"></i>
+            <span>Creator Analytics</span>
+          </a>
+          <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+            <i class="fas fa-plus-circle"></i>
+            <span>Create</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- COMMUNITY & SOCIAL -->
+      <div class="sidebar-section" data-section="community">
+        <div class="sidebar-section-header" data-toggle="community">
+          <span>COMMUNITY</span>
+          <i class="fas fa-chevron-up toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-items" id="section-community">
+          <a href="#" class="sidebar-nav-item" data-page="pulse">
+            <i class="fas fa-heart"></i>
+            <span>Community Pulse</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
+            <i class="fas fa-users"></i>
+            <span>Watch Party</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" id="sidebar-badges">
+            <i class="fas fa-medal"></i>
+            <span>My Badges</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ACCOUNT & SETTINGS -->
+      <div class="sidebar-section" data-section="account">
+        <div class="sidebar-section-header" data-toggle="account">
+          <span>ACCOUNT</span>
+          <i class="fas fa-chevron-up toggle-icon"></i>
+        </div>
+        <div class="sidebar-section-items" id="section-account">
+          <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles">
+            <i class="fas fa-user-cog"></i>
+            <span>Manage Profiles</span>
+          </a>
+          <a href="#" class="sidebar-nav-item" id="sidebar-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+        <label class="toggle-switch">
+          <input type="checkbox" id="creatorModeSwitch">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Creator Mode</span>
+      </div>
+    
+      <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+        <span><i class="fas fa-palette"></i> Theme</span>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+    
+      <div class="sidebar-scale-control">
+        <div class="scale-control-row">
+          <span><i class="fas fa-text-height"></i> UI Size</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="scale-btn" id="sidebar-scale-decrease">
+              <i class="fas fa-minus"></i>
+            </button>
+            <span class="scale-value" id="sidebar-scale-value">100%</span>
+            <button class="scale-btn" id="sidebar-scale-increase">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="scale-control-row">
+          <button class="scale-btn" id="sidebar-scale-reset">
+            <i class="fas fa-undo"></i> Reset to Default
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME SELECTOR -->
+  <!-- ============================================ -->
+  <div id="theme-selector" class="theme-selector">
+    <button class="theme-option" data-theme="dark">
+      <i class="fas fa-moon"></i> Dark
+    </button>
+    <button class="theme-option" data-theme="light">
+      <i class="fas fa-sun"></i> Light
+    </button>
+    <button class="theme-option" data-theme="high-contrast">
+      <i class="fas fa-eye"></i> High Contrast
+    </button>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- BOTTOM NAVIGATION BUTTONS -->
+  <!-- ============================================ -->
+  <div class="navigation-button-container">
+    <div class="navigation-button">
+      <div class="nav-icon" id="nav-home-btn" title="Home">
+        <i class="fas fa-home"></i>
+      </div>
+      <div class="nav-icon" id="nav-history-btn" title="Watch History">
+        <i class="fas fa-history"></i>
+      </div>
+      <div class="nav-icon" id="nav-create-btn" title="Create Content">
+        <i class="fas fa-plus-circle"></i>
+      </div>
+      <div class="nav-icon" id="nav-menu-btn" title="Menu">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- BACK TO TOP BUTTON -->
+  <!-- ============================================ -->
+  <button id="backToTopBtn" class="back-to-top">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <!-- ============================================ -->
+  <!-- TOAST CONTAINER -->
+  <!-- ============================================ -->
+  <div id="toast-container"></div>
+
+  <!-- ============================================ -->
+  <!-- MAIN CONTENT - Explore Screen Specific -->
+  <!-- ============================================ -->
+  <main class="container">
     <!-- 1. IMMERSIVE DISCOVERY HERO -->
     <section class="cinematic-hero">
       <div class="hero-content">
@@ -297,76 +671,147 @@
     </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="discovery-footer">
+  <!-- ============================================ -->
+  <!-- SHARED FOOTER -->
+  <!-- ============================================ -->
+  <footer class="footer">
     <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart"></i> Built in South Africa • The Future of African Entertainment</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <a href="terms-of-service.html">Terms of Service</a>
+      <a href="support.html">Support</a>
+    </div>
   </footer>
 
-  <!-- Sidebar Menu -->
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <i class="fas fa-film"></i>
-        <span>BANTU</span>
+  <!-- ============================================ -->
+  <!-- MODALS & PANELS -->
+  <!-- ============================================ -->
+  
+  <!-- Analytics Modal -->
+  <div id="analytics-modal" class="analytics-modal">
+    <div class="analytics-content">
+      <div class="analytics-header">
+        <h2>Analytics Dashboard</h2>
+        <button id="close-analytics" class="close-search-btn">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-      <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="sidebar-profile">
-      <div class="sidebar-avatar" id="sidebarAvatar"><i class="fas fa-user"></i></div>
-      <div class="sidebar-info">
-        <div class="sidebar-name" id="sidebarName">Guest</div>
-        <div class="sidebar-email" id="sidebarEmail">Sign in to continue</div>
+      <div class="analytics-body">
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Total Views</h3>
+            <div class="analytics-value" id="total-views">0</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Engagement</h3>
+            <div class="analytics-value" id="engagement-rate">0%</div>
+          </div>
+        </div>
+        <div class="charts-container">
+          <canvas id="engagement-chart"></canvas>
+        </div>
       </div>
     </div>
-    <nav class="sidebar-nav">
-      <a href="index.html" class="sidebar-link"><i class="fas fa-home"></i><span>Home</span></a>
-      <a href="explore-screen.html" class="sidebar-link active"><i class="fas fa-compass"></i><span>Explore</span></a>
-      <a href="#" class="sidebar-link" id="sidebarAnalytics"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
-      <a href="#" class="sidebar-link" id="sidebarNotifications"><i class="fas fa-bell"></i><span>Notifications</span></a>
-      <a href="#" class="sidebar-link" id="sidebarBadges"><i class="fas fa-medal"></i><span>Badges</span></a>
-      <a href="creator-upload.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Create</span></a>
-      <a href="creator-dashboard.html" class="sidebar-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
-    </nav>
   </div>
 
   <!-- Search Modal -->
-  <div class="search-modal" id="searchModal">
+  <div id="search-modal" class="search-modal">
     <div class="search-modal-header">
-      <div class="search-input-wrapper">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchInput" placeholder="Discover creators, cultures, languages, movements...">
+      <div class="search-input-container">
+        <i class="search-icon fas fa-search"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
       </div>
-      <button class="close-search" id="closeSearch"><i class="fas fa-times"></i></button>
+      <button id="close-search-btn" class="close-search-btn">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-    <div class="search-results" id="searchResults"></div>
+    <div class="search-filters">
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select id="category-filter" class="filter-select">
+          <option value="">All Categories</option>
+          <option value="Music">Music</option>
+          <option value="STEM">STEM</option>
+          <option value="Culture">Culture</option>
+          <option value="News">News</option>
+          <option value="Sports">Sports</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Sort By</label>
+        <select id="sort-filter" class="filter-select">
+          <option value="newest">Newest First</option>
+          <option value="popular">Most Popular</option>
+          <option value="trending">Trending</option>
+        </select>
+      </div>
+    </div>
+    <div id="search-results" class="search-results">
+      <div id="search-results-grid" class="search-results-grid">
+        <!-- Results loaded here -->
+      </div>
+    </div>
   </div>
 
   <!-- Notifications Panel -->
-  <div class="notifications-panel" id="notificationsPanel">
-    <div class="panel-header">
-      <h3>Notifications</h3>
-      <button class="close-panel" id="closeNotifications"><i class="fas fa-times"></i></button>
+  <div id="notifications-panel" class="notifications-panel">
+    <div class="notifications-header">
+      <h2>Notifications</h2>
+      <button id="close-notifications" class="icon-btn">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-    <div class="notifications-list" id="notificationsList"></div>
+    <div class="notifications-list" id="notifications-list">
+      <!-- Notifications loaded here -->
+    </div>
+    <div class="notifications-footer">
+      <button id="mark-all-read" class="text-btn">Mark all as read</button>
+      <button id="notification-settings" class="text-btn">Settings</button>
+    </div>
   </div>
-
-  <!-- Toast Container -->
-  <div id="toastContainer"></div>
 </div>
 
-<script src="env.js" defer></script>
+<!-- ============================================ -->
+<!-- SCRIPTS - Load in correct order -->
+<!-- ============================================ -->
+
+<!-- Initialize Supabase Client -->
+<script>
+  const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+  window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.SUPABASE_URL = SUPABASE_URL;
+  window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+</script>
+
+<!-- Shared Components JS - Platform-wide -->
+<script src="js/shared-components.js"></script>
+
+<!-- Helper Scripts -->
+<script src="js/state-manager.js"></script>
+<script src="js/supabase-helper.js"></script>
+<script src="js/auth-helper.js"></script>
+<script src="js/security.js"></script>
+<script src="js/analytics.js"></script>
+
+<!-- Explore Screen Specific Scripts -->
 <script src="js/explore-screen.js" defer></script>
 <script src="js/explore-screen-features.js" defer></script>
 
+<!-- Page Load Handler -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Hide loading screen after shared components initialize
     setTimeout(function() {
-      document.getElementById('loading').style.opacity = '0';
-      setTimeout(function() {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('app').classList.add('visible');
-      }, 500);
+      const loading = document.getElementById('loading');
+      const app = document.getElementById('app');
+      if (loading && app) {
+        loading.style.opacity = '0';
+        setTimeout(function() {
+          loading.style.display = 'none';
+          app.classList.add('visible');
+        }, 500);
+      }
     }, 800);
   });
 </script>
