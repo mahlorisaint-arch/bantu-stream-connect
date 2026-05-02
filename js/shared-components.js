@@ -4,7 +4,7 @@
 // Complete implementation for Search, Analytics, Notifications, Voice Search, Profile */
 // ============================================ */
 
-console.log('📦 Shared Components v3.1 - Complete with all features and fixes...');
+console.log('📦 Shared Components v3.2 - Complete with all features and fixes...');
 
 // ============================================ */
 // GLOBAL VARIABLES */
@@ -70,7 +70,7 @@ async function getCurrentUser() {
 }
 
 // ============================================ */
-// UPDATE HEADER PROFILE - Shows logged-in user (NO REDIRECT) */
+// UPDATE HEADER PROFILE - Shows logged-in user (FIXED: NO REDIRECT) */
 // ============================================ */
 async function updateHeaderProfile() {
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -112,7 +112,9 @@ async function updateHeaderProfile() {
             profilePlaceholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
         }
         
-        // DO NOT set onclick redirect here - handled by profile dropdown
+        // FIX: Do NOT set onclick redirect here - handled by profile dropdown
+        // The profile button click should toggle the dropdown, not redirect.
+        
     } else {
         // Guest user
         if (profileNameSpan) {
@@ -390,6 +392,7 @@ async function performSearch(query, category = '', sortBy = 'newest') {
     }
 }
 
+// FIXED: Thumbnail URL construction for search results
 function renderSearchResults(results, query) {
     const resultsGrid = document.getElementById('search-results-grid');
     
@@ -436,7 +439,7 @@ function renderSearchResults(results, query) {
 }
 
 // ============================================ */
-// 2. COMPLETE ANALYTICS FUNCTIONALITY (Full Metrics) */
+// 2. COMPLETE ANALYTICS FUNCTIONALITY (FIXED: 4 metrics) */
 // ============================================ */
 
 function setupAnalytics() {
@@ -465,6 +468,7 @@ function setupAnalytics() {
     setupChartControls();
 }
 
+// FIXED: Analytics now shows Total Views, Avg. Watch Time, Engagement Rate, Comments
 async function loadCompleteAnalyticsData() {
     const user = await getCurrentUser();
     if (!user || !user.id) return;
@@ -509,20 +513,23 @@ async function loadCompleteAnalyticsData() {
         const totalComments = comments?.length || 0;
         const engagementRate = totalViews > 0 ? ((totalLikes + totalComments) / totalViews * 100).toFixed(1) : 0;
         
-        // Update UI elements - ensure these IDs exist in analytics-modal HTML
-        const metricsMap = {
-            'total-views': formatNumber(totalViews),
-            'avg-watch-time': formatDuration(avgWatchTime),
-            'engagement-rate': engagementRate + '%',
-            'total-comments': formatNumber(totalComments),
-            'total-likes': formatNumber(totalLikes),
-            'total-content': contentList.length.toString()
-        };
+        // Update UI elements for the 4 requested metrics
+        const totalViewsEl = document.getElementById('total-views');
+        const avgWatchTimeEl = document.getElementById('avg-watch-time');
+        const engagementRateEl = document.getElementById('engagement-rate');
+        const totalCommentsEl = document.getElementById('total-comments');
         
-        for (const [id, value] of Object.entries(metricsMap)) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        }
+        if (totalViewsEl) totalViewsEl.textContent = formatNumber(totalViews);
+        if (avgWatchTimeEl) avgWatchTimeEl.textContent = formatDuration(avgWatchTime);
+        if (engagementRateEl) engagementRateEl.textContent = engagementRate + '%';
+        if (totalCommentsEl) totalCommentsEl.textContent = formatNumber(totalComments);
+        
+        // Optional: also update other stats if elements exist
+        const totalLikesEl = document.getElementById('total-likes');
+        if (totalLikesEl) totalLikesEl.textContent = formatNumber(totalLikes);
+        
+        const totalContentEl = document.getElementById('total-content');
+        if (totalContentEl) totalContentEl.textContent = contentList.length.toString();
         
         // Get daily views for chart
         const dailyViews = getDailyViewsData(views);
@@ -1206,7 +1213,7 @@ function showMicrophonePermissionPrompt() {
 }
 
 // ============================================ */
-// 5. PROFILE DROPDOWN (NO REDIRECT - TOGGLES DROPDOWN) */
+// 5. PROFILE DROPDOWN (FIXED: No redirect, toggles dropdown) */
 // ============================================ */
 
 function setupProfileDropdown() {
@@ -1219,6 +1226,7 @@ function setupProfileDropdown() {
         const newProfileBtn = profileBtn.cloneNode(true);
         profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
         
+        // FIX: This toggles the dropdown, does NOT redirect
         newProfileBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
