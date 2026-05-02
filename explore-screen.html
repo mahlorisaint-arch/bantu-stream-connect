@@ -123,6 +123,51 @@
   #app.visible {
     opacity: 1;
   }
+  
+  /* Error message styling */
+  .error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background: var(--card-bg);
+    border-radius: 16px;
+    margin: 40px auto;
+    max-width: 500px;
+  }
+  
+  .error-message i {
+    font-size: 48px;
+    color: var(--error-color);
+    margin-bottom: 20px;
+  }
+  
+  .error-message h3 {
+    color: var(--soft-white);
+    margin-bottom: 10px;
+  }
+  
+  .error-message p {
+    color: var(--slate-grey);
+    margin-bottom: 20px;
+  }
+  
+  .error-message button {
+    background: var(--bantu-blue);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .error-message button:hover {
+    background: var(--warm-gold);
+    transform: translateY(-2px);
+  }
 </style>
 </head>
 <body>
@@ -155,7 +200,7 @@
         <i class="fas fa-bars"></i>
       </button>
       <div class="logo-icon">
-        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2265%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3EB%3C/text%3E%3C/svg%3E'">
       </div>
       <div class="logo-text">BANTU STREAM CONNECT</div>
     </div>
@@ -214,7 +259,7 @@
     <div class="sidebar-header">
       <div class="sidebar-logo" onclick="window.location.href='index.html'">
         <div class="logo-icon">
-          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2265%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3EB%3C/text%3E%3C/svg%3E'">
         </div>
         <span class="sidebar-logo-text">BANTU</span>
       </div>
@@ -472,9 +517,19 @@
   <div id="toast-container"></div>
 
   <!-- ============================================ -->
+  <!-- ERROR DISPLAY (if needed) -->
+  <!-- ============================================ -->
+  <div id="error-display" style="display: none;" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i>
+    <h3>Loading Error</h3>
+    <p>Please refresh the page to continue.</p>
+    <button onclick="location.reload()">Refresh</button>
+  </div>
+
+  <!-- ============================================ -->
   <!-- MAIN CONTENT - Explore Screen Specific -->
   <!-- ============================================ -->
-  <main class="container">
+  <main class="container" id="main-content">
     <!-- 1. IMMERSIVE DISCOVERY HERO -->
     <section class="cinematic-hero">
       <div class="hero-content">
@@ -775,24 +830,40 @@
 <!-- SCRIPTS - Load in correct order -->
 <!-- ============================================ -->
 
-<!-- Initialize Supabase Client -->
+<!-- Initialize Supabase Client - Check if already defined -->
 <script>
-  const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-  window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  window.SUPABASE_URL = SUPABASE_URL;
-  window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+  // Only define if not already defined by explore-screen.js
+  if (typeof window.SUPABASE_URL === 'undefined') {
+    window.SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+  }
+  
+  if (!window.supabaseClient) {
+    window.supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  }
 </script>
 
 <!-- Shared Components JS - Platform-wide -->
 <script src="js/shared-components.js"></script>
 
-<!-- Helper Scripts -->
-<script src="js/state-manager.js"></script>
-<script src="js/supabase-helper.js"></script>
-<script src="js/auth-helper.js"></script>
-<script src="js/security.js"></script>
-<script src="js/analytics.js"></script>
+<!-- Helper Scripts - Only include if they exist -->
+<script>
+  // Dynamically load helper scripts if they exist
+  const scriptsToLoad = [
+    'js/state-manager.js',
+    'js/supabase-helper.js',
+    'js/auth-helper.js',
+    'js/security.js',
+    'js/analytics.js'
+  ];
+  
+  scriptsToLoad.forEach(scriptSrc => {
+    const script = document.createElement('script');
+    script.src = scriptSrc;
+    script.onerror = () => console.warn(`⚠️ Could not load: ${scriptSrc}`);
+    document.body.appendChild(script);
+  });
+</script>
 
 <!-- Explore Screen Specific Scripts -->
 <script src="js/explore-screen.js" defer></script>
@@ -800,6 +871,10 @@
 
 <!-- Page Load Handler -->
 <script>
+  // Store original SUPABASE_URL to avoid duplicate declaration errors
+  window.__SUPABASE_URL = window.SUPABASE_URL;
+  window.__SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+  
   document.addEventListener('DOMContentLoaded', function() {
     // Hide loading screen after shared components initialize
     setTimeout(function() {
@@ -813,6 +888,26 @@
         }, 500);
       }
     }, 800);
+    
+    // Handle any errors gracefully
+    window.addEventListener('error', function(e) {
+      console.error('Page error:', e.message);
+      // Don't show error for missing favicon or analytics
+      if (!e.message.includes('favicon') && !e.message.includes('analytics')) {
+        const errorDisplay = document.getElementById('error-display');
+        const mainContent = document.getElementById('main-content');
+        if (errorDisplay && mainContent && !errorDisplay.style.display === 'block') {
+          // Only show error if content hasn't loaded after 5 seconds
+          setTimeout(function() {
+            const hasContent = document.querySelector('.worlds-container')?.children?.length > 0;
+            if (!hasContent) {
+              errorDisplay.style.display = 'flex';
+              if (mainContent) mainContent.style.opacity = '0.5';
+            }
+          }, 5000);
+        }
+      }
+    });
   });
 </script>
 </body>
