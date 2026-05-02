@@ -8,10 +8,6 @@
 <!-- PERFORMANCE: Preload Critical Resources -->
 <link rel="preload" href="css/shared-components.css" as="style">
 <link rel="preload" href="css/explore-screen.css" as="style">
-<link rel="preload" href="css/explore-screen-features.css" as="style">
-<link rel="preload" href="js/shared-components.js" as="script">
-<link rel="preload" href="js/explore-screen.js" as="script">
-<link rel="preload" href="js/explore-screen-features.js" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://ydnxqnbjoshvxteevemc.supabase.co">
@@ -26,30 +22,34 @@
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- SHARED COMPONENTS CSS - Platform-wide consistency -->
+<!-- SHARED COMPONENTS CSS - Platform-wide consistency (matches content-detail) -->
 <link rel="stylesheet" href="css/shared-components.css">
 
-<!-- Page-specific CSS -->
+<!-- Page-specific CSS - Compact sizes matching content-detail -->
 <link rel="stylesheet" href="css/explore-screen.css">
-<link rel="stylesheet" href="css/explore-screen-features.css">
 
 <style>
-  /* Additional explore-specific styles that complement shared components */
+  /* ============================================ */
+  /* EXPLORE SCREEN STYLES - COMPACT & CONSISTENT */
+  /* Matches content-detail page sizing */
+  /* ============================================ */
+  
+  /* Discovery Background */
   .discovery-bg {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -1;
+    z-index: -2;
     overflow: hidden;
   }
   
   .bg-particle {
     position: absolute;
-    width: 4px;
-    height: 4px;
-    background: rgba(245, 158, 11, 0.3);
+    width: 3px;
+    height: 3px;
+    background: rgba(245, 158, 11, 0.25);
     border-radius: 50%;
     animation: float 20s infinite linear;
   }
@@ -58,27 +58,27 @@
     position: absolute;
     border-radius: 50%;
     filter: blur(80px);
-    opacity: 0.15;
+    opacity: 0.12;
     animation: glowPulse 8s infinite alternate;
   }
   
-  .glow-1 { width: 400px; height: 400px; background: #1D4ED8; top: 10%; left: -100px; }
-  .glow-2 { width: 300px; height: 300px; background: #F59E0B; bottom: 20%; right: -50px; }
-  .glow-3 { width: 250px; height: 250px; background: #10B981; top: 50%; left: 50%; }
+  .glow-1 { width: 350px; height: 350px; background: #1D4ED8; top: 10%; left: -100px; }
+  .glow-2 { width: 250px; height: 250px; background: #F59E0B; bottom: 20%; right: -50px; }
+  .glow-3 { width: 200px; height: 200px; background: #10B981; top: 50%; left: 50%; }
   
   @keyframes float {
     0% { transform: translateY(0) translateX(0); opacity: 0; }
-    10% { opacity: 0.5; }
-    90% { opacity: 0.5; }
+    10% { opacity: 0.4; }
+    90% { opacity: 0.4; }
     100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
   }
   
   @keyframes glowPulse {
-    0% { transform: scale(1); opacity: 0.1; }
-    100% { transform: scale(1.5); opacity: 0.2; }
+    0% { transform: scale(1); opacity: 0.08; }
+    100% { transform: scale(1.4); opacity: 0.15; }
   }
   
-  /* Loading screen - matches shared styling */
+  /* Loading Screen */
   .loading-screen {
     position: fixed;
     top: 0;
@@ -91,24 +91,25 @@
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.4s ease;
   }
   
   .loading-spinner {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     border: 3px solid rgba(255,255,255,0.1);
     border-radius: 50%;
     border-top-color: var(--warm-gold);
     animation: spin 1s linear infinite;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
   .loading-text {
     color: var(--slate-grey);
-    font-size: 14px;
+    font-size: 12px;
     letter-spacing: 2px;
     text-transform: uppercase;
+    font-weight: 500;
   }
   
   @keyframes spin {
@@ -117,56 +118,590 @@
   
   #app {
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.4s ease;
   }
   
   #app.visible {
     opacity: 1;
   }
   
-  /* Error message styling */
+  /* ============================================ */
+  /* EXPLORE CONTAINER - COMPACT SIZING */
+  /* ============================================ */
+  .explore-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 120px;
+  }
+  
+  /* Cinematic Hero - Compact */
+  .cinematic-hero {
+    position: relative;
+    background: linear-gradient(135deg, rgba(29,78,216,0.15), rgba(10,14,18,0.95));
+    border-radius: 20px;
+    padding: 40px 32px;
+    margin-bottom: 32px;
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  
+  .hero-headline {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  
+  .gradient-text {
+    background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  .hero-rotating-text {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    font-size: 1rem;
+    color: var(--slate-grey);
+  }
+  
+  .static-prefix {
+    font-weight: 500;
+  }
+  
+  .rotating-words {
+    display: inline-block;
+    min-height: 28px;
+  }
+  
+  .rotating-words span {
+    display: none;
+    color: var(--warm-gold);
+    font-weight: 500;
+  }
+  
+  .rotating-words span.active {
+    display: inline-block;
+    animation: fadeWord 0.5s ease;
+  }
+  
+  @keyframes fadeWord {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .hero-action {
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    border: none;
+  }
+  
+  .hero-action.primary {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+  }
+  
+  .hero-action.secondary {
+    background: rgba(255,255,255,0.1);
+    color: var(--soft-white);
+    border: 1px solid var(--card-border);
+  }
+  
+  .hero-action.tertiary {
+    background: transparent;
+    color: var(--soft-white);
+    border: 1px solid var(--card-border);
+  }
+  
+  .hero-action:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Energy Ticker - Compact */
+  .energy-ticker {
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--card-border);
+    border-radius: 40px;
+    padding: 8px 16px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  
+  .ticker-content {
+    display: inline-block;
+    animation: tickerScroll 25s linear infinite;
+    font-size: 0.8rem;
+    color: var(--slate-grey);
+  }
+  
+  .ticker-content span {
+    margin-right: 32px;
+  }
+  
+  .ticker-content span i {
+    margin-right: 6px;
+    color: var(--warm-gold);
+  }
+  
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  
+  /* Discovery Sections */
+  .discovery-section {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 28px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .section-title i {
+    color: var(--warm-gold);
+    font-size: 1.1rem;
+  }
+  
+  .section-subtitle {
+    color: var(--slate-grey);
+    font-size: 0.8rem;
+    margin-top: 4px;
+  }
+  
+  .section-view-all {
+    background: transparent;
+    border: none;
+    color: var(--bantu-blue);
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  /* Worlds Grid */
+  .worlds-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  
+  .world-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .world-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--warm-gold);
+  }
+  
+  .world-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(29,78,216,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 1.4rem;
+    color: var(--warm-gold);
+  }
+  
+  .world-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  
+  .world-card p {
+    font-size: 0.75rem;
+    color: var(--slate-grey);
+  }
+  
+  .world-stats {
+    margin-top: 10px;
+    font-size: 0.7rem;
+    color: var(--slate-grey);
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  /* Journey Builder */
+  .journey-builder {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  
+  .journey-step {
+    flex: 1;
+    min-width: 140px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  
+  .step-label {
+    font-size: 0.7rem;
+    color: var(--slate-grey);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  
+  .step-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  
+  .step-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .step-option {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .step-option.selected {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border-color: transparent;
+    color: white;
+  }
+  
+  .journey-connector {
+    display: flex;
+    align-items: center;
+    color: var(--slate-grey);
+    font-size: 1rem;
+  }
+  
+  .journey-generate-btn {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: none;
+    border-radius: 40px;
+    padding: 10px 24px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 auto;
+  }
+  
+  /* Cultural Grid */
+  .cultural-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  .cultural-item {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .cultural-item:hover {
+    transform: translateY(-3px);
+    border-color: var(--warm-gold);
+  }
+  
+  .cultural-image {
+    height: 100px;
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+  
+  .cultural-info {
+    padding: 10px;
+  }
+  
+  .cultural-info h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  
+  .cultural-info p {
+    font-size: 0.7rem;
+    color: var(--slate-grey);
+  }
+  
+  /* Creator Ecosystems */
+  .creator-ecosystems {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  
+  .creator-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .creator-avatar {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: white;
+  }
+  
+  .creator-card h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  
+  .creator-card p {
+    font-size: 0.7rem;
+    color: var(--slate-grey);
+  }
+  
+  /* Live Grid */
+  .live-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  
+  .live-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .live-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #EF4444;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .live-thumbnail {
+    height: 120px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+  
+  .live-info {
+    padding: 10px;
+  }
+  
+  .live-info h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  
+  /* Map Section */
+  .discovery-map {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .map-container {
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  #africaMapCanvas {
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+    background: rgba(29,78,216,0.1);
+    border-radius: 12px;
+  }
+  
+  /* Final CTA */
+  .final-cta {
+    text-align: center;
+    margin: 40px 0 20px;
+  }
+  
+  .discover-all-btn {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: none;
+    border-radius: 50px;
+    padding: 14px 32px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s;
+  }
+  
+  .discover-all-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(29,78,216,0.3);
+  }
+  
+  /* Error Display */
   .error-message {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 40px 20px;
     text-align: center;
     background: var(--card-bg);
     border-radius: 16px;
     margin: 40px auto;
-    max-width: 500px;
+    max-width: 400px;
   }
   
   .error-message i {
-    font-size: 48px;
+    font-size: 40px;
     color: var(--error-color);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
-  .error-message h3 {
-    color: var(--soft-white);
-    margin-bottom: 10px;
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .explore-container {
+      padding: 12px;
+      padding-bottom: 100px;
+    }
+    
+    .cinematic-hero {
+      padding: 24px 20px;
+    }
+    
+    .hero-headline {
+      font-size: 1.6rem;
+    }
+    
+    .hero-actions {
+      flex-direction: column;
+    }
+    
+    .hero-action {
+      justify-content: center;
+    }
+    
+    .journey-builder {
+      flex-direction: column;
+    }
+    
+    .journey-connector {
+      transform: rotate(90deg);
+      margin: 4px 0;
+    }
+    
+    .worlds-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .cultural-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
   
-  .error-message p {
-    color: var(--slate-grey);
-    margin-bottom: 20px;
-  }
-  
-  .error-message button {
-    background: var(--bantu-blue);
-    color: white;
-    border: none;
-    padding: 10px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .error-message button:hover {
-    background: var(--warm-gold);
-    transform: translateY(-2px);
+  @media (max-width: 480px) {
+    .section-title {
+      font-size: 1rem;
+    }
+    
+    .worlds-container {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 </head>
@@ -183,9 +718,6 @@
     <div class="bg-particle p1"></div>
     <div class="bg-particle p2"></div>
     <div class="bg-particle p3"></div>
-    <div class="bg-particle p4"></div>
-    <div class="bg-particle p5"></div>
-    <div class="bg-particle p6"></div>
     <div class="bg-glow glow-1"></div>
     <div class="bg-glow glow-2"></div>
     <div class="bg-glow glow-3"></div>
@@ -205,709 +737,237 @@
       <div class="logo-text">BANTU STREAM CONNECT</div>
     </div>
     <div class="header-actions">
-      <!-- Voice Search Button -->
-      <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-        <i class="fas fa-microphone"></i>
-      </button>
-      <!-- Analytics Button -->
-      <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
-        <i class="fas fa-chart-line"></i>
-      </button>
-      <!-- Search Button -->
-      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
-        <i class="fas fa-search"></i>
-      </button>
-      <!-- Notifications Button -->
-      <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+      <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
+      <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
+      <button id="search-btn" class="icon-btn search-btn" title="Search"><i class="fas fa-search"></i></button>
+      <button id="notifications-btn" class="icon-btn" title="Notifications">
         <i class="fas fa-bell"></i>
         <span class="notification-badge" id="notification-count" style="display: none;">0</span>
       </button>
-      <!-- Profile Switcher -->
       <div class="profile-switcher">
-        <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
-          <div class="profile-placeholder" id="userProfilePlaceholder">
-            <i class="fas fa-user"></i>
-          </div>
+        <button id="current-profile-btn" class="profile-btn" title="Profile">
+          <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
           <span class="profile-name" id="current-profile-name">Guest</span>
           <i class="fas fa-chevron-down"></i>
         </button>
         <div class="profile-dropdown" id="profile-dropdown">
-          <div class="profile-dropdown-header">
-            <h4>Switch Profile</h4>
-          </div>
+          <div class="profile-dropdown-header"><h4>Switch Profile</h4></div>
           <div class="profile-list" id="profile-list"></div>
           <div class="profile-dropdown-footer">
-            <button class="text-btn" id="manage-profiles-btn">
-              <i class="fas fa-user-cog"></i> Manage Profiles
-            </button>
+            <button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button>
           </div>
         </div>
       </div>
-      <!-- RSA Badge -->
-      <div class="rsa-badge" title="Proudly South African">
-        <i class="fas fa-map-marker-alt"></i>
-        <span>RSA</span>
-      </div>
+      <div class="rsa-badge" title="Proudly South African"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
     </div>
   </header>
 
   <!-- ============================================ -->
-  <!-- SHARED SIDEBAR MENU - Platform-wide consistent -->
+  <!-- SHARED SIDEBAR MENU -->
   <!-- ============================================ -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
   <div class="sidebar-menu" id="sidebar-menu">
     <div class="sidebar-header">
       <div class="sidebar-logo" onclick="window.location.href='index.html'">
-        <div class="logo-icon">
-          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2265%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3EB%3C/text%3E%3C/svg%3E'">
-        </div>
+        <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Logo"></div>
         <span class="sidebar-logo-text">BANTU</span>
       </div>
-      <button class="sidebar-close" id="sidebar-close">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
     </div>
-
     <div class="sidebar-profile" id="sidebar-profile">
-      <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
-        <i class="fas fa-user"></i>
-      </div>
+      <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
       <div class="sidebar-profile-info">
         <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
         <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
       </div>
       <i class="fas fa-chevron-right"></i>
     </div>
-
     <nav class="sidebar-nav">
-      <!-- MAIN NAVIGATION -->
       <div class="sidebar-section" data-section="main">
-        <div class="sidebar-section-header" data-toggle="main">
-          <span>MAIN</span>
-          <i class="fas fa-chevron-up toggle-icon"></i>
-        </div>
-        <div class="sidebar-section-items" id="section-main">
-          <a href="index.html" class="sidebar-nav-item" data-page="home">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-          </a>
-          <a href="explore-screen.html" class="sidebar-nav-item active" data-page="explore">
-            <i class="fas fa-compass"></i>
-            <span>Explore</span>
-          </a>
-          <a href="trending.html" class="sidebar-nav-item" data-page="trending">
-            <i class="fas fa-fire"></i>
-            <span>Trending</span>
-          </a>
-          <a href="creators.html" class="sidebar-nav-item" data-page="creators">
-            <i class="fas fa-users"></i>
-            <span>Discover Creators</span>
-          </a>
-        </div>
+        <div class="sidebar-section-header" data-toggle="main"><span>MAIN</span><i class="fas fa-chevron-up toggle-icon"></i></div>
+        <div class="sidebar-section-items"><a href="index.html" class="sidebar-nav-item"><i class="fas fa-home"></i><span>Home</span></a><a href="explore-screen.html" class="sidebar-nav-item active"><i class="fas fa-compass"></i><span>Explore</span></a><a href="trending.html" class="sidebar-nav-item"><i class="fas fa-fire"></i><span>Trending</span></a><a href="creators.html" class="sidebar-nav-item"><i class="fas fa-users"></i><span>Discover Creators</span></a></div>
       </div>
-
-      <!-- CONTENT CATEGORIES -->
       <div class="sidebar-section" data-section="categories">
-        <div class="sidebar-section-header" data-toggle="categories">
-          <span>CATEGORIES</span>
-          <i class="fas fa-chevron-up toggle-icon"></i>
-        </div>
-        <div class="sidebar-section-items" id="section-categories">
-          <a href="#" class="sidebar-nav-item" data-category="music">
-            <i class="fas fa-music"></i>
-            <span>Music</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="stem">
-            <i class="fas fa-atom"></i>
-            <span>STEM</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="culture">
-            <i class="fas fa-palette"></i>
-            <span>Culture</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="news">
-            <i class="fas fa-newspaper"></i>
-            <span>News</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="sports">
-            <i class="fas fa-futbol"></i>
-            <span>Sports</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="movies">
-            <i class="fas fa-film"></i>
-            <span>Movies</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="documentaries">
-            <i class="fas fa-video"></i>
-            <span>Documentaries</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" data-category="podcasts">
-            <i class="fas fa-microphone-alt"></i>
-            <span>Podcasts</span>
-          </a>
-        </div>
+        <div class="sidebar-section-header" data-toggle="categories"><span>CATEGORIES</span><i class="fas fa-chevron-up toggle-icon"></i></div>
+        <div class="sidebar-section-items"><a href="#" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a><a href="#" class="sidebar-nav-item" data-category="stem"><i class="fas fa-atom"></i><span>STEM</span></a><a href="#" class="sidebar-nav-item" data-category="culture"><i class="fas fa-palette"></i><span>Culture</span></a><a href="#" class="sidebar-nav-item" data-category="news"><i class="fas fa-newspaper"></i><span>News</span></a><a href="#" class="sidebar-nav-item" data-category="sports"><i class="fas fa-futbol"></i><span>Sports</span></a><a href="#" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a><a href="#" class="sidebar-nav-item" data-category="documentaries"><i class="fas fa-video"></i><span>Documentaries</span></a><a href="#" class="sidebar-nav-item" data-category="podcasts"><i class="fas fa-microphone-alt"></i><span>Podcasts</span></a></div>
       </div>
-
-      <!-- YOUR CONTENT -->
       <div class="sidebar-section" data-section="your-content">
-        <div class="sidebar-section-header" data-toggle="your-content">
-          <span>YOU</span>
-          <i class="fas fa-chevron-up toggle-icon"></i>
-        </div>
-        <div class="sidebar-section-items" id="section-your-content">
-          <a href="library.html" class="sidebar-nav-item" data-page="library">
-            <i class="fas fa-book"></i>
-            <span>Library</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
-            <i class="fas fa-history"></i>
-            <span>Watch History</span>
-          </a>
-          <a href="my-uploads.html" class="sidebar-nav-item" data-page="uploads">
-            <i class="fas fa-upload"></i>
-            <span>My Uploads</span>
-          </a>
-        </div>
+        <div class="sidebar-section-header" data-toggle="your-content"><span>YOU</span><i class="fas fa-chevron-up toggle-icon"></i></div>
+        <div class="sidebar-section-items"><a href="library.html" class="sidebar-nav-item"><i class="fas fa-book"></i><span>Library</span></a><a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a><a href="my-uploads.html" class="sidebar-nav-item"><i class="fas fa-upload"></i><span>My Uploads</span></a></div>
       </div>
-
-      <!-- CREATOR ZONE -->
-      <div class="sidebar-section creator-only" data-section="creator" style="display: none;">
-        <div class="sidebar-section-header" data-toggle="creator">
-          <span>CREATOR</span>
-          <i class="fas fa-chevron-up toggle-icon"></i>
-        </div>
-        <div class="sidebar-section-items" id="section-creator">
-          <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-          </a>
-          <a href="creator-analytics.html" class="sidebar-nav-item" data-page="analytics">
-            <i class="fas fa-chart-line"></i>
-            <span>Creator Analytics</span>
-          </a>
-          <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-            <i class="fas fa-plus-circle"></i>
-            <span>Create</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- COMMUNITY & SOCIAL -->
+      <div class="sidebar-section creator-only" data-section="creator" style="display:none"><div class="sidebar-section-header" data-toggle="creator"><span>CREATOR</span><i class="fas fa-chevron-up toggle-icon"></i></div><div class="sidebar-section-items"><a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a><a href="creator-analytics.html" class="sidebar-nav-item"><i class="fas fa-chart-line"></i><span>Creator Analytics</span></a><a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a></div></div>
       <div class="sidebar-section" data-section="community">
-        <div class="sidebar-section-header" data-toggle="community">
-          <span>COMMUNITY</span>
-          <i class="fas fa-chevron-up toggle-icon"></i>
-        </div>
-        <div class="sidebar-section-items" id="section-community">
-          <a href="#" class="sidebar-nav-item" data-page="pulse">
-            <i class="fas fa-heart"></i>
-            <span>Community Pulse</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-            <i class="fas fa-users"></i>
-            <span>Watch Party</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-            <i class="fas fa-medal"></i>
-            <span>My Badges</span>
-          </a>
-        </div>
+        <div class="sidebar-section-header" data-toggle="community"><span>COMMUNITY</span><i class="fas fa-chevron-up toggle-icon"></i></div>
+        <div class="sidebar-section-items"><a href="#" class="sidebar-nav-item"><i class="fas fa-heart"></i><span>Community Pulse</span></a><a href="#" class="sidebar-nav-item" id="sidebar-watch-party"><i class="fas fa-users"></i><span>Watch Party</span></a><a href="#" class="sidebar-nav-item" id="sidebar-badges"><i class="fas fa-medal"></i><span>My Badges</span></a></div>
       </div>
-
-      <!-- ACCOUNT & SETTINGS -->
       <div class="sidebar-section" data-section="account">
-        <div class="sidebar-section-header" data-toggle="account">
-          <span>ACCOUNT</span>
-          <i class="fas fa-chevron-up toggle-icon"></i>
-        </div>
-        <div class="sidebar-section-items" id="section-account">
-          <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles">
-            <i class="fas fa-user-cog"></i>
-            <span>Manage Profiles</span>
-          </a>
-          <a href="#" class="sidebar-nav-item" id="sidebar-logout">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-          </a>
-        </div>
+        <div class="sidebar-section-header" data-toggle="account"><span>ACCOUNT</span><i class="fas fa-chevron-up toggle-icon"></i></div>
+        <div class="sidebar-section-items"><a href="manage-profiles.html" class="sidebar-nav-item"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a><a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></div>
       </div>
     </nav>
-
     <div class="sidebar-footer">
-      <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
-        <label class="toggle-switch">
-          <input type="checkbox" id="creatorModeSwitch">
-          <span class="toggle-slider"></span>
-        </label>
-        <span class="toggle-label">Creator Mode</span>
-      </div>
-    
-      <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-        <span><i class="fas fa-palette"></i> Theme</span>
-        <i class="fas fa-chevron-right"></i>
-      </div>
-    
+      <div class="creator-mode-toggle" id="creatorModeToggle" style="display:none"><label class="toggle-switch"><input type="checkbox" id="creatorModeSwitch"><span class="toggle-slider"></span></label><span class="toggle-label">Creator Mode</span></div>
+      <div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
       <div class="sidebar-scale-control">
-        <div class="scale-control-row">
-          <span><i class="fas fa-text-height"></i> UI Size</span>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="scale-btn" id="sidebar-scale-decrease">
-              <i class="fas fa-minus"></i>
-            </button>
-            <span class="scale-value" id="sidebar-scale-value">100%</span>
-            <button class="scale-btn" id="sidebar-scale-increase">
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-        </div>
-        <div class="scale-control-row">
-          <button class="scale-btn" id="sidebar-scale-reset">
-            <i class="fas fa-undo"></i> Reset to Default
-          </button>
-        </div>
+        <div class="scale-control-row"><span><i class="fas fa-text-height"></i> UI Size</span><div style="display:flex;gap:8px"><button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button><span class="scale-value" id="sidebar-scale-value">100%</span><button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button></div></div>
+        <div class="scale-control-row"><button class="scale-btn" id="sidebar-scale-reset"><i class="fas fa-undo"></i> Reset to Default</button></div>
       </div>
     </div>
   </div>
 
-  <!-- ============================================ -->
   <!-- THEME SELECTOR -->
-  <!-- ============================================ -->
   <div id="theme-selector" class="theme-selector">
-    <button class="theme-option" data-theme="dark">
-      <i class="fas fa-moon"></i> Dark
-    </button>
-    <button class="theme-option" data-theme="light">
-      <i class="fas fa-sun"></i> Light
-    </button>
-    <button class="theme-option" data-theme="high-contrast">
-      <i class="fas fa-eye"></i> High Contrast
-    </button>
+    <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+    <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+    <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
   </div>
 
-  <!-- ============================================ -->
-  <!-- BOTTOM NAVIGATION BUTTONS -->
-  <!-- ============================================ -->
+  <!-- BOTTOM NAVIGATION -->
   <div class="navigation-button-container">
     <div class="navigation-button">
-      <div class="nav-icon" id="nav-home-btn" title="Home">
-        <i class="fas fa-home"></i>
-      </div>
-      <div class="nav-icon" id="nav-history-btn" title="Watch History">
-        <i class="fas fa-history"></i>
-      </div>
-      <div class="nav-icon" id="nav-create-btn" title="Create Content">
-        <i class="fas fa-plus-circle"></i>
-      </div>
-      <div class="nav-icon" id="nav-menu-btn" title="Menu">
-        <i class="fas fa-bars"></i>
-      </div>
+      <div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div>
+      <div class="nav-icon" id="nav-history-btn" title="Watch History"><i class="fas fa-history"></i></div>
+      <div class="nav-icon" id="nav-create-btn" title="Create Content"><i class="fas fa-plus-circle"></i></div>
+      <div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div>
     </div>
   </div>
 
-  <!-- ============================================ -->
-  <!-- BACK TO TOP BUTTON -->
-  <!-- ============================================ -->
-  <button id="backToTopBtn" class="back-to-top">
-    <i class="fas fa-arrow-up"></i>
-  </button>
-
-  <!-- ============================================ -->
-  <!-- TOAST CONTAINER -->
-  <!-- ============================================ -->
+  <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
   <div id="toast-container"></div>
 
-  <!-- ============================================ -->
-  <!-- ERROR DISPLAY (if needed) -->
-  <!-- ============================================ -->
-  <div id="error-display" style="display: none;" class="error-message">
-    <i class="fas fa-exclamation-triangle"></i>
-    <h3>Loading Error</h3>
-    <p>Please refresh the page to continue.</p>
-    <button onclick="location.reload()">Refresh</button>
-  </div>
-
-  <!-- ============================================ -->
-  <!-- MAIN CONTENT - Explore Screen Specific -->
-  <!-- ============================================ -->
-  <main class="container" id="main-content">
-    <!-- 1. IMMERSIVE DISCOVERY HERO -->
+  <!-- MAIN CONTENT -->
+  <main class="explore-container">
+    <!-- Cinematic Hero -->
     <section class="cinematic-hero">
       <div class="hero-content">
-        <h1 class="hero-headline">
-          Discover Africa<br>
-          <span class="gradient-text">Beyond The Feed</span>
-        </h1>
-        <div class="hero-rotating-text">
-          <span class="static-prefix">Explore </span>
-          <div class="rotating-words" id="rotatingWords">
-            <span>worlds built by African creators.</span>
-            <span>stories from every culture.</span>
-            <span>the future of African entertainment.</span>
-            <span>movements shaping tomorrow.</span>
-          </div>
-        </div>
-        <div class="hero-actions">
-          <button class="hero-action primary" id="exploreWorldsBtn">
-            <i class="fas fa-globe-africa"></i>
-            <span>Explore Worlds</span>
-          </button>
-          <button class="hero-action secondary" id="startJourneyBtn">
-            <i class="fas fa-compass"></i>
-            <span>Start Discovery Journey</span>
-          </button>
-          <button class="hero-action tertiary" id="discoverCreatorsBtn">
-            <i class="fas fa-star"></i>
-            <span>Discover Creators</span>
-          </button>
-        </div>
-      </div>
-      <div class="hero-backdrop">
-        <div class="hero-particles"></div>
+        <h1 class="hero-headline">Discover Africa<br><span class="gradient-text">Beyond The Feed</span></h1>
+        <div class="hero-rotating-text"><span class="static-prefix">Explore </span><div class="rotating-words" id="rotatingWords"><span class="active">worlds built by African creators.</span><span>stories from every culture.</span><span>the future of African entertainment.</span><span>movements shaping tomorrow.</span></div></div>
+        <div class="hero-actions"><button class="hero-action primary" id="exploreWorldsBtn"><i class="fas fa-globe-africa"></i><span>Explore Worlds</span></button><button class="hero-action secondary" id="startJourneyBtn"><i class="fas fa-compass"></i><span>Start Discovery Journey</span></button><button class="hero-action tertiary" id="discoverCreatorsBtn"><i class="fas fa-star"></i><span>Discover Creators</span></button></div>
       </div>
     </section>
 
-    <!-- 2. LIVE PLATFORM ENERGY BAR (Scrolling) -->
-    <div class="energy-ticker">
-      <div class="ticker-content" id="energyTicker">
-        <span>🔥 1,204 creators live now</span>
-        <span>📍 Trending in Johannesburg</span>
-        <span>🎵 Zulu podcasts rising</span>
-        <span>🎤 Afrobeats world active</span>
-        <span>🎬 Cape Town film discussions live</span>
-        <span>⭐ 89 new creators this week</span>
-        <span>📺 342 live streams active</span>
-      </div>
-    </div>
+    <!-- Energy Ticker -->
+    <div class="energy-ticker"><div class="ticker-content" id="energyTicker"><span>🔥 1,204 creators live now</span><span>📍 Trending in Johannesburg</span><span>🎵 Zulu podcasts rising</span><span>🎤 Afrobeats world active</span><span>🎬 Cape Town film discussions</span><span>⭐ 89 new creators this week</span><span>📺 342 live streams active</span></div></div>
 
-    <!-- 3. DISCOVERY WORLDS SYSTEM -->
-    <section class="discovery-section" id="worldsSection">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-globe-africa"></i>
-          Discovery Worlds
-        </h2>
-        <button class="section-view-all">View All <i class="fas fa-arrow-right"></i></button>
-      </div>
-      <div class="worlds-container" id="worldsContainer">
-        <!-- Worlds will be injected via JS -->
-      </div>
-    </section>
+    <!-- Discovery Worlds -->
+    <section class="discovery-section"><div class="section-header"><h2 class="section-title"><i class="fas fa-globe-africa"></i> Discovery Worlds</h2><button class="section-view-all">View All <i class="fas fa-arrow-right"></i></button></div><div class="worlds-container" id="worldsContainer"><div class="world-card"><div class="world-icon"><i class="fas fa-music"></i></div><h3>Afrobeats World</h3><p>The pulse of African music</p><div class="world-stats"><span>2.4M views</span></div></div><div class="world-card"><div class="world-icon"><i class="fas fa-flask"></i></div><h3>STEM Africa</h3><p>Innovation from the motherland</p><div class="world-stats"><span>890K views</span></div></div><div class="world-card"><div class="world-icon"><i class="fas fa-drum"></i></div><h3>Cultural Heritage</h3><p>Preserving traditions</p><div class="world-stats"><span>1.2M views</span></div></div><div class="world-card"><div class="world-icon"><i class="fas fa-futbol"></i></div><h3>Sports Nation</h3><p>African athletic excellence</p><div class="world-stats"><span>3.1M views</span></div></div></div></section>
 
-    <!-- 4. DISCOVERY JOURNEY SYSTEM -->
-    <section class="discovery-section journey-section" id="journeySection">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-route"></i>
-          Start Your Discovery Journey
-        </h2>
-        <p class="section-subtitle">Build your personalized exploration path</p>
-      </div>
-      <div class="journey-builder" id="journeyBuilder">
-        <!-- Step 1: Mood -->
-        <div class="journey-step" data-step="mood">
-          <div class="step-label">Step 1</div>
-          <div class="step-title">Choose Your Mood</div>
-          <div class="step-options" id="moodOptions"></div>
-        </div>
-        <div class="journey-connector"><i class="fas fa-arrow-right"></i></div>
-        <!-- Step 2: Region -->
-        <div class="journey-step" data-step="region">
-          <div class="step-label">Step 2</div>
-          <div class="step-title">Choose Region</div>
-          <div class="step-options" id="regionOptions"></div>
-        </div>
-        <div class="journey-connector"><i class="fas fa-arrow-right"></i></div>
-        <!-- Step 3: Language -->
-        <div class="journey-step" data-step="language">
-          <div class="step-label">Step 3</div>
-          <div class="step-title">Choose Language</div>
-          <div class="step-options" id="languageOptions"></div>
-        </div>
-        <div class="journey-connector"><i class="fas fa-arrow-right"></i></div>
-        <!-- Step 4: Format -->
-        <div class="journey-step" data-step="format">
-          <div class="step-label">Step 4</div>
-          <div class="step-title">Choose Format</div>
-          <div class="step-options" id="formatOptions"></div>
-        </div>
-      </div>
-      <div class="journey-action">
-        <button class="journey-generate-btn" id="generateJourneyBtn">
-          <i class="fas fa-magic"></i>
-          Generate My Discovery Worlds
-        </button>
-      </div>
-      <div class="journey-results" id="journeyResults" style="display: none;"></div>
-    </section>
+    <!-- Journey Builder -->
+    <section class="discovery-section"><div class="section-header"><h2 class="section-title"><i class="fas fa-route"></i> Start Your Discovery Journey</h2><p class="section-subtitle">Build your personalized exploration path</p></div><div class="journey-builder"><div class="journey-step" data-step="mood"><div class="step-label">Step 1</div><div class="step-title">Choose Your Mood</div><div class="step-options" id="moodOptions"><span class="step-option selected" data-value="energetic">⚡ Energetic</span><span class="step-option" data-value="relaxed">🌿 Relaxed</span><span class="step-option" data-value="inspired">✨ Inspired</span><span class="step-option" data-value="curious">🔍 Curious</span></div></div><div class="journey-connector"><i class="fas fa-arrow-right"></i></div><div class="journey-step" data-step="region"><div class="step-label">Step 2</div><div class="step-title">Choose Region</div><div class="step-options" id="regionOptions"><span class="step-option selected" data-value="west">🌍 West Africa</span><span class="step-option" data-value="east">🦒 East Africa</span><span class="step-option" data-value="south">🦁 Southern Africa</span><span class="step-option" data-value="north">🏜️ North Africa</span></div></div><div class="journey-connector"><i class="fas fa-arrow-right"></i></div><div class="journey-step" data-step="language"><div class="step-label">Step 3</div><div class="step-title">Choose Language</div><div class="step-options" id="languageOptions"><span class="step-option selected" data-value="english">English</span><span class="step-option" data-value="swahili">Swahili</span><span class="step-option" data-value="zulu">Zulu</span><span class="step-option" data-value="yoruba">Yoruba</span></div></div><div class="journey-connector"><i class="fas fa-arrow-right"></i></div><div class="journey-step" data-step="format"><div class="step-label">Step 4</div><div class="step-title">Choose Format</div><div class="step-options" id="formatOptions"><span class="step-option selected" data-value="video">🎬 Video</span><span class="step-option" data-value="podcast">🎙️ Podcast</span><span class="step-option" data-value="article">📰 Article</span><span class="step-option" data-value="live">📡 Live</span></div></div></div><div class="journey-action"><button class="journey-generate-btn" id="generateJourneyBtn"><i class="fas fa-magic"></i> Generate My Discovery Worlds</button></div><div class="journey-results" id="journeyResults" style="display:none;"></div></section>
 
-    <!-- 5. CULTURAL DISCOVERY HUB -->
-    <section class="discovery-section cultural-hub">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-drumstick-bite"></i>
-          Explore African Culture
-        </h2>
-      </div>
-      <div class="cultural-grid" id="culturalGrid"></div>
-    </section>
+    <!-- Cultural Hub -->
+    <section class="discovery-section"><div class="section-header"><h2 class="section-title"><i class="fas fa-drumstick-bite"></i> Explore African Culture</h2></div><div class="cultural-grid" id="culturalGrid"><div class="cultural-item"><div class="cultural-image"><i class="fas fa-drum"></i></div><div class="cultural-info"><h4>Traditional Drums</h4><p>Rhythms of West Africa</p></div></div><div class="cultural-item"><div class="cultural-image"><i class="fas fa-mask"></i></div><div class="cultural-info"><h4>African Masks</h4><p>Spiritual traditions</p></div></div><div class="cultural-item"><div class="cultural-image"><i class="fas fa-utensils"></i></div><div class="cultural-info"><h4>Culinary Journeys</h4><p>Taste of Africa</p></div></div><div class="cultural-item"><div class="cultural-image"><i class="fas fa-palette"></i></div><div class="cultural-info"><h4>Contemporary Art</h4><p>Modern expression</p></div></div></div></section>
 
-    <!-- 6. CREATOR UNIVERSES -->
-    <section class="discovery-section creator-universes">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-users"></i>
-          Creator Universes
-        </h2>
-      </div>
-      <div class="creator-ecosystems" id="creatorEcosystems"></div>
-    </section>
+    <!-- Creator Universes -->
+    <section class="discovery-section"><div class="section-header"><h2 class="section-title"><i class="fas fa-users"></i> Creator Universes</h2></div><div class="creator-ecosystems" id="creatorEcosystems"></div></section>
 
-    <!-- 7. LIVE EXPERIENCE DISTRICT -->
-    <section class="discovery-section live-district">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-satellite-dish"></i>
-          Live Across Africa
-        </h2>
-        <div class="live-indicator">
-          <span class="live-pulse"></span>
-          <span>LIVE NOW</span>
-        </div>
-      </div>
-      <div class="live-grid" id="liveGrid"></div>
-    </section>
-
-    <!-- 8. AFRICA DISCOVERY MAP -->
-    <section class="discovery-section map-section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-map-marked-alt"></i>
-          Explore Africa Live
-        </h2>
-      </div>
-      <div class="discovery-map" id="discoveryMap">
-        <div class="map-container">
-          <canvas id="africaMapCanvas" width="800" height="500"></canvas>
-          <div class="map-hotspots" id="mapHotspots"></div>
-        </div>
-        <div class="map-trending" id="mapTrending"></div>
-      </div>
-    </section>
-
-    <!-- 9. EDITORIAL DISCOVERY -->
-    <section class="discovery-section editorial">
-      <div class="section-header">
-        <h2 class="section-title">
-          <i class="fas fa-newspaper"></i>
-          Curated By Bantu Editors
-        </h2>
-      </div>
-      <div class="editorial-grid" id="editorialGrid"></div>
-    </section>
-
-    <!-- 10. SMART SEARCH -->
-    <section class="discovery-section smart-search">
-      <div class="smart-search-container">
-        <div class="smart-search-header">
-          <i class="fas fa-search"></i>
-          <span>Discover Anything Across Africa</span>
-        </div>
-        <div class="smart-search-categories" id="smartSearchCategories"></div>
-        <div class="smart-search-suggestions" id="smartSearchSuggestions"></div>
-      </div>
-    </section>
+    <!-- Live District -->
+    <section class="discovery-section"><div class="section-header"><h2 class="section-title"><i class="fas fa-satellite-dish"></i> Live Across Africa</h2><div class="live-indicator"><span class="live-pulse"></span><span>LIVE NOW</span></div></div><div class="live-grid" id="liveGrid"><div class="live-card"><div class="live-badge"><i class="fas fa-circle"></i> LIVE</div><div class="live-thumbnail"><i class="fas fa-headphones" style="font-size:2rem"></i></div><div class="live-info"><h4>Afrobeats Countdown</h4><p>🔥 2.3K watching</p></div></div><div class="live-card"><div class="live-badge"><i class="fas fa-circle"></i> LIVE</div><div class="live-thumbnail"><i class="fas fa-chalkboard-user" style="font-size:2rem"></i></div><div class="live-info"><h4>Tech Talk: AI in Africa</h4><p>🔥 892 watching</p></div></div><div class="live-card"><div class="live-badge"><i class="fas fa-circle"></i> LIVE</div><div class="live-thumbnail"><i class="fas fa-futbol" style="font-size:2rem"></i></div><div class="live-info"><h4>CAF Champions League</h4><p>🔥 5.1K watching</p></div></div></div></section>
 
     <!-- Final CTA -->
-    <div class="final-cta">
-      <button class="discover-all-btn" id="discoverAllBtn">
-        <span>ENTER THE DISCOVERY UNIVERSE</span>
-        <i class="fas fa-arrow-right"></i>
-      </button>
-    </div>
+    <div class="final-cta"><button class="discover-all-btn" id="discoverAllBtn"><span>ENTER THE DISCOVERY UNIVERSE</span><i class="fas fa-arrow-right"></i></button></div>
   </main>
 
-  <!-- ============================================ -->
-  <!-- SHARED FOOTER -->
-  <!-- ============================================ -->
+  <!-- FOOTER -->
   <footer class="footer">
     <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart"></i> Built in South Africa • The Future of African Entertainment</p>
-    <div class="footer-links">
-      <a href="privacy-policy.html">Privacy Policy</a>
-      <a href="terms-of-service.html">Terms of Service</a>
-      <a href="support.html">Support</a>
-    </div>
+    <div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div>
   </footer>
 
-  <!-- ============================================ -->
-  <!-- MODALS & PANELS -->
-  <!-- ============================================ -->
-  
-  <!-- Analytics Modal -->
-  <div id="analytics-modal" class="analytics-modal">
-    <div class="analytics-content">
-      <div class="analytics-header">
-        <h2>Analytics Dashboard</h2>
-        <button id="close-analytics" class="close-search-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="analytics-body">
-        <div class="analytics-grid">
-          <div class="analytics-card">
-            <h3>Total Views</h3>
-            <div class="analytics-value" id="total-views">0</div>
-          </div>
-          <div class="analytics-card">
-            <h3>Engagement</h3>
-            <div class="analytics-value" id="engagement-rate">0%</div>
-          </div>
-        </div>
-        <div class="charts-container">
-          <canvas id="engagement-chart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Search Modal -->
-  <div id="search-modal" class="search-modal">
-    <div class="search-modal-header">
-      <div class="search-input-container">
-        <i class="search-icon fas fa-search"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-      </div>
-      <button id="close-search-btn" class="close-search-btn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="search-filters">
-      <div class="filter-group">
-        <label class="filter-label">Category</label>
-        <select id="category-filter" class="filter-select">
-          <option value="">All Categories</option>
-          <option value="Music">Music</option>
-          <option value="STEM">STEM</option>
-          <option value="Culture">Culture</option>
-          <option value="News">News</option>
-          <option value="Sports">Sports</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Sort By</label>
-        <select id="sort-filter" class="filter-select">
-          <option value="newest">Newest First</option>
-          <option value="popular">Most Popular</option>
-          <option value="trending">Trending</option>
-        </select>
-      </div>
-    </div>
-    <div id="search-results" class="search-results">
-      <div id="search-results-grid" class="search-results-grid">
-        <!-- Results loaded here -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Notifications Panel -->
-  <div id="notifications-panel" class="notifications-panel">
-    <div class="notifications-header">
-      <h2>Notifications</h2>
-      <button id="close-notifications" class="icon-btn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="notifications-list" id="notifications-list">
-      <!-- Notifications loaded here -->
-    </div>
-    <div class="notifications-footer">
-      <button id="mark-all-read" class="text-btn">Mark all as read</button>
-      <button id="notification-settings" class="text-btn">Settings</button>
-    </div>
-  </div>
+  <!-- MODALS -->
+  <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>Analytics Dashboard</h2><button id="close-analytics" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="total-views">0</div></div><div class="analytics-card"><h3>Engagement</h3><div class="analytics-value" id="engagement-rate">0%</div></div></div><div class="charts-container"><canvas id="engagement-chart"></canvas></div></div></div></div>
+  <div id="search-modal" class="search-modal"><div class="search-modal-header"><div class="search-input-container"><i class="search-icon fas fa-search"></i><input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off"></div><button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="search-filters"><div class="filter-group"><label class="filter-label">Category</label><select id="category-filter" class="filter-select"><option value="">All Categories</option><option value="Music">Music</option><option value="STEM">STEM</option><option value="Culture">Culture</option><option value="News">News</option><option value="Sports">Sports</option></select></div><div class="filter-group"><label class="filter-label">Sort By</label><select id="sort-filter" class="filter-select"><option value="newest">Newest First</option><option value="popular">Most Popular</option><option value="trending">Trending</option></select></div></div><div id="search-results" class="search-results"><div id="search-results-grid" class="search-results-grid"></div></div></div>
+  <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h2>Notifications</h2><button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"></div><div class="notifications-footer"><button id="mark-all-read" class="text-btn">Mark all as read</button><button id="notification-settings" class="text-btn">Settings</button></div></div>
 </div>
 
-<!-- ============================================ -->
-<!-- SCRIPTS - Load in correct order -->
-<!-- ============================================ -->
-
-<!-- Initialize Supabase Client - Check if already defined -->
+<!-- SCRIPTS -->
 <script>
-  // Only define if not already defined by explore-screen.js
   if (typeof window.SUPABASE_URL === 'undefined') {
     window.SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
   }
-  
   if (!window.supabaseClient) {
     window.supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   }
 </script>
 
-<!-- Shared Components JS - Platform-wide -->
+<!-- Shared Components -->
 <script src="js/shared-components.js"></script>
 
-<!-- Helper Scripts - Only include if they exist -->
+<!-- Helper Scripts -->
 <script>
-  // Dynamically load helper scripts if they exist
-  const scriptsToLoad = [
-    'js/state-manager.js',
-    'js/supabase-helper.js',
-    'js/auth-helper.js',
-    'js/security.js',
-    'js/analytics.js'
-  ];
-  
-  scriptsToLoad.forEach(scriptSrc => {
-    const script = document.createElement('script');
-    script.src = scriptSrc;
-    script.onerror = () => console.warn(`⚠️ Could not load: ${scriptSrc}`);
-    document.body.appendChild(script);
+  ['js/state-manager.js', 'js/supabase-helper.js', 'js/auth-helper.js', 'js/security.js', 'js/analytics.js'].forEach(src => {
+    const s = document.createElement('script'); s.src = src; s.onerror = () => console.warn(`⚠️ Could not load: ${src}`); document.body.appendChild(s);
   });
 </script>
 
-<!-- Explore Screen Specific Scripts -->
-<script src="js/explore-screen.js" defer></script>
-<script src="js/explore-screen-features.js" defer></script>
-
-<!-- Page Load Handler -->
+<!-- Explore Screen Scripts (lightweight) -->
 <script>
-  // Store original SUPABASE_URL to avoid duplicate declaration errors
-  window.__SUPABASE_URL = window.SUPABASE_URL;
-  window.__SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    // Hide loading screen after shared components initialize
-    setTimeout(function() {
+  document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize shared components
+    if (window.initializeSharedComponents) {
+      await window.initializeSharedComponents();
+    }
+    
+    // Rotating words animation
+    const words = document.querySelectorAll('.rotating-words span');
+    if (words.length) {
+      let currentIndex = 0;
+      setInterval(() => {
+        words[currentIndex].classList.remove('active');
+        currentIndex = (currentIndex + 1) % words.length;
+        words[currentIndex].classList.add('active');
+      }, 4000);
+    }
+    
+    // Journey builder step selection
+    document.querySelectorAll('.step-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        const parent = this.closest('.step-options');
+        parent.querySelectorAll('.step-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+      });
+    });
+    
+    // Generate journey button
+    const generateBtn = document.getElementById('generateJourneyBtn');
+    const journeyResults = document.getElementById('journeyResults');
+    if (generateBtn) {
+      generateBtn.addEventListener('click', () => {
+        const mood = document.querySelector('#moodOptions .step-option.selected')?.dataset.value || 'energetic';
+        const region = document.querySelector('#regionOptions .step-option.selected')?.dataset.value || 'west';
+        journeyResults.innerHTML = `<div class="worlds-container"><div class="world-card"><div class="world-icon"><i class="fas fa-magic"></i></div><h3>Your ${mood} Journey in ${region}</h3><p>Personalized content ready for you</p><div class="world-stats"><span>✨ New discoveries waiting</span></div></div></div>`;
+        journeyResults.style.display = 'block';
+        setTimeout(() => journeyResults.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+      });
+    }
+    
+    // Interactive button handlers
+    document.getElementById('exploreWorldsBtn')?.addEventListener('click', () => document.getElementById('worldsContainer')?.scrollIntoView({ behavior: 'smooth' }));
+    document.getElementById('startJourneyBtn')?.addEventListener('click', () => document.querySelector('.journey-builder')?.scrollIntoView({ behavior: 'smooth' }));
+    document.getElementById('discoverCreatorsBtn')?.addEventListener('click', () => document.querySelector('.creator-ecosystems')?.scrollIntoView({ behavior: 'smooth' }));
+    document.getElementById('discoverAllBtn')?.addEventListener('click', () => alert('🌍 Welcome to the Discovery Universe!\nExplore curated African content across all worlds.'));
+    
+    // Creator ecosystems data
+    const creatorEco = document.getElementById('creatorEcosystems');
+    if (creatorEco) {
+      creatorEco.innerHTML = ['DJ Maphorisa', 'Treb The Creator', 'Sjava', 'Sho Madjozi', 'Cassper Nyovest', 'Nomzamo Mbatha'].map(name => `<div class="creator-card"><div class="creator-avatar"><i class="fas fa-user"></i></div><h4>${name}</h4><p>⭐ ${Math.floor(Math.random() * 500) + 100}K followers</p></div>`).join('');
+      creatorEco.querySelectorAll('.creator-card').forEach(card => card.addEventListener('click', () => window.location.href = 'creators.html'));
+    }
+    
+    // Live cards clickable
+    document.querySelectorAll('.live-card').forEach(card => card.addEventListener('click', () => showToast('🎬 Live stream starting soon!', 'info')));
+    document.querySelectorAll('.cultural-item').forEach(item => item.addEventListener('click', () => showToast('🌍 Exploring cultural content...', 'info')));
+    
+    // Hide loading screen
+    setTimeout(() => {
       const loading = document.getElementById('loading');
       const app = document.getElementById('app');
       if (loading && app) {
         loading.style.opacity = '0';
-        setTimeout(function() {
-          loading.style.display = 'none';
-          app.classList.add('visible');
-        }, 500);
+        setTimeout(() => { loading.style.display = 'none'; app.classList.add('visible'); }, 400);
       }
-    }, 800);
-    
-    // Handle any errors gracefully
-    window.addEventListener('error', function(e) {
-      console.error('Page error:', e.message);
-      // Don't show error for missing favicon or analytics
-      if (!e.message.includes('favicon') && !e.message.includes('analytics')) {
-        const errorDisplay = document.getElementById('error-display');
-        const mainContent = document.getElementById('main-content');
-        if (errorDisplay && mainContent && !errorDisplay.style.display === 'block') {
-          // Only show error if content hasn't loaded after 5 seconds
-          setTimeout(function() {
-            const hasContent = document.querySelector('.worlds-container')?.children?.length > 0;
-            if (!hasContent) {
-              errorDisplay.style.display = 'flex';
-              if (mainContent) mainContent.style.opacity = '0.5';
-            }
-          }, 5000);
-        }
-      }
-    });
+    }, 600);
   });
 </script>
 </body>
