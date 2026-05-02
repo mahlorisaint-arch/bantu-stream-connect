@@ -1,6 +1,6 @@
 /**
  * BANTU STREAM CONNECT - EXPLORE SCREEN FEATURES v4.0
- * REAL DATA UI IMPLEMENTATION
+ * REAL DATA UI IMPLEMENTATION - DISCOVERY WORLDS
  */
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const energyTicker = document.getElementById('energyTicker');
   
   // ============================================
-  // 1. RENDER DISCOVERY WORLDS (From Genres)
+  // 1. RENDER DISCOVERY WORLDS (Film, Music, Podcast, Creator, News, Culture)
   // ============================================
   async function renderDiscoveryWorlds() {
     if (!worldsContainer) return;
@@ -48,117 +48,114 @@ document.addEventListener('DOMContentLoaded', async function() {
     `;
     
     try {
-      // Fetch real genres from database
-      let genres = await window.fetchers.fetchGenres();
-      
-      // Map genres to world cards with icons and colors
-      const worldConfigs = {
-        'Music': { icon: 'fa-music', color: '#EC4899', gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)' },
-        'Film': { icon: 'fa-film', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
-        'Movies': { icon: 'fa-film', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
-        'STEM': { icon: 'fa-flask', color: '#06B6D4', gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)' },
-        'Sports': { icon: 'fa-futbol', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' },
-        'Culture': { icon: 'fa-drumstick-bite', color: '#F59E0B', gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)' },
-        'News': { icon: 'fa-newspaper', color: '#EF4444', gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)' },
-        'Podcast': { icon: 'fa-podcast', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' }
-      };
-      
-      // Limit to top 6 genres or use fallback
-      const topGenres = (genres && genres.length) ? genres.slice(0, 6) : [];
-      
-      if (!topGenres.length) {
-        // Fallback to default worlds
-        const defaultWorlds = [
-          { name: 'Music World', icon: 'fa-music', desc: 'Discover trending tracks and artists', color: '#EC4899', gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)' },
-          { name: 'Film World', icon: 'fa-film', desc: 'Nollywood, African cinema, and more', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
-          { name: 'STEM World', icon: 'fa-flask', desc: 'Innovation and education', color: '#06B6D4', gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)' },
-          { name: 'Culture World', icon: 'fa-drumstick-bite', desc: 'Heritage and traditions', color: '#F59E0B', gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)' },
-          { name: 'Sports World', icon: 'fa-futbol', desc: 'Live matches and highlights', color: '#10B981', gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)' },
-          { name: 'News World', icon: 'fa-newspaper', desc: 'Breaking stories from Africa', color: '#EF4444', gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)' }
-        ];
-        
-        worldsContainer.innerHTML = defaultWorlds.map(world => `
-          <div class="world-card" data-world="${world.name.toLowerCase().replace(' world', '')}" style="--world-color: ${world.color}">
-            <div class="world-card-bg" style="background: ${world.gradient}"></div>
-            <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
-            <div class="world-icon"><i class="fas ${world.icon}"></i></div>
-            <div class="world-info">
-              <h3 class="world-name">${world.name}</h3>
-              <p class="world-desc">${world.desc}</p>
-              <div class="world-stats">
-                <span class="explore-link">Explore <i class="fas fa-arrow-right"></i></span>
-              </div>
-            </div>
-          </div>
-        `).join('');
-        
-        // Add click handlers
-        document.querySelectorAll('.world-card').forEach(card => {
-          card.addEventListener('click', () => {
-            const world = card.dataset.world;
-            window.location.href = `content-library.html?genre=${encodeURIComponent(world)}`;
-          });
-        });
-        return;
-      }
-      
-      // Get content counts for each genre
-      const worldsWithCounts = await Promise.all(topGenres.map(async (genre) => {
-        const config = worldConfigs[genre.name] || worldConfigs['Culture'];
-        let contentCount = 0;
-        
-        try {
-          if (window.supabaseClient) {
-            const { count } = await window.supabaseClient
-              .from('Content')
-              .select('id', { count: 'exact', head: true })
-              .eq('status', 'published')
-              .eq('genre', genre.name);
-            contentCount = count || 0;
-          } else {
-            contentCount = Math.floor(Math.random() * 500) + 100;
-          }
-        } catch (e) {
-          contentCount = Math.floor(Math.random() * 500) + 100;
+      // Define the 6 Discovery Worlds as specified
+      const discoveryWorlds = [
+        {
+          id: 'film',
+          name: 'Film World',
+          tagline: 'Cinematic stories from Africa',
+          icon: 'fa-film',
+          color: '#8B5CF6',
+          gradient: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+          categories: ['Soapies & Telenovelas', 'African Futurism (Sci-Fi)', 'Township Dramas', 'SA Romantic Comedy'],
+          redirectUrl: 'https://bantustreamconnect.com/category/movies'
+        },
+        {
+          id: 'music',
+          name: 'Music World',
+          tagline: 'Rhythms that move the continent',
+          icon: 'fa-music',
+          color: '#EC4899',
+          gradient: 'linear-gradient(135deg, #1e1e2f, #2d1b3a)',
+          categories: ['Amapiano', 'Afro House', 'Hip-Hop (SA)', 'Gqom'],
+          redirectUrl: 'https://bantustreamconnect.com/category/music'
+        },
+        {
+          id: 'podcast',
+          name: 'Podcast World',
+          tagline: 'Conversations that matter',
+          icon: 'fa-podcast',
+          color: '#10B981',
+          gradient: 'linear-gradient(135deg, #1a2e1a, #0f2e1a)',
+          categories: ['Business', 'Storytelling', 'Culture', 'News & Politics'],
+          redirectUrl: 'https://bantustreamconnect.com/category/podcasts'
+        },
+        {
+          id: 'creator',
+          name: 'Creator World',
+          tagline: 'Meet the architects of culture',
+          icon: 'fa-users',
+          color: '#06B6D4',
+          gradient: 'linear-gradient(135deg, #0f2e2e, #0f2a2e)',
+          categories: ['Rising Stars', 'Verified', 'Trending'],
+          redirectUrl: 'https://bantustreamconnect.com/discover-creator'
+        },
+        {
+          id: 'news',
+          name: 'News',
+          tagline: 'Trusted source for African perspectives',
+          icon: 'fa-newspaper',
+          color: '#EF4444',
+          gradient: 'linear-gradient(135deg, #2e1a1a, #2e1f1a)',
+          categories: ['Business', 'Entertainment', 'Technology', 'Politics'],
+          redirectUrl: 'https://bantustreamconnect.com/category/news'
+        },
+        {
+          id: 'culture',
+          name: 'Culture World',
+          tagline: 'Heritage, traditions, and futures',
+          icon: 'fa-drumstick-bite',
+          color: '#F59E0B',
+          gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)',
+          categories: ['Fashion', 'Languages', 'Traditions', 'Our History'],
+          redirectUrl: 'https://bantustreamconnect.com/category/culture'
         }
-        
-        return {
-          id: genre.id,
-          name: `${genre.name} World`,
-          icon: config.icon,
-          desc: genre.description || `Explore ${genre.name} content from African creators`,
-          color: config.color,
-          gradient: config.gradient,
-          contentCount: contentCount,
-          origin: genre.origin_city || genre.origin_region
-        };
-      }));
+      ];
       
-      worldsContainer.innerHTML = worldsWithCounts.map(world => `
-        <div class="world-card" data-world="${world.name.toLowerCase().replace(' world', '')}" data-genre="${world.name.replace(' World', '')}" style="--world-color: ${world.color}">
+      worldsContainer.innerHTML = discoveryWorlds.map(world => `
+        <div class="world-card" data-world-id="${world.id}" data-redirect-url="${world.redirectUrl}" style="--world-color: ${world.color}">
           <div class="world-card-bg" style="background: ${world.gradient}"></div>
           <div class="world-card-glow" style="background: radial-gradient(circle at center, ${world.color}40, transparent)"></div>
           <div class="world-icon"><i class="fas ${world.icon}"></i></div>
           <div class="world-info">
             <h3 class="world-name">${world.name}</h3>
-            <p class="world-desc">${world.desc}</p>
+            <p class="world-desc">${world.tagline}</p>
             <div class="world-genres">
-              <span class="genre-tag">${world.contentCount.toLocaleString()} pieces</span>
-              ${world.origin ? `<span class="genre-tag">${world.origin}</span>` : ''}
+              ${world.categories.map(cat => `<span class="genre-tag">${cat}</span>`).join('')}
             </div>
             <div class="world-stats">
-              <span class="explore-link">Explore <i class="fas fa-arrow-right"></i></span>
+              <button class="explore-world-btn" data-world="${world.id}">Explore <i class="fas fa-arrow-right"></i></button>
             </div>
           </div>
         </div>
       `).join('');
       
-      // Add click handlers
+      // Add click handlers for Explore buttons
+      document.querySelectorAll('.explore-world-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const worldId = btn.dataset.world;
+          const worldCard = btn.closest('.world-card');
+          const redirectUrl = worldCard?.dataset.redirectUrl;
+          
+          // Find the world config
+          const worldConfig = discoveryWorlds.find(w => w.id === worldId);
+          if (worldConfig) {
+            await showWorldExpandedContent(worldConfig);
+          } else if (redirectUrl) {
+            window.location.href = redirectUrl;
+          }
+        });
+      });
+      
+      // Also make clicking the card show expanded content
       document.querySelectorAll('.world-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const genre = card.dataset.genre;
-          if (genre) {
-            window.location.href = `content-library.html?genre=${encodeURIComponent(genre)}`;
+        card.addEventListener('click', async (e) => {
+          if (e.target.classList.contains('explore-world-btn') || e.target.closest('.explore-world-btn')) return;
+          const worldId = card.dataset.worldId;
+          const worldConfig = discoveryWorlds.find(w => w.id === worldId);
+          if (worldConfig) {
+            await showWorldExpandedContent(worldConfig);
           }
         });
       });
@@ -169,6 +166,219 @@ document.addEventListener('DOMContentLoaded', async function() {
         worldsContainer.innerHTML = '<div class="error-state">Failed to load worlds. Please refresh.</div>';
       }
     }
+  }
+  
+  /**
+   * Show expanded content for a world (max 10 items + View All button)
+   */
+  async function showWorldExpandedContent(worldConfig) {
+    // Create modal for expanded content
+    const modal = document.createElement('div');
+    modal.className = 'world-expanded-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease;
+      overflow-y: auto;
+    `;
+    
+    // Fetch content based on world type
+    let contentItems = [];
+    let contentType = '';
+    
+    switch(worldConfig.id) {
+      case 'film':
+        contentType = 'movie';
+        contentItems = await window.fetchers.getContentByType('movie', 10);
+        if (contentItems.length === 0) {
+          contentItems = await window.fetchers.getContentByType('video', 10);
+        }
+        break;
+      case 'music':
+        contentType = 'music';
+        contentItems = await window.fetchers.getContentByType('music', 10);
+        if (contentItems.length === 0) {
+          contentItems = await window.fetchers.getContentByType('audio', 10);
+        }
+        break;
+      case 'podcast':
+        contentType = 'podcast';
+        contentItems = await window.fetchers.getContentByType('podcast', 10);
+        break;
+      case 'creator':
+        contentType = 'creator';
+        contentItems = await window.fetchers.fetchFeaturedCreators(10);
+        break;
+      case 'news':
+        contentType = 'news';
+        contentItems = await window.fetchers.getContentByType('article', 10);
+        if (contentItems.length === 0) {
+          contentItems = await window.fetchers.getContentByType('news', 10);
+        }
+        break;
+      case 'culture':
+        contentType = 'culture';
+        contentItems = await window.fetchers.getContentByType('culture', 10);
+        if (contentItems.length === 0) {
+          contentItems = await window.fetchers.fetchCulturalMovements(10);
+        }
+        break;
+      default:
+        contentItems = await window.fetchers.getContentByType('video', 10);
+    }
+    
+    // If no content, use fallback demo content
+    if (!contentItems || contentItems.length === 0) {
+      contentItems = generateFallbackContent(worldConfig.id, 10);
+    }
+    
+    // Build modal HTML
+    modal.innerHTML = `
+      <div class="expanded-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 10;">
+        <div>
+          <i class="fas ${worldConfig.icon}" style="color: ${worldConfig.color}; font-size: 28px; margin-right: 12px;"></i>
+          <span style="font-size: 24px; font-weight: 700;">${worldConfig.name}</span>
+          <span style="color: #94A3B8; margin-left: 12px;">${worldConfig.tagline}</span>
+        </div>
+        <button class="close-modal-btn" style="background: rgba(255,255,255,0.1); border: none; width: 40px; height: 40px; border-radius: 50%; color: white; cursor: pointer; font-size: 20px;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="expanded-modal-content" style="padding: 30px; max-width: 1200px; margin: 0 auto; width: 100%;">
+        <div class="content-categories" style="display: flex; gap: 12px; margin-bottom: 30px; flex-wrap: wrap;">
+          ${worldConfig.categories.map(cat => `<span class="category-chip" style="background: rgba(255,255,255,0.05); padding: 8px 20px; border-radius: 30px; cursor: pointer; transition: all 0.3s;">${cat}</span>`).join('')}
+        </div>
+        <div class="content-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+          ${contentItems.slice(0, 10).map(item => renderContentItem(item, worldConfig.id)).join('')}
+        </div>
+        <div style="text-align: center; margin-top: 40px;">
+          <button class="view-all-btn" data-redirect="${worldConfig.redirectUrl}" style="background: linear-gradient(135deg, ${worldConfig.color}, ${worldConfig.color}80); border: none; padding: 14px 40px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; font-size: 16px; transition: transform 0.3s;">
+            View All <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    // Close modal functionality
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+      document.body.style.overflow = '';
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+      }
+    });
+    
+    // View All button
+    const viewAllBtn = modal.querySelector('.view-all-btn');
+    if (viewAllBtn) {
+      viewAllBtn.addEventListener('click', () => {
+        const redirectUrl = viewAllBtn.dataset.redirect;
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        }
+      });
+    }
+    
+    // Category chips filter (visual only)
+    const categoryChips = modal.querySelectorAll('.category-chip');
+    categoryChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        categoryChips.forEach(c => c.style.background = 'rgba(255,255,255,0.05)');
+        chip.style.background = worldConfig.color;
+      });
+    });
+  }
+  
+  /**
+   * Render individual content item based on world type
+   */
+  function renderContentItem(item, worldType) {
+    if (worldType === 'creator') {
+      return `
+        <div class="content-card creator-card" style="background: rgba(255,255,255,0.03); border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s;">
+          <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #8B5CF6); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+            ${item.avatar_url ? `<img src="${item.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : `<i class="fas fa-user" style="font-size: 32px; color: white;"></i>`}
+          </div>
+          <h4 style="margin-bottom: 5px;">${window.escapeHtml(item.full_name || item.username || 'Creator')}</h4>
+          <p style="font-size: 13px; color: #94A3B8;">${item.bio ? window.escapeHtml(item.bio.substring(0, 60)) : 'African Creator'}</p>
+          <div style="margin-top: 12px; display: flex; justify-content: center; gap: 10px;">
+            ${item.pulse_score ? `<span style="font-size: 12px; background: rgba(245,158,11,0.2); padding: 4px 12px; border-radius: 20px;">🔥 Score: ${Math.round(item.pulse_score)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    return `
+      <div class="content-card" style="background: rgba(255,255,255,0.03); border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s;">
+        <div style="position: relative;">
+          <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${window.escapeHtml(item.title || 'Content')}" style="width: 100%; height: 140px; object-fit: cover;">
+          ${item.duration ? `<span style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 12px; font-size: 11px;">${item.duration}</span>` : ''}
+        </div>
+        <div style="padding: 15px;">
+          <h4 style="font-size: 16px; margin-bottom: 5px;">${window.escapeHtml(item.title || 'Untitled')}</h4>
+          <p style="font-size: 13px; color: #94A3B8; margin-bottom: 8px;">${window.escapeHtml(item.creator_display_name || 'Creator')}</p>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748B;">
+            <span><i class="fas fa-eye"></i> ${window.formatNumber(item.views_count || 0)}</span>
+            <span><i class="fas fa-heart"></i> ${window.formatNumber(item.likes_count || 0)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  /**
+   * Generate fallback content when API returns empty
+   */
+  function generateFallbackContent(worldId, limit) {
+    const fallbackContent = {
+      film: [
+        { title: 'The Last King', creator_display_name: 'Nollywood Studios', views_count: 1250000, likes_count: 89000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '2h 15m' },
+        { title: 'Soweto Love Story', creator_display_name: 'SA Film Co', views_count: 890000, likes_count: 67000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '1h 45m' },
+        { title: 'African Cyberpunk', creator_display_name: 'Futurism Studios', views_count: 560000, likes_count: 45000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '1h 50m' }
+      ],
+      music: [
+        { title: 'Amapiano Mix 2025', creator_display_name: 'DJ Maphorisa', views_count: 3200000, likes_count: 245000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '1h 30m' },
+        { title: 'Afro House Vibes', creator_display_name: 'Black Coffee', views_count: 2100000, likes_count: 178000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '45m' }
+      ],
+      podcast: [
+        { title: 'The Business Breakfast', creator_display_name: 'Money Talk SA', views_count: 450000, likes_count: 23000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '48m' },
+        { title: 'African Stories', creator_display_name: 'Storytelling Africa', views_count: 320000, likes_count: 19000, thumbnail_url: 'https://via.placeholder.com/400x225', duration: '55m' }
+      ],
+      creator: [
+        { full_name: 'Theresa Kachindamoto', username: 'theresa_creates', bio: 'Award-winning filmmaker from Malawi', pulse_score: 95 },
+        { full_name: 'David Tlale', username: 'david_tlale', bio: 'Fashion designer showcasing African elegance', pulse_score: 92 }
+      ],
+      news: [
+        { title: 'African Tech Summit 2025', creator_display_name: 'TechAfrica', views_count: 780000, likes_count: 34000, thumbnail_url: 'https://via.placeholder.com/400x225' },
+        { title: 'New Film Policy Announced', creator_display_name: 'Entertainment Today', views_count: 450000, likes_count: 28000, thumbnail_url: 'https://via.placeholder.com/400x225' }
+      ],
+      culture: [
+        { title: 'Fashion Week Lagos', creator_display_name: 'Culture Hub', views_count: 890000, likes_count: 67000, thumbnail_url: 'https://via.placeholder.com/400x225' },
+        { title: 'Preserving African Languages', creator_display_name: 'Heritage Foundation', views_count: 340000, likes_count: 28000, thumbnail_url: 'https://via.placeholder.com/400x225' }
+      ]
+    };
+    
+    const items = fallbackContent[worldId] || fallbackContent.film;
+    while (items.length < limit && items.length > 0) {
+      items.push({ ...items[0], title: items[0].title + ' (New)' });
+    }
+    return items.slice(0, limit);
   }
   
   // ============================================
