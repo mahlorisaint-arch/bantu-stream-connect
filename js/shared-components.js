@@ -4,7 +4,7 @@
 // Complete implementation for Search, Analytics, Notifications, Voice Search, Profile */
 // ============================================ */
 
-console.log('📦 Shared Components v3.0 - Complete with all features...');
+console.log('📦 Shared Components v3.1 - Complete with all features and fixes...');
 
 // ============================================ */
 // GLOBAL VARIABLES */
@@ -70,7 +70,7 @@ async function getCurrentUser() {
 }
 
 // ============================================ */
-// UPDATE HEADER PROFILE - Shows logged-in user */
+// UPDATE HEADER PROFILE - Shows logged-in user (NO REDIRECT) */
 // ============================================ */
 async function updateHeaderProfile() {
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -112,28 +112,14 @@ async function updateHeaderProfile() {
             profilePlaceholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
         }
         
-        // Make profile button clickable to profile page
-        const profileBtn = document.getElementById('current-profile-btn');
-        if (profileBtn) {
-            profileBtn.onclick = (e) => {
-                e.stopPropagation();
-                window.location.href = 'manage-profiles.html';
-            };
-        }
+        // DO NOT set onclick redirect here - handled by profile dropdown
     } else {
         // Guest user
         if (profileNameSpan) {
             profileNameSpan.textContent = 'Guest';
         }
         profilePlaceholder.innerHTML = '<i class="fas fa-user"></i>';
-        
-        const profileBtn = document.getElementById('current-profile-btn');
-        if (profileBtn) {
-            profileBtn.onclick = (e) => {
-                e.stopPropagation();
-                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            };
-        }
+        // Also no redirect - dropdown will handle sign-in
     }
     
     // Apply mobile styles
@@ -185,7 +171,7 @@ async function updateSidebarProfile() {
             avatarDiv.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initial}</span>`;
         }
         
-        // Make profile clickable
+        // Make profile clickable to profile page (sidebar only)
         if (profileDiv) {
             profileDiv.onclick = () => {
                 window.location.href = 'manage-profiles.html';
@@ -293,9 +279,7 @@ async function updateProfileDropdown() {
 }
 
 // ============================================ */
-// ============================================ */
-// 1. COMPLETE SEARCH FUNCTIONALITY */
-// ============================================ */
+// 1. COMPLETE SEARCH FUNCTIONALITY (with thumbnail fix) */
 // ============================================ */
 
 function setupSearchModal() {
@@ -415,9 +399,17 @@ function renderSearchResults(results, query) {
     }
     
     resultsGrid.innerHTML = results.map(item => {
-        const thumbnail = item.thumbnail_url ? 
-            (item.thumbnail_url.startsWith('http') ? item.thumbnail_url : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${item.thumbnail_url}`) : 
-            'https://via.placeholder.com/400x225?text=No+Thumbnail';
+        // FIXED: Proper thumbnail URL construction
+        let thumbnail = 'https://via.placeholder.com/400x225?text=No+Thumbnail';
+        if (item.thumbnail_url) {
+            if (item.thumbnail_url.startsWith('http')) {
+                thumbnail = item.thumbnail_url;
+            } else if (item.thumbnail_url.startsWith('/')) {
+                thumbnail = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content${item.thumbnail_url}`;
+            } else {
+                thumbnail = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${item.thumbnail_url}`;
+            }
+        }
         
         const creatorName = item.user_profiles?.full_name || item.user_profiles?.username || 'Unknown Creator';
         const views = formatNumber(item.views_count || 0);
@@ -426,7 +418,7 @@ function renderSearchResults(results, query) {
         return `
             <div class="search-result-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
                 <div class="search-result-thumbnail">
-                    <img src="${thumbnail}" alt="${escapeHtml(item.title)}" loading="lazy">
+                    <img src="${thumbnail}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='https://via.placeholder.com/400x225?text=No+Image'">
                     ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
                 </div>
                 <div class="search-result-info">
@@ -444,7 +436,7 @@ function renderSearchResults(results, query) {
 }
 
 // ============================================ */
-// 2. COMPLETE ANALYTICS FUNCTIONALITY */
+// 2. COMPLETE ANALYTICS FUNCTIONALITY (Full Metrics) */
 // ============================================ */
 
 function setupAnalytics() {
@@ -494,26 +486,47 @@ async function loadCompleteAnalyticsData() {
         // Get view analytics
         const { data: views } = await window.supabaseClient
             .from('content_views')
-            .select('content_id, view_duration, created_at')
+            .select('content_id, view_duration, created_at, profile_id')
+            .in('content_id', contentIds);
+        
+        // Get likes
+        const { data: likes } = await window.supabaseClient
+            .from('content_likes')
+            .select('content_id')
+            .in('content_id', contentIds);
+        
+        // Get comments
+        const { data: comments } = await window.supabaseClient
+            .from('comments')
+            .select('content_id')
             .in('content_id', contentIds);
         
         // Calculate metrics
         const totalViews = views?.length || 0;
         const totalWatchTime = views?.reduce((sum, v) => sum + (v.view_duration || 0), 0) || 0;
         const avgWatchTime = totalViews > 0 ? Math.floor(totalWatchTime / totalViews) : 0;
-        const uniqueViewers = new Set(views?.map(v => v.profile_id)).size || 0;
+        const totalLikes = likes?.length || 0;
+        const totalComments = comments?.length || 0;
+        const engagementRate = totalViews > 0 ? ((totalLikes + totalComments) / totalViews * 100).toFixed(1) : 0;
+        
+        // Update UI elements - ensure these IDs exist in analytics-modal HTML
+        const metricsMap = {
+            'total-views': formatNumber(totalViews),
+            'avg-watch-time': formatDuration(avgWatchTime),
+            'engagement-rate': engagementRate + '%',
+            'total-comments': formatNumber(totalComments),
+            'total-likes': formatNumber(totalLikes),
+            'total-content': contentList.length.toString()
+        };
+        
+        for (const [id, value] of Object.entries(metricsMap)) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
         
         // Get daily views for chart
         const dailyViews = getDailyViewsData(views);
-        
-        // Update UI
-        updateAnalyticsUI(totalViews, totalWatchTime, avgWatchTime, uniqueViewers, contentList.length);
-        
-        // Render chart
         renderAnalyticsChart(dailyViews);
-        
-        // Load engagement data
-        await loadEngagementMetrics(contentIds);
         
     } catch (error) {
         console.error('Error loading analytics:', error);
@@ -620,13 +633,13 @@ async function refreshAnalyticsChart(period) {
     
     let filteredViews = views || [];
     if (period === '7d') {
-        const七天前 = new Date();
-        七天前.setDate(七天前.getDate() - 7);
-        filteredViews = views?.filter(v => new Date(v.created_at) >= 七天前) || [];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        filteredViews = views?.filter(v => new Date(v.created_at) >= sevenDaysAgo) || [];
     } else if (period === '30d') {
-        const三十天前 = new Date();
-        三十天前.setDate(三十天前.getDate() - 30);
-        filteredViews = views?.filter(v => new Date(v.created_at) >= 三十天前) || [];
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filteredViews = views?.filter(v => new Date(v.created_at) >= thirtyDaysAgo) || [];
     }
     
     const chartData = getDailyViewsData(filteredViews);
@@ -1193,7 +1206,43 @@ function showMicrophonePermissionPrompt() {
 }
 
 // ============================================ */
-// 5. COMPLETE PROFILE MANAGEMENT FUNCTIONS */
+// 5. PROFILE DROPDOWN (NO REDIRECT - TOGGLES DROPDOWN) */
+// ============================================ */
+
+function setupProfileDropdown() {
+    const profileBtn = document.getElementById('current-profile-btn');
+    const dropdown = document.getElementById('profile-dropdown');
+    const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+    
+    if (profileBtn && dropdown) {
+        // Remove any existing click listeners by cloning
+        const newProfileBtn = profileBtn.cloneNode(true);
+        profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
+        
+        newProfileBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropdown.classList.toggle('active');
+        };
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!newProfileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    }
+    
+    if (manageProfilesBtn) {
+        manageProfilesBtn.onclick = (e) => {
+            e.stopPropagation();
+            window.location.href = 'manage-profiles.html';
+        };
+    }
+}
+
+// ============================================ */
+// PROFILE MANAGEMENT FUNCTIONS */
 // ============================================ */
 
 async function createNewProfile(profileData) {
@@ -1689,34 +1738,6 @@ function applyMobileHeaderStyles() {
 }
 
 // ============================================ */
-// PROFILE DROPDOWN TOGGLE */
-// ============================================ */
-function setupProfileDropdown() {
-    const profileBtn = document.getElementById('current-profile-btn');
-    const dropdown = document.getElementById('profile-dropdown');
-    const manageProfilesBtn = document.getElementById('manage-profiles-btn');
-    
-    if (profileBtn && dropdown) {
-        profileBtn.onclick = (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('active');
-        };
-        
-        document.addEventListener('click', (e) => {
-            if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.remove('active');
-            }
-        });
-    }
-    
-    if (manageProfilesBtn) {
-        manageProfilesBtn.onclick = () => {
-            window.location.href = 'manage-profiles.html';
-        };
-    }
-}
-
-// ============================================ */
 // TOAST NOTIFICATION SYSTEM */
 // ============================================ */
 function showToast(message, type = 'info') {
@@ -1765,7 +1786,7 @@ function formatNumber(num) {
 }
 
 function formatDuration(seconds) {
-    if (!seconds) return '0:00';
+    if (!seconds || seconds === 0) return '0:00';
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -1835,17 +1856,12 @@ function setupAuthListener() {
 // MAKE HEADER BUTTONS CLICKABLE */
 // ============================================ */
 function setupHeaderButtons() {
-    // Voice Search Button - Now handled by setupVoiceSearch
-    // Analytics Button - Now handled by setupAnalytics
-    // Search Button - Now handled by setupSearchModal
-    // Notifications Button - Now handled by setupNotifications
-    
-    // Just ensure any additional setup
-    const voiceSearchBtn = document.getElementById('voice-search-btn');
-    if (voiceSearchBtn && !voiceSearchBtn.hasClickListener) {
-        // Will be set in setupVoiceSearch
-        voiceSearchBtn.hasClickListener = false;
-    }
+    // All buttons are set up in their respective functions:
+    // - Voice search: setupVoiceSearch
+    // - Analytics: setupAnalytics
+    // - Search: setupSearchModal
+    // - Notifications: setupNotifications
+    // - Profile: setupProfileDropdown
 }
 
 // ============================================ */
@@ -1861,8 +1877,8 @@ async function initSharedComponents() {
     
     // Setup all components
     setupHeaderButtons();
-    setupSearchModal();        // COMPLETE
-    setupAnalytics();          // COMPLETE
+    setupSearchModal();        // COMPLETE with thumbnail fix
+    setupAnalytics();          // COMPLETE with full metrics
     setupNotifications();      // COMPLETE
     setupVoiceSearch();        // COMPLETE
     setupBottomNavigation();
@@ -1870,7 +1886,7 @@ async function initSharedComponents() {
     setupSidebarToggles();
     setupSidebarScaleControls();
     setupBackToTop();
-    setupProfileDropdown();
+    setupProfileDropdown();    // FIXED - no redirect, toggles dropdown
     setupLogout();
     setupAuthListener();
     initThemeSelector();
