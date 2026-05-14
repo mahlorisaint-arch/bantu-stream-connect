@@ -131,6 +131,289 @@ iframe {
     overflow-x: hidden !important;
 }
 
+/* ===== PHASE 1D: COLLECTIONS GRID STYLES (STREAMING ARCHITECTURE) ===== */
+
+/* Collections Section */
+.collections-section {
+    padding: 24px 20px;
+    margin-bottom: 40px;
+}
+
+.collections-section h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.collections-section h2 i {
+    color: var(--warm-gold);
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: var(--warm-gold);
+}
+
+/* Collections Grid - Like YouTube/Spotify/Netflix */
+.collections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 24px;
+}
+
+/* Collection Card - Streaming Platform Style */
+.collection-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    position: relative;
+}
+
+.collection-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: var(--warm-gold);
+    box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
+}
+
+.collection-card:hover .collection-overlay {
+    opacity: 1;
+}
+
+.collection-card:hover .collection-thumb {
+    transform: scale(1.05);
+}
+
+/* Thumbnail Wrapper */
+.collection-thumb-wrapper {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+}
+
+.collection-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+    background: linear-gradient(135deg, var(--deep-navy), #1a1a2e);
+}
+
+/* Overlay on hover */
+.collection-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.collection-overlay i {
+    font-size: 48px;
+    color: white;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.collection-card:hover .collection-overlay i {
+    transform: scale(1);
+}
+
+/* Type Badge */
+.collection-type-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+}
+
+.collection-type-badge i {
+    font-size: 11px;
+}
+
+.collection-type-badge.playlist {
+    background: linear-gradient(135deg, #1E3A5F, #0F172A);
+    border-left: 2px solid var(--slate-grey);
+}
+.collection-type-badge.album {
+    background: linear-gradient(135deg, #4A1D6D, #2D0A4A);
+    border-left: 2px solid #EC4899;
+}
+.collection-type-badge.podcast {
+    background: linear-gradient(135deg, #1B4D3E, #0A2E24);
+    border-left: 2px solid #10B981;
+}
+.collection-type-badge.series {
+    background: linear-gradient(135deg, #1D4ED8, #0F2A6A);
+    border-left: 2px solid var(--bantu-blue);
+}
+
+/* Count Badge */
+.collection-count-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+}
+
+.collection-count-badge i {
+    font-size: 10px;
+    color: var(--warm-gold);
+}
+
+/* Card Body */
+.collection-body {
+    padding: 14px;
+}
+
+.collection-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--soft-white);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.collection-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--slate-grey);
+    margin-bottom: 8px;
+}
+
+.collection-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.collection-meta i {
+    font-size: 11px;
+}
+
+.collection-desc {
+    font-size: 12px;
+    color: var(--slate-grey);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    opacity: 0.8;
+}
+
+/* Featured Collection */
+.collection-card.featured {
+    border: 2px solid var(--warm-gold);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.collection-card.featured::before {
+    content: '⭐ FEATURED';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--warm-gold);
+    color: var(--deep-black);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    z-index: 3;
+    letter-spacing: 0.5px;
+}
+
+/* Empty State for Collections */
+.collections-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.collections-empty i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    color: var(--warm-gold);
+    opacity: 0.5;
+}
+
+.collections-empty h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: var(--soft-white);
+}
+
+.collections-empty p {
+    color: var(--slate-grey);
+    margin-bottom: 20px;
+}
+
+.create-collection-btn {
+    background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.create-collection-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+}
+
 /* ===== THEME SELECTOR STYLES - FIXED ===== */
 .theme-selector {
     position: fixed;
@@ -1485,6 +1768,33 @@ border-color: var(--warm-gold); transform: translateY(-3px);
         gap: 0.75rem !important;
     }
     
+    /* Fix collection grid for Phase 1D on mobile */
+    .collections-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+        gap: 0.875rem !important;
+    }
+    
+    .collection-body {
+        padding: 0.625rem !important;
+    }
+    
+    .collection-title {
+        font-size: 0.75rem !important;
+    }
+    
+    .collection-meta {
+        font-size: 0.625rem !important;
+        gap: 0.5rem !important;
+    }
+    
+    .collection-desc {
+        font-size: 0.625rem !important;
+    }
+    
+    .collections-section h2 {
+        font-size: 1.125rem !important;
+    }
+    
     /* Fix navigation button on mobile */
     .navigation-button-container {
         bottom: 0.75rem !important;
@@ -1696,6 +2006,11 @@ border-color: var(--warm-gold); transform: translateY(-3px);
     .banner-title {
         font-size: 0.875rem !important;
     }
+    
+    /* Collection grid on very small screens */
+    .collections-grid {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 /* Additional small screen fixes */
@@ -1734,7 +2049,7 @@ border-color: var(--warm-gold); transform: translateY(-3px);
 
 /* Touch-friendly adjustments for mobile */
 @media (hover: none) and (pointer: coarse) {
-    .icon-btn, .profile-btn, .nav-icon, .action-btn, .content-tab, .support-btn, .recommended-follow-btn {
+    .icon-btn, .profile-btn, .nav-icon, .action-btn, .content-tab, .support-btn, .recommended-follow-btn, .collection-card {
         min-width: 44px !important;
         min-height: 44px !important;
     }
