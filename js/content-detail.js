@@ -446,10 +446,14 @@ function initializeWatchSessionOnPlay() {
             return;
         }
 
-        // ✅ ONLY GET existing session ID - NEVER CREATE
-        const sessionId = sessionStorage.getItem('bantu_view_session');
+        // ✅ Get content-specific session ID (NOT global)
+        const sessionKey = `bantu_view_session_${parseInt(currentContent.id)}`;
+        const sessionId = sessionStorage.getItem(sessionKey);
+        
         if (!sessionId) {
-            console.warn('⚠️ No session ID found - view may not be recorded correctly');
+            console.warn('⚠️ No session ID found for content:', currentContent.id);
+        } else {
+            console.log('🎬 Found content-specific session:', sessionId);
         }
 
         console.log('🎬 Initializing WatchSession with session:', sessionId);
@@ -458,7 +462,7 @@ function initializeWatchSessionOnPlay() {
             userId: currentUserId,
             supabase: window.supabaseClient,
             videoElement: enhancedVideoPlayer.video,
-            sessionId: sessionId, // ✅ Pass session ID (may be null)
+            sessionId: sessionId, // ✅ Pass content-specific session ID
             syncInterval: 10000,
             viewThreshold: 20,
             completionThreshold: 0.9,
@@ -488,14 +492,13 @@ function initializeWatchSessionOnPlay() {
         setTimeout(function() {
             if (watchSession && enhancedVideoPlayer && enhancedVideoPlayer.video) {
                 watchSession.start(enhancedVideoPlayer.video);
-                console.log('✅ Watch session started with session ID:', sessionId);
+                console.log('✅ Watch session started with content-specific session ID:', sessionId);
             }
         }, 500);
     } catch (error) {
         console.error('❌ Failed to initialize watch session:', error);
     }
 }
-
 // ============================================
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
 // ✅ ADDED: profile_id to insert
@@ -531,9 +534,13 @@ function handlePlay() {
         viewsFullEl.textContent = formatNumber(newViews);
     }
 
-    // ✅ RECORD VIEW (ALWAYS, NO CONDITION)
+        // ✅ RECORD VIEW WITH CONTENT-SPECIFIC SESSION
     const contentIdNum = parseInt(currentContent.id);
     console.log('📝 Calling recordContentView with ID:', contentIdNum);
+    
+    // Store current content ID for session tracking
+    window._currentPlayingContentId = contentIdNum;
+    
     recordContentView(contentIdNum)
         .then(async function(returnedSessionId) {
             if (returnedSessionId) {
@@ -1911,6 +1918,14 @@ function closeVideoPlayer() {
     if (viewValidationTimer) {
         clearTimeout(viewValidationTimer);
         viewValidationTimer = null;
+    }
+
+        // ✅ Clean up content-specific session
+    if (window._currentPlayingContentId) {
+        if (window.cleanupContentSession) {
+            window.cleanupContentSession(window._currentPlayingContentId);
+        }
+        window._currentPlayingContentId = null;
     }
 
     // Show placeholder again
