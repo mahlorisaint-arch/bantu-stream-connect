@@ -48,7 +48,6 @@ let keyboardShortcuts = null; // PHASE 1 POLISH: Keyboard shortcuts
 let playlistModal = null; // PHASE 2 POLISH: Playlist modal
 let isInitialized = false;
 let currentUserId = null;
-let viewValidationTimer = null; // 🔧 NEW: Timer for view validation
 let _heavyVideoLoaded = false; // 🚀 Flag for lazy video features
 
 // TEMPORARILY DISABLE the recent view check for testing
@@ -446,15 +445,8 @@ function initializeWatchSessionOnPlay() {
             return;
         }
 
-        // ✅ Get content-specific session ID (NOT global)
         const sessionKey = `bantu_view_session_${parseInt(currentContent.id)}`;
         const sessionId = sessionStorage.getItem(sessionKey);
-        
-        if (!sessionId) {
-            console.warn('⚠️ No session ID found for content:', currentContent.id);
-        } else {
-            console.log('🎬 Found content-specific session:', sessionId);
-        }
 
         console.log('🎬 Initializing WatchSession with session:', sessionId);
         watchSession = new window.WatchSession({
@@ -462,7 +454,7 @@ function initializeWatchSessionOnPlay() {
             userId: currentUserId,
             supabase: window.supabaseClient,
             videoElement: enhancedVideoPlayer.video,
-            sessionId: sessionId, // ✅ Pass content-specific session ID
+            sessionId: sessionId,
             syncInterval: 10000,
             viewThreshold: 20,
             completionThreshold: 0.9,
@@ -470,7 +462,8 @@ function initializeWatchSessionOnPlay() {
                 console.log('📊 Progress synced:', data);
             },
             onViewCounted: function(data) {
-                console.log('👍 View counted:', data);
+                console.log('👍 View counted by WatchSession:', data);
+                // ✅ CRITICAL: Refresh counts when view is counted
                 refreshCountsFromSource();
             },
             onComplete: function(data) {
@@ -492,7 +485,7 @@ function initializeWatchSessionOnPlay() {
         setTimeout(function() {
             if (watchSession && enhancedVideoPlayer && enhancedVideoPlayer.video) {
                 watchSession.start(enhancedVideoPlayer.video);
-                console.log('✅ Watch session started with content-specific session ID:', sessionId);
+                console.log('✅ Watch session started');
             }
         }, 500);
     } catch (error) {
@@ -534,38 +527,19 @@ function handlePlay() {
         viewsFullEl.textContent = formatNumber(newViews);
     }
 
-        // ✅ RECORD VIEW WITH CONTENT-SPECIFIC SESSION
-    const contentIdNum = parseInt(currentContent.id);
-    console.log('📝 Calling recordContentView with ID:', contentIdNum);
+           // ✅ VIEW RECORDING IS HANDLED BY WATCH SESSION ONLY
+    // Do NOT call recordContentView() here - WatchSession will handle it
+    console.log('🎬 View recording will be handled by WatchSession after 20 seconds');
     
-    // Store current content ID for session tracking
-    window._currentPlayingContentId = contentIdNum;
+    // Still update UI optimistically
+    if (viewsEl && viewsFullEl) {
+        // Optimistic UI update - will be corrected by refreshCountsFromSource later
+        viewsEl.textContent = `${formatNumber(currentViews + 1)} views`;
+        viewsFullEl.textContent = formatNumber(currentViews + 1);
+    }
     
-    recordContentView(contentIdNum)
-        .then(async function(returnedSessionId) {
-            if (returnedSessionId) {
-                console.log('✅ View recorded successfully! Session:', returnedSessionId);
-                markContentAsViewed(currentContent.id);
-                await refreshCountsFromSource();
-                startViewValidationTimer(returnedSessionId, contentIdNum);
-                if (window.track?.contentView) {
-                    window.track.contentView(currentContent.id, 'video');
-                }
-            } else {
-                console.error('❌ Failed to record view - rolling back UI');
-                if (viewsEl && viewsFullEl) {
-                    viewsEl.textContent = `${formatNumber(currentViews)} views`;
-                    viewsFullEl.textContent = formatNumber(currentViews);
-                }
-            }
-        })
-        .catch(function(error) {
-            console.error('❌ View recording promise rejected:', error);
-            if (viewsEl && viewsFullEl) {
-                viewsEl.textContent = `${formatNumber(currentViews)} views`;
-                viewsFullEl.textContent = formatNumber(currentViews);
-            }
-        });
+    // Mark as viewed in local storage for UI purposes only
+    markContentAsViewed(currentContent.id);
 
     // 🚀 Load heavy video features on-demand
     loadHeavyVideoFeatures().then(() => {
