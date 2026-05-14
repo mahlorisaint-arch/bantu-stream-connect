@@ -415,6 +415,20 @@ Banner preview
 </div>
 
 <main class="container">
+
+<!-- ===== PHASE 1D: COLLECTIONS SECTION (STREAMING ARCHITECTURE) ===== -->
+<!-- This section displays playlists/albums/series as cards like YouTube/Spotify/Netflix -->
+<section class="collections-section">
+  <h2><i class="fas fa-layer-group"></i> Your Collections</h2>
+  <div id="collectionsGrid" class="collections-grid">
+    <!-- Dynamic content loaded by JavaScript -->
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--slate-grey);">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px;"></i>
+      <p style="margin-top:16px;">Loading collections...</p>
+    </div>
+  </div>
+</section>
+
 <section class="channel-trailer-section" id="trailer-section" style="display: none;">
 <div class="trailer-container">
 <div class="trailer-header">
