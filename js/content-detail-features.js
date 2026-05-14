@@ -33,26 +33,48 @@ async function recordContentView(contentId) {
             console.log('👤 Guest user');
         }
 
-        // ✅ ONLY GET existing session ID - NEVER CREATE
-        let sessionId = sessionStorage.getItem('bantu_view_session');
-        if (!sessionId) {
-            // This should never happen if handlePlay() created it first
-            console.error('❌ CRITICAL: No session ID found in storage!');
-            return null;
-        }
-        console.log('🔑 Using existing session ID:', sessionId);
-
         const contentIdNum = parseInt(contentId);
         if (isNaN(contentIdNum)) {
             console.error('❌ Invalid content ID:', contentId);
             return null;
         }
 
+        // ✅ CRITICAL FIX: Content-specific session key (NOT global)
+        const sessionKey = `bantu_view_session_${contentIdNum}`;
+        let sessionId = sessionStorage.getItem(sessionKey);
+
+        // ✅ Create new session if none exists for THIS content
+        if (!sessionId) {
+            sessionId = crypto.randomUUID();
+            sessionStorage.setItem(sessionKey, sessionId);
+            console.log('🆕 Created NEW session ID for content', contentIdNum, ':', sessionId);
+        } else {
+            console.log('🔑 Using existing session ID for content', contentIdNum, ':', sessionId);
+        }
+
         const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
             ? 'mobile'
             : 'desktop';
 
-        // ✅ CORRECT INSERT - NO creator_id
+        // ✅ CHECK IF VIEW ALREADY EXISTS FOR THIS (content, session)
+        const { data: existingView, error: checkError } = await window.supabaseClient
+            .from('content_views')
+            .select('id, counted_as_view')
+            .eq('content_id', contentIdNum)
+            .eq('session_id', sessionId)
+            .maybeSingle();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+            console.error('❌ Check error:', checkError);
+        }
+
+        // ✅ ALREADY HAVE A RECORD - just return session ID
+        if (existingView) {
+            console.log('⚠️ View record already exists for this content/session:', existingView.id);
+            return sessionId;
+        }
+
+        // ✅ INSERT NEW VIEW RECORD
         const insertData = {
             content_id: contentIdNum,
             viewer_id: viewerId,
@@ -81,7 +103,7 @@ async function recordContentView(contentId) {
 
         console.log('✅ VIEW CREATED SUCCESSFULLY!');
         console.log('✅ View ID:', data.id);
-        console.log('✅ Session ID:', sessionId);
+        console.log('✅ Session ID (content-specific):', sessionId);
         return sessionId;
     } catch (error) {
         console.error('❌ Exception:', error.message);
@@ -99,16 +121,46 @@ function startViewValidationTimer(sessionId, contentId) {
         clearTimeout(viewValidationTimer);
     }
 
-    console.log('⏱ Starting 20-second validation timer for session:', sessionId);
+    console.log('⏱ Starting 20-second validation timer for session:', sessionId, 'content:', contentId);
 
-    // ✅ Wait 20 seconds before counting as valid view
+    // ✅ Wait 20 seconds before validating
     viewValidationTimer = setTimeout(async () => {
         console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
         try {
             const currentTime = enhancedVideoPlayer?.video?.currentTime || 0;
             console.log('📊 Current video time at validation:', currentTime);
 
-            // ✅ CORRECT: Update only fields that exist in content_views
+            // ✅ CRITICAL FIX: Verify actual watch time (not just clock time)
+            if (currentTime < 20) {
+                console.warn('⚠️ User did not actually watch 20 seconds (currentTime:', currentTime, ') - NOT counting view');
+                return;
+            }
+
+            // ✅ GET THE EXISTING VIEW RECORD FIRST
+            const { data: existingView, error: findError } = await window.supabaseClient
+                .from('content_views')
+                .select('id, counted_as_view')
+                .eq('session_id', sessionId)
+                .eq('content_id', parseInt(contentId))
+                .maybeSingle();
+
+            if (findError) {
+                console.error('❌ Failed to find view:', findError);
+                return;
+            }
+
+            if (!existingView) {
+                console.warn('⚠️ No matching view found for validation');
+                return;
+            }
+
+            // ✅ Already counted - skip
+            if (existingView.counted_as_view === true) {
+                console.log('⚠️ View already counted, skipping validation');
+                return;
+            }
+
+            // ✅ UPDATE ONLY THE SPECIFIC RECORD BY ID
             const { data, error } = await window.supabaseClient
                 .from('content_views')
                 .update({
@@ -117,9 +169,7 @@ function startViewValidationTimer(sessionId, contentId) {
                     completed_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 })
-                .eq('session_id', sessionId)
-                .eq('content_id', parseInt(contentId))
-                .eq('counted_as_view', false)
+                .eq('id', existingView.id)  // ✅ Update by PRIMARY KEY, not session_id
                 .select();
 
             if (error) {
@@ -137,18 +187,6 @@ function startViewValidationTimer(sessionId, contentId) {
                 // ✅ Show subtle notification
                 if (data[0].counted_as_view) {
                     console.log('📊 View counted for content:', contentId);
-                }
-            } else {
-                console.warn('⚠️ No matching session found for validation or already counted');
-                // Try to find any record with this session_id to debug
-                const { data: findData, error: findError } = await window.supabaseClient
-                    .from('content_views')
-                    .select('*')
-                    .eq('session_id', sessionId);
-                if (findError) {
-                    console.error('❌ Could not find session:', findError);
-                } else {
-                    console.log('🔍 Found records with session_id:', findData);
                 }
             }
         } catch (error) {
