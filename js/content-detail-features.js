@@ -6,255 +6,15 @@
 console.log('🎬 Content Detail Features Loading...');
 
 // ============================================
-// 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM WITH SESSION ID
-// 🔧 FIXED: Removed creator_id - column doesn't exist
-// 🔧 FIXED: Added profile_id - required column
+// 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM - NOW HANDLED BY WATCH SESSION ONLY
+// 🔧 REMOVED: recordContentView() - moved to watch-session.js
+// 🔧 REMOVED: startViewValidationTimer() - moved to watch-session.js
+// 🔧 KEEP: Helper functions for UI only
 // ============================================
 
 // ============================================
-// 🔧 FIXED: Record view in content_views table with session_id
-// ✅ REMOVED: creator_id (column doesn't exist)
-// ✅ ADDED: profile_id (required column)
+// CLIENT-SIDE VIEW DEDUPLICATION (UI helpers only)
 // ============================================
-async function recordContentView(contentId) {
-    console.log('🚨 recordContentView CALLED with contentId:', contentId, 'type:', typeof contentId);
-    try {
-        let viewerId = null;
-        let profileId = null;
-        let userId = null;
-        if (window.AuthHelper?.isAuthenticated?.()) {
-            const userProfile = window.AuthHelper.getUserProfile();
-            viewerId = userProfile?.id || null;
-            profileId = userProfile?.id || null;
-            userId = userProfile?.id || null;
-            console.log('👤 User ID:', userId);
-            console.log('👤 Profile ID:', profileId);
-        } else {
-            console.log('👤 Guest user');
-        }
-
-        const contentIdNum = parseInt(contentId);
-        if (isNaN(contentIdNum)) {
-            console.error('❌ Invalid content ID:', contentId);
-            return null;
-        }
-
-        // ✅ CRITICAL FIX: Content-specific session key (NOT global)
-        const sessionKey = `bantu_view_session_${contentIdNum}`;
-        let sessionId = sessionStorage.getItem(sessionKey);
-
-        // ✅ Create new session if none exists for THIS content
-        if (!sessionId) {
-            sessionId = crypto.randomUUID();
-            sessionStorage.setItem(sessionKey, sessionId);
-            console.log('🆕 Created NEW session ID for content', contentIdNum, ':', sessionId);
-        } else {
-            console.log('🔑 Using existing session ID for content', contentIdNum, ':', sessionId);
-        }
-
-        const deviceType = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-            ? 'mobile'
-            : 'desktop';
-
-        // ✅ CHECK IF VIEW ALREADY EXISTS FOR THIS (content, session)
-        const { data: existingView, error: checkError } = await window.supabaseClient
-            .from('content_views')
-            .select('id, counted_as_view')
-            .eq('content_id', contentIdNum)
-            .eq('session_id', sessionId)
-            .maybeSingle();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-            console.error('❌ Check error:', checkError);
-        }
-
-        // ✅ ALREADY HAVE A RECORD - just return session ID
-        if (existingView) {
-            console.log('⚠️ View record already exists for this content/session:', existingView.id);
-            return sessionId;
-        }
-
-        // ✅ INSERT NEW VIEW RECORD
-        const insertData = {
-            content_id: contentIdNum,
-            viewer_id: viewerId,
-            profile_id: profileId,
-            user_id: userId,
-            session_id: sessionId,
-            view_duration: 0,
-            counted_as_view: false,
-            device_type: deviceType,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        };
-        console.log('📝 Inserting view data:', insertData);
-
-        const { data, error } = await window.supabaseClient
-            .from('content_views')
-            .insert(insertData)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('❌ Insert failed:', error.message);
-            console.error('❌ Error code:', error.code);
-            return null;
-        }
-
-        console.log('✅ VIEW CREATED SUCCESSFULLY!');
-        console.log('✅ View ID:', data.id);
-        console.log('✅ Session ID (content-specific):', sessionId);
-        return sessionId;
-    } catch (error) {
-        console.error('❌ Exception:', error.message);
-        return null;
-    }
-}
-
-// ============================================
-// 🔧 FIXED: Start view validation timer (YouTube-style 20-second threshold)
-// ✅ REMOVED: creator_id from update
-// ============================================
-function startViewValidationTimer(sessionId, contentId) {
-    // Clear existing timer
-    if (viewValidationTimer) {
-        clearTimeout(viewValidationTimer);
-    }
-
-    console.log('⏱ Starting 20-second validation timer for session:', sessionId, 'content:', contentId);
-
-    // ✅ Wait 20 seconds before validating
-    viewValidationTimer = setTimeout(async () => {
-        console.log('⏱ Validating view after 20 seconds:', { sessionId, contentId });
-        try {
-            const currentTime = enhancedVideoPlayer?.video?.currentTime || 0;
-            console.log('📊 Current video time at validation:', currentTime);
-
-            // ✅ CRITICAL FIX: Verify actual watch time (not just clock time)
-            if (currentTime < 20) {
-                console.warn('⚠️ User did not actually watch 20 seconds (currentTime:', currentTime, ') - NOT counting view');
-                return;
-            }
-
-            // ✅ GET THE EXISTING VIEW RECORD FIRST
-            const { data: existingView, error: findError } = await window.supabaseClient
-                .from('content_views')
-                .select('id, counted_as_view')
-                .eq('session_id', sessionId)
-                .eq('content_id', parseInt(contentId))
-                .maybeSingle();
-
-            if (findError) {
-                console.error('❌ Failed to find view:', findError);
-                return;
-            }
-
-            if (!existingView) {
-                console.warn('⚠️ No matching view found for validation');
-                return;
-            }
-
-            // ✅ Already counted - skip
-            if (existingView.counted_as_view === true) {
-                console.log('⚠️ View already counted, skipping validation');
-                return;
-            }
-
-            // ✅ UPDATE ONLY THE SPECIFIC RECORD BY ID
-            const { data, error } = await window.supabaseClient
-                .from('content_views')
-                .update({
-                    counted_as_view: true,
-                    view_duration: Math.floor(currentTime),
-                    completed_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', existingView.id)  // ✅ Update by PRIMARY KEY, not session_id
-                .select();
-
-            if (error) {
-                console.error('❌ Failed to validate view:', error);
-                return;
-            }
-
-            if (data && data.length > 0) {
-                console.log('✅ View validated and counted after 20 seconds!');
-                console.log('✅ Updated record:', data[0]);
-
-                // ✅ Refresh counts after validation
-                await refreshCountsFromSource();
-
-                // ✅ Show subtle notification
-                if (data[0].counted_as_view) {
-                    console.log('📊 View counted for content:', contentId);
-                }
-            }
-        } catch (error) {
-            console.error('❌ View validation error:', error);
-        }
-    }, 20000); // 20 seconds threshold
-}
-
-// ============================================
-// 🔧 NEW: Debug function to check session data
-// ============================================
-async function debugSessionData() {
-    const sessionId = sessionStorage.getItem('bantu_view_session');
-    console.log('Current session ID:', sessionId);
-    if (!sessionId) {
-        console.log('No active session');
-        return;
-    }
-    const { data, error } = await window.supabaseClient
-        .from('content_views')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: false });
-    if (error) {
-        console.error('Debug error:', error);
-        return;
-    }
-    console.table(data);
-    return data;
-}
-
-// ============================================
-// CRITICAL: Refresh counts by counting rows in source tables
-// ============================================
-async function refreshCountsFromSource() {
-    if (!currentContent) return;
-    try {
-        const { count: newViews } = await window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id)
-            .eq('counted_as_view', true);  // ✅ ONLY count validated views
-
-        const { count: newLikes } = await window.supabaseClient
-            .from('content_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id);
-
-        currentContent.views_count = newViews || 0;
-        currentContent.likes_count = newLikes || 0;
-
-        safeSetText('viewsCount', formatNumber(newViews) + ' views');
-        safeSetText('viewsCountFull', formatNumber(newViews));
-        safeSetText('likesCount', formatNumber(newLikes));
-
-        console.log('✅ Counts refreshed from source tables:', {
-            views: newViews,
-            likes: newLikes
-        });
-    } catch (error) {
-        console.error('❌ Failed to refresh counts from source:', error);
-    }
-}
-
-// ============================================
-// CLIENT-SIDE VIEW DEDUPLICATION
-// ============================================
-// This is the functional version of the check
 function hasViewedContentRecently(contentId) {
     try {
         const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
@@ -292,6 +52,43 @@ function clearViewCache() {
     localStorage.removeItem('bantu_viewed_content');
     console.log('🧹 View cache cleared');
     showToast('View cache cleared!', 'success');
+}
+
+// ============================================
+// CRITICAL: Refresh counts by counting rows in source tables
+// ✅ ONLY counts validated views (counted_as_view = true)
+// ============================================
+async function refreshCountsFromSource() {
+    if (!currentContent) return;
+    try {
+        const { count: newViews } = await window.supabaseClient
+            .from('content_views')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', currentContent.id)
+            .eq('counted_as_view', true);  // ✅ ONLY count validated views
+
+        const { count: newLikes } = await window.supabaseClient
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', currentContent.id);
+
+        // Update local content object
+        if (currentContent) {
+            currentContent.views_count = newViews || 0;
+            currentContent.likes_count = newLikes || 0;
+        }
+
+        safeSetText('viewsCount', formatNumber(newViews) + ' views');
+        safeSetText('viewsCountFull', formatNumber(newViews));
+        safeSetText('likesCount', formatNumber(newLikes));
+
+        console.log('✅ Counts refreshed from source tables:', {
+            views: newViews,
+            likes: newLikes
+        });
+    } catch (error) {
+        console.error('❌ Failed to refresh counts from source:', error);
+    }
 }
 
 // ============================================
@@ -438,7 +235,7 @@ function debounce(func, wait) {
 }
 
 // ============================================
-// THEME SELECTOR - HOME FEED INTEGRATION (FIXED: Added missing function)
+// THEME SELECTOR - HOME FEED INTEGRATION
 // ============================================
 function initThemeSelector() {
     console.log('🎨 Initializing theme selector...');
@@ -558,7 +355,6 @@ function setupCompleteSidebar() {
     window.addEventListener('resize', () => optimizeMobileSidebar());
 }
 
-// ✅ FIXED: Header menu button - Opens sidebar ONLY (no redirect)
 function setupMobileSidebar() {
     const menuToggle = document.getElementById('menu-toggle');
     const sidebarClose = document.getElementById('sidebar-close');
@@ -579,7 +375,6 @@ function setupMobileSidebar() {
         document.body.style.overflow = '';
     };
 
-    // ✅ FIXED: Header menu button - Remove existing listeners by cloning, then open sidebar ONLY
     if (menuToggle) {
         const newMenuToggle = menuToggle.cloneNode(true);
         menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
@@ -594,14 +389,12 @@ function setupMobileSidebar() {
     sidebarClose.addEventListener('click', closeSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
 
-    // ESC key to close
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
             closeSidebar();
         }
     });
 
-    // Handle safe area insets for modern mobile devices
     if (window.CSS && CSS.supports('padding-bottom', 'env(safe-area-inset-bottom)')) {
         const sidebarFooter = document.getElementById('sidebar-footer');
         if (sidebarFooter) {
@@ -662,7 +455,6 @@ function setupSidebarScaleControls() {
 }
 
 function setupSidebarNavigation() {
-    // Analytics
     document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -677,7 +469,6 @@ function setupSidebarNavigation() {
         }
     });
 
-    // Notifications
     document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -688,7 +479,6 @@ function setupSidebarNavigation() {
         }
     });
 
-    // Badges
     document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -703,7 +493,6 @@ function setupSidebarNavigation() {
         }
     });
 
-    // Watch Party
     document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -718,7 +507,6 @@ function setupSidebarNavigation() {
         }
     });
 
-    // Create Content
     document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -731,7 +519,6 @@ function setupSidebarNavigation() {
         }
     });
 
-    // Dashboard
     document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -744,7 +531,6 @@ function setupSidebarNavigation() {
         }
     });
 
-    // Watch History
     document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -757,7 +543,6 @@ function setupSidebarNavigation() {
     });
 }
 
-// ✅ FIXED: Sidebar Profile - Shows logged-in user correctly
 async function updateSidebarProfile() {
     const avatar = document.getElementById('sidebar-profile-avatar');
     const name = document.getElementById('sidebar-profile-name');
@@ -767,7 +552,6 @@ async function updateSidebarProfile() {
     if (!avatar || !name || !email) return;
     avatar.innerHTML = '';
 
-    // ✅ Use window.currentUser from AuthHelper
     if (window.currentUser || (window.AuthHelper?.isAuthenticated?.())) {
         try {
             const userProfile = window.AuthHelper?.getUserProfile?.() || window.currentUser;
@@ -785,11 +569,9 @@ async function updateSidebarProfile() {
                     return;
                 }
 
-                // ✅ Update profile info
                 name.textContent = profile.full_name || profile.username || 'User';
                 email.textContent = userProfile.email || 'user@example.com';
 
-                // ✅ Set avatar image or initials
                 if (profile.avatar_url) {
                     const avatarUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
                     const img = document.createElement('img');
@@ -802,7 +584,6 @@ async function updateSidebarProfile() {
                     renderSidebarInitials(avatar, profile);
                 }
 
-                // ✅ Make profile clickable
                 if (profileSection) {
                     profileSection.onclick = () => {
                         document.getElementById('sidebar-close')?.click();
@@ -817,7 +598,6 @@ async function updateSidebarProfile() {
             renderSidebarFallback(avatar, name, email, window.currentUser);
         }
     } else {
-        // ✅ Guest state
         name.textContent = 'Guest';
         email.textContent = 'Sign in to continue';
         avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
@@ -830,7 +610,6 @@ async function updateSidebarProfile() {
     }
 }
 
-// ✅ FIXED: Sidebar Profile Avatar Initials Rendering - Properly centered
 function renderSidebarInitials(container, profile) {
     if (!container) return;
     container.innerHTML = '';
@@ -870,7 +649,7 @@ function optimizeMobileSidebar() {
 }
 
 // ============================================
-// HEADER FUNCTIONS (from home feed) - ✅ FIXED: Matches home feed sizing, hide profile picture on mobile
+// HEADER FUNCTIONS (from home feed)
 // ============================================
 async function updateHeaderProfile() {
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -909,11 +688,9 @@ async function updateHeaderProfile() {
         renderGuestProfile(profilePlaceholder, currentProfileName);
     }
 
-    // ✅ MOBILE FIX: Hide profile picture icon on mobile phones
     applyMobileHeaderStyles();
 }
 
-// ✅ MOBILE FIX: Apply styles to hide profile picture on mobile
 function applyMobileHeaderStyles() {
     const isMobile = window.innerWidth <= 480;
     const profileBtn = document.querySelector('.profile-btn');
@@ -921,22 +698,18 @@ function applyMobileHeaderStyles() {
     const profileNameSpan = document.getElementById('current-profile-name');
 
     if (isMobile) {
-        // Hide the profile picture/avatar on mobile
         if (profilePlaceholder) {
             profilePlaceholder.style.display = 'none';
         }
-        // Ensure the button still shows the name
         if (profileBtn) {
             profileBtn.style.minWidth = 'auto';
             profileBtn.style.padding = '0.3125rem 0.75rem';
             profileBtn.style.justifyContent = 'center';
         }
-        // Ensure name is visible
         if (profileNameSpan) {
             profileNameSpan.style.display = 'inline-block';
         }
     } else {
-        // Show profile picture on desktop
         if (profilePlaceholder) {
             profilePlaceholder.style.display = 'flex';
         }
@@ -1022,7 +795,6 @@ function updateProfileSwitcher() {
         `;
     }).join('');
 
-    // Add click handlers to profile items
     document.querySelectorAll('.profile-item').forEach(item => {
         item.addEventListener('click', async () => {
             const profileId = item.dataset.profileId;
@@ -1038,7 +810,6 @@ function updateProfileSwitcher() {
         });
     });
 
-    // Profile dropdown toggle
     const profileBtn = document.getElementById('current-profile-btn');
     const dropdown = document.getElementById('profile-dropdown');
     if (profileBtn && dropdown) {
@@ -1053,19 +824,15 @@ function updateProfileSwitcher() {
         });
     }
 
-    // Apply mobile styles for profile picture
     applyMobileHeaderStyles();
 }
 
-// Listen for window resize to update mobile header styles
 window.addEventListener('resize', () => {
     applyMobileHeaderStyles();
 });
 
 // ============================================
-// BOTTOM NAVIGATION BUTTON FUNCTIONS (from home feed)
-// ✅ FIXED: Menu button opens sidebar, NOT dashboard
-// ✅ FIXED: Proper centering, no overflow, no horizontal scrolling
+// BOTTOM NAVIGATION BUTTON FUNCTIONS
 // ============================================
 function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
@@ -1073,7 +840,6 @@ function setupNavigationButtons() {
     const navMenuBtn = document.getElementById('nav-menu-btn');
     const navHistoryBtn = document.getElementById('nav-history-btn');
 
-    // Home Button - Navigate to Home
     if (navHomeBtn) {
         navHomeBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1081,7 +847,6 @@ function setupNavigationButtons() {
         });
     }
 
-    // Create Content Button - Check auth first
     if (navCreateBtn) {
         navCreateBtn.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -1095,7 +860,6 @@ function setupNavigationButtons() {
         });
     }
 
-    // Watch History Button
     if (navHistoryBtn) {
         navHistoryBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1108,9 +872,7 @@ function setupNavigationButtons() {
         });
     }
 
-    // ✅ FIXED: Menu Button - Open Sidebar ONLY (no redirect)
     if (navMenuBtn) {
-        // Remove all existing listeners by cloning
         const newNavMenuBtn = navMenuBtn.cloneNode(true);
         navMenuBtn.parentNode.replaceChild(newNavMenuBtn, navMenuBtn);
         newNavMenuBtn.addEventListener('click', (e) => {
@@ -1136,11 +898,9 @@ function setupNavButtonScrollAnimation() {
     window.addEventListener('scroll', () => {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down - hide
             navContainer.style.opacity = '0';
             navContainer.style.transform = 'translateY(20px)';
         } else {
-            // Scrolling up - show
             navContainer.style.opacity = '1';
             navContainer.style.transform = 'translateY(0)';
         }
@@ -1149,7 +909,7 @@ function setupNavButtonScrollAnimation() {
 }
 
 // ============================================
-// ✅ FIX: Reliable comment input state update
+// COMMENT INPUT STATE UPDATE
 // ============================================
 async function updateCommentInputState() {
     const commentInput = document.getElementById('commentInput');
@@ -1157,7 +917,6 @@ async function updateCommentInputState() {
     const commentAvatar = document.getElementById('userCommentAvatar');
     if (!commentInput || !sendCommentBtn) return;
 
-    // More reliable auth check with fallbacks
     let isAuthenticated = false;
     let userProfile = null;
     if (window.AuthHelper?.isAuthenticated?.()) {
@@ -1179,12 +938,10 @@ async function updateCommentInputState() {
     }
 
     if (isAuthenticated && userProfile) {
-        // Enable comment input
         commentInput.disabled = false;
         commentInput.placeholder = 'Write a comment...';
         sendCommentBtn.disabled = false;
 
-        // Update avatar
         const displayName = userProfile?.full_name || userProfile?.username || userProfile?.email?.split('@')[0] || 'User';
         const avatarUrl = userProfile?.avatar_url || window.AuthHelper?.getAvatarUrl?.();
 
@@ -1198,7 +955,6 @@ async function updateCommentInputState() {
             }
         }
     } else {
-        // Disable for guests
         commentInput.disabled = true;
         commentInput.placeholder = 'Sign in to add a comment...';
         sendCommentBtn.disabled = true;
@@ -1216,13 +972,9 @@ function updateQualityIndicator(quality) {
     const dataSaverBadge = document.getElementById('dataSaverBadge');
     if (!indicator) return;
 
-    // Show indicator
     indicator.style.display = 'block';
-
-    // Update label
     indicator.textContent = quality.toUpperCase();
 
-    // Update styling based on quality
     indicator.classList.remove('auto', 'hd');
     if (quality === 'auto') {
         indicator.classList.add('auto');
@@ -1230,14 +982,12 @@ function updateQualityIndicator(quality) {
         indicator.classList.add('hd');
     }
 
-    // Update data saver badge
     if (streamingManager?.isDataSaverEnabled()) {
         dataSaverBadge?.style.setProperty('display', 'block');
     } else {
         dataSaverBadge?.style.setProperty('display', 'none');
     }
 
-    // Hide after 5 seconds
     setTimeout(() => {
         if (indicator && !streamingManager?.isDataSaverEnabled()) {
             indicator.style.display = 'none';
@@ -1257,7 +1007,6 @@ function updateNetworkSpeedIndicator(speedMbps) {
         valueSpan.textContent = speedMbps.toFixed(1) + ' Mbps';
         indicator.style.display = 'flex';
 
-        // Update color based on speed
         indicator.classList.remove('good', 'fair', 'poor');
         if (speedMbps > 5) {
             indicator.classList.add('good');
@@ -1272,25 +1021,22 @@ function updateNetworkSpeedIndicator(speedMbps) {
 }
 
 // ============================================
-// 🎯 FIXED: Load all recommendation rails with proper titles
-// ✅ REMOVED Continue Watching rail (now using Phase 1 section below comments)
+// LOAD RECOMMENDATION RAILS
 // ============================================
 async function loadRecommendationRails() {
     if (!recommendationEngine) return;
 
-    // ✅ REMOVED: Continue Watching rail (we use the Phase 1 section instead)
     const railConfigs = [
-        // ❌ Continue Watching removed - using continueWatchingSection instead
         {
             type: recommendationEngine.TYPES.BECAUSE_YOU_WATCHED,
             containerId: 'becauseYouWatchedRail',
-            title: 'Because You Watched', // ✅ Fixed: Proper title
+            title: 'Because You Watched',
             options: { limit: 8 }
         },
         {
             type: recommendationEngine.TYPES.MORE_FROM_CREATOR,
             containerId: 'moreFromCreatorRail',
-            title: 'More From This Creator', // ✅ Fixed: Proper title
+            title: 'More From This Creator',
             options: {
                 creatorId: currentContent?.user_id,
                 excludeContentId: currentContent?.id,
@@ -1299,9 +1045,8 @@ async function loadRecommendationRails() {
         }
     ];
 
-    // Show skeleton loaders for each rail with proper titles
     railConfigs.forEach(config => {
-        showRailSkeleton(config.containerId, config.title); // ✅ Pass title
+        showRailSkeleton(config.containerId, config.title);
     });
 
     const results = await recommendationEngine.getMultipleRails(railConfigs);
@@ -1315,9 +1060,6 @@ async function loadRecommendationRails() {
     });
 }
 
-// ============================================
-// 🎯 FIXED: Show skeleton loader for rail with proper title
-// ============================================
 function showRailSkeleton(containerId, title = 'Loading...') {
     const section = document.getElementById(containerId);
     if (!section) return;
@@ -1326,7 +1068,7 @@ function showRailSkeleton(containerId, title = 'Loading...') {
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">${title}</h2> <!-- ✅ Uses proper title -->
+                <h2 class="section-title">${title}</h2>
             </div>
             <div class="content-grid" id="${containerId}-grid">
                 ${Array(6).fill().map(() => `
@@ -1342,9 +1084,6 @@ function showRailSkeleton(containerId, title = 'Loading...') {
     }
 }
 
-// ============================================
-// 🎯 Show empty state for rail
-// ============================================
 function showRailEmpty(containerId, title) {
     const section = document.getElementById(containerId);
     if (!section) return;
@@ -1373,9 +1112,6 @@ function showRailEmpty(containerId, title) {
     `;
 }
 
-// ============================================
-// 🎯 Render a single recommendation rail
-// ============================================
 function renderRecommendationRail(containerId, title, items) {
     const section = document.getElementById(containerId);
     if (!section) return;
@@ -1438,7 +1174,6 @@ async function updateWatchLaterButtonState() {
     const btn = document.getElementById('watchLaterBtn');
     if (!btn || !currentContent?.id || !playlistManager) {
         if (!btn) {
-            console.log('🔄 Watch Later button not in DOM yet, retrying...');
             setTimeout(updateWatchLaterButtonState, 500);
         }
         return;
@@ -1464,7 +1199,6 @@ async function updateWatchLaterButtonState() {
     }
 }
 
-// PHASE 2: Handle Watch Later button click - UPDATED to use modal
 async function handleWatchLaterToggle() {
     const btn = document.getElementById('watchLaterBtn');
     if (!currentContent?.id) {
@@ -1478,14 +1212,12 @@ async function handleWatchLaterToggle() {
         return;
     }
 
-    // ✅ FIXED: Open playlist modal for selection if available
     if (window.playlistModal) {
         window.playlistModal.contentId = currentContent.id;
         window.playlistModal.open();
         return;
     }
 
-    // Fallback to direct Watch Later add
     if (!playlistManager) {
         showToast('Playlist system loading...', 'info');
         return;
@@ -1524,11 +1256,9 @@ async function handleWatchLaterToggle() {
     }
 }
 
-// PHASE 2: Setup Watch Later button event listener - UPDATED to use modal
 function setupWatchLaterButton() {
     const watchLaterBtn = document.getElementById('watchLaterBtn');
     if (!watchLaterBtn) {
-        console.warn('⚠️ Watch Later button not found in DOM — check HTML');
         setTimeout(setupWatchLaterButton, 300);
         return;
     }
@@ -1542,7 +1272,7 @@ function setupWatchLaterButton() {
 }
 
 // ============================================
-// Utility functions (Required dependencies for features)
+// Utility functions
 // ============================================
 function safeSetText(id, text) {
     var el = document.getElementById(id);
@@ -1564,4 +1294,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-console.log('✅ Content Detail Features loaded successfully.');
+// Stub functions for dependencies that may not exist yet
+async function loadContinueWatchingSection() { console.log('loadContinueWatchingSection stub'); }
+async function loadForYouSection() { console.log('loadForYouSection stub'); }
+function loadPersonalAnalytics() { console.log('loadPersonalAnalytics stub'); }
+function renderNotifications() { console.log('renderNotifications stub'); }
+function loadUserBadges() { console.log('loadUserBadges stub'); }
+function loadWatchPartyContent() { console.log('loadWatchPartyContent stub'); }
+
+console.log('✅ Content Detail Features loaded successfully - View recording now handled by WatchSession only');
