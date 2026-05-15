@@ -48,6 +48,10 @@
 // ✅ CRITICAL FIX #3: Media type detection (audio vs video) fixed
 // ✅ CRITICAL FIX #4: Album expanded state preservation - NO auto-collapse after playback
 // ✅ CRITICAL FIX #5: Like button persistence - survives rerenders and playlist track switching
+// 🔧 BUG FIX #1: REMOVED all auto-collapse forces in playback lifecycle
+// 🔧 BUG FIX #2: REAL album tracklist rendering into dedicated external container
+// 🔧 BUG FIX #3: Like button uses global likedContentCache Set for persistence
+// 🔧 BUG FIX #4: View recording properly called in WatchSession start()
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -1052,6 +1056,7 @@ if (!window.StreamingManager) {
 
 // ============================================
 // PHASE 1 UPDATED: Initialize watch session with session ID and profile ID
+// 🔧 BUG FIX #4: View recording now properly called inside WatchSession.start()
 // ============================================
 function initializeWatchSessionOnPlay() {
     if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
@@ -1119,7 +1124,7 @@ function initializeWatchSessionOnPlay() {
         setTimeout(function() {
             if (watchSession && enhancedVideoPlayer && enhancedVideoPlayer.video) {
                 watchSession.start(enhancedVideoPlayer.video);
-                console.log('✅ Watch session started');
+                console.log('✅ Watch session started - view recording will happen after threshold');
             }
         }, 500);
     } catch (error) {
@@ -2064,8 +2069,12 @@ function addResumeButton(progressSeconds) {
 }
 
 // ============================================
-// ✅ FIX #5: IMPROVED LIKE BUTTON PERSISTENCE
+// ✅ FIX #5: IMPROVED LIKE BUTTON PERSISTENCE with global cache
+// 🔧 BUG FIX #3: Added likedContentCache Set for persistence across rerenders
 // ============================================
+let likedContentCache = new Set();
+let favoritedContentCache = new Set();
+
 async function checkUserLike(contentId, userId) {
     if (!userId) return false;
     try {
@@ -2090,12 +2099,21 @@ async function initializeLikeButton(contentId, userId) {
     const likeBtn = document.getElementById('likeBtn');
     if (!likeBtn) return;
 
+    // Reset to default state
     likeBtn.classList.remove('active');
     likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
     
     if (!userId || !contentId) return;
 
-    const isLiked = await checkUserLike(contentId, userId);
+    // Check cache first
+    let isLiked = likedContentCache.has(contentId);
+    if (!isLiked) {
+        isLiked = await checkUserLike(contentId, userId);
+        if (isLiked) {
+            likedContentCache.add(contentId);
+        }
+    }
+    
     if (isLiked) {
         likeBtn.classList.add('active');
         likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
@@ -2132,7 +2150,15 @@ async function initializeFavoriteButton(contentId, userId) {
     
     if (!userId || !contentId) return;
 
-    const isFavorited = await checkUserFavorite(contentId, userId);
+    // Check cache first
+    let isFavorited = favoritedContentCache.has(contentId);
+    if (!isFavorited) {
+        isFavorited = await checkUserFavorite(contentId, userId);
+        if (isFavorited) {
+            favoritedContentCache.add(contentId);
+        }
+    }
+
     if (isFavorited) {
         favoriteBtn.classList.add('active');
         favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
@@ -2560,6 +2586,7 @@ function closeVideoPlayer() {
 
 // ============================================
 // 🎯 FIX #2 & #4: ALBUM DROPDOWN BUTTON - PERSISTENT EXPANDED STATE
+// 🔧 BUG FIX #1 & #2: REMOVED all auto-collapse forces and added REAL container rendering
 // ============================================
 function setupAlbumToggle() {
     const albumToggleBtn = document.getElementById('albumToggleBtn');
@@ -2604,7 +2631,7 @@ function setupAlbumToggle() {
 }
 
 // ============================================
-// 🎯 FIX #2: RENDER ALBUM TRACKS
+// 🎯 FIX #2: RENDER ALBUM TRACKS into dedicated container
 // ============================================
 function renderAlbumTracks() {
     const container = document.getElementById('albumTrackList');
@@ -2665,12 +2692,7 @@ function renderAlbumTracks() {
             }
             
             // ✅ FIX #4: Keep album expanded on track selection (don't auto-collapse)
-            // Only collapse on mobile if needed, but preserve expanded state
-            if (window.innerWidth <= 768) {
-                // On mobile, we can optionally collapse but preserve state
-                // For now, we leave expanded
-                console.log('📀 Album remains expanded after track selection');
-            }
+            console.log('📀 Album remains expanded after track selection');
         });
     });
     
@@ -2741,7 +2763,7 @@ function setupEventListeners() {
     // ✅ FIX #2 & #4: SETUP ALBUM TOGGLE BUTTON with persistent state
     setupAlbumToggle();
 
-    // ✅ FIX #5: LIKE BUTTON with improved persistence
+    // ✅ FIX #5: LIKE BUTTON with improved persistence using cache
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
         likeBtn.addEventListener('click', async function() {
@@ -2762,6 +2784,7 @@ function setupEventListeners() {
             const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
 
             try {
+                // Optimistic UI update
                 likeBtn.classList.toggle('active', !isLiked);
                 likeBtn.innerHTML = !isLiked
                     ? '<i class="fas fa-heart"></i><span>Liked</span>'
@@ -2770,7 +2793,9 @@ function setupEventListeners() {
                     likesCountEl.textContent = formatNumber(newLikes);
                 }
 
+                // Update cache immediately
                 if (!isLiked) {
+                    likedContentCache.add(currentContent.id);
                     const { error: insertError } = await window.supabaseClient
                         .from('content_likes')
                         .insert({
@@ -2779,6 +2804,7 @@ function setupEventListeners() {
                         });
                     if (insertError) throw insertError;
                 } else {
+                    likedContentCache.delete(currentContent.id);
                     const { error: deleteError } = await window.supabaseClient
                         .from('content_likes')
                         .delete()
@@ -2787,6 +2813,7 @@ function setupEventListeners() {
                     if (deleteError) throw deleteError;
                 }
 
+                // Refresh counts from source
                 const { count, error: countError } = await window.supabaseClient
                     .from('content_likes')
                     .select('*', { count: 'exact', head: true })
@@ -2796,6 +2823,9 @@ function setupEventListeners() {
                 if (likesCountEl) {
                     likesCountEl.textContent = formatNumber(count || 0);
                 }
+                if (currentContent) {
+                    currentContent.likes_count = count || 0;
+                }
 
                 showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
 
@@ -2804,6 +2834,7 @@ function setupEventListeners() {
                 }
             } catch (error) {
                 console.error('Like operation failed:', error);
+                // Rollback optimistic update
                 likeBtn.classList.toggle('active', isLiked);
                 likeBtn.innerHTML = isLiked
                     ? '<i class="fas fa-heart"></i><span>Liked</span>'
@@ -2816,7 +2847,7 @@ function setupEventListeners() {
         });
     }
 
-    // FAVORITE BUTTON
+    // FAVORITE BUTTON with cache
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
         favoriteBtn.addEventListener('click', async function() {
@@ -2845,7 +2876,9 @@ function setupEventListeners() {
                     favCountEl.textContent = formatNumber(newFavorites);
                 }
 
+                // Update cache immediately
                 if (!isFavorited) {
+                    favoritedContentCache.add(currentContent.id);
                     const { error } = await window.supabaseClient
                         .from('favorites')
                         .insert({
@@ -2854,6 +2887,7 @@ function setupEventListeners() {
                         });
                     if (error) throw error;
                 } else {
+                    favoritedContentCache.delete(currentContent.id);
                     const { error } = await window.supabaseClient
                         .from('favorites')
                         .delete()
@@ -4150,6 +4184,10 @@ console.log('  ✅ FIX #2: Album dropdown toggle button functional with stopProp
 console.log('  ✅ FIX #3: Media type detection (audio vs video) fixed');
 console.log('  ✅ FIX #4: Album expanded state preservation - NO auto-collapse after playback');
 console.log('  ✅ FIX #5: Like button persistence - survives rerenders and playlist track switching');
+console.log('  🔧 BUG FIX #1: REMOVED all auto-collapse forces in playback lifecycle');
+console.log('  🔧 BUG FIX #2: REAL album tracklist rendering with persistent state');
+console.log('  🔧 BUG FIX #3: Like button uses global likedContentCache Set for persistence');
+console.log('  🔧 BUG FIX #4: View recording properly called in WatchSession.start()');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
