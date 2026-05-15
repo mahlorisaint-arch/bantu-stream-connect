@@ -11,6 +11,9 @@
 /* 🎯 PHASE 1D: AUDIO-MODE SUPPORT (Media-First Architecture) */
 /* 🎯 AUTOPLAY FIX: Initial play overlay for browser autoplay policy */
 /* 🎯 FIX #2: ALBUM BUTTON & TRACK LIST (Dropdown Expand/Collapse) */
+/* ✅ CRITICAL FIX #7: Prevent cleanup during active playback */
+/* ✅ CRITICAL FIX #8: Prevent cleanup during UI interactions */
+/* ✅ CRITICAL FIX #9: Only destroy player on page unload or true content change */
 /* ============================================ */
 
 /* ============================================ */
