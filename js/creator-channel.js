@@ -162,6 +162,7 @@ function getCollectionThumbnail(collection) {
 /**
  * RENDER COLLECTIONS GRID (Phase 1D)
  * Creates cards that behave like YouTube/Spotify/Netflix
+ * UPDATED: Uses content-detail.html?playlist_id= instead of collection.html
  */
 async function renderCollectionsGrid() {
   const collections = await loadCollections();
@@ -220,14 +221,14 @@ async function renderCollectionsGrid() {
     `;
   }).join('');
 
-  // Add click handlers for navigation (Phase 1D: proper collection routing)
+  // Add click handlers for navigation (Phase 1D: proper collection routing using content-detail.html?playlist_id=)
   grid.querySelectorAll('.collection-card').forEach(card => {
     card.addEventListener('click', (e) => {
       const collectionId = card.dataset.collectionId;
       const collectionType = card.dataset.collectionType;
       if (collectionId) {
-        // Navigate to collection detail page (Phase 2)
-        window.location.href = `/collection.html?id=${collectionId}&type=${collectionType}`;
+        // ✅ UPDATED: Navigate to content-detail.html with playlist_id parameter (new architecture)
+        window.location.href = `content-detail.html?playlist_id=${collectionId}&type=${collectionType}`;
       }
     });
   });
@@ -1926,7 +1927,8 @@ function updatePlaylistsUI() {
           e.preventDefault();
           openPlaylistBuilder(playlistId);
         } else {
-          window.location.href = `playlist.html?id=${playlistId}`;
+          // ✅ UPDATED: Navigate to content-detail.html with playlist_id parameter
+          window.location.href = `content-detail.html?playlist_id=${playlistId}`;
         }
       });
     });
