@@ -5,6 +5,9 @@
 // FIXED: Fullscreen toggle with proper container
 // 🎵 AUDIO SUPPORT: Added audio file type detection and MIME types
 // 🎵 AUTOPLAY FIX: Improved error handling to ignore autoplay blocking errors
+// ✅ CRITICAL FIX #1: Added getMediaMimeType helper for proper audio/video detection
+// ✅ CRITICAL FIX #2: Fixed fullscreen toggle to use container instead of video element
+// ✅ CRITICAL FIX #3: Added audio-mode class handling for better UI
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -71,6 +74,33 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
+  // ✅ CRITICAL FIX #1: MIME TYPE HELPER
+  // ======================
+  
+  getMediaMimeType(url = '') {
+    const lower = url.toLowerCase();
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.mov')) return 'video/quicktime';
+    if (lower.endsWith('.mp3')) return 'audio/mpeg';
+    if (lower.endsWith('.wav')) return 'audio/wav';
+    if (lower.endsWith('.ogg')) return 'audio/ogg';
+    if (lower.endsWith('.m4a')) return 'audio/mp4';
+    if (lower.endsWith('.aac')) return 'audio/aac';
+    return 'video/mp4';
+  }
+  
+  // ======================
+  // ✅ CRITICAL FIX: Media type detection
+  // ======================
+  
+  isAudioSource(url) {
+    if (!url) return false;
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+    return audioExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  }
+  
+  // ======================
   // CORE METHODS - UPDATED WITH AUDIO SUPPORT
   // ======================
   
@@ -104,32 +134,22 @@ class EnhancedVideoPlayer {
     if (existingSourceElements.length > 0) {
         preservedSource = existingSourceElements[0].src;
         preservedType = existingSourceElements[0].type;
-    } else if (existingSrc) {
+    } else if (existingSrc && existingSrc !== '') {
         preservedSource = existingSrc;
-        // ============================================
-        // ✅ CRITICAL FIX: SUPPORT AUDIO FILE TYPES
-        // ============================================
-        if (preservedSource.endsWith('.mp4')) {
-            preservedType = 'video/mp4';
-        } else if (preservedSource.endsWith('.webm')) {
-            preservedType = 'video/webm';
-        } else if (preservedSource.endsWith('.mov')) {
-            preservedType = 'video/quicktime';
-        } else if (preservedSource.endsWith('.mp3')) {
-            preservedType = 'audio/mpeg';
-        } else if (preservedSource.endsWith('.wav')) {
-            preservedType = 'audio/wav';
-        } else if (preservedSource.endsWith('.ogg')) {
-            preservedType = 'audio/ogg';
-        } else if (preservedSource.endsWith('.aac')) {
-            preservedType = 'audio/aac';
-        } else if (preservedSource.endsWith('.m4a')) {
-            preservedType = 'audio/mp4';
-        }
+        preservedType = this.getMediaMimeType(preservedSource);
     }
     
     console.log('💾 Preserved source:', preservedSource);
     console.log('💾 Preserved type:', preservedType);
+    
+    // ✅ Check if this is an audio source
+    const isAudio = this.isAudioSource(preservedSource);
+    if (isAudio) {
+        console.log('🎵 Audio source detected, applying audio mode');
+        this.video.classList.add('audio-mode');
+    } else {
+        this.video.classList.remove('audio-mode');
+    }
 
     // Remove native controls
     this.video.controls = false;
@@ -158,7 +178,7 @@ class EnhancedVideoPlayer {
     // ============================================
     // CRITICAL: Restore video source AFTER setup
     // ============================================
-    if (preservedSource) {
+    if (preservedSource && preservedSource !== '') {
         console.log('🔄 Restoring file source...');
         
         // Clear any existing sources
@@ -172,7 +192,7 @@ class EnhancedVideoPlayer {
         // Create new source element
         var source = document.createElement('source');
         source.src = preservedSource;
-        source.type = preservedType || 'video/mp4';
+        source.type = preservedType || this.getMediaMimeType(preservedSource);
         
         // Add source to video element
         this.video.appendChild(source);
@@ -198,9 +218,10 @@ class EnhancedVideoPlayer {
         // ============================================
         this.video.addEventListener('loadedmetadata', () => {
           console.log('✅ File metadata loaded');
-          console.log('✅ Has audio:', this.video.mozHasAudio || this.video.webkitAudioDecodedByteCount > 0 || true);
+          console.log('✅ Duration:', this.video.duration);
           console.log('✅ Volume:', this.video.volume);
           console.log('✅ Muted:', this.video.muted);
+          console.log('✅ Audio mode:', isAudio);
           
           // Check audio tracks
           if (this.video.audioTracks && this.video.audioTracks.length > 0) {
@@ -213,6 +234,8 @@ class EnhancedVideoPlayer {
         this.video.load();
         
         console.log('✅ File source restored successfully');
+    } else {
+        console.warn('⚠️ No source found to restore');
     }
 
     console.log('✅ EnhancedVideoPlayer attached to file element');
@@ -238,10 +261,11 @@ class EnhancedVideoPlayer {
       'leavepictureinpicture'
     ];
     
+    // Bind event handlers to preserve this context
+    this.handleVideoEvent = this.handleVideoEvent.bind(this);
+    
     events.forEach(function(event) {
-      self.video.addEventListener(event, function(e) {
-        self.handleVideoEvent(event, e);
-      });
+      self.video.addEventListener(event, self.handleVideoEvent);
     });
     
     console.log('✅ Video event listeners setup');
@@ -280,6 +304,9 @@ class EnhancedVideoPlayer {
       case 'loadeddata':
         console.log('✅ File metadata loaded, ready to play');
         this.emit('loadeddata', this.video);
+        break;
+      case 'ended':
+        this.emit('ended', this.video);
         break;
     }
   }
@@ -591,7 +618,7 @@ class EnhancedVideoPlayer {
       });
     });
     
-    // Fullscreen button - FIXED: Use proper container
+    // ✅ CRITICAL FIX #2: Fullscreen button - Use proper container
     var fullscreenBtn = this.controls.querySelector('.fullscreen-btn');
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener('click', function() {
@@ -689,7 +716,7 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CRITICAL FIX: FULLSCREEN
+  // ✅ CRITICAL FIX #2: FULLSCREEN - Use container, not video element
   // ======================
   
   toggleFullscreen() {
@@ -739,6 +766,29 @@ class EnhancedVideoPlayer {
     setTimeout(function() {
       if (self.controls) self.controls.style.opacity = '1';
     }, 100);
+    
+    // Listen for fullscreen change events
+    var self = this;
+    var fullscreenChangeHandler = function() {
+      var isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      if (!isCurrentlyFullscreen && self.isFullscreen) {
+        self.isFullscreen = false;
+        if (self.controls) {
+          var btn = self.controls.querySelector('.fullscreen-btn i');
+          if (btn) btn.className = 'fas fa-expand';
+        }
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', fullscreenChangeHandler);
+    document.addEventListener('webkitfullscreenchange', fullscreenChangeHandler);
+    document.addEventListener('mozfullscreenchange', fullscreenChangeHandler);
+    document.addEventListener('MSFullscreenChange', fullscreenChangeHandler);
     
     this.emit('fullscreenchange', this.isFullscreen);
   }
@@ -909,7 +959,7 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CRITICAL FIX: DESTROY METHOD WITH AUDIO PRESERVATION
+  // ✅ CRITICAL FIX #3: DESTROY METHOD WITH SOURCE PRESERVATION
   // ======================
   
   destroy() {
@@ -926,31 +976,22 @@ class EnhancedVideoPlayer {
         if (existingSources.length > 0) {
             preservedSource = existingSources[0].src;
             preservedType = existingSources[0].type;
-        } else if (this.video.src) {
+        } else if (this.video.src && this.video.src !== '') {
             preservedSource = this.video.src;
-            // ============================================
-            // ✅ CRITICAL: Preserve audio MIME types
-            // ============================================
-            if (preservedSource.endsWith('.mp4')) preservedType = 'video/mp4';
-            else if (preservedSource.endsWith('.webm')) preservedType = 'video/webm';
-            else if (preservedSource.endsWith('.mov')) preservedType = 'video/quicktime';
-            else if (preservedSource.endsWith('.mp3')) preservedType = 'audio/mpeg';
-            else if (preservedSource.endsWith('.wav')) preservedType = 'audio/wav';
-            else if (preservedSource.endsWith('.ogg')) preservedType = 'audio/ogg';
-            else if (preservedSource.endsWith('.aac')) preservedType = 'audio/aac';
-            else if (preservedSource.endsWith('.m4a')) preservedType = 'audio/mp4';
+            preservedType = this.getMediaMimeType(preservedSource);
         }
     }
     
     console.log('💾 Preserving source on destroy:', preservedSource);
 
     // Remove event listeners
-    if (this.video) {
+    if (this.video && this.handleVideoEvent) {
         var events = [
           'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
           'canplaythrough', 'loadeddata', 'loadedmetadata',
           'timeupdate', 'progress', 'seeking', 'seeked',
-          'volumechange', 'ratechange'
+          'volumechange', 'ratechange', 'enterpictureinpicture',
+          'leavepictureinpicture'
         ];
         
         var self = this;
@@ -981,7 +1022,7 @@ class EnhancedVideoPlayer {
     // ============================================
     if (this.video) {
         // Restore video source
-        if (preservedSource) {
+        if (preservedSource && preservedSource !== '') {
             console.log('🔄 Restoring source after destroy...');
             
             // Clear existing sources
@@ -995,7 +1036,7 @@ class EnhancedVideoPlayer {
             // Create new source element
             var source = document.createElement('source');
             source.src = preservedSource;
-            source.type = preservedType || 'video/mp4';
+            source.type = preservedType || this.getMediaMimeType(preservedSource);
             
             // Add source back
             this.video.appendChild(source);
@@ -1013,6 +1054,7 @@ class EnhancedVideoPlayer {
     // Clear references
     this.video = null;
     this.container = null;
+    this.controls = null;
     
     console.log('✅ EnhancedVideoPlayer destroyed');
   }
@@ -1050,4 +1092,8 @@ class EnhancedVideoPlayer {
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
 window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
 
-console.log('✅ Enhanced Video Player loaded successfully with null checks, quality selector support, autoplay block handling, and 🎵 AUDIO SUPPORT');
+console.log('✅ Enhanced Video Player loaded successfully with:');
+console.log('  ✅ CRITICAL FIX #1: getMediaMimeType helper for proper audio/video detection');
+console.log('  ✅ CRITICAL FIX #2: Fullscreen toggle using container instead of video element');
+console.log('  ✅ CRITICAL FIX #3: Audio-mode class handling for better UI');
+console.log('  ✅ Null checks, quality selector support, autoplay block handling, and 🎵 AUDIO SUPPORT');
