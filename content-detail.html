@@ -491,6 +491,14 @@
                         <button class="control-btn play-pause" title="Play/Pause">
                             <i class="fas fa-play"></i>
                         </button>
+                        <!-- PHASE 1D: Previous Track Button -->
+                        <button class="control-btn" id="previousTrackBtn" title="Previous Track">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <!-- PHASE 1D: Next Track Button -->
+                        <button class="control-btn" id="nextTrackBtn" title="Next Track">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
                         <div class="time-display">
                             <span class="current-time">0:00</span>
                             <span> / </span>
@@ -565,7 +573,59 @@
             </div>
         </div>
 
-        <!-- 🎯 HERO SECTION - NOW BELOW PLAYER -->
+        <!-- ============================================ -->
+        <!-- 🚀 PHASE 1D: COLLECTION PLAYBACK SECTION -->
+        <!-- ============================================ -->
+        <section class="collection-playback-section hidden" id="collectionPlaybackSection">
+            <div class="collection-layout">
+                <!-- LEFT SIDE -->
+                <div class="collection-main-content">
+                    <!-- COLLECTION HERO -->
+                    <div class="collection-hero-card" id="collectionHeroCard">
+                        <div class="collection-meta">
+                            <div class="collection-badge" id="collectionBadge">
+                                PLAYLIST
+                            </div>
+                            <h2 class="collection-title" id="collectionTitle">
+                                Collection
+                            </h2>
+                            <div class="collection-stats">
+                                <span id="collectionItemsCount">
+                                    0 items
+                                </span>
+                                <span>•</span>
+                                <span id="collectionType">
+                                    playlist
+                                </span>
+                            </div>
+                        </div>
+                        <div class="collection-actions">
+                            <button class="btn btn-primary" id="playAllBtn">
+                                <i class="fas fa-play"></i>
+                                Play All
+                            </button>
+                            <button class="btn btn-secondary" id="shuffleBtn">
+                                <i class="fas fa-random"></i>
+                                Shuffle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDE - QUEUE SIDEBAR -->
+                <aside class="playlist-sidebar" id="playlistSidebar">
+                    <div class="playlist-sidebar-header">
+                        <h3>Up Next</h3>
+                        <button class="autoplay-toggle active" id="autoplayToggle">
+                            AUTOPLAY
+                        </button>
+                    </div>
+                    <div class="playlist-queue" id="playlistQueue"></div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- 🎯 HERO SECTION - NOW BELOW COLLECTION SECTION -->
         <section class="content-hero" id="contentHero">
             <!-- Poster (shown initially) -->
             <div class="hero-poster" id="heroPoster">
@@ -1007,6 +1067,12 @@
 
 <!-- PHASE 3: Recommendation Engine -->
 <script src="js/recommendation-engine.js"></script>
+
+<!-- ============================================ -->
+<!-- PHASE 1D: Queue Manager & Collection Engine (NEW) -->
+<!-- ============================================ -->
+<script src="js/queue-manager.js"></script>
+<script src="js/content-collections-engine.js"></script>
 
 <!-- ============================================ -->
 <!-- PHASE 1-3 POLISH: New Modules              -->
