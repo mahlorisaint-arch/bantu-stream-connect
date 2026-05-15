@@ -9,6 +9,7 @@
 /* 🎯 PHASE 1D: Collection Playback Engine (Albums, Podcasts, Series, Playlists) */
 /* 🎯 PHASE 1D: Playlist Queue Sidebar & Active States */
 /* 🎯 PHASE 1D: AUDIO-MODE SUPPORT (Media-First Architecture) */
+/* 🎯 AUTOPLAY FIX: Initial play overlay for browser autoplay policy */
 /* ============================================ */
 
 /* ============================================ */
@@ -1562,6 +1563,54 @@ video.audio-mode {
 /* Audio mode thumbnail/poster handling */
 .video-container[data-media-type="audio"] video[poster] {
   object-fit: contain;
+}
+
+/* ============================================ */
+/* 🎵 AUTOPLAY OVERLAY STYLES - BROWSER POLICY FIX */
+/* ============================================ */
+.initial-play-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  border-radius: 0;
+}
+
+.initial-play-overlay.hidden {
+  display: none;
+}
+
+#initialPlayButton {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border: none;
+  color: white;
+  padding: 18px 32px;
+  border-radius: 60px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+#initialPlayButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 28px rgba(29, 78, 216, 0.5);
+  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+}
+
+#initialPlayButton i {
+  font-size: 1.4rem;
 }
 
 /* ============================================ */
