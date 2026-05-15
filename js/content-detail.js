@@ -340,7 +340,6 @@ async function loadPlaylistMode(playlistId, playlistType) {
                     title,
                     description,
                     thumbnail_url,
-                    video_url,
                     file_url,
                     duration,
                     content_format,
@@ -441,7 +440,7 @@ async function setCurrentContentFromPlaylistItem(item, index) {
         title: item.title || 'Untitled',
         description: item.description || '',
         thumbnail_url: item.thumbnail_url,
-        file_url: item.file_url || item.video_url,
+        file_url: item.file_url,
         media_type: item.media_type || item.content_format || 'video',
         genre: item.genre || 'General',
         created_at: item.created_at,
@@ -639,9 +638,9 @@ async function loadContentIntoPlayer(content) {
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) closeFromHero.style.display = 'flex';
     
-    // Prepare video URL
-    let fileUrl = content.file_url || content.video_url;
-    console.log('📥 Loading video URL:', fileUrl);
+    // Prepare video URL using the universal helper
+    let fileUrl = getPlayableMediaUrl(content);
+    console.log('📥 Loading media URL:', fileUrl);
     
     if (fileUrl && !fileUrl.startsWith('http')) {
         if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
@@ -656,12 +655,13 @@ async function loadContentIntoPlayer(content) {
     }
     
     // Detect media type
-    const isAudioFile = fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac'));
-    const isVideoFile = fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
+    const mediaType = detectMediaType(content);
+    const isAudioFile = mediaType === 'audio' || (fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac')));
+    const isVideoFile = !isAudioFile && fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
     
     if (!fileUrl || (!isAudioFile && !isVideoFile)) {
         console.error('❌ Invalid file format:', fileUrl);
-        showToast('Video file not available', 'error');
+        showToast('Media file not available', 'error');
         return;
     }
     
@@ -669,8 +669,10 @@ async function loadContentIntoPlayer(content) {
     if (isAudioFile && content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
         videoElement.setAttribute('poster', imgUrl);
+        videoElement.classList.add('audio-mode');
     } else {
         videoElement.removeAttribute('poster');
+        videoElement.classList.remove('audio-mode');
     }
     
     // Clean up existing players
@@ -727,6 +729,58 @@ async function loadContentIntoPlayer(content) {
     }, 100);
 }
 
+// ============================================
+// 🎯 MEDIA-FIRST HELPER FUNCTIONS (CRITICAL FIX)
+// ============================================
+
+/**
+ * Gets a playable media URL from any content object
+ * Supports: file_url, audio_url, video_url, media_url
+ */
+function getPlayableMediaUrl(content) {
+    if (!content) return null;
+    
+    return (
+        content.file_url ||
+        content.audio_url ||
+        content.video_url ||
+        content.media_url ||
+        null
+    );
+}
+
+/**
+ * Detects media type from content metadata or file extension
+ * Returns: 'audio' or 'video'
+ */
+function detectMediaType(content) {
+    if (!content) return 'video';
+    
+    // Check explicit media_type field first
+    if (content.media_type) {
+        if (content.media_type.toLowerCase() === 'audio') return 'audio';
+        if (content.media_type.toLowerCase() === 'video') return 'video';
+    }
+    
+    // Check content_format field
+    const format = (content.content_format || '').toLowerCase();
+    if (format.includes('audio') || format.includes('podcast') || format.includes('music')) {
+        return 'audio';
+    }
+    
+    // Check file URL extension
+    const url = getPlayableMediaUrl(content);
+    if (url) {
+        const ext = url.split('.').pop()?.toLowerCase();
+        if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a') {
+            return 'audio';
+        }
+    }
+    
+    // Default to video
+    return 'video';
+}
+
 // 🎯 NEW: Load only what's needed to render the page (modified for playlist mode compatibility)
 async function loadCriticalContentData(contentId) {
     // Check cache first
@@ -747,7 +801,7 @@ async function loadCriticalContentData(contentId) {
         } catch(e) { console.warn('Cache parse error:', e); }
     }
 
-    // Fetch critical data in PARALLEL
+    // Fetch critical data in PARALLEL - REMOVED video_url, using file_url
     const [contentRes, viewsRes, likesRes] = await Promise.all([
         window.supabaseClient.from('Content').select(`
             *, user_profiles!user_id(id, full_name, username, avatar_url)
@@ -1054,8 +1108,8 @@ function handlePlay() {
         videoElement.volume = 1.0;
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Video source setup
-        let fileUrl = currentContent.file_url;
+        // Video source setup using universal helper
+        let fileUrl = getPlayableMediaUrl(currentContent);
         console.log('📥 Raw file_url from database:', fileUrl);
         if (fileUrl && !fileUrl.startsWith('http')) {
             if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
@@ -1069,8 +1123,9 @@ function handlePlay() {
         }
         console.log('🎵 Final file URL:', fileUrl);
 
-        const isAudioFile = fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac') || fileUrl.includes('.m4a'));
-        const isVideoFile = fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
+        const mediaType = detectMediaType(currentContent);
+        const isAudioFile = mediaType === 'audio' || (fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac') || fileUrl.includes('.m4a')));
+        const isVideoFile = !isAudioFile && fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
 
         if (!fileUrl || (!isAudioFile && !isVideoFile)) {
             console.error('❌ Invalid file format:', fileUrl);
@@ -1081,8 +1136,10 @@ function handlePlay() {
         if (isAudioFile && currentContent.thumbnail_url) {
             const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
             videoElement.setAttribute('poster', imgUrl);
+            videoElement.classList.add('audio-mode');
         } else {
             videoElement.removeAttribute('poster');
+            videoElement.classList.remove('audio-mode');
         }
 
         const videoContainer = document.querySelector('.video-container');
@@ -3807,3 +3864,4 @@ window.addEventListener('beforeunload', function() {
 
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
+console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
