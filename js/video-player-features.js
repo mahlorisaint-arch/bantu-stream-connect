@@ -1,4 +1,4 @@
-// js/video-player-features.js - Phase 1 Critical Fixes
+// js/video-player-features.js - Phase 1 Critical Fixes + Phase 1D Enhancements
 // ✅ FULLY UPDATED
 // ✅ FIXED duplicate content_views inserts
 // ✅ FIXED views_count not updating
@@ -12,6 +12,9 @@
 // ✅ Next/Previous track support
 // ✅ Autoplay with queue
 // ✅ Playback state persistence
+// ✅ Playlist autoplay on completion
+// ✅ Queue state sync with UI
+// ✅ Playlist progression tracking
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -28,6 +31,8 @@
  * 9. Queue-aware autoplay
  * 10. Collection item highlighting
  * 11. Playback state persistence
+ * 12. Playlist autoplay on video end
+ * 13. Queue UI sync methods
  */
 
 class VideoPlayerFeatures {
@@ -37,6 +42,8 @@ class VideoPlayerFeatures {
     this.initialized = false;
     this.currentQueueIndex = 0;
     this.queueItems = [];
+    this.boundHandleVideoEnded = null;
+    this.playlistSyncInterval = null;
   }
 
   /**
@@ -132,13 +139,33 @@ class VideoPlayerFeatures {
   playNextTrack() {
     console.log('⏭️ Playing next track...');
     
-    if (window.QueueManager) {
+    // Check if we're in playlist mode
+    if (window.isPlaylistMode && window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+      const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === window.currentContent?.id);
+      if (currentIndex >= 0 && currentIndex + 1 < window.currentPlaylistItems.length) {
+        const nextItem = window.currentPlaylistItems[currentIndex + 1];
+        if (window.playPlaylistItemByIndex) {
+          window.playPlaylistItemByIndex(currentIndex + 1);
+        } else if (window.playPlaylistItem) {
+          window.playPlaylistItem(nextItem.id, currentIndex + 1);
+        }
+        return;
+      } else {
+        console.log('🏁 End of playlist reached');
+        this.showPlaylistCompleteMessage();
+        return;
+      }
+    }
+    
+    // Fallback to QueueManager or local queue
+    if (window.QueueManager && typeof window.QueueManager.playNext === 'function') {
       window.QueueManager.playNext();
     } else if (this.queueItems.length > 0 && this.currentQueueIndex < this.queueItems.length - 1) {
       this.currentQueueIndex++;
       this.loadQueueItem(this.currentQueueIndex);
     } else {
       console.log('📭 No next track available');
+      this.showEndOfQueueMessage();
     }
   }
   
@@ -148,7 +175,25 @@ class VideoPlayerFeatures {
   playPreviousTrack() {
     console.log('⏮️ Playing previous track...');
     
-    if (window.QueueManager) {
+    // Check if we're in playlist mode
+    if (window.isPlaylistMode && window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+      const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === window.currentContent?.id);
+      if (currentIndex > 0) {
+        const prevItem = window.currentPlaylistItems[currentIndex - 1];
+        if (window.playPlaylistItemByIndex) {
+          window.playPlaylistItemByIndex(currentIndex - 1);
+        } else if (window.playPlaylistItem) {
+          window.playPlaylistItem(prevItem.id, currentIndex - 1);
+        }
+        return;
+      } else {
+        console.log('📭 Already at first item');
+        return;
+      }
+    }
+    
+    // Fallback to QueueManager or local queue
+    if (window.QueueManager && typeof window.QueueManager.playPrevious === 'function') {
       window.QueueManager.playPrevious();
     } else if (this.queueItems.length > 0 && this.currentQueueIndex > 0) {
       this.currentQueueIndex--;
@@ -156,6 +201,46 @@ class VideoPlayerFeatures {
     } else {
       console.log('📭 No previous track available');
     }
+  }
+  
+  /**
+   * PHASE 1D: Show playlist complete message
+   */
+  showPlaylistCompleteMessage() {
+    const message = document.createElement('div');
+    message.className = 'playlist-complete-toast';
+    message.innerHTML = `
+      <i class="fas fa-check-circle"></i>
+      <span>Playlist completed! 🎉</span>
+    `;
+    document.body.appendChild(message);
+    setTimeout(() => {
+      message.classList.add('show');
+      setTimeout(() => {
+        message.classList.remove('show');
+        setTimeout(() => message.remove(), 300);
+      }, 3000);
+    }, 10);
+  }
+  
+  /**
+   * PHASE 1D: Show end of queue message
+   */
+  showEndOfQueueMessage() {
+    const message = document.createElement('div');
+    message.className = 'queue-end-toast';
+    message.innerHTML = `
+      <i class="fas fa-info-circle"></i>
+      <span>End of queue</span>
+    `;
+    document.body.appendChild(message);
+    setTimeout(() => {
+      message.classList.add('show');
+      setTimeout(() => {
+        message.classList.remove('show');
+        setTimeout(() => message.remove(), 300);
+      }, 2000);
+    }, 10);
   }
   
   /**
@@ -188,7 +273,10 @@ class VideoPlayerFeatures {
       currentTime: currentTime,
       isPlaying: isPlaying,
       timestamp: Date.now(),
-      contentId: window.currentContent?.id
+      contentId: window.currentContent?.id,
+      isPlaylistMode: window.isPlaylistMode || false,
+      playlistId: window.currentPlaylist?.id,
+      playlistIndex: window.currentPlaylistIndex
     };
     
     localStorage.setItem('bantu_playback_state', JSON.stringify(playbackState));
@@ -236,10 +324,11 @@ class VideoPlayerFeatures {
    * PHASE 1D: Highlight active queue item
    */
   highlightActiveQueueItem(contentId) {
-    const queueItems = document.querySelectorAll('.queue-item');
+    // Highlight playlist queue items
+    const playlistItems = document.querySelectorAll('.playlist-queue-item');
     let activeFound = false;
     
-    queueItems.forEach(item => {
+    playlistItems.forEach(item => {
       if (item.dataset.contentId === String(contentId)) {
         item.classList.add('active');
         activeFound = true;
@@ -259,6 +348,17 @@ class VideoPlayerFeatures {
       }
     });
     
+    // Also highlight legacy queue items
+    const queueItems = document.querySelectorAll('.queue-item');
+    queueItems.forEach(item => {
+      if (item.dataset.contentId === String(contentId)) {
+        item.classList.add('active');
+        activeFound = true;
+      } else {
+        item.classList.remove('active');
+      }
+    });
+    
     return activeFound;
   }
   
@@ -269,24 +369,71 @@ class VideoPlayerFeatures {
     const videoElement = document.getElementById('inlineVideoPlayer');
     if (!videoElement) return;
     
-    // Remove existing listeners
-    const handleEnded = () => {
+    // Remove existing listener if any
+    if (this.boundHandleVideoEnded) {
+      videoElement.removeEventListener('ended', this.boundHandleVideoEnded);
+    }
+    
+    this.boundHandleVideoEnded = () => {
       const autoplayToggle = document.getElementById('autoplayToggle');
       const isAutoplayEnabled = autoplayToggle?.classList.contains('active') !== false;
       
       if (isAutoplayEnabled) {
         console.log('🎬 Video ended, autoplaying next...');
+        
+        // Check if we're in playlist mode
+        if (window.isPlaylistMode && window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+          const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === window.currentContent?.id);
+          if (currentIndex >= 0 && currentIndex + 1 < window.currentPlaylistItems.length) {
+            const nextItem = window.currentPlaylistItems[currentIndex + 1];
+            setTimeout(() => {
+              if (window.playPlaylistItemByIndex) {
+                window.playPlaylistItemByIndex(currentIndex + 1);
+              } else if (window.playPlaylistItem) {
+                window.playPlaylistItem(nextItem.id, currentIndex + 1);
+              }
+            }, 500);
+            return;
+          }
+        }
+        
+        // Fallback to QueueManager
         this.playNextTrack();
       } else {
         console.log('⏸️ Video ended, autoplay disabled');
       }
     };
     
-    videoElement.removeEventListener('ended', this.boundHandleEnded);
-    this.boundHandleEnded = handleEnded;
-    videoElement.addEventListener('ended', this.boundHandleEnded);
+    videoElement.addEventListener('ended', this.boundHandleVideoEnded);
     
     console.log('✅ Autoplay on ended handler setup complete');
+  }
+  
+  /**
+   * PHASE 1D: Sync queue state with playlist UI
+   */
+  syncQueueWithPlaylistUI() {
+    if (this.playlistSyncInterval) {
+      clearInterval(this.playlistSyncInterval);
+    }
+    
+    this.playlistSyncInterval = setInterval(() => {
+      if (window.currentContent?.id) {
+        this.highlightActiveQueueItem(window.currentContent.id);
+        
+        // Update now playing indicator in playlist queue
+        const nowPlayingItem = document.querySelector('.playlist-queue-item.active');
+        if (nowPlayingItem) {
+          const title = nowPlayingItem.querySelector('.playlist-item-title')?.textContent;
+          if (title) {
+            const nowPlayingEl = document.getElementById('nowPlayingTitle');
+            if (nowPlayingEl) {
+              nowPlayingEl.textContent = title;
+            }
+          }
+        }
+      }
+    }, 1000);
   }
   
   /**
@@ -310,6 +457,31 @@ class VideoPlayerFeatures {
       } catch (e) {
         console.warn('Failed to restore queue:', e);
       }
+    }
+    
+    // Also check for playlist mode restoration
+    const savedPlaylist = localStorage.getItem('bantu_last_playlist');
+    if (savedPlaylist && !window.isPlaylistMode) {
+      try {
+        const playlist = JSON.parse(savedPlaylist);
+        console.log('📀 Found saved playlist:', playlist.name);
+      } catch (e) {
+        console.warn('Failed to restore playlist:', e);
+      }
+    }
+  }
+  
+  /**
+   * PHASE 1D: Save current playlist to storage
+   */
+  saveCurrentPlaylist() {
+    if (window.currentPlaylist) {
+      localStorage.setItem('bantu_last_playlist', JSON.stringify({
+        id: window.currentPlaylist.id,
+        name: window.currentPlaylist.name,
+        itemsCount: window.currentPlaylistItems?.length || 0,
+        timestamp: Date.now()
+      }));
     }
   }
 
@@ -793,9 +965,22 @@ class VideoPlayerFeatures {
           currentTime: videoElement.currentTime,
           isPlaying: !videoElement.paused,
           timestamp: Date.now(),
-          contentId: window.currentContent?.id
+          contentId: window.currentContent?.id,
+          isPlaylistMode: window.isPlaylistMode || false,
+          playlistId: window.currentPlaylist?.id,
+          playlistIndex: window.currentPlaylistIndex
         };
         localStorage.setItem('bantu_playback_state', JSON.stringify(playbackState));
+      }
+      
+      // Save current playlist if in playlist mode
+      if (window.isPlaylistMode && window.currentPlaylist) {
+        this.saveCurrentPlaylist();
+      }
+      
+      // Clean up interval
+      if (this.playlistSyncInterval) {
+        clearInterval(this.playlistSyncInterval);
       }
     });
   }
@@ -819,6 +1004,7 @@ class VideoPlayerFeatures {
     this.restoreQueueFromStorage();
     this.setupAutoplayOnEnded();
     this.setupPlaybackStateCleanup();
+    this.syncQueueWithPlaylistUI();
     
     this.initialized = true;
 
@@ -909,6 +1095,19 @@ class VideoPlayerFeatures {
             this.playPreviousTrack();
           }
           break;
+          
+        case 'a':
+          // 'A' key to toggle autoplay
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            const autoplayToggle = document.getElementById('autoplayToggle');
+            if (autoplayToggle) {
+              const isActive = autoplayToggle.classList.toggle('active');
+              localStorage.setItem('bantu_autoplay_enabled', isActive);
+              console.log('🎵 Autoplay toggled via keyboard:', isActive ? 'ON' : 'OFF');
+            }
+          }
+          break;
       }
     });
     
@@ -987,7 +1186,8 @@ class VideoPlayerFeatures {
     // Save to localStorage for persistence
     localStorage.setItem('bantu_active_queue', JSON.stringify({
       queue: this.queueItems,
-      currentIndex: this.currentQueueIndex
+      currentIndex: this.currentQueueIndex,
+      timestamp: Date.now()
     }));
     
     console.log('📋 Queue set:', this.queueItems.length, 'items');
@@ -1012,6 +1212,40 @@ class VideoPlayerFeatures {
     localStorage.removeItem('bantu_active_queue');
     localStorage.removeItem('bantu_playback_state');
     console.log('🗑️ Queue cleared');
+  }
+  
+  /**
+   * PHASE 1D: Update playlist UI when track changes
+   */
+  updatePlaylistUIOnTrackChange(contentId) {
+    this.highlightActiveQueueItem(contentId);
+    
+    // Update now playing section
+    const nowPlayingTitle = document.getElementById('nowPlayingTitle');
+    const nowPlayingThumb = document.getElementById('nowPlayingThumb');
+    
+    if (nowPlayingTitle && window.currentContent) {
+      nowPlayingTitle.textContent = window.currentContent.title || 'Now Playing';
+    }
+    
+    if (nowPlayingThumb && window.currentContent?.thumbnail_url) {
+      nowPlayingThumb.src = window.currentContent.thumbnail_url;
+    }
+    
+    // Update playlist progress
+    if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+      const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === contentId);
+      const progressEl = document.getElementById('playlistProgress');
+      if (progressEl && currentIndex >= 0) {
+        const percent = ((currentIndex + 1) / window.currentPlaylistItems.length) * 100;
+        progressEl.style.width = `${percent}%`;
+        
+        const progressText = document.getElementById('playlistProgressText');
+        if (progressText) {
+          progressText.textContent = `${currentIndex + 1} / ${window.currentPlaylistItems.length}`;
+        }
+      }
+    }
   }
 }
 
@@ -1047,6 +1281,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.highlightQueueItem = (contentId) =>
       videoPlayerFeatures.highlightActiveQueueItem(contentId);
+    
+    window.updatePlaylistUI = (contentId) =>
+      videoPlayerFeatures.updatePlaylistUIOnTrackChange(contentId);
+    
+    window.playNextTrack = () =>
+      videoPlayerFeatures.playNextTrack();
+    
+    window.playPreviousTrack = () =>
+      videoPlayerFeatures.playPreviousTrack();
 
   }, 1000);
 });
@@ -1054,5 +1297,5 @@ document.addEventListener('DOMContentLoaded', () => {
 window.VideoPlayerFeatures = VideoPlayerFeatures;
 
 console.log(
-  '✅ Video Player Features (Phase 1 + Phase 1D) loaded - FULLY FIXED'
+  '✅ Video Player Features (Phase 1 + Phase 1D) loaded - FULLY FIXED with playlist autoplay and queue sync'
 );
