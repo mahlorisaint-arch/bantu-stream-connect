@@ -6,6 +6,12 @@
 // ✅ FIXED session handling
 // ✅ FIXED creator_id issues
 // ✅ FIXED content table view syncing
+// 🚀 PHASE 1D ENHANCEMENTS:
+// ✅ Collection-aware playback
+// ✅ Queue integration
+// ✅ Next/Previous track support
+// ✅ Autoplay with queue
+// ✅ Playback state persistence
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -16,6 +22,12 @@
  * 5. NO creator_id references anywhere
  * 6. FIXED views_count sync
  * 7. FIXED duplicate inserts
+ * 
+ * PHASE 1D ENHANCEMENTS:
+ * 8. Next/Previous track support
+ * 9. Queue-aware autoplay
+ * 10. Collection item highlighting
+ * 11. Playback state persistence
  */
 
 class VideoPlayerFeatures {
@@ -23,6 +35,8 @@ class VideoPlayerFeatures {
     this.viewDeduplicationKey = 'bantu_viewed_content';
     this.viewWindowHours = 24;
     this.initialized = false;
+    this.currentQueueIndex = 0;
+    this.queueItems = [];
   }
 
   /**
@@ -67,6 +81,236 @@ class VideoPlayerFeatures {
     }
     
     console.log('✅ Duplicate controls removed');
+  }
+
+  /**
+   * PHASE 1D: Setup next/previous track controls
+   */
+  setupQueueControls() {
+    console.log('🎵 Setting up queue controls...');
+    
+    const nextBtn = document.getElementById('nextTrackBtn');
+    const prevBtn = document.getElementById('previousTrackBtn');
+    
+    if (nextBtn) {
+      // Remove existing listeners
+      const newNextBtn = nextBtn.cloneNode(true);
+      nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+      newNextBtn.addEventListener('click', () => this.playNextTrack());
+    }
+    
+    if (prevBtn) {
+      // Remove existing listeners
+      const newPrevBtn = prevBtn.cloneNode(true);
+      prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+      newPrevBtn.addEventListener('click', () => this.playPreviousTrack());
+    }
+    
+    // Setup autoplay toggle
+    const autoplayToggle = document.getElementById('autoplayToggle');
+    if (autoplayToggle) {
+      const savedAutoplay = localStorage.getItem('bantu_autoplay_enabled');
+      const isAutoplayEnabled = savedAutoplay !== null ? savedAutoplay === 'true' : true;
+      
+      if (!isAutoplayEnabled) {
+        autoplayToggle.classList.remove('active');
+      }
+      
+      autoplayToggle.addEventListener('click', () => {
+        const isActive = autoplayToggle.classList.toggle('active');
+        localStorage.setItem('bantu_autoplay_enabled', isActive);
+        console.log('🎵 Autoplay:', isActive ? 'ON' : 'OFF');
+      });
+    }
+    
+    console.log('✅ Queue controls setup complete');
+  }
+  
+  /**
+   * PHASE 1D: Play next track from queue
+   */
+  playNextTrack() {
+    console.log('⏭️ Playing next track...');
+    
+    if (window.QueueManager) {
+      window.QueueManager.playNext();
+    } else if (this.queueItems.length > 0 && this.currentQueueIndex < this.queueItems.length - 1) {
+      this.currentQueueIndex++;
+      this.loadQueueItem(this.currentQueueIndex);
+    } else {
+      console.log('📭 No next track available');
+    }
+  }
+  
+  /**
+   * PHASE 1D: Play previous track from queue
+   */
+  playPreviousTrack() {
+    console.log('⏮️ Playing previous track...');
+    
+    if (window.QueueManager) {
+      window.QueueManager.playPrevious();
+    } else if (this.queueItems.length > 0 && this.currentQueueIndex > 0) {
+      this.currentQueueIndex--;
+      this.loadQueueItem(this.currentQueueIndex);
+    } else {
+      console.log('📭 No previous track available');
+    }
+  }
+  
+  /**
+   * PHASE 1D: Load queue item
+   */
+  loadQueueItem(index) {
+    const item = this.queueItems[index];
+    if (!item) return;
+    
+    console.log('🎬 Loading queue item:', item.title);
+    
+    // Save current playback state
+    this.savePlaybackState();
+    
+    // Navigate to content
+    window.location.href = `content-detail.html?id=${item.id}`;
+  }
+  
+  /**
+   * PHASE 1D: Save playback state for queue restoration
+   */
+  savePlaybackState() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    const currentTime = videoElement?.currentTime || 0;
+    const isPlaying = videoElement && !videoElement.paused;
+    
+    const playbackState = {
+      queue: this.queueItems,
+      currentIndex: this.currentQueueIndex,
+      currentTime: currentTime,
+      isPlaying: isPlaying,
+      timestamp: Date.now(),
+      contentId: window.currentContent?.id
+    };
+    
+    localStorage.setItem('bantu_playback_state', JSON.stringify(playbackState));
+    console.log('💾 Playback state saved');
+  }
+  
+  /**
+   * PHASE 1D: Restore playback state
+   */
+  restorePlaybackState() {
+    const savedState = localStorage.getItem('bantu_playback_state');
+    if (!savedState) return false;
+    
+    try {
+      const state = JSON.parse(savedState);
+      
+      // Check if state is recent (within 30 minutes)
+      if (Date.now() - state.timestamp > 30 * 60 * 1000) {
+        console.log('⏰ Playback state expired');
+        return false;
+      }
+      
+      // Restore queue if available
+      if (state.queue && state.queue.length > 0) {
+        this.queueItems = state.queue;
+        this.currentQueueIndex = state.currentIndex;
+        
+        if (window.QueueManager && this.queueItems.length > 0) {
+          window.QueueManager.initialize(this.queueItems);
+          if (state.currentIndex !== undefined) {
+            window.QueueManager.currentIndex = state.currentIndex;
+          }
+        }
+      }
+      
+      console.log('💾 Playback state restored');
+      return true;
+    } catch (error) {
+      console.warn('Failed to restore playback state:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * PHASE 1D: Highlight active queue item
+   */
+  highlightActiveQueueItem(contentId) {
+    const queueItems = document.querySelectorAll('.queue-item');
+    let activeFound = false;
+    
+    queueItems.forEach(item => {
+      if (item.dataset.contentId === String(contentId)) {
+        item.classList.add('active');
+        activeFound = true;
+        
+        // Scroll into view if needed
+        const sidebar = document.querySelector('.playlist-queue');
+        if (sidebar) {
+          const itemRect = item.getBoundingClientRect();
+          const sidebarRect = sidebar.getBoundingClientRect();
+          
+          if (itemRect.bottom > sidebarRect.bottom || itemRect.top < sidebarRect.top) {
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      } else {
+        item.classList.remove('active');
+      }
+    });
+    
+    return activeFound;
+  }
+  
+  /**
+   * PHASE 1D: Setup video ended handler for autoplay
+   */
+  setupAutoplayOnEnded() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    if (!videoElement) return;
+    
+    // Remove existing listeners
+    const handleEnded = () => {
+      const autoplayToggle = document.getElementById('autoplayToggle');
+      const isAutoplayEnabled = autoplayToggle?.classList.contains('active') !== false;
+      
+      if (isAutoplayEnabled) {
+        console.log('🎬 Video ended, autoplaying next...');
+        this.playNextTrack();
+      } else {
+        console.log('⏸️ Video ended, autoplay disabled');
+      }
+    };
+    
+    videoElement.removeEventListener('ended', this.boundHandleEnded);
+    this.boundHandleEnded = handleEnded;
+    videoElement.addEventListener('ended', this.boundHandleEnded);
+    
+    console.log('✅ Autoplay on ended handler setup complete');
+  }
+  
+  /**
+   * PHASE 1D: Restore queue from localStorage
+   */
+  restoreQueueFromStorage() {
+    const savedQueue = localStorage.getItem('bantu_active_queue');
+    if (savedQueue) {
+      try {
+        const parsed = JSON.parse(savedQueue);
+        if (parsed.queue && parsed.queue.length > 0) {
+          this.queueItems = parsed.queue;
+          this.currentQueueIndex = parsed.currentIndex || 0;
+          
+          if (window.QueueManager) {
+            window.QueueManager.queue = this.queueItems;
+            window.QueueManager.currentIndex = this.currentQueueIndex;
+            console.log('📋 Queue restored from storage:', this.queueItems.length, 'items');
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to restore queue:', e);
+      }
+    }
   }
 
   /**
@@ -536,25 +780,50 @@ class VideoPlayerFeatures {
   }
 
   /**
-   * Initialize all Phase 1 fixes
+   * PHASE 1D: Clear playback state on page unload
+   */
+  setupPlaybackStateCleanup() {
+    window.addEventListener('beforeunload', () => {
+      // Save final playback state before leaving
+      const videoElement = document.getElementById('inlineVideoPlayer');
+      if (videoElement && window.currentContent) {
+        const playbackState = {
+          queue: this.queueItems,
+          currentIndex: this.currentQueueIndex,
+          currentTime: videoElement.currentTime,
+          isPlaying: !videoElement.paused,
+          timestamp: Date.now(),
+          contentId: window.currentContent?.id
+        };
+        localStorage.setItem('bantu_playback_state', JSON.stringify(playbackState));
+      }
+    });
+  }
+
+  /**
+   * Initialize all Phase 1 fixes and Phase 1D enhancements
    */
   initialize() {
 
     if (this.initialized) return;
     
     console.log(
-      '🚀 Initializing Phase 1 video player fixes...'
+      '🚀 Initializing Phase 1 video player fixes and Phase 1D enhancements...'
     );
     
     this.removeDuplicateControls();
     this.setupFullscreenFix();
     this.setupViewDeduplication();
     this.setupMemoryLeakFix();
+    this.setupQueueControls();
+    this.restoreQueueFromStorage();
+    this.setupAutoplayOnEnded();
+    this.setupPlaybackStateCleanup();
     
     this.initialized = true;
 
     console.log(
-      '✅ Phase 1 fixes initialized successfully'
+      '✅ Phase 1 and Phase 1D fixes initialized successfully'
     );
     
     this.setupAdditionalEventListeners();
@@ -624,6 +893,22 @@ class VideoPlayerFeatures {
           }
 
           break;
+          
+        case 'n':
+          // 'N' key for next track
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            this.playNextTrack();
+          }
+          break;
+          
+        case 'p':
+          // 'P' key for previous track
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            this.playPreviousTrack();
+          }
+          break;
       }
     });
     
@@ -691,6 +976,43 @@ class VideoPlayerFeatures {
       }
     }
   }
+  
+  /**
+   * PHASE 1D: Public method to set queue items
+   */
+  setQueue(items, currentIndex = 0) {
+    this.queueItems = items || [];
+    this.currentQueueIndex = currentIndex;
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('bantu_active_queue', JSON.stringify({
+      queue: this.queueItems,
+      currentIndex: this.currentQueueIndex
+    }));
+    
+    console.log('📋 Queue set:', this.queueItems.length, 'items');
+  }
+  
+  /**
+   * PHASE 1D: Get current queue
+   */
+  getQueue() {
+    return {
+      items: this.queueItems,
+      currentIndex: this.currentQueueIndex
+    };
+  }
+  
+  /**
+   * PHASE 1D: Clear queue
+   */
+  clearQueue() {
+    this.queueItems = [];
+    this.currentQueueIndex = 0;
+    localStorage.removeItem('bantu_active_queue');
+    localStorage.removeItem('bantu_playback_state');
+    console.log('🗑️ Queue cleared');
+  }
 }
 
 // ============================================
@@ -712,6 +1034,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.hasViewedContent = (id) =>
       VideoPlayerFeatures.hasViewedContent(id);
+    
+    // PHASE 1D: Expose queue management methods
+    window.setVideoQueue = (items, currentIndex) =>
+      videoPlayerFeatures.setQueue(items, currentIndex);
+    
+    window.getVideoQueue = () =>
+      videoPlayerFeatures.getQueue();
+    
+    window.clearVideoQueue = () =>
+      videoPlayerFeatures.clearQueue();
+    
+    window.highlightQueueItem = (contentId) =>
+      videoPlayerFeatures.highlightActiveQueueItem(contentId);
 
   }, 1000);
 });
@@ -719,5 +1054,5 @@ document.addEventListener('DOMContentLoaded', () => {
 window.VideoPlayerFeatures = VideoPlayerFeatures;
 
 console.log(
-  '✅ Video Player Features (Phase 1) loaded - FULLY FIXED'
+  '✅ Video Player Features (Phase 1 + Phase 1D) loaded - FULLY FIXED'
 );
