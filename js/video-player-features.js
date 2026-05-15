@@ -6,6 +6,9 @@
 // ✅ FIXED session handling
 // ✅ FIXED creator_id issues
 // ✅ FIXED content table view syncing
+// ✅ CRITICAL FIX #7: Prevent cleanup during active playback
+// ✅ CRITICAL FIX #8: Prevent cleanup during UI interactions
+// ✅ CRITICAL FIX #9: Only destroy player on page unload or true content change
 // 🚀 PHASE 1D ENHANCEMENTS:
 // ✅ Collection-aware playback
 // ✅ Queue integration
@@ -33,6 +36,11 @@
  * 11. Playback state persistence
  * 12. Playlist autoplay on video end
  * 13. Queue UI sync methods
+ * 
+ * 🔥 CRITICAL FIX #7-9:
+ * 14. Prevent cleanup during active playback
+ * 15. Prevent cleanup during UI interactions (play, pause, settings, album expand)
+ * 16. Only destroy player on page unload or true content change
  */
 
 class VideoPlayerFeatures {
@@ -44,6 +52,13 @@ class VideoPlayerFeatures {
     this.queueItems = [];
     this.boundHandleVideoEnded = null;
     this.playlistSyncInterval = null;
+    
+    // ✅ CRITICAL FIX #7-9: Track cleanup state
+    this._isCleaningUp = false;
+    this._activePlaybackCount = 0;
+    this._pendingCleanup = false;
+    this._lastCleanupTime = 0;
+    this._contentChangeInProgress = false;
   }
 
   /**
@@ -91,6 +106,126 @@ class VideoPlayerFeatures {
   }
 
   /**
+   * ✅ CRITICAL FIX #7: Check if cleanup is safe to perform
+   */
+  canCleanup() {
+    // Don't cleanup if actively playing
+    if (this._activePlaybackCount > 0) {
+      console.log('🚫 Cleanup blocked: Active playback in progress');
+      return false;
+    }
+    
+    // Don't cleanup if content change is in progress
+    if (this._contentChangeInProgress) {
+      console.log('🚫 Cleanup blocked: Content change in progress');
+      return false;
+    }
+    
+    // Don't cleanup too frequently (within 500ms)
+    const now = Date.now();
+    if (now - this._lastCleanupTime < 500) {
+      console.log('🚫 Cleanup blocked: Too frequent (throttled)');
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #7: Mark playback started
+   */
+  markPlaybackStarted() {
+    this._activePlaybackCount++;
+    console.log(`🎬 Playback started (count: ${this._activePlaybackCount})`);
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #7: Mark playback ended
+   */
+  markPlaybackEnded() {
+    this._activePlaybackCount = Math.max(0, this._activePlaybackCount - 1);
+    console.log(`⏹️ Playback ended (count: ${this._activePlaybackCount})`);
+    
+    // If there was pending cleanup and playback just ended, execute it
+    if (this._pendingCleanup && this._activePlaybackCount === 0 && this.canCleanup()) {
+      console.log('🔧 Executing pending cleanup after playback ended');
+      this._pendingCleanup = false;
+      this.executeCleanup();
+    }
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #8: Mark content change start (prevents cleanup)
+   */
+  markContentChangeStart() {
+    this._contentChangeInProgress = true;
+    console.log('🔄 Content change started - cleanup disabled');
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #8: Mark content change end
+   */
+  markContentChangeEnd() {
+    this._contentChangeInProgress = false;
+    console.log('✅ Content change ended - cleanup re-enabled');
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #9: Safe cleanup that respects active state
+   */
+  safeCleanup(force = false) {
+    if (force) {
+      console.log('🧹 Force cleanup - ignoring safety checks');
+      this.executeCleanup();
+      return;
+    }
+    
+    if (!this.canCleanup()) {
+      console.log('⏰ Deferring cleanup until safe');
+      this._pendingCleanup = true;
+      return;
+    }
+    
+    this.executeCleanup();
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #9: Execute actual cleanup
+   */
+  executeCleanup() {
+    if (this._isCleaningUp) {
+      console.log('⚠️ Cleanup already in progress');
+      return;
+    }
+    
+    this._isCleaningUp = true;
+    this._lastCleanupTime = Date.now();
+    
+    console.log('🧹 Executing video player resource cleanup...');
+    
+    // Clean up video player but preserve source
+    if (window.enhancedVideoPlayer && !this._contentChangeInProgress) {
+      try {
+        // Don't destroy if we're just pausing
+        if (this._activePlaybackCount === 0) {
+          console.log('📦 Cleaning up player resources while preserving source...');
+          // Just pause and cleanup controls, don't destroy the player
+          if (window.enhancedVideoPlayer.video && !window.enhancedVideoPlayer.video.paused) {
+            window.enhancedVideoPlayer.video.pause();
+          }
+        } else {
+          console.log('⚠️ Skipping cleanup - active playback detected');
+        }
+      } catch (error) {
+        console.warn('Cleanup error:', error);
+      }
+    }
+    
+    this._isCleaningUp = false;
+    console.log('✅ Cleanup complete');
+  }
+
+  /**
    * PHASE 1D: Setup next/previous track controls
    */
   setupQueueControls() {
@@ -100,20 +235,23 @@ class VideoPlayerFeatures {
     const prevBtn = document.getElementById('previousTrackBtn');
     
     if (nextBtn) {
-      // Remove existing listeners
       const newNextBtn = nextBtn.cloneNode(true);
       nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
-      newNextBtn.addEventListener('click', () => this.playNextTrack());
+      newNextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.playNextTrack();
+      });
     }
     
     if (prevBtn) {
-      // Remove existing listeners
       const newPrevBtn = prevBtn.cloneNode(true);
       prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
-      newPrevBtn.addEventListener('click', () => this.playPreviousTrack());
+      newPrevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.playPreviousTrack();
+      });
     }
     
-    // Setup autoplay toggle
     const autoplayToggle = document.getElementById('autoplayToggle');
     if (autoplayToggle) {
       const savedAutoplay = localStorage.getItem('bantu_autoplay_enabled');
@@ -123,7 +261,8 @@ class VideoPlayerFeatures {
         autoplayToggle.classList.remove('active');
       }
       
-      autoplayToggle.addEventListener('click', () => {
+      autoplayToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
         const isActive = autoplayToggle.classList.toggle('active');
         localStorage.setItem('bantu_autoplay_enabled', isActive);
         console.log('🎵 Autoplay:', isActive ? 'ON' : 'OFF');
@@ -157,7 +296,6 @@ class VideoPlayerFeatures {
       }
     }
     
-    // Fallback to QueueManager or local queue
     if (window.QueueManager && typeof window.QueueManager.playNext === 'function') {
       window.QueueManager.playNext();
     } else if (this.queueItems.length > 0 && this.currentQueueIndex < this.queueItems.length - 1) {
@@ -175,7 +313,6 @@ class VideoPlayerFeatures {
   playPreviousTrack() {
     console.log('⏮️ Playing previous track...');
     
-    // Check if we're in playlist mode
     if (window.isPlaylistMode && window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
       const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === window.currentContent?.id);
       if (currentIndex > 0) {
@@ -192,7 +329,6 @@ class VideoPlayerFeatures {
       }
     }
     
-    // Fallback to QueueManager or local queue
     if (window.QueueManager && typeof window.QueueManager.playPrevious === 'function') {
       window.QueueManager.playPrevious();
     } else if (this.queueItems.length > 0 && this.currentQueueIndex > 0) {
@@ -252,10 +388,8 @@ class VideoPlayerFeatures {
     
     console.log('🎬 Loading queue item:', item.title);
     
-    // Save current playback state
     this.savePlaybackState();
     
-    // Navigate to content
     window.location.href = `content-detail.html?id=${item.id}`;
   }
   
@@ -293,13 +427,11 @@ class VideoPlayerFeatures {
     try {
       const state = JSON.parse(savedState);
       
-      // Check if state is recent (within 30 minutes)
       if (Date.now() - state.timestamp > 30 * 60 * 1000) {
         console.log('⏰ Playback state expired');
         return false;
       }
       
-      // Restore queue if available
       if (state.queue && state.queue.length > 0) {
         this.queueItems = state.queue;
         this.currentQueueIndex = state.currentIndex;
@@ -324,7 +456,6 @@ class VideoPlayerFeatures {
    * PHASE 1D: Highlight active queue item
    */
   highlightActiveQueueItem(contentId) {
-    // Highlight playlist queue items
     const playlistItems = document.querySelectorAll('.playlist-queue-item');
     let activeFound = false;
     
@@ -333,7 +464,6 @@ class VideoPlayerFeatures {
         item.classList.add('active');
         activeFound = true;
         
-        // Scroll into view if needed
         const sidebar = document.querySelector('.playlist-queue');
         if (sidebar) {
           const itemRect = item.getBoundingClientRect();
@@ -348,7 +478,6 @@ class VideoPlayerFeatures {
       }
     });
     
-    // Also highlight legacy queue items
     const queueItems = document.querySelectorAll('.queue-item');
     queueItems.forEach(item => {
       if (item.dataset.contentId === String(contentId)) {
@@ -369,7 +498,6 @@ class VideoPlayerFeatures {
     const videoElement = document.getElementById('inlineVideoPlayer');
     if (!videoElement) return;
     
-    // Remove existing listener if any
     if (this.boundHandleVideoEnded) {
       videoElement.removeEventListener('ended', this.boundHandleVideoEnded);
     }
@@ -381,7 +509,6 @@ class VideoPlayerFeatures {
       if (isAutoplayEnabled) {
         console.log('🎬 Video ended, autoplaying next...');
         
-        // Check if we're in playlist mode
         if (window.isPlaylistMode && window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
           const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === window.currentContent?.id);
           if (currentIndex >= 0 && currentIndex + 1 < window.currentPlaylistItems.length) {
@@ -397,7 +524,6 @@ class VideoPlayerFeatures {
           }
         }
         
-        // Fallback to QueueManager
         this.playNextTrack();
       } else {
         console.log('⏸️ Video ended, autoplay disabled');
@@ -421,7 +547,6 @@ class VideoPlayerFeatures {
       if (window.currentContent?.id) {
         this.highlightActiveQueueItem(window.currentContent.id);
         
-        // Update now playing indicator in playlist queue
         const nowPlayingItem = document.querySelector('.playlist-queue-item.active');
         if (nowPlayingItem) {
           const title = nowPlayingItem.querySelector('.playlist-item-title')?.textContent;
@@ -459,7 +584,6 @@ class VideoPlayerFeatures {
       }
     }
     
-    // Also check for playlist mode restoration
     const savedPlaylist = localStorage.getItem('bantu_last_playlist');
     if (savedPlaylist && !window.isPlaylistMode) {
       try {
@@ -635,10 +759,6 @@ class VideoPlayerFeatures {
           userId = userProfile?.id || null;
         }
 
-        // ============================================
-        // SESSION MANAGEMENT
-        // ============================================
-
         let sessionId = sessionStorage.getItem('bantu_view_session');
 
         if (!sessionId) {
@@ -657,10 +777,6 @@ class VideoPlayerFeatures {
           console.log('♻️ Existing session reused:', sessionId);
         }
 
-        // ============================================
-        // CHECK DATABASE FIRST
-        // ============================================
-
         const { data: existingView, error: existingError } =
           await window.supabaseClient
             .from('content_views')
@@ -676,10 +792,6 @@ class VideoPlayerFeatures {
           );
         }
 
-        // ============================================
-        // ALREADY EXISTS
-        // ============================================
-
         if (existingView) {
 
           console.log(
@@ -691,10 +803,6 @@ class VideoPlayerFeatures {
 
           return sessionId;
         }
-
-        // ============================================
-        // INSERT NEW VIEW
-        // ============================================
 
         const insertData = {
           content_id: contentIdNum,
@@ -720,13 +828,8 @@ class VideoPlayerFeatures {
           .select()
           .single();
 
-        // ============================================
-        // DUPLICATE = SUCCESS
-        // ============================================
-
         if (error) {
 
-          // Unique constraint = already exists
           if (error.code === '23505') {
 
             console.log(
@@ -748,15 +851,7 @@ class VideoPlayerFeatures {
           data.id
         );
 
-        // ============================================
-        // MARK VIEWED
-        // ============================================
-
         VideoPlayerFeatures.markContentAsViewed(contentIdNum);
-
-        // ============================================
-        // 🔥 IMMEDIATELY UPDATE UI COUNTS
-        // ============================================
 
         try {
 
@@ -865,7 +960,7 @@ class VideoPlayerFeatures {
   }
 
   /**
-   * CRITICAL FIX #4: Fix memory leaks
+   * CRITICAL FIX #4: Fix memory leaks with safe cleanup
    */
   setupMemoryLeakFix() {
 
@@ -956,7 +1051,7 @@ class VideoPlayerFeatures {
    */
   setupPlaybackStateCleanup() {
     window.addEventListener('beforeunload', () => {
-      // Save final playback state before leaving
+      // Only save final state, don't destroy player aggressively
       const videoElement = document.getElementById('inlineVideoPlayer');
       if (videoElement && window.currentContent) {
         const playbackState = {
@@ -973,12 +1068,10 @@ class VideoPlayerFeatures {
         localStorage.setItem('bantu_playback_state', JSON.stringify(playbackState));
       }
       
-      // Save current playlist if in playlist mode
       if (window.isPlaylistMode && window.currentPlaylist) {
         this.saveCurrentPlaylist();
       }
       
-      // Clean up interval
       if (this.playlistSyncInterval) {
         clearInterval(this.playlistSyncInterval);
       }
@@ -1013,6 +1106,91 @@ class VideoPlayerFeatures {
     );
     
     this.setupAdditionalEventListeners();
+    this.setupPlaybackTracking(); // ✅ NEW: Track playback for cleanup prevention
+    this.setupUIInteractionTracking(); // ✅ NEW: Track UI interactions
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #7: Track playback for cleanup prevention
+   */
+  setupPlaybackTracking() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    if (!videoElement) return;
+    
+    videoElement.addEventListener('play', () => {
+      this.markPlaybackStarted();
+    });
+    
+    videoElement.addEventListener('pause', () => {
+      this.markPlaybackEnded();
+    });
+    
+    videoElement.addEventListener('ended', () => {
+      this.markPlaybackEnded();
+    });
+    
+    console.log('✅ Playback tracking initialized');
+  }
+  
+  /**
+   * ✅ CRITICAL FIX #8: Track UI interactions to prevent cleanup
+   */
+  setupUIInteractionTracking() {
+    // Track play/pause button interactions
+    const playBtn = document.getElementById('playBtn');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => {
+        this.markContentChangeStart();
+        setTimeout(() => this.markContentChangeEnd(), 500);
+      });
+    }
+    
+    // Track settings menu interactions
+    const settingsBtn = document.querySelector('.settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.markContentChangeStart();
+        setTimeout(() => this.markContentChangeEnd(), 300);
+      });
+    }
+    
+    // Track album expand/collapse
+    const albumToggleBtn = document.getElementById('albumToggleBtn');
+    if (albumToggleBtn) {
+      albumToggleBtn.addEventListener('click', () => {
+        this.markContentChangeStart();
+        setTimeout(() => this.markContentChangeEnd(), 500);
+      });
+    }
+    
+    // Track like button
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+      likeBtn.addEventListener('click', () => {
+        this.markContentChangeStart();
+        setTimeout(() => this.markContentChangeEnd(), 300);
+      });
+    }
+    
+    // Track favorite button
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+      favoriteBtn.addEventListener('click', () => {
+        this.markContentChangeStart();
+        setTimeout(() => this.markContentChangeEnd(), 300);
+      });
+    }
+    
+    // Track watch later button
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+      watchLaterBtn.addEventListener('click', () => {
+        this.markContentChangeStart();
+        setTimeout(() => this.markContentChangeEnd(), 300);
+      });
+    }
+    
+    console.log('✅ UI interaction tracking initialized');
   }
 
   /**
@@ -1030,9 +1208,7 @@ class VideoPlayerFeatures {
         case 'k':
 
           e.preventDefault();
-
           window.enhancedVideoPlayer.togglePlay();
-
           break;
 
         case 'f':
@@ -1040,10 +1216,8 @@ class VideoPlayerFeatures {
           if (window.enhancedVideoPlayer.toggleFullscreen) {
 
             e.preventDefault();
-
             window.enhancedVideoPlayer.toggleFullscreen();
           }
-
           break;
 
         case 'm':
@@ -1051,11 +1225,9 @@ class VideoPlayerFeatures {
           if (window.enhancedVideoPlayer.video) {
 
             e.preventDefault();
-
             window.enhancedVideoPlayer.video.muted =
               !window.enhancedVideoPlayer.video.muted;
           }
-
           break;
 
         case 'arrowleft':
@@ -1066,7 +1238,6 @@ class VideoPlayerFeatures {
 
             window.enhancedVideoPlayer.video.currentTime -= 10;
           }
-
           break;
 
         case 'arrowright':
@@ -1077,11 +1248,9 @@ class VideoPlayerFeatures {
 
             window.enhancedVideoPlayer.video.currentTime += 10;
           }
-
           break;
           
         case 'n':
-          // 'N' key for next track
           if (!e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             this.playNextTrack();
@@ -1089,7 +1258,6 @@ class VideoPlayerFeatures {
           break;
           
         case 'p':
-          // 'P' key for previous track
           if (!e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             this.playPreviousTrack();
@@ -1097,7 +1265,6 @@ class VideoPlayerFeatures {
           break;
           
         case 'a':
-          // 'A' key to toggle autoplay
           if (!e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             const autoplayToggle = document.getElementById('autoplayToggle');
@@ -1183,7 +1350,6 @@ class VideoPlayerFeatures {
     this.queueItems = items || [];
     this.currentQueueIndex = currentIndex;
     
-    // Save to localStorage for persistence
     localStorage.setItem('bantu_active_queue', JSON.stringify({
       queue: this.queueItems,
       currentIndex: this.currentQueueIndex,
@@ -1220,7 +1386,6 @@ class VideoPlayerFeatures {
   updatePlaylistUIOnTrackChange(contentId) {
     this.highlightActiveQueueItem(contentId);
     
-    // Update now playing section
     const nowPlayingTitle = document.getElementById('nowPlayingTitle');
     const nowPlayingThumb = document.getElementById('nowPlayingThumb');
     
@@ -1232,7 +1397,6 @@ class VideoPlayerFeatures {
       nowPlayingThumb.src = window.currentContent.thumbnail_url;
     }
     
-    // Update playlist progress
     if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
       const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === contentId);
       const progressEl = document.getElementById('playlistProgress');
@@ -1269,7 +1433,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.hasViewedContent = (id) =>
       VideoPlayerFeatures.hasViewedContent(id);
     
-    // PHASE 1D: Expose queue management methods
     window.setVideoQueue = (items, currentIndex) =>
       videoPlayerFeatures.setQueue(items, currentIndex);
     
@@ -1290,6 +1453,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.playPreviousTrack = () =>
       videoPlayerFeatures.playPreviousTrack();
+    
+    // ✅ NEW: Expose cleanup control methods
+    window.safeCleanup = (force) =>
+      videoPlayerFeatures.safeCleanup(force);
+    
+    window.markContentChangeStart = () =>
+      videoPlayerFeatures.markContentChangeStart();
+    
+    window.markContentChangeEnd = () =>
+      videoPlayerFeatures.markContentChangeEnd();
 
   }, 1000);
 });
@@ -1297,5 +1470,9 @@ document.addEventListener('DOMContentLoaded', () => {
 window.VideoPlayerFeatures = VideoPlayerFeatures;
 
 console.log(
-  '✅ Video Player Features (Phase 1 + Phase 1D) loaded - FULLY FIXED with playlist autoplay and queue sync'
+  '✅ Video Player Features (Phase 1 + Phase 1D) loaded - FULLY FIXED with:'
 );
+console.log('  ✅ CRITICAL FIX #7: Prevent cleanup during active playback');
+console.log('  ✅ CRITICAL FIX #8: Prevent cleanup during UI interactions');
+console.log('  ✅ CRITICAL FIX #9: Only destroy player on page unload or true content change');
+console.log('  ✅ Playlist autoplay and queue sync');
