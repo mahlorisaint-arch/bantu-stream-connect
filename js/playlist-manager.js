@@ -1,483 +1,662 @@
-// js/streaming-manager.js — HLS Streaming & Quality Control Manager
-// Bantu Stream Connect — Phase 4 Implementation
-// ✅ FIXED: Network speed test uses public endpoint, HLS integration complete
+// js/playlist-manager.js - Bantu Stream Connect Playlist Manager
+// COMPLETE FIXED VERSION WITH WATCH LATER AND PLAYLIST MODAL INTEGRATION
+// FIXED: Duplicate key constraint error handling
+// FIXED: Watch Later playlist creation and management
+// FIXED: Playlist item add/remove with proper error handling
+// ✅ CRITICAL FIX #1: Added isInWatchLater method with proper error handling
+// ✅ CRITICAL FIX #2: Added getWatchLaterPlaylistId method with caching
+// ✅ CRITICAL FIX #3: Added addToWatchLater and removeFromWatchLater methods
+// ✅ CRITICAL FIX #4: Fixed playlist item insertion to handle duplicates gracefully
 
 (function() {
   'use strict';
   
-  console.log('📡 StreamingManager module loading...');
+  console.log('📋 PlaylistManager module loading...');
 
-  function StreamingManager(config) {
-    if (!config || !config.videoElement) {
-      console.error('❌ StreamingManager: Missing required config (videoElement)');
+  function PlaylistManager(config) {
+    if (!config || !config.supabase) {
+      console.error('❌ PlaylistManager: Missing required config (supabase)');
       return;
     }
+    
+    if (!config.userId) {
+      console.warn('⚠️ PlaylistManager: No userId provided - playlist features limited');
+    }
 
-    this.video = config.videoElement;
-    this.supabase = config.supabaseClient || window.supabaseClient;
-    this.contentId = config.contentId || null;
+    this.supabase = config.supabase;
     this.userId = config.userId || null;
+    this.watchLaterName = config.watchLaterName || 'Watch Later';
     
-    // Quality levels (for HLS or multi-quality MP4)
-    this.qualityLevels = config.qualityLevels || [
-      { label: 'Auto', value: 'auto', bitrate: 0 },
-      { label: '1080p', value: '1080p', bitrate: 5000000 },
-      { label: '720p', value: '720p', bitrate: 2500000 },
-      { label: '480p', value: '480p', bitrate: 1000000 },
-      { label: '360p', value: '360p', bitrate: 500000 }
-    ];
-    
-    // State
-    this.currentQuality = 'auto';
-    this.isDataSaverMode = false;
-    this.networkSpeed = null;
-    this.bufferHealth = 100;
-    this.hlsInstance = null;
-    this.availableQualities = [];
-    this.currentBitrate = 0;
+    // Cache for watch later playlist ID
+    this._watchLaterPlaylistId = null;
+    this._watchLaterCacheTime = null;
+    this._cacheDuration = 30000; // 30 seconds cache
     
     // Callbacks
-    this.onQualityChange = config.onQualityChange || null;
-    this.onDataSaverToggle = config.onDataSaverToggle || null;
+    this.onPlaylistUpdated = config.onPlaylistUpdated || null;
     this.onError = config.onError || null;
     
-    // Load saved preferences
-    this._loadUserPreferences();
-    
-    console.log('✅ StreamingManager initialized');
+    console.log('✅ PlaylistManager initialized for user:', this.userId || 'guest');
   }
 
   // ============================================
-  // PUBLIC API
+  // PUBLIC API - CORE PLAYLIST OPERATIONS
   // ============================================
 
-  StreamingManager.prototype.initialize = async function() {
-    // Load available qualities from database
-    await this._loadAvailableQualities();
-    
-    // Check if HLS is supported and manifest exists
-    if (this._isHLSSupported()) {
-      await this._initializeHLS();
+  /**
+   * Get all playlists for the current user
+   */
+  PlaylistManager.prototype.getPlaylists = async function() {
+    if (!this.userId) {
+      console.warn('⚠️ Cannot get playlists: No user logged in');
+      return [];
     }
     
-    // Setup network monitoring (less aggressive - every 60s)
-    this._startNetworkMonitoring();
-    
-    // Apply saved quality preference
-    await this._applyQualityPreference();
-    
-    console.log('✅ StreamingManager fully initialized');
+    try {
+      const { data, error } = await this.supabase
+        .from('playlists')
+        .select(`
+          *,
+          playlist_items(count)
+        `)
+        .eq('user_id', this.userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Add item count to each playlist
+      const playlists = (data || []).map(playlist => ({
+        ...playlist,
+        item_count: playlist.playlist_items?.[0]?.count || 0
+      }));
+      
+      return playlists;
+    } catch (error) {
+      console.error('❌ Failed to get playlists:', error);
+      this._handleError('get_playlists', error);
+      return [];
+    }
   };
 
-  StreamingManager.prototype.setQuality = async function(quality) {
-    if (!this.qualityLevels.find(q => q.value === quality)) {
-      console.warn('⚠️ Invalid quality level:', quality);
+  /**
+   * Get a single playlist by ID with its items
+   */
+  PlaylistManager.prototype.getPlaylist = async function(playlistId) {
+    if (!playlistId) {
+      console.warn('⚠️ Cannot get playlist: No playlist ID provided');
+      return null;
+    }
+    
+    try {
+      // Get playlist details
+      const { data: playlist, error: playlistError } = await this.supabase
+        .from('playlists')
+        .select('*')
+        .eq('id', playlistId)
+        .single();
+      
+      if (playlistError) throw playlistError;
+      
+      // Get playlist items with content details
+      const { data: items, error: itemsError } = await this.supabase
+        .from('playlist_items')
+        .select(`
+          id,
+          added_at,
+          content_id,
+          Content (
+            id,
+            title,
+            thumbnail_url,
+            duration,
+            media_type,
+            views_count,
+            user_profiles!user_id (
+              id,
+              full_name,
+              username,
+              avatar_url
+            )
+          )
+        `)
+        .eq('playlist_id', playlistId)
+        .order('added_at', { ascending: true });
+      
+      if (itemsError) throw itemsError;
+      
+      return {
+        ...playlist,
+        items: items || []
+      };
+    } catch (error) {
+      console.error('❌ Failed to get playlist:', error);
+      this._handleError('get_playlist', error);
+      return null;
+    }
+  };
+
+  /**
+   * Create a new playlist
+   */
+  PlaylistManager.prototype.createPlaylist = async function(name, description = '', isPublic = false) {
+    if (!this.userId) {
+      this._handleError('create_playlist', new Error('User not logged in'));
+      return null;
+    }
+    
+    if (!name || name.trim() === '') {
+      this._handleError('create_playlist', new Error('Playlist name is required'));
+      return null;
+    }
+    
+    try {
+      const { data, error } = await this.supabase
+        .from('playlists')
+        .insert({
+          user_id: this.userId,
+          name: name.trim(),
+          description: description.trim(),
+          is_public: isPublic,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      console.log('✅ Playlist created:', data.name);
+      
+      if (this.onPlaylistUpdated) {
+        this.onPlaylistUpdated({ action: 'create', playlist: data });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to create playlist:', error);
+      this._handleError('create_playlist', error);
+      return null;
+    }
+  };
+
+  /**
+   * Update an existing playlist
+   */
+  PlaylistManager.prototype.updatePlaylist = async function(playlistId, updates) {
+    if (!playlistId) {
+      this._handleError('update_playlist', new Error('Playlist ID required'));
       return false;
     }
     
-    const currentTime = this.video.currentTime;
-    const wasPaused = this.video.paused;
-    
-    this.currentQuality = quality;
-    
-    // Save preference
-    this._saveQualityPreference(quality);
-    
-    // If HLS, switch quality
-    if (this.hlsInstance && quality !== 'auto') {
-      const levelIndex = this.qualityLevels.findIndex(q => q.value === quality);
-      if (levelIndex >= 0 && levelIndex < this.hlsInstance.levels.length) {
-        this.hlsInstance.currentLevel = levelIndex;
-        console.log('📺 HLS quality switched to:', quality);
+    try {
+      const { error } = await this.supabase
+        .from('playlists')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', playlistId)
+        .eq('user_id', this.userId);
+      
+      if (error) throw error;
+      
+      console.log('✅ Playlist updated:', playlistId);
+      
+      if (this.onPlaylistUpdated) {
+        this.onPlaylistUpdated({ action: 'update', playlistId });
       }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to update playlist:', error);
+      this._handleError('update_playlist', error);
+      return false;
     }
-    
-    // For MP4, we'd need to reload with different URL (implement if needed)
-    if (!this.hlsInstance && quality !== 'auto') {
-      await this._switchQualityMP4(quality);
-    }
-    
-    // Notify callback
-    if (this.onQualityChange) {
-      this.onQualityChange({ 
-        quality: quality, 
-        timestamp: Date.now(),
-        bitrate: this.currentBitrate
-      });
-    }
-    
-    console.log('📺 Quality changed to:', quality);
-    return true;
   };
 
-  StreamingManager.prototype.toggleDataSaver = function(enabled) {
-    this.isDataSaverMode = enabled;
+  /**
+   * Delete a playlist
+   */
+  PlaylistManager.prototype.deletePlaylist = async function(playlistId) {
+    if (!playlistId) {
+      this._handleError('delete_playlist', new Error('Playlist ID required'));
+      return false;
+    }
     
-    // Save preference
-    localStorage.setItem('bsc_data_saver', enabled ? 'true' : 'false');
+    try {
+      // First delete all playlist items (cascade should handle this, but explicit for safety)
+      const { error: itemsError } = await this.supabase
+        .from('playlist_items')
+        .delete()
+        .eq('playlist_id', playlistId);
+      
+      if (itemsError) throw itemsError;
+      
+      // Then delete the playlist
+      const { error } = await this.supabase
+        .from('playlists')
+        .delete()
+        .eq('id', playlistId)
+        .eq('user_id', this.userId);
+      
+      if (error) throw error;
+      
+      console.log('✅ Playlist deleted:', playlistId);
+      
+      // Invalidate watch later cache if this was the watch later playlist
+      if (this._watchLaterPlaylistId === playlistId) {
+        this._watchLaterPlaylistId = null;
+        this._watchLaterCacheTime = null;
+      }
+      
+      if (this.onPlaylistUpdated) {
+        this.onPlaylistUpdated({ action: 'delete', playlistId });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to delete playlist:', error);
+      this._handleError('delete_playlist', error);
+      return false;
+    }
+  };
+
+  // ============================================
+  // PUBLIC API - PLAYLIST ITEMS
+  // ============================================
+
+  /**
+   * Add content to a playlist
+   */
+  PlaylistManager.prototype.addToPlaylist = async function(playlistId, contentId) {
+    if (!playlistId || !contentId) {
+      this._handleError('add_to_playlist', new Error('Playlist ID and Content ID required'));
+      return false;
+    }
     
-    // Apply data saver quality
-    if (enabled) {
-      this.setQuality('360p');
+    try {
+      // ✅ CRITICAL FIX #4: Check if already exists to avoid duplicate key error
+      const { data: existing, error: checkError } = await this.supabase
+        .from('playlist_items')
+        .select('id')
+        .eq('playlist_id', playlistId)
+        .eq('content_id', contentId)
+        .maybeSingle();
+      
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+      
+      if (existing) {
+        console.log('ℹ️ Content already in playlist:', contentId);
+        return true; // Already exists, consider success
+      }
+      
+      const { error } = await this.supabase
+        .from('playlist_items')
+        .insert({
+          playlist_id: playlistId,
+          content_id: contentId,
+          added_at: new Date().toISOString()
+        });
+      
+      // Handle duplicate key gracefully
+      if (error && error.code === '23505') { // Unique violation
+        console.log('ℹ️ Content already in playlist (duplicate key)');
+        return true;
+      }
+      
+      if (error) throw error;
+      
+      console.log('✅ Added to playlist:', contentId);
+      
+      // Update playlist updated_at
+      await this.supabase
+        .from('playlists')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', playlistId);
+      
+      if (this.onPlaylistUpdated) {
+        this.onPlaylistUpdated({ 
+          action: 'add_item', 
+          playlistId, 
+          contentId,
+          timestamp: Date.now()
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to add to playlist:', error);
+      this._handleError('add_to_playlist', error);
+      return false;
+    }
+  };
+
+  /**
+   * Remove content from a playlist
+   */
+  PlaylistManager.prototype.removeFromPlaylist = async function(playlistId, contentId) {
+    if (!playlistId || !contentId) {
+      this._handleError('remove_from_playlist', new Error('Playlist ID and Content ID required'));
+      return false;
+    }
+    
+    try {
+      const { error } = await this.supabase
+        .from('playlist_items')
+        .delete()
+        .eq('playlist_id', playlistId)
+        .eq('content_id', contentId);
+      
+      if (error) throw error;
+      
+      console.log('✅ Removed from playlist:', contentId);
+      
+      // Update playlist updated_at
+      await this.supabase
+        .from('playlists')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', playlistId);
+      
+      if (this.onPlaylistUpdated) {
+        this.onPlaylistUpdated({ 
+          action: 'remove_item', 
+          playlistId, 
+          contentId,
+          timestamp: Date.now()
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to remove from playlist:', error);
+      this._handleError('remove_from_playlist', error);
+      return false;
+    }
+  };
+
+  /**
+   * Check if content is in a specific playlist
+   */
+  PlaylistManager.prototype.isInPlaylist = async function(playlistId, contentId) {
+    if (!playlistId || !contentId || !this.userId) return false;
+    
+    try {
+      const { data, error } = await this.supabase
+        .from('playlist_items')
+        .select('id')
+        .eq('playlist_id', playlistId)
+        .eq('content_id', contentId)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      return !!data;
+    } catch (error) {
+      console.warn('⚠️ Failed to check playlist membership:', error);
+      return false;
+    }
+  };
+
+  /**
+   * Get all playlists containing a specific content
+   */
+  PlaylistManager.prototype.getPlaylistsForContent = async function(contentId) {
+    if (!contentId || !this.userId) return [];
+    
+    try {
+      const { data, error } = await this.supabase
+        .from('playlist_items')
+        .select(`
+          playlist_id,
+          playlists!inner (
+            id,
+            name,
+            is_public
+          )
+        `)
+        .eq('content_id', contentId);
+      
+      if (error) throw error;
+      
+      return (data || []).map(item => item.playlists);
+    } catch (error) {
+      console.error('❌ Failed to get playlists for content:', error);
+      return [];
+    }
+  };
+
+  // ============================================
+  // ✅ CRITICAL FIX #2 & #3: WATCH LATER METHODS
+  // ============================================
+
+  /**
+   * Get or create the Watch Later playlist ID
+   * Uses caching to reduce database calls
+   */
+  PlaylistManager.prototype.getWatchLaterPlaylistId = async function() {
+    if (!this.userId) {
+      console.warn('⚠️ Cannot get Watch Later: No user logged in');
+      return null;
+    }
+    
+    // Check cache
+    const now = Date.now();
+    if (this._watchLaterPlaylistId && this._watchLaterCacheTime && 
+        (now - this._watchLaterCacheTime) < this._cacheDuration) {
+      return this._watchLaterPlaylistId;
+    }
+    
+    try {
+      // Look for existing Watch Later playlist
+      let { data: playlist, error } = await this.supabase
+        .from('playlists')
+        .select('id')
+        .eq('user_id', this.userId)
+        .eq('name', this.watchLaterName)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      // Create if it doesn't exist
+      if (!playlist) {
+        console.log('📋 Creating Watch Later playlist for user:', this.userId);
+        
+        const { data: newPlaylist, error: createError } = await this.supabase
+          .from('playlists')
+          .insert({
+            user_id: this.userId,
+            name: this.watchLaterName,
+            description: 'Content saved to watch later',
+            is_public: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (createError) throw createError;
+        
+        playlist = newPlaylist;
+        console.log('✅ Watch Later playlist created:', playlist.id);
+      }
+      
+      // Update cache
+      this._watchLaterPlaylistId = playlist.id;
+      this._watchLaterCacheTime = now;
+      
+      return playlist.id;
+    } catch (error) {
+      console.error('❌ Failed to get Watch Later playlist:', error);
+      this._handleError('get_watch_later', error);
+      return null;
+    }
+  };
+
+  /**
+   * ✅ CRITICAL FIX #3: Add content to Watch Later
+   */
+  PlaylistManager.prototype.addToWatchLater = async function(contentId) {
+    if (!this.userId) {
+      this._handleError('add_to_watch_later', new Error('User not logged in'));
+      return false;
+    }
+    
+    if (!contentId) {
+      this._handleError('add_to_watch_later', new Error('Content ID required'));
+      return false;
+    }
+    
+    try {
+      const watchLaterId = await this.getWatchLaterPlaylistId();
+      if (!watchLaterId) {
+        throw new Error('Could not get or create Watch Later playlist');
+      }
+      
+      const success = await this.addToPlaylist(watchLaterId, contentId);
+      
+      if (success) {
+        console.log('✅ Added to Watch Later:', contentId);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('❌ Failed to add to Watch Later:', error);
+      this._handleError('add_to_watch_later', error);
+      return false;
+    }
+  };
+
+  /**
+   * ✅ CRITICAL FIX #3: Remove content from Watch Later
+   */
+  PlaylistManager.prototype.removeFromWatchLater = async function(contentId) {
+    if (!this.userId || !contentId) return false;
+    
+    try {
+      const watchLaterId = await this.getWatchLaterPlaylistId();
+      if (!watchLaterId) return false;
+      
+      const success = await this.removeFromPlaylist(watchLaterId, contentId);
+      
+      if (success) {
+        console.log('✅ Removed from Watch Later:', contentId);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('❌ Failed to remove from Watch Later:', error);
+      this._handleError('remove_from_watch_later', error);
+      return false;
+    }
+  };
+
+  /**
+   * ✅ CRITICAL FIX #1: Check if content is in Watch Later
+   */
+  PlaylistManager.prototype.isInWatchLater = async function(contentId) {
+    if (!this.userId || !contentId) return false;
+    
+    try {
+      const watchLaterId = await this.getWatchLaterPlaylistId();
+      if (!watchLaterId) return false;
+      
+      return await this.isInPlaylist(watchLaterId, contentId);
+    } catch (error) {
+      console.warn('⚠️ Failed to check Watch Later status:', error);
+      return false;
+    }
+  };
+
+  /**
+   * Get all Watch Later items
+   */
+  PlaylistManager.prototype.getWatchLaterItems = async function() {
+    if (!this.userId) return [];
+    
+    try {
+      const watchLaterId = await this.getWatchLaterPlaylistId();
+      if (!watchLaterId) return [];
+      
+      const playlist = await this.getPlaylist(watchLaterId);
+      return playlist?.items || [];
+    } catch (error) {
+      console.error('❌ Failed to get Watch Later items:', error);
+      return [];
+    }
+  };
+
+  /**
+   * Toggle content in Watch Later (add if not present, remove if present)
+   */
+  PlaylistManager.prototype.toggleWatchLater = async function(contentId) {
+    if (!this.userId || !contentId) {
+      return { added: false, removed: false };
+    }
+    
+    const isPresent = await this.isInWatchLater(contentId);
+    
+    if (isPresent) {
+      const removed = await this.removeFromWatchLater(contentId);
+      return { added: false, removed };
     } else {
-      this.setQuality('auto');
+      const added = await this.addToWatchLater(contentId);
+      return { added, removed: false };
     }
+  };
+
+  // ============================================
+  // PUBLIC API - UTILITY METHODS
+  // ============================================
+
+  /**
+   * Clear the watch later cache (useful after logout)
+   */
+  PlaylistManager.prototype.clearWatchLaterCache = function() {
+    this._watchLaterPlaylistId = null;
+    this._watchLaterCacheTime = null;
+    console.log('🗑️ Watch later cache cleared');
+  };
+
+  /**
+   * Update user ID (for when user logs in/out)
+   */
+  PlaylistManager.prototype.setUserId = function(userId) {
+    this.userId = userId;
+    this.clearWatchLaterCache();
+    console.log('👤 PlaylistManager user ID updated:', userId || 'guest');
     
-    // Notify callback
-    if (this.onDataSaverToggle) {
-      this.onDataSaverToggle({ enabled: enabled, timestamp: Date.now() });
+    if (this.onPlaylistUpdated) {
+      this.onPlaylistUpdated({ action: 'user_change', userId });
     }
-    
-    console.log('💾 Data saver mode:', enabled ? 'ON' : 'OFF');
-    return enabled;
   };
 
-  StreamingManager.prototype.getAvailableQualities = function() {
-    if (this.isDataSaverMode) {
-      return this.qualityLevels.filter(q => q.value === '360p' || q.value === 'auto');
-    }
-    return this.availableQualities.length > 0 ? this.availableQualities : this.qualityLevels;
-  };
-
-  StreamingManager.prototype.getCurrentQuality = function() {
-    return this.currentQuality;
-  };
-
-  StreamingManager.prototype.isDataSaverEnabled = function() {
-    return this.isDataSaverMode;
-  };
-
-  StreamingManager.prototype.getNetworkSpeed = function() {
-    return this.networkSpeed;
-  };
-
-  StreamingManager.prototype.getBufferHealth = function() {
-    return this.bufferHealth;
-  };
-
-  StreamingManager.prototype.destroy = function() {
-    // Stop network monitoring
-    if (this._networkCheckInterval) {
-      clearInterval(this._networkCheckInterval);
-      this._networkCheckInterval = null;
-    }
-    
-    // Destroy HLS instance
-    if (this.hlsInstance) {
-      this.hlsInstance.destroy();
-      this.hlsInstance = null;
-    }
-    
-    console.log('🛑 StreamingManager destroyed');
+  /**
+   * Check if user is logged in
+   */
+  PlaylistManager.prototype.isAuthenticated = function() {
+    return !!this.userId;
   };
 
   // ============================================
   // PRIVATE METHODS
   // ============================================
 
-  StreamingManager.prototype._loadAvailableQualities = async function() {
-    if (!this.contentId) return;
-    
-    try {
-      const { data, error } = await this.supabase
-        .from('content_quality')
-        .select('quality_label, bitrate, resolution')
-        .eq('content_id', this.contentId)
-        .order('bitrate', { ascending: false });
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        this.availableQualities = data.map(q => ({
-          label: q.quality_label,
-          value: q.quality_label.toLowerCase(),
-          bitrate: q.bitrate
-        }));
-        
-        // Add Auto option
-        this.availableQualities.unshift({ 
-          label: 'Auto', 
-          value: 'auto', 
-          bitrate: 0 
-        });
-        
-        console.log('📺 Available qualities:', this.availableQualities);
-      }
-    } catch (error) {
-      console.warn('⚠️ Could not load quality profiles:', error);
-    }
-  };
-
-  StreamingManager.prototype._isHLSSupported = function() {
-    // Check for native HLS support (Safari)
-    const video = document.createElement('video');
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      return true;
-    }
-    // Check for HLS.js support
-    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-      return true;
-    }
-    return false;
-  };
-
-  StreamingManager.prototype._initializeHLS = async function() {
-    if (!this.contentId) return;
-    
-    try {
-      // Fetch content with HLS manifest URL
-      const { data: content, error } = await this.supabase
-        .from('Content')
-        .select('hls_manifest_url, quality_profiles, file_url')
-        .eq('id', this.contentId)
-        .single();
-      
-      if (error) throw error;
-      
-      // Check if HLS manifest exists
-      if (!content?.hls_manifest_url) {
-        console.log('ℹ️ No HLS manifest available, using MP4');
-        return;
-      }
-      
-      // Check for HLS.js (for non-Safari browsers)
-      if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-        this.hlsInstance = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 90,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          startLevel: -1, // Auto-select
-          capLevelToPlayerSize: true
-        });
-        
-        this.hlsInstance.loadSource(content.hls_manifest_url);
-        this.hlsInstance.attachMedia(this.video);
-        
-        this.hlsInstance.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-          console.log('✅ HLS manifest parsed', data);
-          
-          // Update available qualities from manifest
-          if (data.levels && data.levels.length > 0) {
-            this.availableQualities = data.levels.map((level, index) => ({
-              label: this._getQualityLabel(level.height),
-              value: this._getQualityLabel(level.height).toLowerCase(),
-              bitrate: level.bitrate,
-              height: level.height
-            }));
-            
-            this.availableQualities.unshift({ 
-              label: 'Auto', 
-              value: 'auto', 
-              bitrate: 0 
-            });
-          }
-          
-          // Auto-play if not paused
-          if (!this.video.paused) {
-            this.video.play().catch(() => {});
-          }
-        });
-        
-        this.hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-          const level = this.hlsInstance.levels[data.level];
-          this.currentBitrate = level.bitrate;
-          console.log('📺 Quality level switched:', this._getQualityLabel(level.height));
-        });
-        
-        this.hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            console.error('❌ HLS fatal error:', data);
-            this._handleError('hls', data);
-            
-            // Try to recover
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                this.hlsInstance.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                this.hlsInstance.recoverMediaError();
-                break;
-              default:
-                this._handleError('hls_unrecoverable', data);
-                break;
-            }
-          }
-        });
-        
-        console.log('✅ HLS.js initialized');
-        
-      } else if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS (Safari)
-        this.video.src = content.hls_manifest_url;
-        this.video.addEventListener('loadedmetadata', () => {
-          console.log('✅ Native HLS loaded');
-          this.video.play().catch(() => {});
-        });
-      }
-      
-      // Store quality profiles from database
-      if (content.quality_profiles?.length > 0) {
-        this.qualityLevels = content.quality_profiles;
-      }
-      
-    } catch (error) {
-      console.error('❌ HLS initialization failed:', error);
-      this._handleError('hls_init', error);
-    }
-  };
-
-  StreamingManager.prototype._getQualityLabel = function(height) {
-    if (height >= 1080) return '1080p';
-    if (height >= 720) return '720p';
-    if (height >= 480) return '480p';
-    return '360p';
-  };
-
-  StreamingManager.prototype._switchQualityMP4 = async function(quality) {
-    // For MP4 files, we need to reload with different URL
-    // This is a simplified version - implement based on your storage structure
-    if (!this.contentId) return;
-    
-    try {
-      const { data } = await this.supabase
-        .from('content_quality')
-        .select('file_url')
-        .eq('content_id', this.contentId)
-        .eq('quality_label', quality.toUpperCase())
-        .single();
-      
-      if (data?.file_url) {
-        const currentTime = this.video.currentTime;
-        const wasPaused = this.video.paused;
-        
-        this.video.src = data.file_url;
-        this.video.currentTime = currentTime;
-        
-        if (!wasPaused) {
-          await this.video.play();
-        }
-        
-        console.log('📺 MP4 quality switched to:', quality);
-      }
-    } catch (error) {
-      console.warn('⚠️ Could not switch MP4 quality:', error);
-    }
-  };
-
-  StreamingManager.prototype._startNetworkMonitoring = function() {
-    // Check network speed every 60 seconds (not 30) to reduce requests
-    this._networkCheckInterval = setInterval(() => {
-      this._measureNetworkSpeed();
-    }, 60000); // 60 seconds
-    
-    // Initial check after a short delay
-    setTimeout(() => {
-      this._measureNetworkSpeed();
-    }, 5000);
-  };
-
-  StreamingManager.prototype._measureNetworkSpeed = async function() {
-    try {
-      const startTime = Date.now();
-      
-      // Use a small, reliable endpoint for testing
-      // Using a 1KB test file from a CDN (no auth required)
-      const testUrl = 'https://httpbin.org/bytes/1024?t=' + Date.now();
-      
-      const response = await fetch(testUrl, {
-        method: 'GET',
-        cache: 'no-store',
-        mode: 'cors'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Network test failed');
-      }
-      
-      const endTime = Date.now();
-      const duration = (endTime - startTime) / 1000; // seconds
-      const bytesLoaded = 1024; // 1KB
-      const bitsLoaded = bytesLoaded * 8;
-      const speedBps = bitsLoaded / duration;
-      
-      this.networkSpeed = speedBps;
-      
-      console.log('🌐 Network speed:', (speedBps / 1000000).toFixed(2), 'Mbps');
-      
-      // Auto-adjust quality based on network (if in auto mode)
-      if (this.currentQuality === 'auto' && !this.isDataSaverMode) {
-        this._autoAdjustQuality();
-      }
-      
-    } catch (error) {
-      // Fail silently — don't spam console
-      this.networkSpeed = 2000000; // Default to 2 Mbps on error
-      console.warn('⚠️ Network speed test failed, using default');
-    }
-  };
-
-  StreamingManager.prototype._autoAdjustQuality = function() {
-    if (!this.networkSpeed) return;
-    
-    // Bitrate thresholds (bits per second)
-    // Add 20% buffer for stability
-    const targetBitrate = this.networkSpeed * 0.8;
-    
-    if (targetBitrate > 5000000) {
-      this.setQuality('1080p');
-    } else if (targetBitrate > 2500000) {
-      this.setQuality('720p');
-    } else if (targetBitrate > 1000000) {
-      this.setQuality('480p');
-    } else {
-      this.setQuality('360p');
-    }
-  };
-
-  StreamingManager.prototype._applyQualityPreference = async function() {
-    // Load from localStorage
-    const savedQuality = localStorage.getItem('bsc_quality_preference');
-    const dataSaver = localStorage.getItem('bsc_data_saver') === 'true';
-    
-    if (dataSaver) {
-      this.toggleDataSaver(true);
-    } else if (savedQuality) {
-      await this.setQuality(savedQuality);
-    }
-  };
-
-  StreamingManager.prototype._loadUserPreferences = function() {
-    const savedQuality = localStorage.getItem('bsc_quality_preference');
-    const dataSaver = localStorage.getItem('bsc_data_saver');
-    
-    if (savedQuality) {
-      this.currentQuality = savedQuality;
-    }
-    
-    if (dataSaver === 'true') {
-      this.isDataSaverMode = true;
-    }
-  };
-
-  StreamingManager.prototype._saveQualityPreference = function(quality) {
-    localStorage.setItem('bsc_quality_preference', quality);
-  };
-
-  StreamingManager.prototype._handleError = function(context, error) {
-    console.error('❌ StreamingManager error [' + context + ']:', error);
+  PlaylistManager.prototype._handleError = function(context, error) {
+    console.error('❌ PlaylistManager error [' + context + ']:', error);
     if (this.onError) {
       this.onError({ context: context, error: error.message || error });
     }
   };
 
-  // Export
+  // ============================================
+  // EXPORT
+  // ============================================
+
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = StreamingManager;
+    module.exports = PlaylistManager;
   } else {
-    window.StreamingManager = StreamingManager;
+    window.PlaylistManager = PlaylistManager;
   }
   
-  console.log('✅ StreamingManager module loaded successfully');
+  console.log('✅ PlaylistManager module loaded successfully');
 })();
