@@ -34,6 +34,10 @@
 // 🚀 PERFORMANCE: YouTube-style skeleton loading, critical data parallelization, lazy heavy features
 // 🔐 AUTH FIX: Ensured AuthHelper is fully initialized before UI updates
 // 🔐 AUTH FIX: Added waitForAuthHelper() to prevent timing issues
+// 🚀 PHASE 1D: COLLECTION-AWARE CONTENT DETAIL ENGINE
+// ✅ PHASE 1D: Integrated Queue Manager and Content Collections Engine
+// ✅ PHASE 1D: Next/Previous playback, queue sidebar, autoplay, active item highlighting
+// ✅ PHASE 1D: Queue survives refresh via localStorage
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -171,6 +175,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Apply mobile header styles
         applyMobileHeaderStyles();
 
+        // ============================================
+        // 🚀 PHASE 1D: Initialize Collection Engine
+        // ============================================
+        if (currentContent && window.ContentCollectionsEngine) {
+            await window.ContentCollectionsEngine.initialize(currentContent);
+        } else if (currentContent && !window.ContentCollectionsEngine) {
+            console.warn('⚠️ ContentCollectionsEngine not loaded yet, will retry');
+            // Wait for engine to load and retry
+            const waitForEngine = setInterval(async () => {
+                if (window.ContentCollectionsEngine) {
+                    clearInterval(waitForEngine);
+                    await window.ContentCollectionsEngine.initialize(currentContent);
+                }
+            }, 100);
+            setTimeout(() => clearInterval(waitForEngine), 5000);
+        }
+
     } catch (err) {
         console.error('❌ Critical load failed:', err);
         showToast('Failed to load content. Retrying...', 'error');
@@ -179,6 +200,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fallback: try to load with old method
         try {
             await loadContentFromURL();
+            // Try collection engine on fallback too
+            if (currentContent && window.ContentCollectionsEngine) {
+                await window.ContentCollectionsEngine.initialize(currentContent);
+            }
         } catch (fallbackErr) {
             console.error('Fallback also failed:', fallbackErr);
             document.getElementById('contentTitle').textContent = 'Content Unavailable';
@@ -296,6 +321,13 @@ async function loadCriticalContentData() {
         .eq('id', contentId)
         .single();
 
+    // PHASE 1D: Get series/collection info
+    const { data: seriesData } = await window.supabaseClient
+        .from('Content')
+        .select('series_id, episode_number')
+        .eq('id', contentId)
+        .single();
+
     currentContent = {
         id: contentRes.data.id,
         title: contentRes.data.title || 'Untitled',
@@ -321,6 +353,8 @@ async function loadCriticalContentData() {
         quality_profiles: streamingData?.quality_profiles || [],
         hls_manifest_url: streamingData?.hls_manifest_url || null,
         data_saver_url: streamingData?.data_saver_url || null,
+        series_id: seriesData?.series_id || null,
+        episode_number: seriesData?.episode_number || null,
         _cachedAt: Date.now()
     };
 
@@ -1330,6 +1364,13 @@ async function loadContentFromURL() {
             .eq('id', contentId)
             .single();
 
+        // PHASE 1D: Get series/collection info
+        const { data: seriesData } = await window.supabaseClient
+            .from('Content')
+            .select('series_id, episode_number')
+            .eq('id', contentId)
+            .single();
+
         currentContent = {
             id: contentData.id,
             title: contentData.title || 'Untitled',
@@ -1356,7 +1397,9 @@ async function loadContentFromURL() {
             // PHASE 4: Streaming data
             quality_profiles: streamingData?.quality_profiles || [],
             hls_manifest_url: streamingData?.hls_manifest_url || null,
-            data_saver_url: streamingData?.data_saver_url || null
+            data_saver_url: streamingData?.data_saver_url || null,
+            series_id: seriesData?.series_id || null,
+            episode_number: seriesData?.episode_number || null
         };
 
         console.log('📥 Content loaded with ACCURATE counts and creator data:', {
@@ -1367,7 +1410,8 @@ async function loadContentFromURL() {
             has_avatar: !!currentContent.user_profiles?.avatar_url,
             avatar_url: currentContent.user_profiles?.avatar_url,
             watch_progress: currentContent.watch_progress,
-            hls_available: !!currentContent.hls_manifest_url
+            hls_available: !!currentContent.hls_manifest_url,
+            series_id: currentContent.series_id
         });
 
         updateContentUI(currentContent);
@@ -3147,6 +3191,147 @@ function setupContinueWatchingRefresh() {
     });
 }
 
+// ============================================
+// 🚀 PHASE 1D: Collection Playback Actions
+// ============================================
+function setupCollectionPlaybackActions() {
+    const playAllBtn = document.getElementById('playAllBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    
+    if (playAllBtn) {
+        playAllBtn.addEventListener('click', () => {
+            if (window.QueueManager) {
+                window.QueueManager.currentIndex = 0;
+                window.QueueManager.loadCurrentItem();
+            }
+        });
+    }
+    
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', () => {
+            if (window.QueueManager && window.QueueManager.shuffleQueue) {
+                window.QueueManager.shuffleQueue();
+                showToast('Queue shuffled!', 'success');
+            }
+        });
+    }
+}
+
+// PHASE 1D: Setup watch later button (fallback)
+function setupWatchLaterButton() {
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (!watchLaterBtn) return;
+    
+    watchLaterBtn.addEventListener('click', async function() {
+        if (!currentUserId) {
+            showToast('Please sign in to use Watch Later', 'warning');
+            return;
+        }
+        
+        if (playlistModal) {
+            playlistModal.open();
+        } else {
+            // Fallback: create a basic Watch Later playlist if modal not available
+            try {
+                const { data: existingList } = await window.supabaseClient
+                    .from('playlists')
+                    .select('id')
+                    .eq('user_id', currentUserId)
+                    .eq('name', 'Watch Later')
+                    .maybeSingle();
+                
+                let playlistId = existingList?.id;
+                if (!playlistId) {
+                    const { data: newPlaylist } = await window.supabaseClient
+                        .from('playlists')
+                        .insert({
+                            user_id: currentUserId,
+                            name: 'Watch Later',
+                            description: 'Content to watch later',
+                            is_public: false
+                        })
+                        .select()
+                        .single();
+                    playlistId = newPlaylist.id;
+                }
+                
+                // Check if already in playlist
+                const { data: existing } = await window.supabaseClient
+                    .from('playlist_items')
+                    .select('id')
+                    .eq('playlist_id', playlistId)
+                    .eq('content_id', currentContent.id)
+                    .maybeSingle();
+                
+                if (existing) {
+                    showToast('Already in Watch Later', 'info');
+                    return;
+                }
+                
+                await window.supabaseClient
+                    .from('playlist_items')
+                    .insert({
+                        playlist_id: playlistId,
+                        content_id: currentContent.id,
+                        added_at: new Date().toISOString()
+                    });
+                
+                showToast('Added to Watch Later!', 'success');
+            } catch (error) {
+                console.error('Watch Later fallback failed:', error);
+                showToast('Failed to add to Watch Later', 'error');
+            }
+        }
+    });
+}
+
+// PHASE 1D: Update watch later button state
+async function updateWatchLaterButtonState() {
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (!watchLaterBtn || !playlistManager || !currentUserId || !currentContent?.id) return;
+    
+    try {
+        const isInWatchLater = await playlistManager.isInWatchLater(currentContent.id);
+        if (isInWatchLater) {
+            watchLaterBtn.classList.add('active');
+            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+        } else {
+            watchLaterBtn.classList.remove('active');
+            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+        }
+    } catch (error) {
+        console.warn('Failed to check watch later state:', error);
+    }
+}
+
+// PHASE 1D: Refresh counts from source
+async function refreshCountsFromSource() {
+    if (!currentContent?.id) return;
+    try {
+        const { count: viewsCount } = await window.supabaseClient
+            .from('content_views')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', currentContent.id);
+        
+        const { count: likesCount } = await window.supabaseClient
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', currentContent.id);
+        
+        if (viewsCount !== undefined) {
+            currentContent.views_count = viewsCount;
+            updateCountsUI(currentContent);
+        }
+        if (likesCount !== undefined) {
+            currentContent.likes_count = likesCount;
+            const likesEl = document.getElementById('likesCount');
+            if (likesEl) likesEl.textContent = formatNumber(likesCount);
+        }
+    } catch (error) {
+        console.warn('Failed to refresh counts:', error);
+    }
+}
+
 // Utility functions
 function formatDate(dateString) {
     if (!dateString) return '-';
@@ -3185,12 +3370,23 @@ function formatCommentTime(timestamp) {
     }
 }
 
+// PHASE 1D: Mark content as viewed in localStorage
+function markContentAsViewed(contentId) {
+    const viewed = JSON.parse(localStorage.getItem('bantu_viewed_content') || '[]');
+    if (!viewed.includes(contentId)) {
+        viewed.push(contentId);
+        localStorage.setItem('bantu_viewed_content', JSON.stringify(viewed));
+    }
+}
+
 // Export key functions
 window.hasViewedContentRecently = hasViewedContentRecently;
 window.streamingManager = streamingManager;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
 window.closeVideoPlayer = closeVideoPlayer; // ✅ Export close function
+window.refreshCountsFromSource = refreshCountsFromSource;
+window.markContentAsViewed = markContentAsViewed;
 
 // 🔧 PHASE 1: Page unload handler - clean up watch session and validation timer
 window.addEventListener('beforeunload', function() {
@@ -3209,3 +3405,4 @@ window.addEventListener('beforeunload', function() {
 });
 
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
+console.log('🚀 PHASE 1D: Collection engine and queue manager integration complete');
