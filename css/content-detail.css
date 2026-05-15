@@ -8,6 +8,7 @@
 /* 🎯 PERFORMANCE: Skeleton loading animations for instant perceived speed */
 /* 🎯 PHASE 1D: Collection Playback Engine (Albums, Podcasts, Series, Playlists) */
 /* 🎯 PHASE 1D: Playlist Queue Sidebar & Active States */
+/* 🎯 PHASE 1D: AUDIO-MODE SUPPORT (Media-First Architecture) */
 /* ============================================ */
 
 /* ============================================ */
@@ -1539,6 +1540,28 @@ body {
 
 #inlineVideoPlayer[poster] {
   background: #000;
+}
+
+/* ============================================ */
+/* 🎯 PHASE 1D: AUDIO MODE STYLES - Media-First Architecture */
+/* ============================================ */
+video.audio-mode {
+  background: radial-gradient(circle at center, rgba(29, 78, 216, 0.35), rgba(10, 14, 18, 1));
+  object-fit: contain;
+}
+
+/* Audio mode enhancements for better visual experience */
+.video-container[data-media-type="audio"] video.audio-mode {
+  background: radial-gradient(circle at center, rgba(29, 78, 216, 0.45), rgba(10, 14, 18, 1));
+}
+
+.video-container[data-media-type="audio"] .enhanced-video-controls {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.6), transparent);
+}
+
+/* Audio mode thumbnail/poster handling */
+.video-container[data-media-type="audio"] video[poster] {
+  object-fit: contain;
 }
 
 /* ============================================ */
