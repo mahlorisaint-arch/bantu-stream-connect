@@ -43,6 +43,9 @@
 // 🔧 PHASE 1D FIX: Hard block fallback during playlist mode
 // 🔧 PHASE 1D FIX: Proper playlist UI rendering and queue events
 // 🎵 BROWSER AUTOPLAY UNLOCK: User interaction tracker + play overlay
+// ✅ CRITICAL FIX #1: markContentAsViewed array crash fixed (prevents player death)
+// ✅ CRITICAL FIX #2: Album dropdown toggle button with proper event listener
+// ✅ CRITICAL FIX #3: Media type detection (audio vs video) fixed
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -63,6 +66,7 @@ let _heavyVideoLoaded = false; // 🚀 Flag for lazy video features
 let currentPlaylist = null;
 let currentPlaylistItems = [];
 let isPlaylistMode = false;
+let viewValidationTimer = null; // For cleanup
 
 // ============================================
 // 🎵 BROWSER AUTOPLAY UNLOCK — GLOBAL USER INTERACTION TRACKER
@@ -671,25 +675,30 @@ async function loadContentIntoPlayer(content) {
         }
     }
     
-    // Detect media type
-    const mediaType = detectMediaType(content);
-    const isAudioFile = mediaType === 'audio' || (fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac')));
-    const isVideoFile = !isAudioFile && fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
+    // ✅ FIX #3: PROPER MEDIA DETECTION - Don't assume audio mode
+    const isAudio = detectMediaType(content) === 'audio';
     
-    if (!fileUrl || (!isAudioFile && !isVideoFile)) {
-        console.error('❌ Invalid file format:', fileUrl);
-        showToast('Media file not available', 'error');
-        return;
-    }
-    
-    // Set poster for audio files
-    if (isAudioFile && content.thumbnail_url) {
+    // Set poster and class based on media type
+    if (isAudio && content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
         videoElement.setAttribute('poster', imgUrl);
         videoElement.classList.add('audio-mode');
     } else {
         videoElement.removeAttribute('poster');
         videoElement.classList.remove('audio-mode');
+    }
+    
+    // ✅ FIX #3: PROPER SOURCE MIME TYPE
+    function getMediaMimeType(url = '') {
+        const lower = url.toLowerCase();
+        if (lower.endsWith('.mp4')) return 'video/mp4';
+        if (lower.endsWith('.webm')) return 'video/webm';
+        if (lower.endsWith('.mov')) return 'video/quicktime';
+        if (lower.endsWith('.mp3')) return 'audio/mpeg';
+        if (lower.endsWith('.wav')) return 'audio/wav';
+        if (lower.endsWith('.ogg')) return 'audio/ogg';
+        if (lower.endsWith('.m4a')) return 'audio/mp4';
+        return 'video/mp4';
     }
     
     // Clean up existing players
@@ -708,16 +717,7 @@ async function loadContentIntoPlayer(content) {
     
     const source = document.createElement('source');
     source.src = fileUrl;
-    if (isAudioFile) {
-        if (fileUrl.endsWith('.mp3')) source.type = 'audio/mpeg';
-        else if (fileUrl.endsWith('.wav')) source.type = 'audio/wav';
-        else if (fileUrl.endsWith('.ogg')) source.type = 'audio/ogg';
-        else source.type = 'audio/mpeg';
-    } else {
-        if (fileUrl.endsWith('.mp4')) source.type = 'video/mp4';
-        else if (fileUrl.endsWith('.webm')) source.type = 'video/webm';
-        else source.type = 'video/mp4';
-    }
+    source.type = getMediaMimeType(fileUrl);
     videoElement.appendChild(source);
     videoElement.load();
     
@@ -1151,7 +1151,7 @@ function handlePlay() {
         viewsFullEl.textContent = formatNumber(currentViews + 1);
     }
     
-    // Mark as viewed in local storage for UI purposes only
+    // ✅ FIX #1: CRITICAL VIEWED ARRAY FIX - Mark as viewed safely
     markContentAsViewed(currentContent.id);
 
     // 🚀 Load heavy video features on-demand
@@ -1183,9 +1183,10 @@ function handlePlay() {
         }
         console.log('🎵 Final file URL:', fileUrl);
 
+        // ✅ FIX #3: PROPER MEDIA DETECTION - Don't assume audio mode
         const mediaType = detectMediaType(currentContent);
-        const isAudioFile = mediaType === 'audio' || (fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac') || fileUrl.includes('.m4a')));
-        const isVideoFile = !isAudioFile && fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
+        const isAudioFile = mediaType === 'audio';
+        const isVideoFile = !isAudioFile;
 
         if (!fileUrl || (!isAudioFile && !isVideoFile)) {
             console.error('❌ Invalid file format:', fileUrl);
@@ -1193,6 +1194,7 @@ function handlePlay() {
             return;
         }
 
+        // Set poster and class based on media type
         if (isAudioFile && currentContent.thumbnail_url) {
             const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
             videoElement.setAttribute('poster', imgUrl);
@@ -1220,18 +1222,22 @@ function handlePlay() {
         videoElement.removeAttribute('src');
         videoElement.src = '';
 
+        // ✅ FIX #3: PROPER SOURCE MIME TYPE
+        function getMediaMimeType(url = '') {
+            const lower = url.toLowerCase();
+            if (lower.endsWith('.mp4')) return 'video/mp4';
+            if (lower.endsWith('.webm')) return 'video/webm';
+            if (lower.endsWith('.mov')) return 'video/quicktime';
+            if (lower.endsWith('.mp3')) return 'audio/mpeg';
+            if (lower.endsWith('.wav')) return 'audio/wav';
+            if (lower.endsWith('.ogg')) return 'audio/ogg';
+            if (lower.endsWith('.m4a')) return 'audio/mp4';
+            return 'video/mp4';
+        }
+
         const source = document.createElement('source');
         source.src = fileUrl;
-        if (isAudioFile) {
-            if (fileUrl.endsWith('.mp3')) source.type = 'audio/mpeg';
-            else if (fileUrl.endsWith('.wav')) source.type = 'audio/wav';
-            else if (fileUrl.endsWith('.ogg')) source.type = 'audio/ogg';
-            else source.type = 'audio/mpeg';
-        } else {
-            if (fileUrl.endsWith('.mp4')) source.type = 'video/mp4';
-            else if (fileUrl.endsWith('.webm')) source.type = 'video/webm';
-            else source.type = 'video/mp4';
-        }
+        source.type = getMediaMimeType(fileUrl);
         videoElement.appendChild(source);
         videoElement.load();
 
@@ -2536,7 +2542,115 @@ function closeVideoPlayer() {
     }
 }
 
-// Setup event listeners
+// ============================================
+// 🎯 FIX #2: ALBUM DROPDOWN BUTTON (Not expanding fix)
+// ============================================
+function setupAlbumToggle() {
+    const albumToggleBtn = document.getElementById('albumToggleBtn');
+    const albumTrackList = document.getElementById('albumTrackList');
+    
+    if (!albumToggleBtn || !albumTrackList) {
+        console.warn('⚠️ Album toggle elements not found - album feature may not be present');
+        return;
+    }
+
+    console.log('🎵 Setting up album toggle button...');
+    
+    albumToggleBtn.addEventListener('click', () => {
+        const expanded = albumTrackList.classList.contains('expanded');
+        
+        if (expanded) {
+            albumTrackList.classList.remove('expanded');
+            albumTrackList.classList.add('hidden');
+            console.log('📀 Album collapsed');
+        } else {
+            albumTrackList.classList.remove('hidden');
+            albumTrackList.classList.add('expanded');
+            renderAlbumTracks();
+            console.log('📀 Album expanded and tracks rendered');
+        }
+    });
+    
+    console.log('✅ Album toggle initialized');
+}
+
+// ============================================
+// 🎯 FIX #2: RENDER ALBUM TRACKS
+// ============================================
+function renderAlbumTracks() {
+    const container = document.getElementById('albumTrackList');
+    if (!container) return;
+    
+    // Use playlistItems if available (from collection engine) or currentPlaylistItems
+    let tracks = [];
+    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items) {
+        tracks = window.ContentCollectionsEngine.items;
+    } else if (currentPlaylistItems && currentPlaylistItems.length) {
+        tracks = currentPlaylistItems;
+    } else if (currentContent && currentContent._playlistItems) {
+        tracks = currentContent._playlistItems;
+    }
+    
+    if (!tracks || !tracks.length) {
+        container.innerHTML = `
+            <div class="empty-playlist">
+                <i class="fas fa-music"></i>
+                <p>No tracks found in this album</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = tracks.map((item, index) => `
+        <div class="album-track-item" data-index="${index}" data-content-id="${item.id}">
+            <img src="${item.thumbnail_url || 'assets/default-thumbnail.jpg'}" 
+                 class="album-track-thumb" 
+                 alt="${escapeHtml(item.title || 'Untitled')}"
+                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop'">
+            <div class="album-track-info">
+                <div class="album-track-title">${escapeHtml(item.title || 'Untitled')}</div>
+                <div class="album-track-meta">Track ${index + 1} • ${formatDuration(item.duration || 0)}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Add click handlers
+    container.querySelectorAll('.album-track-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const index = Number(item.dataset.index);
+            const contentId = item.dataset.contentId;
+            console.log('🎵 Playing album track:', index, contentId);
+            
+            // Try to use collection engine if available
+            if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.playItem) {
+                await window.ContentCollectionsEngine.playItem(index);
+            } 
+            // Fallback to playlist mode
+            else if (currentPlaylistItems && currentPlaylistItems[index]) {
+                await playPlaylistItemByIndex(index);
+            }
+            // Last resort: navigate to content detail
+            else if (contentId) {
+                window.location.href = `content-detail.html?id=${contentId}`;
+            }
+            
+            // Collapse album list after selection on mobile
+            if (window.innerWidth <= 768) {
+                const albumTrackList = document.getElementById('albumTrackList');
+                if (albumTrackList) {
+                    albumTrackList.classList.remove('expanded');
+                    albumTrackList.classList.add('hidden');
+                }
+            }
+        });
+    });
+    
+    console.log('✅ Album track list rendered:', tracks.length, 'tracks');
+}
+
+// ============================================
+// Setup event listeners (UPDATED with album toggle)
+// ============================================
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
     const playBtn = document.getElementById('playBtn');
@@ -2574,6 +2688,9 @@ function setupEventListeners() {
             }
         });
     }
+
+    // ✅ FIX #2: SETUP ALBUM TOGGLE BUTTON
+    setupAlbumToggle();
 
     // LIKE BUTTON
     const likeBtn = document.getElementById('likeBtn');
@@ -3910,12 +4027,45 @@ function formatCommentTime(timestamp) {
     }
 }
 
-// PHASE 1D: Mark content as viewed in localStorage
+// ✅ FIX #1: CRITICAL VIEWED ARRAY FIX - MARK CONTENT AS VIEWED (SAFE VERSION)
 function markContentAsViewed(contentId) {
-    const viewed = JSON.parse(localStorage.getItem('bantu_viewed_content') || '[]');
-    if (!viewed.includes(contentId)) {
+    try {
+        // Get from localStorage
+        let viewed = localStorage.getItem('bantu_viewed_content');
+        
+        // Parse safely
+        try {
+            viewed = JSON.parse(viewed || '[]');
+        } catch (e) {
+            console.warn('⚠️ Failed to parse viewed content:', e);
+            viewed = [];
+        }
+        
+        // ✅ CRITICAL FIX: Ensure array
+        if (!Array.isArray(viewed)) {
+            console.warn('⚠️ viewed content was not an array, resetting...');
+            viewed = [];
+        }
+        
+        // Prevent duplicates
+        if (viewed.includes(contentId)) {
+            return;
+        }
+        
         viewed.push(contentId);
+        
+        // Keep storage clean (limit to 500 items)
+        if (viewed.length > 500) {
+            viewed = viewed.slice(-500);
+        }
+        
         localStorage.setItem('bantu_viewed_content', JSON.stringify(viewed));
+        
+        console.log('✅ Marked content as viewed:', contentId);
+        
+    } catch (error) {
+        console.error('❌ Failed to mark viewed content:', error);
+        // Don't let this crash the playback flow
     }
 }
 
@@ -3927,6 +4077,7 @@ window.playlistModal = playlistModal;
 window.closeVideoPlayer = closeVideoPlayer;
 window.refreshCountsFromSource = refreshCountsFromSource;
 window.markContentAsViewed = markContentAsViewed;
+window.renderAlbumTracks = renderAlbumTracks; // Expose for debugging
 
 // 🔧 PHASE 1: Page unload handler - clean up watch session and validation timer
 window.addEventListener('beforeunload', function() {
@@ -3944,6 +4095,10 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
+console.log('✅ Content detail script loaded with CRITICAL FIXES:');
+console.log('  ✅ FIX #1: markContentAsViewed array crash fixed');
+console.log('  ✅ FIX #2: Album dropdown toggle button functional');
+console.log('  ✅ FIX #3: Media type detection (audio vs video) fixed');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
