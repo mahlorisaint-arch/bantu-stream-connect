@@ -8,6 +8,9 @@
 // ✅ CRITICAL FIX #1: Added getMediaMimeType helper for proper audio/video detection
 // ✅ CRITICAL FIX #2: Fixed fullscreen toggle to use container instead of video element
 // ✅ CRITICAL FIX #3: Added audio-mode class handling for better UI
+// ✅ CRITICAL FIX #4: Fixed play/pause state syncing with actual media events
+// ✅ CRITICAL FIX #5: Mobile playback reliability with pointer events
+// ✅ CRITICAL FIX #6: Prevent duplicate listeners stacking
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -44,6 +47,10 @@ class EnhancedVideoPlayer {
     this.networkCheckInterval = null;
     this.playbackStartTime = null;
     this.watchedSegments = [];
+    
+    // ✅ FIX #6: Track if listeners are already attached
+    this._listenersAttached = false;
+    this._destroyed = false;
     
     // Event listeners
     this.eventListeners = new Map();
@@ -110,9 +117,22 @@ class EnhancedVideoPlayer {
     if (!videoElement) {
         throw new Error('Video element is required');
     }
+    
+    // ✅ FIX #6: Don't reattach if already attached
+    if (this._listenersAttached && this.video === videoElement) {
+        console.log('⚠️ Player already attached to this video element, skipping');
+        return this;
+    }
+    
+    // ✅ Clean up previous attachment if exists
+    if (this._listenersAttached) {
+        console.log('🔄 Cleaning up previous listeners before reattach');
+        this.removeVideoEventListeners();
+    }
 
     this.video = videoElement;
     this.container = container || videoElement.parentElement;
+    this._destroyed = false;
     
     // Ensure audio is enabled
     this.video.muted = false;
@@ -237,7 +257,8 @@ class EnhancedVideoPlayer {
     } else {
         console.warn('⚠️ No source found to restore');
     }
-
+    
+    this._listenersAttached = true;
     console.log('✅ EnhancedVideoPlayer attached to file element');
     return this;
   }
@@ -249,6 +270,28 @@ class EnhancedVideoPlayer {
   setupEventHandlers() {
     console.log('🔧 Setting up event handlers');
     // This is called from init() but we'll handle events differently
+  }
+  
+  // ✅ FIX #6: Separate method to remove listeners
+  removeVideoEventListeners() {
+    if (!this.video || !this.handleVideoEvent) return;
+    
+    console.log('🔧 Removing video event listeners...');
+    var events = [
+      'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
+      'canplaythrough', 'loadeddata', 'loadedmetadata',
+      'timeupdate', 'progress', 'seeking', 'seeked',
+      'volumechange', 'ratechange', 'enterpictureinpicture',
+      'leavepictureinpicture'
+    ];
+    
+    var self = this;
+    events.forEach(function(event) {
+      self.video.removeEventListener(event, self.handleVideoEvent);
+    });
+    
+    this._listenersAttached = false;
+    console.log('✅ Video event listeners removed');
   }
   
   setupVideoEventListeners() {
@@ -271,11 +314,11 @@ class EnhancedVideoPlayer {
     console.log('✅ Video event listeners setup');
   }
   
-  handleVideoEvent(event, e) {
+  handleVideoEvent(event) {
     // CRITICAL FIX: Add null check at top
-    if (!this.video) return;
+    if (!this.video || this._destroyed) return;
     
-    switch(event) {
+    switch(event.type) {
       case 'play':
         this.handlePlay();
         this.emit('play', this.video.currentTime);
@@ -284,15 +327,21 @@ class EnhancedVideoPlayer {
         this.handlePause();
         this.emit('pause', this.video.currentTime);
         break;
+      case 'ended':
+        this.handleEnded();
+        this.emit('ended', this.video);
+        break;
       case 'timeupdate':
+        this.updateTimeDisplay();
         this.emit('timeupdate', this.video.currentTime);
         break;
       case 'volumechange':
+        this.updateVolumeButton();
         this.emit('volumechange', this.video.volume);
         break;
       case 'error':
-        this.handleError(e);
-        this.emit('error', e);
+        this.handleError(event);
+        this.emit('error', event);
         break;
       case 'waiting':
         this.handleBuffering();
@@ -305,54 +354,94 @@ class EnhancedVideoPlayer {
         console.log('✅ File metadata loaded, ready to play');
         this.emit('loadeddata', this.video);
         break;
-      case 'ended':
-        this.emit('ended', this.video);
-        break;
     }
   }
   
   handlePlay() {
     // CRITICAL FIX: Add null check
-    if (!this.video) return;
+    if (!this.video || this._destroyed) return;
     
     this.playbackStartTime = Date.now();
     this.stats.playCount++;
     
-    // Update play button icon
-    if (this.controls) {
-      var playBtn = this.controls.querySelector('.play-pause');
-      if (playBtn) {
-        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      }
-    }
+    // ✅ FIX #4: Update play button icon from actual media event
+    this.updatePlayButton(true);
+    
+    // Hide initial play overlay if visible
+    const overlay = document.getElementById('initialPlayOverlay');
+    if (overlay) overlay.classList.add('hidden');
     
     this.emit('playbackstart', {
       timestamp: this.playbackStartTime,
       currentTime: this.video.currentTime
     });
+    
+    console.log('▶️ Play event fired - button updated');
   }
   
   handlePause() {
     // CRITICAL FIX: Add null check
-    if (!this.video) return;
+    if (!this.video || this._destroyed) return;
     
     if (this.playbackStartTime) {
       var watchTime = Date.now() - this.playbackStartTime;
       this.stats.totalWatchTime += watchTime;
       this.playbackStartTime = null;
       
-      // Update play button icon
-      if (this.controls) {
-        var playBtn = this.controls.querySelector('.play-pause');
-        if (playBtn) {
-          playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        }
-      }
-      
       this.emit('playbackpause', {
         watchTime: watchTime,
         currentTime: this.video.currentTime
       });
+    }
+    
+    // ✅ FIX #4: Update play button icon from actual media event
+    this.updatePlayButton(false);
+    
+    console.log('⏸️ Pause event fired - button updated');
+  }
+  
+  handleEnded() {
+    // ✅ FIX #4: Update play button when video ends
+    this.updatePlayButton(false);
+    console.log('🏁 Video ended - button updated');
+    this.emit('ended', this.video);
+  }
+  
+  // ✅ FIX #4: Separate method to update play button state
+  updatePlayButton(isPlaying) {
+    if (!this.controls) return;
+    
+    var playBtn = this.controls.querySelector('.play-pause');
+    if (playBtn) {
+      if (isPlaying) {
+        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        playBtn.setAttribute('title', 'Pause');
+      } else {
+        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        playBtn.setAttribute('title', 'Play');
+      }
+    }
+  }
+  
+  // ✅ FIX #4: Update volume button state
+  updateVolumeButton() {
+    if (!this.controls || !this.video) return;
+    
+    var volumeBtn = this.controls.querySelector('.volume-btn');
+    var volumeBar = this.controls.querySelector('.volume-bar');
+    
+    if (volumeBtn) {
+      if (this.video.muted || this.video.volume === 0) {
+        volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+      } else if (this.video.volume < 0.5) {
+        volumeBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
+      } else {
+        volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+      }
+    }
+    
+    if (volumeBar) {
+      volumeBar.value = this.video.muted ? 0 : this.video.volume * 100;
     }
   }
   
@@ -443,17 +532,13 @@ class EnhancedVideoPlayer {
     });
     
     this.container.addEventListener('mouseleave', function() {
-      // CRITICAL FIX: Add null check
       if (!self.video) return;
       if (!self.video.paused && self.controls) {
         self.controls.style.opacity = '0';
       }
     });
     
-    this.video.addEventListener('play', function() {
-      if (self.controls) self.controls.style.opacity = '1';
-    });
-    
+    // ✅ FIX #4: Show controls when video is paused
     this.video.addEventListener('pause', function() {
       if (self.controls) self.controls.style.opacity = '1';
     });
@@ -464,7 +549,7 @@ class EnhancedVideoPlayer {
   getControlsHTML() {
     return `
       <div class="controls-bar">
-        <button class="control-btn play-pause" title="Play/Pause">
+        <button class="control-btn play-pause" title="Play">
           <i class="fas fa-play"></i>
         </button>
         
@@ -494,15 +579,11 @@ class EnhancedVideoPlayer {
       </div>
       
       <div class="settings-menu" style="display: none;">
-        <!-- PHASE 4: Quality Section - This will be populated by streaming-manager.js -->
         <div class="settings-section" id="qualitySection">
           <h4>Quality</h4>
-          <div class="quality-options" id="qualityOptions">
-            <!-- Quality options will be dynamically populated -->
-          </div>
+          <div class="quality-options" id="qualityOptions"></div>
         </div>
         
-        <!-- PHASE 4: Data Saver Section -->
         <div class="settings-section" id="dataSaverSection">
           <h4>Data Saver</h4>
           <label class="toggle-switch">
@@ -512,7 +593,6 @@ class EnhancedVideoPlayer {
           <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
         </div>
         
-        <!-- Playback Speed Section -->
         <div class="settings-section">
           <h4>Playback Speed</h4>
           <div class="speed-options">
@@ -529,16 +609,24 @@ class EnhancedVideoPlayer {
     `;
   }
   
+  // ✅ FIX #5: Updated control listeners with pointer events for mobile
   setupControlListeners() {
     if (!this.controls) return;
     
     var self = this;
     
-    // Play/Pause button
+    // ✅ FIX #4 & #5: Play/Pause button - use both click and pointerdown for mobile
     var playBtn = this.controls.querySelector('.play-pause');
     if (playBtn) {
-      playBtn.addEventListener('click', function() {
+      // Use click for desktop, pointerdown for mobile responsiveness
+      playBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
         self.togglePlay();
+      });
+      
+      // Also support pointerdown for faster mobile response
+      playBtn.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
       });
     }
     
@@ -550,6 +638,11 @@ class EnhancedVideoPlayer {
         var time = (percent / 100) * (self.video.duration || 0);
         self.seek(time);
       });
+      
+      // ✅ FIX #5: Touch support for progress bar
+      progressBar.addEventListener('touchstart', function(e) {
+        e.stopPropagation();
+      });
     }
     
     // Volume button
@@ -557,13 +650,11 @@ class EnhancedVideoPlayer {
     var volumeBar = this.controls.querySelector('.volume-bar');
     
     if (volumeBtn && volumeBar) {
-      volumeBtn.addEventListener('click', function() {
+      volumeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
         if (!self.video) return;
         self.video.muted = !self.video.muted;
-        volumeBtn.innerHTML = self.video.muted ? 
-          '<i class="fas fa-volume-mute"></i>' : 
-          '<i class="fas fa-volume-up"></i>';
-        volumeBar.value = self.video.muted ? 0 : self.video.volume * 100;
+        self.updateVolumeButton();
       });
       
       volumeBar.addEventListener('input', function(e) {
@@ -571,13 +662,16 @@ class EnhancedVideoPlayer {
         var volume = e.target.value / 100;
         self.video.volume = volume;
         self.video.muted = volume === 0;
-        volumeBtn.innerHTML = volume === 0 ? 
-          '<i class="fas fa-volume-mute"></i>' : 
-          '<i class="fas fa-volume-up"></i>';
+        self.updateVolumeButton();
+      });
+      
+      // ✅ FIX #5: Touch support for volume
+      volumeBar.addEventListener('touchstart', function(e) {
+        e.stopPropagation();
       });
     }
     
-    // Settings button - FIXED: Proper toggle with event propagation
+    // Settings button
     var settingsBtn = this.controls.querySelector('.settings-btn');
     var settingsMenu = this.controls.querySelector('.settings-menu');
     
@@ -604,44 +698,39 @@ class EnhancedVideoPlayer {
     var speedOptions = this.controls.querySelectorAll('.speed-option');
     speedOptions.forEach(function(btn) {
       btn.addEventListener('click', function(e) {
+        e.stopPropagation();
         var rate = parseFloat(e.target.dataset.rate);
         self.setPlaybackRate(rate);
         
-        // Update active state
         speedOptions.forEach(function(b) {
           b.classList.remove('active');
         });
         e.target.classList.add('active');
         
-        // Hide settings menu
         if (settingsMenu) settingsMenu.style.display = 'none';
       });
     });
     
-    // ✅ CRITICAL FIX #2: Fullscreen button - Use proper container
+    // ✅ CRITICAL FIX #2: Fullscreen button
     var fullscreenBtn = this.controls.querySelector('.fullscreen-btn');
     if (fullscreenBtn) {
-      fullscreenBtn.addEventListener('click', function() {
+      fullscreenBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
         self.toggleFullscreen();
       });
     }
     
-    // Update time display
-    this.video.addEventListener('timeupdate', function() {
-      self.updateTimeDisplay();
-    });
+    // ✅ FIX #4: Update time display on timeupdate is already handled in handleVideoEvent
     
-    console.log('✅ Control listeners setup');
+    console.log('✅ Control listeners setup complete');
   }
   
   updateTimeDisplay() {
-    // CRITICAL FIX: Add null check at top
     if (!this.controls || !this.video) return;
     
     var currentTime = this.video.currentTime;
     var duration = this.video.duration || 0;
     
-    // Update time display
     var currentTimeEl = this.controls.querySelector('.current-time');
     var durationEl = this.controls.querySelector('.duration');
     var progressBar = this.controls.querySelector('.progress-bar');
@@ -650,7 +739,7 @@ class EnhancedVideoPlayer {
       currentTimeEl.textContent = this.formatTime(currentTime);
     }
     
-    if (durationEl) {
+    if (durationEl && !isNaN(duration)) {
       durationEl.textContent = this.formatTime(duration);
     }
     
@@ -665,27 +754,29 @@ class EnhancedVideoPlayer {
   // ======================
   
   play() {
+    if (!this.video || this._destroyed) return Promise.reject('Player destroyed');
+    
     var self = this;
     return this.video.play().catch(function(error) {
-      // Ignore autoplay blocking errors - they will be shown via overlay
       if (error.name === 'NotAllowedError') {
         console.log('ℹ️ Playback blocked by browser autoplay policy');
         self.emit('autoplayblocked', error);
         return;
       }
-      self.handleError({ target: self.video });
+      console.error('Play error:', error);
       throw error;
     });
   }
   
   pause() {
-    if (this.video) {
+    if (this.video && !this._destroyed) {
       this.video.pause();
     }
   }
   
   togglePlay() {
-    if (!this.video) return;
+    if (!this.video || this._destroyed) return;
+    
     if (this.video.paused) {
       this.play();
     } else {
@@ -694,33 +785,34 @@ class EnhancedVideoPlayer {
   }
   
   seek(time) {
-    if (!isNaN(time) && isFinite(time) && this.video) {
-      this.video.currentTime = time;
+    if (!isNaN(time) && isFinite(time) && this.video && !this._destroyed) {
+      this.video.currentTime = Math.max(0, Math.min(time, this.video.duration || 0));
     }
   }
   
   setPlaybackRate(rate) {
-    if (this.video) {
+    if (this.video && !this._destroyed) {
       this.video.playbackRate = rate;
       this.playbackRate = rate;
       this.emit('ratechange', rate);
+      console.log('⚡ Playback rate changed to:', rate);
     }
   }
   
   setVolume(volume) {
-    if (this.video) {
+    if (this.video && !this._destroyed) {
       this.video.volume = Math.max(0, Math.min(1, volume));
       this.video.muted = this.video.volume === 0;
+      this.updateVolumeButton();
       this.emit('volumechange', this.video.volume);
     }
   }
   
   // ======================
-  // ✅ CRITICAL FIX #2: FULLSCREEN - Use container, not video element
+  // ✅ CRITICAL FIX #2: FULLSCREEN
   // ======================
   
   toggleFullscreen() {
-    // Use the player container, not video element
     var playerContainer = this.container || document.querySelector('.inline-player');
     if (!playerContainer) {
       console.error('Player container not found for fullscreen');
@@ -728,7 +820,6 @@ class EnhancedVideoPlayer {
     }
     
     if (!this.isFullscreen) {
-      // Enter fullscreen
       if (playerContainer.requestFullscreen) {
         playerContainer.requestFullscreen();
       } else if (playerContainer.webkitRequestFullscreen) {
@@ -740,7 +831,6 @@ class EnhancedVideoPlayer {
       }
       this.isFullscreen = true;
     } else {
-      // Exit fullscreen
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
@@ -753,7 +843,6 @@ class EnhancedVideoPlayer {
       this.isFullscreen = false;
     }
     
-    // Update fullscreen button icon
     if (this.controls) {
       var fullscreenBtn = this.controls.querySelector('.fullscreen-btn i');
       if (fullscreenBtn) {
@@ -761,13 +850,6 @@ class EnhancedVideoPlayer {
       }
     }
     
-    // Force custom controls to show in fullscreen
-    var self = this;
-    setTimeout(function() {
-      if (self.controls) self.controls.style.opacity = '1';
-    }, 100);
-    
-    // Listen for fullscreen change events
     var self = this;
     var fullscreenChangeHandler = function() {
       var isCurrentlyFullscreen = !!(
@@ -799,7 +881,6 @@ class EnhancedVideoPlayer {
   
   initializeSocialFeatures() {
     console.log('🔧 Initializing social features');
-    // This will be handled by content-detail.js
   }
   
   // ======================
@@ -807,10 +888,8 @@ class EnhancedVideoPlayer {
   // ======================
   
   showBufferingIndicator() {
-    // CRITICAL FIX: Add null check
     if (!this.container) return;
     
-    // Create or show buffering indicator
     var indicator = this.container.querySelector('.buffering-indicator');
     if (!indicator) {
       indicator = document.createElement('div');
@@ -837,7 +916,6 @@ class EnhancedVideoPlayer {
   }
   
   hideBufferingIndicator() {
-    // CRITICAL FIX: Add null check
     if (!this.container) return;
     
     var indicator = this.container.querySelector('.buffering-indicator');
@@ -847,10 +925,8 @@ class EnhancedVideoPlayer {
   }
   
   showErrorOverlay(message) {
-    // CRITICAL FIX: Add null check
     if (!this.container) return;
     
-    // Create or show error overlay
     var overlay = this.container.querySelector('.error-overlay');
     var self = this;
     
@@ -879,13 +955,12 @@ class EnhancedVideoPlayer {
       `;
       this.container.appendChild(overlay);
       
-      // Add retry button listener
       var retryBtn = overlay.querySelector('.retry-btn');
       if (retryBtn) {
         retryBtn.addEventListener('click', function() {
-          if (self.video) {
+          if (self.video && !self._destroyed) {
             self.video.load();
-            self.video.play().catch(console.error);
+            self.play().catch(console.error);
           }
           overlay.style.display = 'none';
         });
@@ -895,7 +970,6 @@ class EnhancedVideoPlayer {
   }
   
   hideErrorOverlay() {
-    // CRITICAL FIX: Add null check
     if (!this.container) return;
     
     var overlay = this.container.querySelector('.error-overlay');
@@ -959,11 +1033,17 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // ✅ CRITICAL FIX #3: DESTROY METHOD WITH SOURCE PRESERVATION
+  // ✅ CRITICAL FIX #3 & #6: DESTROY METHOD
   // ======================
   
   destroy() {
+    if (this._destroyed) {
+      console.log('⚠️ Player already destroyed');
+      return;
+    }
+    
     console.log('🗑️ Destroying EnhancedVideoPlayer...');
+    this._destroyed = true;
     
     // ============================================
     // CRITICAL FIX: Preserve video source on destroy
@@ -984,21 +1064,8 @@ class EnhancedVideoPlayer {
     
     console.log('💾 Preserving source on destroy:', preservedSource);
 
-    // Remove event listeners
-    if (this.video && this.handleVideoEvent) {
-        var events = [
-          'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
-          'canplaythrough', 'loadeddata', 'loadedmetadata',
-          'timeupdate', 'progress', 'seeking', 'seeked',
-          'volumechange', 'ratechange', 'enterpictureinpicture',
-          'leavepictureinpicture'
-        ];
-        
-        var self = this;
-        events.forEach(function(event) {
-          self.video.removeEventListener(event, self.handleVideoEvent);
-        });
-    }
+    // ✅ FIX #6: Remove event listeners
+    this.removeVideoEventListeners();
     
     // Clear timeouts/intervals
     if (this.bufferingTimeout) clearTimeout(this.bufferingTimeout);
@@ -1021,27 +1088,24 @@ class EnhancedVideoPlayer {
     // CRITICAL: Restore native controls and source
     // ============================================
     if (this.video) {
+        // Pause video
+        this.video.pause();
+        
         // Restore video source
         if (preservedSource && preservedSource !== '') {
             console.log('🔄 Restoring source after destroy...');
             
-            // Clear existing sources
             while (this.video.firstChild) {
                 this.video.removeChild(this.video.firstChild);
             }
             
-            // Remove src attribute
             this.video.removeAttribute('src');
             
-            // Create new source element
             var source = document.createElement('source');
             source.src = preservedSource;
             source.type = preservedType || this.getMediaMimeType(preservedSource);
-            
-            // Add source back
             this.video.appendChild(source);
             
-            // Reload video
             this.video.load();
         }
         
@@ -1090,10 +1154,13 @@ class EnhancedVideoPlayer {
 
 // Export for global use
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
-window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
+window.BantuVideoPlayer = EnhancedVideoPlayer;
 
 console.log('✅ Enhanced Video Player loaded successfully with:');
 console.log('  ✅ CRITICAL FIX #1: getMediaMimeType helper for proper audio/video detection');
 console.log('  ✅ CRITICAL FIX #2: Fullscreen toggle using container instead of video element');
 console.log('  ✅ CRITICAL FIX #3: Audio-mode class handling for better UI');
+console.log('  ✅ CRITICAL FIX #4: Play/pause state syncing with actual media events');
+console.log('  ✅ CRITICAL FIX #5: Mobile playback reliability with pointer events');
+console.log('  ✅ CRITICAL FIX #6: Prevent duplicate listeners stacking');
 console.log('  ✅ Null checks, quality selector support, autoplay block handling, and 🎵 AUDIO SUPPORT');
