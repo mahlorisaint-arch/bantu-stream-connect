@@ -574,7 +574,20 @@
         </div>
 
         <!-- ============================================ -->
-        <!-- 🚀 PHASE 1D: PLAYLIST / ALBUM / SERIES QUEUE SECTION -->
+        <!-- 🚀 PHASE 1D: PLAYLIST QUEUE SECTION (SIDEBAR STYLE) -->
+        <!-- This is the NEW playlist queue section that renders episode list -->
+        <!-- ============================================ -->
+        <section class="playlist-queue-section" id="playlistQueueSection" style="display: none;">
+            <div class="playlist-queue-header">
+                <h2>Playlist Queue</h2>
+            </div>
+            <div class="playlist-queue" id="playlistQueue">
+                <!-- Playlist queue items will be dynamically inserted here -->
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- 🚀 PHASE 1D: LEGACY PLAYLIST SECTION (Backward compatibility) -->
         <!-- ============================================ -->
         <section class="playlist-section" id="playlistSection" style="display: none;">
             <div class="section-header">
