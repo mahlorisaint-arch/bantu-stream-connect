@@ -7,11 +7,17 @@
 // ✅ FIXED: Prevents PostgreSQL 23505 duplicate key errors
 // ✅ FIXED: Better watch time accumulation
 // ✅ FIXED: Safe sync lifecycle
+// 🚀 PHASE 1D ENHANCEMENTS:
+// ✅ Queue-aware session tracking
+// ✅ Collection item progress tracking
+// ✅ Autoplay trigger on completion
+// ✅ Session persistence for queue restoration
+// ✅ Multi-content watch session support
 
 (function() {
   'use strict';
 
-  console.log('🎬 WatchSession module loading...');
+  console.log('🎬 WatchSession module loading... (Phase 1D Enhanced)');
 
   function WatchSession(config) {
     if (!config || !config.contentId || !config.supabase) {
@@ -48,16 +54,166 @@
 
     this.visibilityHandler = null;
 
+    // PHASE 1D: Queue tracking
+    this.collectionId = config.collectionId || null;
+    this.episodeNumber = config.episodeNumber || null;
+    this.shouldAutoplayNext = config.autoplay !== false;
+    
+    // PHASE 1D: Session persistence
+    this.sessionKey = `watch_session_${this.contentId}`;
+    this.restoredFromStorage = false;
+
     this.onProgressSync = config.onProgressSync || null;
     this.onViewCounted = config.onViewCounted || null;
     this.onComplete = config.onComplete || null;
     this.onError = config.onError || null;
+    this.onAutoplayTrigger = config.onAutoplayTrigger || null; // PHASE 1D
 
     console.log(
       '✅ WatchSession initialized:',
-      this.sessionId || 'NO SESSION'
+      this.sessionId || 'NO SESSION',
+      'Collection:',
+      this.collectionId || 'none'
     );
+    
+    // PHASE 1D: Restore session from storage if available
+    this._restoreFromStorage();
   }
+
+  // =====================================================
+  // PHASE 1D: Session Persistence Methods
+  // =====================================================
+
+  WatchSession.prototype._saveToStorage = function() {
+    try {
+      const sessionData = {
+        contentId: this.contentId,
+        userId: this.userId,
+        sessionId: this.sessionId,
+        lastPosition: this.lastSavedPosition,
+        totalWatchTime: this.totalWatchTime,
+        viewCounted: this.viewCounted,
+        isCompleted: this.isCompleted,
+        collectionId: this.collectionId,
+        episodeNumber: this.episodeNumber,
+        timestamp: Date.now()
+      };
+      
+      localStorage.setItem(this.sessionKey, JSON.stringify(sessionData));
+      sessionStorage.setItem('bantu_last_watch_session', JSON.stringify({
+        contentId: this.contentId,
+        sessionId: this.sessionId,
+        timestamp: Date.now()
+      }));
+      
+      console.log('💾 Watch session saved to storage');
+    } catch (error) {
+      console.warn('Failed to save session to storage:', error);
+    }
+  };
+
+  WatchSession.prototype._restoreFromStorage = function() {
+    try {
+      const saved = localStorage.getItem(this.sessionKey);
+      if (saved) {
+        const data = JSON.parse(saved);
+        // Only restore if session is less than 24 hours old
+        if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+          this.lastSavedPosition = data.lastPosition || 0;
+          this.totalWatchTime = data.totalWatchTime || 0;
+          this.viewCounted = data.viewCounted || false;
+          this.isCompleted = data.isCompleted || false;
+          this.restoredFromStorage = true;
+          console.log('📦 Session restored from storage at position:', this.lastSavedPosition);
+        } else {
+          localStorage.removeItem(this.sessionKey);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore session from storage:', error);
+    }
+  };
+
+  WatchSession.prototype._clearFromStorage = function() {
+    try {
+      localStorage.removeItem(this.sessionKey);
+      console.log('🗑️ Session cleared from storage');
+    } catch (error) {
+      console.warn('Failed to clear session from storage:', error);
+    }
+  };
+
+  // =====================================================
+  // PHASE 1D: Collection Progress Tracking
+  // =====================================================
+
+  WatchSession.prototype._updateCollectionProgress = function() {
+    if (!this.collectionId || !this.userId) return Promise.resolve();
+    
+    console.log('📊 Updating collection progress for:', this.collectionId);
+    
+    return this.supabase
+      .from('collection_progress')
+      .upsert({
+        user_id: this.userId,
+        collection_id: this.collectionId,
+        last_content_id: this.contentId,
+        last_episode: this.episodeNumber,
+        progress_percentage: this.videoElement 
+          ? (this.videoElement.currentTime / (this.videoElement.duration || 1)) * 100 
+          : 0,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,collection_id'
+      })
+      .then(function(result) {
+        if (result.error) {
+          console.warn('Collection progress update failed:', result.error.message);
+        } else {
+          console.log('✅ Collection progress updated');
+        }
+      })
+      .catch(function(error) {
+        console.warn('Collection progress error:', error);
+      });
+  };
+
+  // =====================================================
+  // PHASE 1D: Trigger Next Content in Collection
+  // =====================================================
+
+  WatchSession.prototype._triggerAutoplayNext = function() {
+    if (!this.shouldAutoplayNext) {
+      console.log('⏸️ Autoplay disabled, not playing next');
+      return;
+    }
+    
+    // Check autoplay toggle state
+    const autoplayToggle = document.getElementById('autoplayToggle');
+    const isAutoplayEnabled = autoplayToggle?.classList.contains('active') !== false;
+    
+    if (!isAutoplayEnabled) {
+      console.log('⏸️ Autoplay toggle is OFF');
+      return;
+    }
+    
+    console.log('🎬 Autoplay: triggering next content...');
+    
+    if (this.onAutoplayTrigger) {
+      this.onAutoplayTrigger({
+        contentId: this.contentId,
+        collectionId: this.collectionId,
+        episodeNumber: this.episodeNumber
+      });
+    } else if (window.QueueManager) {
+      // Use QueueManager if available
+      window.QueueManager.playNext();
+    } else if (window.VideoPlayerFeatures) {
+      // Fallback to VideoPlayerFeatures
+      const vpf = new window.VideoPlayerFeatures();
+      vpf.playNextTrack();
+    }
+  };
 
   // =====================================================
   // PUBLIC API
@@ -81,6 +237,9 @@
       .then(function() {
         self._attachEventListeners();
         self._setupVisibilityHandler();
+        
+        // PHASE 1D: Save initial state to storage
+        self._saveToStorage();
 
         console.log(
           '✅ WatchSession started for content:',
@@ -102,6 +261,7 @@
     if (!this.isActive) return;
 
     this._syncProgress(true);
+    this._saveToStorage(); // PHASE 1D: Save before stopping
 
     this._detachEventListeners();
     this._cleanupVisibilityHandler();
@@ -115,6 +275,7 @@
     if (!this.isActive || !this.videoElement) return;
 
     this._syncProgress(true);
+    this._saveToStorage(); // PHASE 1D: Save on manual sync
   };
 
   WatchSession.prototype.getState = function() {
@@ -129,8 +290,24 @@
       lastSavedPosition: this.lastSavedPosition,
       totalWatchTime: this.totalWatchTime,
       viewCounted: this.viewCounted,
-      isCompleted: this.isCompleted
+      isCompleted: this.isCompleted,
+      collectionId: this.collectionId,
+      episodeNumber: this.episodeNumber
     };
+  };
+
+  // PHASE 1D: Set collection info for queue tracking
+  WatchSession.prototype.setCollection = function(collectionId, episodeNumber) {
+    this.collectionId = collectionId;
+    this.episodeNumber = episodeNumber;
+    this._saveToStorage();
+    console.log('📁 Collection set:', collectionId, 'Episode:', episodeNumber);
+  };
+
+  // PHASE 1D: Enable/disable autoplay
+  WatchSession.prototype.setAutoplay = function(enabled) {
+    this.shouldAutoplayNext = enabled;
+    console.log('🎵 Autoplay set to:', enabled);
   };
 
   // =====================================================
@@ -171,9 +348,14 @@
             result.data.is_completed || false;
 
           console.log(
-            '📥 Progress restored:',
+            '📥 Progress restored from DB:',
             self.lastSavedPosition
           );
+        }
+        
+        // PHASE 1D: Storage restoration takes precedence for position
+        if (self.restoredFromStorage && self.lastSavedPosition > 0) {
+          console.log('📦 Using storage-restored position:', self.lastSavedPosition);
         }
       })
       .catch(function(error) {
@@ -364,6 +546,7 @@
           console.log('👁️ Hidden — syncing');
 
           self._syncProgress(true);
+          self._saveToStorage();
         }
       };
 
@@ -420,6 +603,7 @@
         this.viewCounted = true;
 
         this._recordView(video);
+        this._saveToStorage(); // PHASE 1D: Save view state
       }
 
       // =====================================
@@ -459,6 +643,9 @@
               timestamp: Date.now()
             });
           }
+          
+          // PHASE 1D: Clear from storage on completion
+          this._clearFromStorage();
         }
       }
 
@@ -475,6 +662,7 @@
         this.lastSyncTime = now;
 
         this._syncProgress(false);
+        this._saveToStorage(); // PHASE 1D: Periodic save
       }
 
       this.lastSavedPosition = currentTime;
@@ -490,6 +678,7 @@
       console.log('⏸️ Paused');
 
       this._syncProgress(true);
+      this._saveToStorage();
     };
 
   WatchSession.prototype._onEnded =
@@ -502,6 +691,7 @@
       this._updateCompletionStatus(true);
 
       this._syncProgress(true);
+      this._clearFromStorage();
 
       if (this.onComplete) {
         this.onComplete({
@@ -510,6 +700,9 @@
           reason: 'ended'
         });
       }
+      
+      // PHASE 1D: Trigger autoplay for next content in collection/queue
+      this._triggerAutoplayNext();
     };
 
   WatchSession.prototype._onVideoError =
@@ -531,6 +724,7 @@
         this.userId
       ) {
         this._syncProgress(true);
+        this._saveToStorage();
       }
     };
 
@@ -707,6 +901,9 @@
                 self.sessionId
             });
           }
+          
+          // PHASE 1D: Update collection progress after sync
+          self._updateCollectionProgress();
         })
 
         .catch(function(error) {
@@ -840,6 +1037,38 @@
     };
 
   // =====================================================
+  // PHASE 1D: Static Methods for Session Management
+  // =====================================================
+
+  WatchSession.getActiveSession = function(contentId) {
+    const key = `watch_session_${contentId}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.warn('Failed to get active session:', error);
+    }
+    return null;
+  };
+
+  WatchSession.clearAllSessions = function() {
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('watch_session_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      sessionStorage.removeItem('bantu_last_watch_session');
+      console.log('🗑️ All watch sessions cleared');
+    } catch (error) {
+      console.warn('Failed to clear sessions:', error);
+    }
+  };
+
+  // =====================================================
   // EXPORT
   // =====================================================
 
@@ -854,7 +1083,7 @@
   }
 
   console.log(
-    '✅ WatchSession module loaded successfully'
+    '✅ WatchSession module loaded successfully (Phase 1D Enhanced)'
   );
 
 })();
