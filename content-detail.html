@@ -574,58 +574,21 @@
         </div>
 
         <!-- ============================================ -->
-        <!-- 🚀 PHASE 1D: COLLECTION PLAYBACK SECTION -->
+        <!-- 🚀 PHASE 1D: PLAYLIST / ALBUM / SERIES QUEUE SECTION -->
         <!-- ============================================ -->
-        <section class="collection-playback-section hidden" id="collectionPlaybackSection">
-            <div class="collection-layout">
-                <!-- LEFT SIDE -->
-                <div class="collection-main-content">
-                    <!-- COLLECTION HERO -->
-                    <div class="collection-hero-card" id="collectionHeroCard">
-                        <div class="collection-meta">
-                            <div class="collection-badge" id="collectionBadge">
-                                PLAYLIST
-                            </div>
-                            <h2 class="collection-title" id="collectionTitle">
-                                Collection
-                            </h2>
-                            <div class="collection-stats">
-                                <span id="collectionItemsCount">
-                                    0 items
-                                </span>
-                                <span>•</span>
-                                <span id="collectionType">
-                                    playlist
-                                </span>
-                            </div>
-                        </div>
-                        <div class="collection-actions">
-                            <button class="btn btn-primary" id="playAllBtn">
-                                <i class="fas fa-play"></i>
-                                Play All
-                            </button>
-                            <button class="btn btn-secondary" id="shuffleBtn">
-                                <i class="fas fa-random"></i>
-                                Shuffle
-                            </button>
-                        </div>
-                    </div>
+        <section class="playlist-section" id="playlistSection" style="display: none;">
+            <div class="section-header">
+                <h2 class="section-title">Playlist Queue</h2>
+                <div class="playlist-meta">
+                    <span id="playlistTotalItems">0 items</span>
                 </div>
-
-                <!-- RIGHT SIDE - QUEUE SIDEBAR -->
-                <aside class="playlist-sidebar" id="playlistSidebar">
-                    <div class="playlist-sidebar-header">
-                        <h3>Up Next</h3>
-                        <button class="autoplay-toggle active" id="autoplayToggle">
-                            AUTOPLAY
-                        </button>
-                    </div>
-                    <div class="playlist-queue" id="playlistQueue"></div>
-                </aside>
+            </div>
+            <div class="playlist-items" id="playlistItems">
+                <!-- Playlist items will be dynamically inserted here -->
             </div>
         </section>
 
-        <!-- 🎯 HERO SECTION - NOW BELOW COLLECTION SECTION -->
+        <!-- 🎯 HERO SECTION - NOW BELOW PLAYLIST SECTION -->
         <section class="content-hero" id="contentHero">
             <!-- Poster (shown initially) -->
             <div class="hero-poster" id="heroPoster">
