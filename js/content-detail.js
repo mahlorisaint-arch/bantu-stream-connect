@@ -38,6 +38,7 @@
 // ✅ PHASE 1D: Integrated Queue Manager and Content Collections Engine
 // ✅ PHASE 1D: Next/Previous playback, queue sidebar, autoplay, active item highlighting
 // ✅ PHASE 1D: Queue survives refresh via localStorage
+// 🎯 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -53,6 +54,11 @@ let playlistModal = null; // PHASE 2 POLISH: Playlist modal
 let isInitialized = false;
 let currentUserId = null;
 let _heavyVideoLoaded = false; // 🚀 Flag for lazy video features
+
+// 🎯 PLAYLIST MODE GLOBALS
+let currentPlaylist = null;
+let currentPlaylistItems = [];
+let isPlaylistMode = false;
 
 // TEMPORARILY DISABLE the recent view check for testing
 function hasViewedContentRecently(contentId) {
@@ -82,6 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
         );
     }
+
+    // Parse URL parameters for playlist mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const contentId = urlParams.get('id');
+    const playlistId = urlParams.get('playlist_id');
+    const playlistType = urlParams.get('type');
 
     // 2. LOAD HELPERS and WAIT for Auth Helper
     if (!window.SupabaseHelper) {
@@ -120,8 +132,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. LOAD CRITICAL CONTENT IN PARALLEL (0.3s - 0.8s)
     try {
+        // 🎯 PLAYLIST MODE DETECTION
+        if (playlistId) {
+            console.log('🎵 Playlist mode detected:', playlistId, playlistType);
+            await loadPlaylistMode(playlistId, playlistType);
+            isPlaylistMode = true;
+        } else if (contentId) {
+            console.log('🎬 Single content mode detected:', contentId);
+            await loadCriticalContentData(contentId);
+            isPlaylistMode = false;
+        } else {
+            throw new Error('No content ID or playlist ID provided');
+        }
+
         await Promise.all([
-            loadCriticalContentData(),
             updateSidebarProfile(), // Double-check after content loads
             updateHeaderProfile()
         ]);
@@ -153,9 +177,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             await initializePlaylistManager();
         }
 
-        // PHASE 3: Initialize Recommendation Engine
-        if (currentContent?.id) {
+        // PHASE 3: Initialize Recommendation Engine (only if in single content mode)
+        if (!isPlaylistMode && currentContent?.id) {
             await initializeRecommendationEngine();
+        } else if (isPlaylistMode && currentPlaylistItems.length > 0) {
+            // For playlist mode, load recommendations based on first item
+            await initializeRecommendationEngineForPlaylist(currentPlaylistItems[0]?.id);
         }
 
         // PHASE 1 POLISH: Initialize keyboard shortcuts after video player
@@ -166,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 1000);
 
         // PHASE 2 POLISH: Initialize playlist modal
-        if (currentUserId && currentContent?.id) {
+        if (currentUserId && (currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id))) {
             setTimeout(() => {
                 initializePlaylistModal();
             }, 500);
@@ -178,9 +205,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ============================================
         // 🚀 PHASE 1D: Initialize Collection Engine
         // ============================================
-        if (currentContent && window.ContentCollectionsEngine) {
+        if (!isPlaylistMode && currentContent && window.ContentCollectionsEngine) {
             await window.ContentCollectionsEngine.initialize(currentContent);
-        } else if (currentContent && !window.ContentCollectionsEngine) {
+        } else if (!isPlaylistMode && currentContent && !window.ContentCollectionsEngine) {
             console.warn('⚠️ ContentCollectionsEngine not loaded yet, will retry');
             // Wait for engine to load and retry
             const waitForEngine = setInterval(async () => {
@@ -200,10 +227,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fallback: try to load with old method
         try {
             await loadContentFromURL();
-            // Try collection engine on fallback too
-            if (currentContent && window.ContentCollectionsEngine) {
-                await window.ContentCollectionsEngine.initialize(currentContent);
-            }
         } catch (fallbackErr) {
             console.error('Fallback also failed:', fallbackErr);
             document.getElementById('contentTitle').textContent = 'Content Unavailable';
@@ -213,7 +236,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 6. LAZY LOAD NON-CRITICAL FEATURES (Background after UI renders)
     requestIdleCallback(() => {
         setupEventListeners();
-        loadSecondaryContentData(); // Comments, recommendations, continue watching
+        if (isPlaylistMode && currentPlaylistItems.length > 0) {
+            loadSecondaryContentDataForPlaylist();
+        } else if (currentContent?.id) {
+            loadSecondaryContentData(currentContent.id);
+        }
         initializeVideoPlayerSkeleton(); // Prep element, DON'T load heavy HLS yet
     }, { timeout: 2000 });
 
@@ -268,11 +295,419 @@ async function waitForHelpers() {
     });
 }
 
-// 🚀 NEW: Load only what's needed to render the page
-async function loadCriticalContentData() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const contentId = urlParams.get('id') || '68';
+// ============================================
+// 🎯 PLAYLIST MODE: Load playlist data
+// ============================================
+async function loadPlaylistMode(playlistId, playlistType) {
+    try {
+        showLoading();
+
+        console.log('📀 Loading playlist:', playlistId, 'Type:', playlistType);
+
+        const { data: playlist, error } = await window.supabaseClient
+            .from('creator_playlists')
+            .select(`
+                *,
+                items:Content (
+                    id,
+                    title,
+                    description,
+                    thumbnail_url,
+                    video_url,
+                    file_url,
+                    duration,
+                    content_format,
+                    media_type,
+                    episode_number,
+                    season_number,
+                    views_count,
+                    likes_count,
+                    user_id,
+                    user_profiles!user_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    ),
+                    created_at
+                )
+            `)
+            .eq('id', playlistId)
+            .single();
+
+        if (error) throw error;
+
+        if (!playlist) {
+            showToast('Playlist not found', 'error');
+            return;
+        }
+
+        currentPlaylist = playlist;
+        currentPlaylistItems = playlist.items || [];
+
+        console.log(`📀 Loaded playlist: ${playlist.name} with ${currentPlaylistItems.length} items`);
+
+        // Render playlist UI
+        renderPlaylistHero(playlist);
+        renderPlaylistQueue(currentPlaylistItems);
+
+        // Set current content to first item for player
+        if (currentPlaylistItems.length > 0) {
+            await setCurrentContentFromPlaylistItem(currentPlaylistItems[0], 0);
+            await loadContentIntoPlayer(currentPlaylistItems[0]);
+        } else {
+            showToast('This playlist has no items', 'warning');
+        }
+
+        hideLoading();
+
+    } catch (error) {
+        console.error('❌ Playlist mode failed:', error);
+        showToast('Failed to load playlist', 'error');
+        hideLoading();
+    }
+}
+
+// ============================================
+// 🎯 PLAYLIST MODE: Set current content from playlist item
+// ============================================
+async function setCurrentContentFromPlaylistItem(item, index) {
+    if (!item) return;
+
+    currentContent = {
+        id: item.id,
+        title: item.title || 'Untitled',
+        description: item.description || '',
+        thumbnail_url: item.thumbnail_url,
+        file_url: item.file_url || item.video_url,
+        media_type: item.media_type || item.content_format || 'video',
+        genre: item.genre || 'General',
+        created_at: item.created_at,
+        duration: item.duration || 3600,
+        language: item.language || 'English',
+        views_count: item.views_count || 0,
+        likes_count: item.likes_count || 0,
+        favorites_count: item.favorites_count || 0,
+        comments_count: item.comments_count || 0,
+        creator: item.user_profiles?.full_name || item.user_profiles?.username || 'Creator',
+        creator_display_name: item.user_profiles?.full_name || item.user_profiles?.username || 'Creator',
+        creator_id: item.user_id,
+        user_profiles: item.user_profiles,
+        episode_number: item.episode_number,
+        season_number: item.season_number,
+        _playlistIndex: index,
+        _playlistId: currentPlaylist?.id
+    };
+
+    // Update UI with current content info
+    updateContentUI(currentContent);
     
+    // Highlight active item in queue
+    highlightActivePlaylistItem(item.id);
+    
+    console.log('🎵 Set current content from playlist:', currentContent.title, 'Index:', index);
+}
+
+// ============================================
+// 🎯 PLAYLIST MODE: Render playlist hero section
+// ============================================
+function renderPlaylistHero(playlist) {
+    safeSetText('contentTitle', playlist.name || 'Playlist');
+    safeSetText('contentDescription', playlist.description || '');
+    
+    // Show playlist badge in hero
+    const playlistBadge = document.createElement('div');
+    playlistBadge.className = 'playlist-badge';
+    playlistBadge.innerHTML = `
+        <i class="fas fa-list-ul"></i>
+        <span>${playlist.playlist_type || 'Playlist'}</span>
+    `;
+    
+    const heroActions = document.querySelector('.hero-actions');
+    if (heroActions && !document.querySelector('.playlist-badge')) {
+        heroActions.insertBefore(playlistBadge, heroActions.firstChild);
+    }
+    
+    // Update total items in playlist header
+    const totalItemsEl = document.getElementById('playlistTotalItems');
+    if (totalItemsEl && playlist.items) {
+        totalItemsEl.textContent = `${playlist.items.length} items`;
+    }
+}
+
+// ============================================
+// 🎯 PLAYLIST MODE: Render playlist queue
+// ============================================
+function renderPlaylistQueue(items) {
+    const section = document.getElementById('playlistSection');
+    const container = document.getElementById('playlistItems');
+    const total = document.getElementById('playlistTotalItems');
+
+    if (!section || !container) {
+        console.warn('⚠️ Playlist section elements not found');
+        return;
+    }
+
+    section.style.display = 'block';
+
+    if (total && items) {
+        total.textContent = `${items.length} items`;
+    }
+
+    if (!items || items.length === 0) {
+        container.innerHTML = `
+            <div class="playlist-empty">
+                <i class="fas fa-music"></i>
+                <p>No items in this playlist</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = items.map((item, index) => `
+        <div
+            class="playlist-item"
+            onclick="window.playPlaylistItem('${item.id}', ${index})"
+            id="playlist-item-${item.id}"
+            data-index="${index}"
+        >
+            <div class="playlist-thumbnail">
+                <img
+                    src="${item.thumbnail_url || 'assets/default-thumbnail.jpg'}"
+                    alt="${escapeHtml(item.title)}"
+                    onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=140&h=80&fit=crop'"
+                />
+                <div class="playlist-number">${index + 1}</div>
+            </div>
+            <div class="playlist-content">
+                <div class="playlist-title">${escapeHtml(item.title)}</div>
+                <div class="playlist-subtitle">
+                    ${item.content_format || item.media_type || 'Video'}
+                    ${item.episode_number ? ` • Episode ${item.episode_number}` : ''}
+                </div>
+                <div class="playlist-duration">
+                    ${formatDuration(item.duration || 0)}
+                </div>
+            </div>
+            <div class="playlist-now-playing">
+                <i class="fas fa-play-circle"></i>
+            </div>
+        </div>
+    `).join('');
+
+    // Add CSS for now-playing indicator
+    const style = document.createElement('style');
+    style.textContent = `
+        .playlist-now-playing {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            color: var(--warm-gold);
+            margin-left: auto;
+            padding-left: 1rem;
+        }
+        .playlist-item.active .playlist-now-playing {
+            opacity: 1;
+        }
+        .playlist-item.active .playlist-number {
+            display: none;
+        }
+        .playlist-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 40px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--warm-gold);
+            margin-right: 1rem;
+        }
+        .playlist-empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--slate-grey);
+        }
+        .playlist-empty i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    `;
+    if (!document.querySelector('#playlist-styles')) {
+        style.id = 'playlist-styles';
+        document.head.appendChild(style);
+    }
+}
+
+// ============================================
+// 🎯 PLAYLIST MODE: Highlight active playlist item
+// ============================================
+function highlightActivePlaylistItem(contentId) {
+    document.querySelectorAll('.playlist-item').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    const activeItem = document.getElementById(`playlist-item-${contentId}`);
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
+}
+
+// ============================================
+// 🎯 PLAYLIST MODE: Play playlist item
+// ============================================
+async function playPlaylistItem(contentId, index) {
+    try {
+        console.log('🎵 Playing playlist item:', contentId, 'Index:', index);
+        
+        const item = currentPlaylistItems.find(i => i.id === contentId);
+        if (!item) {
+            console.error('Item not found in playlist:', contentId);
+            return;
+        }
+        
+        await setCurrentContentFromPlaylistItem(item, index);
+        
+        // Load into player
+        await loadContentIntoPlayer(item);
+        
+        // Initialize watch session for new content
+        setTimeout(() => {
+            if (enhancedVideoPlayer?.video) {
+                initializeWatchSessionOnPlay();
+            }
+        }, 500);
+        
+        showToast(`Now playing: ${item.title}`, 'info');
+        
+    } catch (error) {
+        console.error('❌ Failed to play playlist item:', error);
+        showToast('Failed to play item', 'error');
+    }
+}
+
+// Make function globally accessible for onclick handlers
+window.playPlaylistItem = playPlaylistItem;
+
+// ============================================
+// 🎯 Load content into video player
+// ============================================
+async function loadContentIntoPlayer(content) {
+    if (!content) return;
+    
+    const player = document.getElementById('inlinePlayer');
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (!player || !videoElement) {
+        console.warn('Player elements not ready');
+        return;
+    }
+    
+    // Show player
+    player.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+    
+    // Update hero poster opacity
+    const heroPoster = document.getElementById('heroPoster');
+    if (heroPoster) heroPoster.style.opacity = '0.3';
+    
+    // Show close button
+    const closeFromHero = document.getElementById('closePlayerFromHero');
+    if (closeFromHero) closeFromHero.style.display = 'flex';
+    
+    // Prepare video URL
+    let fileUrl = content.file_url || content.video_url;
+    console.log('📥 Loading video URL:', fileUrl);
+    
+    if (fileUrl && !fileUrl.startsWith('http')) {
+        if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
+        fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
+    }
+    
+    if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
+        if (content.thumbnail_url) {
+            const cleanPath = content.thumbnail_url.startsWith('/') ? content.thumbnail_url.substring(1) : content.thumbnail_url;
+            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+        }
+    }
+    
+    // Detect media type
+    const isAudioFile = fileUrl && (fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.ogg') || fileUrl.includes('.aac'));
+    const isVideoFile = fileUrl && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('.mov'));
+    
+    if (!fileUrl || (!isAudioFile && !isVideoFile)) {
+        console.error('❌ Invalid file format:', fileUrl);
+        showToast('Video file not available', 'error');
+        return;
+    }
+    
+    // Set poster for audio files
+    if (isAudioFile && content.thumbnail_url) {
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+        videoElement.setAttribute('poster', imgUrl);
+    } else {
+        videoElement.removeAttribute('poster');
+    }
+    
+    // Clean up existing players
+    if (enhancedVideoPlayer) {
+        try { enhancedVideoPlayer.destroy(); } catch(e) {}
+        enhancedVideoPlayer = null;
+    }
+    if (watchSession) {
+        watchSession.stop();
+        watchSession = null;
+    }
+    
+    // Set video source
+    while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
+    videoElement.removeAttribute('src');
+    
+    const source = document.createElement('source');
+    source.src = fileUrl;
+    if (isAudioFile) {
+        if (fileUrl.endsWith('.mp3')) source.type = 'audio/mpeg';
+        else if (fileUrl.endsWith('.wav')) source.type = 'audio/wav';
+        else if (fileUrl.endsWith('.ogg')) source.type = 'audio/ogg';
+        else source.type = 'audio/mpeg';
+    } else {
+        if (fileUrl.endsWith('.mp4')) source.type = 'video/mp4';
+        else if (fileUrl.endsWith('.webm')) source.type = 'video/webm';
+        else source.type = 'video/mp4';
+    }
+    videoElement.appendChild(source);
+    videoElement.load();
+    
+    // Initialize players
+    initializeEnhancedVideoPlayer();
+    setTimeout(() => {
+        if (streamingManager) {
+            streamingManager.destroy();
+            streamingManager = null;
+        }
+        initializeStreamingManager();
+    }, 100);
+    
+    // Auto-play
+    setTimeout(() => {
+        if (enhancedVideoPlayer) {
+            enhancedVideoPlayer.play().catch(err => console.error('Play failed:', err));
+        } else {
+            videoElement.play().catch(err => console.error('Autoplay failed:', err));
+        }
+    }, 500);
+    
+    // Scroll to player
+    setTimeout(() => {
+        player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+// 🎯 NEW: Load only what's needed to render the page (modified for playlist mode compatibility)
+async function loadCriticalContentData(contentId) {
     // Check cache first
     const cached = localStorage.getItem(`content_${contentId}`);
     if (cached) {
@@ -407,11 +842,9 @@ function updateCountsUI(content) {
     if (likesEl) likesEl.textContent = formatNumber(content.likes_count);
 }
 
-// 🚀 NEW: Load non-critical data in background
-async function loadSecondaryContentData() {
-    if (!currentContent?.id) return;
-    
-    const contentId = currentContent.id;
+// 🎯 NEW: Load non-critical data in background (single content mode)
+async function loadSecondaryContentData(contentId) {
+    if (!contentId) return;
     
     // Run non-blocking
     Promise.all([
@@ -420,6 +853,21 @@ async function loadSecondaryContentData() {
         currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
         currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
     ]).catch(err => console.warn('⚠️ Secondary data load failed:', err));
+}
+
+// 🎯 NEW: Load secondary data for playlist mode
+async function loadSecondaryContentDataForPlaylist() {
+    if (!currentPlaylistItems.length) return;
+    
+    // Load comments for first item
+    const firstItemId = currentPlaylistItems[0]?.id;
+    if (firstItemId) {
+        Promise.all([
+            loadComments(firstItemId),
+            currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
+            currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
+        ]).catch(err => console.warn('⚠️ Playlist secondary data load failed:', err));
+    }
 }
 
 // ============================================
@@ -459,9 +907,6 @@ if (!window.StreamingManager) {
 // ============================================
 // PHASE 1 UPDATED: Initialize watch session with session ID and profile ID
 // ============================================
-// ============================================
-// PHASE 1 UPDATED: Initialize watch session with existing session ID only
-// ============================================
 function initializeWatchSessionOnPlay() {
     if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
         console.log('🚫 Cannot initialize watch session: missing content, user, or video');
@@ -497,7 +942,6 @@ function initializeWatchSessionOnPlay() {
             },
             onViewCounted: function(data) {
                 console.log('👍 View counted by WatchSession:', data);
-                // ✅ CRITICAL: Refresh counts when view is counted
                 refreshCountsFromSource();
             },
             onComplete: function(data) {
@@ -508,6 +952,16 @@ function initializeWatchSessionOnPlay() {
                     resumeBtn.remove();
                     const playBtn = document.getElementById('playBtn');
                     if (playBtn) playBtn.style.display = 'flex';
+                }
+                
+                // Auto-play next in playlist mode
+                if (isPlaylistMode && currentPlaylistItems.length > 0) {
+                    const currentIndex = currentPlaylistItems.findIndex(i => i.id === currentContent?.id);
+                    if (currentIndex >= 0 && currentIndex + 1 < currentPlaylistItems.length) {
+                        setTimeout(() => {
+                            playPlaylistItem(currentPlaylistItems[currentIndex + 1].id, currentIndex + 1);
+                        }, 3000);
+                    }
                 }
             },
             onError: function(error) {
@@ -526,14 +980,9 @@ function initializeWatchSessionOnPlay() {
         console.error('❌ Failed to initialize watch session:', error);
     }
 }
+
 // ============================================
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
-// ✅ ADDED: profile_id to insert
-// ============================================
-// ============================================
-// 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
-// ✅ ADDED: profile_id to insert
-// ✅ UPDATED: Session ID generation removed - now using existing session only
 // ============================================
 function handlePlay() {
     console.log('🎬 handlePlay CALLED - Starting view recording...');
@@ -549,8 +998,6 @@ function handlePlay() {
         return;
     }
 
-    // ✅ REMOVED: Session ID generation - now using existing session only
-
     // ✅ UPDATE UI OPTIMISTICALLY
     const viewsEl = document.getElementById('viewsCount');
     const viewsFullEl = document.getElementById('viewsCountFull');
@@ -561,13 +1008,10 @@ function handlePlay() {
         viewsFullEl.textContent = formatNumber(newViews);
     }
 
-           // ✅ VIEW RECORDING IS HANDLED BY WATCH SESSION ONLY
-    // Do NOT call recordContentView() here - WatchSession will handle it
     console.log('🎬 View recording will be handled by WatchSession after 20 seconds');
     
     // Still update UI optimistically
     if (viewsEl && viewsFullEl) {
-        // Optimistic UI update - will be corrected by refreshCountsFromSource later
         viewsEl.textContent = `${formatNumber(currentViews + 1)} views`;
         viewsFullEl.textContent = formatNumber(currentViews + 1);
     }
@@ -577,7 +1021,6 @@ function handlePlay() {
 
     // 🚀 Load heavy video features on-demand
     loadHeavyVideoFeatures().then(() => {
-        // Continue with video playback setup
         player.style.display = 'block';
         const placeholder = document.getElementById('videoPlaceholder');
         if (placeholder) placeholder.style.display = 'none';
@@ -590,7 +1033,7 @@ function handlePlay() {
         videoElement.volume = 1.0;
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Video source setup (keep your existing working code)
+        // Video source setup
         let fileUrl = currentContent.file_url;
         console.log('📥 Raw file_url from database:', fileUrl);
         if (fileUrl && !fileUrl.startsWith('http')) {
@@ -740,23 +1183,24 @@ function initializePlaylistModal() {
         console.warn('⚠️ PlaylistModal not loaded yet');
         return;
     }
-    if (!currentUserId || !currentContent?.id) {
+    if (!currentUserId || !(currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id))) {
         console.warn('⚠️ Cannot initialize playlist modal: missing user or content');
         return;
     }
+
+    const contentIdForModal = currentContent?.id || (currentPlaylistItems[0]?.id);
+    if (!contentIdForModal) return;
 
     try {
         playlistModal = new window.PlaylistModal({
             supabase: window.supabaseClient,
             userId: currentUserId,
-            contentId: currentContent.id
+            contentId: contentIdForModal
         });
         window.playlistModal = playlistModal;
 
-        // Update Watch Later button to open modal
         const watchLaterBtn = document.getElementById('watchLaterBtn');
         if (watchLaterBtn) {
-            // Clone to remove existing listeners
             const newBtn = watchLaterBtn.cloneNode(true);
             watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
             newBtn.addEventListener('click', (e) => {
@@ -840,6 +1284,26 @@ async function initializeRecommendationEngine() {
     }
 }
 
+// For playlist mode recommendations
+async function initializeRecommendationEngineForPlaylist(contentId) {
+    if (!window.RecommendationEngine || !contentId) return;
+    
+    try {
+        recommendationEngine = new window.RecommendationEngine({
+            supabase: window.supabaseClient,
+            userId: currentUserId,
+            currentContentId: contentId,
+            limit: 8,
+            minWatchThreshold: 0.5,
+            cacheDuration: 60000
+        });
+        await loadRecommendationRails();
+        console.log('✅ RecommendationEngine initialized for playlist');
+    } catch (error) {
+        console.error('❌ Failed to initialize RecommendationEngine:', error);
+    }
+}
+
 // ============================================
 // PHASE 4: STREAMING MANAGER INITIALIZATION
 // ============================================
@@ -862,7 +1326,6 @@ async function initializeStreamingManager() {
                 console.log('📺 Quality changed:', data);
                 updateQualityIndicator(data.quality);
                 showToast('Quality: ' + data.quality, 'info');
-                // Refresh quality selector UI
                 setupQualitySelector();
             },
             onDataSaverToggle: function(data) {
@@ -876,7 +1339,6 @@ async function initializeStreamingManager() {
         });
         await streamingManager.initialize();
 
-        // Set up periodic network speed updates
         setInterval(() => {
             if (streamingManager) {
                 const speed = streamingManager.getNetworkSpeed();
@@ -886,11 +1348,9 @@ async function initializeStreamingManager() {
             }
         }, 5000);
 
-        // ✅ CRITICAL: Setup quality selector AFTER streaming manager is ready
         setupQualitySelector();
         setupDataSaverToggle();
 
-        // Initialize quality indicator with current quality
         setTimeout(() => {
             if (streamingManager) {
                 updateQualityIndicator(streamingManager.getCurrentQuality());
@@ -913,7 +1373,6 @@ function setupQualitySelector() {
         return;
     }
 
-    // Get available qualities from streaming manager
     const qualities = streamingManager?.getAvailableQualities?.() || [
         { label: 'Auto', value: 'auto' },
         { label: '1080p', value: '1080p' },
@@ -924,7 +1383,6 @@ function setupQualitySelector() {
 
     console.log('📺 Setting up quality selector with', qualities.length, 'qualities');
 
-    // Render quality options
     qualityContainer.innerHTML = qualities.map(q => `
         <button class="quality-option ${q.value === streamingManager?.getCurrentQuality?.() ? 'active' : ''}"
                 data-quality="${q.value}">
@@ -932,24 +1390,20 @@ function setupQualitySelector() {
         </button>
     `).join('');
 
-    // Attach click handlers
     qualityContainer.querySelectorAll('.quality-option').forEach(btn => {
         btn.addEventListener('click', async function() {
             const quality = this.dataset.quality;
-            // Update UI
             qualityContainer.querySelectorAll('.quality-option').forEach(b =>
                 b.classList.remove('active')
             );
             this.classList.add('active');
 
-            // Change quality via streaming manager
             if (streamingManager) {
                 await streamingManager.setQuality(quality);
                 console.log('📺 Quality changed to:', quality);
                 showToast('Quality: ' + quality.toUpperCase(), 'info');
             }
 
-            // Close settings menu
             const settingsMenu = document.querySelector('.settings-menu');
             if (settingsMenu) {
                 settingsMenu.classList.remove('active');
@@ -1031,7 +1485,6 @@ async function updateHeaderProfile() {
         if (profileName) profileName.textContent = 'Guest';
     }
     
-    // Apply mobile header styles after updating
     applyMobileHeaderStyles();
 }
 
@@ -1147,17 +1600,14 @@ function setupAuthListeners() {
                 streamingManager.userId = currentUserId;
             }
             
-            // Re-initialize playlist modal if needed
-            if (currentContent?.id && !playlistModal) {
+            if ((currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id)) && !playlistModal) {
                 setTimeout(initializePlaylistModal, 500);
             }
 
-            // Update home feed UI components
             await updateSidebarProfile();
             await updateHeaderProfile();
             updateProfileSwitcher();
             
-            // Update comment input state after sign in
             setTimeout(updateCommentInputState, 300);
 
         } else if (event === 'SIGNED_OUT') {
@@ -1189,11 +1639,9 @@ function setupAuthListeners() {
                 streamingManager.userId = null;
             }
 
-            // Reset home feed UI components
             resetSidebarProfile();
             resetHeaderProfile();
             
-            // Update comment input state after sign out
             setTimeout(updateCommentInputState, 300);
         }
     });
@@ -1205,7 +1653,6 @@ function setupAuthListeners() {
         resetProfileUI();
     }
     
-    // Initial comment input state update
     setTimeout(updateCommentInputState, 500);
 }
 
@@ -1256,9 +1703,7 @@ function updateProfileUI() {
         };
     }
     
-    // Apply mobile header styles after updating profile UI
     applyMobileHeaderStyles();
-    // Update comment input state directly
     updateCommentInputState();
 }
 
@@ -1275,9 +1720,7 @@ function resetProfileUI() {
     profileBtn.onclick = () => {
         window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
     };
-    // Apply mobile header styles after reset
     applyMobileHeaderStyles();
-    // Update comment input state for guest
     updateCommentInputState();
 }
 
@@ -1288,18 +1731,15 @@ function applyMobileHeaderStyles() {
     
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-        // On mobile: hide the profile picture/avatar, keep the RSA badge and user name
         const profileImg = headerProfile.querySelector('#userProfilePlaceholder img, #userProfilePlaceholder .profile-placeholder');
         if (profileImg) {
             profileImg.style.display = 'none';
         }
-        // Ensure RSA badge is visible
         const rsaBadge = headerProfile.querySelector('.rsa-badge');
         if (rsaBadge) {
             rsaBadge.style.display = 'flex';
         }
     } else {
-        // On desktop: show the profile picture
         const profileImg = headerProfile.querySelector('#userProfilePlaceholder img, #userProfilePlaceholder .profile-placeholder');
         if (profileImg) {
             profileImg.style.display = '';
@@ -1307,19 +1747,16 @@ function applyMobileHeaderStyles() {
     }
 }
 
-// Listen for window resize to re-apply mobile header styles
 window.addEventListener('resize', applyMobileHeaderStyles);
 
 // ============================================
 // FALLBACK: Load content with ACCURATE counts from source tables (used if critical fails)
-// ✅ CRITICAL: Include user_profiles with avatar_url
 // ============================================
 async function loadContentFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const contentId = urlParams.get('id') || '68';
     
     try {
-        // ✅ CRITICAL: Ensure user_profiles includes avatar_url
         const { data: contentData, error: contentError } = await window.supabaseClient
             .from('Content')
             .select(`
@@ -1357,14 +1794,12 @@ async function loadContentFromURL() {
             watchProgress = progressData;
         }
 
-        // Get quality profiles and HLS manifest URL (PHASE 4)
         const { data: streamingData } = await window.supabaseClient
             .from('Content')
             .select('quality_profiles, hls_manifest_url, data_saver_url')
             .eq('id', contentId)
             .single();
 
-        // PHASE 1D: Get series/collection info
         const { data: seriesData } = await window.supabaseClient
             .from('Content')
             .select('series_id, episode_number')
@@ -1390,11 +1825,9 @@ async function loadContentFromURL() {
             creator_display_name: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
             creator_id: contentData.user_profiles?.id || contentData.user_id,
             user_id: contentData.user_id,
-            // ✅ CRITICAL: Include full user_profiles object with avatar_url
             user_profiles: contentData.user_profiles,
             watch_progress: watchProgress?.last_position || 0,
             is_completed: watchProgress?.is_completed || false,
-            // PHASE 4: Streaming data
             quality_profiles: streamingData?.quality_profiles || [],
             hls_manifest_url: streamingData?.hls_manifest_url || null,
             data_saver_url: streamingData?.data_saver_url || null,
@@ -1557,9 +1990,6 @@ function updateContentUI(content) {
     safeSetText('contentDescriptionShort', truncateText(content.description, 150));
     safeSetText('contentDescriptionFull', content.description);
 
-    // ============================================
-    // ✅ CRITICAL FIX: SET CREATOR AVATAR
-    // ============================================
     const creatorAvatar = document.getElementById('creatorAvatar');
     if (creatorAvatar && content.user_profiles) {
         const avatarUrl = content.user_profiles.avatar_url;
@@ -1567,7 +1997,6 @@ function updateContentUI(content) {
         const initial = displayName.charAt(0).toUpperCase();
         
         if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && avatarUrl !== '') {
-            // ✅ Use actual avatar URL
             const fixedAvatarUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
             creatorAvatar.innerHTML = `
                 <img src="${fixedAvatarUrl}"
@@ -1577,7 +2006,6 @@ function updateContentUI(content) {
             `;
             console.log('✅ Creator avatar set from URL:', fixedAvatarUrl);
         } else {
-            // ✅ Fallback to initials with gradient
             creatorAvatar.innerHTML = `
                 <div style="
                     width:100%;
@@ -1601,19 +2029,14 @@ function updateContentUI(content) {
         });
     }
 
-    // ============================================
-    // ✅ CRITICAL FIX: MAKE CREATOR SECTION CLICKABLE
-    // ============================================
     const creatorSection = document.querySelector('.creator-section');
     const creatorInfo = document.querySelector('.creator-info');
     if (creatorSection && content.creator_id) {
         creatorSection.style.cursor = 'pointer';
         if (creatorInfo) {
-            // Remove existing listeners by cloning
             const newCreatorInfo = creatorInfo.cloneNode(true);
             creatorInfo.parentNode.replaceChild(newCreatorInfo, creatorInfo);
             newCreatorInfo.addEventListener('click', function(e) {
-                // Don't trigger if clicking connect button
                 if (e.target.closest('.connect-btn')) return;
                 window.location.href = `creator-channel.html?id=${content.creator_id}&name=${encodeURIComponent(content.creator_display_name)}`;
             });
@@ -1634,8 +2057,6 @@ function updateContentUI(content) {
             </div>
         `;
     }
-
-    // 🎯 REMOVED: Player title "Now Playing" header - no longer used
 }
 
 // ✅ FIXED: loadComments - REMOVED creator_id from update
@@ -1657,12 +2078,11 @@ async function loadComments(contentId) {
             countEl.textContent = `(${comments.length})`;
         }
 
-        // ✅ FIXED: Update comments_count - NO creator_id condition
         if (currentContent) {
             const { error: updateError } = await window.supabaseClient
                 .from('Content')
                 .update({ comments_count: comments.length })
-                .eq('id', currentContent.id);  // ✅ Only use id, NOT creator_id
+                .eq('id', currentContent.id);
             if (updateError) {
                 console.warn('Failed to update comments_count:', updateError);
             }
@@ -1876,10 +2296,8 @@ function initializeEnhancedVideoPlayer() {
             showToast('Playback error occurred', 'error');
         });
 
-        // ✅ FIXED: Add video load confirmation events
         enhancedVideoPlayer.on('loadeddata', () => {
             console.log('✅ Video metadata loaded, ready to play');
-            // Hide any loading indicators
             const placeholder = document.getElementById('videoPlaceholder');
             if (placeholder) placeholder.style.display = 'none';
         });
@@ -1903,18 +2321,15 @@ function closeVideoPlayer() {
     const player = document.getElementById('inlinePlayer');
     const video = document.getElementById('inlineVideoPlayer');
 
-    // Hide player
     if (player) {
         player.style.display = 'none';
     }
 
-    // Stop video
     if (video) {
         video.pause();
         video.currentTime = 0;
     }
 
-    // Clean up sessions
     if (watchSession) {
         watchSession.stop();
         watchSession = null;
@@ -1932,13 +2347,11 @@ function closeVideoPlayer() {
         streamingManager = null;
     }
 
-    // Clear view validation timer
     if (viewValidationTimer) {
         clearTimeout(viewValidationTimer);
         viewValidationTimer = null;
     }
 
-        // ✅ Clean up content-specific session
     if (window._currentPlayingContentId) {
         if (window.cleanupContentSession) {
             window.cleanupContentSession(window._currentPlayingContentId);
@@ -1946,25 +2359,21 @@ function closeVideoPlayer() {
         window._currentPlayingContentId = null;
     }
 
-    // Show placeholder again
     const placeholder = document.getElementById('videoPlaceholder');
     if (placeholder) {
         placeholder.style.display = 'flex';
     }
 
-    // ✅ Restore hero poster opacity
     const heroPoster = document.getElementById('heroPoster');
     if (heroPoster) {
         heroPoster.style.opacity = '1';
     }
 
-    // ✅ Hide close button in hero actions
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) {
         closeFromHero.style.display = 'none';
     }
 
-    // Scroll to hero section (now visible again)
     const hero = document.querySelector('.content-hero');
     if (hero) {
         hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1984,7 +2393,6 @@ function setupEventListeners() {
         poster.addEventListener('click', handlePlay);
     }
 
-    // ✅ Close player from hero actions button
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) {
         closeFromHero.addEventListener('click', function() {
@@ -1992,7 +2400,6 @@ function setupEventListeners() {
         });
     }
     
-    // ❌ Old close button removed - no longer in DOM
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fullPlayerBtn = document.getElementById('fullPlayerBtn');
     if (fullscreenBtn) {
@@ -2012,13 +2419,10 @@ function setupEventListeners() {
         });
     }
 
-    // ============================================
-    // LIKE BUTTON - RLS-COMPLIANT, TRIGGER-INDEPENDENT ✅
-    // ============================================
+    // LIKE BUTTON
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
         likeBtn.addEventListener('click', async function() {
-            // Guard clauses
             if (!currentContent) return;
             if (!window.AuthHelper?.isAuthenticated?.()) {
                 showToast('Sign in to like content', 'warning');
@@ -2030,14 +2434,12 @@ function setupEventListeners() {
                 return;
             }
 
-            // Get current state
             const isLiked = likeBtn.classList.contains('active');
             const likesCountEl = document.getElementById('likesCount');
             const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
             const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
 
             try {
-                // ===== OPTIMISTIC UI UPDATE =====
                 likeBtn.classList.toggle('active', !isLiked);
                 likeBtn.innerHTML = !isLiked
                     ? '<i class="fas fa-heart"></i><span>Liked</span>'
@@ -2046,9 +2448,7 @@ function setupEventListeners() {
                     likesCountEl.textContent = formatNumber(newLikes);
                 }
 
-                // ===== DATABASE OPERATION: Insert/Delete Like =====
                 if (!isLiked) {
-                    // LIKE: Insert new record
                     const { error: insertError } = await window.supabaseClient
                         .from('content_likes')
                         .insert({
@@ -2057,38 +2457,31 @@ function setupEventListeners() {
                         });
                     if (insertError) throw insertError;
                 } else {
-                    // UNLIKE: Delete record with BOTH WHERE clauses (RLS compliant)
                     const { error: deleteError } = await window.supabaseClient
                         .from('content_likes')
                         .delete()
-                        .eq('user_id', userProfile.id)      // ← WHERE clause #1
-                        .eq('content_id', currentContent.id); // ← WHERE clause #2
+                        .eq('user_id', userProfile.id)
+                        .eq('content_id', currentContent.id);
                     if (deleteError) throw deleteError;
                 }
 
-                // ===== FETCH UPDATED COUNT FROM SOURCE TABLE =====
-                // This bypasses any trigger issues by counting directly
                 const { count, error: countError } = await window.supabaseClient
                     .from('content_likes')
                     .select('*', { count: 'exact', head: true })
                     .eq('content_id', currentContent.id);
                 if (countError) throw countError;
 
-                // ===== UPDATE UI WITH ACCURATE COUNT =====
                 if (likesCountEl) {
                     likesCountEl.textContent = formatNumber(count || 0);
                 }
 
-                // Show success message
                 showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
 
-                // Optional: Track analytics
                 if (window.track?.contentLike) {
                     window.track.contentLike(currentContent.id, !isLiked);
                 }
             } catch (error) {
                 console.error('Like operation failed:', error);
-                // ===== ROLLBACK UI ON ERROR =====
                 likeBtn.classList.toggle('active', isLiked);
                 likeBtn.innerHTML = isLiked
                     ? '<i class="fas fa-heart"></i><span>Liked</span>'
@@ -2101,9 +2494,7 @@ function setupEventListeners() {
         });
     }
 
-    // ============================================
     // FAVORITE BUTTON
-    // ============================================
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
         favoriteBtn.addEventListener('click', async function() {
@@ -2174,27 +2565,21 @@ function setupEventListeners() {
         });
     }
 
-    // ============================================
-    // PHASE 2: WATCH LATER BUTTON (uses modal now)
-    // ============================================
-    // The Watch Later button is now handled in initializePlaylistModal
-    // This is a fallback in case modal isn't initialized yet
     setupWatchLaterButton();
     
     const refreshBtn = document.getElementById('refreshCommentsBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', async function() {
-            if (currentContent) {
+            const contentIdForComments = currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+            if (contentIdForComments) {
                 showToast('Refreshing comments...', 'info');
-                await loadComments(currentContent.id);
+                await loadComments(contentIdForComments);
                 showToast('Comments refreshed!', 'success');
             }
         });
     }
 
-    // ============================================
     // COMMENT SUBMISSION HANDLER
-    // ============================================
     const sendBtn = document.getElementById('sendCommentBtn');
     const commentInput = document.getElementById('commentInput');
     if (sendBtn && commentInput) {
@@ -2208,7 +2593,8 @@ function setupEventListeners() {
                 showToast('You need to sign in to comment', 'warning');
                 return;
             }
-            if (!currentContent) return;
+            const contentIdForComment = currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+            if (!contentIdForComment) return;
 
             const originalHTML = sendBtn.innerHTML;
             sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -2225,7 +2611,7 @@ function setupEventListeners() {
                 const { data: newComment, error: insertError } = await window.supabaseClient
                     .from('comments')
                     .insert({
-                        content_id: currentContent.id,
+                        content_id: contentIdForComment,
                         user_id: userProfile.id,
                         author_name: displayName,
                         comment_text: text,
@@ -2241,12 +2627,12 @@ function setupEventListeners() {
                 }
 
                 console.log('✅ Comment inserted:', newComment);
-                await loadComments(currentContent.id);
+                await loadComments(contentIdForComment);
                 await refreshCountsFromSource();
                 commentInput.value = '';
                 showToast('Comment added!', 'success');
                 if (window.track?.contentComment) {
-                    window.track.contentComment(currentContent.id);
+                    window.track.contentComment(contentIdForComment);
                 }
             } catch (error) {
                 console.error('❌ Comment submission failed:', error);
@@ -2289,9 +2675,6 @@ function setupEventListeners() {
         });
     }
 
-    // ============================================
-    // FIXED: SHARE BUTTON WITH BRAND IDENTITY
-    // ============================================
     const shareBtn = document.getElementById('shareBtn');
     if (shareBtn) {
         shareBtn.addEventListener('click', async function() {
@@ -2333,10 +2716,8 @@ NO DNA, JUST RSA
 
 // ====================================================
 // SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
-// ✅ FIXED: Always returns a Promise to prevent ".then is not a function" error
 // ====================================================
 function setupConnectButtons() {
-    // ✅ FIXED: Always return a Promise
     function checkConnectionStatus(creatorId) {
         return new Promise(async (resolve) => {
             if (!window.AuthHelper?.isAuthenticated() || !creatorId) {
@@ -2366,7 +2747,6 @@ function setupConnectButtons() {
 
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn && currentContent?.creator_id) {
-        // ✅ Now .then() will always work
         checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
             if (isConnected) {
                 connectBtn.classList.add('connected');
@@ -2516,19 +2896,20 @@ function initAnalyticsModal() {
 }
 
 async function loadContentAnalytics() {
-    if (!currentContent) return;
+    const contentIdForAnalytics = currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+    if (!contentIdForAnalytics) return;
     try {
         const { data: viewsData } = await window.supabaseClient
             .from('content_views')
             .select('id, viewed_at')
-            .eq('content_id', currentContent.id)
+            .eq('content_id', contentIdForAnalytics)
             .order('viewed_at', { ascending: false })
             .limit(100);
 
         const { data: commentsData } = await window.supabaseClient
             .from('comments')
             .select('id, created_at')
-            .eq('content_id', currentContent.id);
+            .eq('content_id', contentIdForAnalytics);
 
         const totalViews = viewsData?.length || 0;
         const totalComments = commentsData?.length || 0;
@@ -2676,9 +3057,6 @@ function triggerSearch() {
     }
 }
 
-// ============================================
-// FIXED: Search content with REAL view counts from source table
-// ============================================
 async function searchContent(query, category, sortBy) {
     try {
         let orderBy = 'created_at';
@@ -2720,9 +3098,6 @@ async function searchContent(query, category, sortBy) {
     }
 }
 
-// ============================================
-// FIXED: Render search results with REAL view counts
-// ============================================
 function renderSearchResults(results) {
     const grid = document.getElementById('search-results-grid');
     if (!grid) return;
@@ -3228,10 +3603,12 @@ function setupWatchLaterButton() {
             return;
         }
         
+        const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+        if (!contentIdForWatchLater) return;
+        
         if (playlistModal) {
             playlistModal.open();
         } else {
-            // Fallback: create a basic Watch Later playlist if modal not available
             try {
                 const { data: existingList } = await window.supabaseClient
                     .from('playlists')
@@ -3255,12 +3632,11 @@ function setupWatchLaterButton() {
                     playlistId = newPlaylist.id;
                 }
                 
-                // Check if already in playlist
                 const { data: existing } = await window.supabaseClient
                     .from('playlist_items')
                     .select('id')
                     .eq('playlist_id', playlistId)
-                    .eq('content_id', currentContent.id)
+                    .eq('content_id', contentIdForWatchLater)
                     .maybeSingle();
                 
                 if (existing) {
@@ -3272,7 +3648,7 @@ function setupWatchLaterButton() {
                     .from('playlist_items')
                     .insert({
                         playlist_id: playlistId,
-                        content_id: currentContent.id,
+                        content_id: contentIdForWatchLater,
                         added_at: new Date().toISOString()
                     });
                 
@@ -3288,10 +3664,13 @@ function setupWatchLaterButton() {
 // PHASE 1D: Update watch later button state
 async function updateWatchLaterButtonState() {
     const watchLaterBtn = document.getElementById('watchLaterBtn');
-    if (!watchLaterBtn || !playlistManager || !currentUserId || !currentContent?.id) return;
+    if (!watchLaterBtn || !playlistManager || !currentUserId) return;
+    
+    const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+    if (!contentIdForWatchLater) return;
     
     try {
-        const isInWatchLater = await playlistManager.isInWatchLater(currentContent.id);
+        const isInWatchLater = await playlistManager.isInWatchLater(contentIdForWatchLater);
         if (isInWatchLater) {
             watchLaterBtn.classList.add('active');
             watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
@@ -3306,23 +3685,24 @@ async function updateWatchLaterButtonState() {
 
 // PHASE 1D: Refresh counts from source
 async function refreshCountsFromSource() {
-    if (!currentContent?.id) return;
+    const contentIdForRefresh = currentContent?.id || (currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+    if (!contentIdForRefresh) return;
     try {
         const { count: viewsCount } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id);
+            .eq('content_id', contentIdForRefresh);
         
         const { count: likesCount } = await window.supabaseClient
             .from('content_likes')
             .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id);
+            .eq('content_id', contentIdForRefresh);
         
-        if (viewsCount !== undefined) {
+        if (currentContent && viewsCount !== undefined) {
             currentContent.views_count = viewsCount;
             updateCountsUI(currentContent);
         }
-        if (likesCount !== undefined) {
+        if (currentContent && likesCount !== undefined) {
             currentContent.likes_count = likesCount;
             const likesEl = document.getElementById('likesCount');
             if (likesEl) likesEl.textContent = formatNumber(likesCount);
@@ -3384,7 +3764,7 @@ window.hasViewedContentRecently = hasViewedContentRecently;
 window.streamingManager = streamingManager;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
-window.closeVideoPlayer = closeVideoPlayer; // ✅ Export close function
+window.closeVideoPlayer = closeVideoPlayer;
 window.refreshCountsFromSource = refreshCountsFromSource;
 window.markContentAsViewed = markContentAsViewed;
 
@@ -3405,4 +3785,4 @@ window.addEventListener('beforeunload', function() {
 });
 
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
-console.log('🚀 PHASE 1D: Collection engine and queue manager integration complete');
+console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
