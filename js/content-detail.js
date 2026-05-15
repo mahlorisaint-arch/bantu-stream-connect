@@ -39,6 +39,9 @@
 // ✅ PHASE 1D: Next/Previous playback, queue sidebar, autoplay, active item highlighting
 // ✅ PHASE 1D: Queue survives refresh via localStorage
 // 🎯 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture
+// 🔧 PHASE 1D FIX: Added showLoading/hideLoading functions
+// 🔧 PHASE 1D FIX: Hard block fallback during playlist mode
+// 🔧 PHASE 1D FIX: Proper playlist UI rendering and queue events
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -59,6 +62,29 @@ let _heavyVideoLoaded = false; // 🚀 Flag for lazy video features
 let currentPlaylist = null;
 let currentPlaylistItems = [];
 let isPlaylistMode = false;
+
+// ============================================
+// 🔧 PHASE 1D FIX 1 — ADD MISSING LOADING FUNCTIONS
+// ============================================
+function showLoading(message = 'Loading...') {
+    const loadingScreen = document.getElementById('loading');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+        const text = loadingScreen.querySelector('.loading-text');
+        if (text) {
+            text.textContent = message;
+        }
+    }
+    console.log('⏳', message);
+}
+
+function hideLoading() {
+    const loadingScreen = document.getElementById('loading');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+    }
+    console.log('✅ Loading hidden');
+}
 
 // TEMPORARILY DISABLE the recent view check for testing
 function hasViewedContentRecently(contentId) {
@@ -296,15 +322,16 @@ async function waitForHelpers() {
 }
 
 // ============================================
-// 🎯 PLAYLIST MODE: Load playlist data
+// 🎯 PLAYLIST MODE: Load playlist data (FIX 4 & 3 applied)
 // ============================================
 async function loadPlaylistMode(playlistId, playlistType) {
     try {
-        showLoading();
+        showLoading('Loading playlist...');
 
         console.log('📀 Loading playlist:', playlistId, 'Type:', playlistType);
 
-        const { data: playlist, error } = await window.supabaseClient
+        // Fetch playlist with items
+        let query = window.supabaseClient
             .from('creator_playlists')
             .select(`
                 *,
@@ -332,8 +359,14 @@ async function loadPlaylistMode(playlistId, playlistType) {
                     created_at
                 )
             `)
-            .eq('id', playlistId)
-            .single();
+            .eq('id', playlistId);
+
+        // Add type filter if specified
+        if (playlistType) {
+            query = query.eq('playlist_type', playlistType);
+        }
+
+        const { data: playlist, error } = await query.single();
 
         if (error) throw error;
 
@@ -342,9 +375,24 @@ async function loadPlaylistMode(playlistId, playlistType) {
             return;
         }
 
+        // 🔧 FIX 4: Ensure playlist has items and set globals
+        if (!playlist.items || !playlist.items.length) {
+            throw new Error('Playlist contains no published items');
+        }
+
         currentPlaylist = playlist;
         currentPlaylistItems = playlist.items || [];
 
+        window.currentPlaylist = playlist;
+        window.currentPlaylistIndex = 0;
+        window.currentContent = playlist.items[0];
+
+        console.log(
+            '🎵 Playlist initialized:',
+            playlist.name,
+            'Items:',
+            playlist.items.length
+        );
         console.log(`📀 Loaded playlist: ${playlist.name} with ${currentPlaylistItems.length} items`);
 
         // Render playlist UI
@@ -362,9 +410,23 @@ async function loadPlaylistMode(playlistId, playlistType) {
         hideLoading();
 
     } catch (error) {
+        // 🔧 FIX 3: Hard block fallback during playlist mode
         console.error('❌ Playlist mode failed:', error);
         showToast('Failed to load playlist', 'error');
         hideLoading();
+
+        const hero = document.getElementById('contentHero');
+        if (hero) {
+            hero.innerHTML = `
+                <div class="playlist-error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Failed to load playlist</h2>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        }
+        // IMPORTANT: return prevents fallback execution
+        return;
     }
 }
 
@@ -409,11 +471,19 @@ async function setCurrentContentFromPlaylistItem(item, index) {
 }
 
 // ============================================
-// 🎯 PLAYLIST MODE: Render playlist hero section
+// 🎯 PLAYLIST MODE: Render playlist hero section (FIX 5)
 // ============================================
 function renderPlaylistHero(playlist) {
+    const firstItem = playlist.items?.[0] || {};
+    
     safeSetText('contentTitle', playlist.name || 'Playlist');
-    safeSetText('contentDescription', playlist.description || '');
+    safeSetText('contentDescription', playlist.description || 'Playlist collection');
+    
+    // Update hero poster
+    const heroPoster = document.getElementById('heroPoster');
+    if (heroPoster) {
+        heroPoster.src = playlist.custom_thumbnail_url || firstItem.thumbnail_url || '';
+    }
     
     // Show playlist badge in hero
     const playlistBadge = document.createElement('div');
@@ -436,22 +506,13 @@ function renderPlaylistHero(playlist) {
 }
 
 // ============================================
-// 🎯 PLAYLIST MODE: Render playlist queue
+// 🎯 PLAYLIST MODE: Render playlist queue (FIX 6 & 7)
 // ============================================
 function renderPlaylistQueue(items) {
-    const section = document.getElementById('playlistSection');
-    const container = document.getElementById('playlistItems');
-    const total = document.getElementById('playlistTotalItems');
-
-    if (!section || !container) {
-        console.warn('⚠️ Playlist section elements not found');
+    const container = document.getElementById('playlistQueue');
+    if (!container) {
+        console.warn('⚠️ Playlist queue container not found');
         return;
-    }
-
-    section.style.display = 'block';
-
-    if (total && items) {
-        total.textContent = `${items.length} items`;
     }
 
     if (!items || items.length === 0) {
@@ -466,130 +527,90 @@ function renderPlaylistQueue(items) {
 
     container.innerHTML = items.map((item, index) => `
         <div
-            class="playlist-item"
-            onclick="window.playPlaylistItem('${item.id}', ${index})"
-            id="playlist-item-${item.id}"
+            class="playlist-queue-item ${index === 0 ? 'active' : ''}"
             data-index="${index}"
+            data-content-id="${item.id}"
         >
-            <div class="playlist-thumbnail">
+            <div class="playlist-thumb">
                 <img
                     src="${item.thumbnail_url || 'assets/default-thumbnail.jpg'}"
-                    alt="${escapeHtml(item.title)}"
+                    alt="${escapeHtml(item.title || 'Untitled')}"
                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=140&h=80&fit=crop'"
-                />
-                <div class="playlist-number">${index + 1}</div>
+                >
             </div>
-            <div class="playlist-content">
-                <div class="playlist-title">${escapeHtml(item.title)}</div>
-                <div class="playlist-subtitle">
-                    ${item.content_format || item.media_type || 'Video'}
-                    ${item.episode_number ? ` • Episode ${item.episode_number}` : ''}
+            <div class="playlist-meta">
+                <div class="playlist-item-title">
+                    ${escapeHtml(item.title || 'Untitled')}
                 </div>
-                <div class="playlist-duration">
+                <div class="playlist-item-subtitle">
                     ${formatDuration(item.duration || 0)}
                 </div>
-            </div>
-            <div class="playlist-now-playing">
-                <i class="fas fa-play-circle"></i>
             </div>
         </div>
     `).join('');
 
-    // Add CSS for now-playing indicator
-    const style = document.createElement('style');
-    style.textContent = `
-        .playlist-now-playing {
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            color: var(--warm-gold);
-            margin-left: auto;
-            padding-left: 1rem;
-        }
-        .playlist-item.active .playlist-now-playing {
-            opacity: 1;
-        }
-        .playlist-item.active .playlist-number {
-            display: none;
-        }
-        .playlist-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(245, 158, 11, 0.15);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 40px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--warm-gold);
-            margin-right: 1rem;
-        }
-        .playlist-empty {
-            text-align: center;
-            padding: 3rem;
-            color: var(--slate-grey);
-        }
-        .playlist-empty i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-    `;
-    if (!document.querySelector('#playlist-styles')) {
-        style.id = 'playlist-styles';
-        document.head.appendChild(style);
-    }
+    setupPlaylistQueueEvents();
 }
 
 // ============================================
-// 🎯 PLAYLIST MODE: Highlight active playlist item
+// 🎯 PLAYLIST MODE: Setup queue click events (FIX 7)
 // ============================================
-function highlightActivePlaylistItem(contentId) {
-    document.querySelectorAll('.playlist-item').forEach(el => {
-        el.classList.remove('active');
+function setupPlaylistQueueEvents() {
+    document.querySelectorAll('.playlist-queue-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const index = Number(item.dataset.index);
+            await playPlaylistItemByIndex(index);
+        });
     });
-    
-    const activeItem = document.getElementById(`playlist-item-${contentId}`);
-    if (activeItem) {
-        activeItem.classList.add('active');
-    }
 }
 
 // ============================================
-// 🎯 PLAYLIST MODE: Play playlist item
+// 🎯 PLAYLIST MODE: Play playlist item by index (FIX 8)
 // ============================================
-async function playPlaylistItem(contentId, index) {
-    try {
-        console.log('🎵 Playing playlist item:', contentId, 'Index:', index);
-        
-        const item = currentPlaylistItems.find(i => i.id === contentId);
-        if (!item) {
-            console.error('Item not found in playlist:', contentId);
-            return;
-        }
-        
-        await setCurrentContentFromPlaylistItem(item, index);
-        
-        // Load into player
-        await loadContentIntoPlayer(item);
-        
-        // Initialize watch session for new content
-        setTimeout(() => {
-            if (enhancedVideoPlayer?.video) {
-                initializeWatchSessionOnPlay();
-            }
-        }, 500);
-        
-        showToast(`Now playing: ${item.title}`, 'info');
-        
-    } catch (error) {
-        console.error('❌ Failed to play playlist item:', error);
-        showToast('Failed to play item', 'error');
-    }
+async function playPlaylistItemByIndex(index) {
+    if (!window.currentPlaylist?.items?.[index]) return;
+
+    const item = window.currentPlaylist.items[index];
+
+    window.currentPlaylistIndex = index;
+    window.currentContent = item;
+
+    // Update active class in queue
+    document.querySelectorAll('.playlist-queue-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.playlist-queue-item[data-index="${index}"]`)?.classList.add('active');
+
+    await setCurrentContentFromPlaylistItem(item, index);
+    await loadContentIntoPlayer(item);
+
+    console.log('▶️ Playing playlist item:', item.title);
 }
 
 // Make function globally accessible for onclick handlers
-window.playPlaylistItem = playPlaylistItem;
+window.playPlaylistItemByIndex = playPlaylistItemByIndex;
+window.playPlaylistItem = async (contentId, index) => {
+    if (currentPlaylistItems && currentPlaylistItems[index] && currentPlaylistItems[index].id === contentId) {
+        await playPlaylistItemByIndex(index);
+    } else {
+        // Fallback: find item by ID
+        const foundIndex = currentPlaylistItems.findIndex(i => i.id === contentId);
+        if (foundIndex !== -1) {
+            await playPlaylistItemByIndex(foundIndex);
+        }
+    }
+};
+
+// ============================================
+// 🎯 Highlight active playlist item
+// ============================================
+function highlightActivePlaylistItem(contentId) {
+    document.querySelectorAll('.playlist-queue-item').forEach(el => {
+        if (el.dataset.contentId === contentId) {
+            el.classList.add('active');
+        } else {
+            el.classList.remove('active');
+        }
+    });
+}
 
 // ============================================
 // 🎯 Load content into video player
