@@ -130,6 +130,43 @@
     from { transform: translateY(-20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* ============================================ */
+/* 🎵 BROWSER AUTOPLAY UNLOCK - PLAY OVERLAY */
+/* ============================================ */
+.initial-play-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+}
+.initial-play-overlay.hidden {
+    display: none;
+}
+#initialPlayButton {
+    background: #00a8ff;
+    border: none;
+    color: white;
+    padding: 18px 28px;
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+#initialPlayButton:hover {
+    transform: scale(1.05);
+    background: #0090dd;
+}
+.video-container {
+    position: relative;
+}
 </style>
 </head>
 <body>
@@ -463,6 +500,10 @@
                 <video id="inlineVideoPlayer" playsinline webkit-playsinline>
                     Your browser does not support the video tag.
                 </video>
+                <!-- 🎵 AUTOPLAY OVERLAY (Browser autoplay unlock) -->
+                <div id="initialPlayOverlay" class="initial-play-overlay hidden">
+                    <button id="initialPlayButton">▶ Play Album</button>
+                </div>
                 <!-- PHASE 4: Quality Badge and Network Speed Indicator -->
                 <div class="quality-indicator" id="qualityBadge">Auto</div>
                 <div class="network-speed-indicator" id="networkSpeedIndicator">
@@ -575,7 +616,6 @@
 
         <!-- ============================================ -->
         <!-- 🚀 PHASE 1D: PLAYLIST QUEUE SECTION (SIDEBAR STYLE) -->
-        <!-- This is the NEW playlist queue section that renders episode list -->
         <!-- ============================================ -->
         <section class="playlist-queue-section" id="playlistQueueSection" style="display: none;">
             <div class="playlist-queue-header">
@@ -587,7 +627,7 @@
         </section>
 
         <!-- ============================================ -->
-        <!-- 🚀 PHASE 1D: LEGACY PLAYLIST SECTION (Backward compatibility) -->
+        <!-- 🚀 PHASE 1D: LEGACY PLAYLIST SECTION -->
         <!-- ============================================ -->
         <section class="playlist-section" id="playlistSection" style="display: none;">
             <div class="section-header">
@@ -784,15 +824,12 @@
         <!-- ============================================ -->
         <!-- 🎯 PHASE 3: RECOMMENDATION RAILS - BELOW COMMENTS -->
         <!-- ============================================ -->
-        <!-- Because You Watched Rail -->
         <section class="related-section" id="becauseYouWatchedRail" style="display:none;">
             <!-- Content injected by JS with skeleton loaders -->
         </section>
-        <!-- More From Creator Rail -->
         <section class="related-section" id="moreFromCreatorRail" style="display:none;">
             <!-- Content injected by JS with skeleton loaders -->
         </section>
-        <!-- Related Content (keep at bottom) -->
         <section class="related-section">
             <div class="section-header">
                 <h2 class="section-title">Related Content</h2>
