@@ -42,6 +42,7 @@
 // 🔧 PHASE 1D FIX: Added showLoading/hideLoading functions
 // 🔧 PHASE 1D FIX: Hard block fallback during playlist mode
 // 🔧 PHASE 1D FIX: Proper playlist UI rendering and queue events
+// 🎵 BROWSER AUTOPLAY UNLOCK: User interaction tracker + play overlay
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -62,6 +63,13 @@ let _heavyVideoLoaded = false; // 🚀 Flag for lazy video features
 let currentPlaylist = null;
 let currentPlaylistItems = [];
 let isPlaylistMode = false;
+
+// ============================================
+// 🎵 BROWSER AUTOPLAY UNLOCK — GLOBAL USER INTERACTION TRACKER
+// ============================================
+document.addEventListener('click', () => {
+    document.body.classList.add('user-interacted');
+}, { once: true });
 
 // ============================================
 // 🔧 PHASE 1D FIX 1 — ADD MISSING LOADING FUNCTIONS
@@ -612,7 +620,16 @@ function highlightActivePlaylistItem(contentId) {
 }
 
 // ============================================
-// 🎯 Load content into video player
+// 🎵 SHOW INITIAL PLAY OVERLAY (BROWSER AUTOPLAY UNLOCK)
+// ============================================
+function showInitialPlayOverlay() {
+    const overlay = document.getElementById('initialPlayOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+}
+
+// ============================================
+// 🎯 Load content into video player (SAFE AUTOPLAY)
 // ============================================
 async function loadContentIntoPlayer(content) {
     if (!content) return;
@@ -714,14 +731,30 @@ async function loadContentIntoPlayer(content) {
         initializeStreamingManager();
     }, 100);
     
-    // Auto-play
-    setTimeout(() => {
-        if (enhancedVideoPlayer) {
-            enhancedVideoPlayer.play().catch(err => console.error('Play failed:', err));
-        } else {
-            videoElement.play().catch(err => console.error('Autoplay failed:', err));
+    // 🎵 PHASE 1D FIX — SAFE AUTOPLAY
+    setTimeout(async () => {
+        try {
+            // Only autoplay if user already interacted
+            const canAutoplay = document.body.classList.contains('user-interacted');
+            if (!canAutoplay) {
+                console.log('⛔ Autoplay blocked until user interaction');
+                showInitialPlayOverlay();
+                return;
+            }
+            if (enhancedVideoPlayer) {
+                await enhancedVideoPlayer.play();
+            } else {
+                await videoElement.play();
+            }
+            console.log('▶️ Playback started successfully');
+            // Hide overlay if visible
+            const overlay = document.getElementById('initialPlayOverlay');
+            if (overlay) overlay.classList.add('hidden');
+        } catch (error) {
+            console.warn('⚠️ Playback blocked:', error);
+            showInitialPlayOverlay();
         }
-    }, 500);
+    }, 300);
     
     // Scroll to player
     setTimeout(() => {
@@ -943,6 +976,33 @@ async function loadSecondaryContentDataForPlaylist() {
             currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
         ]).catch(err => console.warn('⚠️ Playlist secondary data load failed:', err));
     }
+}
+
+// ============================================
+// 🎵 INITIAL PLAY BUTTON HANDLER (Browser autoplay unlock)
+// ============================================
+function setupInitialPlayButton() {
+    const playButton = document.getElementById('initialPlayButton');
+    if (!playButton) return;
+    
+    playButton.addEventListener('click', async () => {
+        const video = document.getElementById('inlineVideoPlayer');
+        if (!video) return;
+        
+        try {
+            if (enhancedVideoPlayer) {
+                await enhancedVideoPlayer.play();
+            } else {
+                await video.play();
+            }
+            const overlay = document.getElementById('initialPlayOverlay');
+            if (overlay) overlay.classList.add('hidden');
+            console.log('▶️ User initiated playback');
+        } catch (error) {
+            console.error('❌ User playback failed:', error);
+            showToast('Playback failed. Please try again.', 'error');
+        }
+    });
 }
 
 // ============================================
@@ -1184,11 +1244,24 @@ function handlePlay() {
             initializeStreamingManager();
         }, 100);
 
-        setTimeout(() => {
-            if (enhancedVideoPlayer) {
-                enhancedVideoPlayer.play().catch(err => console.error('Play failed:', err));
-            } else {
-                videoElement.play().catch(err => console.error('Autoplay failed:', err));
+        // 🎵 SAFE AUTOPLAY with user interaction check
+        setTimeout(async () => {
+            try {
+                const canAutoplay = document.body.classList.contains('user-interacted');
+                if (!canAutoplay) {
+                    console.log('⛔ Autoplay blocked until user interaction');
+                    showInitialPlayOverlay();
+                    return;
+                }
+                if (enhancedVideoPlayer) {
+                    await enhancedVideoPlayer.play();
+                } else {
+                    await videoElement.play();
+                }
+                console.log('▶️ Playback started successfully');
+            } catch (error) {
+                console.warn('⚠️ Playback blocked:', error);
+                showInitialPlayOverlay();
             }
         }, 500);
 
@@ -2369,8 +2442,13 @@ function initializeEnhancedVideoPlayer() {
             }
         });
 
-        enhancedVideoPlayer.on('error', (error) => {
-            console.error('🔴 Video player error:', error);
+        enhancedVideoPlayer.on('error', (event) => {
+            const media = enhancedVideoPlayer?.video;
+            // Ignore autoplay blocking errors
+            if (media && media.error === null && media.networkState !== 3) {
+                return;
+            }
+            console.error('🔴 Video player error:', event);
             showToast('Playback error occurred', 'error');
         });
 
@@ -2789,6 +2867,10 @@ NO DNA, JUST RSA
     }
 
     setupConnectButtons();
+    
+    // Setup initial play button for autoplay unlock
+    setupInitialPlayButton();
+    
     console.log('✅ Event listeners setup complete');
 }
 
@@ -3865,3 +3947,4 @@ window.addEventListener('beforeunload', function() {
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
+console.log('🎵 BROWSER AUTOPLAY UNLOCK: User interaction tracker + play overlay integrated');
