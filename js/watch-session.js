@@ -13,11 +13,12 @@
 // ✅ Autoplay trigger on completion
 // ✅ Session persistence for queue restoration
 // ✅ Multi-content watch session support
+// 🔧 BUG FIX #4: View recording properly called on session start
 
 (function() {
   'use strict';
 
-  console.log('🎬 WatchSession module loading... (Phase 1D Enhanced)');
+  console.log('🎬 WatchSession module loading... (Phase 1D Enhanced with view recording)');
 
   function WatchSession(config) {
     if (!config || !config.contentId || !config.supabase) {
@@ -41,7 +42,9 @@
       sessionStorage.getItem('bantu_view_session');
 
     if (!this.sessionId) {
-      console.warn('⚠️ No session ID found');
+      console.warn('⚠️ No session ID found, generating one');
+      this.sessionId = this._generateSessionId();
+      sessionStorage.setItem('bantu_view_session', this.sessionId);
     }
 
     this.lastSyncTime = 0;
@@ -49,6 +52,7 @@
     this.totalWatchTime = 0;
 
     this.viewCounted = false;
+    this.viewRecorded = false; // 🔧 BUG FIX #4: Track if view already recorded
     this.isCompleted = false;
     this.isActive = false;
 
@@ -84,6 +88,10 @@
   // PHASE 1D: Session Persistence Methods
   // =====================================================
 
+  WatchSession.prototype._generateSessionId = function() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  };
+
   WatchSession.prototype._saveToStorage = function() {
     try {
       const sessionData = {
@@ -93,6 +101,7 @@
         lastPosition: this.lastSavedPosition,
         totalWatchTime: this.totalWatchTime,
         viewCounted: this.viewCounted,
+        viewRecorded: this.viewRecorded,
         isCompleted: this.isCompleted,
         collectionId: this.collectionId,
         episodeNumber: this.episodeNumber,
@@ -122,6 +131,7 @@
           this.lastSavedPosition = data.lastPosition || 0;
           this.totalWatchTime = data.totalWatchTime || 0;
           this.viewCounted = data.viewCounted || false;
+          this.viewRecorded = data.viewRecorded || false;
           this.isCompleted = data.isCompleted || false;
           this.restoredFromStorage = true;
           console.log('📦 Session restored from storage at position:', this.lastSavedPosition);
@@ -216,6 +226,102 @@
   };
 
   // =====================================================
+  // 🔧 BUG FIX #4: RECORD VIEW - Called on session start
+  // =====================================================
+  
+  /**
+   * recordView() - Records a view for the content
+   * Uses the increment_content_views RPC function to safely increment
+   * the view count without duplicate issues.
+   */
+  WatchSession.prototype.recordView = async function() {
+    // Prevent duplicate view recording
+    if (this.viewRecorded) {
+      console.log('👁️ View already recorded for this session');
+      return;
+    }
+
+    if (!this.userId) {
+      console.log('🔓 Guest user - view recording skipped (will record on threshold)');
+      return;
+    }
+
+    console.log('👁️ Recording view for content:', this.contentId);
+
+    try {
+      // Try to use the increment_content_views RPC function first (YouTube-style)
+      const { error: rpcError } = await this.supabase
+        .rpc('increment_content_views', {
+          content_id_input: this.contentId
+        });
+
+      if (rpcError) {
+        console.warn('RPC increment failed, falling back to manual insert:', rpcError.message);
+        
+        // Fallback: Manual insert with session-based deduplication
+        if (this.sessionId) {
+          const { error: insertError } = await this.supabase
+            .from('content_views')
+            .upsert({
+              content_id: this.contentId,
+              session_id: this.sessionId,
+              viewer_id: this.userId,
+              profile_id: this.userId,
+              user_id: this.userId,
+              view_duration: Math.floor(this.videoElement?.currentTime || 0),
+              counted_as_view: true,
+              device_type: this._getDeviceType(),
+              updated_at: new Date().toISOString(),
+              created_at: new Date().toISOString()
+            }, {
+              onConflict: 'content_id,session_id'
+            });
+
+          if (insertError) throw insertError;
+        } else {
+          // Last resort: Simple insert
+          const { error: insertError } = await this.supabase
+            .from('content_views')
+            .insert({
+              content_id: this.contentId,
+              viewer_id: this.userId,
+              profile_id: this.userId,
+              user_id: this.userId,
+              view_duration: Math.floor(this.videoElement?.currentTime || 0),
+              counted_as_view: true,
+              device_type: this._getDeviceType()
+            });
+
+          if (insertError) throw insertError;
+        }
+      }
+
+      this.viewRecorded = true;
+      this._saveToStorage();
+
+      console.log('✅ View recorded successfully for content:', this.contentId);
+      
+      // Update frontend view count if function exists
+      if (typeof refreshCountsFromSource === 'function') {
+        setTimeout(() => refreshCountsFromSource(), 500);
+      }
+      
+      // Callback for view counted
+      if (this.onViewCounted) {
+        this.onViewCounted({
+          contentId: this.contentId,
+          sessionId: this.sessionId,
+          userId: this.userId
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ View recording failed:', error.message);
+      this._handleError('recordView', error);
+    }
+  };
+
+  // =====================================================
   // PUBLIC API
   // =====================================================
 
@@ -241,9 +347,18 @@
         // PHASE 1D: Save initial state to storage
         self._saveToStorage();
 
+        // 🔧 BUG FIX #4: RECORD VIEW ON START (YouTube-style)
+        // This ensures the view is counted immediately when the session starts
+        // rather than waiting for the threshold
+        console.log('👁️ Recording view on session start (YouTube-style)...');
+        return self.recordView();
+      })
+      .then(function() {
         console.log(
           '✅ WatchSession started for content:',
-          self.contentId
+          self.contentId,
+          'View recorded:',
+          self.viewRecorded
         );
 
         return true;
@@ -290,6 +405,7 @@
       lastSavedPosition: this.lastSavedPosition,
       totalWatchTime: this.totalWatchTime,
       viewCounted: this.viewCounted,
+      viewRecorded: this.viewRecorded,
       isCompleted: this.isCompleted,
       collectionId: this.collectionId,
       episodeNumber: this.episodeNumber
@@ -593,17 +709,20 @@
         video.duration || 0;
 
       // =====================================
-      // COUNT VIEW
+      // COUNT VIEW (Threshold-based fallback)
       // =====================================
-
+      // Only use threshold if view not already recorded
       if (
+        !this.viewRecorded &&
         !this.viewCounted &&
         currentTime >= this.viewThreshold
       ) {
         this.viewCounted = true;
-
-        this._recordView(video);
-        this._saveToStorage(); // PHASE 1D: Save view state
+        // Fallback: record view if not already recorded
+        if (!this.viewRecorded) {
+          console.log('👁️ View threshold reached, recording view...');
+          this.recordView();
+        }
       }
 
       // =====================================
@@ -740,7 +859,7 @@
    * (content_id, session_id)
    */
 
-  WatchSession.prototype._recordView =
+  WatchSession.prototype._legacyRecordView =
     function(video) {
 
       var self = this;
@@ -1083,7 +1202,7 @@
   }
 
   console.log(
-    '✅ WatchSession module loaded successfully (Phase 1D Enhanced)'
+    '✅ WatchSession module loaded successfully (Phase 1D Enhanced with view recording)'
   );
 
 })();
