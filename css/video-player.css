@@ -4,6 +4,7 @@
 /* PHASE 4: Added Quality Selector & Data Saver Styles                 */
 /* 🎯 MOBILE-OPTIMIZED: Full-bleed video experience                    */
 /* 🎯 REDESIGN: Removed close button, compact settings, full-width     */
+/* 🎯 PHASE 1D: Added Previous/Next track controls for collection playback */
 /* =================================================================== */
 
 /* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
@@ -175,6 +176,25 @@
 
 .control-btn i {
   font-size: 14px;
+}
+
+/* PHASE 1D: Previous/Next Track Buttons - Special Styling */
+.control-btn#previousTrackBtn,
+.control-btn#nextTrackBtn {
+  background: rgba(29, 78, 216, 0.3);
+  border-color: rgba(29, 78, 216, 0.5);
+}
+
+.control-btn#previousTrackBtn:hover,
+.control-btn#nextTrackBtn:hover {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  transform: scale(1.15);
+}
+
+.control-btn#previousTrackBtn:active,
+.control-btn#nextTrackBtn:active {
+  transform: scale(0.98);
 }
 
 /* Time Display - More Compact */
@@ -786,6 +806,13 @@ input:checked + .toggle-slider:before {
     font-size: 11px !important;
   }
   
+  /* PHASE 1D: Previous/Next buttons mobile adjustment */
+  .control-btn#previousTrackBtn,
+  .control-btn#nextTrackBtn {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
   .time-display {
     min-width: 60px !important;
     font-size: 10px !important;
@@ -928,6 +955,13 @@ input:checked + .toggle-slider:before {
   
   .control-btn i {
     font-size: 10px !important;
+  }
+  
+  /* PHASE 1D: Previous/Next buttons ultra-mobile */
+  .control-btn#previousTrackBtn,
+  .control-btn#nextTrackBtn {
+    width: 26px !important;
+    height: 26px !important;
   }
   
   .time-display {
@@ -1099,6 +1133,147 @@ input:checked + .toggle-slider:before {
   height: 0 !important;
   width: 0 !important;
   pointer-events: none !important;
+}
+
+/* =================================================================== */
+/* PHASE 1D: COLLECTION PLAYBACK QUEUE INDICATORS                      */
+/* =================================================================== */
+
+/* Queue position indicator for current playing track */
+.video-container[data-queue-index]::before {
+  content: attr(data-queue-index);
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--warm-gold);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 16px;
+  z-index: 95;
+  font-family: 'Orbitron', monospace;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Up Next indicator (shows when playing and more items exist) */
+.up-next-indicator {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--soft-white);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  z-index: 95;
+  backdrop-filter: blur(4px);
+  border-left: 3px solid var(--warm-gold);
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.up-next-indicator.visible {
+  opacity: 1;
+}
+
+.up-next-indicator i {
+  margin-right: 6px;
+  color: var(--warm-gold);
+}
+
+/* Autoplay countdown indicator */
+.autoplay-countdown {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.9), rgba(245, 158, 11, 0.9));
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 30px;
+  z-index: 95;
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Orbitron', monospace;
+  animation: countdownPulse 1s ease infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.autoplay-countdown.visible {
+  opacity: 1;
+}
+
+.autoplay-countdown .countdown-number {
+  font-size: 18px;
+  font-weight: 700;
+  min-width: 30px;
+  text-align: center;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* Mobile adjustments for queue indicators */
+@media (max-width: 768px) {
+  .video-container[data-queue-index]::before {
+    font-size: 9px;
+    padding: 3px 8px;
+    top: 5px;
+    left: 5px;
+  }
+  
+  .up-next-indicator {
+    bottom: 65px;
+    right: 5px;
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+  
+  .autoplay-countdown {
+    bottom: 65px;
+    right: 5px;
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+  
+  .autoplay-countdown .countdown-number {
+    font-size: 14px;
+    min-width: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-container[data-queue-index]::before {
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+  
+  .up-next-indicator {
+    bottom: 55px;
+    font-size: 8px;
+    padding: 3px 6px;
+  }
+  
+  .autoplay-countdown {
+    bottom: 55px;
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+  
+  .autoplay-countdown .countdown-number {
+    font-size: 12px;
+    min-width: 22px;
+  }
 }
 
 /* =================================================================== */
