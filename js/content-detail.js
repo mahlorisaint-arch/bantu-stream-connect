@@ -44,8 +44,10 @@
 // 🔧 PHASE 1D FIX: Proper playlist UI rendering and queue events
 // 🎵 BROWSER AUTOPLAY UNLOCK: User interaction tracker + play overlay
 // ✅ CRITICAL FIX #1: markContentAsViewed array crash fixed (prevents player death)
-// ✅ CRITICAL FIX #2: Album dropdown toggle button with proper event listener
+// ✅ CRITICAL FIX #2: Album dropdown toggle button with proper event listener - FIXED: persistent expanded state
 // ✅ CRITICAL FIX #3: Media type detection (audio vs video) fixed
+// ✅ CRITICAL FIX #4: Album expanded state preservation - NO auto-collapse after playback
+// ✅ CRITICAL FIX #5: Like button persistence - survives rerenders and playlist track switching
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -67,6 +69,9 @@ let currentPlaylist = null;
 let currentPlaylistItems = [];
 let isPlaylistMode = false;
 let viewValidationTimer = null; // For cleanup
+
+// 🎵 ALBUM EXPANDED STATE - PERSISTENT (FIX #4)
+let isAlbumExpanded = false;
 
 // ============================================
 // 🎵 BROWSER AUTOPLAY UNLOCK — GLOBAL USER INTERACTION TRACKER
@@ -477,6 +482,12 @@ async function setCurrentContentFromPlaylistItem(item, index) {
     
     // Highlight active item in queue
     highlightActivePlaylistItem(item.id);
+    
+    // ✅ FIX #5: Re-initialize like button for new content (persistence)
+    if (currentUserId && currentContent?.id) {
+        initializeLikeButton(currentContent.id, currentUserId);
+        initializeFavoriteButton(currentContent.id, currentUserId);
+    }
     
     console.log('🎵 Set current content from playlist:', currentContent.title, 'Index:', index);
 }
@@ -2052,6 +2063,9 @@ function addResumeButton(progressSeconds) {
     }
 }
 
+// ============================================
+// ✅ FIX #5: IMPROVED LIKE BUTTON PERSISTENCE
+// ============================================
 async function checkUserLike(contentId, userId) {
     if (!userId) return false;
     try {
@@ -2060,8 +2074,7 @@ async function checkUserLike(contentId, userId) {
             .select('id')
             .eq('user_id', userId)
             .eq('content_id', contentId)
-            .single();
-        if (error?.code === 'PGRST116') return false;
+            .maybeSingle();  // ✅ Use maybeSingle to avoid PGRST116 error
         if (error) {
             console.warn('Like check failed:', error.message);
             return false;
@@ -2079,13 +2092,15 @@ async function initializeLikeButton(contentId, userId) {
 
     likeBtn.classList.remove('active');
     likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
-    if (!userId) return;
+    
+    if (!userId || !contentId) return;
 
     const isLiked = await checkUserLike(contentId, userId);
     if (isLiked) {
         likeBtn.classList.add('active');
         likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
     }
+    console.log(`✅ Like button initialized for content ${contentId}: ${isLiked ? 'liked' : 'not liked'}`);
 }
 
 async function checkUserFavorite(contentId, userId) {
@@ -2096,8 +2111,7 @@ async function checkUserFavorite(contentId, userId) {
             .select('id')
             .eq('user_id', userId)
             .eq('content_id', contentId)
-            .single();
-        if (error?.code === 'PGRST116') return false;
+            .maybeSingle();  // ✅ Use maybeSingle to avoid PGRST116 error
         if (error) {
             console.warn('Favorite check failed:', error.message);
             return false;
@@ -2115,13 +2129,15 @@ async function initializeFavoriteButton(contentId, userId) {
 
     favoriteBtn.classList.remove('active');
     favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
-    if (!userId) return;
+    
+    if (!userId || !contentId) return;
 
     const isFavorited = await checkUserFavorite(contentId, userId);
     if (isFavorited) {
         favoriteBtn.classList.add('active');
         favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
     }
+    console.log(`✅ Favorite button initialized for content ${contentId}: ${isFavorited ? 'favorited' : 'not favorited'}`);
 }
 
 // ============================================
@@ -2543,7 +2559,7 @@ function closeVideoPlayer() {
 }
 
 // ============================================
-// 🎯 FIX #2: ALBUM DROPDOWN BUTTON (Not expanding fix)
+// 🎯 FIX #2 & #4: ALBUM DROPDOWN BUTTON - PERSISTENT EXPANDED STATE
 // ============================================
 function setupAlbumToggle() {
     const albumToggleBtn = document.getElementById('albumToggleBtn');
@@ -2554,24 +2570,37 @@ function setupAlbumToggle() {
         return;
     }
 
-    console.log('🎵 Setting up album toggle button...');
+    console.log('🎵 Setting up album toggle button with persistent state...');
     
-    albumToggleBtn.addEventListener('click', () => {
+    // ✅ FIX #4: Restore expanded state from global variable
+    if (isAlbumExpanded) {
+        albumTrackList.classList.remove('hidden');
+        albumTrackList.classList.add('expanded');
+        renderAlbumTracks();
+        console.log('📀 Album restored to expanded state');
+    }
+    
+    // ✅ FIX #2 & #4: Use stopPropagation to prevent event bubbling
+    albumToggleBtn.addEventListener('click', (event) => {
+        event.stopPropagation();  // ✅ CRITICAL: Prevents event bubbling
+        
         const expanded = albumTrackList.classList.contains('expanded');
         
         if (expanded) {
             albumTrackList.classList.remove('expanded');
             albumTrackList.classList.add('hidden');
+            isAlbumExpanded = false;
             console.log('📀 Album collapsed');
         } else {
             albumTrackList.classList.remove('hidden');
             albumTrackList.classList.add('expanded');
             renderAlbumTracks();
+            isAlbumExpanded = true;
             console.log('📀 Album expanded and tracks rendered');
         }
     });
     
-    console.log('✅ Album toggle initialized');
+    console.log('✅ Album toggle initialized with persistent state');
 }
 
 // ============================================
@@ -2614,9 +2643,10 @@ function renderAlbumTracks() {
         </div>
     `).join('');
     
-    // Add click handlers
+    // Add click handlers with stopPropagation
     container.querySelectorAll('.album-track-item').forEach(item => {
-        item.addEventListener('click', async () => {
+        item.addEventListener('click', async (event) => {
+            event.stopPropagation();  // ✅ CRITICAL: Prevents event bubbling
             const index = Number(item.dataset.index);
             const contentId = item.dataset.contentId;
             console.log('🎵 Playing album track:', index, contentId);
@@ -2634,18 +2664,37 @@ function renderAlbumTracks() {
                 window.location.href = `content-detail.html?id=${contentId}`;
             }
             
-            // Collapse album list after selection on mobile
+            // ✅ FIX #4: Keep album expanded on track selection (don't auto-collapse)
+            // Only collapse on mobile if needed, but preserve expanded state
             if (window.innerWidth <= 768) {
-                const albumTrackList = document.getElementById('albumTrackList');
-                if (albumTrackList) {
-                    albumTrackList.classList.remove('expanded');
-                    albumTrackList.classList.add('hidden');
-                }
+                // On mobile, we can optionally collapse but preserve state
+                // For now, we leave expanded
+                console.log('📀 Album remains expanded after track selection');
             }
         });
     });
     
     console.log('✅ Album track list rendered:', tracks.length, 'tracks');
+    
+    // Highlight current playing track if in playlist mode
+    if (currentContent && currentContent.id) {
+        highlightCurrentAlbumTrack(currentContent.id);
+    }
+}
+
+// ✅ NEW: Highlight current playing track in album list
+function highlightCurrentAlbumTrack(contentId) {
+    const container = document.getElementById('albumTrackList');
+    if (!container) return;
+    
+    const allTracks = container.querySelectorAll('.album-track-item');
+    allTracks.forEach(track => {
+        if (track.dataset.contentId === contentId) {
+            track.classList.add('playing');
+        } else {
+            track.classList.remove('playing');
+        }
+    });
 }
 
 // ============================================
@@ -2689,10 +2738,10 @@ function setupEventListeners() {
         });
     }
 
-    // ✅ FIX #2: SETUP ALBUM TOGGLE BUTTON
+    // ✅ FIX #2 & #4: SETUP ALBUM TOGGLE BUTTON with persistent state
     setupAlbumToggle();
 
-    // LIKE BUTTON
+    // ✅ FIX #5: LIKE BUTTON with improved persistence
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
         likeBtn.addEventListener('click', async function() {
@@ -4097,8 +4146,10 @@ window.addEventListener('beforeunload', function() {
 
 console.log('✅ Content detail script loaded with CRITICAL FIXES:');
 console.log('  ✅ FIX #1: markContentAsViewed array crash fixed');
-console.log('  ✅ FIX #2: Album dropdown toggle button functional');
+console.log('  ✅ FIX #2: Album dropdown toggle button functional with stopPropagation');
 console.log('  ✅ FIX #3: Media type detection (audio vs video) fixed');
+console.log('  ✅ FIX #4: Album expanded state preservation - NO auto-collapse after playback');
+console.log('  ✅ FIX #5: Like button persistence - survives rerenders and playlist track switching');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
