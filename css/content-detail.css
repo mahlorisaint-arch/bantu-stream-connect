@@ -7,6 +7,7 @@
 /* 🎯 YOUTUBE-LEVEL SIDEBAR: Sectioned navigation, collapsible, active states */
 /* 🎯 PERFORMANCE: Skeleton loading animations for instant perceived speed */
 /* 🎯 PHASE 1D: Collection Playback Engine (Albums, Podcasts, Series, Playlists) */
+/* 🎯 PHASE 1D: Playlist Queue Sidebar & Active States */
 /* ============================================ */
 
 /* ============================================ */
@@ -3402,7 +3403,144 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* 🎯 NEW PLAYLIST / SERIES / ALBUM QUEUE SECTION */
+/* 🎯 PHASE 1D: PLAYLIST QUEUE SECTION (SIDEBAR / RAIL) */
+/* ============================================ */
+.playlist-queue-section {
+  margin-top: 2rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.playlist-queue-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.playlist-queue-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+}
+
+.playlist-queue {
+  display: flex;
+  flex-direction: column;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.playlist-queue::-webkit-scrollbar {
+  width: 6px;
+}
+
+.playlist-queue::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.playlist-queue::-webkit-scrollbar-thumb {
+  background: var(--bantu-blue);
+  border-radius: 3px;
+}
+
+.playlist-queue-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: 0.25s ease;
+  border-left: 3px solid transparent;
+}
+
+.playlist-queue-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
+.playlist-queue-item.active {
+  background: rgba(29, 78, 216, 0.2);
+  border-left-color: var(--bantu-blue);
+}
+
+.playlist-thumb {
+  width: 140px;
+  height: 78px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.playlist-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.playlist-queue-item:hover .playlist-thumb img {
+  transform: scale(1.05);
+}
+
+.playlist-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.playlist-item-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--soft-white);
+}
+
+.playlist-item-subtitle {
+  opacity: 0.7;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--slate-grey);
+}
+
+/* Playlist Error State */
+.playlist-error-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  margin: 1rem 0;
+}
+
+.playlist-error-state i {
+  font-size: 3rem;
+  color: var(--error-color);
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.playlist-error-state h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--soft-white);
+}
+
+.playlist-error-state p {
+  color: var(--slate-grey);
+  font-size: 0.9rem;
+}
+
+/* ============================================ */
+/* 🎯 NEW PLAYLIST / SERIES / ALBUM QUEUE SECTION (Legacy) */
 /* ============================================ */
 .playlist-section {
   margin-top: 2rem;
@@ -3525,50 +3663,6 @@ input:checked + .toggle-slider:before {
   margin-top: 0.35rem;
 }
 
-@media (max-width: 768px) {
-  .playlist-section {
-    padding: 1rem;
-    margin-top: 1.5rem;
-  }
-  
-  .playlist-thumbnail {
-    width: 120px;
-    height: 72px;
-  }
-  
-  .playlist-title {
-    font-size: 14px;
-  }
-  
-  .playlist-subtitle,
-  .playlist-duration {
-    font-size: 11px;
-  }
-  
-  .playlist-number {
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
-    top: 6px;
-    left: 6px;
-  }
-}
-
-@media (max-width: 480px) {
-  .playlist-thumbnail {
-    width: 100px;
-    height: 60px;
-  }
-  
-  .playlist-title {
-    font-size: 13px;
-  }
-  
-  .playlist-item {
-    padding: 0.7rem;
-  }
-}
-
 /* ============================================ */
 /* RESPONSIVE DESIGN - Content Detail Page */
 /* ============================================ */
@@ -3688,6 +3782,28 @@ input:checked + .toggle-slider:before {
   .toggle-description {
     display: none !important;
   }
+  
+  /* Playlist Queue Mobile */
+  .playlist-thumb {
+    width: 100px;
+    height: 60px;
+  }
+  
+  .playlist-queue-header h2 {
+    font-size: 1rem;
+  }
+  
+  .playlist-item-title {
+    font-size: 0.85rem;
+  }
+  
+  .playlist-item-subtitle {
+    font-size: 0.7rem;
+  }
+  
+  .playlist-queue-item {
+    padding: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -3719,6 +3835,20 @@ input:checked + .toggle-slider:before {
     width: 100%;
     justify-content: center;
   }
+  
+  .playlist-thumb {
+    width: 80px;
+    height: 50px;
+  }
+  
+  .playlist-queue-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .playlist-queue-item {
+    gap: 0.75rem;
+    padding: 0.6rem;
+  }
 }
 
 @media (max-width: 360px) {
@@ -3746,6 +3876,11 @@ input:checked + .toggle-slider:before {
   .rsa-badge {
     font-size: 0.5625rem !important;
     padding: 0.1875rem 0.3125rem !important;
+  }
+  
+  .playlist-thumb {
+    width: 70px;
+    height: 45px;
   }
 }
 
