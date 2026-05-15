@@ -169,7 +169,7 @@
 }
 
 /* ============================================ */
-/* 🎵 ALBUM TRACK LIST STYLES (FIX #2) */
+/* 🎵 ALBUM TRACK LIST STYLES - DEDICATED EXTERNAL CONTAINER */
 /* ============================================ */
 .album-toggle-btn {
     display: flex;
@@ -197,6 +197,74 @@
     transform: rotate(180deg);
 }
 
+/* DEDICATED ALBUM TRACKLIST CONTAINER - NOT inside detail card */
+.album-tracklist-container {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.album-tracklist-container.hidden {
+    display: none;
+}
+
+.album-track-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.album-track-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.album-track-card.active {
+    border: 1px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.track-number {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    min-width: 30px;
+}
+
+.track-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.track-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.track-title {
+    font-weight: 500;
+    font-size: 14px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.track-duration {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+}
+
+/* Legacy album track list styles (for backward compatibility) */
 .album-track-list.hidden {
     display: none;
 }
@@ -728,7 +796,9 @@
             </div>
         </section>
 
-        <!-- 🎯 HERO SECTION - NOW BELOW PLAYLIST SECTION -->
+        <!-- ============================================ -->
+        <!-- 🎯 HERO SECTION - DETAIL CARD -->
+        <!-- ============================================ -->
         <section class="content-hero" id="contentHero">
             <!-- Poster (shown initially) -->
             <div class="hero-poster" id="heroPoster">
@@ -795,16 +865,21 @@
                         <span>Close Player</span>
                     </button>
                     <!-- ✅ FIX #2: ALBUM TOGGLE BUTTON -->
-                    <button id="albumToggleBtn" class="album-toggle-btn">
+                    <button id="album-toggle-btn" class="album-toggle-btn">
                         <i class="fas fa-list"></i>
-                        <span>Album</span>
+                        <span>Album Tracks</span>
                     </button>
-                </div>
-                <!-- ✅ FIX #2: ALBUM TRACK LIST CONTAINER -->
-                <div id="albumTrackList" class="album-track-list hidden">
                 </div>
             </div>
         </section>
+
+        <!-- ============================================ -->
+        <!-- 🔧 BUG FIX #2: DEDICATED ALBUM TRACKLIST CONTAINER -->
+        <!-- Placed BETWEEN detail card and creator card -->
+        <!-- ============================================ -->
+        <div id="album-tracklist-container" class="album-tracklist-container hidden">
+            <!-- Album tracks will be rendered here dynamically -->
+        </div>
 
         <!-- ============================================ -->
         <!-- 🎨 CREATOR SECTION - PROPER STRUCTURE FOR AVATAR -->
@@ -1570,135 +1645,150 @@ if (!window.showToast) {
 })();
 
 // ============================================
-// FIX #2 — ALBUM BUTTON NOT EXPANDING
-// Add toggle handler and track renderer
+// FIX #2 & #4 — ALBUM TOGGLE BUTTON WITH DEDICATED CONTAINER
+// Persistent expanded state, NO auto-collapse
 // ============================================
 (function() {
-    // Track renderer function
-    window.renderAlbumTracks = function renderAlbumTracks() {
-        const container = document.getElementById('albumTrackList');
-        if (!container) return;
+    let isAlbumExpanded = false;
 
-        // Try to get playlist items from global scope or window
-        const playlistItems = window.playlistItems || window.currentPlaylist || [];
+    function renderAlbumTracklist(playlistItems) {
+        const container = document.getElementById('album-tracklist-container');
+        if (!container || !playlistItems || !playlistItems.length) return;
 
-        if (!playlistItems || !playlistItems.length) {
-            container.innerHTML = `
-                <div class="empty-playlist">
-                    No tracks found
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = playlistItems.map((item, index) => `
-            <div
-                class="album-track-item"
+        container.innerHTML = playlistItems.map((track, index) => `
+            <div 
+                class="album-track-card ${index === 0 ? 'active' : ''}"
                 data-index="${index}"
+                data-content-id="${track.id}"
             >
-                <img
-                    src="${item.thumbnail_url || item.thumbnail || ''}"
-                    class="album-track-thumb"
-                    onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23333%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2250%22 fill=%22%23666%22 font-size=%2212%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3ENo Image%3C/text%3E%3C/svg%3E'"
+                <div class="track-number">${index + 1}</div>
+                <img 
+                    src="${track.thumbnail_url || track.thumbnail || ''}" 
+                    class="track-thumb"
+                    onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop'"
                 >
-                <div class="album-track-info">
-                    <div class="album-track-title">
-                        ${item.title || 'Untitled'}
-                    </div>
-                    <div class="album-track-meta">
-                        Track ${index + 1}
-                    </div>
+                <div class="track-meta">
+                    <div class="track-title">${escapeHtml(track.title || 'Untitled')}</div>
+                    <div class="track-duration">${formatDuration(track.duration || 0)}</div>
                 </div>
             </div>
         `).join('');
 
-        container.querySelectorAll('.album-track-item')
-            .forEach(item => {
-                item.addEventListener('click', () => {
-                    const index = Number(item.dataset.index);
-                    // Try multiple possible play functions
-                    if (typeof window.playPlaylistItem === 'function') {
-                        window.playPlaylistItem(index);
-                    } else if (typeof window.playItem === 'function') {
-                        window.playItem(index);
-                    } else if (typeof window.handlePlay === 'function') {
-                        window.handlePlay(playlistItems[index]);
-                    } else {
-                        console.warn('⚠️ No play function found for album track');
-                    }
-                });
-            });
-
-        console.log(
-            '✅ Album track list rendered:',
-            playlistItems.length
-        );
-    };
-
-    // Initialize album toggle when DOM is ready
-    function initAlbumToggle() {
-        const albumToggleBtn = document.getElementById('albumToggleBtn');
-        const albumTrackList = document.getElementById('albumTrackList');
-
-        if (albumToggleBtn && albumTrackList) {
-            albumToggleBtn.addEventListener('click', () => {
-                const expanded = albumTrackList.classList.contains('expanded');
-
-                if (expanded) {
-                    albumTrackList.classList.remove('expanded');
-                    albumTrackList.classList.add('hidden');
-                    albumToggleBtn.classList.remove('expanded');
-                } else {
-                    albumTrackList.classList.remove('hidden');
-                    albumTrackList.classList.add('expanded');
-                    albumToggleBtn.classList.add('expanded');
-                    // Render tracks if function available
-                    if (typeof window.renderAlbumTracks === 'function') {
-                        window.renderAlbumTracks();
-                    }
+        container.querySelectorAll('.album-track-card').forEach(card => {
+            card.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const index = Number(card.dataset.index);
+                const contentId = card.dataset.contentId;
+                console.log('🎵 Playing album track:', index, contentId);
+                
+                // Try multiple play functions
+                if (typeof window.playPlaylistItemByIndex === 'function') {
+                    window.playPlaylistItemByIndex(index);
+                } else if (typeof window.playPlaylistItem === 'function') {
+                    window.playPlaylistItem(contentId, index);
+                } else if (window.currentPlaylist?.items?.[index]) {
+                    window.location.href = `content-detail.html?id=${contentId}`;
                 }
+                
+                // Update active state
+                container.querySelectorAll('.album-track-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
             });
-            console.log('✅ Album toggle initialized');
-        }
+        });
+
+        console.log('✅ Album tracklist rendered:', playlistItems.length, 'tracks');
     }
 
-    // Run on DOM ready and also after a short delay for dynamic content
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAlbumToggle);
-    } else {
-        initAlbumToggle();
+    function setupAlbumToggle() {
+        const albumBtn = document.getElementById('album-toggle-btn');
+        const tracklistContainer = document.getElementById('album-tracklist-container');
+
+        if (!albumBtn || !tracklistContainer) {
+            console.warn('⚠️ Album toggle elements not found');
+            return;
+        }
+
+        // Get playlist items from global scope
+        let playlistItems = window.currentPlaylistItems || [];
+        
+        // If no items, try to get from content collections engine
+        if (!playlistItems.length && window.ContentCollectionsEngine?.items) {
+            playlistItems = window.ContentCollectionsEngine.items;
+        }
+
+        // Restore expanded state from global variable
+        if (isAlbumExpanded && playlistItems.length) {
+            tracklistContainer.classList.remove('hidden');
+            albumBtn.classList.add('expanded');
+            renderAlbumTracklist(playlistItems);
+            console.log('📀 Album restored to expanded state');
+        }
+
+        albumBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Get current playlist items again in case they changed
+            let currentItems = window.currentPlaylistItems || [];
+            if (!currentItems.length && window.ContentCollectionsEngine?.items) {
+                currentItems = window.ContentCollectionsEngine.items;
+            }
+
+            const isCurrentlyExpanded = !tracklistContainer.classList.contains('hidden');
+            
+            if (isCurrentlyExpanded) {
+                tracklistContainer.classList.add('hidden');
+                albumBtn.classList.remove('expanded');
+                isAlbumExpanded = false;
+                console.log('📀 Album collapsed');
+            } else {
+                if (currentItems.length) {
+                    tracklistContainer.classList.remove('hidden');
+                    albumBtn.classList.add('expanded');
+                    renderAlbumTracklist(currentItems);
+                    isAlbumExpanded = true;
+                    console.log('📀 Album expanded with', currentItems.length, 'tracks');
+                } else {
+                    console.warn('⚠️ No tracks available to render');
+                    showToast('No tracks available', 'warning');
+                }
+            }
+        });
+
+        console.log('✅ Album toggle initialized with dedicated container');
     }
-    setTimeout(initAlbumToggle, 500);
-    setTimeout(initAlbumToggle, 1500);
+
+    // Initialize on DOM ready and after content loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupAlbumToggle);
+    } else {
+        setupAlbumToggle();
+    }
+    setTimeout(setupAlbumToggle, 500);
+    
+    // Re-run when playlist mode loads
+    document.addEventListener('playlistLoaded', setupAlbumToggle);
 })();
 
 // ============================================
 // FIX #3 — ENSURE VIDEO CONTENT USES VIDEO MODE
-// Add media type detection helper
 // ============================================
 (function() {
-    // MIME type detection helper
     window.getMediaMimeType = function getMediaMimeType(url = '') {
         const lower = url.toLowerCase();
-
         if (lower.endsWith('.mp4')) return 'video/mp4';
         if (lower.endsWith('.webm')) return 'video/webm';
         if (lower.endsWith('.mov')) return 'video/quicktime';
         if (lower.endsWith('.m4v')) return 'video/mp4';
-
         if (lower.endsWith('.mp3')) return 'audio/mpeg';
         if (lower.endsWith('.wav')) return 'audio/wav';
         if (lower.endsWith('.ogg')) return 'audio/ogg';
         if (lower.endsWith('.m4a')) return 'audio/mp4';
         if (lower.endsWith('.flac')) return 'audio/flac';
-
-        // HLS streams
         if (lower.endsWith('.m3u8')) return 'application/x-mpegURL';
-
-        return 'video/mp4'; // Default fallback
+        return 'video/mp4';
     };
 
-    // Helper to detect if content is audio
     window.isAudioContent = function isAudioContent(content, mediaUrl) {
         return content?.media_type === 'audio' ||
             content?.content_format === 'audio' ||
@@ -1706,16 +1796,13 @@ if (!window.showToast) {
             /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(mediaUrl || '');
     };
 
-    // Patch video mode setting - run after video player initializes
     function patchVideoMode() {
         const video = document.getElementById('inlineVideoPlayer');
         if (!video) return;
 
-        // Listen for content load events to apply correct mode
         document.addEventListener('contentLoaded', function(e) {
             const content = e.detail || window.currentContent;
-            const mediaUrl = content?.media_url || content?.url || '';
-            
+            const mediaUrl = content?.file_url || content?.media_url || '';
             const isAudio = window.isAudioContent(content, mediaUrl);
             
             if (isAudio) {
@@ -1726,53 +1813,29 @@ if (!window.showToast) {
                 console.log('🎬 Video mode applied');
             }
         });
-
-        // Also patch source type setting if video player has setup function
-        if (window.setupVideoSource) {
-            const originalSetup = window.setupVideoSource;
-            window.setupVideoSource = function(url, source) {
-                if (source && source.type) {
-                    source.type = window.getMediaMimeType(url);
-                }
-                return originalSetup ? originalSetup(url, source) : true;
-            };
-        }
     }
 
-    // Run patch after delay to ensure video player scripts are loaded
     setTimeout(patchVideoMode, 1000);
     document.addEventListener('DOMContentLoaded', patchVideoMode);
 })();
 
 // ============================================
-// GLOBAL ERROR HANDLER - Catch any remaining crashes
+// GLOBAL ERROR HANDLER
 // ============================================
 window.addEventListener('error', function(e) {
-    // Prevent viewed.includes crash from breaking everything
     if (e.message && e.message.includes('includes is not a function')) {
         console.warn('🛡️ Caught viewed.includes crash - attempting recovery');
-        // Reset viewed storage to safe state
-        try {
-            localStorage.setItem('viewed_content', '[]');
-        } catch (err) {}
-        // Try to continue execution
+        try { localStorage.setItem('viewed_content', '[]'); } catch (err) {}
         e.preventDefault?.();
         return true;
     }
 }, true);
 
 // ============================================
-// READY CALLBACK - Ensure fixes are applied
+// READY CALLBACK
 // ============================================
 document.addEventListener('contentDetailReady', function() {
     console.log('🔧 Critical fixes patch applied');
-    // Re-initialize album toggle in case content loaded dynamically
-    if (typeof window.renderAlbumTracks === 'function') {
-        const albumTrackList = document.getElementById('albumTrackList');
-        if (albumTrackList && albumTrackList.classList.contains('expanded')) {
-            window.renderAlbumTracks();
-        }
-    }
 });
 </script>
 </body>
