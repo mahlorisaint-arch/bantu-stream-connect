@@ -4,6 +4,7 @@
 // FIXED: Settings menu toggle with quality selector integration
 // FIXED: Fullscreen toggle with proper container
 // 🎵 AUDIO SUPPORT: Added audio file type detection and MIME types
+// 🎵 AUTOPLAY FIX: Improved error handling to ignore autoplay blocking errors
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -177,9 +178,15 @@ class EnhancedVideoPlayer {
         this.video.appendChild(source);
         
         // ============================================
-        // ✅ CRITICAL: Add error handling for file loading
+        // ✅ IMPROVED ERROR HANDLING: Ignore autoplay blocking
         // ============================================
         this.video.addEventListener('error', (e) => {
+          // Ignore autoplay blocking errors - they are handled by the overlay
+          const media = this.video;
+          if (media && media.error === null && media.networkState !== 3) {
+            console.log('ℹ️ Ignoring non-critical error (likely autoplay block)');
+            return;
+          }
           console.error('❌ File load error:', e);
           console.error('❌ Error code:', this.video?.error?.code);
           console.error('❌ Error message:', this.video?.error?.message);
@@ -323,6 +330,13 @@ class EnhancedVideoPlayer {
   }
   
   handleError(error) {
+    // CRITICAL FIX: Ignore autoplay blocking errors
+    const media = this.video;
+    if (media && media.error === null && media.networkState !== 3) {
+      console.log('ℹ️ Ignoring autoplay block error - will be handled by overlay');
+      return;
+    }
+    
     console.error('Video player error:', error);
     this.stats.errorCount++;
     this.errorState = error;
@@ -626,6 +640,12 @@ class EnhancedVideoPlayer {
   play() {
     var self = this;
     return this.video.play().catch(function(error) {
+      // Ignore autoplay blocking errors - they will be shown via overlay
+      if (error.name === 'NotAllowedError') {
+        console.log('ℹ️ Playback blocked by browser autoplay policy');
+        self.emit('autoplayblocked', error);
+        return;
+      }
       self.handleError({ target: self.video });
       throw error;
     });
@@ -1030,4 +1050,4 @@ class EnhancedVideoPlayer {
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
 window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
 
-console.log('✅ Enhanced Video Player loaded successfully with null checks, quality selector support, and 🎵 AUDIO SUPPORT');
+console.log('✅ Enhanced Video Player loaded successfully with null checks, quality selector support, autoplay block handling, and 🎵 AUDIO SUPPORT');
