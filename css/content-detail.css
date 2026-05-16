@@ -1691,6 +1691,25 @@ body {
   font-style: italic;
 }
 
+/* 🎯 RETRY BUTTON FOR ALBUM TRACKLIST */
+.retry-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: var(--bantu-blue);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  background: var(--warm-gold);
+}
+
 @media (max-width: 640px) {
   .album-track-item {
     padding: 0.75rem;
@@ -3017,7 +3036,8 @@ input:checked + .toggle-slider:before {
   font-size: 14px;
 }
 
-.retry-btn {
+/* Retry button also used in error overlay */
+.error-content .retry-btn {
   padding: 10px 25px;
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
   border: none;
@@ -3028,7 +3048,7 @@ input:checked + .toggle-slider:before {
   transition: all 0.2s ease;
 }
 
-.retry-btn:hover {
+.error-content .retry-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
 }
