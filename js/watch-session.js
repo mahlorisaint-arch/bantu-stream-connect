@@ -13,12 +13,16 @@
 // ✅ Autoplay trigger on completion
 // ✅ Session persistence for queue restoration
 // ✅ Multi-content watch session support
-// 🔧 BUG FIX #4: View recording properly called on session start
+// 🔧 VIEWS FIX #1: Removed premature early exit logic
+// 🔧 VIEWS FIX #2: Added proper DB confirmation with viewPersisted flag
+// 🔧 VIEWS FIX #3: Separate "session attempted" from "view successfully persisted"
+// 🔧 VIEWS FIX #4: Added retry mechanism for failed view recording
+// 🔧 VIEWS FIX #5: Added frontend optimistic update callback
 
 (function() {
   'use strict';
 
-  console.log('🎬 WatchSession module loading... (Phase 1D Enhanced with view recording)');
+  console.log('🎬 WatchSession module loading... (Phase 1D Enhanced with view recording fixes)');
 
   function WatchSession(config) {
     if (!config || !config.contentId || !config.supabase) {
@@ -51,10 +55,15 @@
     this.lastSavedPosition = 0;
     this.totalWatchTime = 0;
 
-    this.viewCounted = false;
-    this.viewRecorded = false; // 🔧 BUG FIX #4: Track if view already recorded
+    // 🔧 VIEWS FIX #2 & #3: Separate tracking flags
+    this.viewCounted = false;      // Threshold reached (for analytics)
+    this.viewAttempted = false;    // Recording attempted (prevents duplicate calls)
+    this.viewPersisted = false;    // ✅ DB CONFIRMED - view successfully saved
+    
     this.isCompleted = false;
     this.isActive = false;
+    this.viewRetryCount = 0;       // Track retries for failed view recording
+    this.maxViewRetries = 3;       // Maximum retry attempts
 
     this.visibilityHandler = null;
 
@@ -69,6 +78,7 @@
 
     this.onProgressSync = config.onProgressSync || null;
     this.onViewCounted = config.onViewCounted || null;
+    this.onViewRecorded = config.onViewRecorded || null;  // 🔧 VIEWS FIX: New callback for view recording
     this.onComplete = config.onComplete || null;
     this.onError = config.onError || null;
     this.onAutoplayTrigger = config.onAutoplayTrigger || null; // PHASE 1D
@@ -101,7 +111,8 @@
         lastPosition: this.lastSavedPosition,
         totalWatchTime: this.totalWatchTime,
         viewCounted: this.viewCounted,
-        viewRecorded: this.viewRecorded,
+        viewAttempted: this.viewAttempted,
+        viewPersisted: this.viewPersisted,
         isCompleted: this.isCompleted,
         collectionId: this.collectionId,
         episodeNumber: this.episodeNumber,
@@ -131,7 +142,8 @@
           this.lastSavedPosition = data.lastPosition || 0;
           this.totalWatchTime = data.totalWatchTime || 0;
           this.viewCounted = data.viewCounted || false;
-          this.viewRecorded = data.viewRecorded || false;
+          this.viewAttempted = data.viewAttempted || false;
+          this.viewPersisted = data.viewPersisted || false;
           this.isCompleted = data.isCompleted || false;
           this.restoredFromStorage = true;
           console.log('📦 Session restored from storage at position:', this.lastSavedPosition);
@@ -226,99 +238,206 @@
   };
 
   // =====================================================
-  // 🔧 BUG FIX #4: RECORD VIEW - Called on session start
+  // 🔧 VIEWS FIX #1-5: RECORD VIEW - PROPER DB CONFIRMATION
   // =====================================================
   
   /**
    * recordView() - Records a view for the content
-   * Uses the increment_content_views RPC function to safely increment
-   * the view count without duplicate issues.
+   * 
+   * CRITICAL FIXES:
+   * 1. NO premature early exit - only skip if DB ALREADY confirmed (viewPersisted)
+   * 2. Separate "session attempted" (viewAttempted) from "view successfully persisted" (viewPersisted)
+   * 3. Retry mechanism for failed view recording
+   * 4. Frontend optimistic update callback
+   * 5. Proper DB confirmation before marking as persisted
    */
   WatchSession.prototype.recordView = async function() {
-    // Prevent duplicate view recording
-    if (this.viewRecorded) {
-      console.log('👁️ View already recorded for this session');
-      return;
+    // 🔧 VIEWS FIX #1 & #2: Only skip if DATABASE already confirmed
+    if (this.viewPersisted === true) {
+      console.log('👁️ View already persisted in database for session:', this.sessionId);
+      return true;
+    }
+
+    // 🔧 VIEWS FIX #3: Prevent duplicate simultaneous calls ONLY
+    if (this.viewAttempted === true) {
+      console.log('👁️ View recording already attempted for this session, waiting for confirmation...');
+      // Don't return false - we want to wait for the pending operation
+      // Instead, we'll return a promise that resolves when the pending operation completes
+      return this._waitForPendingView();
     }
 
     if (!this.userId) {
       console.log('🔓 Guest user - view recording skipped (will record on threshold)');
-      return;
+      return false;
     }
 
-    console.log('👁️ Recording view for content:', this.contentId);
+    console.log('👁️ Recording view for content:', this.contentId, 'Session:', this.sessionId);
+    
+    // Mark as attempted to prevent duplicate calls
+    this.viewAttempted = true;
+    this.viewRetryCount = 0;
+    
+    // Save state to storage
+    this._saveToStorage();
 
     try {
-      // Try to use the increment_content_views RPC function first (YouTube-style)
-      const { error: rpcError } = await this.supabase
-        .rpc('increment_content_views', {
-          content_id_input: this.contentId
-        });
-
-      if (rpcError) {
-        console.warn('RPC increment failed, falling back to manual insert:', rpcError.message);
+      // Attempt to record the view
+      const success = await this._performViewRecording();
+      
+      if (success) {
+        // 🔧 VIEWS FIX #2: ONLY MARK SUCCESS AFTER DB CONFIRMATION
+        this.viewPersisted = true;
+        this._saveToStorage();
         
-        // Fallback: Manual insert with session-based deduplication
-        if (this.sessionId) {
-          const { error: insertError } = await this.supabase
-            .from('content_views')
-            .upsert({
-              content_id: this.contentId,
-              session_id: this.sessionId,
-              viewer_id: this.userId,
-              profile_id: this.userId,
-              user_id: this.userId,
-              view_duration: Math.floor(this.videoElement?.currentTime || 0),
-              counted_as_view: true,
-              device_type: this._getDeviceType(),
-              updated_at: new Date().toISOString(),
-              created_at: new Date().toISOString()
-            }, {
-              onConflict: 'content_id,session_id'
-            });
-
-          if (insertError) throw insertError;
-        } else {
-          // Last resort: Simple insert
-          const { error: insertError } = await this.supabase
-            .from('content_views')
-            .insert({
-              content_id: this.contentId,
-              viewer_id: this.userId,
-              profile_id: this.userId,
-              user_id: this.userId,
-              view_duration: Math.floor(this.videoElement?.currentTime || 0),
-              counted_as_view: true,
-              device_type: this._getDeviceType()
-            });
-
-          if (insertError) throw insertError;
+        console.log('✅ View recorded successfully and persisted to database');
+        
+        // 🔧 VIEWS FIX #4: Trigger frontend optimistic update callback
+        if (this.onViewRecorded) {
+          this.onViewRecorded({
+            contentId: this.contentId,
+            sessionId: this.sessionId,
+            userId: this.userId,
+            timestamp: Date.now()
+          });
         }
+        
+        // Also trigger the legacy onViewCounted callback for compatibility
+        if (this.onViewCounted) {
+          this.onViewCounted({
+            contentId: this.contentId,
+            sessionId: this.sessionId,
+            userId: this.userId
+          });
+        }
+        
+        return true;
+      } else {
+        // Recording failed, but we can retry
+        console.warn('⚠️ View recording attempt failed, will retry on next sync');
+        this.viewAttempted = false; // Allow retry
+        return false;
       }
-
-      this.viewRecorded = true;
-      this._saveToStorage();
-
-      console.log('✅ View recorded successfully for content:', this.contentId);
       
-      // Update frontend view count if function exists
-      if (typeof refreshCountsFromSource === 'function') {
-        setTimeout(() => refreshCountsFromSource(), 500);
-      }
-      
-      // Callback for view counted
-      if (this.onViewCounted) {
-        this.onViewCounted({
-          contentId: this.contentId,
-          sessionId: this.sessionId,
-          userId: this.userId
-        });
-      }
-
     } catch (error) {
       console.error('❌ View recording failed:', error.message);
+      this.viewAttempted = false; // Allow retry
       this._handleError('recordView', error);
+      return false;
     }
+  };
+  
+  /**
+   * Wait for pending view recording to complete
+   * Used when multiple calls to recordView happen simultaneously
+   */
+  WatchSession.prototype._waitForPendingView = function() {
+    return new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (this.viewPersisted === true) {
+          clearInterval(checkInterval);
+          resolve(true);
+        } else if (this.viewAttempted === false && this.viewPersisted === false) {
+          // Previous attempt failed, we can try again
+          clearInterval(checkInterval);
+          resolve(false);
+        }
+      }, 100);
+      
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve(false);
+      }, 5000);
+    });
+  };
+  
+  /**
+   * Perform the actual database operation for view recording
+   * Returns true if successful, false otherwise
+   */
+  WatchSession.prototype._performViewRecording = async function() {
+    // Try to use the increment_content_views RPC function first (YouTube-style)
+    const { error: rpcError } = await this.supabase
+      .rpc('increment_content_views', {
+        content_id_input: this.contentId
+      });
+
+    if (!rpcError) {
+      console.log('✅ View recorded via RPC increment_content_views');
+      return true;
+    }
+
+    console.warn('RPC increment failed, falling back to manual upsert:', rpcError.message);
+    
+    // Fallback: Manual upsert with session-based deduplication
+    if (this.sessionId) {
+      const { error: upsertError } = await this.supabase
+        .from('content_views')
+        .upsert({
+          content_id: this.contentId,
+          session_id: this.sessionId,
+          viewer_id: this.userId,
+          profile_id: this.userId,
+          user_id: this.userId,
+          view_duration: Math.floor(this.videoElement?.currentTime || 0),
+          counted_as_view: true,
+          device_type: this._getDeviceType(),
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }, {
+          onConflict: 'content_id,session_id'
+        });
+
+      if (!upsertError) {
+        console.log('✅ View recorded via manual upsert with session_id');
+        return true;
+      }
+      
+      console.warn('Upsert failed:', upsertError.message);
+    }
+    
+    // Last resort: Simple insert without session_id
+    const { error: insertError } = await this.supabase
+      .from('content_views')
+      .insert({
+        content_id: this.contentId,
+        viewer_id: this.userId,
+        profile_id: this.userId,
+        user_id: this.userId,
+        view_duration: Math.floor(this.videoElement?.currentTime || 0),
+        counted_as_view: true,
+        device_type: this._getDeviceType(),
+        created_at: new Date().toISOString()
+      });
+
+    if (!insertError) {
+      console.log('✅ View recorded via simple insert');
+      return true;
+    }
+    
+    console.error('All view recording methods failed:', insertError.message);
+    return false;
+  };
+  
+  /**
+   * Retry view recording with exponential backoff
+   */
+  WatchSession.prototype._retryViewRecording = async function() {
+    if (this.viewPersisted) return true;
+    if (this.viewRetryCount >= this.maxViewRetries) {
+      console.warn('⚠️ Max view retries reached, giving up');
+      return false;
+    }
+    
+    this.viewRetryCount++;
+    const delay = Math.min(1000 * Math.pow(2, this.viewRetryCount), 10000);
+    
+    console.log(`🔄 Retrying view recording (attempt ${this.viewRetryCount}/${this.maxViewRetries}) in ${delay}ms...`);
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    this.viewAttempted = false; // Reset to allow retry
+    return this.recordView();
   };
 
   // =====================================================
@@ -347,18 +466,18 @@
         // PHASE 1D: Save initial state to storage
         self._saveToStorage();
 
-        // 🔧 BUG FIX #4: RECORD VIEW ON START (YouTube-style)
-        // This ensures the view is counted immediately when the session starts
-        // rather than waiting for the threshold
+        // 🔧 VIEWS FIX #1-5: RECORD VIEW ON START with proper DB confirmation
         console.log('👁️ Recording view on session start (YouTube-style)...');
         return self.recordView();
       })
-      .then(function() {
+      .then(function(viewRecorded) {
         console.log(
           '✅ WatchSession started for content:',
           self.contentId,
           'View recorded:',
-          self.viewRecorded
+          viewRecorded,
+          'View persisted:',
+          self.viewPersisted
         );
 
         return true;
@@ -405,7 +524,8 @@
       lastSavedPosition: this.lastSavedPosition,
       totalWatchTime: this.totalWatchTime,
       viewCounted: this.viewCounted,
-      viewRecorded: this.viewRecorded,
+      viewAttempted: this.viewAttempted,
+      viewPersisted: this.viewPersisted,
       isCompleted: this.isCompleted,
       collectionId: this.collectionId,
       episodeNumber: this.episodeNumber
@@ -711,17 +831,19 @@
       // =====================================
       // COUNT VIEW (Threshold-based fallback)
       // =====================================
-      // Only use threshold if view not already recorded
+      // Only use threshold if view not already persisted
       if (
-        !this.viewRecorded &&
+        !this.viewPersisted &&
         !this.viewCounted &&
         currentTime >= this.viewThreshold
       ) {
         this.viewCounted = true;
-        // Fallback: record view if not already recorded
-        if (!this.viewRecorded) {
+        // Fallback: record view if not already persisted
+        if (!this.viewPersisted && !this.viewAttempted) {
           console.log('👁️ View threshold reached, recording view...');
-          this.recordView();
+          this.recordView().catch(err => {
+            console.warn('Threshold view recording failed:', err);
+          });
         }
       }
 
@@ -1202,7 +1324,7 @@
   }
 
   console.log(
-    '✅ WatchSession module loaded successfully (Phase 1D Enhanced with view recording)'
+    '✅ WatchSession module loaded successfully (Phase 1D Enhanced with view recording fixes)'
   );
 
 })();
