@@ -1,3 +1,12 @@
+// js/state-manager.js - Bantu Stream Connect State Manager
+// COMPLETE FIXED VERSION WITH VIEW STATE TRACKING AND ALBUM MANAGEMENT
+// ✅ FIXED: View state persistence with DB confirmation tracking
+// ✅ FIXED: Album/playlist state management with track source detection
+// ✅ FIXED: Session recovery with proper cleanup prevention
+// ✅ FIXED: Content view recording state tracking
+// 🔧 ALBUM FIX: Added albumTracks state with multiple source support
+// 🔧 VIEWS FIX: Added viewRecordingState tracking
+
 class StateManager {
   constructor() {
     this.state = {
@@ -13,23 +22,53 @@ class StateManager {
       favorites: new Set(),
       likes: new Set(),
       connections: new Set(),
+      
+      // 🔧 VIEWS FIX: View recording state tracking
+      viewRecordingState: {
+        currentSessionId: null,
+        recordedContentIds: new Set(), // Track which content IDs have been recorded this session
+        pendingRecordings: new Map(), // Content IDs pending DB confirmation
+        lastViewTimestamp: null
+      },
+      
+      // 🔧 ALBUM FIX: Album/Playlist state
+      albumState: {
+        currentAlbumId: null,
+        currentAlbumTracks: [],
+        currentTrackIndex: -1,
+        albumTrackSources: new Map(), // Cache of tracks by album ID
+        expandedState: new Set() // Track which albums are expanded
+      },
+      
+      // Content state
+      currentContent: null,
+      contentLoading: false,
+      contentError: null,
+      
       session: {
         currentContentId: null,
         currentTime: 0,
         playing: false,
         volume: 1.0,
-        muted: false
+        muted: false,
+        lastActivityTime: Date.now(),
+        isCleanupBlocked: false // 🔧 CRITICAL FIX: Block cleanup during interactions
       },
+      
       cache: {
         content: new Map(),
         creators: new Map(),
-        comments: new Map()
+        comments: new Map(),
+        albums: new Map(), // 🔧 ALBUM FIX: Cache album data
+        tracks: new Map()  // 🔧 ALBUM FIX: Cache track data
       }
     };
     
     this.listeners = new Map();
     this.isLoading = false;
     this.pendingActions = [];
+    this.syncQueue = [];
+    this.isSyncing = false;
     
     this.init();
   }
@@ -43,6 +82,9 @@ class StateManager {
     
     // Setup session recovery
     this.setupSessionRecovery();
+    
+    // Setup view state recovery
+    this.setupViewStateRecovery();
   }
   
   loadPersistedState() {
@@ -51,20 +93,54 @@ class StateManager {
       if (saved) {
         const parsed = JSON.parse(saved);
         
-        // Merge with current state
+        // Merge with current state, converting Sets back from Arrays
         this.state = {
           ...this.state,
           ...parsed,
           favorites: new Set(parsed.favorites || []),
           likes: new Set(parsed.likes || []),
           connections: new Set(parsed.connections || []),
-          cache: this.state.cache // Don't restore cache
+          viewRecordingState: {
+            ...this.state.viewRecordingState,
+            recordedContentIds: new Set(parsed.viewRecordingState?.recordedContentIds || []),
+            pendingRecordings: new Map(Object.entries(parsed.viewRecordingState?.pendingRecordings || {})),
+            currentSessionId: parsed.viewRecordingState?.currentSessionId || null,
+            lastViewTimestamp: parsed.viewRecordingState?.lastViewTimestamp || null
+          },
+          albumState: {
+            ...this.state.albumState,
+            expandedState: new Set(parsed.albumState?.expandedState || []),
+            albumTrackSources: new Map(Object.entries(parsed.albumState?.albumTrackSources || {}))
+          },
+          cache: this.state.cache // Don't restore cache from storage
         };
       }
+      
+      // Restore view recording session if exists
+      this.restoreViewRecordingSession();
+      
     } catch (error) {
       console.error('Failed to load persisted state:', error);
       this.clearCorruptedState();
     }
+  }
+  
+  restoreViewRecordingSession() {
+    // Check if there's an existing session in sessionStorage
+    const existingSession = sessionStorage.getItem('bantu_view_session');
+    if (existingSession && !this.state.viewRecordingState.currentSessionId) {
+      this.state.viewRecordingState.currentSessionId = existingSession;
+      console.log('♻️ Restored view recording session:', existingSession);
+    } else if (!this.state.viewRecordingState.currentSessionId) {
+      // Create new session if none exists
+      this.state.viewRecordingState.currentSessionId = this.generateSessionId();
+      sessionStorage.setItem('bantu_view_session', this.state.viewRecordingState.currentSessionId);
+      console.log('🆕 Created new view recording session');
+    }
+  }
+  
+  generateSessionId() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
   
   clearCorruptedState() {
@@ -74,8 +150,22 @@ class StateManager {
       favorites: new Set(),
       likes: new Set(),
       connections: new Set(),
+      viewRecordingState: {
+        currentSessionId: this.generateSessionId(),
+        recordedContentIds: new Set(),
+        pendingRecordings: new Map(),
+        lastViewTimestamp: null
+      },
+      albumState: {
+        currentAlbumId: null,
+        currentAlbumTracks: [],
+        currentTrackIndex: -1,
+        albumTrackSources: new Map(),
+        expandedState: new Set()
+      },
       watchHistory: {}
     };
+    sessionStorage.setItem('bantu_view_session', this.state.viewRecordingState.currentSessionId);
   }
   
   setupPersistence() {
@@ -88,11 +178,30 @@ class StateManager {
       saveTimeout = setTimeout(() => {
         try {
           const stateToSave = {
-            ...this.state,
+            user: this.state.user,
+            preferences: this.state.preferences,
+            watchHistory: this.state.watchHistory,
             favorites: Array.from(this.state.favorites),
             likes: Array.from(this.state.likes),
             connections: Array.from(this.state.connections),
-            cache: undefined // Don't save cache
+            viewRecordingState: {
+              currentSessionId: this.state.viewRecordingState.currentSessionId,
+              recordedContentIds: Array.from(this.state.viewRecordingState.recordedContentIds),
+              pendingRecordings: Object.fromEntries(this.state.viewRecordingState.pendingRecordings),
+              lastViewTimestamp: this.state.viewRecordingState.lastViewTimestamp
+            },
+            albumState: {
+              currentAlbumId: this.state.albumState.currentAlbumId,
+              currentTrackIndex: this.state.albumState.currentTrackIndex,
+              expandedState: Array.from(this.state.albumState.expandedState),
+              albumTrackSources: Object.fromEntries(this.state.albumState.albumTrackSources)
+            },
+            session: {
+              currentContentId: this.state.session.currentContentId,
+              currentTime: this.state.session.currentTime,
+              volume: this.state.session.volume,
+              muted: this.state.session.muted
+            }
           };
           
           localStorage.setItem('bantu_state', JSON.stringify(stateToSave));
@@ -110,10 +219,35 @@ class StateManager {
     // Attempt to recover interrupted playback
     window.addEventListener('beforeunload', () => {
       this.savePlaybackState();
+      this.saveViewRecordingState();
     });
     
     // Attempt to restore playback state on page load
     this.restorePlaybackState();
+  }
+  
+  setupViewStateRecovery() {
+    // Restore any pending view recordings
+    const pendingRecordings = this.state.viewRecordingState.pendingRecordings;
+    if (pendingRecordings && pendingRecordings.size > 0) {
+      console.log(`🔄 Found ${pendingRecordings.size} pending view recordings to retry`);
+      // Attempt to retry pending recordings
+      setTimeout(() => this.retryPendingViewRecordings(), 5000);
+    }
+  }
+  
+  async retryPendingViewRecordings() {
+    const pending = Array.from(this.state.viewRecordingState.pendingRecordings.entries());
+    for (const [contentId, data] of pending) {
+      if (Date.now() - data.timestamp < 300000) { // Only retry within 5 minutes
+        console.log(`🔄 Retrying view recording for content: ${contentId}`);
+        // Emit event for retry
+        this.notifyListeners('view:retry', { contentId, data });
+      } else {
+        // Remove expired pending recording
+        this.state.viewRecordingState.pendingRecordings.delete(contentId);
+      }
+    }
   }
   
   savePlaybackState() {
@@ -126,6 +260,16 @@ class StateManager {
         })
       );
     }
+  }
+  
+  saveViewRecordingState() {
+    // Save current view recording state to sessionStorage for recovery
+    const viewState = {
+      sessionId: this.state.viewRecordingState.currentSessionId,
+      recordedIds: Array.from(this.state.viewRecordingState.recordedContentIds),
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('bantu_view_state', JSON.stringify(viewState));
   }
   
   restorePlaybackState() {
@@ -155,10 +299,274 @@ class StateManager {
     }
   }
   
+  // ============================================
+  // 🔧 VIEWS FIX: View Recording State Management
+  // ============================================
+  
+  /**
+   * Mark content as viewed in state
+   */
+  markContentAsViewed(contentId, confirmed = true) {
+    if (!contentId) return false;
+    
+    if (confirmed) {
+      // Add to recorded set
+      this.state.viewRecordingState.recordedContentIds.add(contentId);
+      this.state.viewRecordingState.lastViewTimestamp = Date.now();
+      
+      // Remove from pending if exists
+      this.state.viewRecordingState.pendingRecordings.delete(contentId);
+      
+      // Update watch history
+      this.updateWatchHistory(contentId, 0, null);
+      
+      console.log('✅ Content marked as viewed in state:', contentId);
+      this.notifyListeners('view:recorded', { contentId, confirmed: true });
+      
+      return true;
+    } else {
+      // Add to pending recordings
+      this.state.viewRecordingState.pendingRecordings.set(contentId, {
+        timestamp: Date.now(),
+        retries: 0
+      });
+      
+      console.log('⏳ Content marked as pending view:', contentId);
+      this.notifyListeners('view:pending', { contentId });
+      
+      return false;
+    }
+  }
+  
+  /**
+   * Check if content has been viewed in this session
+   */
+  hasViewedContent(contentId) {
+    return this.state.viewRecordingState.recordedContentIds.has(contentId);
+  }
+  
+  /**
+   * Check if content is pending view recording
+   */
+  isPendingViewRecording(contentId) {
+    return this.state.viewRecordingState.pendingRecordings.has(contentId);
+  }
+  
+  /**
+   * Get current view session ID
+   */
+  getCurrentViewSessionId() {
+    return this.state.viewRecordingState.currentSessionId;
+  }
+  
+  /**
+   * Clear view recording state (for testing or logout)
+   */
+  clearViewRecordingState() {
+    this.state.viewRecordingState.recordedContentIds.clear();
+    this.state.viewRecordingState.pendingRecordings.clear();
+    this.state.viewRecordingState.currentSessionId = this.generateSessionId();
+    this.state.viewRecordingState.lastViewTimestamp = null;
+    sessionStorage.setItem('bantu_view_session', this.state.viewRecordingState.currentSessionId);
+    sessionStorage.removeItem('bantu_view_state');
+    console.log('🗑️ View recording state cleared');
+    this.notifyListeners('view:cleared', null);
+  }
+  
+  // ============================================
+  // 🔧 ALBUM FIX: Album/Playlist State Management
+  // ============================================
+  
+  /**
+   * Set current album tracks with multiple source support
+   */
+  setAlbumTracks(albumId, tracks, source = 'unknown') {
+    if (!albumId) return;
+    
+    // Normalize tracks format
+    const normalizedTracks = this.normalizeTracks(tracks);
+    
+    this.state.albumState.currentAlbumId = albumId;
+    this.state.albumState.currentAlbumTracks = normalizedTracks;
+    
+    // Cache tracks by album ID
+    this.state.albumState.albumTrackSources.set(albumId, {
+      tracks: normalizedTracks,
+      source: source,
+      timestamp: Date.now()
+    });
+    
+    // Also cache in regular cache
+    this.cacheAlbumTracks(albumId, normalizedTracks);
+    
+    console.log(`📀 Album tracks set for ${albumId}: ${normalizedTracks.length} tracks from ${source}`);
+    this.notifyListeners('album:tracks-updated', { albumId, tracks: normalizedTracks, source });
+    
+    return normalizedTracks;
+  }
+  
+  /**
+   * Normalize tracks to consistent format
+   */
+  normalizeTracks(tracks) {
+    if (!Array.isArray(tracks)) return [];
+    
+    return tracks.map((track, index) => {
+      // If track is already normalized
+      if (track.id && track.title) {
+        return track;
+      }
+      
+      // If track has Content object (from DB query)
+      if (track.Content) {
+        return {
+          id: track.content_id || track.Content.id,
+          title: track.Content.title || 'Untitled',
+          thumbnail_url: track.Content.thumbnail_url,
+          duration: track.Content.duration,
+          artist: track.Content.user_profiles?.full_name || track.Content.user_profiles?.username,
+          added_at: track.added_at,
+          index: index
+        };
+      }
+      
+      // If track is simple object with basic properties
+      return {
+        id: track.id || track.content_id || index,
+        title: track.title || track.name || 'Untitled',
+        thumbnail_url: track.thumbnail_url || track.thumbnail,
+        duration: track.duration,
+        artist: track.artist || track.creator_name,
+        index: index
+      };
+    });
+  }
+  
+  /**
+   * Get current album tracks
+   */
+  getCurrentAlbumTracks() {
+    return this.state.albumState.currentAlbumTracks;
+  }
+  
+  /**
+   * Get cached album tracks by ID
+   */
+  getCachedAlbumTracks(albumId) {
+    const cached = this.state.albumState.albumTrackSources.get(albumId);
+    if (cached && Date.now() - cached.timestamp < 300000) { // 5 minute cache
+      return cached.tracks;
+    }
+    return null;
+  }
+  
+  /**
+   * Cache album tracks
+   */
+  cacheAlbumTracks(albumId, tracks) {
+    this.state.cache.albums.set(albumId, {
+      tracks: tracks,
+      cachedAt: Date.now()
+    });
+    
+    // Also cache individual tracks
+    tracks.forEach(track => {
+      if (track.id) {
+        this.state.cache.tracks.set(track.id, {
+          ...track,
+          cachedAt: Date.now(),
+          albumId: albumId
+        });
+      }
+    });
+    
+    // Limit cache size
+    if (this.state.cache.albums.size > 50) {
+      const oldestKey = Array.from(this.state.cache.albums.entries())
+        .sort((a, b) => a[1].cachedAt - b[1].cachedAt)[0][0];
+      this.state.cache.albums.delete(oldestKey);
+    }
+  }
+  
+  /**
+   * Get cached track by ID
+   */
+  getCachedTrack(trackId) {
+    const cached = this.state.cache.tracks.get(trackId);
+    if (cached && Date.now() - cached.cachedAt < 3600000) { // 1 hour cache
+      return cached;
+    }
+    return null;
+  }
+  
+  /**
+   * Set current track index
+   */
+  setCurrentTrackIndex(index) {
+    if (index >= 0 && index < this.state.albumState.currentAlbumTracks.length) {
+      this.state.albumState.currentTrackIndex = index;
+      this.notifyListeners('album:track-changed', {
+        index: index,
+        track: this.state.albumState.currentAlbumTracks[index]
+      });
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Get current track
+   */
+  getCurrentTrack() {
+    if (this.state.albumState.currentTrackIndex >= 0 && 
+        this.state.albumState.currentTrackIndex < this.state.albumState.currentAlbumTracks.length) {
+      return this.state.albumState.currentAlbumTracks[this.state.albumState.currentTrackIndex];
+    }
+    return null;
+  }
+  
+  /**
+   * Toggle album expanded state
+   */
+  toggleAlbumExpanded(albumId) {
+    if (this.state.albumState.expandedState.has(albumId)) {
+      this.state.albumState.expandedState.delete(albumId);
+    } else {
+      this.state.albumState.expandedState.add(albumId);
+    }
+    
+    this.notifyListeners('album:expanded-toggled', {
+      albumId,
+      expanded: this.state.albumState.expandedState.has(albumId)
+    });
+    
+    return this.state.albumState.expandedState.has(albumId);
+  }
+  
+  /**
+   * Check if album is expanded
+   */
+  isAlbumExpanded(albumId) {
+    return this.state.albumState.expandedState.has(albumId);
+  }
+  
+  /**
+   * Clear album state
+   */
+  clearAlbumState() {
+    this.state.albumState.currentAlbumId = null;
+    this.state.albumState.currentAlbumTracks = [];
+    this.state.albumState.currentTrackIndex = -1;
+    // Don't clear cache or expanded state
+    this.notifyListeners('album:cleared', null);
+  }
+  
+  // ============================================
   // Core API
+  // ============================================
+  
   getState(path = null) {
     if (!path) return this.cloneState(this.state);
-    
     return this.getNestedValue(this.state, path);
   }
   
@@ -202,15 +610,18 @@ class StateManager {
     });
   }
   
+  // ============================================
   // Watch history management
+  // ============================================
+  
   updateWatchHistory(contentId, time, duration) {
-    const percentWatched = (time / duration) * 100;
+    const percentWatched = duration ? (time / duration) * 100 : 0;
     
     this.setState(`watchHistory.${contentId}`, {
       lastWatched: Date.now(),
       resumeTime: time,
-      duration,
-      percentWatched,
+      duration: duration,
+      percentWatched: percentWatched,
       completed: percentWatched >= 90
     });
     
@@ -218,9 +629,22 @@ class StateManager {
     if (window.track) {
       window.track.watchProgress(contentId, percentWatched, time);
     }
+    
+    this.notifyListeners('watch:history-updated', { contentId, time, percentWatched });
   }
   
+  getResumeTime(contentId) {
+    const history = this.getState(`watchHistory.${contentId}`);
+    if (history && history.resumeTime > 0 && !history.completed) {
+      return history.resumeTime;
+    }
+    return 0;
+  }
+  
+  // ============================================
   // Favorites management
+  // ============================================
+  
   toggleFavorite(contentId) {
     const isFavorited = this.state.favorites.has(contentId);
     
@@ -231,6 +655,7 @@ class StateManager {
     }
     
     this.notifyListeners('favorites', this.state.favorites);
+    this.notifyListeners(`favorites:${contentId}`, !isFavorited);
     
     // Sync with server in background
     this.syncWithServer('favorites', contentId, !isFavorited);
@@ -238,7 +663,18 @@ class StateManager {
     return !isFavorited;
   }
   
+  isFavorite(contentId) {
+    return this.state.favorites.has(contentId);
+  }
+  
+  getFavorites() {
+    return Array.from(this.state.favorites);
+  }
+  
+  // ============================================
   // Likes management
+  // ============================================
+  
   toggleLike(contentId) {
     const isLiked = this.state.likes.has(contentId);
     
@@ -249,6 +685,7 @@ class StateManager {
     }
     
     this.notifyListeners('likes', this.state.likes);
+    this.notifyListeners(`likes:${contentId}`, !isLiked);
     
     // Sync with server in background
     this.syncWithServer('likes', contentId, !isLiked);
@@ -256,7 +693,14 @@ class StateManager {
     return !isLiked;
   }
   
+  isLiked(contentId) {
+    return this.state.likes.has(contentId);
+  }
+  
+  // ============================================
   // Connections management
+  // ============================================
+  
   toggleConnection(creatorId) {
     const isConnected = this.state.connections.has(creatorId);
     
@@ -267,6 +711,7 @@ class StateManager {
     }
     
     this.notifyListeners('connections', this.state.connections);
+    this.notifyListeners(`connections:${creatorId}`, !isConnected);
     
     // Sync with server in background
     this.syncWithServer('connections', creatorId, !isConnected);
@@ -274,31 +719,58 @@ class StateManager {
     return !isConnected;
   }
   
-  async syncWithServer(type, id, value) {
-    try {
-      // Simulate API call - integrate with your Supabase later
-      console.log(`Syncing ${type}: ${id} = ${value}`);
-      
-      if (window.SupabaseHelper && window.SupabaseHelper.isInitialized) {
-        // TODO: Implement actual sync with Supabase
-      }
-    } catch (error) {
-      console.error(`Failed to sync ${type}:`, error);
-      this.queueForRetry({ type, id, value });
+  isConnected(creatorId) {
+    return this.state.connections.has(creatorId);
+  }
+  
+  // ============================================
+  // Session management
+  // ============================================
+  
+  setCurrentContent(contentId, contentData = null) {
+    this.setState('session.currentContentId', contentId);
+    if (contentData) {
+      this.setState('currentContent', contentData);
     }
+    this.notifyListeners('session:content-changed', { contentId, contentData });
   }
   
-  queueForRetry(action) {
-    const queue = JSON.parse(localStorage.getItem('sync_queue') || '[]');
-    queue.push({
-      ...action,
-      timestamp: Date.now(),
-      retries: 0
-    });
-    localStorage.setItem('sync_queue', JSON.stringify(queue));
+  setPlaybackTime(time) {
+    this.setState('session.currentTime', time);
   }
   
-  // Cache management
+  setPlaying(playing) {
+    this.setState('session.playing', playing);
+    this.setState('session.lastActivityTime', Date.now());
+    this.notifyListeners('session:play-state-changed', { playing });
+  }
+  
+  setVolume(volume, muted = false) {
+    this.setState('session.volume', Math.max(0, Math.min(1, volume)));
+    this.setState('session.muted', muted);
+    this.notifyListeners('session:volume-changed', { volume, muted });
+  }
+  
+  /**
+   * 🔧 CRITICAL FIX: Block cleanup during interactions
+   */
+  blockCleanup(blocked = true) {
+    this.setState('session.isCleanupBlocked', blocked);
+    this.notifyListeners('session:cleanup-blocked', { blocked });
+  }
+  
+  isCleanupBlocked() {
+    return this.state.session.isCleanupBlocked;
+  }
+  
+  updateLastActivity() {
+    this.setState('session.lastActivityTime', Date.now());
+  }
+  
+  // ============================================
+  // Content cache management
+  // ============================================
+  
   cacheContent(content) {
     if (!content?.id) return;
     
@@ -327,7 +799,10 @@ class StateManager {
     return cached;
   }
   
+  // ============================================
   // Subscription system
+  // ============================================
+  
   subscribe(path, callback) {
     if (!this.listeners.has(path)) {
       this.listeners.set(path, new Set());
@@ -371,7 +846,83 @@ class StateManager {
     }
   }
   
+  // ============================================
+  // Server sync
+  // ============================================
+  
+  async syncWithServer(type, id, value) {
+    try {
+      console.log(`Syncing ${type}: ${id} = ${value}`);
+      
+      if (window.SupabaseHelper && window.SupabaseHelper.isInitialized && this.state.user) {
+        // Implement actual sync with Supabase based on type
+        switch (type) {
+          case 'favorites':
+            if (value) {
+              await window.SupabaseHelper.addToFavorites(id);
+            } else {
+              await window.SupabaseHelper.removeFromFavorites(id);
+            }
+            break;
+          case 'likes':
+            if (value) {
+              await window.SupabaseHelper.likeContent(id);
+            } else {
+              await window.SupabaseHelper.unlikeContent(id);
+            }
+            break;
+          case 'connections':
+            if (value) {
+              await window.SupabaseHelper.followCreator(id);
+            } else {
+              await window.SupabaseHelper.unfollowCreator(id);
+            }
+            break;
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to sync ${type}:`, error);
+      this.queueForRetry({ type, id, value });
+    }
+  }
+  
+  queueForRetry(action) {
+    this.syncQueue.push({
+      ...action,
+      timestamp: Date.now(),
+      retries: 0
+    });
+    
+    // Process queue if not already processing
+    if (!this.isSyncing) {
+      this.processSyncQueue();
+    }
+  }
+  
+  async processSyncQueue() {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    
+    while (this.syncQueue.length > 0) {
+      const action = this.syncQueue.shift();
+      if (action.retries < 3) {
+        try {
+          await this.syncWithServer(action.type, action.id, action.value);
+        } catch (error) {
+          action.retries++;
+          this.syncQueue.push(action);
+          await new Promise(resolve => setTimeout(resolve, 2000 * action.retries));
+        }
+      }
+    }
+    
+    this.isSyncing = false;
+  }
+  
+  // ============================================
   // Helper methods
+  // ============================================
+  
   getNestedValue(obj, path) {
     return path.split('.').reduce((current, key) => {
       return current && current[key] !== undefined ? current[key] : undefined;
@@ -410,35 +961,77 @@ class StateManager {
     return cloned;
   }
   
-  // Reset state (for testing/logout)
+  // ============================================
+  // Reset and cleanup
+  // ============================================
+  
   resetState() {
     this.state = {
       ...this.state,
       favorites: new Set(),
       likes: new Set(),
       connections: new Set(),
+      viewRecordingState: {
+        currentSessionId: this.generateSessionId(),
+        recordedContentIds: new Set(),
+        pendingRecordings: new Map(),
+        lastViewTimestamp: null
+      },
+      albumState: {
+        currentAlbumId: null,
+        currentAlbumTracks: [],
+        currentTrackIndex: -1,
+        albumTrackSources: new Map(),
+        expandedState: new Set()
+      },
       watchHistory: {},
       session: {
         currentContentId: null,
         currentTime: 0,
         playing: false,
         volume: 1.0,
-        muted: false
+        muted: false,
+        lastActivityTime: Date.now(),
+        isCleanupBlocked: false
       }
     };
     
     localStorage.removeItem('bantu_state');
+    sessionStorage.setItem('bantu_view_session', this.state.viewRecordingState.currentSessionId);
     this.notifyListeners('*', this.state);
+    console.log('🔄 State reset to initial values');
   }
   
+  // ============================================
   // Export/Import state (for debugging)
+  // ============================================
+  
   exportState() {
     return JSON.stringify({
-      ...this.state,
+      user: this.state.user,
+      preferences: this.state.preferences,
+      watchHistory: this.state.watchHistory,
       favorites: Array.from(this.state.favorites),
       likes: Array.from(this.state.likes),
       connections: Array.from(this.state.connections),
-      cache: undefined
+      viewRecordingState: {
+        currentSessionId: this.state.viewRecordingState.currentSessionId,
+        recordedContentIds: Array.from(this.state.viewRecordingState.recordedContentIds),
+        pendingRecordings: Object.fromEntries(this.state.viewRecordingState.pendingRecordings),
+        lastViewTimestamp: this.state.viewRecordingState.lastViewTimestamp
+      },
+      albumState: {
+        currentAlbumId: this.state.albumState.currentAlbumId,
+        currentAlbumTracks: this.state.albumState.currentAlbumTracks,
+        currentTrackIndex: this.state.albumState.currentTrackIndex,
+        expandedState: Array.from(this.state.albumState.expandedState)
+      },
+      session: {
+        currentContentId: this.state.session.currentContentId,
+        currentTime: this.state.session.currentTime,
+        volume: this.state.session.volume,
+        muted: this.state.session.muted
+      }
     }, null, 2);
   }
   
@@ -450,7 +1043,19 @@ class StateManager {
         ...imported,
         favorites: new Set(imported.favorites || []),
         likes: new Set(imported.likes || []),
-        connections: new Set(imported.connections || [])
+        connections: new Set(imported.connections || []),
+        viewRecordingState: {
+          ...this.state.viewRecordingState,
+          recordedContentIds: new Set(imported.viewRecordingState?.recordedContentIds || []),
+          pendingRecordings: new Map(Object.entries(imported.viewRecordingState?.pendingRecordings || {})),
+          currentSessionId: imported.viewRecordingState?.currentSessionId || this.generateSessionId(),
+          lastViewTimestamp: imported.viewRecordingState?.lastViewTimestamp || null
+        },
+        albumState: {
+          ...this.state.albumState,
+          expandedState: new Set(imported.albumState?.expandedState || []),
+          currentAlbumTracks: imported.albumState?.currentAlbumTracks || []
+        }
       };
       this.notifyListeners('*', this.state);
       return true;
@@ -471,9 +1076,27 @@ window.state = {
   getPreferences: () => stateManager.getState('preferences'),
   getFavorites: () => Array.from(stateManager.getState('favorites')),
   getWatchHistory: (contentId) => stateManager.getState(`watchHistory.${contentId}`),
-  isFavorite: (contentId) => stateManager.getState('favorites').has(contentId),
-  isLiked: (contentId) => stateManager.getState('likes').has(contentId),
-  isConnected: (creatorId) => stateManager.getState('connections').has(creatorId),
+  getResumeTime: (contentId) => stateManager.getResumeTime(contentId),
+  isFavorite: (contentId) => stateManager.isFavorite(contentId),
+  isLiked: (contentId) => stateManager.isLiked(contentId),
+  isConnected: (creatorId) => stateManager.isConnected(creatorId),
+  
+  // View recording state
+  hasViewedContent: (contentId) => stateManager.hasViewedContent(contentId),
+  getCurrentViewSessionId: () => stateManager.getCurrentViewSessionId(),
+  markContentAsViewed: (contentId, confirmed) => stateManager.markContentAsViewed(contentId, confirmed),
+  clearViewRecordingState: () => stateManager.clearViewRecordingState(),
+  
+  // Album state
+  getCurrentAlbumTracks: () => stateManager.getCurrentAlbumTracks(),
+  getCurrentTrack: () => stateManager.getCurrentTrack(),
+  setAlbumTracks: (albumId, tracks, source) => stateManager.setAlbumTracks(albumId, tracks, source),
+  setCurrentTrackIndex: (index) => stateManager.setCurrentTrackIndex(index),
+  toggleAlbumExpanded: (albumId) => stateManager.toggleAlbumExpanded(albumId),
+  isAlbumExpanded: (albumId) => stateManager.isAlbumExpanded(albumId),
+  clearAlbumState: () => stateManager.clearAlbumState(),
+  getCachedAlbumTracks: (albumId) => stateManager.getCachedAlbumTracks(albumId),
+  getCachedTrack: (trackId) => stateManager.getCachedTrack(trackId),
   
   // Setters
   setUser: (userData) => stateManager.setState('user', userData),
@@ -483,9 +1106,13 @@ window.state = {
   toggleConnection: (creatorId) => stateManager.toggleConnection(creatorId),
   
   // Session
-  setCurrentContent: (contentId) => stateManager.setState('session.currentContentId', contentId),
-  setPlaybackTime: (time) => stateManager.setState('session.currentTime', time),
-  setPlaying: (playing) => stateManager.setState('session.playing', playing),
+  setCurrentContent: (contentId, contentData) => stateManager.setCurrentContent(contentId, contentData),
+  setPlaybackTime: (time) => stateManager.setPlaybackTime(time),
+  setPlaying: (playing) => stateManager.setPlaying(playing),
+  setVolume: (volume, muted) => stateManager.setVolume(volume, muted),
+  blockCleanup: (blocked) => stateManager.blockCleanup(blocked),
+  isCleanupBlocked: () => stateManager.isCleanupBlocked(),
+  updateLastActivity: () => stateManager.updateLastActivity(),
   
   // Cache
   cacheContent: (content) => stateManager.cacheContent(content),
@@ -496,10 +1123,15 @@ window.state = {
   
   // Helper methods
   updateWatchHistory: (contentId, time, duration) => 
-    stateManager.updateWatchHistory(contentId, time, duration)
+    stateManager.updateWatchHistory(contentId, time, duration),
+  
+  // Reset and debug
+  resetState: () => stateManager.resetState(),
+  exportState: () => stateManager.exportState(),
+  importState: (json) => stateManager.importState(json)
 };
 
 // Make available globally
 window.stateManager = stateManager;
 
-console.log('✅ State Manager initialized');
+console.log('✅ State Manager initialized with view recording and album state tracking');
