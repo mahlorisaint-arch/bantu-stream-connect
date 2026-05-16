@@ -59,6 +59,8 @@
 // 🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic
 // 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
 // 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
+// 🔧 VIEW SYNC FIX #1: Added global event for view count synchronization across components
+// 🔧 ALBUM ARCHITECTURE FIX: Removed duplicate album systems; only one active system now
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -1105,6 +1107,13 @@ function initializeWatchSessionOnPlay() {
                 await incrementContentViews(currentContent.id);
                 // Refresh counts from source for accuracy
                 await refreshCountsFromSource();
+                // 🔧 VIEW SYNC FIX #1: Dispatch global event for view count synchronization
+                window.dispatchEvent(new CustomEvent('content-views-updated', {
+                    detail: {
+                        contentId: currentContent.id,
+                        viewsCount: currentContent.views_count + 1
+                    }
+                }));
             },
             onProgressSync: function(data) {
                 console.log('📊 Progress synced:', data);
@@ -2657,6 +2666,7 @@ function closeVideoPlayer() {
 // 🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic
 // 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
 // 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
+// 🔧 ALBUM ARCHITECTURE FIX: Single source of truth for album rendering
 // ============================================
 function setupAlbumToggle() {
     const albumToggleBtn = document.getElementById('albumToggleBtn');
@@ -2713,6 +2723,7 @@ function setupAlbumToggle() {
 // 🎯 FIX #2: RENDER ALBUM TRACKS into dedicated container
 // 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
 // 🔧 ALBUM FIX #3: Added comprehensive error logging
+// 🔧 ALBUM ARCHITECTURE FIX: Single source of truth for track data
 // ============================================
 function renderAlbumTracks() {
     const container = document.getElementById('albumTrackList');
@@ -2721,39 +2732,54 @@ function renderAlbumTracks() {
         return;
     }
     
-    // 🔧 ALBUM FIX #2: Multiple property fallbacks for track source
+    // 🔧 ALBUM FIX #2 & ARCHITECTURE FIX: Single source of truth with proper fallbacks
     let tracks = [];
     
-    // Try multiple possible sources for tracks
-    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items) {
+    // Log all possible track sources for debugging
+    console.log('🔍 Album track source detection:', {
+        hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
+        collectionsItems: window.ContentCollectionsEngine?.items?.length,
+        currentPlaylistItemsLength: currentPlaylistItems?.length,
+        hasCurrentPlaylist: !!currentPlaylist,
+        currentPlaylistItemsCount: currentPlaylist?.items?.length,
+        hasWindowCurrentPlaylist: !!window.currentPlaylist,
+        windowCurrentPlaylistItemsCount: window.currentPlaylist?.items?.length,
+        isPlaylistMode: isPlaylistMode,
+        currentContentHasPlaylistItems: !!(currentContent && currentContent._playlistItems)
+    });
+    
+    // Try multiple possible sources for tracks (single source priority)
+    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items && window.ContentCollectionsEngine.items.length) {
         tracks = window.ContentCollectionsEngine.items;
         console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
     } else if (currentPlaylistItems && currentPlaylistItems.length) {
         tracks = currentPlaylistItems;
         console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
-    } else if (currentContent && currentContent._playlistItems) {
-        tracks = currentContent._playlistItems;
-        console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
-    } else if (currentPlaylist && currentPlaylist.items) {
+    } else if (currentPlaylist && currentPlaylist.items && currentPlaylist.items.length) {
         tracks = currentPlaylist.items;
         console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
-    } else if (window.currentPlaylist && window.currentPlaylist.items) {
+    } else if (window.currentPlaylist && window.currentPlaylist.items && window.currentPlaylist.items.length) {
         tracks = window.currentPlaylist.items;
         console.log('📀 Tracks from window.currentPlaylist.items:', tracks.length);
+    } else if (currentContent && currentContent._playlistItems && currentContent._playlistItems.length) {
+        tracks = currentContent._playlistItems;
+        console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
     }
     
-    // 🔧 ALBUM FIX #3: Comprehensive error logging
+    // 🔧 ALBUM FIX #3: Comprehensive error logging with actionable data
     if (!tracks || !tracks.length) {
-        console.warn('⚠️ No tracks available to render', {
+        console.warn('❌ No tracks available to render - Album tracklist empty', {
             hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
-            collectionsItems: window.ContentCollectionsEngine?.items?.length,
+            collectionsItemsLength: window.ContentCollectionsEngine?.items?.length,
             currentPlaylistItemsLength: currentPlaylistItems?.length,
-            hasCurrentContentPlaylistItems: !!currentContent?._playlistItems,
             hasCurrentPlaylist: !!currentPlaylist,
             currentPlaylistItemsCount: currentPlaylist?.items?.length,
             hasWindowCurrentPlaylist: !!window.currentPlaylist,
             windowCurrentPlaylistItemsCount: window.currentPlaylist?.items?.length,
-            isPlaylistMode: isPlaylistMode
+            isPlaylistMode: isPlaylistMode,
+            hasCurrentContent: !!currentContent,
+            currentContentHasPlaylistItems: !!(currentContent && currentContent._playlistItems),
+            currentContentPlaylistItemsLength: currentContent?._playlistItems?.length
         });
         
         container.innerHTML = `
@@ -2765,25 +2791,42 @@ function renderAlbumTracks() {
         return;
     }
     
-    container.innerHTML = tracks.map((item, index) => `
-        <div class="album-track-item" data-index="${index}" data-content-id="${item.id}">
-            <img src="${item.thumbnail_url || 'assets/default-thumbnail.jpg'}" 
-                 class="album-track-thumb" 
-                 alt="${escapeHtml(item.title || 'Untitled')}"
-                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop'">
+    // Sort tracks by track_number if available
+    const sortedTracks = [...tracks].sort((a, b) => {
+        const aTrackNum = a.content_metadata?.track_number || a.track_number || 0;
+        const bTrackNum = b.content_metadata?.track_number || b.track_number || 0;
+        return aTrackNum - bTrackNum;
+    });
+    
+    console.log(`📀 Rendering ${sortedTracks.length} album tracks (sorted by track number)`);
+    
+    container.innerHTML = sortedTracks.map((item, index) => `
+        <div class="album-track-item ${currentContent?.id === item.id ? 'playing' : ''}" 
+             data-index="${index}" 
+             data-content-id="${item.id}">
+            <div class="album-track-thumb-wrapper">
+                <img src="${item.thumbnail_url || 'assets/default-thumbnail.jpg'}" 
+                     class="album-track-thumb" 
+                     alt="${escapeHtml(item.title || 'Untitled')}"
+                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop'">
+                ${currentContent?.id === item.id ? '<div class="now-playing-indicator"><i class="fas fa-play"></i></div>' : ''}
+            </div>
             <div class="album-track-info">
                 <div class="album-track-title">${escapeHtml(item.title || 'Untitled')}</div>
-                <div class="album-track-meta">Track ${index + 1} • ${formatDuration(item.duration || 0)}</div>
+                <div class="album-track-meta">
+                    ${item.content_metadata?.track_number || item.track_number ? `Track ${item.content_metadata?.track_number || item.track_number} • ` : ''}
+                    ${formatDuration(item.duration || 0)}
+                </div>
             </div>
         </div>
     `).join('');
     
     // Add click handlers with stopPropagation
-    container.querySelectorAll('.album-track-item').forEach(item => {
-        item.addEventListener('click', async (event) => {
+    container.querySelectorAll('.album-track-item').forEach(trackItem => {
+        trackItem.addEventListener('click', async (event) => {
             event.stopPropagation();  // ✅ CRITICAL: Prevents event bubbling
-            const index = Number(item.dataset.index);
-            const contentId = item.dataset.contentId;
+            const index = Number(trackItem.dataset.index);
+            const contentId = trackItem.dataset.contentId;
             console.log('🎵 Playing album track:', index, contentId);
             
             // Try to use collection engine if available
@@ -2795,7 +2838,7 @@ function renderAlbumTracks() {
                 await playPlaylistItemByIndex(index);
             }
             // Last resort: navigate to content detail
-            else if (contentId) {
+            else if (contentId && contentId !== currentContent?.id) {
                 window.location.href = `content-detail.html?id=${contentId}`;
             }
             
@@ -2804,27 +2847,7 @@ function renderAlbumTracks() {
         });
     });
     
-    console.log('✅ Album track list rendered:', tracks.length, 'tracks');
-    
-    // Highlight current playing track if in playlist mode
-    if (currentContent && currentContent.id) {
-        highlightCurrentAlbumTrack(currentContent.id);
-    }
-}
-
-// ✅ NEW: Highlight current playing track in album list
-function highlightCurrentAlbumTrack(contentId) {
-    const container = document.getElementById('albumTrackList');
-    if (!container) return;
-    
-    const allTracks = container.querySelectorAll('.album-track-item');
-    allTracks.forEach(track => {
-        if (track.dataset.contentId === contentId) {
-            track.classList.add('playing');
-        } else {
-            track.classList.remove('playing');
-        }
-    });
+    console.log('✅ Album track list rendered:', sortedTracks.length, 'tracks');
 }
 
 // ============================================
@@ -3181,6 +3204,30 @@ NO DNA, JUST RSA
     
     // Setup initial play button for autoplay unlock
     setupInitialPlayButton();
+    
+    // 🔧 VIEW SYNC FIX #1: Add global listener for view count updates
+    window.addEventListener('content-views-updated', async (event) => {
+        const { contentId, viewsCount } = event.detail;
+        if (String(contentId) !== String(currentContent?.id)) return;
+        
+        // Update currentContent
+        if (currentContent && viewsCount !== undefined) {
+            currentContent.views_count = viewsCount;
+        } else {
+            // Fetch fresh view count if not provided
+            const { data, error } = await window.supabaseClient
+                .from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', contentId);
+            if (!error && currentContent) {
+                currentContent.views_count = data?.length || 0;
+            }
+        }
+        
+        // Update UI elements
+        updateCountsUI(currentContent);
+        console.log('👁️ Frontend views synced via global event:', currentContent?.views_count);
+    });
     
     console.log('✅ Event listeners setup complete');
 }
@@ -4308,6 +4355,8 @@ console.log('  🔧 VIEWS FIX #4: Added incrementContentViews RPC call for conte
 console.log('  🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic');
 console.log('  🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks');
 console.log('  🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering');
+console.log('  🔧 VIEW SYNC FIX #1: Added global content-views-updated event for cross-component sync');
+console.log('  🔧 ALBUM ARCHITECTURE FIX: Single source of truth for album rendering');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
