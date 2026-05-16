@@ -1114,10 +1114,16 @@ function initializeWatchSessionOnPlay() {
             return;
         }
 
+        // 🔧 VIEW RECORDING FIX #2: Always generate a fresh session ID
         const sessionKey = `bantu_view_session_${parseInt(currentContent.id)}`;
-        const sessionId = sessionStorage.getItem(sessionKey);
+        let sessionId = sessionStorage.getItem(sessionKey);
+        
+        // Force new session ID to prevent "already persisted" issues
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem(sessionKey, sessionId);
+        
+        console.log('🎬 Initializing WatchSession with NEW session:', sessionId);
 
-        console.log('🎬 Initializing WatchSession with session:', sessionId);
         watchSession = new window.WatchSession({
             contentId: currentContent.id,
             userId: currentUserId,
@@ -2704,13 +2710,20 @@ function setupAlbumToggle() {
     
     if (!albumToggleBtn || !albumTrackList) {
         console.warn('⚠️ Album toggle elements not found - album feature may not be present');
-        // 🔧 ALBUM FIX #1: Retry after DOM is ready
-        setTimeout(() => {
+        // 🔧 ALBUM FIX #1: Retry after DOM is ready with longer delays
+        let retryCount = 0;
+        const maxRetries = 10;
+        const retryInterval = setInterval(() => {
+            retryCount++;
             const retryBtn = document.getElementById('albumToggleBtn');
             const retryList = document.getElementById('albumTrackList');
             if (retryBtn && retryList) {
-                console.log('🔄 Retrying album toggle setup after timeout...');
+                clearInterval(retryInterval);
+                console.log('🔄 Album toggle elements found on retry', retryCount);
                 setupAlbumToggle();
+            } else if (retryCount >= maxRetries) {
+                clearInterval(retryInterval);
+                console.warn('⚠️ Album toggle elements not found after max retries');
             }
         }, 500);
         return;
@@ -2722,7 +2735,8 @@ function setupAlbumToggle() {
     if (isAlbumExpanded) {
         albumTrackList.classList.remove('hidden');
         albumTrackList.classList.add('expanded');
-        renderAlbumTracks();
+        // Wait for data to be available before rendering
+        setTimeout(() => renderAlbumTracks(), 100);
         console.log('📀 Album restored to expanded state');
     }
     
@@ -2763,8 +2777,7 @@ function renderAlbumTracks() {
         return;
     }
     
-    // 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST (MOST IMPORTANT)
-    // The console shows playlist has 9 items loaded into currentPlaylistItems
+    // 🔧 CRITICAL ALBUM FIX: Direct access to the playlist items that we KNOW exist
     let tracks = [];
     
     // Log all possible track sources for debugging
@@ -2781,18 +2794,25 @@ function renderAlbumTracks() {
         currentContentHasPlaylistItems: !!(currentContent && currentContent._playlistItems)
     });
     
-    // 🔧 FIX: Check playlist mode sources FIRST (highest priority)
-    if (currentPlaylistItems && currentPlaylistItems.length) {
-        tracks = currentPlaylistItems;
-        console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
-    } 
-    else if (currentPlaylist && currentPlaylist.items && currentPlaylist.items.length) {
+    // PRIORITY 1: currentPlaylistItems (this is where your 9 items are)
+    if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+        tracks = window.currentPlaylistItems;
+        console.log('📀 Tracks from window.currentPlaylistItems:', tracks.length);
+    }
+    // PRIORITY 2: currentPlaylist
+    else if (currentPlaylist && currentPlaylist.items && currentPlaylist.items.length > 0) {
         tracks = currentPlaylist.items;
         console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
-    } 
-    else if (window.currentPlaylist && window.currentPlaylist.items && window.currentPlaylist.items.length) {
+    }
+    // PRIORITY 3: window.currentPlaylist
+    else if (window.currentPlaylist && window.currentPlaylist.items && window.currentPlaylist.items.length > 0) {
         tracks = window.currentPlaylist.items;
         console.log('📀 Tracks from window.currentPlaylist.items:', tracks.length);
+    }
+    // PRIORITY 4: global currentPlaylistItems
+    else if (typeof currentPlaylistItems !== 'undefined' && currentPlaylistItems && currentPlaylistItems.length > 0) {
+        tracks = currentPlaylistItems;
+        console.log('📀 Tracks from currentPlaylistItems (global):', tracks.length);
     }
     // THEN try other sources (lower priority)
     else if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items && window.ContentCollectionsEngine.items.length) {
@@ -2808,24 +2828,27 @@ function renderAlbumTracks() {
         console.log('📀 Tracks from currentContent.tracks:', tracks.length);
     }
     
+    // Log what we found
+    console.log('🔍 Album track source result:', {
+        tracksLength: tracks.length,
+        firstTrackTitle: tracks[0]?.title,
+        isPlaylistMode: isPlaylistMode
+    });
+    
     // 🔧 ALBUM FIX #3: Comprehensive error logging with actionable data
     if (!tracks || !tracks.length) {
         console.error('❌ No tracks available to render - Album tracklist empty', {
-            currentPlaylistItemsLength: currentPlaylistItems?.length,
-            currentPlaylistItemsArray: currentPlaylistItems ? 'exists' : 'null',
-            currentPlaylistItemsFirstItem: currentPlaylistItems?.[0]?.title,
-            currentPlaylistExists: !!currentPlaylist,
-            currentPlaylistItemsCount: currentPlaylist?.items?.length,
-            isPlaylistMode: isPlaylistMode,
-            // Log the actual values to help debug
-            currentPlaylistItemsValue: currentPlaylistItems,
-            currentPlaylistValue: currentPlaylist
+            window_currentPlaylistItems: window.currentPlaylistItems?.length,
+            currentPlaylist_items: currentPlaylist?.items?.length,
+            window_currentPlaylist_items: window.currentPlaylist?.items?.length,
+            global_currentPlaylistItems: typeof currentPlaylistItems !== 'undefined' ? currentPlaylistItems?.length : 'undefined'
         });
         
         container.innerHTML = `
             <div class="empty-playlist">
                 <i class="fas fa-music"></i>
-                <p>No tracks found in this album</p>
+                <p>Loading tracks...</p>
+                <button onclick="retryRenderAlbumTracks()" class="retry-btn">Retry</button>
             </div>
         `;
         return;
@@ -2858,6 +2881,9 @@ function renderAlbumTracks() {
                     ${formatDuration(item.duration || 0)}
                 </div>
             </div>
+            <div class="album-track-duration">
+                ${formatDuration(item.duration || 0)}
+            </div>
         </div>
     `).join('');
     
@@ -2869,8 +2895,10 @@ function renderAlbumTracks() {
             const contentId = trackItem.dataset.contentId;
             console.log('🎵 Playing album track:', index, contentId);
             
-            // Use playlist mode playback (priority)
-            if (currentPlaylistItems && currentPlaylistItems[index]) {
+            // Play the selected track using playlist mode playback (priority)
+            if (window.playPlaylistItemByIndex) {
+                await window.playPlaylistItemByIndex(index);
+            } else if (typeof playPlaylistItemByIndex === 'function') {
                 await playPlaylistItemByIndex(index);
             }
             // Try to use collection engine if available
@@ -2889,6 +2917,12 @@ function renderAlbumTracks() {
     
     console.log('✅ Album track list rendered:', sortedTracks.length, 'tracks');
 }
+
+// Helper function to retry rendering
+window.retryRenderAlbumTracks = function() {
+    console.log('🔄 Retrying album track render...');
+    renderAlbumTracks();
+};
 
 // ============================================
 // Setup event listeners (UPDATED with album toggle and view sync)
@@ -4278,6 +4312,56 @@ async function refreshCountsFromSource() {
     }
 }
 
+// Manual view recording function for testing
+window.manualRecordView = async function() {
+    if (!currentContent?.id) {
+        console.error('No current content');
+        return false;
+    }
+    
+    console.log('🔧 Manually recording view for content:', currentContent.id);
+    
+    try {
+        // Direct RPC call
+        const { error: rpcError } = await window.supabaseClient
+            .rpc('increment_content_views', {
+                content_id_input: currentContent.id
+            });
+        
+        if (rpcError) {
+            console.error('RPC failed:', rpcError);
+            return false;
+        }
+        
+        // Also insert into content_views
+        const sessionId = 'manual_' + Date.now();
+        const { error: insertError } = await window.supabaseClient
+            .from('content_views')
+            .insert({
+                content_id: currentContent.id,
+                viewer_id: currentUserId,
+                session_id: sessionId,
+                counted_as_view: true,
+                device_type: 'desktop'
+            });
+        
+        if (insertError) {
+            console.warn('Insert warning:', insertError);
+        }
+        
+        // Update frontend
+        incrementFrontendViewCount();
+        await refreshCountsFromSource();
+        
+        console.log('✅ Manual view recorded successfully');
+        showToast('View recorded!', 'success');
+        return true;
+    } catch (error) {
+        console.error('Manual view recording failed:', error);
+        return false;
+    }
+};
+
 // Utility functions
 function formatDate(dateString) {
     if (!dateString) return '-';
@@ -4408,6 +4492,7 @@ console.log('  🔧 VIEW SYNC FIX #1: Added global content-views-updated event f
 console.log('  🔧 ALBUM ARCHITECTURE FIX: Single source of truth for album rendering');
 console.log('  🔧 CRITICAL ALBUM FIX: Check playlist items FIRST, not ContentCollectionsEngine');
 console.log('  🔧 VIEW RECORDING FIX: Reset viewPersisted flag when content changes');
+console.log('  🔧 VIEW RECORDING FIX #2: Always generate fresh session ID for view recording');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
