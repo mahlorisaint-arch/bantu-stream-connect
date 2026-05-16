@@ -2,6 +2,7 @@
 // Extracted features from content-detail.js to reduce main file size.
 // These modules handle View Tracking, UI Utilities, Theme, Sidebar, Header, Navigation, and Recommendations.
 // Load this file BEFORE content-detail.js in your HTML.
+// 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system (now ONLY in content-detail.js)
 
 console.log('🎬 Content Detail Features Loading...');
 
@@ -1306,127 +1307,12 @@ function loadUserBadges() { console.log('loadUserBadges stub'); }
 function loadWatchPartyContent() { console.log('loadWatchPartyContent stub'); }
 
 // ============================================
-// 🔧 ALBUM FIX: Setup album toggle with retry
+// 🔧 ALBUM FIX: REMOVED duplicate album toggle system
+// 🔧 ALBUM ARCHITECTURE FIX: Album UI now handled EXCLUSIVELY by content-detail.js
 // ============================================
-function setupAlbumToggleWithRetry() {
-    const maxRetries = 10;
-    let retryCount = 0;
-    
-    const trySetup = () => {
-        const albumToggleBtn = document.getElementById('albumToggleBtn');
-        const albumTrackList = document.getElementById('albumTrackList');
-        
-        if (albumToggleBtn && albumTrackList) {
-            console.log('✅ Album toggle elements found, setting up...');
-            if (typeof window.setupAlbumToggle === 'function') {
-                window.setupAlbumToggle();
-            } else {
-                setupBasicAlbumToggle(albumToggleBtn, albumTrackList);
-            }
-        } else if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`🔄 Album toggle retry ${retryCount}/${maxRetries}...`);
-            setTimeout(trySetup, 300);
-        } else {
-            console.warn('⚠️ Album toggle elements not found after retries');
-        }
-    };
-    
-    requestAnimationFrame(() => {
-        setTimeout(trySetup, 100);
-    });
-}
-
-function setupBasicAlbumToggle(albumToggleBtn, albumTrackList) {
-    console.log('🔧 Setting up basic album toggle...');
-    
-    const getAlbumTracks = () => {
-        let tracks = [];
-        
-        // Try multiple possible sources
-        if (window.ContentCollectionsEngine?.items) {
-            tracks = window.ContentCollectionsEngine.items;
-            console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
-        } else if (window.currentPlaylistItems?.length) {
-            tracks = window.currentPlaylistItems;
-            console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
-        } else if (window.currentPlaylist?.items) {
-            tracks = window.currentPlaylist.items;
-            console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
-        } else if (window.currentContent?._playlistItems) {
-            tracks = window.currentContent._playlistItems;
-            console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
-        } else if (window.currentContent?.tracks) {
-            tracks = window.currentContent.tracks;
-            console.log('📀 Tracks from currentContent.tracks:', tracks.length);
-        }
-        
-        return tracks;
-    };
-    
-    const updateTracklist = () => {
-        const tracks = getAlbumTracks();
-        
-        if (!albumTrackList) return;
-        
-        if (!Array.isArray(tracks) || tracks.length === 0) {
-            console.warn('⚠️ No tracks available to render', {
-                hasContentCollectionsEngine: !!window.ContentCollectionsEngine?.items?.length,
-                hasCurrentPlaylistItems: !!(window.currentPlaylistItems?.length),
-                hasCurrentPlaylist: !!(window.currentPlaylist?.items?.length),
-                hasCurrentContentPlaylistItems: !!(window.currentContent?._playlistItems?.length)
-            });
-            
-            albumTrackList.innerHTML = `
-                <div class="empty-tracklist">
-                    No tracks available
-                </div>
-            `;
-            return;
-        }
-        
-        albumTrackList.innerHTML = tracks.map((track, index) => `
-            <div class="album-track-item" data-track-id="${track.id}" data-track-index="${index}">
-                <div class="track-number">${index + 1}</div>
-                <div class="track-info">
-                    <div class="track-title">${escapeHtml(track.title || 'Untitled')}</div>
-                    ${track.artist ? `<div class="track-artist">${escapeHtml(track.artist)}</div>` : ''}
-                </div>
-                <div class="track-duration">${track.duration || '--:--'}</div>
-                <button class="play-track-btn" data-track-id="${track.id}">
-                    <i class="fas fa-play"></i>
-                </button>
-            </div>
-        `).join('');
-        
-        console.log(`✅ Rendered ${tracks.length} tracks in album tracklist`);
-        
-        document.querySelectorAll('.play-track-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const trackId = btn.dataset.trackId;
-                if (trackId && typeof window.playTrackById === 'function') {
-                    window.playTrackById(trackId);
-                } else if (trackId) {
-                    console.log('🎵 Play track:', trackId);
-                }
-            });
-        });
-    };
-    
-    updateTracklist();
-    
-    let isOpen = false;
-    albumToggleBtn.addEventListener('click', () => {
-        isOpen = !isOpen;
-        albumTrackList.style.display = isOpen ? 'block' : 'none';
-        if (isOpen) {
-            updateTracklist();
-        }
-    });
-    
-    console.log('✅ Basic album toggle setup complete');
-}
+// NOTE: setupAlbumToggleWithRetry and setupBasicAlbumToggle have been REMOVED.
+// Album rendering is now ONLY handled by the setupAlbumToggle() function in content-detail.js.
+// This prevents DOM synchronization issues and duplicate event handlers.
 
 // ============================================
 // Initialize all features
@@ -1452,8 +1338,8 @@ function initContentDetailFeatures() {
     // Setup watch later button
     setupWatchLaterButton();
     
-    // Setup album toggle with retry
-    setupAlbumToggleWithRetry();
+    // 🔧 ALBUM ARCHITECTURE FIX: Album toggle setup removed from here
+    // Album functionality now lives ONLY in content-detail.js
     
     console.log('✅ Content Detail Features initialized');
 }
@@ -1466,3 +1352,4 @@ if (document.readyState === 'loading') {
 }
 
 console.log('✅ Content Detail Features loaded successfully - View recording delegated to watch-session.js');
+console.log('🔧 ALBUM ARCHITECTURE FIX: Duplicate album systems removed - album UI now ONLY in content-detail.js');
