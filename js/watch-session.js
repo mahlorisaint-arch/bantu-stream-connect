@@ -19,6 +19,7 @@
 // 🔧 VIEWS FIX #4: Added retry mechanism for failed view recording
 // 🔧 VIEWS FIX #5: Added frontend optimistic update callback
 // 🔧 VIEW SYNC FIX #1: Dispatch global event when view is recorded
+// 🔧 CRITICAL VIEW FIX: DO NOT restore viewPersisted from storage - prevents false "already persisted" messages
 
 (function() {
   'use strict';
@@ -113,7 +114,9 @@
         totalWatchTime: this.totalWatchTime,
         viewCounted: this.viewCounted,
         viewAttempted: this.viewAttempted,
-        viewPersisted: this.viewPersisted,
+        // 🔧 CRITICAL VIEW FIX: DO NOT save viewPersisted to storage
+        // This prevents false "already persisted" messages on session restore
+        // viewPersisted is intentionally omitted - will be reset on restore
         isCompleted: this.isCompleted,
         collectionId: this.collectionId,
         episodeNumber: this.episodeNumber,
@@ -127,7 +130,7 @@
         timestamp: Date.now()
       }));
       
-      console.log('💾 Watch session saved to storage');
+      console.log('💾 Watch session saved to storage (viewPersisted excluded)');
     } catch (error) {
       console.warn('Failed to save session to storage:', error);
     }
@@ -144,12 +147,16 @@
           this.totalWatchTime = data.totalWatchTime || 0;
           this.viewCounted = data.viewCounted || false;
           this.viewAttempted = data.viewAttempted || false;
-          this.viewPersisted = data.viewPersisted || false;
+          // 🔧 CRITICAL VIEW FIX: DO NOT restore viewPersisted from storage
+          // This prevents false "already persisted" messages from previous sessions
+          // Force to false - will re-record view for this session
+          this.viewPersisted = false;
           this.isCompleted = data.isCompleted || false;
           this.restoredFromStorage = true;
-          console.log('📦 Session restored from storage at position:', this.lastSavedPosition);
+          console.log('📦 Session restored from storage at position:', this.lastSavedPosition, '(viewPersisted reset to false)');
         } else {
           localStorage.removeItem(this.sessionKey);
+          console.log('🗑️ Session expired (>24 hours), removed from storage');
         }
       }
     } catch (error) {
