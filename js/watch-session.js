@@ -1,6 +1,5 @@
 // js/watch-session.js — Production Watch Session Lifecycle Manager
 // Bantu Stream Connect — Phase 2 Stable View Tracking System
-// 🔧 CRITICAL FIX: View recording now works properly
 // ✅ FIXED: Duplicate session/content inserts
 // ✅ FIXED: Proper UPSERT strategy for content_views
 // ✅ FIXED: Session ID is ONLY read from storage
@@ -1004,6 +1003,93 @@
   // =====================================================
   // DATABASE OPERATIONS
   // =====================================================
+
+  /**
+   * ✅ FIXED:
+   * Uses UPSERT to match:
+   *
+   * unique_content_view_session
+   * (content_id, session_id)
+   */
+
+  WatchSession.prototype._legacyRecordView =
+    function(video) {
+
+      var self = this;
+
+      if (!this.userId) {
+        return Promise.resolve();
+      }
+
+      if (!this.sessionId) {
+        console.error(
+          '❌ No session ID'
+        );
+
+        return Promise.resolve();
+      }
+
+      return this.supabase
+        .from('content_views')
+        .upsert({
+          content_id: this.contentId,
+          session_id: this.sessionId,
+
+          viewer_id: this.userId,
+          profile_id: this.userId,
+          user_id: this.userId,
+
+          view_duration: Math.floor(
+            video.currentTime
+          ),
+
+          counted_as_view: true,
+
+          device_type:
+            this._getDeviceType(),
+
+          updated_at:
+            new Date().toISOString(),
+
+          created_at:
+            new Date().toISOString()
+        }, {
+          onConflict:
+            'content_id,session_id'
+        })
+
+        .then(function(result) {
+
+          if (result.error) {
+            throw result.error;
+          }
+
+          console.log(
+            '✅ View upserted successfully'
+          );
+
+          if (self.onViewCounted) {
+            self.onViewCounted({
+              contentId: self.contentId,
+              sessionId: self.sessionId,
+              userId: self.userId
+            });
+          }
+        })
+
+        .catch(function(error) {
+
+          console.error(
+            '❌ View record failed:',
+            error.message
+          );
+
+          self._handleError(
+            'recordView',
+            error
+          );
+        });
+    };
 
   WatchSession.prototype._syncProgress =
     function(force) {
