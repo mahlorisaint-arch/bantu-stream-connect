@@ -19,7 +19,7 @@
 // ✅ Queue state sync with UI
 // ✅ Playlist progression tracking
 // ✅ Views FIX #1-4: Proper view recording with DB confirmation
-// ✅ Album FIX #1-3: DOM timing and track source detection
+// 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system (album UI now ONLY in content-detail.js)
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -50,10 +50,9 @@
  * 19. Added frontend optimistic update for views
  * 20. Added incrementContentViews RPC call
  * 
- * 🔧 ALBUM FIX #1-3:
- * 21. Fixed DOM timing with requestAnimationFrame and retry logic
- * 22. Fixed track source detection with multiple property fallbacks
- * 23. Added comprehensive error logging for track rendering
+ * 🔧 ALBUM ARCHITECTURE FIX:
+ * 21. REMOVED duplicate album toggle system (setupAlbumToggleWithRetry, setupBasicAlbumToggle, getAlbumTracks)
+ * 22. Album UI now handled EXCLUSIVELY by content-detail.js
  */
 
 class VideoPlayerFeatures {
@@ -1107,7 +1106,8 @@ class VideoPlayerFeatures {
       });
     }
     
-    // Track album expand/collapse
+    // Track album expand/collapse - Note: Album UI is now handled by content-detail.js,
+    // but we still need to track the interaction to prevent cleanup
     const albumToggleBtn = document.getElementById('albumToggleBtn');
     if (albumToggleBtn) {
       albumToggleBtn.addEventListener('click', () => {
@@ -1366,159 +1366,6 @@ class VideoPlayerFeatures {
   }
   
   /**
-   * 🔧 ALBUM FIX #1-3: Track source detection with multiple fallbacks
-   * This fixes the "No tracks available" issue by checking multiple possible data sources
-   */
-  getAlbumTracks() {
-    let tracks = [];
-    
-    // Try multiple possible sources where tracks could be stored
-    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items) {
-      tracks = window.ContentCollectionsEngine.items;
-      console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
-    } else if (window.currentPlaylistItems && window.currentPlaylistItems.length) {
-      tracks = window.currentPlaylistItems;
-      console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
-    } else if (window.currentPlaylist && window.currentPlaylist.items) {
-      tracks = window.currentPlaylist.items;
-      console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
-    } else if (window.currentContent && window.currentContent._playlistItems) {
-      tracks = window.currentContent._playlistItems;
-      console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
-    } else if (window.currentContent && window.currentContent.tracks) {
-      tracks = window.currentContent.tracks;
-      console.log('📀 Tracks from currentContent.tracks:', tracks.length);
-    }
-    
-    // Log warning if no tracks found
-    if (tracks.length === 0) {
-      console.warn('⚠️ No tracks available to render', {
-        hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
-        hasCurrentPlaylistItems: !!(window.currentPlaylistItems && window.currentPlaylistItems.length),
-        hasCurrentPlaylist: !!(window.currentPlaylist && window.currentPlaylist.items),
-        hasCurrentContentPlaylistItems: !!(window.currentContent && window.currentContent._playlistItems),
-        hasCurrentContentTracks: !!(window.currentContent && window.currentContent.tracks)
-      });
-    }
-    
-    return tracks;
-  }
-  
-  /**
-   * 🔧 ALBUM FIX #1: Setup album toggle with retry logic
-   * Fixes DOM timing issues where elements aren't ready yet
-   */
-  setupAlbumToggleWithRetry() {
-    const maxRetries = 10;
-    let retryCount = 0;
-    
-    const trySetup = () => {
-      const albumToggleBtn = document.getElementById('albumToggleBtn');
-      const albumTrackList = document.getElementById('albumTrackList');
-      
-      if (albumToggleBtn && albumTrackList) {
-        console.log('✅ Album toggle elements found, setting up...');
-        if (typeof window.setupAlbumToggle === 'function') {
-          window.setupAlbumToggle();
-        } else {
-          // If setupAlbumToggle doesn't exist, provide a basic implementation
-          this.setupBasicAlbumToggle(albumToggleBtn, albumTrackList);
-        }
-      } else if (retryCount < maxRetries) {
-        retryCount++;
-        console.log(`🔄 Album toggle retry ${retryCount}/${maxRetries}...`);
-        setTimeout(trySetup, 300);
-      } else {
-        console.warn('⚠️ Album toggle elements not found after retries');
-      }
-    };
-    
-    // Use requestAnimationFrame for better timing
-    requestAnimationFrame(() => {
-      setTimeout(trySetup, 100);
-    });
-  }
-  
-  /**
-   * 🔧 ALBUM FIX: Basic album toggle implementation if setupAlbumToggle doesn't exist
-   */
-  setupBasicAlbumToggle(albumToggleBtn, albumTrackList) {
-    console.log('🔧 Setting up basic album toggle...');
-    
-    const updateTracklist = () => {
-      const tracks = this.getAlbumTracks();
-      
-      if (!albumTrackList) return;
-      
-      if (!Array.isArray(tracks) || tracks.length === 0) {
-        console.warn('⚠️ No tracks available to render', {
-          tracks: tracks,
-          sources: {
-            ContentCollectionsEngine: window.ContentCollectionsEngine?.items?.length,
-            currentPlaylistItems: window.currentPlaylistItems?.length,
-            currentPlaylist: window.currentPlaylist?.items?.length,
-            currentContentPlaylistItems: window.currentContent?._playlistItems?.length
-          }
-        });
-        
-        albumTrackList.innerHTML = `
-          <div class="empty-tracklist">
-            No tracks available
-          </div>
-        `;
-        return;
-      }
-      
-      // Render the tracks
-      albumTrackList.innerHTML = tracks.map((track, index) => `
-        <div class="album-track-item" data-track-id="${track.id}" data-track-index="${index}">
-          <div class="track-number">${index + 1}</div>
-          <div class="track-info">
-            <div class="track-title">${track.title || 'Untitled'}</div>
-            ${track.artist ? `<div class="track-artist">${track.artist}</div>` : ''}
-          </div>
-          <div class="track-duration">${track.duration || '--:--'}</div>
-          <button class="play-track-btn" data-track-id="${track.id}">
-            <i class="fas fa-play"></i>
-          </button>
-        </div>
-      `).join('');
-      
-      console.log(`✅ Rendered ${tracks.length} tracks in album tracklist`);
-      
-      // Attach play handlers
-      document.querySelectorAll('.play-track-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const trackId = btn.dataset.trackId;
-          if (trackId && typeof window.playTrackById === 'function') {
-            window.playTrackById(trackId);
-          } else if (trackId) {
-            console.log('🎵 Play track:', trackId);
-          }
-        });
-      });
-    };
-    
-    // Initial update
-    updateTracklist();
-    
-    // Toggle visibility
-    let isOpen = false;
-    albumToggleBtn.addEventListener('click', () => {
-      isOpen = !isOpen;
-      if (isOpen) {
-        albumTrackList.style.display = 'block';
-        updateTracklist(); // Refresh tracks when opening
-      } else {
-        albumTrackList.style.display = 'none';
-      }
-    });
-    
-    console.log('✅ Basic album toggle setup complete');
-  }
-  
-  /**
    * Initialize view recording for a specific session
    */
   async initializeViewRecording(contentId) {
@@ -1554,8 +1401,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     videoPlayerFeatures.setupTouchDeviceSupport();
     
-    // 🔧 ALBUM FIX #1: Setup album toggle with retry
-    videoPlayerFeatures.setupAlbumToggleWithRetry();
+    // 🔧 ALBUM ARCHITECTURE FIX: Album toggle setup REMOVED from here
+    // Album UI is now handled EXCLUSIVELY by content-detail.js
+    // This prevents duplicate event handlers and DOM synchronization issues
     
     // Expose helper methods globally
     window.clearViewCache = () =>
@@ -1601,10 +1449,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.incrementFrontendViewCount = () =>
       videoPlayerFeatures.incrementFrontendViewCount();
-    
-    // Expose album track helper
-    window.getAlbumTracks = () =>
-      videoPlayerFeatures.getAlbumTracks();
 
   }, 1000);
 });
@@ -1619,4 +1463,4 @@ console.log('  ✅ CRITICAL FIX #8: Prevent cleanup during UI interactions');
 console.log('  ✅ CRITICAL FIX #9: Only destroy player on page unload or true content change');
 console.log('  ✅ Playlist autoplay and queue sync');
 console.log('  🔧 VIEWS FIX #1-4: View recording with RPC and frontend updates (NO premature early exit)');
-console.log('  🔧 ALBUM FIX #1-3: DOM timing and track source detection with multiple fallbacks');
+console.log('  🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system - album UI now ONLY in content-detail.js');
