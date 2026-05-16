@@ -7,6 +7,8 @@
 // ✅ CRITICAL FIX #2: Added getWatchLaterPlaylistId method with caching
 // ✅ CRITICAL FIX #3: Added addToWatchLater and removeFromWatchLater methods
 // ✅ CRITICAL FIX #4: Fixed playlist item insertion to handle duplicates gracefully
+// 🔧 ALBUM FIX: Added getAlbumTracks method with multiple source detection
+// 🔧 ALBUM FIX: Added getPlaylistTracks method for album/playlist track retrieval
 
 (function() {
   'use strict';
@@ -31,6 +33,10 @@
     this._watchLaterPlaylistId = null;
     this._watchLaterCacheTime = null;
     this._cacheDuration = 30000; // 30 seconds cache
+    
+    // Cache for playlist tracks
+    this._playlistTracksCache = new Map();
+    this._cacheTimeout = null;
     
     // Callbacks
     this.onPlaylistUpdated = config.onPlaylistUpdated || null;
@@ -124,9 +130,22 @@
       
       if (itemsError) throw itemsError;
       
+      // Cache the tracks for album/playlist display
+      const tracks = (items || []).map(item => ({
+        id: item.content_id,
+        title: item.Content?.title || 'Untitled',
+        thumbnail_url: item.Content?.thumbnail_url,
+        duration: item.Content?.duration,
+        artist: item.Content?.user_profiles?.full_name || item.Content?.user_profiles?.username,
+        added_at: item.added_at
+      }));
+      
+      this._cachePlaylistTracks(playlistId, tracks);
+      
       return {
         ...playlist,
-        items: items || []
+        items: items || [],
+        tracks: tracks
       };
     } catch (error) {
       console.error('❌ Failed to get playlist:', error);
@@ -249,6 +268,9 @@
         this._watchLaterCacheTime = null;
       }
       
+      // Remove from tracks cache
+      this._playlistTracksCache.delete(playlistId);
+      
       if (this.onPlaylistUpdated) {
         this.onPlaylistUpdated({ action: 'delete', playlistId });
       }
@@ -314,6 +336,9 @@
         .update({ updated_at: new Date().toISOString() })
         .eq('id', playlistId);
       
+      // Invalidate cache for this playlist
+      this._playlistTracksCache.delete(playlistId);
+      
       if (this.onPlaylistUpdated) {
         this.onPlaylistUpdated({ 
           action: 'add_item', 
@@ -356,6 +381,9 @@
         .from('playlists')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', playlistId);
+      
+      // Invalidate cache for this playlist
+      this._playlistTracksCache.delete(playlistId);
       
       if (this.onPlaylistUpdated) {
         this.onPlaylistUpdated({ 
@@ -423,6 +451,142 @@
       console.error('❌ Failed to get playlists for content:', error);
       return [];
     }
+  };
+
+  // ============================================
+  // 🔧 ALBUM FIX: TRACK SOURCE DETECTION
+  // ============================================
+
+  /**
+   * Get tracks for a playlist/album with multiple source detection
+   * This method intelligently finds tracks from various possible sources
+   */
+  PlaylistManager.prototype.getAlbumTracks = async function(playlistIdOrContent) {
+    let tracks = [];
+    
+    // Case 1: Called with a playlist ID
+    if (typeof playlistIdOrContent === 'string' || typeof playlistIdOrContent === 'number') {
+      // Check cache first
+      const cacheKey = String(playlistIdOrContent);
+      if (this._playlistTracksCache.has(cacheKey)) {
+        const cached = this._playlistTracksCache.get(cacheKey);
+        if (Date.now() - cached.timestamp < this._cacheDuration) {
+          console.log('📀 Using cached tracks for playlist:', cacheKey, cached.tracks.length);
+          return cached.tracks;
+        }
+      }
+      
+      // Fetch from database
+      const playlist = await this.getPlaylist(playlistIdOrContent);
+      if (playlist && playlist.tracks) {
+        tracks = playlist.tracks;
+      }
+    }
+    
+    // Case 2: Called with a content object that might have tracks/items
+    else if (playlistIdOrContent && typeof playlistIdOrContent === 'object') {
+      const content = playlistIdOrContent;
+      
+      // Try multiple possible track sources
+      if (content.items && Array.isArray(content.items)) {
+        tracks = content.items;
+        console.log('📀 Tracks from content.items:', tracks.length);
+      } else if (content.tracks && Array.isArray(content.tracks)) {
+        tracks = content.tracks;
+        console.log('📀 Tracks from content.tracks:', tracks.length);
+      } else if (content._playlistItems && Array.isArray(content._playlistItems)) {
+        tracks = content._playlistItems;
+        console.log('📀 Tracks from content._playlistItems:', tracks.length);
+      } else if (content.playlist_items && Array.isArray(content.playlist_items)) {
+        tracks = content.playlist_items;
+        console.log('📀 Tracks from content.playlist_items:', tracks.length);
+      }
+      
+      // If tracks are objects that need transformation
+      if (tracks.length > 0 && tracks[0] && !tracks[0].title && tracks[0].Content) {
+        tracks = tracks.map(item => ({
+          id: item.content_id || item.Content?.id,
+          title: item.Content?.title || 'Untitled',
+          thumbnail_url: item.Content?.thumbnail_url,
+          duration: item.Content?.duration,
+          artist: item.Content?.user_profiles?.full_name || item.Content?.user_profiles?.username
+        }));
+      }
+    }
+    
+    // Case 3: Check global window objects
+    else if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+      tracks = window.currentPlaylistItems;
+      console.log('📀 Tracks from window.currentPlaylistItems:', tracks.length);
+    } else if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items) {
+      tracks = window.ContentCollectionsEngine.items;
+      console.log('📀 Tracks from ContentCollectionsEngine.items:', tracks.length);
+    } else if (window.currentPlaylist && window.currentPlaylist.items) {
+      tracks = window.currentPlaylist.items;
+      console.log('📀 Tracks from window.currentPlaylist.items:', tracks.length);
+    } else if (window.currentContent && window.currentContent._playlistItems) {
+      tracks = window.currentContent._playlistItems;
+      console.log('📀 Tracks from window.currentContent._playlistItems:', tracks.length);
+    }
+    
+    // Log warning if no tracks found
+    if (tracks.length === 0) {
+      console.warn('⚠️ No tracks available in any source', {
+        input: playlistIdOrContent,
+        hasPlaylistId: typeof playlistIdOrContent === 'string' || typeof playlistIdOrContent === 'number',
+        hasCurrentPlaylistItems: !!(window.currentPlaylistItems?.length),
+        hasContentCollectionsEngine: !!(window.ContentCollectionsEngine?.items?.length),
+        hasCurrentPlaylist: !!(window.currentPlaylist?.items?.length)
+      });
+    }
+    
+    return tracks;
+  };
+
+  /**
+   * Get playlist tracks with automatic source detection
+   * Convenience method for album/playlist display
+   */
+  PlaylistManager.prototype.getPlaylistTracks = async function(playlistId) {
+    return await this.getAlbumTracks(playlistId);
+  };
+
+  /**
+   * Cache playlist tracks
+   */
+  PlaylistManager.prototype._cachePlaylistTracks = function(playlistId, tracks) {
+    this._playlistTracksCache.set(String(playlistId), {
+      tracks: tracks,
+      timestamp: Date.now()
+    });
+    
+    // Auto-cleanup old cache entries
+    if (this._cacheTimeout) {
+      clearTimeout(this._cacheTimeout);
+    }
+    this._cacheTimeout = setTimeout(() => {
+      this._clearExpiredCache();
+    }, this._cacheDuration * 2);
+  };
+
+  /**
+   * Clear expired cache entries
+   */
+  PlaylistManager.prototype._clearExpiredCache = function() {
+    const now = Date.now();
+    for (const [key, value] of this._playlistTracksCache.entries()) {
+      if (now - value.timestamp > this._cacheDuration * 2) {
+        this._playlistTracksCache.delete(key);
+      }
+    }
+  };
+
+  /**
+   * Clear all playlist tracks cache
+   */
+  PlaylistManager.prototype.clearPlaylistTracksCache = function() {
+    this._playlistTracksCache.clear();
+    console.log('🗑️ Playlist tracks cache cleared');
   };
 
   // ============================================
@@ -590,17 +754,17 @@
    */
   PlaylistManager.prototype.toggleWatchLater = async function(contentId) {
     if (!this.userId || !contentId) {
-      return { added: false, removed: false };
+      return { added: false, removed: false, success: false };
     }
     
     const isPresent = await this.isInWatchLater(contentId);
     
     if (isPresent) {
       const removed = await this.removeFromWatchLater(contentId);
-      return { added: false, removed };
+      return { added: false, removed, success: removed, action: 'removed' };
     } else {
       const added = await this.addToWatchLater(contentId);
-      return { added, removed: false };
+      return { added, removed: false, success: added, action: 'added' };
     }
   };
 
@@ -623,6 +787,7 @@
   PlaylistManager.prototype.setUserId = function(userId) {
     this.userId = userId;
     this.clearWatchLaterCache();
+    this.clearPlaylistTracksCache();
     console.log('👤 PlaylistManager user ID updated:', userId || 'guest');
     
     if (this.onPlaylistUpdated) {
@@ -635,6 +800,16 @@
    */
   PlaylistManager.prototype.isAuthenticated = function() {
     return !!this.userId;
+  };
+
+  /**
+   * Get playlist items formatted as tracks for album display
+   */
+  PlaylistManager.prototype.getPlaylistAsTracks = async function(playlistId) {
+    const playlist = await this.getPlaylist(playlistId);
+    if (!playlist) return [];
+    
+    return playlist.tracks || [];
   };
 
   // ============================================
