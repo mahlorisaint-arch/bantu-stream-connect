@@ -18,6 +18,7 @@
 // 🔧 VIEWS FIX #3: Separate "session attempted" from "view successfully persisted"
 // 🔧 VIEWS FIX #4: Added retry mechanism for failed view recording
 // 🔧 VIEWS FIX #5: Added frontend optimistic update callback
+// 🔧 VIEW SYNC FIX #1: Dispatch global event when view is recorded
 
 (function() {
   'use strict';
@@ -250,6 +251,7 @@
    * 3. Retry mechanism for failed view recording
    * 4. Frontend optimistic update callback
    * 5. Proper DB confirmation before marking as persisted
+   * 6. Dispatch global event for cross-component sync
    */
   WatchSession.prototype.recordView = async function() {
     // 🔧 VIEWS FIX #1 & #2: Only skip if DATABASE already confirmed
@@ -291,6 +293,9 @@
         
         console.log('✅ View recorded successfully and persisted to database');
         
+        // 🔧 VIEW SYNC FIX #1: Dispatch global event for view count synchronization
+        this._dispatchViewRecordedEvent();
+        
         // 🔧 VIEWS FIX #4: Trigger frontend optimistic update callback
         if (this.onViewRecorded) {
           this.onViewRecorded({
@@ -323,6 +328,25 @@
       this.viewAttempted = false; // Allow retry
       this._handleError('recordView', error);
       return false;
+    }
+  };
+  
+  /**
+   * Dispatch global event for view count synchronization across components
+   */
+  WatchSession.prototype._dispatchViewRecordedEvent = function() {
+    try {
+      window.dispatchEvent(new CustomEvent('content-views-updated', {
+        detail: {
+          contentId: this.contentId,
+          sessionId: this.sessionId,
+          userId: this.userId,
+          timestamp: Date.now()
+        }
+      }));
+      console.log('📡 Dispatched content-views-updated event for cross-component sync');
+    } catch (error) {
+      console.warn('Failed to dispatch view recorded event:', error);
     }
   };
   
