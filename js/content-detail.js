@@ -61,6 +61,8 @@
 // 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
 // 🔧 VIEW SYNC FIX #1: Added global event for view count synchronization across components
 // 🔧 ALBUM ARCHITECTURE FIX: Removed duplicate album systems; only one active system now
+// 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST, not ContentCollectionsEngine
+// 🔧 VIEW RECORDING FIX: Reset viewPersisted flag when content changes
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -460,10 +462,13 @@ async function loadPlaylistMode(playlistId, playlistType) {
 }
 
 // ============================================
-// 🎯 PLAYLIST MODE: Set current content from playlist item
+// 🎯 PLAYLIST MODE: Set current content from playlist item (with view reset)
 // ============================================
 async function setCurrentContentFromPlaylistItem(item, index) {
     if (!item) return;
+
+    // 🔧 VIEW RECORDING FIX: Reset view recording state before switching content
+    resetViewRecordingState();
 
     currentContent = {
         id: item.id,
@@ -504,6 +509,41 @@ async function setCurrentContentFromPlaylistItem(item, index) {
     
     console.log('🎵 Set current content from playlist:', currentContent.title, 'Index:', index);
 }
+
+// ============================================
+// 🎯 PLAYLIST MODE: Play playlist item by index (with view reset)
+// ============================================
+async function playPlaylistItemByIndex(index) {
+    if (!window.currentPlaylist?.items?.[index]) return;
+
+    const item = window.currentPlaylist.items[index];
+
+    window.currentPlaylistIndex = index;
+    window.currentContent = item;
+
+    // Update active class in queue
+    document.querySelectorAll('.playlist-queue-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.playlist-queue-item[data-index="${index}"]`)?.classList.add('active');
+
+    await setCurrentContentFromPlaylistItem(item, index);
+    await loadContentIntoPlayer(item);
+
+    console.log('▶️ Playing playlist item:', item.title);
+}
+
+// Make function globally accessible for onclick handlers
+window.playPlaylistItemByIndex = playPlaylistItemByIndex;
+window.playPlaylistItem = async (contentId, index) => {
+    if (currentPlaylistItems && currentPlaylistItems[index] && currentPlaylistItems[index].id === contentId) {
+        await playPlaylistItemByIndex(index);
+    } else {
+        // Fallback: find item by ID
+        const foundIndex = currentPlaylistItems.findIndex(i => i.id === contentId);
+        if (foundIndex !== -1) {
+            await playPlaylistItemByIndex(foundIndex);
+        }
+    }
+};
 
 // ============================================
 // 🎯 PLAYLIST MODE: Render playlist hero section (FIX 5)
@@ -598,41 +638,6 @@ function setupPlaylistQueueEvents() {
         });
     });
 }
-
-// ============================================
-// 🎯 PLAYLIST MODE: Play playlist item by index (FIX 8)
-// ============================================
-async function playPlaylistItemByIndex(index) {
-    if (!window.currentPlaylist?.items?.[index]) return;
-
-    const item = window.currentPlaylist.items[index];
-
-    window.currentPlaylistIndex = index;
-    window.currentContent = item;
-
-    // Update active class in queue
-    document.querySelectorAll('.playlist-queue-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.playlist-queue-item[data-index="${index}"]`)?.classList.add('active');
-
-    await setCurrentContentFromPlaylistItem(item, index);
-    await loadContentIntoPlayer(item);
-
-    console.log('▶️ Playing playlist item:', item.title);
-}
-
-// Make function globally accessible for onclick handlers
-window.playPlaylistItemByIndex = playPlaylistItemByIndex;
-window.playPlaylistItem = async (contentId, index) => {
-    if (currentPlaylistItems && currentPlaylistItems[index] && currentPlaylistItems[index].id === contentId) {
-        await playPlaylistItemByIndex(index);
-    } else {
-        // Fallback: find item by ID
-        const foundIndex = currentPlaylistItems.findIndex(i => i.id === contentId);
-        if (foundIndex !== -1) {
-            await playPlaylistItemByIndex(foundIndex);
-        }
-    }
-};
 
 // ============================================
 // 🎯 Highlight active playlist item
@@ -1061,6 +1066,30 @@ if (!window.StreamingManager) {
     const script = document.createElement('script');
     script.src = 'js/streaming-manager.js';
     document.head.appendChild(script);
+}
+
+// ============================================
+// 🔧 VIEW RECORDING FIX: Reset viewPersisted flag when content changes
+// ============================================
+function resetViewRecordingState() {
+    if (window._watchSession) {
+        console.log('🔄 Resetting view recording state for new content');
+        window._watchSession.viewPersisted = false;
+        window._watchSession.viewAttempted = false;
+        window._watchSession.viewCounted = false;
+        window._watchSession.viewRetryCount = 0;
+        window._watchSession._isRecordingView = false;
+    }
+    // Also clear the session storage flag for this content
+    if (currentContent?.id) {
+        const sessionKey = `view_recorded_${currentContent.id}_`;
+        Object.keys(sessionStorage).forEach(key => {
+            if (key.startsWith(`view_recorded_${currentContent.id}`)) {
+                sessionStorage.removeItem(key);
+            }
+        });
+    }
+    console.log('✅ View recording state reset for new content');
 }
 
 // ============================================
@@ -2667,6 +2696,7 @@ function closeVideoPlayer() {
 // 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
 // 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
 // 🔧 ALBUM ARCHITECTURE FIX: Single source of truth for album rendering
+// 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST, not ContentCollectionsEngine
 // ============================================
 function setupAlbumToggle() {
     const albumToggleBtn = document.getElementById('albumToggleBtn');
@@ -2724,6 +2754,7 @@ function setupAlbumToggle() {
 // 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
 // 🔧 ALBUM FIX #3: Added comprehensive error logging
 // 🔧 ALBUM ARCHITECTURE FIX: Single source of truth for track data
+// 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST - ContentCollectionsEngine is secondary
 // ============================================
 function renderAlbumTracks() {
     const container = document.getElementById('albumTrackList');
@@ -2732,54 +2763,63 @@ function renderAlbumTracks() {
         return;
     }
     
-    // 🔧 ALBUM FIX #2 & ARCHITECTURE FIX: Single source of truth with proper fallbacks
+    // 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST (MOST IMPORTANT)
+    // The console shows playlist has 9 items loaded into currentPlaylistItems
     let tracks = [];
     
     // Log all possible track sources for debugging
     console.log('🔍 Album track source detection:', {
-        hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
-        collectionsItems: window.ContentCollectionsEngine?.items?.length,
         currentPlaylistItemsLength: currentPlaylistItems?.length,
-        hasCurrentPlaylist: !!currentPlaylist,
+        currentPlaylistItemsExists: !!currentPlaylistItems,
+        currentPlaylistExists: !!currentPlaylist,
         currentPlaylistItemsCount: currentPlaylist?.items?.length,
         hasWindowCurrentPlaylist: !!window.currentPlaylist,
         windowCurrentPlaylistItemsCount: window.currentPlaylist?.items?.length,
         isPlaylistMode: isPlaylistMode,
+        hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
+        collectionsItemsLength: window.ContentCollectionsEngine?.items?.length,
         currentContentHasPlaylistItems: !!(currentContent && currentContent._playlistItems)
     });
     
-    // Try multiple possible sources for tracks (single source priority)
-    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items && window.ContentCollectionsEngine.items.length) {
-        tracks = window.ContentCollectionsEngine.items;
-        console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
-    } else if (currentPlaylistItems && currentPlaylistItems.length) {
+    // 🔧 FIX: Check playlist mode sources FIRST (highest priority)
+    if (currentPlaylistItems && currentPlaylistItems.length) {
         tracks = currentPlaylistItems;
         console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
-    } else if (currentPlaylist && currentPlaylist.items && currentPlaylist.items.length) {
+    } 
+    else if (currentPlaylist && currentPlaylist.items && currentPlaylist.items.length) {
         tracks = currentPlaylist.items;
         console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
-    } else if (window.currentPlaylist && window.currentPlaylist.items && window.currentPlaylist.items.length) {
+    } 
+    else if (window.currentPlaylist && window.currentPlaylist.items && window.currentPlaylist.items.length) {
         tracks = window.currentPlaylist.items;
         console.log('📀 Tracks from window.currentPlaylist.items:', tracks.length);
-    } else if (currentContent && currentContent._playlistItems && currentContent._playlistItems.length) {
+    }
+    // THEN try other sources (lower priority)
+    else if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items && window.ContentCollectionsEngine.items.length) {
+        tracks = window.ContentCollectionsEngine.items;
+        console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
+    }
+    else if (currentContent && currentContent._playlistItems && currentContent._playlistItems.length) {
         tracks = currentContent._playlistItems;
         console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
+    }
+    else if (currentContent && currentContent.tracks && currentContent.tracks.length) {
+        tracks = currentContent.tracks;
+        console.log('📀 Tracks from currentContent.tracks:', tracks.length);
     }
     
     // 🔧 ALBUM FIX #3: Comprehensive error logging with actionable data
     if (!tracks || !tracks.length) {
-        console.warn('❌ No tracks available to render - Album tracklist empty', {
-            hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
-            collectionsItemsLength: window.ContentCollectionsEngine?.items?.length,
+        console.error('❌ No tracks available to render - Album tracklist empty', {
             currentPlaylistItemsLength: currentPlaylistItems?.length,
-            hasCurrentPlaylist: !!currentPlaylist,
+            currentPlaylistItemsArray: currentPlaylistItems ? 'exists' : 'null',
+            currentPlaylistItemsFirstItem: currentPlaylistItems?.[0]?.title,
+            currentPlaylistExists: !!currentPlaylist,
             currentPlaylistItemsCount: currentPlaylist?.items?.length,
-            hasWindowCurrentPlaylist: !!window.currentPlaylist,
-            windowCurrentPlaylistItemsCount: window.currentPlaylist?.items?.length,
             isPlaylistMode: isPlaylistMode,
-            hasCurrentContent: !!currentContent,
-            currentContentHasPlaylistItems: !!(currentContent && currentContent._playlistItems),
-            currentContentPlaylistItemsLength: currentContent?._playlistItems?.length
+            // Log the actual values to help debug
+            currentPlaylistItemsValue: currentPlaylistItems,
+            currentPlaylistValue: currentPlaylist
         });
         
         container.innerHTML = `
@@ -2791,7 +2831,7 @@ function renderAlbumTracks() {
         return;
     }
     
-    // Sort tracks by track_number if available
+    // Sort tracks by track_number if available from content_metadata
     const sortedTracks = [...tracks].sort((a, b) => {
         const aTrackNum = a.content_metadata?.track_number || a.track_number || 0;
         const bTrackNum = b.content_metadata?.track_number || b.track_number || 0;
@@ -2829,13 +2869,13 @@ function renderAlbumTracks() {
             const contentId = trackItem.dataset.contentId;
             console.log('🎵 Playing album track:', index, contentId);
             
-            // Try to use collection engine if available
-            if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.playItem) {
-                await window.ContentCollectionsEngine.playItem(index);
-            } 
-            // Fallback to playlist mode
-            else if (currentPlaylistItems && currentPlaylistItems[index]) {
+            // Use playlist mode playback (priority)
+            if (currentPlaylistItems && currentPlaylistItems[index]) {
                 await playPlaylistItemByIndex(index);
+            }
+            // Try to use collection engine if available
+            else if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.playItem) {
+                await window.ContentCollectionsEngine.playItem(index);
             }
             // Last resort: navigate to content detail
             else if (contentId && contentId !== currentContent?.id) {
@@ -2851,7 +2891,7 @@ function renderAlbumTracks() {
 }
 
 // ============================================
-// Setup event listeners (UPDATED with album toggle)
+// Setup event listeners (UPDATED with album toggle and view sync)
 // ============================================
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
@@ -3206,13 +3246,23 @@ NO DNA, JUST RSA
     setupInitialPlayButton();
     
     // 🔧 VIEW SYNC FIX #1: Add global listener for view count updates
+    setupViewSyncListener();
+    
+    console.log('✅ Event listeners setup complete');
+}
+
+// ============================================
+// 🔧 VIEW SYNC FIX: Setup view sync listener
+// ============================================
+function setupViewSyncListener() {
     window.addEventListener('content-views-updated', async (event) => {
         const { contentId, viewsCount } = event.detail;
         if (String(contentId) !== String(currentContent?.id)) return;
         
-        // Update currentContent
+        // Update currentContent with new view count
         if (currentContent && viewsCount !== undefined) {
             currentContent.views_count = viewsCount;
+            console.log('👁️ Frontend views synced via global event:', viewsCount);
         } else {
             // Fetch fresh view count if not provided
             const { data, error } = await window.supabaseClient
@@ -3221,15 +3271,13 @@ NO DNA, JUST RSA
                 .eq('content_id', contentId);
             if (!error && currentContent) {
                 currentContent.views_count = data?.length || 0;
+                console.log('👁️ Frontend views synced via fetch:', currentContent.views_count);
             }
         }
         
         // Update UI elements
         updateCountsUI(currentContent);
-        console.log('👁️ Frontend views synced via global event:', currentContent?.views_count);
     });
-    
-    console.log('✅ Event listeners setup complete');
 }
 
 // ====================================================
@@ -4321,6 +4369,7 @@ window.markContentAsViewed = markContentAsViewed;
 window.renderAlbumTracks = renderAlbumTracks; // Expose for debugging
 window.incrementFrontendViewCount = incrementFrontendViewCount;
 window.incrementContentViews = incrementContentViews;
+window.resetViewRecordingState = resetViewRecordingState; // Expose for debugging
 
 // 🔧 PHASE 1: Page unload handler - clean up watch session and validation timer
 window.addEventListener('beforeunload', function() {
@@ -4357,6 +4406,8 @@ console.log('  🔧 ALBUM FIX #2: Fixed track source detection with multiple pro
 console.log('  🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering');
 console.log('  🔧 VIEW SYNC FIX #1: Added global content-views-updated event for cross-component sync');
 console.log('  🔧 ALBUM ARCHITECTURE FIX: Single source of truth for album rendering');
+console.log('  🔧 CRITICAL ALBUM FIX: Check playlist items FIRST, not ContentCollectionsEngine');
+console.log('  🔧 VIEW RECORDING FIX: Reset viewPersisted flag when content changes');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
