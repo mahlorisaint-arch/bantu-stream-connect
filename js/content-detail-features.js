@@ -7,13 +7,12 @@ console.log('🎬 Content Detail Features Loading...');
 
 // ============================================
 // 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM - NOW HANDLED BY WATCH SESSION ONLY
-// 🔧 REMOVED: recordContentView() - moved to watch-session.js
-// 🔧 REMOVED: startViewValidationTimer() - moved to watch-session.js
-// 🔧 KEEP: Helper functions for UI only
+// 🔧 ALL view recording delegated to watch-session.js
+// 🔧 KEEP: Helper functions for UI only (view status display, not recording)
 // ============================================
 
 // ============================================
-// CLIENT-SIDE VIEW DEDUPLICATION (UI helpers only)
+// CLIENT-SIDE VIEW STATUS HELPERS (UI only - NO recording here)
 // ============================================
 function hasViewedContentRecently(contentId) {
     try {
@@ -59,23 +58,23 @@ function clearViewCache() {
 // ✅ ONLY counts validated views (counted_as_view = true)
 // ============================================
 async function refreshCountsFromSource() {
-    if (!currentContent) return;
+    if (!window.currentContent) return;
     try {
         const { count: newViews } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id)
+            .eq('content_id', window.currentContent.id)
             .eq('counted_as_view', true);  // ✅ ONLY count validated views
 
         const { count: newLikes } = await window.supabaseClient
             .from('content_likes')
             .select('*', { count: 'exact', head: true })
-            .eq('content_id', currentContent.id);
+            .eq('content_id', window.currentContent.id);
 
         // Update local content object
-        if (currentContent) {
-            currentContent.views_count = newViews || 0;
-            currentContent.likes_count = newLikes || 0;
+        if (window.currentContent) {
+            window.currentContent.views_count = newViews || 0;
+            window.currentContent.likes_count = newLikes || 0;
         }
 
         safeSetText('viewsCount', formatNumber(newViews) + ' views');
@@ -982,14 +981,14 @@ function updateQualityIndicator(quality) {
         indicator.classList.add('hd');
     }
 
-    if (streamingManager?.isDataSaverEnabled()) {
+    if (window.streamingManager?.isDataSaverEnabled()) {
         dataSaverBadge?.style.setProperty('display', 'block');
     } else {
         dataSaverBadge?.style.setProperty('display', 'none');
     }
 
     setTimeout(() => {
-        if (indicator && !streamingManager?.isDataSaverEnabled()) {
+        if (indicator && !window.streamingManager?.isDataSaverEnabled()) {
             indicator.style.display = 'none';
         }
     }, 5000);
@@ -1024,22 +1023,22 @@ function updateNetworkSpeedIndicator(speedMbps) {
 // LOAD RECOMMENDATION RAILS
 // ============================================
 async function loadRecommendationRails() {
-    if (!recommendationEngine) return;
+    if (!window.recommendationEngine) return;
 
     const railConfigs = [
         {
-            type: recommendationEngine.TYPES.BECAUSE_YOU_WATCHED,
+            type: window.recommendationEngine?.TYPES?.BECAUSE_YOU_WATCHED || 'because_you_watched',
             containerId: 'becauseYouWatchedRail',
             title: 'Because You Watched',
             options: { limit: 8 }
         },
         {
-            type: recommendationEngine.TYPES.MORE_FROM_CREATOR,
+            type: window.recommendationEngine?.TYPES?.MORE_FROM_CREATOR || 'more_from_creator',
             containerId: 'moreFromCreatorRail',
             title: 'More From This Creator',
             options: {
-                creatorId: currentContent?.user_id,
-                excludeContentId: currentContent?.id,
+                creatorId: window.currentContent?.user_id,
+                excludeContentId: window.currentContent?.id,
                 limit: 6
             }
         }
@@ -1049,15 +1048,17 @@ async function loadRecommendationRails() {
         showRailSkeleton(config.containerId, config.title);
     });
 
-    const results = await recommendationEngine.getMultipleRails(railConfigs);
-    results.forEach(({ type, results: items }) => {
-        const config = railConfigs.find(r => r.type === type);
-        if (config && items?.length > 0) {
-            renderRecommendationRail(config.containerId, config.title, items);
-        } else if (config) {
-            showRailEmpty(config.containerId, config.title);
-        }
-    });
+    if (window.recommendationEngine?.getMultipleRails) {
+        const results = await window.recommendationEngine.getMultipleRails(railConfigs);
+        results.forEach(({ type, results: items }) => {
+            const config = railConfigs.find(r => r.type === type);
+            if (config && items?.length > 0) {
+                renderRecommendationRail(config.containerId, config.title, items);
+            } else if (config) {
+                showRailEmpty(config.containerId, config.title);
+            }
+        });
+    }
 }
 
 function showRailSkeleton(containerId, title = 'Loading...') {
@@ -1068,7 +1069,7 @@ function showRailSkeleton(containerId, title = 'Loading...') {
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">${title}</h2>
+                <h2 class="section-title">${escapeHtml(title)}</h2>
             </div>
             <div class="content-grid" id="${containerId}-grid">
                 ${Array(6).fill().map(() => `
@@ -1097,14 +1098,14 @@ function showRailEmpty(containerId, title) {
             <div class="empty-icon">
                 <i class="fas fa-magic" style="font-size: 48px; color: var(--slate-grey); opacity: 0.5;"></i>
             </div>
-            <h3 style="color: var(--soft-white); margin: 15px 0 10px;">No ${title}</h3>
+            <h3 style="color: var(--soft-white); margin: 15px 0 10px;">No ${escapeHtml(title)}</h3>
             <p style="color: var(--slate-grey); font-size: 14px;">
                 ${title === 'Continue Watching' ? 'Start watching content to pick up where you left off' :
                     title === 'Because You Watched' ? 'Watch more content to get personalized recommendations' :
                         'Check back later for more content'}
             </p>
             ${title === 'Because You Watched' ? `
-                <button class="btn btn-secondary" onclick="document.getElementById('relatedGrid').scrollIntoView({behavior:'smooth'})" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('relatedGrid')?.scrollIntoView({behavior:'smooth'})" style="margin-top: 15px;">
                     Browse Related Content
                 </button>
             ` : ''}
@@ -1119,7 +1120,7 @@ function renderRecommendationRail(containerId, title, items) {
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">${title}</h2>
+                <h2 class="section-title">${escapeHtml(title)}</h2>
             </div>
             <div class="content-grid" id="${containerId}-grid"></div>
         `;
@@ -1137,8 +1138,8 @@ function renderRecommendationRail(containerId, title, items) {
         return `
             <a href="content-detail.html?id=${item.id}" class="content-card recommendation-card">
                 <div class="card-thumbnail">
-                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
-                        alt="${item.title}"
+                    <img src="${escapeHtml(item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop')}"
+                        alt="${escapeHtml(item.title)}"
                         loading="lazy"
                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                     ${progress ? `
@@ -1169,10 +1170,12 @@ function renderRecommendationRail(containerId, title, items) {
     section.style.display = 'block';
 }
 
-// PHASE 2: Update Watch Later button state
+// ============================================
+// WATCH LATER FUNCTIONALITY
+// ============================================
 async function updateWatchLaterButtonState() {
     const btn = document.getElementById('watchLaterBtn');
-    if (!btn || !currentContent?.id || !playlistManager) {
+    if (!btn || !window.currentContent?.id || !window.playlistManager) {
         if (!btn) {
             setTimeout(updateWatchLaterButtonState, 500);
         }
@@ -1180,7 +1183,7 @@ async function updateWatchLaterButtonState() {
     }
 
     try {
-        const isInList = await playlistManager.isInWatchLater(currentContent.id);
+        const isInList = await window.playlistManager.isInWatchLater(window.currentContent.id);
         if (isInList) {
             btn.classList.add('active');
             btn.innerHTML = '<i class="fas fa-check"></i><span>Saved</span>';
@@ -1201,11 +1204,11 @@ async function updateWatchLaterButtonState() {
 
 async function handleWatchLaterToggle() {
     const btn = document.getElementById('watchLaterBtn');
-    if (!currentContent?.id) {
+    if (!window.currentContent?.id) {
         showToast('No content selected', 'error');
         return;
     }
-    if (!currentUserId) {
+    if (!window.currentUserId) {
         showToast('Sign in to save to Watch Later', 'warning');
         const redirect = encodeURIComponent(window.location.href);
         window.location.href = `login.html?redirect=${redirect}`;
@@ -1213,12 +1216,12 @@ async function handleWatchLaterToggle() {
     }
 
     if (window.playlistModal) {
-        window.playlistModal.contentId = currentContent.id;
+        window.playlistModal.contentId = window.currentContent.id;
         window.playlistModal.open();
         return;
     }
 
-    if (!playlistManager) {
+    if (!window.playlistManager) {
         showToast('Playlist system loading...', 'info');
         return;
     }
@@ -1233,7 +1236,7 @@ async function handleWatchLaterToggle() {
     btn.disabled = true;
 
     try {
-        const result = await playlistManager.toggleWatchLater(currentContent.id);
+        const result = await window.playlistManager.toggleWatchLater(window.currentContent.id);
         if (result.success) {
             if (result.action === 'added') {
                 showToast('✅ Added to Watch Later', 'success');
@@ -1302,4 +1305,164 @@ function renderNotifications() { console.log('renderNotifications stub'); }
 function loadUserBadges() { console.log('loadUserBadges stub'); }
 function loadWatchPartyContent() { console.log('loadWatchPartyContent stub'); }
 
-console.log('✅ Content Detail Features loaded successfully - View recording now handled by WatchSession only');
+// ============================================
+// 🔧 ALBUM FIX: Setup album toggle with retry
+// ============================================
+function setupAlbumToggleWithRetry() {
+    const maxRetries = 10;
+    let retryCount = 0;
+    
+    const trySetup = () => {
+        const albumToggleBtn = document.getElementById('albumToggleBtn');
+        const albumTrackList = document.getElementById('albumTrackList');
+        
+        if (albumToggleBtn && albumTrackList) {
+            console.log('✅ Album toggle elements found, setting up...');
+            if (typeof window.setupAlbumToggle === 'function') {
+                window.setupAlbumToggle();
+            } else {
+                setupBasicAlbumToggle(albumToggleBtn, albumTrackList);
+            }
+        } else if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`🔄 Album toggle retry ${retryCount}/${maxRetries}...`);
+            setTimeout(trySetup, 300);
+        } else {
+            console.warn('⚠️ Album toggle elements not found after retries');
+        }
+    };
+    
+    requestAnimationFrame(() => {
+        setTimeout(trySetup, 100);
+    });
+}
+
+function setupBasicAlbumToggle(albumToggleBtn, albumTrackList) {
+    console.log('🔧 Setting up basic album toggle...');
+    
+    const getAlbumTracks = () => {
+        let tracks = [];
+        
+        // Try multiple possible sources
+        if (window.ContentCollectionsEngine?.items) {
+            tracks = window.ContentCollectionsEngine.items;
+            console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
+        } else if (window.currentPlaylistItems?.length) {
+            tracks = window.currentPlaylistItems;
+            console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
+        } else if (window.currentPlaylist?.items) {
+            tracks = window.currentPlaylist.items;
+            console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
+        } else if (window.currentContent?._playlistItems) {
+            tracks = window.currentContent._playlistItems;
+            console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
+        } else if (window.currentContent?.tracks) {
+            tracks = window.currentContent.tracks;
+            console.log('📀 Tracks from currentContent.tracks:', tracks.length);
+        }
+        
+        return tracks;
+    };
+    
+    const updateTracklist = () => {
+        const tracks = getAlbumTracks();
+        
+        if (!albumTrackList) return;
+        
+        if (!Array.isArray(tracks) || tracks.length === 0) {
+            console.warn('⚠️ No tracks available to render', {
+                hasContentCollectionsEngine: !!window.ContentCollectionsEngine?.items?.length,
+                hasCurrentPlaylistItems: !!(window.currentPlaylistItems?.length),
+                hasCurrentPlaylist: !!(window.currentPlaylist?.items?.length),
+                hasCurrentContentPlaylistItems: !!(window.currentContent?._playlistItems?.length)
+            });
+            
+            albumTrackList.innerHTML = `
+                <div class="empty-tracklist">
+                    No tracks available
+                </div>
+            `;
+            return;
+        }
+        
+        albumTrackList.innerHTML = tracks.map((track, index) => `
+            <div class="album-track-item" data-track-id="${track.id}" data-track-index="${index}">
+                <div class="track-number">${index + 1}</div>
+                <div class="track-info">
+                    <div class="track-title">${escapeHtml(track.title || 'Untitled')}</div>
+                    ${track.artist ? `<div class="track-artist">${escapeHtml(track.artist)}</div>` : ''}
+                </div>
+                <div class="track-duration">${track.duration || '--:--'}</div>
+                <button class="play-track-btn" data-track-id="${track.id}">
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+        `).join('');
+        
+        console.log(`✅ Rendered ${tracks.length} tracks in album tracklist`);
+        
+        document.querySelectorAll('.play-track-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const trackId = btn.dataset.trackId;
+                if (trackId && typeof window.playTrackById === 'function') {
+                    window.playTrackById(trackId);
+                } else if (trackId) {
+                    console.log('🎵 Play track:', trackId);
+                }
+            });
+        });
+    };
+    
+    updateTracklist();
+    
+    let isOpen = false;
+    albumToggleBtn.addEventListener('click', () => {
+        isOpen = !isOpen;
+        albumTrackList.style.display = isOpen ? 'block' : 'none';
+        if (isOpen) {
+            updateTracklist();
+        }
+    });
+    
+    console.log('✅ Basic album toggle setup complete');
+}
+
+// ============================================
+// Initialize all features
+// ============================================
+function initContentDetailFeatures() {
+    console.log('🎬 Initializing Content Detail Features...');
+    
+    // Initialize UI Scale Controller
+    window.uiScaleController = new UIScaleController();
+    window.uiScaleController.init();
+    
+    // Setup sidebar
+    setupCompleteSidebar();
+    setupSidebarNavigation();
+    
+    // Setup navigation buttons
+    setupNavigationButtons();
+    setupNavButtonScrollAnimation();
+    
+    // Setup theme
+    initThemeSelector();
+    
+    // Setup watch later button
+    setupWatchLaterButton();
+    
+    // Setup album toggle with retry
+    setupAlbumToggleWithRetry();
+    
+    console.log('✅ Content Detail Features initialized');
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initContentDetailFeatures);
+} else {
+    initContentDetailFeatures();
+}
+
+console.log('✅ Content Detail Features loaded successfully - View recording delegated to watch-session.js');
