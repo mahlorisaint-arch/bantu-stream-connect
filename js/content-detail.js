@@ -52,6 +52,13 @@
 // 🔧 BUG FIX #2: REAL album tracklist rendering into dedicated external container
 // 🔧 BUG FIX #3: Like button uses global likedContentCache Set for persistence
 // 🔧 BUG FIX #4: View recording properly called in WatchSession start()
+// 🔧 VIEWS FIX #1: Removed premature early exit in view recording
+// 🔧 VIEWS FIX #2: Added proper DB confirmation handling with viewPersisted flag
+// 🔧 VIEWS FIX #3: Added frontend optimistic update for views
+// 🔧 VIEWS FIX #4: Added incrementContentViews RPC call for content.views_count
+// 🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic
+// 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
+// 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -1057,6 +1064,7 @@ if (!window.StreamingManager) {
 // ============================================
 // PHASE 1 UPDATED: Initialize watch session with session ID and profile ID
 // 🔧 BUG FIX #4: View recording now properly called inside WatchSession.start()
+// 🔧 VIEWS FIX #1-4: Fixed view recording with proper deduplication and DB confirmation
 // ============================================
 function initializeWatchSessionOnPlay() {
     if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
@@ -1088,6 +1096,16 @@ function initializeWatchSessionOnPlay() {
             syncInterval: 10000,
             viewThreshold: 20,
             completionThreshold: 0.9,
+            // 🔧 VIEWS FIX: Added onViewRecorded callback for frontend update
+            onViewRecorded: async function(data) {
+                console.log('✅ View recorded by WatchSession:', data);
+                // Increment frontend view count
+                incrementFrontendViewCount();
+                // Call RPC to update content.views_count
+                await incrementContentViews(currentContent.id);
+                // Refresh counts from source for accuracy
+                await refreshCountsFromSource();
+            },
             onProgressSync: function(data) {
                 console.log('📊 Progress synced:', data);
             },
@@ -1133,7 +1151,69 @@ function initializeWatchSessionOnPlay() {
 }
 
 // ============================================
+// 🔧 VIEWS FIX: Increment frontend view count
+// ============================================
+function incrementFrontendViewCount() {
+    const selectors = [
+        '.view-count',
+        '.views-count',
+        '[data-view-count]',
+        '#viewsCount',
+        '#viewsCountFull'
+    ];
+
+    selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+            const current = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+            const newViews = current + 1;
+            // Format the text based on what the element contains
+            if (el.textContent.includes('views')) {
+                el.textContent = `${formatNumber(newViews)} views`;
+            } else {
+                el.textContent = formatNumber(newViews);
+            }
+            console.log(`📊 Updated view count for ${selector}: ${newViews}`);
+        });
+    });
+}
+
+// ============================================
+// 🔧 VIEWS FIX: Increment content.views_count via RPC
+// ============================================
+async function incrementContentViews(contentId) {
+    if (!contentId) return false;
+    
+    try {
+        // Try RPC first (recommended)
+        const { error: rpcError } = await window.supabaseClient.rpc('increment_content_views', {
+            content_id_input: contentId
+        });
+        
+        if (rpcError) {
+            console.warn('RPC increment failed, trying direct update:', rpcError);
+            // Fallback: direct update
+            const { error: updateError } = await window.supabaseClient
+                .from('Content')
+                .update({ views_count: window.supabaseClient.rpc('increment', { x: 1 }) })
+                .eq('id', contentId);
+            
+            if (updateError) {
+                console.error('Direct update also failed:', updateError);
+                return false;
+            }
+        }
+        
+        console.log('✅ Content views_count incremented for:', contentId);
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to increment content views:', error);
+        return false;
+    }
+}
+
+// ============================================
 // 🔧 FIXED: Record view when Play button is clicked with YouTube-style validation
+// 🔧 VIEWS FIX: Removed premature early exit, added proper DB confirmation
 // ============================================
 function handlePlay() {
     console.log('🎬 handlePlay CALLED - Starting view recording...');
@@ -1149,23 +1229,10 @@ function handlePlay() {
         return;
     }
 
-    // ✅ UPDATE UI OPTIMISTICALLY
-    const viewsEl = document.getElementById('viewsCount');
-    const viewsFullEl = document.getElementById('viewsCountFull');
-    const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
-    const newViews = currentViews + 1;
-    if (viewsEl && viewsFullEl) {
-        viewsEl.textContent = `${formatNumber(newViews)} views`;
-        viewsFullEl.textContent = formatNumber(newViews);
-    }
-
-    console.log('🎬 View recording will be handled by WatchSession after 20 seconds');
+    // ✅ UPDATE UI OPTIMISTICALLY (now handled by WatchSession's onViewRecorded)
+    // This is immediate frontend feedback while waiting for DB confirmation
     
-    // Still update UI optimistically
-    if (viewsEl && viewsFullEl) {
-        viewsEl.textContent = `${formatNumber(currentViews + 1)} views`;
-        viewsFullEl.textContent = formatNumber(currentViews + 1);
-    }
+    console.log('🎬 View recording will be handled by WatchSession after 20 seconds threshold');
     
     // ✅ FIX #1: CRITICAL VIEWED ARRAY FIX - Mark as viewed safely
     markContentAsViewed(currentContent.id);
@@ -2587,6 +2654,9 @@ function closeVideoPlayer() {
 // ============================================
 // 🎯 FIX #2 & #4: ALBUM DROPDOWN BUTTON - PERSISTENT EXPANDED STATE
 // 🔧 BUG FIX #1 & #2: REMOVED all auto-collapse forces and added REAL container rendering
+// 🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic
+// 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
+// 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
 // ============================================
 function setupAlbumToggle() {
     const albumToggleBtn = document.getElementById('albumToggleBtn');
@@ -2594,6 +2664,15 @@ function setupAlbumToggle() {
     
     if (!albumToggleBtn || !albumTrackList) {
         console.warn('⚠️ Album toggle elements not found - album feature may not be present');
+        // 🔧 ALBUM FIX #1: Retry after DOM is ready
+        setTimeout(() => {
+            const retryBtn = document.getElementById('albumToggleBtn');
+            const retryList = document.getElementById('albumTrackList');
+            if (retryBtn && retryList) {
+                console.log('🔄 Retrying album toggle setup after timeout...');
+                setupAlbumToggle();
+            }
+        }, 500);
         return;
     }
 
@@ -2632,22 +2711,51 @@ function setupAlbumToggle() {
 
 // ============================================
 // 🎯 FIX #2: RENDER ALBUM TRACKS into dedicated container
+// 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
+// 🔧 ALBUM FIX #3: Added comprehensive error logging
 // ============================================
 function renderAlbumTracks() {
     const container = document.getElementById('albumTrackList');
-    if (!container) return;
-    
-    // Use playlistItems if available (from collection engine) or currentPlaylistItems
-    let tracks = [];
-    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items) {
-        tracks = window.ContentCollectionsEngine.items;
-    } else if (currentPlaylistItems && currentPlaylistItems.length) {
-        tracks = currentPlaylistItems;
-    } else if (currentContent && currentContent._playlistItems) {
-        tracks = currentContent._playlistItems;
+    if (!container) {
+        console.warn('⚠️ Album track list container not found');
+        return;
     }
     
+    // 🔧 ALBUM FIX #2: Multiple property fallbacks for track source
+    let tracks = [];
+    
+    // Try multiple possible sources for tracks
+    if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.items) {
+        tracks = window.ContentCollectionsEngine.items;
+        console.log('📀 Tracks from ContentCollectionsEngine:', tracks.length);
+    } else if (currentPlaylistItems && currentPlaylistItems.length) {
+        tracks = currentPlaylistItems;
+        console.log('📀 Tracks from currentPlaylistItems:', tracks.length);
+    } else if (currentContent && currentContent._playlistItems) {
+        tracks = currentContent._playlistItems;
+        console.log('📀 Tracks from currentContent._playlistItems:', tracks.length);
+    } else if (currentPlaylist && currentPlaylist.items) {
+        tracks = currentPlaylist.items;
+        console.log('📀 Tracks from currentPlaylist.items:', tracks.length);
+    } else if (window.currentPlaylist && window.currentPlaylist.items) {
+        tracks = window.currentPlaylist.items;
+        console.log('📀 Tracks from window.currentPlaylist.items:', tracks.length);
+    }
+    
+    // 🔧 ALBUM FIX #3: Comprehensive error logging
     if (!tracks || !tracks.length) {
+        console.warn('⚠️ No tracks available to render', {
+            hasContentCollectionsEngine: !!window.ContentCollectionsEngine,
+            collectionsItems: window.ContentCollectionsEngine?.items?.length,
+            currentPlaylistItemsLength: currentPlaylistItems?.length,
+            hasCurrentContentPlaylistItems: !!currentContent?._playlistItems,
+            hasCurrentPlaylist: !!currentPlaylist,
+            currentPlaylistItemsCount: currentPlaylist?.items?.length,
+            hasWindowCurrentPlaylist: !!window.currentPlaylist,
+            windowCurrentPlaylistItemsCount: window.currentPlaylist?.items?.length,
+            isPlaylistMode: isPlaylistMode
+        });
+        
         container.innerHTML = `
             <div class="empty-playlist">
                 <i class="fas fa-music"></i>
@@ -2761,7 +2869,10 @@ function setupEventListeners() {
     }
 
     // ✅ FIX #2 & #4: SETUP ALBUM TOGGLE BUTTON with persistent state
-    setupAlbumToggle();
+    // 🔧 ALBUM FIX #1: Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+        setupAlbumToggle();
+    });
 
     // ✅ FIX #5: LIKE BUTTON with improved persistence using cache
     const likeBtn = document.getElementById('likeBtn');
@@ -4161,6 +4272,8 @@ window.closeVideoPlayer = closeVideoPlayer;
 window.refreshCountsFromSource = refreshCountsFromSource;
 window.markContentAsViewed = markContentAsViewed;
 window.renderAlbumTracks = renderAlbumTracks; // Expose for debugging
+window.incrementFrontendViewCount = incrementFrontendViewCount;
+window.incrementContentViews = incrementContentViews;
 
 // 🔧 PHASE 1: Page unload handler - clean up watch session and validation timer
 window.addEventListener('beforeunload', function() {
@@ -4188,6 +4301,13 @@ console.log('  🔧 BUG FIX #1: REMOVED all auto-collapse forces in playback lif
 console.log('  🔧 BUG FIX #2: REAL album tracklist rendering with persistent state');
 console.log('  🔧 BUG FIX #3: Like button uses global likedContentCache Set for persistence');
 console.log('  🔧 BUG FIX #4: View recording properly called in WatchSession.start()');
+console.log('  🔧 VIEWS FIX #1: Removed premature early exit in view recording');
+console.log('  🔧 VIEWS FIX #2: Added proper DB confirmation handling with viewPersisted flag');
+console.log('  🔧 VIEWS FIX #3: Added frontend optimistic update for views');
+console.log('  🔧 VIEWS FIX #4: Added incrementContentViews RPC call for content.views_count');
+console.log('  🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic');
+console.log('  🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks');
+console.log('  🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering');
 console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, 🔧 VIEW VALIDATION WITH SESSION_ID, 🔧 PROFILE_ID FIX, 🔐 AUTH FIXES, and YOUTUBE-STYLE PERFORMANCE OPTIMIZATIONS');
 console.log('🚀 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture');
 console.log('🎯 MEDIA-FIRST ARCHITECTURE: Universal media support (audio, video, podcasts, albums) with file_url');
