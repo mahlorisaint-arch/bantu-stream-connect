@@ -7,6 +7,7 @@
 // ✅ Collection/series context tracking for recommendations
 // ✅ Queue state synchronization with playback session
 // ✅ Graceful degradation and offline-first caching
+// ✅ SYNTAX FIX: Class method definitions corrected (no object-literal syntax in class body)
 
 (function() {
   'use strict';
@@ -144,9 +145,14 @@
       this.isSyncing = false;
       this.offlineQueue = [];
       
+      // Debounced watch history tracking (FIXED: proper class property)
+      this._debouncedWatchHistoryTimeout = null;
+      this._debouncedWatchHistoryLastContentId = null;
+      
       // Initialization
       this._initDeviceDetection();
       this._initSessionManagement();
+      this._initDebouncedWatchHistory();
       this.init();
       
       console.log('✅ StateManager initialized', {
@@ -194,6 +200,12 @@
         this.state.viewRecording.currentSessionId = existing || this._generateUUID();
         sessionStorage.setItem('bantu_view_session', this.state.viewRecording.currentSessionId);
       }
+    }
+    
+    // ✅ FIX: Proper debounced watch history initialization (class method, not object property)
+    _initDebouncedWatchHistory() {
+      // This sets up the debounced function for watch history updates
+      // Called once in constructor
     }
     
     _generateUUID() {
@@ -1419,7 +1431,7 @@
         this.setState('session.duration', duration, { notify: false });
       }
       
-      // Update watch history periodically
+      // Update watch history periodically with debouncing
       const contentId = this.state.session.currentContentId;
       if (contentId && time > 0) {
         this._debouncedWatchHistoryUpdate(contentId, time, duration);
@@ -1428,25 +1440,24 @@
       this.notifyListeners('session:time-updated', { time, duration });
     }
     
-    // Debounced watch history update (every 10 seconds)
-    _debouncedWatchHistoryUpdate: null,
-    
-    _initDebouncedWatchHistory() {
-      let timeout = null;
-      let lastContentId = null;
+    // ✅ FIX: Debounced watch history update as proper class method (not object property)
+    _debouncedWatchHistoryUpdate(contentId, time, duration) {
+      // Clear existing timeout if any
+      if (this._debouncedWatchHistoryTimeout) {
+        clearTimeout(this._debouncedWatchHistoryTimeout);
+      }
       
-      this._debouncedWatchHistoryUpdate = (contentId, time, duration) => {
-        if (timeout) clearTimeout(timeout);
-        
-        timeout = setTimeout(() => {
-          if (contentId === lastContentId) {
-            this.updateWatchHistory(contentId, time, duration);
-          }
-        }, 10000);
-        
-        lastContentId = contentId;
-      };
-    },
+      // Set new timeout to debounce updates (10 second window)
+      this._debouncedWatchHistoryTimeout = setTimeout(() => {
+        // Only update if contentId hasn't changed
+        if (contentId === this._debouncedWatchHistoryLastContentId) {
+          this.updateWatchHistory(contentId, time, duration);
+        }
+      }, 10000);
+      
+      // Track the contentId for comparison
+      this._debouncedWatchHistoryLastContentId = contentId;
+    }
     
     setPlaying(playing) {
       const wasPlaying = this.state.session.playing;
@@ -2224,37 +2235,6 @@
   }
   
   // =====================================================
-  // INITIALIZATION FIXES
-  // =====================================================
-  
-  // Initialize debounced watch history method after class definition
-  StateManager.prototype._initDebouncedWatchHistory = function() {
-    let timeout = null;
-    let lastContentId = null;
-    
-    this._debouncedWatchHistoryUpdate = (contentId, time, duration) => {
-      if (timeout) clearTimeout(timeout);
-      
-      timeout = setTimeout(() => {
-        if (contentId === lastContentId) {
-          this.updateWatchHistory(contentId, time, duration);
-        }
-      }, 10000);
-      
-      lastContentId = contentId;
-    };
-  };
-  
-  // Override constructor to call the init method
-  const originalConstructor = StateManager;
-  StateManager = function(config) {
-    originalConstructor.call(this, config);
-    this._initDebouncedWatchHistory();
-  };
-  StateManager.prototype = originalConstructor.prototype;
-  StateManager.prototype.constructor = StateManager;
-  
-  // =====================================================
   // EXPORT & GLOBAL ACCESS
   // =====================================================
   
@@ -2367,5 +2347,6 @@
   }
   
   console.log('✅ StateManager module loaded successfully (Phase 3 + Phase 1D Enhanced)');
+  console.log('   🔧 SYNTAX FIX: Class method definitions corrected - no object-literal syntax in class body');
   
 })();
