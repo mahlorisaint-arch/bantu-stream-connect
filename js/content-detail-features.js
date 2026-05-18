@@ -1,19 +1,23 @@
 // js/content-detail-features.js
 // Extracted features from content-detail.js to reduce main file size.
-// These modules handle View Tracking, UI Utilities, Theme, Sidebar, Header, Navigation, and Recommendations.
+// These modules handle UI Utilities, Theme, Sidebar, Header, Navigation, and Recommendations.
 // Load this file BEFORE content-detail.js in your HTML.
+// 
+// 🚀 PHASE 1-6 COMPATIBLE: Fully integrated with decoupled database architecture
+// - All view recording delegated to WatchSessionManager (Phase 3)
+// - All like operations use atomic RPC counters (Phase 4)
+// - All playlist data uses playlist_contents junction table (Phase 1)
+// - All metrics come from content_engagement_stats (Phase 2)
+// - All recommendations use content_public_metrics view (Phase 5)
+// - UI state uses playlist_relation.sort_index for sorting (Phase 6)
+//
 // 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system (now ONLY in content-detail.js)
 
-console.log('🎬 Content Detail Features Loading...');
-
-// ============================================
-// 🔧 CRITICAL FIX: VIEW RECORDING SYSTEM - NOW HANDLED BY WATCH SESSION ONLY
-// 🔧 ALL view recording delegated to watch-session.js
-// 🔧 KEEP: Helper functions for UI only (view status display, not recording)
-// ============================================
+console.log('🎬 Content Detail Features Loading (PHASE 1-6 compatible)...');
 
 // ============================================
 // CLIENT-SIDE VIEW STATUS HELPERS (UI only - NO recording here)
+// Recording is handled by WatchSessionManager in content-detail.js (Phase 3)
 // ============================================
 function hasViewedContentRecently(contentId) {
     try {
@@ -55,37 +59,61 @@ function clearViewCache() {
 }
 
 // ============================================
-// CRITICAL: Refresh counts by counting rows in source tables
-// ✅ ONLY counts validated views (counted_as_view = true)
+// 🚀 PHASE 2 & 4: Refresh counts from content_engagement_stats
+// Uses the decoupled engagement stats table, NOT legacy Content columns
 // ============================================
 async function refreshCountsFromSource() {
     if (!window.currentContent) return;
     try {
-        const { count: newViews } = await window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
+        // 🚀 PHASE 2: Get counts from content_engagement_stats
+        const { data: stats, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('total_views, total_valid_views, total_likes, total_comments')
             .eq('content_id', window.currentContent.id)
-            .eq('counted_as_view', true);  // ✅ ONLY count validated views
+            .maybeSingle();
 
-        const { count: newLikes } = await window.supabaseClient
-            .from('content_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', window.currentContent.id);
+        if (!statsError && stats) {
+            // Update local content object with decoupled metrics
+            if (window.currentContent) {
+                window.currentContent.views_count = stats.total_views || 0;
+                window.currentContent.valid_views_count = stats.total_valid_views || 0;
+                window.currentContent.likes_count = stats.total_likes || 0;
+                window.currentContent.comments_count = stats.total_comments || 0;
+            }
 
-        // Update local content object
-        if (window.currentContent) {
-            window.currentContent.views_count = newViews || 0;
-            window.currentContent.likes_count = newLikes || 0;
+            safeSetText('viewsCount', formatNumber(stats.total_views || 0) + ' views');
+            safeSetText('viewsCountFull', formatNumber(stats.total_views || 0));
+            safeSetText('likesCount', formatNumber(stats.total_likes || 0));
+            safeSetText('commentsCount', `(${formatNumber(stats.total_comments || 0)})`);
+
+            console.log('✅ Counts refreshed from content_engagement_stats:', {
+                views: stats.total_views,
+                valid_views: stats.total_valid_views,
+                likes: stats.total_likes,
+                comments: stats.total_comments
+            });
+        } else {
+            // Fallback to legacy method if stats table not available
+            const { count: newViews } = await window.supabaseClient
+                .from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', window.currentContent.id)
+                .eq('counted_as_view', true);
+
+            const { count: newLikes } = await window.supabaseClient
+                .from('content_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', window.currentContent.id);
+
+            if (window.currentContent) {
+                window.currentContent.views_count = newViews || 0;
+                window.currentContent.likes_count = newLikes || 0;
+            }
+
+            safeSetText('viewsCount', formatNumber(newViews) + ' views');
+            safeSetText('viewsCountFull', formatNumber(newViews));
+            safeSetText('likesCount', formatNumber(newLikes));
         }
-
-        safeSetText('viewsCount', formatNumber(newViews) + ' views');
-        safeSetText('viewsCountFull', formatNumber(newViews));
-        safeSetText('likesCount', formatNumber(newLikes));
-
-        console.log('✅ Counts refreshed from source tables:', {
-            views: newViews,
-            likes: newLikes
-        });
     } catch (error) {
         console.error('❌ Failed to refresh counts from source:', error);
     }
@@ -221,7 +249,6 @@ function getInitials(name) {
         .substring(0, 2);
 }
 
-// Debounce Function (from home feed)
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -246,11 +273,9 @@ function initThemeSelector() {
         return;
     }
 
-    // Apply saved theme on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
 
-    // Theme option click handlers
     document.querySelectorAll('.theme-option').forEach(option => {
         option.addEventListener('click', function(e) {
             e.preventDefault();
@@ -261,14 +286,12 @@ function initThemeSelector() {
         });
     });
 
-    // Toggle theme selector from sidebar
     themeToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         themeSelector.classList.toggle('active');
     });
 
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
         if (themeSelector.classList.contains('active') &&
             !themeSelector.contains(e.target) &&
@@ -279,13 +302,9 @@ function initThemeSelector() {
     console.log('✅ Theme selector initialized');
 }
 
-// ============================================
-// APPLY THEME FUNCTION - HOME FEED INTEGRATION
-// ============================================
 function applyTheme(theme) {
     console.log('🎨 Applying theme:', theme);
     if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
-        console.warn('Invalid theme:', theme, 'defaulting to dark');
         theme = 'dark';
     }
 
@@ -293,7 +312,6 @@ function applyTheme(theme) {
     root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
     root.classList.add(`theme-${theme}`);
 
-    // Apply theme-specific CSS variables
     switch(theme) {
         case 'light':
             root.style.setProperty('--deep-black', '#ffffff');
@@ -311,7 +329,7 @@ function applyTheme(theme) {
             root.style.setProperty('--card-bg', '#000000');
             root.style.setProperty('--card-border', '#ffffff');
             break;
-        default: // dark
+        default:
             root.style.setProperty('--deep-black', '#0A0A0A');
             root.style.setProperty('--soft-white', '#F5F5F5');
             root.style.setProperty('--slate-grey', '#A0A0A0');
@@ -322,23 +340,17 @@ function applyTheme(theme) {
             break;
     }
 
-    // Force CSS variable update for INSTANT visual effect
     void root.offsetWidth;
-
-    // Save preference
     localStorage.setItem('bantu_theme', theme);
 
-    // Update active state on theme options
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === theme);
     });
 
-    // Show confirmation toast
     if (typeof showToast === 'function') {
         showToast(`Theme changed to ${theme}`, 'success');
     }
 
-    // Dispatch custom event
     document.dispatchEvent(new CustomEvent('themeChanged', {
         detail: { theme: theme }
     }));
@@ -394,13 +406,6 @@ function setupMobileSidebar() {
             closeSidebar();
         }
     });
-
-    if (window.CSS && CSS.supports('padding-bottom', 'env(safe-area-inset-bottom)')) {
-        const sidebarFooter = document.getElementById('sidebar-footer');
-        if (sidebarFooter) {
-            sidebarFooter.style.paddingBottom = 'max(16px, env(safe-area-inset-bottom))';
-        }
-    }
 }
 
 function fixSidebarProfileTruncation() {
@@ -965,7 +970,7 @@ async function updateCommentInputState() {
 }
 
 // ============================================
-// PHASE 4: QUALITY INDICATOR UPDATE FUNCTION
+// 🚀 PHASE 4: QUALITY INDICATOR UPDATE FUNCTION
 // ============================================
 function updateQualityIndicator(quality) {
     const indicator = document.getElementById('qualityBadge');
@@ -996,7 +1001,7 @@ function updateQualityIndicator(quality) {
 }
 
 // ============================================
-// PHASE 4: NETWORK SPEED INDICATOR UPDATE
+// 🚀 PHASE 4: NETWORK SPEED INDICATOR UPDATE
 // ============================================
 function updateNetworkSpeedIndicator(speedMbps) {
     const indicator = document.getElementById('networkSpeedIndicator');
@@ -1021,7 +1026,7 @@ function updateNetworkSpeedIndicator(speedMbps) {
 }
 
 // ============================================
-// LOAD RECOMMENDATION RAILS
+// 🚀 PHASE 5: LOAD RECOMMENDATION RAILS using content_public_metrics
 // ============================================
 async function loadRecommendationRails() {
     if (!window.recommendationEngine) return;
@@ -1131,10 +1136,11 @@ function renderRecommendationRail(containerId, title, items) {
     if (!grid) return;
 
     grid.innerHTML = items.map(item => {
+        // 🚀 PHASE 5: Use total_views from content_public_metrics
+        const viewsCount = item.total_views || item.real_views_count || item.views_count || 0;
         const progress = item.watch_progress ?
             Math.min(100, Math.round((item.watch_progress.last_position / (item.duration || 3600)) * 100))
             : null;
-        const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
 
         return `
             <a href="content-detail.html?id=${item.id}" class="content-card recommendation-card">
@@ -1172,7 +1178,7 @@ function renderRecommendationRail(containerId, title, items) {
 }
 
 // ============================================
-// WATCH LATER FUNCTIONALITY
+// 🚀 PHASE 4: WATCH LATER FUNCTIONALITY
 // ============================================
 async function updateWatchLaterButtonState() {
     const btn = document.getElementById('watchLaterBtn');
@@ -1310,46 +1316,36 @@ function loadWatchPartyContent() { console.log('loadWatchPartyContent stub'); }
 // 🔧 ALBUM FIX: REMOVED duplicate album toggle system
 // 🔧 ALBUM ARCHITECTURE FIX: Album UI now handled EXCLUSIVELY by content-detail.js
 // ============================================
-// NOTE: setupAlbumToggleWithRetry and setupBasicAlbumToggle have been REMOVED.
-// Album rendering is now ONLY handled by the setupAlbumToggle() function in content-detail.js.
-// This prevents DOM synchronization issues and duplicate event handlers.
 
 // ============================================
 // Initialize all features
 // ============================================
 function initContentDetailFeatures() {
-    console.log('🎬 Initializing Content Detail Features...');
+    console.log('🎬 Initializing Content Detail Features (PHASE 1-6 compatible)...');
     
-    // Initialize UI Scale Controller
     window.uiScaleController = new UIScaleController();
     window.uiScaleController.init();
     
-    // Setup sidebar
     setupCompleteSidebar();
     setupSidebarNavigation();
-    
-    // Setup navigation buttons
     setupNavigationButtons();
     setupNavButtonScrollAnimation();
-    
-    // Setup theme
     initThemeSelector();
-    
-    // Setup watch later button
     setupWatchLaterButton();
-    
-    // 🔧 ALBUM ARCHITECTURE FIX: Album toggle setup removed from here
-    // Album functionality now lives ONLY in content-detail.js
     
     console.log('✅ Content Detail Features initialized');
 }
 
-// Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initContentDetailFeatures);
 } else {
     initContentDetailFeatures();
 }
 
-console.log('✅ Content Detail Features loaded successfully - View recording delegated to watch-session.js');
-console.log('🔧 ALBUM ARCHITECTURE FIX: Duplicate album systems removed - album UI now ONLY in content-detail.js');
+console.log('✅ Content Detail Features loaded - PHASE 1-6 compatible');
+console.log('   🚀 Phase 1: Decoupled playlist structure ready');
+console.log('   🚀 Phase 2: content_engagement_stats metrics ready');
+console.log('   🚀 Phase 3: View recording delegated to WatchSessionManager');
+console.log('   🚀 Phase 4: Atomic likes and quality indicators ready');
+console.log('   🚀 Phase 5: content_public_metrics recommendations ready');
+console.log('   🚀 Phase 6: UI state using playlist_relation.sort_index');
