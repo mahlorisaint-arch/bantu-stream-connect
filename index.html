@@ -215,6 +215,69 @@
             100% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
         }
         
+        /* MAINTENANCE BANNER STYLES - added for critical system message */
+        .maintenance-banner {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.15));
+            border-left: 4px solid var(--warning-color);
+            border-radius: 16px;
+            padding: 18px 24px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: all 0.2s ease;
+        }
+        .maintenance-banner-icon {
+            font-size: 28px;
+            color: var(--warning-color);
+            flex-shrink: 0;
+        }
+        .maintenance-banner-content {
+            flex: 1;
+        }
+        .maintenance-banner-title {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--soft-white);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .maintenance-banner-message {
+            font-size: 14px;
+            color: var(--slate-grey);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .maintenance-banner-status {
+            font-size: 12px;
+            color: var(--info-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .maintenance-banner-status i {
+            font-size: 10px;
+        }
+        .maintenance-dismiss {
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: var(--slate-grey);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+        .maintenance-dismiss:hover {
+            background: rgba(255,255,255,0.15);
+            color: var(--soft-white);
+        }
+        
         /* Main content - VISIBLE IMMEDIATELY for perceived speed */
         #app {
             opacity: 0;
@@ -462,6 +525,34 @@
         <div class="welcome-banner" id="welcome-banner">
             <h2 id="welcome-message">Welcome back, <span id="user-name">Guest</span>! 👋</h2>
             <p id="welcome-subtitle">Discover new content tailored just for you</p>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- CRITICAL MAINTENANCE BANNER - ADDED TO HOME FEED           -->
+        <!-- ========================================================= -->
+        <div class="maintenance-banner" id="maintenance-banner">
+            <div class="maintenance-banner-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <div class="maintenance-banner-content">
+                <div class="maintenance-banner-title">
+                    ⚠️ Under Scheduled Maintenance
+                    <span style="font-size: 12px; background: rgba(245,158,11,0.2); padding: 2px 10px; border-radius: 30px;">PROGRESS • ETA 2-3h</span>
+                </div>
+                <div class="maintenance-banner-message">
+                    We are currently upgrading our database systems to bring you a faster, smoother experience. 
+                    You may experience temporary loading issues on the Home Page and playlist feeds over the next few hours. 
+                    Our engineering team is on it, and full service will be restored shortly. Thank you for your patience!
+                </div>
+                <div class="maintenance-banner-status">
+                    <i class="fas fa-database"></i> Database migration active 
+                    <span>•</span> <i class="fas fa-clock"></i> Estimated completion: ~2 hours
+                    <span>•</span> <i class="fas fa-headset"></i> <span id="maintenance-support">Support: status@bantustreamconnect.com</span>
+                </div>
+            </div>
+            <button class="maintenance-dismiss" id="dismiss-maintenance-btn" aria-label="Dismiss banner">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
         <!-- Language Filter Bar -->
@@ -1432,6 +1523,23 @@
     
     <!-- Initialization Script -->
     <script>
+        // Maintenance banner dismiss logic (localStorage for persist across sessions but not required permanently)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dismissBtn = document.getElementById('dismiss-maintenance-btn');
+            const maintenanceBanner = document.getElementById('maintenance-banner');
+            if (dismissBtn && maintenanceBanner) {
+                // Check if banner was dismissed this session or previously (optional)
+                const isDismissed = sessionStorage.getItem('maintenance_banner_dismissed');
+                if (isDismissed === 'true') {
+                    maintenanceBanner.style.display = 'none';
+                }
+                dismissBtn.addEventListener('click', function() {
+                    maintenanceBanner.style.display = 'none';
+                    sessionStorage.setItem('maintenance_banner_dismissed', 'true');
+                });
+            }
+        });
+
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
