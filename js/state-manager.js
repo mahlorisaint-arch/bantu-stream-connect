@@ -7,7 +7,6 @@
 // ✅ Collection/series context tracking for recommendations
 // ✅ Queue state synchronization with playback session
 // ✅ Graceful degradation and offline-first caching
-// ✅ SYNTAX FIX: Class method definitions corrected (no object-literal syntax in class body)
 
 (function() {
   'use strict';
@@ -145,9 +144,8 @@
       this.isSyncing = false;
       this.offlineQueue = [];
       
-      // Debounced watch history tracking (FIXED: proper class property)
-      this._debouncedWatchHistoryTimeout = null;
-      this._debouncedWatchHistoryLastContentId = null;
+      // Debounced function placeholder
+      this._debouncedWatchHistoryUpdate = null;
       
       // Initialization
       this._initDeviceDetection();
@@ -200,12 +198,6 @@
         this.state.viewRecording.currentSessionId = existing || this._generateUUID();
         sessionStorage.setItem('bantu_view_session', this.state.viewRecording.currentSessionId);
       }
-    }
-    
-    // ✅ FIX: Proper debounced watch history initialization (class method, not object property)
-    _initDebouncedWatchHistory() {
-      // This sets up the debounced function for watch history updates
-      // Called once in constructor
     }
     
     _generateUUID() {
@@ -1431,7 +1423,7 @@
         this.setState('session.duration', duration, { notify: false });
       }
       
-      // Update watch history periodically with debouncing
+      // Update watch history periodically
       const contentId = this.state.session.currentContentId;
       if (contentId && time > 0) {
         this._debouncedWatchHistoryUpdate(contentId, time, duration);
@@ -1440,23 +1432,22 @@
       this.notifyListeners('session:time-updated', { time, duration });
     }
     
-    // ✅ FIX: Debounced watch history update as proper class method (not object property)
-    _debouncedWatchHistoryUpdate(contentId, time, duration) {
-      // Clear existing timeout if any
-      if (this._debouncedWatchHistoryTimeout) {
-        clearTimeout(this._debouncedWatchHistoryTimeout);
-      }
+    // Debounced watch history update (every 10 seconds)
+    _initDebouncedWatchHistory() {
+      let timeout = null;
+      let lastContentId = null;
       
-      // Set new timeout to debounce updates (10 second window)
-      this._debouncedWatchHistoryTimeout = setTimeout(() => {
-        // Only update if contentId hasn't changed
-        if (contentId === this._debouncedWatchHistoryLastContentId) {
-          this.updateWatchHistory(contentId, time, duration);
-        }
-      }, 10000);
-      
-      // Track the contentId for comparison
-      this._debouncedWatchHistoryLastContentId = contentId;
+      this._debouncedWatchHistoryUpdate = (contentId, time, duration) => {
+        if (timeout) clearTimeout(timeout);
+        
+        timeout = setTimeout(() => {
+          if (contentId === lastContentId) {
+            this.updateWatchHistory(contentId, time, duration);
+          }
+        }, 10000);
+        
+        lastContentId = contentId;
+      };
     }
     
     setPlaying(playing) {
@@ -2347,6 +2338,5 @@
   }
   
   console.log('✅ StateManager module loaded successfully (Phase 3 + Phase 1D Enhanced)');
-  console.log('   🔧 SYNTAX FIX: Class method definitions corrected - no object-literal syntax in class body');
   
 })();
