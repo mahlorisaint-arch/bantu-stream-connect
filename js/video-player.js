@@ -12,6 +12,7 @@
 // ✅ Event system for cross-component communication
 // ✅ Quality selection, playback speed, volume, fullscreen, PiP support
 // ✅ Social features integration (likes, favorites, shares) with RPC calls
+// ✅ SYNTAX FIX: Class property assignments corrected (all use 'this.' prefix)
 
 (function() {
   'use strict';
@@ -68,20 +69,20 @@
       this.socialPanel = null;
       this.settingsMenu = null;
       
-      // Player state
+      // Player state - ✅ FIX: All properties use 'this.' prefix
       this.isFullscreen = false;
       this.isPiP = false;
       this.isBuffering = false;
       this.isPlaying = false;
       this.playbackRate = 1.0;
-      currentQuality: 'auto',
-      retryAttempts = 0;
-      errorState = null;
-      bufferingTimeout = null;
-      networkCheckInterval = null;
-      controlsHideTimeout = null;
-      playbackStartTime = null;
-      watchedSegments = [];
+      this.currentQuality = 'auto'; // ✅ FIX: Was 'currentQuality: 'auto'' (object syntax)
+      this.retryAttempts = 0; // ✅ FIX: Was 'retryAttempts = 0' (missing 'this.')
+      this.errorState = null; // ✅ FIX: Was 'errorState = null' (missing 'this.')
+      this.bufferingTimeout = null; // ✅ FIX: Was 'bufferingTimeout = null' (missing 'this.')
+      this.networkCheckInterval = null; // ✅ FIX: Was 'networkCheckInterval = null' (missing 'this.')
+      this.controlsHideTimeout = null;
+      this.playbackStartTime = null;
+      this.watchedSegments = [];
       
       // Phase 3: Telemetry state
       this.playbackSessionId = null;
@@ -197,7 +198,7 @@
      * Detect media type from URL or metadata
      */
     detectMediaType(url, metadata = {}) {
-      if (metadata.media_type) return metadata.media_type;
+      if (metadata?.media_type) return metadata.media_type;
       if (this.isAudioSource(url)) return 'audio';
       return 'video';
     }
@@ -291,7 +292,7 @@
       const video = this.video;
       
       // Check for source elements
-      const sourceEl = video.querySelector('source');
+      const sourceEl = video?.querySelector('source');
       if (sourceEl?.src) {
         this._sourcePreserved = {
           url: sourceEl.src,
@@ -302,7 +303,7 @@
       }
       
       // Check for direct src attribute
-      if (video.src && video.src !== window.location.href) {
+      if (video?.src && video.src !== window.location.href) {
         this._sourcePreserved = {
           url: video.src,
           type: this.getMediaMimeType(video.src),
@@ -312,11 +313,11 @@
       }
       
       // Check for data attributes (fallback)
-      const dataSrc = video.dataset.src || video.getAttribute('data-file-url');
+      const dataSrc = video?.dataset?.src || video?.getAttribute('data-file-url');
       if (dataSrc) {
         this._sourcePreserved = {
           url: dataSrc,
-          type: video.dataset.type || this.getMediaMimeType(dataSrc),
+          type: video.dataset?.type || this.getMediaMimeType(dataSrc),
           method: 'data-attribute'
         };
       }
@@ -327,6 +328,7 @@
      */
     _configureVideoElement() {
       const video = this.video;
+      if (!video) return;
       
       // Disable native controls
       video.controls = false;
@@ -353,6 +355,8 @@
      * Apply audio-mode styling if needed
      */
     _applyAudioMode() {
+      if (!this.video) return;
+      
       const isAudio = this.isAudioSource(this._sourcePreserved?.url);
       
       if (isAudio) {
@@ -1078,7 +1082,7 @@
      */
     _handleKeyboard(event) {
       // Ignore if typing in input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName)) return;
       
       // Ignore if settings menu is open
       if (this._controlsCache?.settingsMenu?.style.display === 'block') return;
@@ -1155,14 +1159,14 @@
       const TAP_THRESHOLD = 200;
       
       this.container.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches?.[0]?.clientX || 0;
+        touchStartY = e.touches?.[0]?.clientY || 0;
         touchStartTime = Date.now();
       }, { passive: true });
       
       this.container.addEventListener('touchend', (e) => {
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndX = e.changedTouches?.[0]?.clientX || 0;
+        const touchEndY = e.changedTouches?.[0]?.clientY || 0;
         const touchDuration = Date.now() - touchStartTime;
         
         const deltaX = touchEndX - touchStartX;
@@ -1171,7 +1175,7 @@
         // Swipe left/right for seek
         if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD / 2) {
           e.preventDefault();
-          const seekTime = (deltaX / this.container.offsetWidth) * this.video.duration * 0.1;
+          const seekTime = (deltaX / this.container.offsetWidth) * (this.video?.duration || 0) * 0.1;
           this.seekRelative(seekTime);
           return;
         }
@@ -1488,11 +1492,11 @@
       if (muted || volume === 0) {
         icon?.classList.replace('fa-volume-up', 'fa-volume-mute');
         icon?.classList.replace('fa-volume-down', 'fa-volume-mute');
-        icon?.className = 'fas fa-volume-mute';
+        icon.className = 'fas fa-volume-mute';
       } else if (volume < 0.5) {
-        icon?.className = 'fas fa-volume-down';
+        icon.className = 'fas fa-volume-down';
       } else {
-        icon?.className = 'fas fa-volume-up';
+        icon.className = 'fas fa-volume-up';
       }
       
       // Update volume bar if exists
@@ -2597,6 +2601,7 @@
   }
   
   console.log('✅ EnhancedVideoPlayer module loaded successfully (Phase 3 + Phase 1D Enhanced)');
+  console.log('   🔧 SYNTAX FIX: All class properties now use "this." prefix');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   
 })();
