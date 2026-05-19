@@ -9,6 +9,7 @@
 // ✅ CRITICAL FIX #4: Fixed playlist item insertion to handle duplicates gracefully
 // 🔧 ALBUM FIX: Added getAlbumTracks method with multiple source detection
 // 🔧 ALBUM FIX: Added getPlaylistTracks method for album/playlist track retrieval
+// 🔧 PHASE 5 FIX: Updated to use content_engagement_stats for view/like counts
 
 (function() {
   'use strict';
@@ -37,6 +38,7 @@
     // Cache for playlist tracks
     this._playlistTracksCache = new Map();
     this._cacheTimeout = null;
+    this._playlistTracksCacheDuration = 60000; // 60 seconds for tracks cache
     
     // Callbacks
     this.onPlaylistUpdated = config.onPlaylistUpdated || null;
@@ -99,11 +101,12 @@
         .from('playlists')
         .select('*')
         .eq('id', playlistId)
-        .single();
+        .maybeSingle();
       
       if (playlistError) throw playlistError;
+      if (!playlist) return null;
       
-      // Get playlist items with content details
+      // Get playlist items with content details (Phase 5: use content_engagement_stats)
       const { data: items, error: itemsError } = await this.supabase
         .from('playlist_items')
         .select(`
@@ -113,10 +116,15 @@
           Content (
             id,
             title,
+            description,
             thumbnail_url,
+            file_url,
             duration,
             media_type,
-            views_count,
+            content_format,
+            user_id,
+            created_at,
+            status,
             user_profiles!user_id (
               id,
               full_name,
@@ -130,21 +138,53 @@
       
       if (itemsError) throw itemsError;
       
-      // Cache the tracks for album/playlist display
-      const tracks = (items || []).map(item => ({
-        id: item.content_id,
-        title: item.Content?.title || 'Untitled',
-        thumbnail_url: item.Content?.thumbnail_url,
-        duration: item.Content?.duration,
-        artist: item.Content?.user_profiles?.full_name || item.Content?.user_profiles?.username,
-        added_at: item.added_at
+      // Fetch engagement stats for each content item (Phase 5)
+      const itemsWithStats = await Promise.all((items || []).map(async (item) => {
+        if (!item.Content) return item;
+        
+        try {
+          const { data: stats } = await this.supabase
+            .from('content_engagement_stats')
+            .select('total_views, total_likes, total_valid_views')
+            .eq('content_id', item.content_id)
+            .maybeSingle();
+          
+          return {
+            ...item,
+            Content: {
+              ...item.Content,
+              views_count: stats?.total_views || 0,
+              likes_count: stats?.total_likes || 0,
+              valid_views_count: stats?.total_valid_views || 0
+            }
+          };
+        } catch (e) {
+          return item;
+        }
       }));
+      
+      // Cache the tracks for album/playlist display
+      const tracks = (itemsWithStats || [])
+        .filter(item => item.Content) // Filter out items with null Content
+        .map(item => ({
+          id: item.content_id,
+          title: item.Content?.title || 'Untitled',
+          description: item.Content?.description,
+          thumbnail_url: item.Content?.thumbnail_url,
+          file_url: item.Content?.file_url,
+          duration: item.Content?.duration,
+          media_type: item.Content?.media_type,
+          artist: item.Content?.user_profiles?.full_name || item.Content?.user_profiles?.username,
+          added_at: item.added_at,
+          views_count: item.Content?.views_count || 0,
+          likes_count: item.Content?.likes_count || 0
+        }));
       
       this._cachePlaylistTracks(playlistId, tracks);
       
       return {
         ...playlist,
-        items: items || [],
+        items: itemsWithStats || [],
         tracks: tracks
       };
     } catch (error) {
@@ -180,11 +220,11 @@
           updated_at: new Date().toISOString()
         })
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       
-      console.log('✅ Playlist created:', data.name);
+      console.log('✅ Playlist created:', data?.name);
       
       if (this.onPlaylistUpdated) {
         this.onPlaylistUpdated({ action: 'create', playlist: data });
@@ -446,7 +486,7 @@
       
       if (error) throw error;
       
-      return (data || []).map(item => item.playlists);
+      return (data || []).map(item => item.playlists).filter(Boolean);
     } catch (error) {
       console.error('❌ Failed to get playlists for content:', error);
       return [];
@@ -470,9 +510,9 @@
       const cacheKey = String(playlistIdOrContent);
       if (this._playlistTracksCache.has(cacheKey)) {
         const cached = this._playlistTracksCache.get(cacheKey);
-        if (Date.now() - cached.timestamp < this._cacheDuration) {
-          console.log('📀 Using cached tracks for playlist:', cacheKey, cached.tracks.length);
-          return cached.tracks;
+        if (cached && Date.now() - cached.timestamp < this._playlistTracksCacheDuration) {
+          console.log('📀 Using cached tracks for playlist:', cacheKey, cached.tracks?.length || 0);
+          return cached.tracks || [];
         }
       }
       
@@ -507,9 +547,15 @@
         tracks = tracks.map(item => ({
           id: item.content_id || item.Content?.id,
           title: item.Content?.title || 'Untitled',
+          description: item.Content?.description,
           thumbnail_url: item.Content?.thumbnail_url,
+          file_url: item.Content?.file_url,
           duration: item.Content?.duration,
-          artist: item.Content?.user_profiles?.full_name || item.Content?.user_profiles?.username
+          media_type: item.Content?.media_type,
+          artist: item.Content?.user_profiles?.full_name || item.Content?.user_profiles?.username,
+          added_at: item.added_at,
+          views_count: item.Content?.views_count || 0,
+          likes_count: item.Content?.likes_count || 0
         }));
       }
     }
@@ -530,7 +576,7 @@
     }
     
     // Log warning if no tracks found
-    if (tracks.length === 0) {
+    if (!tracks || tracks.length === 0) {
       console.warn('⚠️ No tracks available in any source', {
         input: playlistIdOrContent,
         hasPlaylistId: typeof playlistIdOrContent === 'string' || typeof playlistIdOrContent === 'number',
@@ -540,7 +586,7 @@
       });
     }
     
-    return tracks;
+    return tracks || [];
   };
 
   /**
@@ -556,7 +602,7 @@
    */
   PlaylistManager.prototype._cachePlaylistTracks = function(playlistId, tracks) {
     this._playlistTracksCache.set(String(playlistId), {
-      tracks: tracks,
+      tracks: tracks || [],
       timestamp: Date.now()
     });
     
@@ -566,7 +612,7 @@
     }
     this._cacheTimeout = setTimeout(() => {
       this._clearExpiredCache();
-    }, this._cacheDuration * 2);
+    }, this._playlistTracksCacheDuration * 2);
   };
 
   /**
@@ -575,7 +621,7 @@
   PlaylistManager.prototype._clearExpiredCache = function() {
     const now = Date.now();
     for (const [key, value] of this._playlistTracksCache.entries()) {
-      if (now - value.timestamp > this._cacheDuration * 2) {
+      if (value && now - value.timestamp > this._playlistTracksCacheDuration * 2) {
         this._playlistTracksCache.delete(key);
       }
     }
@@ -636,12 +682,16 @@
             updated_at: new Date().toISOString()
           })
           .select()
-          .single();
+          .maybeSingle();
         
         if (createError) throw createError;
         
         playlist = newPlaylist;
-        console.log('✅ Watch Later playlist created:', playlist.id);
+        console.log('✅ Watch Later playlist created:', playlist?.id);
+      }
+      
+      if (!playlist) {
+        throw new Error('Failed to create or retrieve Watch Later playlist');
       }
       
       // Update cache
@@ -761,10 +811,10 @@
     
     if (isPresent) {
       const removed = await this.removeFromWatchLater(contentId);
-      return { added: false, removed, success: removed, action: 'removed' };
+      return { added: false, removed: removed, success: removed, action: 'removed' };
     } else {
       const added = await this.addToWatchLater(contentId);
-      return { added, removed: false, success: added, action: 'added' };
+      return { added: added, removed: false, success: added, action: 'added' };
     }
   };
 
@@ -791,7 +841,7 @@
     console.log('👤 PlaylistManager user ID updated:', userId || 'guest');
     
     if (this.onPlaylistUpdated) {
-      this.onPlaylistUpdated({ action: 'user_change', userId });
+      this.onPlaylistUpdated({ action: 'user_change', userId: userId });
     }
   };
 
@@ -819,7 +869,7 @@
   PlaylistManager.prototype._handleError = function(context, error) {
     console.error('❌ PlaylistManager error [' + context + ']:', error);
     if (this.onError) {
-      this.onError({ context: context, error: error.message || error });
+      this.onError({ context: context, error: error?.message || error || 'Unknown error' });
     }
   };
 
@@ -833,5 +883,5 @@
     window.PlaylistManager = PlaylistManager;
   }
   
-  console.log('✅ PlaylistManager module loaded successfully');
+  console.log('✅ PlaylistManager module loaded successfully (Phase 5 Compatible)');
 })();
