@@ -12,11 +12,14 @@
 // ✅ Event system for cross-component communication
 // ✅ Quality selection, playback speed, volume, fullscreen, PiP support
 // ✅ Social features integration (likes, favorites, shares) with RPC calls
+// 🔧 CRITICAL FIX (2026-05-19): Removed all optional chaining assignments
+// 🔧 CRITICAL FIX (2026-05-19): Safe conditional checks for all player properties
+// 🔧 VERSION: v2.1.0 - Cache-busting update for syntax error resolution
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (Phase 3 + Phase 1D Enhanced)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v2.1.0 - Syntax Safe)');
 
   /**
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
@@ -289,10 +292,11 @@
      */
     _preserveSource() {
       const video = this.video;
+      if (!video) return;
       
       // Check for source elements
       const sourceEl = video.querySelector('source');
-      if (sourceEl?.src) {
+      if (sourceEl && sourceEl.src) {
         this._sourcePreserved = {
           url: sourceEl.src,
           type: sourceEl.type || this.getMediaMimeType(sourceEl.src),
@@ -312,11 +316,11 @@
       }
       
       // Check for data attributes (fallback)
-      const dataSrc = video.dataset.src || video.getAttribute('data-file-url');
+      const dataSrc = video.dataset && video.dataset.src ? video.dataset.src : video.getAttribute('data-file-url');
       if (dataSrc) {
         this._sourcePreserved = {
           url: dataSrc,
-          type: video.dataset.type || this.getMediaMimeType(dataSrc),
+          type: (video.dataset && video.dataset.type) ? video.dataset.type : this.getMediaMimeType(dataSrc),
           method: 'data-attribute'
         };
       }
@@ -327,6 +331,7 @@
      */
     _configureVideoElement() {
       const video = this.video;
+      if (!video) return;
       
       // Disable native controls
       video.controls = false;
@@ -353,15 +358,18 @@
      * Apply audio-mode styling if needed
      */
     _applyAudioMode() {
-      const isAudio = this.isAudioSource(this._sourcePreserved?.url);
+      const url = this._sourcePreserved ? this._sourcePreserved.url : null;
+      const isAudio = this.isAudioSource(url);
       
-      if (isAudio) {
-        this.video.classList.add('audio-mode');
-        this.video.setAttribute('aria-label', 'Audio player');
-        console.log('🎵 Audio mode applied');
-      } else {
-        this.video.classList.remove('audio-mode');
-        this.video.setAttribute('aria-label', 'Video player');
+      if (this.video) {
+        if (isAudio) {
+          this.video.classList.add('audio-mode');
+          this.video.setAttribute('aria-label', 'Audio player');
+          console.log('🎵 Audio mode applied');
+        } else {
+          this.video.classList.remove('audio-mode');
+          this.video.setAttribute('aria-label', 'Video player');
+        }
       }
       
       // Update container class for styling
@@ -642,7 +650,7 @@
      * Setup settings menu interactions
      */
     _setupSettingsMenu() {
-      if (!this._controlsCache?.settingsBtn || !this._controlsCache?.settingsMenu) return;
+      if (!this._controlsCache || !this._controlsCache.settingsBtn || !this._controlsCache.settingsMenu) return;
       
       const { settingsBtn, settingsMenu } = this._controlsCache;
       let isOpen = false;
@@ -654,8 +662,12 @@
         
         isOpen = !isOpen;
         settingsMenu.style.display = isOpen ? 'block' : 'none';
-        settingsBtn.setAttribute('aria-expanded', isOpen);
-        settingsMenu.setAttribute('aria-hidden', !isOpen);
+        if (settingsBtn) {
+          settingsBtn.setAttribute('aria-expanded', isOpen);
+        }
+        if (settingsMenu) {
+          settingsMenu.setAttribute('aria-hidden', !isOpen);
+        }
         
         console.log(`⚙️ Settings menu ${isOpen ? 'opened' : 'closed'}`);
         this._emit('settings:toggled', { isOpen });
@@ -663,7 +675,7 @@
       
       // Close settings when clicking outside
       document.addEventListener('click', (e) => {
-        if (isOpen && 
+        if (isOpen && settingsMenu && settingsBtn && 
             !settingsMenu.contains(e.target) && 
             !settingsBtn.contains(e.target)) {
           isOpen = false;
@@ -674,48 +686,56 @@
       });
       
       // Quality selection
-      this._controlsCache.qualityOptions?.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const quality = e.currentTarget.dataset.quality;
-          this.setQuality(quality);
-          
-          // Update UI
-          this._controlsCache.qualityOptions.forEach(b => {
-            b.classList.remove('active');
-            b.setAttribute('aria-checked', 'false');
+      if (this._controlsCache.qualityOptions) {
+        this._controlsCache.qualityOptions.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const quality = e.currentTarget.dataset.quality;
+            this.setQuality(quality);
+            
+            // Update UI
+            if (this._controlsCache.qualityOptions) {
+              this._controlsCache.qualityOptions.forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-checked', 'false');
+              });
+            }
+            e.currentTarget.classList.add('active');
+            e.currentTarget.setAttribute('aria-checked', 'true');
+            
+            // Close menu
+            isOpen = false;
+            if (settingsMenu) settingsMenu.style.display = 'none';
+            if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'false');
           });
-          e.currentTarget.classList.add('active');
-          e.currentTarget.setAttribute('aria-checked', 'true');
-          
-          // Close menu
-          isOpen = false;
-          settingsMenu.style.display = 'none';
-          settingsBtn.setAttribute('aria-expanded', 'false');
         });
-      });
+      }
       
       // Speed selection
-      this._controlsCache.speedOptions?.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const rate = parseFloat(e.currentTarget.dataset.rate);
-          this.setPlaybackRate(rate);
-          
-          // Update UI
-          this._controlsCache.speedOptions.forEach(b => {
-            b.classList.remove('active');
-            b.setAttribute('aria-checked', 'false');
+      if (this._controlsCache.speedOptions) {
+        this._controlsCache.speedOptions.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rate = parseFloat(e.currentTarget.dataset.rate);
+            this.setPlaybackRate(rate);
+            
+            // Update UI
+            if (this._controlsCache.speedOptions) {
+              this._controlsCache.speedOptions.forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-checked', 'false');
+              });
+            }
+            e.currentTarget.classList.add('active');
+            e.currentTarget.setAttribute('aria-checked', 'true');
+            
+            // Close menu
+            isOpen = false;
+            if (settingsMenu) settingsMenu.style.display = 'none';
+            if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'false');
           });
-          e.currentTarget.classList.add('active');
-          e.currentTarget.setAttribute('aria-checked', 'true');
-          
-          // Close menu
-          isOpen = false;
-          settingsMenu.style.display = 'none';
-          settingsBtn.setAttribute('aria-expanded', 'false');
         });
-      });
+      }
       
       // Data saver toggle
       const dataSaverToggle = document.getElementById('dataSaverToggle');
@@ -751,11 +771,15 @@
       this._handleVideoEvent = this._handleVideoEvent.bind(this);
       
       events.forEach(event => {
-        this.video.addEventListener(event, this._handleVideoEvent);
+        if (this.video) {
+          this.video.addEventListener(event, this._handleVideoEvent);
+        }
       });
       
       // Additional listeners
-      this.video.addEventListener('click', (e) => this._handleVideoClick(e));
+      if (this.video) {
+        this.video.addEventListener('click', (e) => this._handleVideoClick(e));
+      }
       
       // Fullscreen change listeners
       document.addEventListener('fullscreenchange', () => this._handleFullscreenChange());
@@ -764,7 +788,7 @@
       document.addEventListener('MSFullscreenChange', () => this._handleFullscreenChange());
       
       // Picture-in-Picture listeners
-      if (document.pictureInPictureEnabled) {
+      if (document.pictureInPictureEnabled && this.video) {
         this.video.addEventListener('enterpictureinpicture', () => {
           this.isPiP = true;
           this._emit('pip:enter', { video: this.video });
@@ -867,7 +891,7 @@
       console.log('▶️ Playing');
       this._emit('playback:play', {
         timestamp: this.playbackStartTime,
-        currentTime: this.video.currentTime
+        currentTime: this.video ? this.video.currentTime : 0
       });
     }
     
@@ -885,7 +909,7 @@
         
         this._emit('playback:pause', {
           watchTime,
-          currentTime: this.video.currentTime
+          currentTime: this.video ? this.video.currentTime : 0
         });
       }
       
@@ -895,7 +919,7 @@
       
       console.log('⏸️ Paused');
       this._emit('playback:pause', {
-        currentTime: this.video.currentTime
+        currentTime: this.video ? this.video.currentTime : 0
       });
     }
     
@@ -914,7 +938,7 @@
       console.log('🏁 Ended');
       this._emit('playback:ended', {
         totalWatchTime: this.stats.totalWatchTime,
-        duration: this.video.duration
+        duration: this.video ? this.video.duration : 0
       });
     }
     
@@ -926,13 +950,13 @@
       this._updateProgressBar();
       
       // Phase 3: Record view after threshold
-      if (!this.viewRecorded && 
+      if (!this.viewRecorded && this.video && 
           this.video.currentTime >= this.config.validViewThreshold) {
         this._recordView();
       }
       
       // Emit for external progress tracking
-      if (this.video.currentTime % 10 < 0.1) { // Every ~10 seconds
+      if (this.video && this.video.currentTime % 10 < 0.1) { // Every ~10 seconds
         this._emit('playback:progress', {
           currentTime: this.video.currentTime,
           duration: this.video.duration,
@@ -971,7 +995,9 @@
      */
     _handleBufferingEnd() {
       this.isBuffering = false;
-      clearTimeout(this.bufferingTimeout);
+      if (this.bufferingTimeout) {
+        clearTimeout(this.bufferingTimeout);
+      }
       this._hideBufferingIndicator();
       
       this._emit('buffering:end');
@@ -984,7 +1010,7 @@
       console.log('✅ Media data loaded');
       this._emit('media:loadeddata', {
         video: this.video,
-        duration: this.video.duration
+        duration: this.video ? this.video.duration : 0
       });
     }
     
@@ -993,25 +1019,25 @@
      */
     _handleLoadedMetadata() {
       console.log('✅ Media metadata loaded', {
-        duration: this.video.duration,
-        videoWidth: this.video.videoWidth,
-        videoHeight: this.video.videoHeight,
-        audioTracks: this.video.audioTracks?.length || 0
+        duration: this.video ? this.video.duration : 0,
+        videoWidth: this.video ? this.video.videoWidth : 0,
+        videoHeight: this.video ? this.video.videoHeight : 0,
+        audioTracks: (this.video && this.video.audioTracks) ? this.video.audioTracks.length : 0
       });
       
       // Update duration display
       this._updateDurationDisplay();
       
       // Enable audio tracks if available
-      if (this.video.audioTracks?.length > 0) {
+      if (this.video && this.video.audioTracks && this.video.audioTracks.length > 0) {
         this.video.audioTracks[0].enabled = true;
       }
       
       this._emit('media:loadedmetadata', {
-        duration: this.video.duration,
+        duration: this.video ? this.video.duration : 0,
         dimensions: {
-          width: this.video.videoWidth,
-          height: this.video.videoHeight
+          width: this.video ? this.video.videoWidth : 0,
+          height: this.video ? this.video.videoHeight : 0
         }
       });
     }
@@ -1020,18 +1046,18 @@
      * Handle error with retry logic
      */
     _handleError(event) {
-      const error = this.video?.error;
+      const error = this.video ? this.video.error : null;
       
       // Ignore autoplay blocking errors (handled by overlay)
-      if (!error && this.video?.networkState !== 3) {
+      if (!error && this.video && this.video.networkState !== 3) {
         console.log('ℹ️ Ignoring non-critical error (likely autoplay block)');
         return;
       }
       
       console.error('❌ Media error:', {
-        code: error?.code,
-        message: error?.message,
-        networkState: this.video?.networkState
+        code: error ? error.code : 'unknown',
+        message: error ? error.message : 'unknown',
+        networkState: this.video ? this.video.networkState : 'unknown'
       });
       
       this.stats.errorCount++;
@@ -1043,8 +1069,8 @@
         console.log(`🔄 Retry attempt ${this.retryAttempts}/${this.config.retryCount}`);
         
         setTimeout(() => {
-          if (!this._isDestroyed) {
-            this.video?.load();
+          if (!this._isDestroyed && this.video) {
+            this.video.load();
             this.play().catch(() => {});
           }
         }, this.config.retryDelay * this.retryAttempts);
@@ -1081,7 +1107,8 @@
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
       
       // Ignore if settings menu is open
-      if (this._controlsCache?.settingsMenu?.style.display === 'block') return;
+      if (this._controlsCache && this._controlsCache.settingsMenu && 
+          this._controlsCache.settingsMenu.style.display === 'block') return;
       
       switch (event.key.toLowerCase()) {
         case ' ':
@@ -1171,7 +1198,7 @@
         // Swipe left/right for seek
         if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD / 2) {
           e.preventDefault();
-          const seekTime = (deltaX / this.container.offsetWidth) * this.video.duration * 0.1;
+          const seekTime = (deltaX / this.container.offsetWidth) * (this.video ? this.video.duration : 0) * 0.1;
           this.seekRelative(seekTime);
           return;
         }
@@ -1219,26 +1246,30 @@
       const c = this._controlsCache;
       
       // Play/Pause button
-      c.playPauseBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.togglePlay();
-      });
+      if (c.playPauseBtn) {
+        c.playPauseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.togglePlay();
+        });
+      }
       
       // Progress bar seeking
-      c.progressBar?.addEventListener('input', (e) => {
-        const percent = parseFloat(e.target.value);
-        const time = (percent / 100) * (this.video?.duration || 0);
-        this.seek(time);
-      });
-      
-      c.progressBar?.addEventListener('change', (e) => {
-        // Emit seek event on release
-        this.stats.seekCount++;
-        this._emit('playback:seek', {
-          from: this.video?.currentTime,
-          to: parseFloat(e.target.value) / 100 * (this.video?.duration || 0)
+      if (c.progressBar) {
+        c.progressBar.addEventListener('input', (e) => {
+          const percent = parseFloat(e.target.value);
+          const time = (percent / 100) * (this.video ? this.video.duration : 0);
+          this.seek(time);
         });
-      });
+        
+        c.progressBar.addEventListener('change', (e) => {
+          // Emit seek event on release
+          this.stats.seekCount++;
+          this._emit('playback:seek', {
+            from: this.video ? this.video.currentTime : 0,
+            to: parseFloat(e.target.value) / 100 * (this.video ? this.video.duration : 0)
+          });
+        });
+      }
       
       // Volume controls (desktop)
       if (c.volumeBtn && c.volumeBar) {
@@ -1255,50 +1286,71 @@
       
       // Collection navigation (Phase 1D)
       if (this.config.enableCollectionNav) {
-        c.prevTrackBtn?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.playPrevious();
-        });
+        if (c.prevTrackBtn) {
+          c.prevTrackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.playPrevious();
+          });
+        }
         
-        c.nextTrackBtn?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.playNext();
-        });
+        if (c.nextTrackBtn) {
+          c.nextTrackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.playNext();
+          });
+        }
       }
       
       // Fullscreen toggle
-      c.fullscreenBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleFullscreen();
-      });
+      if (c.fullscreenBtn) {
+        c.fullscreenBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleFullscreen();
+        });
+      }
       
       // Picture-in-Picture
-      c.pipBtn?.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await this.togglePictureInPicture();
-      });
+      if (c.pipBtn) {
+        c.pipBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await this.togglePictureInPicture();
+        });
+      }
       
       // Social buttons
       this._setupSocialInteractions();
       
       // Play overlay
-      c.playOverlay?.querySelector('.play-overlay-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.play().catch(() => {});
-      });
+      if (c.playOverlay) {
+        const overlayBtn = c.playOverlay.querySelector('.play-overlay-btn');
+        if (overlayBtn) {
+          overlayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.play().catch(() => {});
+          });
+        }
+      }
       
       // Error overlay buttons
       const errorOverlay = c.errorOverlay;
-      errorOverlay?.querySelector('.retry-btn')?.addEventListener('click', () => {
-        this.retryAttempts = 0;
-        this.video?.load();
-        this.play().catch(() => {});
-        this._hideErrorOverlay();
-      });
-      
-      errorOverlay?.querySelector('.dismiss-btn')?.addEventListener('click', () => {
-        this._hideErrorOverlay();
-      });
+      if (errorOverlay) {
+        const retryBtn = errorOverlay.querySelector('.retry-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => {
+            this.retryAttempts = 0;
+            if (this.video) this.video.load();
+            this.play().catch(() => {});
+            this._hideErrorOverlay();
+          });
+        }
+        
+        const dismissBtn = errorOverlay.querySelector('.dismiss-btn');
+        if (dismissBtn) {
+          dismissBtn.addEventListener('click', () => {
+            this._hideErrorOverlay();
+          });
+        }
+      }
       
       // Controls hover/visibility
       this._setupControlsVisibility();
@@ -1310,30 +1362,37 @@
      * Setup social button interactions
      */
     _setupSocialInteractions() {
-      if (!this._controlsCache?.socialPanel || !this.contentId) return;
+      if (!this._controlsCache || !this._controlsCache.socialPanel || !this.contentId) return;
       
       const { socialPanel } = this._controlsCache;
+      if (!socialPanel) return;
       
       // Like button
       const likeBtn = socialPanel.querySelector('.like-btn');
-      likeBtn?.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await this._toggleLike();
-      });
+      if (likeBtn) {
+        likeBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await this._toggleLike();
+        });
+      }
       
       // Favorite button
       const favBtn = socialPanel.querySelector('.favorite-btn');
-      favBtn?.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await this._toggleFavorite();
-      });
+      if (favBtn) {
+        favBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await this._toggleFavorite();
+        });
+      }
       
       // Share button
       const shareBtn = socialPanel.querySelector('.share-btn');
-      shareBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this._shareContent();
-      });
+      if (shareBtn) {
+        shareBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this._shareContent();
+        });
+      }
     }
     
     /**
@@ -1361,9 +1420,11 @@
       }, { passive: true });
       
       // Show when paused
-      this.video?.addEventListener('pause', () => {
-        this._showControls();
-      });
+      if (this.video) {
+        this.video.addEventListener('pause', () => {
+          this._showControls();
+        });
+      }
       
       // Initial show
       this._showControls();
@@ -1378,7 +1439,7 @@
       }
       
       // Don't auto-hide on mobile or when paused
-      if (this._isMobile || this.video?.paused) return;
+      if (this._isMobile || (this.video && this.video.paused)) return;
       
       this.controlsHideTimeout = setTimeout(() => {
         if (this.isPlaying && !this._isMobile) {
@@ -1415,7 +1476,7 @@
      * Update play/pause button icon
      */
     _updatePlayButton(isPlaying) {
-      const btn = this._controlsCache?.playPauseBtn;
+      const btn = this._controlsCache ? this._controlsCache.playPauseBtn : null;
       if (!btn) return;
       
       const icon = btn.querySelector('i');
@@ -1430,7 +1491,7 @@
      * Update time display
      */
     _updateTimeDisplay() {
-      if (!this._controlsCache?.currentTime || !this.video) return;
+      if (!this._controlsCache || !this._controlsCache.currentTime || !this.video) return;
       
       const current = this._formatTime(this.video.currentTime);
       this._controlsCache.currentTime.textContent = current;
@@ -1440,7 +1501,7 @@
      * Update duration display
      */
     _updateDurationDisplay() {
-      if (!this._controlsCache?.duration || !this.video) return;
+      if (!this._controlsCache || !this._controlsCache.duration || !this.video) return;
       
       const duration = this.video.duration;
       if (duration && isFinite(duration)) {
@@ -1452,7 +1513,7 @@
      * Update progress bar
      */
     _updateProgressBar() {
-      if (!this._controlsCache?.progressBar || !this.video) return;
+      if (!this._controlsCache || !this._controlsCache.progressBar || !this.video) return;
       
       const { currentTime, duration } = this.video;
       if (duration && isFinite(duration)) {
@@ -1466,10 +1527,10 @@
      * Update buffered progress indicator
      */
     _updateBufferedProgress() {
-      if (!this._controlsCache?.progressBuffer || !this.video) return;
+      if (!this._controlsCache || !this._controlsCache.progressBuffer || !this.video) return;
       
       const { buffered, duration } = this.video;
-      if (duration && isFinite(duration) && buffered?.length > 0) {
+      if (duration && isFinite(duration) && buffered && buffered.length > 0) {
         const end = buffered.end(buffered.length - 1);
         const percent = (end / duration) * 100;
         this._controlsCache.progressBuffer.style.width = `${percent}%`;
@@ -1480,23 +1541,23 @@
      * Update volume button icon
      */
     _updateVolumeUI() {
-      if (!this._controlsCache?.volumeBtn || !this.video) return;
+      if (!this._controlsCache || !this._controlsCache.volumeBtn || !this.video) return;
       
       const { muted, volume } = this.video;
       const icon = this._controlsCache.volumeBtn.querySelector('i');
       
-      if (muted || volume === 0) {
-        icon?.classList.replace('fa-volume-up', 'fa-volume-mute');
-        icon?.classList.replace('fa-volume-down', 'fa-volume-mute');
-        icon?.className = 'fas fa-volume-mute';
-      } else if (volume < 0.5) {
-        icon?.className = 'fas fa-volume-down';
-      } else {
-        icon?.className = 'fas fa-volume-up';
+      if (icon) {
+        if (muted || volume === 0) {
+          icon.className = 'fas fa-volume-mute';
+        } else if (volume < 0.5) {
+          icon.className = 'fas fa-volume-down';
+        } else {
+          icon.className = 'fas fa-volume-up';
+        }
       }
       
       // Update volume bar if exists
-      if (this._controlsCache?.volumeBar) {
+      if (this._controlsCache.volumeBar) {
         this._controlsCache.volumeBar.value = muted ? 0 : volume * 100;
       }
     }
@@ -1505,7 +1566,7 @@
      * Show buffering indicator
      */
     _showBufferingIndicator() {
-      const indicator = this._controlsCache?.bufferingIndicator;
+      const indicator = this._controlsCache ? this._controlsCache.bufferingIndicator : null;
       if (indicator) {
         indicator.classList.remove('hidden');
       }
@@ -1515,7 +1576,7 @@
      * Hide buffering indicator
      */
     _hideBufferingIndicator() {
-      const indicator = this._controlsCache?.bufferingIndicator;
+      const indicator = this._controlsCache ? this._controlsCache.bufferingIndicator : null;
       if (indicator) {
         indicator.classList.add('hidden');
       }
@@ -1525,7 +1586,7 @@
      * Show play overlay (for autoplay blocked)
      */
     _showPlayOverlay() {
-      const overlay = this._controlsCache?.playOverlay;
+      const overlay = this._controlsCache ? this._controlsCache.playOverlay : null;
       if (overlay) {
         overlay.classList.remove('hidden');
       }
@@ -1535,7 +1596,7 @@
      * Hide play overlay
      */
     _hidePlayOverlay() {
-      const overlay = this._controlsCache?.playOverlay;
+      const overlay = this._controlsCache ? this._controlsCache.playOverlay : null;
       if (overlay) {
         overlay.classList.add('hidden');
       }
@@ -1545,7 +1606,7 @@
      * Show error overlay
      */
     _showErrorOverlay(message) {
-      const overlay = this._controlsCache?.errorOverlay;
+      const overlay = this._controlsCache ? this._controlsCache.errorOverlay : null;
       if (overlay) {
         const msgEl = overlay.querySelector('.error-message');
         if (msgEl && message) {
@@ -1559,7 +1620,7 @@
      * Hide error overlay
      */
     _hideErrorOverlay() {
-      const overlay = this._controlsCache?.errorOverlay;
+      const overlay = this._controlsCache ? this._controlsCache.errorOverlay : null;
       if (overlay) {
         overlay.classList.add('hidden');
       }
@@ -1573,7 +1634,7 @@
      * Restore preserved source and load media
      */
     _restoreAndLoadSource() {
-      if (!this._sourcePreserved?.url || !this.video) return;
+      if (!this._sourcePreserved || !this._sourcePreserved.url || !this.video) return;
       
       const { url, type } = this._sourcePreserved;
       
@@ -1594,8 +1655,8 @@
       // Setup error handling for initial load
       const errorHandler = (e) => {
         // Ignore autoplay blocking
-        if (!this.video?.error && this.video?.networkState !== 3) return;
-        console.error('❌ Source load error:', this.video?.error);
+        if (!this.video || (!this.video.error && this.video.networkState !== 3)) return;
+        console.error('❌ Source load error:', this.video ? this.video.error : 'unknown');
         this._handleError(e);
       };
       
@@ -1604,7 +1665,9 @@
       // Setup metadata handler
       const metadataHandler = () => {
         console.log('✅ Source loaded successfully');
-        this.video.removeEventListener('loadedmetadata', metadataHandler);
+        if (this.video) {
+          this.video.removeEventListener('loadedmetadata', metadataHandler);
+        }
       };
       this.video.addEventListener('loadedmetadata', metadataHandler, { once: true });
       
@@ -1645,23 +1708,27 @@
       
       // Update audio mode
       if (this.isAudioSource(url)) {
-        this.video.classList.add('audio-mode');
+        if (this.video) this.video.classList.add('audio-mode');
       } else {
-        this.video.classList.remove('audio-mode');
+        if (this.video) this.video.classList.remove('audio-mode');
       }
       
       // Set new source
-      this.video.pause();
-      this.video.currentTime = 0;
+      if (this.video) {
+        this.video.pause();
+        this.video.currentTime = 0;
+      }
       
-      while (this.video.firstChild) {
-        this.video.removeChild(this.video.firstChild);
+      if (this.video) {
+        while (this.video.firstChild) {
+          this.video.removeChild(this.video.firstChild);
+        }
       }
       
       const source = document.createElement('source');
       source.src = url;
       source.type = type;
-      this.video.appendChild(source);
+      if (this.video) this.video.appendChild(source);
       
       // Reset state
       this.retryAttempts = 0;
@@ -1670,7 +1737,7 @@
       this.viewValidated = false;
       
       // Load and optionally play
-      this.video.load();
+      if (this.video) this.video.load();
       
       // Update preserved source
       this._sourcePreserved = { url, type, method: 'setSource' };
@@ -1740,7 +1807,13 @@
       const duration = this.video.duration || 0;
       const clamped = Math.max(0, Math.min(time, duration));
       
-      this.video.currentTime = clamped;
+      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      // This is the critical fix - we use direct assignment with existence check
+      if (this.video) {
+        this.video.currentTime = clamped;
+      }
+      // --- END SAFE ASSIGNMENT ---
+      
       this._emit('playback:seeked', { time: clamped, duration });
     }
     
@@ -1768,7 +1841,11 @@
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0.25, Math.min(4, rate));
-      this.video.playbackRate = clamped;
+      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      if (this.video) {
+        this.video.playbackRate = clamped;
+      }
+      // --- END SAFE ASSIGNMENT ---
       this.playbackRate = clamped;
       
       console.log(`⚡ Playback rate: ${clamped}x`);
@@ -1782,14 +1859,18 @@
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0, Math.min(1, volume));
-      this.video.volume = clamped;
-      this.video.muted = clamped === 0;
+      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      if (this.video) {
+        this.video.volume = clamped;
+        this.video.muted = clamped === 0;
+      }
+      // --- END SAFE ASSIGNMENT ---
       
       this.stats.volumeChanges++;
       this._updateVolumeUI();
       
       console.log(`🔊 Volume: ${Math.round(clamped * 100)}%`);
-      this._emit('playback:volumechange', { volume: clamped, muted: this.video.muted });
+      this._emit('playback:volumechange', { volume: clamped, muted: this.video ? this.video.muted : false });
     }
     
     /**
@@ -1806,11 +1887,15 @@
     toggleMute() {
       if (!this.video || this._isDestroyed) return;
       
-      this.video.muted = !this.video.muted;
+      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      if (this.video) {
+        this.video.muted = !this.video.muted;
+      }
+      // --- END SAFE ASSIGNMENT ---
       this._updateVolumeUI();
       
-      console.log(`🔇 Mute: ${this.video.muted}`);
-      this._emit('playback:mute', { muted: this.video.muted });
+      console.log(`🔇 Mute: ${this.video ? this.video.muted : false}`);
+      this._emit('playback:mute', { muted: this.video ? this.video.muted : false });
     }
     
     // =====================================================
@@ -1868,20 +1953,23 @@
         document.msFullscreenElement
       );
       
+      // --- SAFE ASSIGNMENT: Standard if check, no optional chaining on left ---
       if (isCurrentlyFullscreen !== this.isFullscreen) {
         this.isFullscreen = isCurrentlyFullscreen;
         this._updateFullscreenButton();
         this._emit('player:fullscreen', { isFullscreen: this.isFullscreen });
       }
+      // --- END SAFE ASSIGNMENT ---
     }
     
     /**
      * Update fullscreen button icon
      */
     _updateFullscreenButton() {
-      const btn = this._controlsCache?.fullscreenBtn?.querySelector('i');
-      if (btn) {
-        btn.className = this.isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+      const btn = this._controlsCache ? this._controlsCache.fullscreenBtn : null;
+      const icon = btn ? btn.querySelector('i') : null;
+      if (icon) {
+        icon.className = this.isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
       }
     }
     
@@ -1910,6 +1998,14 @@
     // =====================================================
     // PHASE 3: TELEMETRY INTEGRATION
     // =====================================================
+    
+    /**
+     * Initialize integrations (placeholder for future enhancements)
+     */
+    _initializeIntegrations() {
+      // Placeholder for additional integrations
+      console.log('🔌 Integrations initialized');
+    }
     
     /**
      * Initialize telemetry session (Phase 3)
@@ -2017,7 +2113,7 @@
           content_id: parseInt(this.contentId),
           viewer_id: this.userId,
           session_id: this.playbackSessionId,
-          watched_seconds: Math.floor(this.video?.currentTime || 0),
+          watched_seconds: Math.floor(this.video ? this.video.currentTime : 0),
           device_type: this._isMobile ? 'mobile' : 'desktop',
           created_at: new Date().toISOString()
         });
@@ -2040,13 +2136,13 @@
       console.log('🎬 Auto-advancing to next item...');
       
       // Priority 1: QueueManager integration
-      if (this.config.enableQueueIntegration && window.QueueManager?.playNext) {
+      if (this.config.enableQueueIntegration && window.QueueManager && window.QueueManager.playNext) {
         window.QueueManager.playNext();
         return;
       }
       
       // Priority 2: Collection engine navigation
-      if (window.ContentCollectionsEngine?.getNextItem) {
+      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
         const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
         if (nextItem) {
           window.location.href = `content-detail.html?id=${nextItem.id}`;
@@ -2067,15 +2163,16 @@
     playPrevious() {
       console.log('⏮️ Playing previous item...');
       
-      if (window.QueueManager?.playPrevious) {
+      if (window.QueueManager && window.QueueManager.playPrevious) {
         window.QueueManager.playPrevious();
         return;
       }
       
-      if (window.ContentCollectionsEngine?.getPreviousItem) {
+      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getPreviousItem) {
         const prevItem = window.ContentCollectionsEngine.getPreviousItem(this.contentId);
         if (prevItem) {
           window.location.href = `content-detail.html?id=${prevItem.id}`;
+          return;
         }
       }
       
@@ -2090,15 +2187,16 @@
     playNext() {
       console.log('⏭️ Playing next item...');
       
-      if (window.QueueManager?.playNext) {
+      if (window.QueueManager && window.QueueManager.playNext) {
         window.QueueManager.playNext();
         return;
       }
       
-      if (window.ContentCollectionsEngine?.getNextItem) {
+      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
         const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
         if (nextItem) {
           window.location.href = `content-detail.html?id=${nextItem.id}`;
+          return;
         }
       }
       
@@ -2208,8 +2306,8 @@
      */
     _shareContent() {
       const shareData = {
-        title: this.contentMetadata?.title || 'Check this out',
-        text: this.contentMetadata?.description || '',
+        title: this.contentMetadata ? (this.contentMetadata.title || 'Check this out') : 'Check this out',
+        text: this.contentMetadata ? (this.contentMetadata.description || '') : '',
         url: window.location.href
       };
       
@@ -2235,26 +2333,29 @@
      */
     _shareFallback(data) {
       // Copy URL to clipboard
-      navigator.clipboard?.writeText(data.url).then(() => {
-        this.engagement.shares++;
-        this._updateSocialCounts();
-        
-        // Show toast notification
-        if (window.state?.showToast) {
-          window.state.showToast('Link copied to clipboard!', { type: 'success' });
-        }
-        
-        this._emit('social:shared', { method: 'clipboard' });
-      });
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(data.url).then(() => {
+          this.engagement.shares++;
+          this._updateSocialCounts();
+          
+          // Show toast notification
+          if (window.state && window.state.showToast) {
+            window.state.showToast('Link copied to clipboard!', { type: 'success' });
+          }
+          
+          this._emit('social:shared', { method: 'clipboard' });
+        });
+      }
     }
     
     /**
      * Update social count displays
      */
     _updateSocialCounts() {
-      if (!this._controlsCache?.socialPanel) return;
+      if (!this._controlsCache || !this._controlsCache.socialPanel) return;
       
       const panel = this._controlsCache.socialPanel;
+      if (!panel) return;
       
       // Update like count
       const likeCount = panel.querySelector('.like-btn .social-count');
@@ -2278,14 +2379,14 @@
       const likeBtn = panel.querySelector('.like-btn');
       if (likeBtn) {
         likeBtn.classList.toggle('active', this.engagement.isLiked);
-        likeBtn.setAttribute('aria-pressed', this.engagement.isLiked);
+        likeBtn.setAttribute('aria-pressed', this.engagement.isLiked ? 'true' : 'false');
         likeBtn.setAttribute('aria-label', this.engagement.isLiked ? 'Unlike' : 'Like');
       }
       
       const favBtn = panel.querySelector('.favorite-btn');
       if (favBtn) {
         favBtn.classList.toggle('active', this.engagement.isFavorited);
-        favBtn.setAttribute('aria-pressed', this.engagement.isFavorited);
+        favBtn.setAttribute('aria-pressed', this.engagement.isFavorited ? 'true' : 'false');
         favBtn.setAttribute('aria-label', this.engagement.isFavorited ? 'Remove from favorites' : 'Add to favorites');
       }
     }
@@ -2328,7 +2429,10 @@
       if (!this.eventListeners.has(event)) {
         this.eventListeners.set(event, []);
       }
-      this.eventListeners.get(event).push(callback);
+      const listeners = this.eventListeners.get(event);
+      if (listeners) {
+        listeners.push(callback);
+      }
       
       // Return unsubscribe function
       return () => {
@@ -2427,24 +2531,35 @@
         ];
         
         events.forEach(event => {
-          this.video.removeEventListener(event, this._handleVideoEvent);
+          if (this.video) {
+            this.video.removeEventListener(event, this._handleVideoEvent);
+          }
         });
         
         this._listenersAttached = false;
       }
       
       // Clear timeouts
-      if (this.bufferingTimeout) clearTimeout(this.bufferingTimeout);
-      if (this.controlsHideTimeout) clearTimeout(this.controlsHideTimeout);
-      if (this.networkCheckInterval) clearInterval(this.networkCheckInterval);
+      if (this.bufferingTimeout) {
+        clearTimeout(this.bufferingTimeout);
+        this.bufferingTimeout = null;
+      }
+      if (this.controlsHideTimeout) {
+        clearTimeout(this.controlsHideTimeout);
+        this.controlsHideTimeout = null;
+      }
+      if (this.networkCheckInterval) {
+        clearInterval(this.networkCheckInterval);
+        this.networkCheckInterval = null;
+      }
       
       // Remove controls
-      if (this.controls?.parentNode) {
+      if (this.controls && this.controls.parentNode) {
         this.controls.parentNode.removeChild(this.controls);
       }
       
       // Cleanup telemetry
-      if (this.watchSession?.isActive) {
+      if (this.watchSession && this.watchSession.isActive) {
         this.watchSession.end();
       }
       
@@ -2531,7 +2646,7 @@
         volume: this.video.volume,
         muted: this.video.muted,
         playbackRate: this.video.playbackRate,
-        buffered: this.video.buffered?.length > 0 ? {
+        buffered: this.video.buffered && this.video.buffered.length > 0 ? {
           start: this.video.buffered.start(0),
           end: this.video.buffered.end(this.video.buffered.length - 1)
         } : null
@@ -2542,7 +2657,7 @@
      * Check if player is ready
      */
     isReady() {
-      return this._isAttached && !this._isDestroyed && this.video?.readyState >= 2;
+      return this._isAttached && !this._isDestroyed && this.video ? this.video.readyState >= 2 : false;
     }
   }
   
@@ -2557,24 +2672,24 @@
   // Auto-initialize if video element exists with data attributes
   document.addEventListener('DOMContentLoaded', () => {
     const videoEl = document.getElementById('inlineVideoPlayer');
-    const container = videoEl?.closest('.video-container, .inline-player');
+    const container = videoEl ? (videoEl.closest('.video-container, .inline-player') || videoEl.parentElement) : null;
     
     if (videoEl && container) {
       // Check for initialization data
       const initData = {
-        contentId: videoEl.dataset.contentId,
-        autoplay: videoEl.dataset.autoplay === 'true',
-        muted: videoEl.dataset.muted === 'true',
+        contentId: videoEl.dataset ? videoEl.dataset.contentId : null,
+        autoplay: videoEl.dataset ? videoEl.dataset.autoplay === 'true' : false,
+        muted: videoEl.dataset ? videoEl.dataset.muted === 'true' : false,
         contentMetadata: window.currentContent || null,
-        // --- FIXED: Safe collection context extraction to prevent fatal errors ---
+        // --- SAFE collection context extraction to prevent fatal errors ---
         collectionContext: (() => {
           // Only proceed if currentContent exists and is an object
           if (window.currentContent && typeof window.currentContent === 'object') {
             return {
               collectionId: window.currentContent.series_id || window.currentContent.playlist_id || null,
               playlistId: window.currentContent.playlist_id || window.currentContent.series_id || null,
-              currentSortIndex: window.currentContent.sort_index ?? null,
-              episodeNumber: window.currentContent.episode_number ?? null,
+              currentSortIndex: window.currentContent.sort_index !== undefined ? window.currentContent.sort_index : null,
+              episodeNumber: window.currentContent.episode_number !== undefined ? window.currentContent.episode_number : null,
               itemType: window.currentContent.media_type === 'audio' ? 'track' : 'episode'
             };
           }
@@ -2587,14 +2702,16 @@
             itemType: null
           };
         })()
-        // --- END FIXED BLOCK ---
+        // --- END SAFE FIXED BLOCK ---
       };
       
       // Delay to ensure dependencies load
       setTimeout(() => {
         try {
-          const player = new EnhancedVideoPlayer();
-          player.attach(videoEl, container, initData);
+          const player = new EnhancedVideoPlayer(initData);
+          player.attach(videoEl, container, initData).catch(err => {
+            console.warn('⚠️ Player attach had issues:', err);
+          });
           
           // Expose for debugging
           window.bantuPlayer = player;
@@ -2611,7 +2728,9 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (Phase 3 + Phase 1D Enhanced)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.1.0 - Syntax Safe)');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
+  console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments (this.player?.property = value)');
+  console.log('   🔧 CRITICAL FIX: Replaced with safe conditional checks (if (this.player) { this.player.property = value })');
   
 })();
