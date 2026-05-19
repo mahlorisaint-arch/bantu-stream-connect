@@ -99,11 +99,318 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// ===== PHASE 1D: STREAMING ARCHITECTURE FUNCTIONS =====
+// ===== PHASE 5: LOAD CONTENT WITH ENGAGEMENT STATS =====
 /**
- * PHASE 1D - SINGLE SOURCE OF TRUTH
- * Loads collections (playlists) with their content in a single query
- * Fixes: 0 items bug, broken thumbnails, disconnected navigation
+ * PHASE 5 MIGRATION: Load content with content_engagement_stats instead of direct metrics
+ * OLD: views_count, likes_count on Content table
+ * NEW: content_engagement_stats.total_views, content_engagement_stats.total_likes
+ */
+async function loadContentWithEngagementStats(creatorId, limit = 50) {
+  const { data, error } = await supabase
+    .from('Content')
+    .select(`
+      id,
+      title,
+      description,
+      thumbnail_url,
+      file_url,
+      duration,
+      media_type,
+      content_format,
+      created_at,
+      user_id,
+      is_pinned,
+      is_channel_trailer,
+      status,
+      user_profiles!user_id (
+        id,
+        full_name,
+        username,
+        avatar_url
+      ),
+      content_engagement_stats (
+        total_views,
+        total_likes,
+        total_comments,
+        total_valid_views
+      )
+    `)
+    .eq('user_id', creatorId)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error loading content with engagement stats:', error);
+    return [];
+  }
+
+  // Transform to include metrics at root level for backward compatibility
+  return (data || []).map(item => ({
+    ...item,
+    views_count: item.content_engagement_stats?.total_views || 0,
+    likes_count: item.content_engagement_stats?.total_likes || 0,
+    comments_count: item.content_engagement_stats?.total_comments || 0,
+    valid_views_count: item.content_engagement_stats?.total_valid_views || 0
+  }));
+}
+
+// ===== PHASE 5: LOAD PLAYLISTS WITH JUNCTION TABLE =====
+/**
+ * PHASE 5 MIGRATION: Load playlists using playlist_contents junction table
+ * OLD: Direct Content relationship on creator_playlists
+ * NEW: creator_playlists -> playlist_contents -> Content
+ */
+async function loadPlaylistsWithItems(creatorId) {
+  // First load playlists
+  let playlistsQuery = supabase
+    .from('creator_playlists')
+    .select('*')
+    .eq('creator_id', creatorId);
+
+  // If not owner, only show public playlists
+  if (!window.currentUser || window.currentUser.id !== creatorId) {
+    playlistsQuery = playlistsQuery.eq('visibility', 'public');
+  }
+
+  const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
+  
+  if (playlistsError) {
+    console.error('Error loading playlists:', playlistsError);
+    return [];
+  }
+
+  if (!playlistsData || playlistsData.length === 0) {
+    return [];
+  }
+
+  // Load playlist items using junction table
+  const playlistIds = playlistsData.map(p => p.id);
+  const { data: playlistItems, error: itemsError } = await supabase
+    .from('playlist_contents')
+    .select(`
+      id,
+      playlist_id,
+      content_id,
+      sort_index,
+      item_type,
+      track_number,
+      season_number,
+      Content (
+        id,
+        title,
+        thumbnail_url,
+        duration,
+        media_type,
+        status,
+        content_engagement_stats (
+          total_views,
+          total_likes
+        )
+      )
+    `)
+    .in('playlist_id', playlistIds)
+    .order('sort_index', { ascending: true });
+
+  if (itemsError) {
+    console.error('Error loading playlist items from junction table:', itemsError);
+    // Return playlists without items rather than failing
+    return playlistsData.map(playlist => ({
+      ...playlist,
+      creator_playlist_items: [],
+      item_count: 0
+    }));
+  }
+
+  // Group items by playlist_id
+  const itemsByPlaylist = {};
+  (playlistItems || []).forEach(item => {
+    if (!itemsByPlaylist[item.playlist_id]) {
+      itemsByPlaylist[item.playlist_id] = [];
+    }
+    // Add views/likes from engagement stats
+    const contentWithMetrics = {
+      ...item.Content,
+      views_count: item.Content?.content_engagement_stats?.total_views || 0,
+      likes_count: item.Content?.content_engagement_stats?.total_likes || 0
+    };
+    itemsByPlaylist[item.playlist_id].push({
+      ...item,
+      Content: contentWithMetrics
+    });
+  });
+
+  // Attach items to playlists and calculate counts
+  return playlistsData.map(playlist => ({
+    ...playlist,
+    creator_playlist_items: itemsByPlaylist[playlist.id] || [],
+    item_count: itemsByPlaylist[playlist.id]?.length || 0
+  }));
+}
+
+// ===== PHASE 5: LOAD PLAYLIST ITEMS FOR A SPECIFIC PLAYLIST =====
+async function loadPlaylistItemsForBuilder(playlistId) {
+  const { data: items, error } = await supabase
+    .from('playlist_contents')
+    .select(`
+      id,
+      playlist_id,
+      content_id,
+      sort_index,
+      item_type,
+      track_number,
+      season_number,
+      Content (
+        id,
+        title,
+        thumbnail_url,
+        duration,
+        media_type,
+        status,
+        content_engagement_stats (
+          total_views,
+          total_likes
+        )
+      )
+    `)
+    .eq('playlist_id', playlistId)
+    .order('sort_index', { ascending: true });
+
+  if (error) {
+    console.error('Error loading playlist items:', error);
+    return [];
+  }
+
+  return (items || []).map(item => ({
+    ...item,
+    Content: {
+      ...item.Content,
+      views_count: item.Content?.content_engagement_stats?.total_views || 0,
+      likes_count: item.Content?.content_engagement_stats?.total_likes || 0
+    }
+  }));
+}
+
+// ===== PHASE 5: ADD ITEM TO PLAYLIST USING JUNCTION TABLE =====
+async function addItemToPlaylist(playlistId, contentId, sortIndex = null) {
+  // Get current max sort_index
+  let maxSortIndex = 0;
+  if (sortIndex === null) {
+    const { data: existing } = await supabase
+      .from('playlist_contents')
+      .select('sort_index')
+      .eq('playlist_id', playlistId)
+      .order('sort_index', { ascending: false })
+      .limit(1);
+    
+    maxSortIndex = (existing && existing[0]?.sort_index) || 0;
+    sortIndex = maxSortIndex + 1;
+  }
+
+  const { error } = await supabase
+    .from('playlist_contents')
+    .insert({
+      playlist_id: playlistId,
+      content_id: parseInt(contentId),
+      sort_index: sortIndex,
+      created_at: new Date().toISOString()
+    });
+
+  if (error) throw error;
+  return true;
+}
+
+// ===== PHASE 5: REMOVE ITEM FROM PLAYLIST =====
+async function removeItemFromPlaylist(playlistContentId) {
+  const { error } = await supabase
+    .from('playlist_contents')
+    .delete()
+    .eq('id', playlistContentId);
+
+  if (error) throw error;
+  return true;
+}
+
+// ===== PHASE 5: UPDATE PLAYLIST ITEM ORDER =====
+async function updatePlaylistItemOrder(playlistId, orderedItemIds) {
+  // Update each item's sort_index based on position in array
+  for (let i = 0; i < orderedItemIds.length; i++) {
+    const { error } = await supabase
+      .from('playlist_contents')
+      .update({ sort_index: i + 1 })
+      .eq('id', orderedItemIds[i])
+      .eq('playlist_id', playlistId);
+
+    if (error) {
+      console.error('Error updating item order:', error);
+      return false;
+    }
+  }
+  return true;
+}
+
+// ===== PHASE 5: SAVE PLAYLIST (CREATE OR UPDATE) =====
+async function savePlaylistV2(playlistData, playlistId = null) {
+  const now = new Date().toISOString();
+  const data = {
+    creator_id: window.creatorId,
+    name: playlistData.name,
+    description: playlistData.description || '',
+    playlist_type: playlistData.playlist_type || 'playlist',
+    visibility: playlistData.visibility || 'public',
+    is_featured: playlistData.is_featured || false,
+    updated_at: now
+  };
+
+  if (playlistData.custom_thumbnail_url) {
+    data.custom_thumbnail_url = playlistData.custom_thumbnail_url;
+  }
+
+  let result;
+  if (playlistId) {
+    result = await supabase
+      .from('creator_playlists')
+      .update(data)
+      .eq('id', playlistId)
+      .eq('creator_id', window.creatorId)
+      .select()
+      .single();
+  } else {
+    data.created_at = now;
+    result = await supabase
+      .from('creator_playlists')
+      .insert([data])
+      .select()
+      .single();
+  }
+
+  if (result.error) throw result.error;
+  return result.data;
+}
+
+// ===== PHASE 5: DELETE PLAYLIST =====
+async function deletePlaylistV2(playlistId) {
+  // First delete all playlist_contents entries
+  await supabase
+    .from('playlist_contents')
+    .delete()
+    .eq('playlist_id', playlistId);
+
+  // Then delete the playlist
+  const { error } = await supabase
+    .from('creator_playlists')
+    .delete()
+    .eq('id', playlistId)
+    .eq('creator_id', window.creatorId);
+
+  if (error) throw error;
+  return true;
+}
+
+// ===== PHASE 1D: COLLECTIONS GRID (UPDATED FOR PHASE 5) =====
+/**
+ * PHASE 1D - SINGLE SOURCE OF TRUTH with PHASE 5 migration
+ * Loads collections (playlists) with their content using playlist_contents junction table
  */
 async function loadCollections() {
   const { data, error } = await supabase
@@ -116,16 +423,7 @@ async function loadCollections() {
       custom_thumbnail_url,
       created_at,
       visibility,
-      is_featured,
-      Content (
-        id,
-        title,
-        thumbnail_url,
-        duration,
-        content_format,
-        episode_number,
-        views_count
-      )
+      is_featured
     `)
     .eq("creator_id", window.creatorId)
     .order("created_at", { ascending: false });
@@ -135,20 +433,68 @@ async function loadCollections() {
     return [];
   }
 
-  return data || [];
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Load items from playlist_contents junction table
+  const playlistIds = data.map(p => p.id);
+  const { data: itemsData, error: itemsError } = await supabase
+    .from("playlist_contents")
+    .select(`
+      id,
+      playlist_id,
+      content_id,
+      sort_index,
+      Content (
+        id,
+        title,
+        thumbnail_url,
+        duration,
+        media_type,
+        status,
+        content_engagement_stats (
+          total_views
+        )
+      )
+    `)
+    .in("playlist_id", playlistIds)
+    .order("sort_index", { ascending: true });
+
+  if (itemsError) {
+    console.error("Error loading collection items:", itemsError);
+    return data.map(playlist => ({ ...playlist, Content: [] }));
+  }
+
+  // Group items by playlist_id
+  const itemsByPlaylist = {};
+  (itemsData || []).forEach(item => {
+    if (!itemsByPlaylist[item.playlist_id]) {
+      itemsByPlaylist[item.playlist_id] = [];
+    }
+    itemsByPlaylist[item.playlist_id].push({
+      ...item.Content,
+      sort_index: item.sort_index,
+      playlist_content_id: item.id
+    });
+  });
+
+  // Sort items within each playlist by sort_index
+  Object.keys(itemsByPlaylist).forEach(playlistId => {
+    itemsByPlaylist[playlistId].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+  });
+
+  // Attach items to playlists
+  return data.map(playlist => ({
+    ...playlist,
+    Content: itemsByPlaylist[playlist.id] || []
+  }));
 }
 
-/**
- * FIXED: Get accurate item count using Content relation
- */
 function getCollectionItemCount(collection) {
   return collection.Content?.length || 0;
 }
 
-/**
- * FIXED: Smart thumbnail logic with proper fallback chain
- * custom_thumbnail → first item thumbnail → placeholder
- */
 function getCollectionThumbnail(collection) {
   if (collection.custom_thumbnail_url) {
     return fixMediaUrl(collection.custom_thumbnail_url);
@@ -159,11 +505,6 @@ function getCollectionThumbnail(collection) {
   return "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=225&fit=crop";
 }
 
-/**
- * RENDER COLLECTIONS GRID (Phase 1D)
- * Creates cards that behave like YouTube/Spotify/Netflix
- * UPDATED: Uses content-detail.html?playlist_id= instead of collection.html
- */
 async function renderCollectionsGrid() {
   const collections = await loadCollections();
   const grid = document.getElementById("collectionsGrid");
@@ -221,13 +562,11 @@ async function renderCollectionsGrid() {
     `;
   }).join('');
 
-  // Add click handlers for navigation (Phase 1D: proper collection routing using content-detail.html?playlist_id=)
   grid.querySelectorAll('.collection-card').forEach(card => {
     card.addEventListener('click', (e) => {
       const collectionId = card.dataset.collectionId;
       const collectionType = card.dataset.collectionType;
       if (collectionId) {
-        // ✅ UPDATED: Navigate to content-detail.html with playlist_id parameter (new architecture)
         window.location.href = `content-detail.html?playlist_id=${collectionId}&type=${collectionType}`;
       }
     });
@@ -460,7 +799,7 @@ function setupScaleControls() {
   }
 }
 
-// ===== ANALYTICS FUNCTIONS =====
+// ===== ANALYTICS FUNCTIONS (UPDATED FOR PHASE 5) =====
 function initAnalyticsModal() {
   const modal = document.getElementById('analytics-modal');
   if (!modal) return;
@@ -486,6 +825,7 @@ function initAnalyticsModal() {
 async function loadChannelAnalytics() {
   if (!window.currentUser || !window.creatorContent) return;
   
+  // Use engagement stats for accurate metrics
   const totalViews = window.creatorContent.reduce((s,c) => s + (c.views_count || 0), 0);
   const totalLikes = window.creatorContent.reduce((s,c) => s + (c.likes_count || 0), 0);
   const engagement = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) + '%' : '0%';
@@ -548,7 +888,7 @@ async function loadChannelAnalytics() {
   });
 }
 
-// ===== PLAYLIST BUILDER FUNCTIONS =====
+// ===== PLAYLIST BUILDER FUNCTIONS (UPDATED FOR PHASE 5) =====
 function initPlaylistBuilder() {
   const modal = document.getElementById('playlist-builder-modal');
   if (!modal) return;
@@ -565,12 +905,12 @@ function initPlaylistBuilder() {
   
   const saveBtn = document.getElementById('pl-save-btn');
   if (saveBtn) {
-    saveBtn.addEventListener('click', savePlaylist);
+    saveBtn.addEventListener('click', savePlaylistV2Wrapper);
   }
   
   const deleteBtn = document.getElementById('pl-delete-btn');
   if (deleteBtn) {
-    deleteBtn.addEventListener('click', deletePlaylist);
+    deleteBtn.addEventListener('click', deletePlaylistV2Wrapper);
   }
   
   setupPlaylistTabs();
@@ -608,7 +948,8 @@ async function openPlaylistBuilder(id = null) {
     if (plModalTitle) plModalTitle.textContent = 'Edit Playlist';
     if (plDeleteBtn) plDeleteBtn.style.display = 'block';
     
-    const { data: pl, error } = await supabase.from('creator_playlists')
+    const { data: pl, error } = await supabase
+      .from('creator_playlists')
       .select('*')
       .eq('id', id)
       .eq('creator_id', window.creatorId)
@@ -626,7 +967,7 @@ async function openPlaylistBuilder(id = null) {
     if (plVisSelect) plVisSelect.value = pl.visibility || 'public';
     if (plFeaturedCheck) plFeaturedCheck.checked = pl.is_featured || false;
     
-    await loadPLItems(pl.id);
+    await loadPLItemsV2(pl.id);
   } else {
     if (plModalTitle) plModalTitle.textContent = 'Create Playlist';
     if (plItemsPanel) {
@@ -634,25 +975,18 @@ async function openPlaylistBuilder(id = null) {
     }
   }
   
-  await loadPLLibrary();
+  await loadPLLibraryV2();
   const modal = document.getElementById('playlist-builder-modal');
   if (modal) modal.classList.add('active');
 }
 
-async function loadPLItems(plId) {
-  const { data: items, error } = await supabase
-    .from('creator_playlist_items')
-    .select('*, Content!content_id(id,title,thumbnail_url,duration,views_count,created_at,media_type)')
-    .eq('playlist_id', plId)
-    .order('position', {ascending: true});
-  
-  if (!error) {
-    window._plItems = items || [];
-    renderPLItems();
-  }
+async function loadPLItemsV2(plId) {
+  const items = await loadPlaylistItemsForBuilder(plId);
+  window._plItems = items;
+  renderPLItemsV2();
 }
 
-function renderPLItems() {
+function renderPLItemsV2() {
   const panel = document.getElementById('pl-items-panel');
   const countSpan = document.getElementById('pl-count');
   
@@ -693,17 +1027,17 @@ function renderPLItems() {
     
     const removeBtn = clone.querySelector('.pl-remove');
     if (removeBtn) {
-      removeBtn.onclick = () => removePLItem(item.id);
+      removeBtn.onclick = () => removePLItemV2(item.id);
     }
     
     if (el && panel) {
-      setupPLDragDrop(el, panel);
+      setupPLDragDropV2(el, panel);
       panel.appendChild(el);
     }
   });
 }
 
-function setupPLDragDrop(el, container) {
+function setupPLDragDropV2(el, container) {
   if (!el || !container) return;
   
   el.setAttribute('draggable', 'true');
@@ -716,7 +1050,7 @@ function setupPLDragDrop(el, container) {
   
   el.addEventListener('dragend', () => { 
     el.classList.remove('dragging'); 
-    savePLOrder(); 
+    savePLOrderV2(); 
   });
   
   if (container && !container.hasDragOverListener) {
@@ -750,23 +1084,36 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-async function savePLOrder() {
+async function savePLOrderV2() {
   const plId = document.getElementById('pl-id')?.value;
   if (!plId) return;
   
   const items = document.querySelectorAll('.pl-item');
+  const orderedItemIds = [];
   for (let i = 0; i < items.length; i++) {
-    const el = items[i];
-    await supabase.from('creator_playlist_items').update({position: i+1}).eq('id', el.dataset.id);
+    orderedItemIds.push(items[i].dataset.id);
   }
+  await updatePlaylistItemOrder(plId, orderedItemIds);
 }
 
-async function loadPLLibrary(filter = 'all', search = '') {
-  let query = supabase.from('Content')
-    .select('id,title,thumbnail_url,duration,views_count,media_type,genre')
+async function loadPLLibraryV2(filter = 'all', search = '') {
+  let query = supabase
+    .from('Content')
+    .select(`
+      id,
+      title,
+      thumbnail_url,
+      duration,
+      media_type,
+      genre,
+      content_engagement_stats (
+        total_views,
+        total_likes
+      )
+    `)
     .eq('user_id', window.creatorId)
     .eq('status', 'published')
-    .order('created_at', {ascending: false})
+    .order('created_at', { ascending: false })
     .limit(50);
   
   if (filter !== 'all') {
@@ -779,11 +1126,15 @@ async function loadPLLibrary(filter = 'all', search = '') {
   if (search) query = query.ilike('title', `%${search}%`);
   
   const { data } = await query;
-  window._plLib = data || [];
-  renderPLLib(filter, search);
+  window._plLib = (data || []).map(item => ({
+    ...item,
+    views_count: item.content_engagement_stats?.total_views || 0,
+    likes_count: item.content_engagement_stats?.total_likes || 0
+  }));
+  renderPLLibV2(filter, search);
 }
 
-function renderPLLib(filter, search) {
+function renderPLLibV2(filter, search) {
   const grid = document.getElementById('pl-lib-grid');
   if (!grid) return;
   
@@ -794,7 +1145,7 @@ function renderPLLib(filter, search) {
   if (searchInput) {
     searchInput.oninput = (e) => { 
       clearTimeout(window._libTimer); 
-      window._libTimer = setTimeout(() => loadPLLibrary(filter, e.target.value), 300); 
+      window._libTimer = setTimeout(() => loadPLLibraryV2(filter, e.target.value), 300); 
     };
   }
   
@@ -804,7 +1155,7 @@ function renderPLLib(filter, search) {
       filters.forEach(x => x.classList.remove('active'));
       b.classList.add('active');
       const searchVal = document.getElementById('pl-lib-search')?.value || '';
-      loadPLLibrary(b.dataset.f, searchVal);
+      loadPLLibraryV2(b.dataset.f, searchVal);
     };
   });
   
@@ -828,7 +1179,7 @@ function renderPLLib(filter, search) {
     if (addBtn) {
       addBtn.onclick = (e) => { 
         e.stopPropagation(); 
-        addPLItem(c.id); 
+        addPLItemV2(c.id); 
       };
     }
     
@@ -837,34 +1188,30 @@ function renderPLLib(filter, search) {
   }).join('');
 }
 
-async function addPLItem(contentId) {
+async function addPLItemV2(contentId) {
   const plId = document.getElementById('pl-id')?.value;
   if (!plId) {
     showToast('Save playlist first', 'warning');
     return;
   }
   
-  const max = window._plItems.length ? Math.max(...window._plItems.map(i => i.position || 0)) : 0;
-  const { error } = await supabase.from('creator_playlist_items').insert({
-    playlist_id: plId,
-    content_id: parseInt(contentId),
-    position: max + 1,
-    added_at: new Date().toISOString()
-  });
-  
-  if (!error) {
-    await loadPLItems(plId);
-    loadPLLibrary();
+  try {
+    await addItemToPlaylist(plId, contentId);
+    await loadPLItemsV2(plId);
+    loadPLLibraryV2();
     showToast('Added!', 'success');
+  } catch (error) {
+    console.error('Error adding item:', error);
+    showToast('Failed to add item', 'error');
   }
 }
 
-async function removePLItem(id) {
-  await supabase.from('creator_playlist_items').delete().eq('id', id);
+async function removePLItemV2(playlistContentId) {
+  await removeItemFromPlaylist(playlistContentId);
   const plId = document.getElementById('pl-id')?.value;
   if (plId) {
-    await loadPLItems(plId);
-    loadPLLibrary();
+    await loadPLItemsV2(plId);
+    loadPLLibraryV2();
   }
 }
 
@@ -890,7 +1237,7 @@ function setupPlaylistTabs() {
   });
 }
 
-async function savePlaylist() {
+async function savePlaylistV2Wrapper() {
   const title = document.getElementById('pl-title')?.value.trim();
   if (!title) {
     showToast('Title required', 'warning');
@@ -898,52 +1245,42 @@ async function savePlaylist() {
   }
   
   const id = document.getElementById('pl-id')?.value;
-  const data = {
-    creator_id: window.creatorId,
+  const playlistData = {
     name: title,
     description: document.getElementById('pl-desc')?.value || '',
     playlist_type: document.getElementById('pl-type')?.value || 'playlist',
     visibility: document.getElementById('pl-vis')?.value || 'public',
-    is_featured: document.getElementById('pl-featured')?.checked || false,
-    updated_at: new Date().toISOString()
+    is_featured: document.getElementById('pl-featured')?.checked || false
   };
   
-  let result;
-  if (id) {
-    result = await supabase.from('creator_playlists')
-      .update(data)
-      .eq('id', id)
-      .eq('creator_id', window.creatorId)
-      .select()
-      .single();
-  } else {
-    result = await supabase.from('creator_playlists')
-      .insert([{...data, created_at: new Date().toISOString()}])
-      .select()
-      .single();
-  }
-  
-  if (!result.error) {
+  try {
+    await savePlaylistV2(playlistData, id);
     await loadCreatorData();
-    // Refresh the collections grid (Phase 1D)
     await renderCollectionsGrid();
     const modal = document.getElementById('playlist-builder-modal');
     if (modal) modal.classList.remove('active');
     showToast(id ? 'Updated!' : 'Created!', 'success');
+  } catch (error) {
+    console.error('Save error:', error);
+    showToast('Failed to save playlist', 'error');
   }
 }
 
-async function deletePlaylist() {
+async function deletePlaylistV2Wrapper() {
   const id = document.getElementById('pl-id')?.value;
   if (!id || !confirm('Delete playlist?')) return;
   
-  await supabase.from('creator_playlists').delete().eq('id', id).eq('creator_id', window.creatorId);
-  await loadCreatorData();
-  // Refresh the collections grid (Phase 1D)
-  await renderCollectionsGrid();
-  const modal = document.getElementById('playlist-builder-modal');
-  if (modal) modal.classList.remove('active');
-  showToast('Deleted', 'info');
+  try {
+    await deletePlaylistV2(id);
+    await loadCreatorData();
+    await renderCollectionsGrid();
+    const modal = document.getElementById('playlist-builder-modal');
+    if (modal) modal.classList.remove('active');
+    showToast('Deleted', 'info');
+  } catch (error) {
+    console.error('Delete error:', error);
+    showToast('Failed to delete playlist', 'error');
+  }
 }
 
 // ===== SIDEBAR SETUP =====
@@ -1300,7 +1637,7 @@ async function saveAboutSection() {
   }
 }
 
-// ===== DATA LOADING FUNCTIONS =====
+// ===== DATA LOADING FUNCTIONS (UPDATED FOR PHASE 5) =====
 function getUrlParam(name) {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get(name);
@@ -1315,7 +1652,6 @@ async function loadCreatorData() {
       return;
     }
     
-    // FIX #1: Update view-all link
     const viewAllLink = document.getElementById('view-all-playlists');
     if (viewAllLink) {
       viewAllLink.href = `playlists.html?creatorId=${window.creatorId}`;
@@ -1337,16 +1673,8 @@ async function loadCreatorData() {
     
     if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
     
-    // Load content
-    const { data: content, error: contentError } = await supabase.from('Content')
-      .select('*, user_profiles!user_id(*)')
-      .eq('user_id', window.creatorId)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(50);
-      
-    if (contentError) throw contentError;
-    window.creatorContent = content || [];
+    // Load content with engagement stats (PHASE 5)
+    window.creatorContent = await loadContentWithEngagementStats(window.creatorId, 50);
     
     // Load connector count
     const { count: connectorCount, error: countError } = await supabase.from('connectors')
@@ -1372,54 +1700,14 @@ async function loadCreatorData() {
     
     if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
     
-    // Load playlists
-    let playlistsQuery = supabase.from('creator_playlists')
-      .select('*')
-      .eq('creator_id', window.creatorId);
-    
-    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-      playlistsQuery = playlistsQuery.eq('visibility', 'public');
-    }
-    
-    const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
-    if (playlistsError) console.error('Error loading playlists:', playlistsError);
-    
-    // FIX #2: Load playlist items separately
-    const { data: playlistItems, error: itemsError } = await supabase
-      .from('creator_playlist_items')
-      .select(`
-        *,
-        Content (
-          id,
-          title,
-          thumbnail_url,
-          views_count,
-          duration
-        )
-      `);
-    
-    if (itemsError) console.error('Error loading playlist items:', itemsError);
-    
-    // FIX #3: Map items to their playlists
-    const itemsByPlaylist = {};
-    (playlistItems || []).forEach(item => {
-      if (!itemsByPlaylist[item.playlist_id]) {
-        itemsByPlaylist[item.playlist_id] = [];
-      }
-      itemsByPlaylist[item.playlist_id].push(item);
-    });
-    
-    // Attach items to playlists
-    window.playlists = (playlistsData || []).map(playlist => ({
-      ...playlist,
-      creator_playlist_items: itemsByPlaylist[playlist.id] || []
-    }));
+    // Load playlists with items using PHASE 5 junction table
+    window.playlists = await loadPlaylistsWithItems(window.creatorId);
     
     // Load badges
     const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
     window.achievements = badges || [];
     
-    console.log('✅ Creator data loaded:', { 
+    console.log('✅ Creator data loaded (PHASE 5):', { 
       profile: window.creatorProfile, 
       contentCount: window.creatorContent.length, 
       connectorCount: window.connectorCount, 
@@ -1433,7 +1721,7 @@ async function loadCreatorData() {
     updateContentUI(window.creatorContent);
     updatePlaylistsUI();
     
-    // PHASE 1D: Render collections grid with streaming architecture
+    // Render collections grid with streaming architecture
     await renderCollectionsGrid();
     
     checkAndShowAllSections();
@@ -1448,7 +1736,6 @@ async function loadCreatorData() {
     console.error('❌ Error loading creator channel:', error);
     showToast('Failed to load creator channel', 'error');
     
-    // Still show the app
     setTimeout(() => {
       const loading = document.getElementById('loading');
       const app = document.getElementById('app');
@@ -1459,7 +1746,6 @@ async function loadCreatorData() {
 }
 
 function checkAndShowAllSections() {
-  // Show popular section if there's content
   if (window.creatorContent && window.creatorContent.length > 0) {
     const mostPopular = [...window.creatorContent].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 4);
     if (mostPopular.length > 0) {
@@ -1469,22 +1755,18 @@ function checkAndShowAllSections() {
     }
   }
   
-  // Show activity section
   const activitySection = document.getElementById('activity-section');
   if (activitySection) activitySection.style.display = 'block';
   updateActivityFeed();
   
-  // Show fan section
   const fanSection = document.getElementById('fan-section');
   if (fanSection) fanSection.style.display = 'block';
   updateFanHighlights();
   
-  // Show achievements section
   const achievementsSection = document.getElementById('achievements-section');
   if (achievementsSection) achievementsSection.style.display = 'block';
   updateAchievementsUI();
   
-  // Show schedule section if there's a schedule
   if (window.creatorProfile && window.creatorProfile.upload_schedule) {
     const scheduleSection = document.getElementById('schedule-section');
     const scheduleText = document.getElementById('schedule-text');
@@ -1492,16 +1774,13 @@ function checkAndShowAllSections() {
     if (scheduleText) scheduleText.textContent = window.creatorProfile.upload_schedule;
   }
   
-  // Show recommended section
   const recommendedSection = document.getElementById('recommended-section');
   if (recommendedSection) recommendedSection.style.display = 'block';
   loadRecommendedCreators();
   
-  // Show support section
   const supportSection = document.getElementById('support-section');
   if (supportSection) supportSection.style.display = 'block';
   
-  // Show trailer if exists
   const trailer = window.creatorContent.find(c => c.is_channel_trailer === true);
   if (trailer) {
     const trailerSection = document.getElementById('trailer-section');
@@ -1509,7 +1788,6 @@ function checkAndShowAllSections() {
     updateTrailerUI(trailer);
   }
   
-  // Show pinned content if exists
   const pinned = window.creatorContent.find(c => c.is_pinned === true);
   if (pinned) {
     const pinnedSection = document.getElementById('pinned-section');
@@ -1927,7 +2205,6 @@ function updatePlaylistsUI() {
           e.preventDefault();
           openPlaylistBuilder(playlistId);
         } else {
-          // ✅ UPDATED: Navigate to content-detail.html with playlist_id parameter
           window.location.href = `content-detail.html?playlist_id=${playlistId}`;
         }
       });
@@ -2520,17 +2797,29 @@ function setupEventListeners() {
 
 async function searchContent(query, category = '', sortBy = 'newest') {
   try {
-    let qb = supabase.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status', 'published');
+    let qb = supabase.from('Content')
+      .select(`
+        *,
+        user_profiles!user_id(*),
+        content_engagement_stats (
+          total_views,
+          total_likes,
+          total_comments
+        )
+      `)
+      .ilike('title', `%${query}%`)
+      .eq('status', 'published');
     if (category) qb = qb.eq('genre', category);
     const { data, error } = await qb.limit(50);
     if (error) throw error;
-    const enriched = await Promise.all((data || []).map(async item => {
-      const { count: views } = await supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-      const { count: likes } = await supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-      return { ...item, real_views: views || 0, real_likes: likes || 0 };
+    const enriched = (data || []).map(item => ({
+      ...item,
+      views_count: item.content_engagement_stats?.total_views || 0,
+      likes_count: item.content_engagement_stats?.total_likes || 0,
+      comments_count: item.content_engagement_stats?.total_comments || 0
     }));
-    if (sortBy === 'popular') enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
-    else if (sortBy === 'trending') enriched.sort((a, b) => ((b.real_views || 0) + ((b.real_likes || 0) * 2)) - ((a.real_views || 0) + ((a.real_likes || 0) * 2)));
+    if (sortBy === 'popular') enriched.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+    else if (sortBy === 'trending') enriched.sort((a, b) => ((b.views_count || 0) + ((b.likes_count || 0) * 2)) - ((a.views_count || 0) + ((a.likes_count || 0) * 2)));
     else enriched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     return enriched;
   } catch (error) {
@@ -2548,7 +2837,7 @@ function renderSearchResults(results) {
   }
   grid.innerHTML = results.map(item => {
     const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-    return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy"><div class="thumbnail-overlay"></div><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div></div><div class="card-content"><h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3><div class="card-meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.real_views || 0)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.real_likes || 0)}</span></div></div></div>`;
+    return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy"><div class="thumbnail-overlay"></div><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div></div><div class="card-content"><h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3><div class="card-meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span></div></div></div>`;
   }).join('');
   grid.querySelectorAll('.content-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -2625,7 +2914,11 @@ async function initializeCreatorChannel() {
       if (app) app.style.display = 'block';
     }, 500);
     
-    console.log('✅ Creator channel initialized with Phase 1D streaming architecture!');
+    console.log('✅ Creator channel initialized with PHASE 5 database migration!');
+    console.log('   🚀 Using content_engagement_stats for metrics');
+    console.log('   🚀 Using playlist_contents junction table for playlists');
+    console.log('   🚀 Using status = "published" for content filtering');
+    console.log('   🚀 Using sort_index for ordering');
   } catch (error) {
     console.error('❌ Error initializing:', error);
     showToast('Failed to initialize', 'error');
