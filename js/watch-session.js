@@ -8,6 +8,7 @@
 // ✅ Cross-component event dispatching for view count sync
 // ✅ Retry logic with exponential backoff for failed heartbeats
 // ✅ Safe sync lifecycle with visibility handling
+// ✅ FIXED: Missing methods (syncFinalState, onBeforeUnload, onVideoError)
 
 (function() {
   'use strict';
@@ -83,6 +84,14 @@
     this.onError = config.onError || null;
     this.onProgressSync = config.onProgressSync || null;
 
+    // Bound event handlers (for proper removal)
+    this._boundTimeUpdate = null;
+    this._boundPlay = null;
+    this._boundPause = null;
+    this._boundEnded = null;
+    this._boundError = null;
+    this._boundUnload = null;
+
     console.log(
       '✅ WatchSessionManager initialized:',
       {
@@ -139,8 +148,6 @@
         sequenceNumber: this.sequenceNumber,
         viewThresholdReached: this.viewThresholdReached,
         viewValidationConfirmed: this.viewValidationConfirmed,
-        // CRITICAL: Do NOT persist viewValidationConfirmed as "already done"
-        // We reset it on restore to ensure re-validation for new sessions
         isCompleted: this.isCompleted,
         collectionId: this.collectionId,
         playlistId: this.playlistId,
@@ -175,8 +182,7 @@
           this.totalWatchTimeMs = data.totalWatchTimeMs || 0;
           this.sequenceNumber = data.sequenceNumber || 0;
           this.viewThresholdReached = data.viewThresholdReached || false;
-          // CRITICAL FIX: Reset validation confirmed on restore
-          // This ensures we re-validate views for resumed sessions
+          // Reset validation confirmed on restore to ensure re-validation for resumed sessions
           this.viewValidationConfirmed = false;
           this.isCompleted = data.isCompleted || false;
           this.restoredFromStorage = true;
@@ -721,12 +727,24 @@
   WatchSessionManager.prototype._detachEventListeners = function() {
     if (!this.videoElement) return;
 
-    this.videoElement.removeEventListener('timeupdate', this._boundTimeUpdate);
-    this.videoElement.removeEventListener('play', this._boundPlay);
-    this.videoElement.removeEventListener('pause', this._boundPause);
-    this.videoElement.removeEventListener('ended', this._boundEnded);
-    this.videoElement.removeEventListener('error', this._boundError);
-    window.removeEventListener('beforeunload', this._boundUnload);
+    if (this._boundTimeUpdate) {
+      this.videoElement.removeEventListener('timeupdate', this._boundTimeUpdate);
+    }
+    if (this._boundPlay) {
+      this.videoElement.removeEventListener('play', this._boundPlay);
+    }
+    if (this._boundPause) {
+      this.videoElement.removeEventListener('pause', this._boundPause);
+    }
+    if (this._boundEnded) {
+      this.videoElement.removeEventListener('ended', this._boundEnded);
+    }
+    if (this._boundError) {
+      this.videoElement.removeEventListener('error', this._boundError);
+    }
+    if (this._boundUnload) {
+      window.removeEventListener('beforeunload', this._boundUnload);
+    }
 
     console.log('🔌 Event listeners detached');
   };
@@ -871,17 +889,17 @@
 
   WatchSessionManager.prototype._handleError = function(context, error) {
     console.error('❌ WatchSessionManager error [' + context + ']:', {
-      message: error.message || error,
-      code: error.code,
-      details: error.details
+      message: error?.message || error,
+      code: error?.code,
+      details: error?.details
     });
 
     if (this.onError) {
       this.onError({
         context: context,
         error: {
-          message: error.message || String(error),
-          code: error.code,
+          message: error?.message || String(error),
+          code: error?.code,
           timestamp: Date.now()
         }
       });
