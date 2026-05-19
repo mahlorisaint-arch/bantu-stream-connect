@@ -14,12 +14,13 @@
 // ✅ Social features integration (likes, favorites, shares) with RPC calls
 // 🔧 CRITICAL FIX (2026-05-19): Removed all optional chaining assignments
 // 🔧 CRITICAL FIX (2026-05-19): Safe conditional checks for all player properties
-// 🔧 VERSION: v2.1.0 - Cache-busting update for syntax error resolution
+// 🔧 AUDIO RENDERER FIX (2026-05-19): Automatic mute fallback for AUDIO_RENDERER_ERROR
+// 🔧 VERSION: v2.2.0 - Audio renderer error recovery
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v2.1.0 - Syntax Safe)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v2.2.0 - Audio Renderer Fix)');
 
   /**
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
@@ -139,6 +140,7 @@
       this._isDestroyed = false;
       this._listenersAttached = false;
       this._sourcePreserved = null;
+      this._audioRendererRecoveryAttempted = false; // Track audio renderer recovery
       
       // Mobile detection
       this._isMobile = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(
@@ -1043,7 +1045,74 @@
     }
     
     /**
-     * Handle error with retry logic
+     * Handle audio renderer error specifically
+     * This occurs when Chromium's audio pipeline fails to initialize
+     * (e.g., no audio output device, driver issues, or virtual machine/RDP)
+     */
+    _handleAudioRendererError(error) {
+      console.warn('🔧 AUDIO_RENDERER_ERROR detected - Audio pipeline failure');
+      console.warn('   Error details:', {
+        code: error ? error.code : 'unknown',
+        message: error ? error.message : 'unknown',
+        networkState: this.video ? this.video.networkState : 'unknown'
+      });
+      
+      // Prevent infinite recovery loops
+      if (this._audioRendererRecoveryAttempted) {
+        console.error('❌ Audio renderer recovery already attempted - giving up');
+        this._showErrorOverlay('Audio playback failed. Please check your audio output device and try again.');
+        return;
+      }
+      
+      this._audioRendererRecoveryAttempted = true;
+      
+      // Strategy: Force mute and reload the source
+      // This bypasses the audio pipeline entirely, allowing video to play
+      console.log('🔧 Attempting audio renderer recovery: Forcing mute and reloading...');
+      
+      // 1. Mute the video element
+      if (this.video) {
+        this.video.muted = true;
+        this.config.muted = true;
+        console.log('🔇 Video element muted for recovery');
+      }
+      
+      // 2. Reset retry attempts
+      this.retryAttempts = 0;
+      
+      // 3. Reload the source after a short delay
+      if (this.retryAttempts < this.config.retryCount) {
+        this.retryAttempts++;
+        setTimeout(() => {
+          if (!this._isDestroyed && this.video) {
+            console.log(`🔄 Reloading source in muted mode (attempt ${this.retryAttempts}/${this.config.retryCount})`);
+            this.video.load();
+            
+            // Attempt to play after reload
+            this.play().catch((playError) => {
+              console.warn('⚠️ Play after audio recovery failed:', playError.message);
+              this._showErrorOverlay('Unable to play media. Please check your audio output device.');
+            });
+          }
+        }, this.config.retryDelay);
+        return;
+      }
+      
+      // 4. Final fallback - show error with helpful message
+      this._showErrorOverlay(
+        'Audio playback error detected. Your browser may not have a working audio output device. ' +
+        'Please check your headphones/speakers and try again, or contact support.'
+      );
+      
+      this._emit('media:audio-renderer-error', {
+        error: error,
+        recoveryAttempted: true,
+        suggestion: 'Check audio output device or connect headphones'
+      });
+    }
+    
+    /**
+     * Handle error with retry logic and audio renderer special case
      */
     _handleError(event) {
       const error = this.video ? this.video.error : null;
@@ -1060,10 +1129,23 @@
         networkState: this.video ? this.video.networkState : 'unknown'
       });
       
+      // --- CRITICAL: Handle AUDIO_RENDERER_ERROR specifically ---
+      // This error (code 3 with message containing "AUDIO_RENDERER_ERROR") causes 
+      // the video stream to freeze because audio/video sync cannot be established.
+      const errorMessage = (error && error.message) ? error.message : '';
+      const isAudioRendererError = (error && error.code === 3) && 
+        (errorMessage.includes('AUDIO_RENDERER_ERROR') || errorMessage.includes('audio renderer'));
+      
+      if (isAudioRendererError) {
+        this._handleAudioRendererError(error);
+        return;
+      }
+      // --- END AUDIO RENDERER HANDLING ---
+      
       this.stats.errorCount++;
       this.errorState = error;
       
-      // Retry logic
+      // Standard retry logic for non-audio errors
       if (this.retryAttempts < this.config.retryCount) {
         this.retryAttempts++;
         console.log(`🔄 Retry attempt ${this.retryAttempts}/${this.config.retryCount}`);
@@ -1338,6 +1420,7 @@
         if (retryBtn) {
           retryBtn.addEventListener('click', () => {
             this.retryAttempts = 0;
+            this._audioRendererRecoveryAttempted = false; // Reset audio recovery flag
             if (this.video) this.video.load();
             this.play().catch(() => {});
             this._hideErrorOverlay();
@@ -1652,6 +1735,9 @@
       source.type = type;
       this.video.appendChild(source);
       
+      // Reset audio renderer recovery flag on fresh load
+      this._audioRendererRecoveryAttempted = false;
+      
       // Setup error handling for initial load
       const errorHandler = (e) => {
         // Ignore autoplay blocking
@@ -1706,6 +1792,9 @@
         this.collectionContext = { ...this.collectionContext, ...collectionContext };
       }
       
+      // Reset audio renderer recovery flag on source change
+      this._audioRendererRecoveryAttempted = false;
+      
       // Update audio mode
       if (this.isAudioSource(url)) {
         if (this.video) this.video.classList.add('audio-mode');
@@ -1753,6 +1842,45 @@
     // =====================================================
     
     /**
+     * Safe play with mute fallback for autoplay policies and audio errors
+     */
+    async safePlay() {
+      if (!this.video || this._isDestroyed) {
+        return Promise.reject('Player destroyed');
+      }
+      
+      try {
+        await this.video.play();
+        console.log('▶️ Playback started successfully');
+        return true;
+      } catch (error) {
+        console.warn('⚠️ Initial play blocked or failed:', error.message);
+        
+        // Check for autoplay policy or interrupted errors
+        if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
+          console.log('🔄 Attempting recovery: Muting video and retrying...');
+          if (this.video) {
+            this.video.muted = true;
+            this.config.muted = true;
+          }
+          
+          try {
+            if (this.video) {
+              await this.video.play();
+            }
+            console.log('✅ Playback recovered in muted mode');
+            return true;
+          } catch (retryError) {
+            console.error('❌ Hard playback failure:', retryError);
+            throw retryError;
+          }
+        }
+        
+        throw error;
+      }
+    }
+    
+    /**
      * Play media with autoplay handling
      */
     async play() {
@@ -1760,19 +1888,7 @@
         return Promise.reject('Player destroyed');
       }
       
-      try {
-        await this.video.play();
-        return true;
-      } catch (error) {
-        if (error.name === 'NotAllowedError') {
-          console.log('ℹ️ Playback blocked by autoplay policy');
-          this._showPlayOverlay();
-          this._emit('autoplay:blocked', { error });
-          return false;
-        }
-        console.error('❌ Play error:', error);
-        throw error;
-      }
+      return this.safePlay();
     }
     
     /**
@@ -2568,6 +2684,7 @@
       this.isBuffering = false;
       this.viewRecorded = false;
       this.viewValidated = false;
+      this._audioRendererRecoveryAttempted = false;
     }
     
     /**
@@ -2728,8 +2845,9 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.1.0 - Syntax Safe)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.2.0 - Audio Renderer Fix)');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
+  console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments (this.player?.property = value)');
   console.log('   🔧 CRITICAL FIX: Replaced with safe conditional checks (if (this.player) { this.player.property = value })');
   
