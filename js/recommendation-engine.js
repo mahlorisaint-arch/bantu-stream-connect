@@ -89,11 +89,16 @@
      * @returns {Promise<Array>} Array of enriched content items
      */
     async getRecommendations(type, options = {}) {
-      // Validate type
-      if (!Object.values(this.TYPES || {}).includes(type)) {
+      // --- FIXED: Safe validation to prevent Object.values(undefined) crash ---
+      // Check if TYPES exists and is an object; if not, use an empty object for validation
+      const validTypes = (this.TYPES && typeof this.TYPES === 'object') ? this.TYPES : {};
+      const isValidType = Object.values(validTypes).includes(type);
+      
+      if (!isValidType) {
         console.warn('⚠️ Unknown recommendation type:', type);
         return [];
       }
+      // --- END FIXED BLOCK ---
       
       const cacheKey = this._getCacheKey(type, options);
       
