@@ -2566,13 +2566,28 @@
         autoplay: videoEl.dataset.autoplay === 'true',
         muted: videoEl.dataset.muted === 'true',
         contentMetadata: window.currentContent || null,
-        collectionContext: window.currentContent ? {
-          collectionId: window.currentContent.series_id || window.currentContent.playlist_id,
-          playlistId: window.currentContent.playlist_id,
-          currentSortIndex: window.currentContent.sort_index,
-          episodeNumber: window.currentContent.episode_number,
-          itemType: window.currentContent.media_type === 'audio' ? 'track' : 'episode'
-        } : null
+        // --- FIXED: Safe collection context extraction to prevent fatal errors ---
+        collectionContext: (() => {
+          // Only proceed if currentContent exists and is an object
+          if (window.currentContent && typeof window.currentContent === 'object') {
+            return {
+              collectionId: window.currentContent.series_id || window.currentContent.playlist_id || null,
+              playlistId: window.currentContent.playlist_id || window.currentContent.series_id || null,
+              currentSortIndex: window.currentContent.sort_index ?? null,
+              episodeNumber: window.currentContent.episode_number ?? null,
+              itemType: window.currentContent.media_type === 'audio' ? 'track' : 'episode'
+            };
+          }
+          // Return empty/default context if window.currentContent is missing or invalid
+          return {
+            collectionId: null,
+            playlistId: null,
+            currentSortIndex: null,
+            episodeNumber: null,
+            itemType: null
+          };
+        })()
+        // --- END FIXED BLOCK ---
       };
       
       // Delay to ensure dependencies load
