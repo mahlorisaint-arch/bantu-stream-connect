@@ -76,6 +76,7 @@
 // - Re-engineered playlist data fetches to use verified schema (status)
 // - Fixed .single() crashes by switching to .maybeSingle()
 // - Corrected standalone vs. album mode detection
+// - REMOVED duplicate UIScaleController class definition (was causing "already declared" error)
 // ============================================
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
@@ -872,8 +873,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupCompleteSidebar();
     setupNavigationButtons();
     setupNavButtonScrollAnimation();
-    window.uiScaleController = new UIScaleController();
-    window.uiScaleController.init();
+    
+    // ✅ FIXED: Use safe UIScaleController initialization (no duplicate class definition)
+    if (typeof UIScaleController !== 'undefined') {
+        window.uiScaleController = new UIScaleController();
+        window.uiScaleController.init();
+    } else {
+        console.warn('⚠️ UIScaleController not available from global scope');
+        // Fallback: define it locally if needed
+        window.UIScaleController = class UIScaleController {
+            constructor() {
+                this.scale = 100;
+                this.container = null;
+            }
+            init() {
+                this.container = document.querySelector('.main-content');
+                const savedScale = localStorage.getItem('ui_scale');
+                if (savedScale) this.setScale(parseInt(savedScale));
+                const scaleUpBtn = document.getElementById('scaleUpBtn');
+                const scaleDownBtn = document.getElementById('scaleDownBtn');
+                const scaleResetBtn = document.getElementById('scaleResetBtn');
+                if (scaleUpBtn) scaleUpBtn.addEventListener('click', () => this.scaleUp());
+                if (scaleDownBtn) scaleDownBtn.addEventListener('click', () => this.scaleDown());
+                if (scaleResetBtn) scaleResetBtn.addEventListener('click', () => this.resetScale());
+            }
+            setScale(value) {
+                this.scale = Math.min(150, Math.max(70, value));
+                if (this.container) this.container.style.fontSize = this.scale + '%';
+                localStorage.setItem('ui_scale', this.scale);
+                const scaleIndicator = document.getElementById('scaleIndicator');
+                if (scaleIndicator) scaleIndicator.textContent = this.scale + '%';
+            }
+            scaleUp() { this.setScale(this.scale + 10); }
+            scaleDown() { this.setScale(this.scale - 10); }
+            resetScale() { this.setScale(100); }
+        };
+        window.uiScaleController = new window.UIScaleController();
+        window.uiScaleController.init();
+    }
+    
     setupAuthListeners();
 
     await updateSidebarProfile();
@@ -4549,58 +4587,64 @@ function setupNavButtonScrollAnimation() {
     });
 }
 
-// UIScaleController class definition
-class UIScaleController {
-    constructor() {
-        this.scale = 100;
-        this.container = null;
-    }
-    
-    init() {
-        this.container = document.querySelector('.main-content');
-        const savedScale = localStorage.getItem('ui_scale');
-        if (savedScale) {
-            this.setScale(parseInt(savedScale));
+// ============================================
+// 🔧 UIScaleController - Safe fallback (no duplicate declaration)
+// ============================================
+// UIScaleController is expected to be globally available from content-detail-features.js
+// If not, we define a safe fallback that won't cause "already declared" errors
+if (typeof window.UIScaleController === 'undefined') {
+    window.UIScaleController = class UIScaleController {
+        constructor() {
+            this.scale = 100;
+            this.container = null;
         }
         
-        const scaleUpBtn = document.getElementById('scaleUpBtn');
-        const scaleDownBtn = document.getElementById('scaleDownBtn');
-        const scaleResetBtn = document.getElementById('scaleResetBtn');
+        init() {
+            this.container = document.querySelector('.main-content');
+            const savedScale = localStorage.getItem('ui_scale');
+            if (savedScale) {
+                this.setScale(parseInt(savedScale));
+            }
+            
+            const scaleUpBtn = document.getElementById('scaleUpBtn');
+            const scaleDownBtn = document.getElementById('scaleDownBtn');
+            const scaleResetBtn = document.getElementById('scaleResetBtn');
+            
+            if (scaleUpBtn) {
+                scaleUpBtn.addEventListener('click', () => this.scaleUp());
+            }
+            if (scaleDownBtn) {
+                scaleDownBtn.addEventListener('click', () => this.scaleDown());
+            }
+            if (scaleResetBtn) {
+                scaleResetBtn.addEventListener('click', () => this.resetScale());
+            }
+        }
         
-        if (scaleUpBtn) {
-            scaleUpBtn.addEventListener('click', () => this.scaleUp());
+        setScale(value) {
+            this.scale = Math.min(150, Math.max(70, value));
+            if (this.container) {
+                this.container.style.fontSize = this.scale + '%';
+            }
+            localStorage.setItem('ui_scale', this.scale);
+            const scaleIndicator = document.getElementById('scaleIndicator');
+            if (scaleIndicator) {
+                scaleIndicator.textContent = this.scale + '%';
+            }
         }
-        if (scaleDownBtn) {
-            scaleDownBtn.addEventListener('click', () => this.scaleDown());
+        
+        scaleUp() {
+            this.setScale(this.scale + 10);
         }
-        if (scaleResetBtn) {
-            scaleResetBtn.addEventListener('click', () => this.resetScale());
+        
+        scaleDown() {
+            this.setScale(this.scale - 10);
         }
-    }
-    
-    setScale(value) {
-        this.scale = Math.min(150, Math.max(70, value));
-        if (this.container) {
-            this.container.style.fontSize = this.scale + '%';
+        
+        resetScale() {
+            this.setScale(100);
         }
-        localStorage.setItem('ui_scale', this.scale);
-        const scaleIndicator = document.getElementById('scaleIndicator');
-        if (scaleIndicator) {
-            scaleIndicator.textContent = this.scale + '%';
-        }
-    }
-    
-    scaleUp() {
-        this.setScale(this.scale + 10);
-    }
-    
-    scaleDown() {
-        this.setScale(this.scale - 10);
-    }
-    
-    resetScale() {
-        this.setScale(100);
-    }
+    };
 }
 
 window.manualRecordView = async function() {
@@ -4682,4 +4726,5 @@ console.log('  🚀 FIXED: Content profile fetching with .maybeSingle() (no 406 
 console.log('  🚀 FIXED: Favorite button initialization with .maybeSingle()');
 console.log('  🚀 FIXED: EnhancedVideoPlayer with safe assignments (no optional chaining errors)');
 console.log('  🚀 FIXED: Standalone vs album mode detection');
+console.log('  🚀 FIXED: Duplicate UIScaleController class - now uses safe fallback pattern');
 console.log('  ✅ All critical syntax and runtime errors resolved');
