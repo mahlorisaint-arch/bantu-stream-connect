@@ -76,7 +76,7 @@
 // - Re-engineered playlist data fetches to use verified schema (status)
 // - Fixed .single() crashes by switching to .maybeSingle()
 // - Corrected standalone vs. album mode detection
-// - REMOVED duplicate UIScaleController class definition (was causing "already declared" error)
+// - REMOVED duplicate UIScaleController class (was causing "already declared" error)
 // ============================================
 // 🚨 CRITICAL FIX (2026-05-20): Playlist query uses explicit relation loading without fragile syntax
 // - Replaced Content:content_id!inner with Content!playlist_contents_content_id_fkey
@@ -84,6 +84,7 @@
 // - Fixed empty check for playlistItems
 // - Added correct content mapping paths (item.Content.title)
 // - Added result normalization to handle array vs object responses
+// - Added two-query fallback as enterprise-safe pattern
 // ============================================
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
@@ -114,6 +115,7 @@ let isAlbumExpanded = false;
 // 🚀 EMERGENCY FIX: UPDATED PLAYLIST LOADING WITH VERIFIED SCHEMA
 // Uses the explicit normalized junction table layout with status filtering
 // FIXED: Replaced fragile Content:content_id!inner syntax with Content!playlist_contents_content_id_fkey
+// ADDED: Two-query fallback for enterprise-safe operation
 // ============================================
 
 /**
@@ -247,21 +249,168 @@ async function loadPlaylistMode(playlistId, playlistType) {
 
     } catch (error) {
         console.error('❌ Playlist mode failed:', error);
-        showToast('Failed to load playlist: ' + error.message, 'error');
-        hideLoading();
+        
+        // 🔧 FALLBACK: Two-query approach if embedded join fails
+        console.log('🔄 Attempting two-query fallback for playlist loading...');
+        try {
+            await loadPlaylistModeTwoQueryFallback(playlistId, playlistType);
+        } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            showToast('Failed to load playlist: ' + error.message, 'error');
+            hideLoading();
 
-        const hero = document.getElementById('contentHero');
-        if (hero) {
-            hero.innerHTML = `
-                <div class="playlist-error-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h2>Failed to load playlist</h2>
-                    <p>${error.message}</p>
-                    <button onclick="location.reload()" class="btn btn-primary">Retry</button>
-                </div>
-            `;
+            const hero = document.getElementById('contentHero');
+            if (hero) {
+                hero.innerHTML = `
+                    <div class="playlist-error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h2>Failed to load playlist</h2>
+                        <p>${error.message}</p>
+                        <button onclick="location.reload()" class="btn btn-primary">Retry</button>
+                    </div>
+                `;
+            }
         }
     }
+}
+
+/**
+ * ENTERPRISE-SAFE FALLBACK: Two-query approach for playlist loading
+ * This bypasses PostgREST relationship embedding issues entirely
+ */
+async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
+    console.log('🔄 Loading playlist using two-query fallback for ID:', playlistId);
+
+    // STEP 1: Get playlist rows
+    const { data: playlistRows, error: playlistError } = await window.supabaseClient
+        .from('playlist_contents')
+        .select(`
+            playlist_id,
+            content_id,
+            sort_index,
+            item_type,
+            track_number,
+            disc_number,
+            season_number,
+            display_title_override
+        `)
+        .eq('playlist_id', playlistId)
+        .order('sort_index', { ascending: true });
+
+    if (playlistError) {
+        console.error('❌ Playlist rows error:', playlistError);
+        throw playlistError;
+    }
+
+    console.log('📀 Playlist rows loaded:', playlistRows?.length || 0);
+
+    if (!playlistRows || playlistRows.length === 0) {
+        throw new Error('Playlist has no content');
+    }
+
+    // STEP 2: Extract content IDs
+    const contentIds = playlistRows.map(row => row.content_id).filter(Boolean);
+
+    if (!contentIds.length) {
+        throw new Error('No valid content IDs in playlist');
+    }
+
+    // STEP 3: Fetch actual content separately
+    const { data: contentRows, error: contentError } = await window.supabaseClient
+        .from('Content')
+        .select(`
+            id,
+            title,
+            description,
+            thumbnail_url,
+            file_url,
+            duration,
+            media_type,
+            status,
+            user_id,
+            content_type,
+            content_format,
+            content_metadata,
+            favorites_count,
+            comments_count,
+            shares_count,
+            live_views,
+            creator_display_name,
+            user_profiles!user_id (
+                id,
+                full_name,
+                username,
+                avatar_url
+            )
+        `)
+        .in('id', contentIds)
+        .eq('status', 'published');
+
+    if (contentError) {
+        console.error('❌ Content fetch error:', contentError);
+        throw contentError;
+    }
+
+    console.log('🎵 Content rows loaded:', contentRows?.length || 0);
+
+    // STEP 4: Merge manually
+    const contentMap = new Map();
+    contentRows?.forEach(content => {
+        contentMap.set(content.id, content);
+    });
+
+    const normalizedItems = playlistRows
+        .map(row => {
+            const content = contentMap.get(row.content_id);
+            if (!content) return null;
+            
+            return {
+                ...content,
+                playlist_relation: {
+                    sort_index: row.sort_index,
+                    item_type: row.item_type,
+                    track_number: row.track_number,
+                    disc_number: row.disc_number,
+                    season_number: row.season_number
+                }
+            };
+        })
+        .filter(Boolean);
+
+    if (!normalizedItems.length) {
+        throw new Error('No valid published content items in playlist');
+    }
+
+    // Assign to runtime states
+    currentPlaylistItems = normalizedItems;
+    window.currentPlaylistItems = normalizedItems;
+    window.currentPlaylistIndex = 0;
+    
+    // Fetch playlist metadata separately
+    const { data: playlistMeta, error: metaError } = await window.supabaseClient
+        .from('creator_playlists')
+        .select('*')
+        .eq('id', playlistId)
+        .maybeSingle();
+        
+    if (!metaError && playlistMeta) {
+        currentPlaylist = playlistMeta;
+        window.currentPlaylist = playlistMeta;
+        console.log('📀 Playlist metadata loaded:', playlistMeta.name);
+    }
+
+    console.log(`📀 Loaded playlist (fallback): ${currentPlaylist?.name || 'Playlist'} with ${currentPlaylistItems.length} items`);
+
+    // Render UI
+    renderAlbumTracks(currentPlaylistItems);
+    
+    // Set current content to first item for player
+    if (currentPlaylistItems.length > 0) {
+        await setCurrentContentFromPlaylistItem(currentPlaylistItems[0], 0);
+        await loadContentIntoPlayer(currentPlaylistItems[0]);
+    }
+
+    hideLoading();
 }
 
 // ============================================
@@ -4761,6 +4910,7 @@ console.log('✅ Content detail script loaded with EMERGENCY FIXES:');
 console.log('  🚀 FIXED: Playlist loading with verified schema (status) and explicit relation loading');
 console.log('  🚀 FIXED: Replaced fragile Content:content_id!inner with Content!playlist_contents_content_id_fkey');
 console.log('  🚀 FIXED: Added result normalization for Content array vs object responses');
+console.log('  🚀 FIXED: Two-query fallback for enterprise-safe operation');
 console.log('  🚀 FIXED: Content profile fetching with .maybeSingle() (no 406 errors)');
 console.log('  🚀 FIXED: Favorite button initialization with .maybeSingle()');
 console.log('  🚀 FIXED: EnhancedVideoPlayer with safe assignments (no optional chaining errors)');
