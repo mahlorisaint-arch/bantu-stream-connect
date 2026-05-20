@@ -79,10 +79,11 @@
 // - REMOVED duplicate UIScaleController class definition (was causing "already declared" error)
 // ============================================
 // 🚨 CRITICAL FIX (2026-05-20): Playlist query uses explicit relation loading without fragile syntax
-// - Replaced Content:content_id!inner with proper nested select
+// - Replaced Content:content_id!inner with Content!playlist_contents_content_id_fkey
 // - Added explicit .order('sort_index')
 // - Fixed empty check for playlistItems
 // - Added correct content mapping paths (item.Content.title)
+// - Added result normalization to handle array vs object responses
 // ============================================
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
@@ -112,19 +113,20 @@ let isAlbumExpanded = false;
 // ============================================
 // 🚀 EMERGENCY FIX: UPDATED PLAYLIST LOADING WITH VERIFIED SCHEMA
 // Uses the explicit normalized junction table layout with status filtering
-// FIXED: Removed fragile Content:content_id!inner syntax
+// FIXED: Replaced fragile Content:content_id!inner syntax with Content!playlist_contents_content_id_fkey
 // ============================================
 
 /**
  * FIXED: Load playlist mode using verified schema with explicit relation loading
- * This replaces the fragile Content:content_id!inner syntax that caused resolution errors
+ * Uses Content!playlist_contents_content_id_fkey relationship naming
+ * Also normalizes result to handle array vs object responses from Supabase
  */
 async function loadPlaylistMode(playlistId, playlistType) {
     try {
         showLoading('Loading playlist...');
         console.log('🔄 Loading playlist structure for ID:', playlistId);
 
-        // 🔧 FIXED QUERY: Use explicit relation loading instead of fragile Content:content_id!inner
+        // 🔧 FIXED QUERY: Use Content!playlist_contents_content_id_fkey (NOT Content:content_id!inner)
         const { data: playlistItems, error } = await window.supabaseClient
             .from('playlist_contents')
             .select(`
@@ -133,8 +135,10 @@ async function loadPlaylistMode(playlistId, playlistType) {
                 sort_index,
                 item_type,
                 track_number,
+                disc_number,
                 season_number,
-                Content (
+                display_title_override,
+                Content!playlist_contents_content_id_fkey(
                     id,
                     title,
                     description,
@@ -144,11 +148,14 @@ async function loadPlaylistMode(playlistId, playlistType) {
                     media_type,
                     status,
                     user_id,
-                    content_engagement_stats (
-                        total_views,
-                        total_likes,
-                        total_comments
-                    )
+                    content_type,
+                    content_format,
+                    content_metadata,
+                    favorites_count,
+                    comments_count,
+                    shares_count,
+                    live_views,
+                    creator_display_name
                 )
             `)
             .eq('playlist_id', playlistId)
@@ -176,21 +183,35 @@ async function loadPlaylistMode(playlistId, playlistType) {
 
         console.log('✅ Playlist items loaded successfully:', playlistItems.length);
 
-        // 🔧 FIXED CONTENT MAPPING: Use proper nested path item.Content
+        // 🔧 CRITICAL NORMALIZATION: Supabase sometimes returns Content as array or object
+        // This ensures consistent shape regardless of relationship parsing
         const normalizedItems = playlistItems
-            .filter(item => item.Content && item.Content.status === 'published')
-            .map(item => ({
-                ...item.Content,
-                playlist_relation: {
-                    sort_index: item.sort_index,
-                    item_type: item.item_type,
-                    track_number: item.track_number,
-                    season_number: item.season_number
+            .map(item => {
+                // Handle case where Content might be an array or object
+                let contentData = item.Content;
+                if (Array.isArray(contentData) && contentData.length > 0) {
+                    contentData = contentData[0];
                 }
-            }));
+                if (!contentData) return null;
+                
+                // Filter out unpublished items
+                if (contentData.status !== 'published') return null;
+                
+                return {
+                    ...contentData,
+                    playlist_relation: {
+                        sort_index: item.sort_index,
+                        item_type: item.item_type,
+                        track_number: item.track_number,
+                        disc_number: item.disc_number,
+                        season_number: item.season_number
+                    }
+                };
+            })
+            .filter(Boolean);
 
         if (normalizedItems.length === 0) {
-            throw new Error('No valid content items in playlist');
+            throw new Error('No valid published content items in playlist');
         }
 
         // Assign to runtime states
@@ -211,7 +232,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
             console.log('📀 Playlist metadata loaded:', playlistMeta.name);
         }
 
-        console.log(`📀 Loaded playlist: ${currentPlaylist?.name || 'Playlist'} with ${currentPlaylistItems.length} items using explicit relation loading`);
+        console.log(`📀 Loaded playlist: ${currentPlaylist?.name || 'Playlist'} with ${currentPlaylistItems.length} items using Content!playlist_contents_content_id_fkey relation`);
 
         // Render UI
         renderAlbumTracks(currentPlaylistItems);
@@ -1064,7 +1085,7 @@ async function waitForAuthHelper() {
 
 // ============================================
 // 🎯 PLAYLIST MODE: Set current content from playlist item (with view reset)
-// 🔧 FIXED: Uses proper Content mapping path
+// 🔧 FIXED: Uses proper Content mapping path with normalization support
 // ============================================
 async function setCurrentContentFromPlaylistItem(item, index) {
     if (!item) return;
@@ -4738,7 +4759,8 @@ window.addEventListener('beforeunload', function() {
 
 console.log('✅ Content detail script loaded with EMERGENCY FIXES:');
 console.log('  🚀 FIXED: Playlist loading with verified schema (status) and explicit relation loading');
-console.log('  🚀 FIXED: Removed fragile Content:content_id!inner syntax');
+console.log('  🚀 FIXED: Replaced fragile Content:content_id!inner with Content!playlist_contents_content_id_fkey');
+console.log('  🚀 FIXED: Added result normalization for Content array vs object responses');
 console.log('  🚀 FIXED: Content profile fetching with .maybeSingle() (no 406 errors)');
 console.log('  🚀 FIXED: Favorite button initialization with .maybeSingle()');
 console.log('  🚀 FIXED: EnhancedVideoPlayer with safe assignments (no optional chaining errors)');
