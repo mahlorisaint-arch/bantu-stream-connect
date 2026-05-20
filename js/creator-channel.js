@@ -161,16 +161,115 @@ async function loadContentWithEngagementStats(creatorId, limit = 50) {
  * OLD: Direct Content relationship on creator_playlists
  * NEW: creator_playlists -> playlist_contents -> Content
  * 
- * 🚨 FIXED: Uses proper nested select without fragile Content:content_id!inner syntax
+ * 🚨 FIXED: Uses proper nested select with Content!playlist_contents_content_id_fkey syntax
+ * 🚨 FIXED: Removed fragile Content:content_id!inner syntax
  */
 async function loadPlaylistsWithItems(creatorId) {
-  // First load playlists
+  // 🚨 FIXED QUERY: Use explicit nested select with the correct relationship name
+  // OLD: Content:content_id!inner(...) - This was causing 503 errors
+  // NEW: playlist_contents(...) with Content!playlist_contents_content_id_fkey(...)
+  const { data: playlistsData, error: playlistsError } = await supabase
+    .from('creator_playlists')
+    .select(`
+      id,
+      name,
+      description,
+      playlist_type,
+      custom_thumbnail_url,
+      created_at,
+      visibility,
+      is_featured,
+      playlist_contents(
+        sort_index,
+        item_type,
+        track_number,
+        disc_number,
+        season_number,
+        display_title_override,
+        Content!playlist_contents_content_id_fkey(
+          id,
+          title,
+          thumbnail_url,
+          duration,
+          media_type,
+          content_format,
+          status,
+          content_engagement_stats(
+            total_views,
+            total_likes
+          )
+        )
+      )
+    `)
+    .eq('creator_id', creatorId);
+
+  if (playlistsError) {
+    console.error('Error loading playlists with fixed query:', playlistsError);
+    
+    // 🚨 FALLBACK: Two-query approach if the embedded join fails
+    console.log('🔄 Attempting two-query fallback for playlists...');
+    return await loadPlaylistsWithItemsFallback(creatorId);
+  }
+
+  if (!playlistsData || playlistsData.length === 0) {
+    return [];
+  }
+
+  // 🚨 CRITICAL NORMALIZATION: Process each playlist to normalize Content data
+  // Supabase may return Content as array or object depending on relationship parsing
+  const processedPlaylists = playlistsData.map(playlist => {
+    // Get playlist_contents array (could be null or empty)
+    const contents = playlist.playlist_contents || [];
+    
+    // Normalize each content item in the playlist
+    const normalizedContents = contents.map(item => {
+      // Handle Content that might be array or object
+      let contentData = item.Content;
+      if (Array.isArray(contentData) && contentData.length > 0) {
+        contentData = contentData[0];
+      }
+      if (!contentData) return null;
+      
+      // Add views/likes from engagement stats
+      const contentWithMetrics = {
+        ...contentData,
+        views_count: contentData.content_engagement_stats?.total_views || 0,
+        likes_count: contentData.content_engagement_stats?.total_likes || 0
+      };
+      
+      return {
+        ...item,
+        Content: contentWithMetrics
+      };
+    }).filter(Boolean);
+    
+    // Sort items by sort_index
+    normalizedContents.sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+    
+    return {
+      ...playlist,
+      playlist_contents: normalizedContents,
+      item_count: normalizedContents.length
+    };
+  });
+
+  console.log(`✅ Loaded ${processedPlaylists.length} playlists with ${processedPlaylists.reduce((sum, p) => sum + p.item_count, 0)} total items using fixed query`);
+  return processedPlaylists;
+}
+
+/**
+ * FALLBACK: Two-query approach for loading playlists
+ * This bypasses PostgREST relationship embedding issues entirely
+ */
+async function loadPlaylistsWithItemsFallback(creatorId) {
+  console.log('🔄 Loading playlists using two-query fallback...');
+  
+  // STEP 1: Load playlist metadata
   let playlistsQuery = supabase
     .from('creator_playlists')
     .select('*')
     .eq('creator_id', creatorId);
 
-  // If not owner, only show public playlists
   if (!window.currentUser || window.currentUser.id !== creatorId) {
     playlistsQuery = playlistsQuery.eq('visibility', 'public');
   }
@@ -178,7 +277,7 @@ async function loadPlaylistsWithItems(creatorId) {
   const { data: playlistsData, error: playlistsError } = await playlistsQuery.order('created_at', { ascending: false });
   
   if (playlistsError) {
-    console.error('Error loading playlists:', playlistsError);
+    console.error('Error loading playlists metadata:', playlistsError);
     return [];
   }
 
@@ -186,10 +285,11 @@ async function loadPlaylistsWithItems(creatorId) {
     return [];
   }
 
-  // 🚨 FIXED QUERY: Load playlist items using explicit relation loading
-  // Replaced fragile Content:content_id!inner with proper nested select
+  // STEP 2: Get all playlist IDs
   const playlistIds = playlistsData.map(p => p.id);
-  const { data: playlistItems, error: itemsError } = await supabase
+  
+  // STEP 3: Load playlist_contents rows
+  const { data: playlistContentsRows, error: contentsError } = await supabase
     .from('playlist_contents')
     .select(`
       id,
@@ -200,28 +300,13 @@ async function loadPlaylistsWithItems(creatorId) {
       track_number,
       disc_number,
       season_number,
-      display_title_override,
-      Content (
-        id,
-        title,
-        thumbnail_url,
-        duration,
-        media_type,
-        content_format,
-        status,
-        content_engagement_stats (
-          total_views,
-          total_likes
-        )
-      )
+      display_title_override
     `)
     .in('playlist_id', playlistIds)
-    .eq('Content.status', 'published')
     .order('sort_index', { ascending: true });
 
-  if (itemsError) {
-    console.error('Error loading playlist items from junction table:', itemsError);
-    // Return playlists without items rather than failing
+  if (contentsError) {
+    console.error('Error loading playlist contents:', contentsError);
     return playlistsData.map(playlist => ({
       ...playlist,
       playlist_contents: [],
@@ -229,25 +314,85 @@ async function loadPlaylistsWithItems(creatorId) {
     }));
   }
 
-  // Group items by playlist_id
-  const itemsByPlaylist = {};
-  (playlistItems || []).forEach(item => {
-    if (!itemsByPlaylist[item.playlist_id]) {
-      itemsByPlaylist[item.playlist_id] = [];
-    }
-    // Add views/likes from engagement stats
-    const contentWithMetrics = {
-      ...item.Content,
-      views_count: item.Content?.content_engagement_stats?.total_views || 0,
-      likes_count: item.Content?.content_engagement_stats?.total_likes || 0
-    };
-    itemsByPlaylist[item.playlist_id].push({
-      ...item,
-      Content: contentWithMetrics
+  if (!playlistContentsRows || playlistContentsRows.length === 0) {
+    return playlistsData.map(playlist => ({
+      ...playlist,
+      playlist_contents: [],
+      item_count: 0
+    }));
+  }
+
+  // STEP 4: Extract unique content IDs
+  const contentIds = [...new Set(playlistContentsRows.map(row => row.content_id).filter(Boolean))];
+  
+  if (contentIds.length === 0) {
+    return playlistsData.map(playlist => ({
+      ...playlist,
+      playlist_contents: [],
+      item_count: 0
+    }));
+  }
+
+  // STEP 5: Fetch content data separately
+  const { data: contentRows, error: contentError } = await supabase
+    .from('Content')
+    .select(`
+      id,
+      title,
+      thumbnail_url,
+      duration,
+      media_type,
+      content_format,
+      status,
+      content_engagement_stats (
+        total_views,
+        total_likes
+      )
+    `)
+    .in('id', contentIds)
+    .eq('status', 'published');
+
+  if (contentError) {
+    console.error('Error loading content data:', contentError);
+    return playlistsData.map(playlist => ({
+      ...playlist,
+      playlist_contents: [],
+      item_count: 0
+    }));
+  }
+
+  // STEP 6: Create content map
+  const contentMap = new Map();
+  (contentRows || []).forEach(content => {
+    contentMap.set(content.id, {
+      ...content,
+      views_count: content.content_engagement_stats?.total_views || 0,
+      likes_count: content.content_engagement_stats?.total_likes || 0
     });
   });
 
-  // Attach items to playlists and calculate counts
+  // STEP 7: Group items by playlist_id and merge
+  const itemsByPlaylist = {};
+  playlistContentsRows.forEach(row => {
+    const content = contentMap.get(row.content_id);
+    if (!content) return; // Skip if content not found or unpublished
+    
+    if (!itemsByPlaylist[row.playlist_id]) {
+      itemsByPlaylist[row.playlist_id] = [];
+    }
+    
+    itemsByPlaylist[row.playlist_id].push({
+      ...row,
+      Content: content
+    });
+  });
+
+  // STEP 8: Sort items within each playlist by sort_index
+  Object.keys(itemsByPlaylist).forEach(playlistId => {
+    itemsByPlaylist[playlistId].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+  });
+
+  // STEP 9: Build final playlists array
   return playlistsData.map(playlist => ({
     ...playlist,
     playlist_contents: itemsByPlaylist[playlist.id] || [],
@@ -255,9 +400,9 @@ async function loadPlaylistsWithItems(creatorId) {
   }));
 }
 
-// ===== PHASE 5: LOAD PLAYLIST ITEMS FOR A SPECIFIC PLAYLIST (FIXED QUERY) =====
+// ===== LOAD PLAYLIST ITEMS FOR A SPECIFIC PLAYLIST (FIXED QUERY) =====
 async function loadPlaylistItemsForBuilder(playlistId) {
-  // 🚨 FIXED QUERY: Uses explicit relation loading without fragile syntax
+  // 🚨 FIXED QUERY: Uses explicit relation loading with Content!playlist_contents_content_id_fkey
   const { data: items, error } = await supabase
     .from('playlist_contents')
     .select(`
@@ -270,7 +415,7 @@ async function loadPlaylistItemsForBuilder(playlistId) {
       disc_number,
       season_number,
       display_title_override,
-      Content (
+      Content!playlist_contents_content_id_fkey(
         id,
         title,
         thumbnail_url,
@@ -278,7 +423,7 @@ async function loadPlaylistItemsForBuilder(playlistId) {
         media_type,
         content_format,
         status,
-        content_engagement_stats (
+        content_engagement_stats(
           total_views,
           total_likes
         )
@@ -293,17 +438,24 @@ async function loadPlaylistItemsForBuilder(playlistId) {
     return [];
   }
 
-  return (items || []).map(item => ({
-    ...item,
-    Content: {
-      ...item.Content,
-      views_count: item.Content?.content_engagement_stats?.total_views || 0,
-      likes_count: item.Content?.content_engagement_stats?.total_likes || 0
+  // Normalize Content (handle array vs object)
+  return (items || []).map(item => {
+    let contentData = item.Content;
+    if (Array.isArray(contentData) && contentData.length > 0) {
+      contentData = contentData[0];
     }
-  }));
+    return {
+      ...item,
+      Content: {
+        ...contentData,
+        views_count: contentData?.content_engagement_stats?.total_views || 0,
+        likes_count: contentData?.content_engagement_stats?.total_likes || 0
+      }
+    };
+  }).filter(item => item.Content);
 }
 
-// ===== PHASE 5: ADD ITEM TO PLAYLIST USING JUNCTION TABLE =====
+// ===== ADD ITEM TO PLAYLIST USING JUNCTION TABLE =====
 async function addItemToPlaylist(playlistId, contentId, sortIndex = null) {
   // Get current max sort_index
   let maxSortIndex = 0;
@@ -332,7 +484,7 @@ async function addItemToPlaylist(playlistId, contentId, sortIndex = null) {
   return true;
 }
 
-// ===== PHASE 5: REMOVE ITEM FROM PLAYLIST =====
+// ===== REMOVE ITEM FROM PLAYLIST =====
 async function removeItemFromPlaylist(playlistContentId) {
   const { error } = await supabase
     .from('playlist_contents')
@@ -343,7 +495,7 @@ async function removeItemFromPlaylist(playlistContentId) {
   return true;
 }
 
-// ===== PHASE 5: UPDATE PLAYLIST ITEM ORDER =====
+// ===== UPDATE PLAYLIST ITEM ORDER =====
 async function updatePlaylistItemOrder(playlistId, orderedItemIds) {
   // Update each item's sort_index based on position in array
   for (let i = 0; i < orderedItemIds.length; i++) {
@@ -361,7 +513,7 @@ async function updatePlaylistItemOrder(playlistId, orderedItemIds) {
   return true;
 }
 
-// ===== PHASE 5: SAVE PLAYLIST (CREATE OR UPDATE) =====
+// ===== SAVE PLAYLIST (CREATE OR UPDATE) =====
 async function savePlaylistV2(playlistData, playlistId = null) {
   const now = new Date().toISOString();
   const data = {
@@ -400,7 +552,7 @@ async function savePlaylistV2(playlistData, playlistId = null) {
   return result.data;
 }
 
-// ===== PHASE 5: DELETE PLAYLIST =====
+// ===== DELETE PLAYLIST =====
 async function deletePlaylistV2(playlistId) {
   // First delete all playlist_contents entries
   await supabase
@@ -423,9 +575,12 @@ async function deletePlaylistV2(playlistId) {
 /**
  * PHASE 1D - SINGLE SOURCE OF TRUTH with PHASE 5 migration
  * Loads collections (playlists) with their content using playlist_contents junction table
- * 🚨 FIXED: Uses explicit relation loading without fragile syntax
+ * 🚨 FIXED: Uses explicit relation loading with Content!playlist_contents_content_id_fkey
+ * 🚨 FIXED: Proper item count using playlist_contents.length
+ * 🚨 FIXED: Proper thumbnail extraction with fallback chain
  */
 async function loadCollections() {
+  // 🚨 FIXED QUERY: Use explicit nested select with the correct relationship name
   const { data, error } = await supabase
     .from("creator_playlists")
     .select(`
@@ -436,95 +591,186 @@ async function loadCollections() {
       custom_thumbnail_url,
       created_at,
       visibility,
-      is_featured
+      is_featured,
+      playlist_contents(
+        sort_index,
+        item_type,
+        track_number,
+        disc_number,
+        season_number,
+        display_title_override,
+        Content!playlist_contents_content_id_fkey(
+          id,
+          title,
+          thumbnail_url,
+          duration,
+          media_type,
+          content_format,
+          status,
+          content_engagement_stats(
+            total_views
+          )
+        )
+      )
     `)
     .eq("creator_id", window.creatorId)
     .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error loading collections:", error);
-    return [];
+    // 🚨 FALLBACK: Two-query approach
+    return await loadCollectionsFallback();
   }
 
   if (!data || data.length === 0) {
     return [];
   }
 
-  // 🚨 FIXED QUERY: Load items using explicit relation loading
-  const playlistIds = data.map(p => p.id);
-  const { data: itemsData, error: itemsError } = await supabase
-    .from("playlist_contents")
-    .select(`
-      id,
-      playlist_id,
-      content_id,
-      sort_index,
-      item_type,
-      track_number,
-      disc_number,
-      season_number,
-      Content (
-        id,
-        title,
-        thumbnail_url,
-        duration,
-        media_type,
-        content_format,
-        status,
-        content_engagement_stats (
-          total_views
-        )
-      )
-    `)
-    .in("playlist_id", playlistIds)
-    .eq("Content.status", "published")
-    .order("sort_index", { ascending: true });
+  // 🚨 CRITICAL NORMALIZATION: Process each collection to normalize Content data
+  const processedCollections = data.map(collection => {
+    const contents = collection.playlist_contents || [];
+    
+    // Normalize each content item
+    const normalizedContents = contents.map(item => {
+      let contentData = item.Content;
+      if (Array.isArray(contentData) && contentData.length > 0) {
+        contentData = contentData[0];
+      }
+      if (!contentData) return null;
+      
+      return {
+        ...contentData,
+        sort_index: item.sort_index,
+        playlist_content_id: item.id,
+        track_number: item.track_number,
+        disc_number: item.disc_number,
+        season_number: item.season_number,
+        item_type: item.item_type,
+        views_count: contentData.content_engagement_stats?.total_views || 0
+      };
+    }).filter(Boolean);
+    
+    // Sort by sort_index
+    normalizedContents.sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+    
+    return {
+      ...collection,
+      playlist_contents: normalizedContents,
+      Content: normalizedContents, // For backward compatibility
+      item_count: normalizedContents.length
+    };
+  });
 
-  if (itemsError) {
-    console.error("Error loading collection items:", itemsError);
-    return data.map(playlist => ({ ...playlist, Content: [] }));
+  return processedCollections;
+}
+
+/**
+ * FALLBACK: Two-query approach for loading collections
+ */
+async function loadCollectionsFallback() {
+  console.log('🔄 Loading collections using fallback...');
+  
+  // Load playlist metadata
+  const { data: playlists, error: playlistsError } = await supabase
+    .from("creator_playlists")
+    .select("*")
+    .eq("creator_id", window.creatorId)
+    .order("created_at", { ascending: false });
+
+  if (playlistsError || !playlists || playlists.length === 0) {
+    return [];
   }
 
-  // Group items by playlist_id
-  const itemsByPlaylist = {};
-  (itemsData || []).forEach(item => {
-    if (!itemsByPlaylist[item.playlist_id]) {
-      itemsByPlaylist[item.playlist_id] = [];
-    }
-    itemsByPlaylist[item.playlist_id].push({
-      ...item.Content,
-      sort_index: item.sort_index,
-      playlist_content_id: item.id,
-      track_number: item.track_number,
-      disc_number: item.disc_number,
-      season_number: item.season_number,
-      item_type: item.item_type
+  // Load all playlist contents
+  const playlistIds = playlists.map(p => p.id);
+  const { data: contents, error: contentsError } = await supabase
+    .from("playlist_contents")
+    .select("*")
+    .in("playlist_id", playlistIds)
+    .order("sort_index", { ascending: true });
+
+  if (contentsError || !contents || contents.length === 0) {
+    return playlists.map(p => ({ ...p, Content: [], item_count: 0 }));
+  }
+
+  // Extract content IDs and load content data
+  const contentIds = [...new Set(contents.map(c => c.content_id))];
+  const { data: contentData, error: contentError } = await supabase
+    .from("Content")
+    .select(`
+      id,
+      title,
+      thumbnail_url,
+      duration,
+      media_type,
+      content_format,
+      status,
+      content_engagement_stats(total_views)
+    `)
+    .in("id", contentIds)
+    .eq("status", "published");
+
+  if (contentError) {
+    return playlists.map(p => ({ ...p, Content: [], item_count: 0 }));
+  }
+
+  // Create content map
+  const contentMap = new Map();
+  contentData.forEach(c => {
+    contentMap.set(c.id, {
+      ...c,
+      views_count: c.content_engagement_stats?.total_views || 0
     });
   });
 
-  // Sort items within each playlist by sort_index
-  Object.keys(itemsByPlaylist).forEach(playlistId => {
-    itemsByPlaylist[playlistId].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+  // Group by playlist
+  const contentsByPlaylist = {};
+  contents.forEach(item => {
+    const content = contentMap.get(item.content_id);
+    if (!content) return;
+    
+    if (!contentsByPlaylist[item.playlist_id]) {
+      contentsByPlaylist[item.playlist_id] = [];
+    }
+    contentsByPlaylist[item.playlist_id].push({
+      ...content,
+      sort_index: item.sort_index,
+      playlist_content_id: item.id
+    });
   });
 
-  // Attach items to playlists
-  return data.map(playlist => ({
+  // Sort each playlist's contents
+  Object.keys(contentsByPlaylist).forEach(pid => {
+    contentsByPlaylist[pid].sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
+  });
+
+  // Build final collections
+  return playlists.map(playlist => ({
     ...playlist,
-    Content: itemsByPlaylist[playlist.id] || []
+    Content: contentsByPlaylist[playlist.id] || [],
+    item_count: contentsByPlaylist[playlist.id]?.length || 0
   }));
 }
 
+// 🚨 FIXED: Get collection item count using playlist_contents length
 function getCollectionItemCount(collection) {
-  return collection.Content?.length || 0;
+  return collection.playlist_contents?.length || collection.Content?.length || 0;
 }
 
+// 🚨 FIXED: Get collection thumbnail with proper fallback chain
 function getCollectionThumbnail(collection) {
+  // Priority 1: Custom thumbnail URL
   if (collection.custom_thumbnail_url) {
     return fixMediaUrl(collection.custom_thumbnail_url);
   }
-  if (collection.Content?.[0]?.thumbnail_url) {
-    return fixMediaUrl(collection.Content[0].thumbnail_url);
+  // Priority 2: First item's thumbnail (handles both array and object)
+  const firstItem = collection.playlist_contents?.[0] || collection.Content?.[0];
+  if (firstItem) {
+    // Handle if Content is nested
+    const thumbnail = firstItem.thumbnail_url || firstItem.Content?.thumbnail_url;
+    if (thumbnail) return fixMediaUrl(thumbnail);
   }
+  // Priority 3: Default thumbnail
   return "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=225&fit=crop";
 }
 
@@ -554,6 +800,7 @@ async function renderCollectionsGrid() {
   }
 
   grid.innerHTML = collections.map(collection => {
+    // 🚨 FIXED: Use helper functions for thumbnail and item count
     const thumbnail = getCollectionThumbnail(collection);
     const itemCount = getCollectionItemCount(collection);
     const typeLabel = collection.playlist_type || 'playlist';
@@ -590,6 +837,7 @@ async function renderCollectionsGrid() {
       const collectionId = card.dataset.collectionId;
       const collectionType = card.dataset.collectionType;
       if (collectionId) {
+        // 🚨 FIXED: Navigate with playlist_id parameter
         window.location.href = `content-detail.html?playlist_id=${collectionId}&type=${collectionType}`;
       }
     });
@@ -2172,6 +2420,7 @@ function updateIdentityCard() {
   }
 }
 
+// 🚨 FIXED: Update playlists UI with proper item counts using playlist_contents.length
 function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
@@ -2199,8 +2448,10 @@ function updatePlaylistsUI() {
     });
     
     playlistGrid.innerHTML = sorted.map(playlist => {
+      // 🚨 FIXED: Use playlist_contents for thumbnail and item count
       const firstItem = playlist.playlist_contents?.[0]?.Content;
       let thumb = playlist.custom_thumbnail_url ? fixMediaUrl(playlist.custom_thumbnail_url) : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
+      // 🚨 FIXED: Use playlist_contents.length instead of Content.length
       const itemCount = playlist.playlist_contents?.length || 0;
       const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist' ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` : '';
       const isOwner = window.currentUser && window.currentUser.id === window.creatorId;
@@ -2228,7 +2479,8 @@ function updatePlaylistsUI() {
           e.preventDefault();
           openPlaylistBuilder(playlistId);
         } else {
-          window.location.href = `content-detail.html?playlist_id=${playlistId}`;
+          // 🚨 FIXED: Navigate with playlist_id parameter
+          window.location.href = `content-detail.html?playlist_id=${playlistId}&type=${playlist.playlist_type || 'playlist'}`;
         }
       });
     });
@@ -2943,7 +3195,11 @@ async function initializeCreatorChannel() {
     console.log('   🚀 Using status = "published" for content filtering');
     console.log('   🚀 Using sort_index for ordering');
     console.log('   🚨 FIXED: Removed fragile Content:content_id!inner syntax');
-    console.log('   🚨 FIXED: Explicit relation loading with nested select');
+    console.log('   🚨 FIXED: Explicit relation loading with Content!playlist_contents_content_id_fkey');
+    console.log('   🚨 FIXED: Proper item count using playlist_contents.length');
+    console.log('   🚨 FIXED: Proper thumbnail extraction with fallback chain');
+    console.log('   🚨 FIXED: Playlist click navigation with playlist_id parameter');
+    console.log('   🚨 FIXED: Two-query fallback for enterprise-safe operation');
   } catch (error) {
     console.error('❌ Error initializing:', error);
     showToast('Failed to initialize', 'error');
