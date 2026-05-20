@@ -198,13 +198,16 @@ async function loadPlaylistsWithItems(creatorId) {
       sort_index,
       item_type,
       track_number,
+      disc_number,
       season_number,
+      display_title_override,
       Content (
         id,
         title,
         thumbnail_url,
         duration,
         media_type,
+        content_format,
         status,
         content_engagement_stats (
           total_views,
@@ -221,7 +224,7 @@ async function loadPlaylistsWithItems(creatorId) {
     // Return playlists without items rather than failing
     return playlistsData.map(playlist => ({
       ...playlist,
-      creator_playlist_items: [],
+      playlist_contents: [],
       item_count: 0
     }));
   }
@@ -247,7 +250,7 @@ async function loadPlaylistsWithItems(creatorId) {
   // Attach items to playlists and calculate counts
   return playlistsData.map(playlist => ({
     ...playlist,
-    creator_playlist_items: itemsByPlaylist[playlist.id] || [],
+    playlist_contents: itemsByPlaylist[playlist.id] || [],
     item_count: itemsByPlaylist[playlist.id]?.length || 0
   }));
 }
@@ -264,13 +267,16 @@ async function loadPlaylistItemsForBuilder(playlistId) {
       sort_index,
       item_type,
       track_number,
+      disc_number,
       season_number,
+      display_title_override,
       Content (
         id,
         title,
         thumbnail_url,
         duration,
         media_type,
+        content_format,
         status,
         content_engagement_stats (
           total_views,
@@ -453,12 +459,17 @@ async function loadCollections() {
       playlist_id,
       content_id,
       sort_index,
+      item_type,
+      track_number,
+      disc_number,
+      season_number,
       Content (
         id,
         title,
         thumbnail_url,
         duration,
         media_type,
+        content_format,
         status,
         content_engagement_stats (
           total_views
@@ -483,7 +494,11 @@ async function loadCollections() {
     itemsByPlaylist[item.playlist_id].push({
       ...item.Content,
       sort_index: item.sort_index,
-      playlist_content_id: item.id
+      playlist_content_id: item.id,
+      track_number: item.track_number,
+      disc_number: item.disc_number,
+      season_number: item.season_number,
+      item_type: item.item_type
     });
   });
 
@@ -956,7 +971,8 @@ async function openPlaylistBuilder(id = null) {
     if (plModalTitle) plModalTitle.textContent = 'Edit Playlist';
     if (plDeleteBtn) plDeleteBtn.style.display = 'block';
     
-    const { data: pl, error } = await supabase      .from('creator_playlists')
+    const { data: pl, error } = await supabase
+      .from('creator_playlists')
       .select('*')
       .eq('id', id)
       .eq('creator_id', window.creatorId)
@@ -2183,9 +2199,9 @@ function updatePlaylistsUI() {
     });
     
     playlistGrid.innerHTML = sorted.map(playlist => {
-      const firstItem = playlist.creator_playlist_items?.[0]?.Content;
+      const firstItem = playlist.playlist_contents?.[0]?.Content;
       let thumb = playlist.custom_thumbnail_url ? fixMediaUrl(playlist.custom_thumbnail_url) : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
-      const itemCount = playlist.creator_playlist_items?.length || 0;
+      const itemCount = playlist.playlist_contents?.length || 0;
       const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist' ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` : '';
       const isOwner = window.currentUser && window.currentUser.id === window.creatorId;
       return `
