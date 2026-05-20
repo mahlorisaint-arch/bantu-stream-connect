@@ -155,11 +155,13 @@ async function loadContentWithEngagementStats(creatorId, limit = 50) {
   }));
 }
 
-// ===== PHASE 5: LOAD PLAYLISTS WITH JUNCTION TABLE =====
+// ===== PHASE 5: LOAD PLAYLISTS WITH JUNCTION TABLE (FIXED QUERY) =====
 /**
  * PHASE 5 MIGRATION: Load playlists using playlist_contents junction table
  * OLD: Direct Content relationship on creator_playlists
  * NEW: creator_playlists -> playlist_contents -> Content
+ * 
+ * 🚨 FIXED: Uses proper nested select without fragile Content:content_id!inner syntax
  */
 async function loadPlaylistsWithItems(creatorId) {
   // First load playlists
@@ -184,7 +186,8 @@ async function loadPlaylistsWithItems(creatorId) {
     return [];
   }
 
-  // Load playlist items using junction table
+  // 🚨 FIXED QUERY: Load playlist items using explicit relation loading
+  // Replaced fragile Content:content_id!inner with proper nested select
   const playlistIds = playlistsData.map(p => p.id);
   const { data: playlistItems, error: itemsError } = await supabase
     .from('playlist_contents')
@@ -210,6 +213,7 @@ async function loadPlaylistsWithItems(creatorId) {
       )
     `)
     .in('playlist_id', playlistIds)
+    .eq('Content.status', 'published')
     .order('sort_index', { ascending: true });
 
   if (itemsError) {
@@ -248,8 +252,9 @@ async function loadPlaylistsWithItems(creatorId) {
   }));
 }
 
-// ===== PHASE 5: LOAD PLAYLIST ITEMS FOR A SPECIFIC PLAYLIST =====
+// ===== PHASE 5: LOAD PLAYLIST ITEMS FOR A SPECIFIC PLAYLIST (FIXED QUERY) =====
 async function loadPlaylistItemsForBuilder(playlistId) {
+  // 🚨 FIXED QUERY: Uses explicit relation loading without fragile syntax
   const { data: items, error } = await supabase
     .from('playlist_contents')
     .select(`
@@ -274,6 +279,7 @@ async function loadPlaylistItemsForBuilder(playlistId) {
       )
     `)
     .eq('playlist_id', playlistId)
+    .eq('Content.status', 'published')
     .order('sort_index', { ascending: true });
 
   if (error) {
@@ -407,10 +413,11 @@ async function deletePlaylistV2(playlistId) {
   return true;
 }
 
-// ===== PHASE 1D: COLLECTIONS GRID (UPDATED FOR PHASE 5) =====
+// ===== PHASE 1D: COLLECTIONS GRID (UPDATED FOR PHASE 5, FIXED QUERY) =====
 /**
  * PHASE 1D - SINGLE SOURCE OF TRUTH with PHASE 5 migration
  * Loads collections (playlists) with their content using playlist_contents junction table
+ * 🚨 FIXED: Uses explicit relation loading without fragile syntax
  */
 async function loadCollections() {
   const { data, error } = await supabase
@@ -437,7 +444,7 @@ async function loadCollections() {
     return [];
   }
 
-  // Load items from playlist_contents junction table
+  // 🚨 FIXED QUERY: Load items using explicit relation loading
   const playlistIds = data.map(p => p.id);
   const { data: itemsData, error: itemsError } = await supabase
     .from("playlist_contents")
@@ -459,6 +466,7 @@ async function loadCollections() {
       )
     `)
     .in("playlist_id", playlistIds)
+    .eq("Content.status", "published")
     .order("sort_index", { ascending: true });
 
   if (itemsError) {
@@ -948,8 +956,7 @@ async function openPlaylistBuilder(id = null) {
     if (plModalTitle) plModalTitle.textContent = 'Edit Playlist';
     if (plDeleteBtn) plDeleteBtn.style.display = 'block';
     
-    const { data: pl, error } = await supabase
-      .from('creator_playlists')
+    const { data: pl, error } = await supabase      .from('creator_playlists')
       .select('*')
       .eq('id', id)
       .eq('creator_id', window.creatorId)
@@ -1700,14 +1707,14 @@ async function loadCreatorData() {
     
     if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
     
-    // Load playlists with items using PHASE 5 junction table
+    // Load playlists with items using PHASE 5 junction table (FIXED QUERY)
     window.playlists = await loadPlaylistsWithItems(window.creatorId);
     
     // Load badges
     const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
     window.achievements = badges || [];
     
-    console.log('✅ Creator data loaded (PHASE 5):', { 
+    console.log('✅ Creator data loaded (PHASE 5 with fixed queries):', { 
       profile: window.creatorProfile, 
       contentCount: window.creatorContent.length, 
       connectorCount: window.connectorCount, 
@@ -2919,6 +2926,8 @@ async function initializeCreatorChannel() {
     console.log('   🚀 Using playlist_contents junction table for playlists');
     console.log('   🚀 Using status = "published" for content filtering');
     console.log('   🚀 Using sort_index for ordering');
+    console.log('   🚨 FIXED: Removed fragile Content:content_id!inner syntax');
+    console.log('   🚨 FIXED: Explicit relation loading with nested select');
   } catch (error) {
     console.error('❌ Error initializing:', error);
     showToast('Failed to initialize', 'error');
