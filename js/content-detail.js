@@ -78,6 +78,12 @@
 // - Corrected standalone vs. album mode detection
 // - REMOVED duplicate UIScaleController class definition (was causing "already declared" error)
 // ============================================
+// 🚨 CRITICAL FIX (2026-05-20): Playlist query uses explicit relation loading without fragile syntax
+// - Replaced Content:content_id!inner with proper nested select
+// - Added explicit .order('sort_index')
+// - Fixed empty check for playlistItems
+// - Added correct content mapping paths (item.Content.title)
+// ============================================
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -106,18 +112,19 @@ let isAlbumExpanded = false;
 // ============================================
 // 🚀 EMERGENCY FIX: UPDATED PLAYLIST LOADING WITH VERIFIED SCHEMA
 // Uses the explicit normalized junction table layout with status filtering
+// FIXED: Removed fragile Content:content_id!inner syntax
 // ============================================
 
 /**
- * FIXED: Load playlist mode using verified schema (status) and no .single() crashes
- * This replaces the legacy query that caused "playlist contains no published items" errors
+ * FIXED: Load playlist mode using verified schema with explicit relation loading
+ * This replaces the fragile Content:content_id!inner syntax that caused resolution errors
  */
 async function loadPlaylistMode(playlistId, playlistType) {
     try {
         showLoading('Loading playlist...');
         console.log('🔄 Loading playlist structure for ID:', playlistId);
 
-        // Fetch using the explicit normalized junction table layout
+        // 🔧 FIXED QUERY: Use explicit relation loading instead of fragile Content:content_id!inner
         const { data: playlistItems, error } = await window.supabaseClient
             .from('playlist_contents')
             .select(`
@@ -127,7 +134,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
                 item_type,
                 track_number,
                 season_number,
-                Content:content_id!inner (
+                Content (
                     id,
                     title,
                     description,
@@ -136,47 +143,57 @@ async function loadPlaylistMode(playlistId, playlistType) {
                     duration,
                     media_type,
                     status,
-                    user_id
+                    user_id,
+                    content_engagement_stats (
+                        total_views,
+                        total_likes,
+                        total_comments
+                    )
                 )
             `)
             .eq('playlist_id', playlistId)
+            .eq('Content.status', 'published')
             .order('sort_index', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Playlist query error:', error);
+            throw error;
+        }
 
-        // Diagnostic verification capture
-        console.log('✅ Playlist items loaded successfully:', playlistItems);
-
-        // Fallback safety filter to guarantee only 'published' tracks process down to the UI
-        const publishedItems = (playlistItems || []).filter(item => 
-            item.Content && item.Content.status === 'published'
-        );
-
-        if (publishedItems.length === 0) {
-            console.warn('⚠️ No published items found inside this playlist collection container.');
+        // 🔧 FIXED EMPTY CHECK: Check if playlistItems is null or empty
+        if (!playlistItems || playlistItems.length === 0) {
+            console.warn('⚠️ No published items found in playlist');
             
-            // Debugging hook to check raw relations in your database
+            // Debug: Check raw playlist_contents entries
             const { data: rawItems } = await window.supabaseClient
                 .from('playlist_contents')
                 .select('*')
                 .eq('playlist_id', playlistId);
-            console.log('🔍 Raw database rows found without content join filters:', rawItems);
-
+            console.log('🔍 Raw playlist_contents rows:', rawItems);
+            
             throw new Error('Playlist contains no published items');
         }
 
-        // Normalize payload mapping safely into the state managers
-        const normalizedItems = publishedItems.map(item => ({
-            ...item.Content,
-            playlist_relation: {
-                sort_index: item.sort_index,
-                item_type: item.item_type,
-                track_number: item.track_number,
-                season_number: item.season_number
-            }
-        }));
+        console.log('✅ Playlist items loaded successfully:', playlistItems.length);
 
-        // Assign back to runtime states
+        // 🔧 FIXED CONTENT MAPPING: Use proper nested path item.Content
+        const normalizedItems = playlistItems
+            .filter(item => item.Content && item.Content.status === 'published')
+            .map(item => ({
+                ...item.Content,
+                playlist_relation: {
+                    sort_index: item.sort_index,
+                    item_type: item.item_type,
+                    track_number: item.track_number,
+                    season_number: item.season_number
+                }
+            }));
+
+        if (normalizedItems.length === 0) {
+            throw new Error('No valid content items in playlist');
+        }
+
+        // Assign to runtime states
         currentPlaylistItems = normalizedItems;
         window.currentPlaylistItems = normalizedItems;
         window.currentPlaylistIndex = 0;
@@ -194,24 +211,22 @@ async function loadPlaylistMode(playlistId, playlistType) {
             console.log('📀 Playlist metadata loaded:', playlistMeta.name);
         }
 
-        console.log(`📀 Loaded playlist: ${currentPlaylist?.name || 'Playlist'} with ${currentPlaylistItems.length} items using decoupled structure`);
+        console.log(`📀 Loaded playlist: ${currentPlaylist?.name || 'Playlist'} with ${currentPlaylistItems.length} items using explicit relation loading`);
 
-        // Fire your UI template renderer block
+        // Render UI
         renderAlbumTracks(currentPlaylistItems);
         
         // Set current content to first item for player
         if (currentPlaylistItems.length > 0) {
             await setCurrentContentFromPlaylistItem(currentPlaylistItems[0], 0);
             await loadContentIntoPlayer(currentPlaylistItems[0]);
-        } else {
-            showToast('This playlist has no items', 'warning');
         }
 
         hideLoading();
 
     } catch (error) {
         console.error('❌ Playlist mode failed:', error);
-        showToast('Failed to load playlist', 'error');
+        showToast('Failed to load playlist: ' + error.message, 'error');
         hideLoading();
 
         const hero = document.getElementById('contentHero');
@@ -221,10 +236,10 @@ async function loadPlaylistMode(playlistId, playlistType) {
                     <i class="fas fa-exclamation-triangle"></i>
                     <h2>Failed to load playlist</h2>
                     <p>${error.message}</p>
+                    <button onclick="location.reload()" class="btn btn-primary">Retry</button>
                 </div>
             `;
         }
-        return;
     }
 }
 
@@ -1028,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 5000);
 
-    console.log('✅ Content Detail initialization complete with emergency fixes');
+    console.log('✅ Content Detail initialization complete with emergency fixes and critical playlist query fixes');
 });
 
 async function waitForAuthHelper() {
@@ -1049,6 +1064,7 @@ async function waitForAuthHelper() {
 
 // ============================================
 // 🎯 PLAYLIST MODE: Set current content from playlist item (with view reset)
+// 🔧 FIXED: Uses proper Content mapping path
 // ============================================
 async function setCurrentContentFromPlaylistItem(item, index) {
     if (!item) return;
@@ -1066,10 +1082,10 @@ async function setCurrentContentFromPlaylistItem(item, index) {
         created_at: item.created_at,
         duration: item.duration || 3600,
         language: item.language || 'English',
-        views_count: item.views_count || 0,
-        likes_count: item.likes_count || 0,
+        views_count: item.content_engagement_stats?.total_views || item.views_count || 0,
+        likes_count: item.content_engagement_stats?.total_likes || item.likes_count || 0,
         favorites_count: item.favorites_count || 0,
-        comments_count: item.comments_count || 0,
+        comments_count: item.content_engagement_stats?.total_comments || item.comments_count || 0,
         creator: item.user_profiles?.full_name || item.user_profiles?.username || 'Creator',
         creator_display_name: item.user_profiles?.full_name || item.user_profiles?.username || 'Creator',
         creator_id: item.user_id,
@@ -4721,7 +4737,8 @@ window.addEventListener('beforeunload', function() {
 });
 
 console.log('✅ Content detail script loaded with EMERGENCY FIXES:');
-console.log('  🚀 FIXED: Playlist loading with verified schema (status)');
+console.log('  🚀 FIXED: Playlist loading with verified schema (status) and explicit relation loading');
+console.log('  🚀 FIXED: Removed fragile Content:content_id!inner syntax');
 console.log('  🚀 FIXED: Content profile fetching with .maybeSingle() (no 406 errors)');
 console.log('  🚀 FIXED: Favorite button initialization with .maybeSingle()');
 console.log('  🚀 FIXED: EnhancedVideoPlayer with safe assignments (no optional chaining errors)');
