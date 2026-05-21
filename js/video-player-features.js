@@ -145,24 +145,17 @@
     // ✅ CRITICAL FIX #7-9: Safe Cleanup System
     // =====================================================
 
-    /**
-     * Check if cleanup is safe to perform
-     * Prevents resource cleanup during active playback or UI interactions
-     */
     canCleanup() {
-      // Don't cleanup if actively playing
       if (this._activePlaybackCount > 0) {
         console.log('🚫 Cleanup blocked: Active playback in progress');
         return false;
       }
       
-      // Don't cleanup if content change is in progress
       if (this._contentChangeInProgress) {
         console.log('🚫 Cleanup blocked: Content change in progress');
         return false;
       }
       
-      // Don't cleanup too frequently (within 500ms)
       const now = Date.now();
       if (now - this._lastCleanupTime < 500) {
         console.log('🚫 Cleanup blocked: Too frequent (throttled)');
@@ -172,22 +165,15 @@
       return true;
     }
     
-    /**
-     * Mark playback started - increments active playback counter
-     */
     markPlaybackStarted() {
       this._activePlaybackCount++;
       console.log(`🎬 Playback started (count: ${this._activePlaybackCount})`);
     }
     
-    /**
-     * Mark playback ended - decrements active playback counter
-     */
     markPlaybackEnded() {
       this._activePlaybackCount = Math.max(0, this._activePlaybackCount - 1);
       console.log(`⏹️ Playback ended (count: ${this._activePlaybackCount})`);
       
-      // If there was pending cleanup and playback just ended, execute it
       if (this._pendingCleanup && this._activePlaybackCount === 0 && this.canCleanup()) {
         console.log('🔧 Executing pending cleanup after playback ended');
         this._pendingCleanup = false;
@@ -195,24 +181,16 @@
       }
     }
     
-    /**
-     * Mark content change start - temporarily disables cleanup
-     */
     markContentChangeStart() {
       this._contentChangeInProgress = true;
       console.log('🔄 Content change started - cleanup disabled');
     }
     
-    /**
-     * Mark content change end - re-enables cleanup
-     */
     markContentChangeEnd() {
-      // Use setTimeout to ensure any pending operations complete first
       setTimeout(() => {
         this._contentChangeInProgress = false;
         console.log('✅ Content change ended - cleanup re-enabled');
         
-        // Execute pending cleanup if needed
         if (this._pendingCleanup && this.canCleanup()) {
           this._pendingCleanup = false;
           this.executeCleanup();
@@ -220,10 +198,6 @@
       }, 100);
     }
     
-    /**
-     * Safe cleanup that respects active state
-     * @param {boolean} force - If true, bypass all safety checks
-     */
     safeCleanup(force = false) {
       if (force) {
         console.log('🧹 Force cleanup - ignoring safety checks');
@@ -240,9 +214,6 @@
       this.executeCleanup();
     }
     
-    /**
-     * Execute actual cleanup operations
-     */
     executeCleanup() {
       if (this._isCleaningUp) {
         console.log('⚠️ Cleanup already in progress');
@@ -255,9 +226,7 @@
       console.log('🧹 Executing video player resource cleanup...');
       
       try {
-        // Clean up video player but preserve source unless content is changing
         if (window.enhancedVideoPlayer && !this._contentChangeInProgress) {
-          // Only pause and cleanup controls if no active playback
           if (this._activePlaybackCount === 0) {
             console.log('📦 Cleaning up player resources while preserving source...');
             
@@ -265,11 +234,9 @@
               window.enhancedVideoPlayer.video.pause();
             }
             
-            // Clear buffering indicators
             const bufferingEl = document.querySelector('.bantu-buffering-indicator');
             if (bufferingEl) bufferingEl.style.display = 'none';
             
-            // Reset control visibility
             if (window.enhancedVideoPlayer.controls) {
               window.enhancedVideoPlayer.controls.style.opacity = '1';
               window.enhancedVideoPlayer.controls.style.pointerEvents = 'all';
@@ -279,13 +246,11 @@
           }
         }
         
-        // Clear any pending sync intervals
         if (this.playlistSyncInterval) {
           clearInterval(this.playlistSyncInterval);
           this.playlistSyncInterval = null;
         }
         
-        // Clear UI interaction timers
         this._uiInteractionTimers.forEach(timer => clearTimeout(timer));
         this._uiInteractionTimers.clear();
         
@@ -301,16 +266,11 @@
     // PHASE 1D: Queue & Collection Management
     // =====================================================
 
-    /**
-     * Setup next/previous track controls with event delegation
-     */
     setupQueueControls() {
       console.log('🎵 Setting up queue controls...');
       
-      // Next track button
       const nextBtn = document.getElementById('nextTrackBtn');
       if (nextBtn) {
-        // Clone to remove existing listeners, then attach new ones
         const newNextBtn = nextBtn.cloneNode(true);
         nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
         newNextBtn.addEventListener('click', (e) => {
@@ -320,7 +280,6 @@
         });
       }
       
-      // Previous track button
       const prevBtn = document.getElementById('previousTrackBtn');
       if (prevBtn) {
         const newPrevBtn = prevBtn.cloneNode(true);
@@ -332,7 +291,6 @@
         });
       }
       
-      // Autoplay toggle with localStorage persistence
       const autoplayToggle = document.getElementById('autoplayToggle');
       if (autoplayToggle) {
         const savedAutoplay = localStorage.getItem('bantu_autoplay_enabled');
@@ -354,13 +312,9 @@
       console.log('✅ Queue controls setup complete');
     }
     
-    /**
-     * Play next track from queue or playlist
-     */
     playNextTrack() {
       console.log('⏭️ Playing next track...');
       
-      // Priority 1: Playlist mode
       if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
         const currentIndex = window.currentPlaylistItems.findIndex(
           i => i.id === window.currentContent?.id
@@ -382,13 +336,11 @@
         }
       }
       
-      // Priority 2: QueueManager
       if (window.QueueManager && typeof window.QueueManager.playNext === 'function') {
         window.QueueManager.playNext();
         return;
       }
       
-      // Priority 3: Local queue fallback
       if (this.queueItems.length > 0 && this.currentQueueIndex < this.queueItems.length - 1) {
         this.currentQueueIndex++;
         this.loadQueueItem(this.currentQueueIndex);
@@ -399,13 +351,9 @@
       this.showEndOfQueueMessage();
     }
     
-    /**
-     * Play previous track from queue or playlist
-     */
     playPreviousTrack() {
       console.log('⏮️ Playing previous track...');
       
-      // Priority 1: Playlist mode
       if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
         const currentIndex = window.currentPlaylistItems.findIndex(
           i => i.id === window.currentContent?.id
@@ -426,13 +374,11 @@
         }
       }
       
-      // Priority 2: QueueManager
       if (window.QueueManager && typeof window.QueueManager.playPrevious === 'function') {
         window.QueueManager.playPrevious();
         return;
       }
       
-      // Priority 3: Local queue fallback
       if (this.queueItems.length > 0 && this.currentQueueIndex > 0) {
         this.currentQueueIndex--;
         this.loadQueueItem(this.currentQueueIndex);
@@ -442,9 +388,6 @@
       console.log('📭 No previous track available');
     }
     
-    /**
-     * Load a specific queue item by index
-     */
     loadQueueItem(index) {
       const item = this.queueItems[index];
       if (!item) {
@@ -453,17 +396,10 @@
       }
       
       console.log('🎬 Loading queue item:', item.title);
-      
-      // Save current state before navigation
       this.savePlaybackState();
-      
-      // Navigate to content detail page
       window.location.href = `content-detail.html?id=${item.id}`;
     }
     
-    /**
-     * Save playback state for queue restoration after navigation
-     */
     savePlaybackState() {
       const videoElement = document.getElementById('inlineVideoPlayer');
       const currentTime = videoElement?.currentTime || 0;
@@ -489,10 +425,6 @@
       }
     }
     
-    /**
-     * Restore playback state from localStorage
-     * @returns {boolean} True if state was successfully restored
-     */
     restorePlaybackState() {
       const savedState = localStorage.getItem('bantu_playback_state');
       if (!savedState) return false;
@@ -500,18 +432,15 @@
       try {
         const state = JSON.parse(savedState);
         
-        // Expire states older than 30 minutes
         if (Date.now() - state.timestamp > 30 * 60 * 1000) {
           console.log('⏰ Playback state expired');
           return false;
         }
         
-        // Restore queue if available
         if (state.queue && state.queue.length > 0) {
           this.queueItems = state.queue;
           this.currentQueueIndex = state.currentIndex;
           
-          // Sync with QueueManager if available
           if (window.QueueManager && this.queueItems.length > 0) {
             window.QueueManager.initialize(this.queueItems);
             if (state.currentIndex !== undefined) {
@@ -528,20 +457,15 @@
       }
     }
     
-    /**
-     * Highlight active item in queue/playlist UI
-     */
     highlightActiveQueueItem(contentId) {
       let activeFound = false;
       
-      // Highlight in playlist queue
       const playlistItems = document.querySelectorAll('.playlist-queue-item');
       playlistItems.forEach(item => {
         if (item.dataset.contentId === String(contentId)) {
           item.classList.add('active');
           activeFound = true;
           
-          // Auto-scroll to active item if needed
           const sidebar = document.querySelector('.playlist-queue');
           if (sidebar) {
             const itemRect = item.getBoundingClientRect();
@@ -556,7 +480,6 @@
         }
       });
       
-      // Highlight in general queue items
       const queueItems = document.querySelectorAll('.queue-item');
       queueItems.forEach(item => {
         if (item.dataset.contentId === String(contentId)) {
@@ -570,14 +493,10 @@
       return activeFound;
     }
     
-    /**
-     * Setup autoplay handler for video end event
-     */
     setupAutoplayOnEnded() {
       const videoElement = document.getElementById('inlineVideoPlayer');
       if (!videoElement) return;
       
-      // Remove existing listener to prevent duplicates
       if (this.boundHandleVideoEnded) {
         videoElement.removeEventListener('ended', this.boundHandleVideoEnded);
       }
@@ -589,7 +508,6 @@
         if (isAutoplayEnabled) {
           console.log('🎬 Video ended, autoplaying next...');
           
-          // Priority 1: Playlist mode
           if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
             const currentIndex = window.currentPlaylistItems.findIndex(
               i => i.id === window.currentContent?.id
@@ -598,7 +516,6 @@
             if (currentIndex >= 0 && currentIndex + 1 < window.currentPlaylistItems.length) {
               const nextItem = window.currentPlaylistItems[currentIndex + 1];
               
-              // Small delay to allow UI to update
               setTimeout(() => {
                 if (typeof window.playPlaylistItemByIndex === 'function') {
                   window.playPlaylistItemByIndex(currentIndex + 1);
@@ -610,7 +527,6 @@
             }
           }
           
-          // Priority 2: Queue navigation
           this.playNextTrack();
         } else {
           console.log('⏸️ Video ended, autoplay disabled');
@@ -621,9 +537,6 @@
       console.log('✅ Autoplay on ended handler setup complete');
     }
     
-    /**
-     * Sync queue state with playlist UI at regular intervals
-     */
     syncQueueWithPlaylistUI() {
       if (this.playlistSyncInterval) {
         clearInterval(this.playlistSyncInterval);
@@ -631,10 +544,8 @@
       
       this.playlistSyncInterval = setInterval(() => {
         if (window.currentContent?.id) {
-          // Highlight active item
           this.highlightActiveQueueItem(window.currentContent.id);
           
-          // Update "Now Playing" display
           const nowPlayingItem = document.querySelector('.playlist-queue-item.active');
           if (nowPlayingItem) {
             const title = nowPlayingItem.querySelector('.playlist-item-title')?.textContent;
@@ -649,11 +560,7 @@
       }, 1000);
     }
     
-    /**
-     * Restore queue from localStorage on page load
-     */
     restoreQueueFromStorage() {
-      // Restore active queue
       const savedQueue = localStorage.getItem('bantu_active_queue');
       if (savedQueue) {
         try {
@@ -673,7 +580,6 @@
         }
       }
       
-      // Restore last playlist info
       const savedPlaylist = localStorage.getItem('bantu_last_playlist');
       if (savedPlaylist && !window.isPlaylistMode) {
         try {
@@ -685,9 +591,6 @@
       }
     }
     
-    /**
-     * Save current playlist metadata to localStorage
-     */
     saveCurrentPlaylist() {
       if (window.currentPlaylist) {
         try {
@@ -711,7 +614,6 @@
       console.log('🔧 Setting up fullscreen API fix...');
       
       if (window.EnhancedVideoPlayer && window.EnhancedVideoPlayer.prototype) {
-        // Override toggleFullscreen with proper vendor prefix support
         window.EnhancedVideoPlayer.prototype.toggleFullscreen = function() {
           const videoContainer = document.querySelector('.video-container');
           
@@ -721,7 +623,6 @@
           }
           
           if (!this.isFullscreen) {
-            // Enter fullscreen
             if (videoContainer.requestFullscreen) {
               videoContainer.requestFullscreen();
             } else if (videoContainer.webkitRequestFullscreen) {
@@ -732,7 +633,6 @@
               videoContainer.msRequestFullscreen();
             }
           } else {
-            // Exit fullscreen
             if (document.exitFullscreen) {
               document.exitFullscreen();
             } else if (document.webkitExitFullscreen) {
@@ -746,7 +646,6 @@
           
           this.isFullscreen = !this.isFullscreen;
           
-          // Update button icon
           const fullscreenBtn = this.controls?.querySelector('.fullscreen-btn');
           if (fullscreenBtn) {
             fullscreenBtn.innerHTML = this.isFullscreen
@@ -754,7 +653,6 @@
               : '<i class="fas fa-expand"></i>';
           }
           
-          // Ensure controls remain visible during transition
           setTimeout(() => {
             if (this.controls) {
               this.controls.style.opacity = '1';
@@ -763,7 +661,6 @@
           }, 100);
         };
         
-        // Listen for fullscreen change events across all browsers
         document.addEventListener('fullscreenchange', this.handleFullscreenChange.bind(this));
         document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange.bind(this));
         document.addEventListener('mozfullscreenchange', this.handleFullscreenChange.bind(this));
@@ -797,18 +694,8 @@
     // 🔧 VIEWS FIX #1-4: Proper View Recording with DB Confirmation
     // =====================================================
 
-    /**
-     * Record a view for content with proper database confirmation
-     * 
-     * CRITICAL FIXES:
-     * 1. No premature early exit - only skip if DB already confirmed
-     * 2. Separate "attempted" from "persisted" state
-     * 3. Use RPC increment_content_views for atomic counter updates
-     * 4. Frontend optimistic updates for immediate UI feedback
-     */
     async recordView(contentId, sessionId) {
       try {
-        // Prevent duplicate simultaneous calls ONLY
         if (this._isRecordingView) {
           console.log('👁️ View recording already in progress, skipping duplicate call');
           return false;
@@ -816,7 +703,6 @@
 
         this._isRecordingView = true;
 
-        // Only skip if DATABASE already confirmed persistence
         if (this._viewPersisted === true) {
           console.log('👁️ View already persisted to database for this session');
           return true;
@@ -832,7 +718,6 @@
 
         const userId = window.AuthHelper?.getUserProfile?.()?.id || null;
 
-        // Step 1: Insert into content_views with session-based deduplication
         const { data: viewData, error: viewError } = await window.supabaseClient
           .from('content_views')
           .insert({
@@ -849,7 +734,6 @@
           .single();
 
         if (viewError) {
-          // Handle duplicate key error (already viewed this session)
           if (viewError.code === '23505') {
             console.log('👁️ View already recorded in database (duplicate prevented)');
             this._viewPersisted = true;
@@ -861,7 +745,6 @@
 
         console.log('✅ View recorded successfully in content_views:', viewData?.id);
 
-        // Step 2: Increment content.views_count using RPC for atomic updates
         const { error: rpcError } = await window.supabaseClient
           .rpc('increment_content_views', {
             content_id_input: contentIdNum
@@ -869,21 +752,17 @@
 
         if (rpcError) {
           console.error('❌ Failed to increment content views count:', rpcError);
-          // Don't return false - the view was still recorded in content_views
         } else {
           console.log('✅ Content views count incremented via RPC');
         }
 
-        // Step 3: Mark as persisted in database
         this._viewPersisted = true;
 
-        // Step 4: Store in sessionStorage as backup for cross-tab sync
         sessionStorage.setItem(
           `view_recorded_${contentIdNum}_${sessionId}`,
           Date.now().toString()
         );
 
-        // Step 5: Update frontend UI immediately (optimistic update)
         this.incrementFrontendViewCount();
 
         return true;
@@ -896,9 +775,6 @@
       }
     }
 
-    /**
-     * Increment frontend view count displays (optimistic update)
-     */
     incrementFrontendViewCount() {
       const selectors = [
         '.view-count',
@@ -923,18 +799,12 @@
       });
     }
 
-    /**
-     * Format number with K/M suffixes for display
-     */
     static formatNumber(num) {
       if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
       if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
       return num.toString();
     }
 
-    /**
-     * Mark content as viewed in localStorage for short-term deduplication
-     */
     static markContentAsViewed(contentId) {
       try {
         const viewedContent = JSON.parse(
@@ -950,9 +820,6 @@
       }
     }
 
-    /**
-     * Check if content was viewed recently (within 1 hour)
-     */
     static hasViewedContent(contentId) {
       try {
         const viewedContent = JSON.parse(
@@ -960,15 +827,12 @@
         );
         const viewTime = viewedContent[contentId];
         if (!viewTime) return false;
-        return (Date.now() - viewTime) < 3600000; // 1 hour window
+        return (Date.now() - viewTime) < 3600000;
       } catch (error) {
         return false;
       }
     }
 
-    /**
-     * Clear view cache from localStorage
-     */
     static clearViewCache() {
       localStorage.removeItem('bantu_viewed_content');
       console.log('🧹 View cache cleared');
@@ -987,29 +851,24 @@
         window.EnhancedVideoPlayer.prototype.destroy = function() {
           console.log('🧹 Cleaning up video player resources...');
           
-          // Pause video and optionally clear source
           if (this.video) {
             this.video.pause();
-            // Only clear source if not preserving for quick reload
             if (!this.video.dataset.keepSource) {
               this.video.src = '';
               this.video.load();
             }
           }
           
-          // Clear timeouts
           if (this.bufferingTimeout) {
             clearTimeout(this.bufferingTimeout);
             this.bufferingTimeout = null;
           }
           
-          // Clear intervals
           if (this.networkCheckInterval) {
             clearInterval(this.networkCheckInterval);
             this.networkCheckInterval = null;
           }
           
-          // Remove all video event listeners
           if (this.video) {
             const events = [
               'play', 'pause', 'ended', 'error', 'waiting',
@@ -1023,17 +882,14 @@
             });
           }
           
-          // Remove controls from DOM
           if (this.controls && this.controls.parentNode) {
             this.controls.parentNode.removeChild(this.controls);
           }
           
-          // Clear event listener registry
           if (this.eventListeners) {
             this.eventListeners.clear();
           }
           
-          // Call original destroy if it exists
           if (originalDestroy) {
             originalDestroy.call(this);
           }
@@ -1051,7 +907,6 @@
 
     setupPlaybackStateCleanup() {
       window.addEventListener('beforeunload', () => {
-        // Save final state before page unload
         const videoElement = document.getElementById('inlineVideoPlayer');
         if (videoElement && window.currentContent) {
           const playbackState = {
@@ -1073,12 +928,10 @@
           }
         }
         
-        // Save playlist info if in playlist mode
         if (window.isPlaylistMode && window.currentPlaylist) {
           this.saveCurrentPlaylist();
         }
         
-        // Clear sync interval
         if (this.playlistSyncInterval) {
           clearInterval(this.playlistSyncInterval);
           this.playlistSyncInterval = null;
@@ -1096,12 +949,10 @@
         return;
       }
       
-      // Store reference for global access
       window.videoPlayerFeatures = this;
       
       console.log('🚀 Initializing Phase 1 video player fixes and Phase 1D enhancements...');
       
-      // Apply all fixes and enhancements
       this.removeDuplicateControls();
       this.setupFullscreenFix();
       this.setupMemoryLeakFix();
@@ -1114,15 +965,11 @@
       this.initialized = true;
       console.log('✅ Phase 1 and Phase 1D fixes initialized successfully');
       
-      // Setup additional event handling
       this.setupAdditionalEventListeners();
       this.setupPlaybackTracking();
       this.setupUIInteractionTracking();
     }
     
-    /**
-     * ✅ CRITICAL FIX #7: Track playback for cleanup prevention
-     */
     setupPlaybackTracking() {
       const videoElement = document.getElementById('inlineVideoPlayer');
       if (!videoElement) return;
@@ -1142,9 +989,6 @@
       console.log('✅ Playback tracking initialized');
     }
     
-    /**
-     * ✅ CRITICAL FIX #8: Track UI interactions to prevent premature cleanup
-     */
     setupUIInteractionTracking() {
       const trackInteraction = (element, name, duration = 300) => {
         if (!element) return;
@@ -1152,12 +996,10 @@
         element.addEventListener('click', () => {
           this.markContentChangeStart();
           
-          // Clear any existing timer for this interaction
           if (this._uiInteractionTimers.has(name)) {
             clearTimeout(this._uiInteractionTimers.get(name));
           }
           
-          // Set new timer to re-enable cleanup
           const timer = setTimeout(() => {
             this.markContentChangeEnd();
             this._uiInteractionTimers.delete(name);
@@ -1167,7 +1009,6 @@
         });
       };
       
-      // Track various UI interactions
       trackInteraction(document.getElementById('playBtn'), 'playBtn', 500);
       trackInteraction(document.querySelector('.settings-btn'), 'settingsBtn', 300);
       trackInteraction(document.getElementById('albumToggleBtn'), 'albumToggle', 500);
@@ -1180,15 +1021,9 @@
       console.log('✅ UI interaction tracking initialized');
     }
 
-    /**
-     * Setup additional keyboard and mouse event listeners
-     */
     setupAdditionalEventListeners() {
-      // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         if (!window.enhancedVideoPlayer) return;
-        
-        // Ignore if user is typing in an input
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         
         switch (e.key.toLowerCase()) {
@@ -1248,7 +1083,6 @@
         }
       });
       
-      // Double-click to toggle fullscreen
       const videoContainer = document.querySelector('.video-container');
       if (videoContainer) {
         videoContainer.addEventListener('dblclick', () => {
@@ -1258,10 +1092,7 @@
         });
       }
     }
-
-    /**
-     * Touch device support for mobile controls
-     */
+    
     setupTouchDeviceSupport() {
       if ('ontouchstart' in window) {
         const videoContainer = document.querySelector('.video-container');
@@ -1271,11 +1102,9 @@
         
         videoContainer.addEventListener('touchstart', () => {
           if (window.enhancedVideoPlayer?.controls) {
-            // Show controls on touch
             window.enhancedVideoPlayer.controls.style.opacity = '1';
             window.enhancedVideoPlayer.controls.style.pointerEvents = 'all';
             
-            // Auto-hide after 3 seconds if video is playing
             clearTimeout(touchTimer);
             touchTimer = setTimeout(() => {
               if (window.enhancedVideoPlayer?.controls && 
@@ -1293,9 +1122,6 @@
     // PHASE 1D: Public Queue API
     // =====================================================
     
-    /**
-     * Set queue items and current index
-     */
     setQueue(items, currentIndex = 0) {
       this.queueItems = items || [];
       this.currentQueueIndex = currentIndex;
@@ -1313,9 +1139,6 @@
       console.log('📋 Queue set:', this.queueItems.length, 'items');
     }
     
-    /**
-     * Get current queue state
-     */
     getQueue() {
       return {
         items: this.queueItems,
@@ -1323,9 +1146,6 @@
       };
     }
     
-    /**
-     * Clear queue and related state
-     */
     clearQueue() {
       this.queueItems = [];
       this.currentQueueIndex = 0;
@@ -1334,13 +1154,9 @@
       console.log('🗑️ Queue cleared');
     }
     
-    /**
-     * Update playlist UI when track changes
-     */
     updatePlaylistUIOnTrackChange(contentId) {
       this.highlightActiveQueueItem(contentId);
       
-      // Update "Now Playing" display
       const nowPlayingTitle = document.getElementById('nowPlayingTitle');
       const nowPlayingThumb = document.getElementById('nowPlayingThumb');
       
@@ -1353,7 +1169,6 @@
         nowPlayingThumb.alt = window.currentContent.title || 'Now Playing';
       }
       
-      // Update playlist progress bar
       if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
         const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === contentId);
         const progressEl = document.getElementById('playlistProgress');
@@ -1370,11 +1185,7 @@
       }
     }
     
-    /**
-     * Initialize view recording for a specific session
-     */
     async initializeViewRecording(contentId) {
-      // Generate or retrieve session ID
       if (!this._currentSessionId) {
         this._currentSessionId = sessionStorage.getItem('bantu_view_session');
         if (!this._currentSessionId) {
@@ -1384,11 +1195,9 @@
         }
       }
       
-      // Reset persistence flag for new content
       this._viewPersisted = false;
       this._isRecordingView = false;
       
-      // Record the view
       return await this.recordView(contentId, this._currentSessionId);
     }
     
@@ -1396,9 +1205,6 @@
     // SHOW MESSAGES
     // =====================================================
     
-    /**
-     * Show playlist complete toast message
-     */
     showPlaylistCompleteMessage() {
       const message = document.createElement('div');
       message.className = 'playlist-complete-toast';
@@ -1408,19 +1214,14 @@
       `;
       document.body.appendChild(message);
       
-      // Animate in
       setTimeout(() => message.classList.add('show'), 10);
       
-      // Animate out and remove
       setTimeout(() => {
         message.classList.remove('show');
         setTimeout(() => message.remove(), 300);
       }, 3000);
     }
     
-    /**
-     * Show end of queue toast message
-     */
     showEndOfQueueMessage() {
       const message = document.createElement('div');
       message.className = 'queue-end-toast';
@@ -1444,7 +1245,6 @@
   // =====================================================
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Delay initialization to ensure DOM is fully ready
     setTimeout(() => {
       const videoPlayerFeatures = new VideoPlayerFeatures();
       videoPlayerFeatures.initialize();
@@ -1452,9 +1252,7 @@
       
       // 🔧 ALBUM ARCHITECTURE FIX: Album toggle setup REMOVED from here
       // Album UI is now handled EXCLUSIVELY by content-detail.js
-      // This prevents duplicate event handlers and DOM synchronization issues
       
-      // Expose helper methods globally for cross-module access
       window.clearViewCache = () => VideoPlayerFeatures.clearViewCache();
       window.hasViewedContent = (id) => VideoPlayerFeatures.hasViewedContent(id);
       
@@ -1471,12 +1269,10 @@
       window.playNextTrack = () => videoPlayerFeatures.playNextTrack();
       window.playPreviousTrack = () => videoPlayerFeatures.playPreviousTrack();
       
-      // Expose cleanup control methods for external triggers
       window.safeCleanup = (force) => videoPlayerFeatures.safeCleanup(force);
       window.markContentChangeStart = () => videoPlayerFeatures.markContentChangeStart();
       window.markContentChangeEnd = () => videoPlayerFeatures.markContentChangeEnd();
       
-      // Expose view recording methods
       window.recordContentView = (contentId) => 
         videoPlayerFeatures.initializeViewRecording(contentId);
       window.incrementFrontendViewCount = () => 
@@ -1485,7 +1281,6 @@
     }, 1000);
   });
 
-  // Export class for module systems
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = VideoPlayerFeatures;
   } else {
