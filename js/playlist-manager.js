@@ -51,9 +51,6 @@
   // PUBLIC API - CORE PLAYLIST OPERATIONS
   // ============================================
 
-  /**
-   * Get all playlists for the current user
-   */
   PlaylistManager.prototype.getPlaylists = async function() {
     if (!this.userId) {
       console.warn('⚠️ Cannot get playlists: No user logged in');
@@ -72,7 +69,6 @@
       
       if (error) throw error;
       
-      // Add item count to each playlist
       const playlists = (data || []).map(playlist => ({
         ...playlist,
         item_count: playlist.playlist_items?.[0]?.count || 0
@@ -86,9 +82,6 @@
     }
   };
 
-  /**
-   * Get a single playlist by ID with its items
-   */
   PlaylistManager.prototype.getPlaylist = async function(playlistId) {
     if (!playlistId) {
       console.warn('⚠️ Cannot get playlist: No playlist ID provided');
@@ -96,7 +89,6 @@
     }
     
     try {
-      // Get playlist details
       const { data: playlist, error: playlistError } = await this.supabase
         .from('playlists')
         .select('*')
@@ -106,7 +98,6 @@
       if (playlistError) throw playlistError;
       if (!playlist) return null;
       
-      // Get playlist items with content details (Phase 5: use content_engagement_stats)
       const { data: items, error: itemsError } = await this.supabase
         .from('playlist_items')
         .select(`
@@ -165,7 +156,7 @@
       
       // Cache the tracks for album/playlist display
       const tracks = (itemsWithStats || [])
-        .filter(item => item.Content) // Filter out items with null Content
+        .filter(item => item.Content)
         .map(item => ({
           id: item.content_id,
           title: item.Content?.title || 'Untitled',
@@ -194,9 +185,6 @@
     }
   };
 
-  /**
-   * Create a new playlist
-   */
   PlaylistManager.prototype.createPlaylist = async function(name, description = '', isPublic = false) {
     if (!this.userId) {
       this._handleError('create_playlist', new Error('User not logged in'));
@@ -238,9 +226,6 @@
     }
   };
 
-  /**
-   * Update an existing playlist
-   */
   PlaylistManager.prototype.updatePlaylist = async function(playlistId, updates) {
     if (!playlistId) {
       this._handleError('update_playlist', new Error('Playlist ID required'));
@@ -273,9 +258,6 @@
     }
   };
 
-  /**
-   * Delete a playlist
-   */
   PlaylistManager.prototype.deletePlaylist = async function(playlistId) {
     if (!playlistId) {
       this._handleError('delete_playlist', new Error('Playlist ID required'));
@@ -283,7 +265,6 @@
     }
     
     try {
-      // First delete all playlist items (cascade should handle this, but explicit for safety)
       const { error: itemsError } = await this.supabase
         .from('playlist_items')
         .delete()
@@ -291,7 +272,6 @@
       
       if (itemsError) throw itemsError;
       
-      // Then delete the playlist
       const { error } = await this.supabase
         .from('playlists')
         .delete()
@@ -302,13 +282,11 @@
       
       console.log('✅ Playlist deleted:', playlistId);
       
-      // Invalidate watch later cache if this was the watch later playlist
       if (this._watchLaterPlaylistId === playlistId) {
         this._watchLaterPlaylistId = null;
         this._watchLaterCacheTime = null;
       }
       
-      // Remove from tracks cache
       this._playlistTracksCache.delete(playlistId);
       
       if (this.onPlaylistUpdated) {
@@ -327,9 +305,6 @@
   // PUBLIC API - PLAYLIST ITEMS
   // ============================================
 
-  /**
-   * Add content to a playlist
-   */
   PlaylistManager.prototype.addToPlaylist = async function(playlistId, contentId) {
     if (!playlistId || !contentId) {
       this._handleError('add_to_playlist', new Error('Playlist ID and Content ID required'));
@@ -349,7 +324,7 @@
       
       if (existing) {
         console.log('ℹ️ Content already in playlist:', contentId);
-        return true; // Already exists, consider success
+        return true;
       }
       
       const { error } = await this.supabase
@@ -361,7 +336,7 @@
         });
       
       // Handle duplicate key gracefully
-      if (error && error.code === '23505') { // Unique violation
+      if (error && error.code === '23505') {
         console.log('ℹ️ Content already in playlist (duplicate key)');
         return true;
       }
@@ -370,13 +345,11 @@
       
       console.log('✅ Added to playlist:', contentId);
       
-      // Update playlist updated_at
       await this.supabase
         .from('playlists')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', playlistId);
       
-      // Invalidate cache for this playlist
       this._playlistTracksCache.delete(playlistId);
       
       if (this.onPlaylistUpdated) {
@@ -396,9 +369,6 @@
     }
   };
 
-  /**
-   * Remove content from a playlist
-   */
   PlaylistManager.prototype.removeFromPlaylist = async function(playlistId, contentId) {
     if (!playlistId || !contentId) {
       this._handleError('remove_from_playlist', new Error('Playlist ID and Content ID required'));
@@ -416,13 +386,11 @@
       
       console.log('✅ Removed from playlist:', contentId);
       
-      // Update playlist updated_at
       await this.supabase
         .from('playlists')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', playlistId);
       
-      // Invalidate cache for this playlist
       this._playlistTracksCache.delete(playlistId);
       
       if (this.onPlaylistUpdated) {
@@ -442,9 +410,6 @@
     }
   };
 
-  /**
-   * Check if content is in a specific playlist
-   */
   PlaylistManager.prototype.isInPlaylist = async function(playlistId, contentId) {
     if (!playlistId || !contentId || !this.userId) return false;
     
@@ -465,9 +430,6 @@
     }
   };
 
-  /**
-   * Get all playlists containing a specific content
-   */
   PlaylistManager.prototype.getPlaylistsForContent = async function(contentId) {
     if (!contentId || !this.userId) return [];
     
@@ -497,16 +459,10 @@
   // 🔧 ALBUM FIX: TRACK SOURCE DETECTION
   // ============================================
 
-  /**
-   * Get tracks for a playlist/album with multiple source detection
-   * This method intelligently finds tracks from various possible sources
-   */
   PlaylistManager.prototype.getAlbumTracks = async function(playlistIdOrContent) {
     let tracks = [];
     
-    // Case 1: Called with a playlist ID
     if (typeof playlistIdOrContent === 'string' || typeof playlistIdOrContent === 'number') {
-      // Check cache first
       const cacheKey = String(playlistIdOrContent);
       if (this._playlistTracksCache.has(cacheKey)) {
         const cached = this._playlistTracksCache.get(cacheKey);
@@ -516,18 +472,14 @@
         }
       }
       
-      // Fetch from database
       const playlist = await this.getPlaylist(playlistIdOrContent);
       if (playlist && playlist.tracks) {
         tracks = playlist.tracks;
       }
     }
-    
-    // Case 2: Called with a content object that might have tracks/items
     else if (playlistIdOrContent && typeof playlistIdOrContent === 'object') {
       const content = playlistIdOrContent;
       
-      // Try multiple possible track sources
       if (content.items && Array.isArray(content.items)) {
         tracks = content.items;
         console.log('📀 Tracks from content.items:', tracks.length);
@@ -542,7 +494,6 @@
         console.log('📀 Tracks from content.playlist_items:', tracks.length);
       }
       
-      // If tracks are objects that need transformation
       if (tracks.length > 0 && tracks[0] && !tracks[0].title && tracks[0].Content) {
         tracks = tracks.map(item => ({
           id: item.content_id || item.Content?.id,
@@ -559,8 +510,6 @@
         }));
       }
     }
-    
-    // Case 3: Check global window objects
     else if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
       tracks = window.currentPlaylistItems;
       console.log('📀 Tracks from window.currentPlaylistItems:', tracks.length);
@@ -575,7 +524,6 @@
       console.log('📀 Tracks from window.currentContent._playlistItems:', tracks.length);
     }
     
-    // Log warning if no tracks found
     if (!tracks || tracks.length === 0) {
       console.warn('⚠️ No tracks available in any source', {
         input: playlistIdOrContent,
@@ -589,24 +537,16 @@
     return tracks || [];
   };
 
-  /**
-   * Get playlist tracks with automatic source detection
-   * Convenience method for album/playlist display
-   */
   PlaylistManager.prototype.getPlaylistTracks = async function(playlistId) {
     return await this.getAlbumTracks(playlistId);
   };
 
-  /**
-   * Cache playlist tracks
-   */
   PlaylistManager.prototype._cachePlaylistTracks = function(playlistId, tracks) {
     this._playlistTracksCache.set(String(playlistId), {
       tracks: tracks || [],
       timestamp: Date.now()
     });
     
-    // Auto-cleanup old cache entries
     if (this._cacheTimeout) {
       clearTimeout(this._cacheTimeout);
     }
@@ -615,9 +555,6 @@
     }, this._playlistTracksCacheDuration * 2);
   };
 
-  /**
-   * Clear expired cache entries
-   */
   PlaylistManager.prototype._clearExpiredCache = function() {
     const now = Date.now();
     for (const [key, value] of this._playlistTracksCache.entries()) {
@@ -627,9 +564,6 @@
     }
   };
 
-  /**
-   * Clear all playlist tracks cache
-   */
   PlaylistManager.prototype.clearPlaylistTracksCache = function() {
     this._playlistTracksCache.clear();
     console.log('🗑️ Playlist tracks cache cleared');
@@ -639,17 +573,12 @@
   // ✅ CRITICAL FIX #2 & #3: WATCH LATER METHODS
   // ============================================
 
-  /**
-   * Get or create the Watch Later playlist ID
-   * Uses caching to reduce database calls
-   */
   PlaylistManager.prototype.getWatchLaterPlaylistId = async function() {
     if (!this.userId) {
       console.warn('⚠️ Cannot get Watch Later: No user logged in');
       return null;
     }
     
-    // Check cache
     const now = Date.now();
     if (this._watchLaterPlaylistId && this._watchLaterCacheTime && 
         (now - this._watchLaterCacheTime) < this._cacheDuration) {
@@ -657,7 +586,6 @@
     }
     
     try {
-      // Look for existing Watch Later playlist
       let { data: playlist, error } = await this.supabase
         .from('playlists')
         .select('id')
@@ -667,7 +595,6 @@
       
       if (error && error.code !== 'PGRST116') throw error;
       
-      // Create if it doesn't exist
       if (!playlist) {
         console.log('📋 Creating Watch Later playlist for user:', this.userId);
         
@@ -694,7 +621,6 @@
         throw new Error('Failed to create or retrieve Watch Later playlist');
       }
       
-      // Update cache
       this._watchLaterPlaylistId = playlist.id;
       this._watchLaterCacheTime = now;
       
@@ -706,9 +632,6 @@
     }
   };
 
-  /**
-   * ✅ CRITICAL FIX #3: Add content to Watch Later
-   */
   PlaylistManager.prototype.addToWatchLater = async function(contentId) {
     if (!this.userId) {
       this._handleError('add_to_watch_later', new Error('User not logged in'));
@@ -740,9 +663,6 @@
     }
   };
 
-  /**
-   * ✅ CRITICAL FIX #3: Remove content from Watch Later
-   */
   PlaylistManager.prototype.removeFromWatchLater = async function(contentId) {
     if (!this.userId || !contentId) return false;
     
@@ -764,9 +684,6 @@
     }
   };
 
-  /**
-   * ✅ CRITICAL FIX #1: Check if content is in Watch Later
-   */
   PlaylistManager.prototype.isInWatchLater = async function(contentId) {
     if (!this.userId || !contentId) return false;
     
@@ -781,9 +698,6 @@
     }
   };
 
-  /**
-   * Get all Watch Later items
-   */
   PlaylistManager.prototype.getWatchLaterItems = async function() {
     if (!this.userId) return [];
     
@@ -799,9 +713,6 @@
     }
   };
 
-  /**
-   * Toggle content in Watch Later (add if not present, remove if present)
-   */
   PlaylistManager.prototype.toggleWatchLater = async function(contentId) {
     if (!this.userId || !contentId) {
       return { added: false, removed: false, success: false };
@@ -822,18 +733,12 @@
   // PUBLIC API - UTILITY METHODS
   // ============================================
 
-  /**
-   * Clear the watch later cache (useful after logout)
-   */
   PlaylistManager.prototype.clearWatchLaterCache = function() {
     this._watchLaterPlaylistId = null;
     this._watchLaterCacheTime = null;
     console.log('🗑️ Watch later cache cleared');
   };
 
-  /**
-   * Update user ID (for when user logs in/out)
-   */
   PlaylistManager.prototype.setUserId = function(userId) {
     this.userId = userId;
     this.clearWatchLaterCache();
@@ -845,16 +750,10 @@
     }
   };
 
-  /**
-   * Check if user is logged in
-   */
   PlaylistManager.prototype.isAuthenticated = function() {
     return !!this.userId;
   };
 
-  /**
-   * Get playlist items formatted as tracks for album display
-   */
   PlaylistManager.prototype.getPlaylistAsTracks = async function(playlistId) {
     const playlist = await this.getPlaylist(playlistId);
     if (!playlist) return [];
