@@ -1616,6 +1616,9 @@ body {
 
 /* Legacy album track list (deprecated, kept for compatibility) */
 .album-track-list {
+  display: flex; /* ✅ FIX: Base flex display for tracklist */
+  flex-direction: column; /* ✅ FIX: Column layout */
+  width: 100%; /* ✅ FIX: Full width */
   margin-top: 1.5rem;
   margin-bottom: 1rem;
   background: rgba(255, 255, 255, 0.04);
