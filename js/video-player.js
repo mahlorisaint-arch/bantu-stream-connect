@@ -106,8 +106,8 @@
       this.contentId = options.contentId || null;
       this.contentMetadata = options.contentMetadata || null;
       
-      // Supabase integration
-      this.supabase = options.supabase || window.supabase;
+      // Supabase integration - CRITICAL FIX: Use window.supabaseClient
+      this.supabase = options.supabase || window.supabaseClient || window.supabase;
       this.userId = options.userId || window.AuthHelper?.getUserProfile?.()?.id || null;
       
       // Social engagement state
@@ -159,9 +159,6 @@
     // MIME TYPE & MEDIA DETECTION
     // =====================================================
     
-    /**
-     * Get MIME type for media URL
-     */
     getMediaMimeType(url = '') {
       if (!url) return 'video/mp4';
       
@@ -189,18 +186,12 @@
       return lower.includes('audio') ? 'audio/mpeg' : 'video/mp4';
     }
     
-    /**
-     * Detect if URL is audio-only
-     */
     isAudioSource(url) {
       if (!url) return false;
       const audioExtensions = ['.mp3', '.wav', '.ogg', '.oga', '.m4a', '.aac', '.flac', '.wma'];
       return audioExtensions.some(ext => url.toLowerCase().endsWith(ext));
     }
     
-    /**
-     * Detect media type from URL or metadata
-     */
     detectMediaType(url, metadata = {}) {
       if (metadata.media_type) return metadata.media_type;
       if (this.isAudioSource(url)) return 'audio';
@@ -211,9 +202,6 @@
     // ATTACHMENT & INITIALIZATION
     // =====================================================
     
-    /**
-     * Attach player to video element with full setup
-     */
     attach(videoElement, container, options = {}) {
       if (this._isDestroyed) {
         console.warn('⚠️ Cannot attach: player has been destroyed');
@@ -224,13 +212,11 @@
         throw new Error('Video element is required');
       }
       
-      // Prevent duplicate attachment
       if (this._isAttached && this.video === videoElement) {
         console.log('ℹ️ Player already attached to this element');
         return Promise.resolve(this);
       }
       
-      // Cleanup previous attachment if re-attaching
       if (this._isAttached) {
         console.log('🔄 Cleaning up previous attachment');
         this._cleanupAttachment();
@@ -239,38 +225,21 @@
       this.video = videoElement;
       this.container = container || videoElement.parentElement;
       
-      // Merge options
       if (options.contentId) this.contentId = options.contentId;
       if (options.contentMetadata) this.contentMetadata = options.contentMetadata;
       if (options.collectionContext) {
         this.collectionContext = { ...this.collectionContext, ...options.collectionContext };
       }
       
-      // Preserve existing source before modification
       this._preserveSource();
-      
-      // Configure video element
       this._configureVideoElement();
-      
-      // Apply audio mode if needed
       this._applyAudioMode();
-      
-      // Create UI controls
       this._createControls();
-      
-      // Setup event listeners
       this._setupEventListeners();
-      
-      // Setup control interactions
       this._setupControlInteractions();
-      
-      // Initialize integrations
       this._initializeIntegrations();
-      
-      // Restore source and load media
       this._restoreAndLoadSource();
       
-      // Mark as attached
       this._isAttached = true;
       
       console.log('✅ EnhancedVideoPlayer attached', {
@@ -279,7 +248,6 @@
         collectionId: this.collectionContext.collectionId
       });
       
-      // Emit attached event
       this._emit('player:attached', {
         contentId: this.contentId,
         container: this.container,
@@ -289,14 +257,10 @@
       return Promise.resolve(this);
     }
     
-    /**
-     * Preserve current video source for restoration
-     */
     _preserveSource() {
       const video = this.video;
       if (!video) return;
       
-      // Check for source elements
       const sourceEl = video.querySelector('source');
       if (sourceEl && sourceEl.src) {
         this._sourcePreserved = {
@@ -307,7 +271,6 @@
         return;
       }
       
-      // Check for direct src attribute
       if (video.src && video.src !== window.location.href) {
         this._sourcePreserved = {
           url: video.src,
@@ -317,7 +280,6 @@
         return;
       }
       
-      // Check for data attributes (fallback)
       const dataSrc = video.dataset && video.dataset.src ? video.dataset.src : video.getAttribute('data-file-url');
       if (dataSrc) {
         this._sourcePreserved = {
@@ -328,37 +290,27 @@
       }
     }
     
-    /**
-     * Configure video element properties
-     */
     _configureVideoElement() {
       const video = this.video;
       if (!video) return;
       
-      // Disable native controls
       video.controls = false;
       video.removeAttribute('controls');
       
-      // Apply config settings
       video.autoplay = this.config.autoplay;
       video.loop = this.config.loop;
       video.preload = this.config.preload;
-      video.playsInline = true; // iOS support
-      video.crossOrigin = 'anonymous'; // CORS for metrics
+      video.playsInline = true;
+      video.crossOrigin = 'anonymous';
       
-      // Ensure audio is enabled by default
       video.muted = this.config.muted;
       video.defaultMuted = this.config.muted;
       video.volume = 1.0;
       video.defaultVolume = 1.0;
       
-      // Add player class for styling
       video.classList.add('enhanced-video-player');
     }
     
-    /**
-     * Apply audio-mode styling if needed
-     */
     _applyAudioMode() {
       const url = this._sourcePreserved ? this._sourcePreserved.url : null;
       const isAudio = this.isAudioSource(url);
@@ -374,31 +326,24 @@
         }
       }
       
-      // Update container class for styling
       if (this.container) {
         this.container.classList.toggle('audio-player', isAudio);
         this.container.classList.toggle('video-player', !isAudio);
       }
     }
     
-    /**
-     * Create custom controls UI
-     */
     _createControls() {
       if (!this.container) return;
       
-      // Remove existing controls
       const existingControls = this.container.querySelector('.enhanced-video-controls');
       if (existingControls) existingControls.remove();
       
-      // Create controls container
       this.controls = document.createElement('div');
       this.controls.className = 'enhanced-video-controls';
       this.controls.setAttribute('role', 'toolbar');
       this.controls.setAttribute('aria-label', 'Video player controls');
       this.controls.innerHTML = this._getControlsHTML();
       
-      // Apply styles
       Object.assign(this.controls.style, {
         position: 'absolute',
         bottom: '0',
@@ -412,43 +357,30 @@
         pointerEvents: 'auto'
       });
       
-      // Add to container
       this.container.appendChild(this.controls);
-      
-      // Cache control references
       this._cacheControlElements();
-      
-      // Setup settings menu
       this._setupSettingsMenu();
       
       console.log('✅ Custom controls created');
     }
     
-    /**
-     * Generate controls HTML
-     */
     _getControlsHTML() {
       const isMobile = this._isMobile;
       
       return `
-        <!-- Main Controls Bar -->
         <div class="controls-bar" role="group" aria-label="Playback controls">
-          
-          <!-- Play/Pause -->
           <button class="control-btn play-pause-btn" 
                   title="Play/Pause (Space)"
                   aria-label="Play or pause video">
             <i class="fas fa-play" aria-hidden="true"></i>
           </button>
           
-          <!-- Time Display -->
           <div class="time-display" aria-live="off">
             <span class="current-time">0:00</span>
             <span class="time-separator"> / </span>
             <span class="duration">0:00</span>
           </div>
           
-          <!-- Progress Bar -->
           <div class="progress-container" role="slider" 
                aria-label="Video progress"
                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -461,7 +393,6 @@
             <div class="progress-tooltip"></div>
           </div>
           
-          <!-- Volume (desktop only) -->
           ${!isMobile ? `
           <div class="volume-group">
             <button class="control-btn volume-btn" 
@@ -476,10 +407,8 @@
           </div>
           ` : ''}
           
-          <!-- Spacer -->
           <div class="controls-spacer"></div>
           
-          <!-- Collection Nav (Phase 1D) -->
           ${this.config.enableCollectionNav ? `
           <button class="control-btn prev-track-btn" 
                   title="Previous (P)"
@@ -493,7 +422,6 @@
           </button>
           ` : ''}
           
-          <!-- Settings -->
           <button class="control-btn settings-btn" 
                   title="Settings"
                   aria-label="Open settings"
@@ -502,7 +430,6 @@
             <i class="fas fa-cog" aria-hidden="true"></i>
           </button>
           
-          <!-- Picture in Picture -->
           ${document.pictureInPictureEnabled ? `
           <button class="control-btn pip-btn" 
                   title="Picture in Picture"
@@ -511,7 +438,6 @@
           </button>
           ` : ''}
           
-          <!-- Fullscreen -->
           <button class="control-btn fullscreen-btn" 
                   title="Fullscreen (F)"
                   aria-label="Toggle fullscreen">
@@ -520,13 +446,11 @@
           
         </div>
         
-        <!-- Settings Menu (Hidden by Default) -->
         <div class="settings-menu" 
              role="menu" 
              aria-hidden="true"
              style="display: none;">
           
-          <!-- Quality Selection -->
           <div class="settings-section" id="qualitySection">
             <h4 class="settings-title">Quality</h4>
             <div class="quality-options" id="qualityOptions" role="radiogroup">
@@ -542,7 +466,6 @@
             </div>
           </div>
           
-          <!-- Playback Speed -->
           <div class="settings-section">
             <h4 class="settings-title">Speed</h4>
             <div class="speed-options" role="radiogroup">
@@ -558,7 +481,6 @@
             </div>
           </div>
           
-          <!-- Data Saver Toggle -->
           <div class="settings-section" id="dataSaverSection">
             <h4 class="settings-title">Data Saver</h4>
             <label class="toggle-switch">
@@ -570,7 +492,6 @@
           
         </div>
         
-        <!-- Initial Play Overlay (for autoplay blocked) -->
         <div class="initial-play-overlay hidden" id="initialPlayOverlay">
           <button class="play-overlay-btn" aria-label="Click to play">
             <i class="fas fa-play-circle fa-3x"></i>
@@ -578,13 +499,11 @@
           </button>
         </div>
         
-        <!-- Buffering Indicator -->
         <div class="buffering-indicator hidden">
           <div class="spinner"></div>
           <p>Buffering...</p>
         </div>
         
-        <!-- Error Overlay -->
         <div class="error-overlay hidden">
           <div class="error-content">
             <i class="fas fa-exclamation-triangle fa-2x"></i>
@@ -595,7 +514,6 @@
           </div>
         </div>
         
-        <!-- Social Panel -->
         ${this.contentId ? `
         <div class="social-panel" aria-label="Engagement actions">
           <button class="social-btn like-btn ${this.engagement.isLiked ? 'active' : ''}" 
@@ -619,9 +537,6 @@
       `;
     }
     
-    /**
-     * Cache control element references
-     */
     _cacheControlElements() {
       if (!this.controls) return;
       
@@ -648,16 +563,12 @@
       };
     }
     
-    /**
-     * Setup settings menu interactions
-     */
     _setupSettingsMenu() {
       if (!this._controlsCache || !this._controlsCache.settingsBtn || !this._controlsCache.settingsMenu) return;
       
       const { settingsBtn, settingsMenu } = this._controlsCache;
       let isOpen = false;
       
-      // Toggle settings menu
       settingsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -675,7 +586,6 @@
         this._emit('settings:toggled', { isOpen });
       });
       
-      // Close settings when clicking outside
       document.addEventListener('click', (e) => {
         if (isOpen && settingsMenu && settingsBtn && 
             !settingsMenu.contains(e.target) && 
@@ -687,7 +597,6 @@
         }
       });
       
-      // Quality selection
       if (this._controlsCache.qualityOptions) {
         this._controlsCache.qualityOptions.forEach(btn => {
           btn.addEventListener('click', (e) => {
@@ -695,7 +604,6 @@
             const quality = e.currentTarget.dataset.quality;
             this.setQuality(quality);
             
-            // Update UI
             if (this._controlsCache.qualityOptions) {
               this._controlsCache.qualityOptions.forEach(b => {
                 b.classList.remove('active');
@@ -705,7 +613,6 @@
             e.currentTarget.classList.add('active');
             e.currentTarget.setAttribute('aria-checked', 'true');
             
-            // Close menu
             isOpen = false;
             if (settingsMenu) settingsMenu.style.display = 'none';
             if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'false');
@@ -713,7 +620,6 @@
         });
       }
       
-      // Speed selection
       if (this._controlsCache.speedOptions) {
         this._controlsCache.speedOptions.forEach(btn => {
           btn.addEventListener('click', (e) => {
@@ -721,7 +627,6 @@
             const rate = parseFloat(e.currentTarget.dataset.rate);
             this.setPlaybackRate(rate);
             
-            // Update UI
             if (this._controlsCache.speedOptions) {
               this._controlsCache.speedOptions.forEach(b => {
                 b.classList.remove('active');
@@ -731,7 +636,6 @@
             e.currentTarget.classList.add('active');
             e.currentTarget.setAttribute('aria-checked', 'true');
             
-            // Close menu
             isOpen = false;
             if (settingsMenu) settingsMenu.style.display = 'none';
             if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'false');
@@ -739,7 +643,6 @@
         });
       }
       
-      // Data saver toggle
       const dataSaverToggle = document.getElementById('dataSaverToggle');
       if (dataSaverToggle) {
         dataSaverToggle.addEventListener('change', (e) => {
@@ -747,7 +650,6 @@
           console.log(`💾 Data saver: ${enabled ? 'enabled' : 'disabled'}`);
           this._emit('settings:data-saver', { enabled });
           
-          // Apply quality change if enabled
           if (enabled && this.currentQuality !== '360p') {
             this.setQuality('360p');
           }
@@ -755,9 +657,6 @@
       }
     }
     
-    /**
-     * Setup video event listeners
-     */
     _setupEventListeners() {
       if (!this.video || this._listenersAttached) return;
       
@@ -769,7 +668,6 @@
         'enterpictureinpicture', 'leavepictureinpicture'
       ];
       
-      // Bind handler to preserve context
       this._handleVideoEvent = this._handleVideoEvent.bind(this);
       
       events.forEach(event => {
@@ -778,18 +676,15 @@
         }
       });
       
-      // Additional listeners
       if (this.video) {
         this.video.addEventListener('click', (e) => this._handleVideoClick(e));
       }
       
-      // Fullscreen change listeners
       document.addEventListener('fullscreenchange', () => this._handleFullscreenChange());
       document.addEventListener('webkitfullscreenchange', () => this._handleFullscreenChange());
       document.addEventListener('mozfullscreenchange', () => this._handleFullscreenChange());
       document.addEventListener('MSFullscreenChange', () => this._handleFullscreenChange());
       
-      // Picture-in-Picture listeners
       if (document.pictureInPictureEnabled && this.video) {
         this.video.addEventListener('enterpictureinpicture', () => {
           this.isPiP = true;
@@ -801,12 +696,10 @@
         });
       }
       
-      // Keyboard shortcuts
       if (this.config.enableKeyboardShortcuts) {
         document.addEventListener('keydown', (e) => this._handleKeyboard(e));
       }
       
-      // Touch gestures for mobile
       if (this.config.enableTouchGestures && this._isMobile) {
         this._setupTouchGestures();
       }
@@ -815,9 +708,6 @@
       console.log('✅ Event listeners attached');
     }
     
-    /**
-     * Handle video events
-     */
     _handleVideoEvent(event) {
       if (!this.video || this._isDestroyed) return;
       
@@ -864,7 +754,6 @@
           break;
       }
       
-      // Emit generic event for external listeners
       this._emit(`video:${event.type}`, {
         event: event.type,
         currentTime: this.video.currentTime,
@@ -872,22 +761,15 @@
       });
     }
     
-    /**
-     * Handle play event
-     */
     _handlePlay() {
       this.isPlaying = true;
       this.playbackStartTime = Date.now();
       this.stats.playCount++;
       
-      // Update UI
       this._updatePlayButton(true);
       this._hidePlayOverlay();
-      
-      // Hide controls after delay
       this._scheduleControlsHide();
       
-      // Phase 3: Initialize telemetry session
       this._initializeTelemetrySession();
       
       console.log('▶️ Playing');
@@ -897,13 +779,9 @@
       });
     }
     
-    /**
-     * Handle pause event
-     */
     _handlePause() {
       this.isPlaying = false;
       
-      // Track watch time
       if (this.playbackStartTime) {
         const watchTime = Date.now() - this.playbackStartTime;
         this.stats.totalWatchTime += watchTime;
@@ -915,7 +793,6 @@
         });
       }
       
-      // Update UI
       this._updatePlayButton(false);
       this._showControls();
       
@@ -925,14 +802,10 @@
       });
     }
     
-    /**
-     * Handle ended event
-     */
     _handleEnded() {
       this.isPlaying = false;
       this._updatePlayButton(false);
       
-      // Phase 1D: Auto-advance in collection/queue
       if (this.config.enableCollectionNav && this.config.autoplay) {
         this._autoAdvance();
       }
@@ -944,21 +817,16 @@
       });
     }
     
-    /**
-     * Handle time update
-     */
     _handleTimeUpdate() {
       this._updateTimeDisplay();
       this._updateProgressBar();
       
-      // Phase 3: Record view after threshold
       if (!this.viewRecorded && this.video && 
           this.video.currentTime >= this.config.validViewThreshold) {
         this._recordView();
       }
       
-      // Emit for external progress tracking
-      if (this.video && this.video.currentTime % 10 < 0.1) { // Every ~10 seconds
+      if (this.video && this.video.currentTime % 10 < 0.1) {
         this._emit('playback:progress', {
           currentTime: this.video.currentTime,
           duration: this.video.duration,
@@ -967,16 +835,10 @@
       }
     }
     
-    /**
-     * Handle progress (buffering) event
-     */
     _handleProgress() {
       this._updateBufferedProgress();
     }
     
-    /**
-     * Handle buffering start
-     */
     _handleBufferingStart() {
       this.isBuffering = true;
       this.stats.bufferingCount++;
@@ -992,9 +854,6 @@
       this._emit('buffering:start');
     }
     
-    /**
-     * Handle buffering end
-     */
     _handleBufferingEnd() {
       this.isBuffering = false;
       if (this.bufferingTimeout) {
@@ -1005,9 +864,6 @@
       this._emit('buffering:end');
     }
     
-    /**
-     * Handle loaded data
-     */
     _handleLoadedData() {
       console.log('✅ Media data loaded');
       this._emit('media:loadeddata', {
@@ -1016,9 +872,6 @@
       });
     }
     
-    /**
-     * Handle loaded metadata
-     */
     _handleLoadedMetadata() {
       console.log('✅ Media metadata loaded', {
         duration: this.video ? this.video.duration : 0,
@@ -1027,10 +880,8 @@
         audioTracks: (this.video && this.video.audioTracks) ? this.video.audioTracks.length : 0
       });
       
-      // Update duration display
       this._updateDurationDisplay();
       
-      // Enable audio tracks if available
       if (this.video && this.video.audioTracks && this.video.audioTracks.length > 0) {
         this.video.audioTracks[0].enabled = true;
       }
@@ -1044,11 +895,6 @@
       });
     }
     
-    /**
-     * Handle audio renderer error specifically
-     * This occurs when Chromium's audio pipeline fails to initialize
-     * (e.g., no audio output device, driver issues, or virtual machine/RDP)
-     */
     _handleAudioRendererError(error) {
       console.warn('🔧 AUDIO_RENDERER_ERROR detected - Audio pipeline failure');
       console.warn('   Error details:', {
@@ -1057,7 +903,6 @@
         networkState: this.video ? this.video.networkState : 'unknown'
       });
       
-      // Prevent infinite recovery loops
       if (this._audioRendererRecoveryAttempted) {
         console.error('❌ Audio renderer recovery already attempted - giving up');
         this._showErrorOverlay('Audio playback failed. Please check your audio output device and try again.');
@@ -1066,21 +911,16 @@
       
       this._audioRendererRecoveryAttempted = true;
       
-      // Strategy: Force mute and reload the source
-      // This bypasses the audio pipeline entirely, allowing video to play
       console.log('🔧 Attempting audio renderer recovery: Forcing mute and reloading...');
       
-      // 1. Mute the video element
       if (this.video) {
         this.video.muted = true;
         this.config.muted = true;
         console.log('🔇 Video element muted for recovery');
       }
       
-      // 2. Reset retry attempts
       this.retryAttempts = 0;
       
-      // 3. Reload the source after a short delay
       if (this.retryAttempts < this.config.retryCount) {
         this.retryAttempts++;
         setTimeout(() => {
@@ -1088,7 +928,6 @@
             console.log(`🔄 Reloading source in muted mode (attempt ${this.retryAttempts}/${this.config.retryCount})`);
             this.video.load();
             
-            // Attempt to play after reload
             this.play().catch((playError) => {
               console.warn('⚠️ Play after audio recovery failed:', playError.message);
               this._showErrorOverlay('Unable to play media. Please check your audio output device.');
@@ -1098,7 +937,6 @@
         return;
       }
       
-      // 4. Final fallback - show error with helpful message
       this._showErrorOverlay(
         'Audio playback error detected. Your browser may not have a working audio output device. ' +
         'Please check your headphones/speakers and try again, or contact support.'
@@ -1111,13 +949,9 @@
       });
     }
     
-    /**
-     * Handle error with retry logic and audio renderer special case
-     */
     _handleError(event) {
       const error = this.video ? this.video.error : null;
       
-      // Ignore autoplay blocking errors (handled by overlay)
       if (!error && this.video && this.video.networkState !== 3) {
         console.log('ℹ️ Ignoring non-critical error (likely autoplay block)');
         return;
@@ -1129,9 +963,6 @@
         networkState: this.video ? this.video.networkState : 'unknown'
       });
       
-      // --- CRITICAL: Handle AUDIO_RENDERER_ERROR specifically ---
-      // This error (code 3 with message containing "AUDIO_RENDERER_ERROR") causes 
-      // the video stream to freeze because audio/video sync cannot be established.
       const errorMessage = (error && error.message) ? error.message : '';
       const isAudioRendererError = (error && error.code === 3) && 
         (errorMessage.includes('AUDIO_RENDERER_ERROR') || errorMessage.includes('audio renderer'));
@@ -1140,12 +971,10 @@
         this._handleAudioRendererError(error);
         return;
       }
-      // --- END AUDIO RENDERER HANDLING ---
       
       this.stats.errorCount++;
       this.errorState = error;
       
-      // Standard retry logic for non-audio errors
       if (this.retryAttempts < this.config.retryCount) {
         this.retryAttempts++;
         console.log(`🔄 Retry attempt ${this.retryAttempts}/${this.config.retryCount}`);
@@ -1160,7 +989,6 @@
         return;
       }
       
-      // Show error overlay after max retries
       this._showErrorOverlay('Unable to play media. Please check your connection and try again.');
       
       this._emit('media:error', {
@@ -1170,25 +998,15 @@
       });
     }
     
-    /**
-     * Handle video click (toggle play/pause)
-     */
     _handleVideoClick(event) {
-      // Ignore clicks on controls
       if (event.target.closest('.enhanced-video-controls')) return;
-      
       this.togglePlay();
       this._showControls();
     }
     
-    /**
-     * Handle keyboard shortcuts
-     */
     _handleKeyboard(event) {
-      // Ignore if typing in input
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
       
-      // Ignore if settings menu is open
       if (this._controlsCache && this._controlsCache.settingsMenu && 
           this._controlsCache.settingsMenu.style.display === 'block') return;
       
@@ -1251,9 +1069,6 @@
       }
     }
     
-    /**
-     * Setup touch gestures for mobile
-     */
     _setupTouchGestures() {
       if (!this.container || !this._isMobile) return;
       
@@ -1277,7 +1092,6 @@
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
         
-        // Swipe left/right for seek
         if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD / 2) {
           e.preventDefault();
           const seekTime = (deltaX / this.container.offsetWidth) * (this.video ? this.video.duration : 0) * 0.1;
@@ -1285,7 +1099,6 @@
           return;
         }
         
-        // Swipe up/down for volume
         if (Math.abs(deltaY) > SWIPE_THRESHOLD && Math.abs(deltaX) < SWIPE_THRESHOLD / 2) {
           e.preventDefault();
           const volumeChange = (deltaY / this.container.offsetHeight) * -0.2;
@@ -1293,7 +1106,6 @@
           return;
         }
         
-        // Tap to toggle play/pause
         if (touchDuration < TAP_THRESHOLD && Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
           e.preventDefault();
           this.togglePlay();
@@ -1301,7 +1113,6 @@
         }
       }, { passive: false });
       
-      // Double tap for fullscreen
       let lastTap = 0;
       this.container.addEventListener('touchend', (e) => {
         const now = Date.now();
@@ -1315,19 +1126,11 @@
       console.log('✅ Touch gestures enabled');
     }
     
-    // =====================================================
-    // CONTROL INTERACTIONS
-    // =====================================================
-    
-    /**
-     * Setup control button interactions
-     */
     _setupControlInteractions() {
       if (!this._controlsCache) return;
       
       const c = this._controlsCache;
       
-      // Play/Pause button
       if (c.playPauseBtn) {
         c.playPauseBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1335,7 +1138,6 @@
         });
       }
       
-      // Progress bar seeking
       if (c.progressBar) {
         c.progressBar.addEventListener('input', (e) => {
           const percent = parseFloat(e.target.value);
@@ -1344,7 +1146,6 @@
         });
         
         c.progressBar.addEventListener('change', (e) => {
-          // Emit seek event on release
           this.stats.seekCount++;
           this._emit('playback:seek', {
             from: this.video ? this.video.currentTime : 0,
@@ -1353,7 +1154,6 @@
         });
       }
       
-      // Volume controls (desktop)
       if (c.volumeBtn && c.volumeBar) {
         c.volumeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1366,7 +1166,6 @@
         });
       }
       
-      // Collection navigation (Phase 1D)
       if (this.config.enableCollectionNav) {
         if (c.prevTrackBtn) {
           c.prevTrackBtn.addEventListener('click', (e) => {
@@ -1383,7 +1182,6 @@
         }
       }
       
-      // Fullscreen toggle
       if (c.fullscreenBtn) {
         c.fullscreenBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1391,7 +1189,6 @@
         });
       }
       
-      // Picture-in-Picture
       if (c.pipBtn) {
         c.pipBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -1399,10 +1196,8 @@
         });
       }
       
-      // Social buttons
       this._setupSocialInteractions();
       
-      // Play overlay
       if (c.playOverlay) {
         const overlayBtn = c.playOverlay.querySelector('.play-overlay-btn');
         if (overlayBtn) {
@@ -1413,14 +1208,13 @@
         }
       }
       
-      // Error overlay buttons
       const errorOverlay = c.errorOverlay;
       if (errorOverlay) {
         const retryBtn = errorOverlay.querySelector('.retry-btn');
         if (retryBtn) {
           retryBtn.addEventListener('click', () => {
             this.retryAttempts = 0;
-            this._audioRendererRecoveryAttempted = false; // Reset audio recovery flag
+            this._audioRendererRecoveryAttempted = false;
             if (this.video) this.video.load();
             this.play().catch(() => {});
             this._hideErrorOverlay();
@@ -1435,22 +1229,17 @@
         }
       }
       
-      // Controls hover/visibility
       this._setupControlsVisibility();
       
       console.log('✅ Control interactions setup');
     }
     
-    /**
-     * Setup social button interactions
-     */
     _setupSocialInteractions() {
       if (!this._controlsCache || !this._controlsCache.socialPanel || !this.contentId) return;
       
       const { socialPanel } = this._controlsCache;
       if (!socialPanel) return;
       
-      // Like button
       const likeBtn = socialPanel.querySelector('.like-btn');
       if (likeBtn) {
         likeBtn.addEventListener('click', async (e) => {
@@ -1459,7 +1248,6 @@
         });
       }
       
-      // Favorite button
       const favBtn = socialPanel.querySelector('.favorite-btn');
       if (favBtn) {
         favBtn.addEventListener('click', async (e) => {
@@ -1468,7 +1256,6 @@
         });
       }
       
-      // Share button
       const shareBtn = socialPanel.querySelector('.share-btn');
       if (shareBtn) {
         shareBtn.addEventListener('click', (e) => {
@@ -1478,9 +1265,6 @@
       }
     }
     
-    /**
-     * Setup controls visibility (auto-hide)
-     */
     _setupControlsVisibility() {
       if (!this.container || !this.controls) return;
       
@@ -1489,39 +1273,30 @@
         this._scheduleControlsHide();
       };
       
-      // Show on mouse enter/move
       this.container.addEventListener('mouseenter', showControls);
       this.container.addEventListener('mousemove', showControls);
       
-      // Show on touch start (mobile)
       this.container.addEventListener('touchstart', () => {
         this._showControls();
-        // Don't auto-hide immediately on mobile
         if (this.controlsHideTimeout) {
           clearTimeout(this.controlsHideTimeout);
         }
       }, { passive: true });
       
-      // Show when paused
       if (this.video) {
         this.video.addEventListener('pause', () => {
           this._showControls();
         });
       }
       
-      // Initial show
       this._showControls();
     }
     
-    /**
-     * Schedule controls to auto-hide
-     */
     _scheduleControlsHide() {
       if (this.controlsHideTimeout) {
         clearTimeout(this.controlsHideTimeout);
       }
       
-      // Don't auto-hide on mobile or when paused
       if (this._isMobile || (this.video && this.video.paused)) return;
       
       this.controlsHideTimeout = setTimeout(() => {
@@ -1531,9 +1306,6 @@
       }, this.config.hideControlsDelay);
     }
     
-    /**
-     * Show controls
-     */
     _showControls() {
       if (this.controls) {
         this.controls.style.opacity = '1';
@@ -1541,9 +1313,6 @@
       }
     }
     
-    /**
-     * Hide controls
-     */
     _hideControls() {
       if (this.controls && this.isPlaying && !this._isMobile) {
         this.controls.style.opacity = '0';
@@ -1551,13 +1320,6 @@
       }
     }
     
-    // =====================================================
-    // UI UPDATES
-    // =====================================================
-    
-    /**
-     * Update play/pause button icon
-     */
     _updatePlayButton(isPlaying) {
       const btn = this._controlsCache ? this._controlsCache.playPauseBtn : null;
       if (!btn) return;
@@ -1570,34 +1332,22 @@
       btn.setAttribute('aria-label', isPlaying ? 'Pause video' : 'Play video');
     }
     
-    /**
-     * Update time display
-     */
     _updateTimeDisplay() {
       if (!this._controlsCache || !this._controlsCache.currentTime || !this.video) return;
-      
       const current = this._formatTime(this.video.currentTime);
       this._controlsCache.currentTime.textContent = current;
     }
     
-    /**
-     * Update duration display
-     */
     _updateDurationDisplay() {
       if (!this._controlsCache || !this._controlsCache.duration || !this.video) return;
-      
       const duration = this.video.duration;
       if (duration && isFinite(duration)) {
         this._controlsCache.duration.textContent = this._formatTime(duration);
       }
     }
     
-    /**
-     * Update progress bar
-     */
     _updateProgressBar() {
       if (!this._controlsCache || !this._controlsCache.progressBar || !this.video) return;
-      
       const { currentTime, duration } = this.video;
       if (duration && isFinite(duration)) {
         const percent = (currentTime / duration) * 100;
@@ -1606,12 +1356,8 @@
       }
     }
     
-    /**
-     * Update buffered progress indicator
-     */
     _updateBufferedProgress() {
       if (!this._controlsCache || !this._controlsCache.progressBuffer || !this.video) return;
-      
       const { buffered, duration } = this.video;
       if (duration && isFinite(duration) && buffered && buffered.length > 0) {
         const end = buffered.end(buffered.length - 1);
@@ -1620,12 +1366,8 @@
       }
     }
     
-    /**
-     * Update volume button icon
-     */
     _updateVolumeUI() {
       if (!this._controlsCache || !this._controlsCache.volumeBtn || !this.video) return;
-      
       const { muted, volume } = this.video;
       const icon = this._controlsCache.volumeBtn.querySelector('i');
       
@@ -1639,15 +1381,11 @@
         }
       }
       
-      // Update volume bar if exists
       if (this._controlsCache.volumeBar) {
         this._controlsCache.volumeBar.value = muted ? 0 : volume * 100;
       }
     }
     
-    /**
-     * Show buffering indicator
-     */
     _showBufferingIndicator() {
       const indicator = this._controlsCache ? this._controlsCache.bufferingIndicator : null;
       if (indicator) {
@@ -1655,9 +1393,6 @@
       }
     }
     
-    /**
-     * Hide buffering indicator
-     */
     _hideBufferingIndicator() {
       const indicator = this._controlsCache ? this._controlsCache.bufferingIndicator : null;
       if (indicator) {
@@ -1665,9 +1400,6 @@
       }
     }
     
-    /**
-     * Show play overlay (for autoplay blocked)
-     */
     _showPlayOverlay() {
       const overlay = this._controlsCache ? this._controlsCache.playOverlay : null;
       if (overlay) {
@@ -1675,9 +1407,6 @@
       }
     }
     
-    /**
-     * Hide play overlay
-     */
     _hidePlayOverlay() {
       const overlay = this._controlsCache ? this._controlsCache.playOverlay : null;
       if (overlay) {
@@ -1685,9 +1414,6 @@
       }
     }
     
-    /**
-     * Show error overlay
-     */
     _showErrorOverlay(message) {
       const overlay = this._controlsCache ? this._controlsCache.errorOverlay : null;
       if (overlay) {
@@ -1699,9 +1425,6 @@
       }
     }
     
-    /**
-     * Hide error overlay
-     */
     _hideErrorOverlay() {
       const overlay = this._controlsCache ? this._controlsCache.errorOverlay : null;
       if (overlay) {
@@ -1709,13 +1432,6 @@
       }
     }
     
-    // =====================================================
-    // SOURCE MANAGEMENT
-    // =====================================================
-    
-    /**
-     * Restore preserved source and load media
-     */
     _restoreAndLoadSource() {
       if (!this._sourcePreserved || !this._sourcePreserved.url || !this.video) return;
       
@@ -1723,24 +1439,19 @@
       
       console.log('🔄 Restoring media source:', { url, type });
       
-      // Clear existing sources
       while (this.video.firstChild) {
         this.video.removeChild(this.video.firstChild);
       }
       this.video.removeAttribute('src');
       
-      // Create new source element
       const source = document.createElement('source');
       source.src = url;
       source.type = type;
       this.video.appendChild(source);
       
-      // Reset audio renderer recovery flag on fresh load
       this._audioRendererRecoveryAttempted = false;
       
-      // Setup error handling for initial load
       const errorHandler = (e) => {
-        // Ignore autoplay blocking
         if (!this.video || (!this.video.error && this.video.networkState !== 3)) return;
         console.error('❌ Source load error:', this.video ? this.video.error : 'unknown');
         this._handleError(e);
@@ -1748,7 +1459,6 @@
       
       this.video.addEventListener('error', errorHandler, { once: true });
       
-      // Setup metadata handler
       const metadataHandler = () => {
         console.log('✅ Source loaded successfully');
         if (this.video) {
@@ -1757,10 +1467,8 @@
       };
       this.video.addEventListener('loadedmetadata', metadataHandler, { once: true });
       
-      // Load the media
       this.video.load();
       
-      // Attempt autoplay if configured
       if (this.config.autoplay) {
         this.play().catch((error) => {
           if (error.name === 'NotAllowedError') {
@@ -1772,9 +1480,6 @@
       }
     }
     
-    /**
-     * Change media source dynamically
-     */
     setSource(url, options = {}) {
       if (!this.video || this._isDestroyed) return Promise.reject('Player destroyed');
       
@@ -1785,24 +1490,20 @@
         collectionContext = null
       } = options;
       
-      // Update metadata
       if (contentId) this.contentId = contentId;
       if (contentMetadata) this.contentMetadata = contentMetadata;
       if (collectionContext) {
         this.collectionContext = { ...this.collectionContext, ...collectionContext };
       }
       
-      // Reset audio renderer recovery flag on source change
       this._audioRendererRecoveryAttempted = false;
       
-      // Update audio mode
       if (this.isAudioSource(url)) {
         if (this.video) this.video.classList.add('audio-mode');
       } else {
         if (this.video) this.video.classList.remove('audio-mode');
       }
       
-      // Set new source
       if (this.video) {
         this.video.pause();
         this.video.currentTime = 0;
@@ -1819,16 +1520,13 @@
       source.type = type;
       if (this.video) this.video.appendChild(source);
       
-      // Reset state
       this.retryAttempts = 0;
       this.errorState = null;
       this.viewRecorded = false;
       this.viewValidated = false;
       
-      // Load and optionally play
       if (this.video) this.video.load();
       
-      // Update preserved source
       this._sourcePreserved = { url, type, method: 'setSource' };
       
       console.log('✅ Source changed:', { url, contentId });
@@ -1837,13 +1535,6 @@
       return Promise.resolve();
     }
     
-    // =====================================================
-    // PLAYBACK CONTROLS
-    // =====================================================
-    
-    /**
-     * Safe play with mute fallback for autoplay policies and audio errors
-     */
     async safePlay() {
       if (!this.video || this._isDestroyed) {
         return Promise.reject('Player destroyed');
@@ -1856,7 +1547,6 @@
       } catch (error) {
         console.warn('⚠️ Initial play blocked or failed:', error.message);
         
-        // Check for autoplay policy or interrupted errors
         if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
           console.log('🔄 Attempting recovery: Muting video and retrying...');
           if (this.video) {
@@ -1880,32 +1570,21 @@
       }
     }
     
-    /**
-     * Play media with autoplay handling
-     */
     async play() {
       if (!this.video || this._isDestroyed) {
         return Promise.reject('Player destroyed');
       }
-      
       return this.safePlay();
     }
     
-    /**
-     * Pause media
-     */
     pause() {
       if (this.video && !this._isDestroyed) {
         this.video.pause();
       }
     }
     
-    /**
-     * Toggle play/pause
-     */
     togglePlay() {
       if (!this.video || this._isDestroyed) return;
-      
       if (this.video.paused) {
         this.play().catch(() => {});
       } else {
@@ -1913,9 +1592,6 @@
       }
     }
     
-    /**
-     * Seek to specific time
-     */
     seek(time) {
       if (!this.video || this._isDestroyed) return;
       if (isNaN(time) || !isFinite(time)) return;
@@ -1923,64 +1599,48 @@
       const duration = this.video.duration || 0;
       const clamped = Math.max(0, Math.min(time, duration));
       
-      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
-      // This is the critical fix - we use direct assignment with existence check
+      // 🔧 CRITICAL FIX: Safe assignment without optional chaining
       if (this.video) {
         this.video.currentTime = clamped;
       }
-      // --- END SAFE ASSIGNMENT ---
       
       this._emit('playback:seeked', { time: clamped, duration });
     }
     
-    /**
-     * Seek relative to current time
-     */
     seekRelative(seconds) {
       if (!this.video || this._isDestroyed) return;
       this.seek(this.video.currentTime + seconds);
     }
     
-    /**
-     * Seek to percentage of duration
-     */
     seekPercent(percent) {
       if (!this.video || this._isDestroyed) return;
       const time = (percent / 100) * (this.video.duration || 0);
       this.seek(time);
     }
     
-    /**
-     * Set playback rate
-     */
     setPlaybackRate(rate) {
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0.25, Math.min(4, rate));
-      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      // 🔧 CRITICAL FIX: Safe assignment
       if (this.video) {
         this.video.playbackRate = clamped;
       }
-      // --- END SAFE ASSIGNMENT ---
       this.playbackRate = clamped;
       
       console.log(`⚡ Playback rate: ${clamped}x`);
       this._emit('playback:ratechange', { rate: clamped });
     }
     
-    /**
-     * Set volume
-     */
     setVolume(volume) {
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0, Math.min(1, volume));
-      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      // 🔧 CRITICAL FIX: Safe assignment
       if (this.video) {
         this.video.volume = clamped;
         this.video.muted = clamped === 0;
       }
-      // --- END SAFE ASSIGNMENT ---
       
       this.stats.volumeChanges++;
       this._updateVolumeUI();
@@ -1989,44 +1649,27 @@
       this._emit('playback:volumechange', { volume: clamped, muted: this.video ? this.video.muted : false });
     }
     
-    /**
-     * Adjust volume relative to current
-     */
     adjustVolume(delta) {
       if (!this.video || this._isDestroyed) return;
       this.setVolume(this.video.volume + delta);
     }
     
-    /**
-     * Toggle mute
-     */
     toggleMute() {
       if (!this.video || this._isDestroyed) return;
-      
-      // --- SAFE ASSIGNMENT: No optional chaining on left side ---
+      // 🔧 CRITICAL FIX: Safe assignment
       if (this.video) {
         this.video.muted = !this.video.muted;
       }
-      // --- END SAFE ASSIGNMENT ---
       this._updateVolumeUI();
-      
       console.log(`🔇 Mute: ${this.video ? this.video.muted : false}`);
       this._emit('playback:mute', { muted: this.video ? this.video.muted : false });
     }
     
-    // =====================================================
-    // FULLSCREEN & PIP
-    // =====================================================
-    
-    /**
-     * Toggle fullscreen using container
-     */
     toggleFullscreen() {
       const target = this.container || this.video;
       if (!target) return;
       
       if (!this.isFullscreen) {
-        // Enter fullscreen
         if (target.requestFullscreen) {
           target.requestFullscreen();
         } else if (target.webkitRequestFullscreen) {
@@ -2038,7 +1681,6 @@
         }
         this.isFullscreen = true;
       } else {
-        // Exit fullscreen
         if (document.exitFullscreen) {
           document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -2051,16 +1693,11 @@
         this.isFullscreen = false;
       }
       
-      // Update button icon
       this._updateFullscreenButton();
-      
       console.log(`🖥️ Fullscreen: ${this.isFullscreen}`);
       this._emit('player:fullscreen', { isFullscreen: this.isFullscreen });
     }
     
-    /**
-     * Handle fullscreen change events
-     */
     _handleFullscreenChange() {
       const isCurrentlyFullscreen = !!(
         document.fullscreenElement ||
@@ -2069,18 +1706,14 @@
         document.msFullscreenElement
       );
       
-      // --- SAFE ASSIGNMENT: Standard if check, no optional chaining on left ---
+      // 🔧 CRITICAL FIX: Safe assignment
       if (isCurrentlyFullscreen !== this.isFullscreen) {
         this.isFullscreen = isCurrentlyFullscreen;
         this._updateFullscreenButton();
         this._emit('player:fullscreen', { isFullscreen: this.isFullscreen });
       }
-      // --- END SAFE ASSIGNMENT ---
     }
     
-    /**
-     * Update fullscreen button icon
-     */
     _updateFullscreenButton() {
       const btn = this._controlsCache ? this._controlsCache.fullscreenBtn : null;
       const icon = btn ? btn.querySelector('i') : null;
@@ -2089,9 +1722,6 @@
       }
     }
     
-    /**
-     * Toggle Picture-in-Picture
-     */
     async togglePictureInPicture() {
       if (!this.video || !document.pictureInPictureEnabled) return;
       
@@ -2111,25 +1741,14 @@
       }
     }
     
-    // =====================================================
-    // PHASE 3: TELEMETRY INTEGRATION
-    // =====================================================
-    
-    /**
-     * Initialize integrations (placeholder for future enhancements)
-     */
     _initializeIntegrations() {
-      // Placeholder for additional integrations
       console.log('🔌 Integrations initialized');
     }
     
-    /**
-     * Initialize telemetry session (Phase 3)
-     */
     _initializeTelemetrySession() {
+      // 🔧 CRITICAL FIX: Use window.supabaseClient for RPC calls
       if (!this.config.enableTelemetry || !this.supabase || !this.contentId) return;
       
-      // Get or create playback session ID
       if (!this.playbackSessionId) {
         this.playbackSessionId = sessionStorage.getItem('bantu_playback_session');
         if (!this.playbackSessionId) {
@@ -2140,7 +1759,6 @@
         }
       }
       
-      // Initialize WatchSessionManager if available
       if (typeof WatchSessionManager === 'function' && !this.watchSession) {
         try {
           this.watchSession = new WatchSessionManager({
@@ -2150,12 +1768,10 @@
             sessionId: this.playbackSessionId,
             heartbeatInterval: this.config.heartbeatInterval,
             validViewThreshold: this.config.validViewThreshold,
-            // Collection context (Phase 1D)
             collectionId: this.collectionContext.collectionId,
             playlistId: this.collectionContext.playlistId,
             sortIndex: this.collectionContext.currentSortIndex,
             episodeNumber: this.collectionContext.episodeNumber,
-            // Callbacks
             onViewValidated: (data) => {
               this.viewValidated = true;
               console.log('✅ View validated via telemetry');
@@ -2175,9 +1791,6 @@
       }
     }
     
-    /**
-     * Record view after threshold (Phase 3)
-     */
     async _recordView() {
       if (this.viewRecorded || !this.supabase || !this.contentId) return;
       
@@ -2185,7 +1798,7 @@
       console.log('👁️ View threshold reached, recording...');
       
       try {
-        // Use RPC for atomic increment (Phase 3)
+        // 🔧 CRITICAL FIX: Use window.supabaseClient.rpc() for RPC calls
         const { error } = await this.supabase
           .rpc('increment_content_views', {
             content_id_input: parseInt(this.contentId)
@@ -2193,7 +1806,6 @@
         
         if (error) {
           console.warn('⚠️ View RPC failed:', error.message);
-          // Fallback: direct insert
           await this._recordViewFallback();
         } else {
           console.log('✅ View recorded via RPC');
@@ -2201,7 +1813,6 @@
           this._updateSocialCounts();
         }
         
-        // Update state manager if available
         if (window.stateManager) {
           window.stateManager.markContentAsViewed(this.contentId, true);
         }
@@ -2217,9 +1828,6 @@
       }
     }
     
-    /**
-     * Fallback view recording method
-     */
     async _recordViewFallback() {
       if (!this.supabase || !this.contentId) return;
       
@@ -2239,25 +1847,15 @@
       }
     }
     
-    // =====================================================
-    // PHASE 1D: COLLECTION/QUEUE NAVIGATION
-    // =====================================================
-    
-    /**
-     * Auto-advance to next item in collection/queue
-     */
     _autoAdvance() {
       if (!this.config.enableCollectionNav) return;
-      
       console.log('🎬 Auto-advancing to next item...');
       
-      // Priority 1: QueueManager integration
       if (this.config.enableQueueIntegration && window.QueueManager && window.QueueManager.playNext) {
         window.QueueManager.playNext();
         return;
       }
       
-      // Priority 2: Collection engine navigation
       if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
         const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
         if (nextItem) {
@@ -2266,16 +1864,12 @@
         }
       }
       
-      // Fallback: Emit event for external handler
       this._emit('collection:auto-advance', {
         currentContentId: this.contentId,
         collectionId: this.collectionContext.collectionId
       });
     }
     
-    /**
-     * Play previous item
-     */
     playPrevious() {
       console.log('⏮️ Playing previous item...');
       
@@ -2297,9 +1891,6 @@
       });
     }
     
-    /**
-     * Play next item
-     */
     playNext() {
       console.log('⏭️ Playing next item...');
       
@@ -2321,13 +1912,6 @@
       });
     }
     
-    // =====================================================
-    // SOCIAL FEATURES
-    // =====================================================
-    
-    /**
-     * Toggle like with RPC (Phase 3)
-     */
     async _toggleLike() {
       if (!this.supabase || !this.contentId || !this.userId) {
         console.warn('⚠️ Cannot toggle like: missing auth or content');
@@ -2336,13 +1920,11 @@
       
       const willLike = !this.engagement.isLiked;
       
-      // Optimistic UI update
       this.engagement.isLiked = willLike;
       this.engagement.likes += willLike ? 1 : -1;
       this._updateSocialCounts();
       
       try {
-        // Ledger write (content_likes)
         if (willLike) {
           await this.supabase
             .from('content_likes')
@@ -2358,7 +1940,7 @@
             .eq('content_id', parseInt(this.contentId));
         }
         
-        // Atomic counter update via RPC
+        // 🔧 CRITICAL FIX: Use window.supabaseClient.rpc() for RPC
         await this.supabase.rpc('increment_engagement_stats_likes', {
           target_content_id: parseInt(this.contentId),
           increment_value: willLike ? 1 : -1
@@ -2369,22 +1951,17 @@
         
       } catch (error) {
         console.error('❌ Like toggle failed:', error);
-        // Revert optimistic update
         this.engagement.isLiked = !willLike;
         this.engagement.likes += willLike ? -1 : 1;
         this._updateSocialCounts();
       }
     }
     
-    /**
-     * Toggle favorite
-     */
     async _toggleFavorite() {
       if (!this.supabase || !this.contentId || !this.userId) return;
       
       const willFav = !this.engagement.isFavorited;
       
-      // Optimistic update
       this.engagement.isFavorited = willFav;
       this.engagement.favorites += willFav ? 1 : -1;
       this._updateSocialCounts();
@@ -2417,9 +1994,6 @@
       }
     }
     
-    /**
-     * Share content
-     */
     _shareContent() {
       const shareData = {
         title: this.contentMetadata ? (this.contentMetadata.title || 'Check this out') : 'Check this out',
@@ -2427,7 +2001,6 @@
         url: window.location.href
       };
       
-      // Try Web Share API first
       if (navigator.share) {
         navigator.share(shareData)
           .then(() => {
@@ -2436,7 +2009,6 @@
             this._emit('social:shared', { method: 'web-share' });
           })
           .catch(() => {
-            // Fallback to clipboard
             this._shareFallback(shareData);
           });
       } else {
@@ -2444,17 +2016,12 @@
       }
     }
     
-    /**
-     * Fallback share method
-     */
     _shareFallback(data) {
-      // Copy URL to clipboard
       if (navigator.clipboard) {
         navigator.clipboard.writeText(data.url).then(() => {
           this.engagement.shares++;
           this._updateSocialCounts();
           
-          // Show toast notification
           if (window.state && window.state.showToast) {
             window.state.showToast('Link copied to clipboard!', { type: 'success' });
           }
@@ -2464,34 +2031,27 @@
       }
     }
     
-    /**
-     * Update social count displays
-     */
     _updateSocialCounts() {
       if (!this._controlsCache || !this._controlsCache.socialPanel) return;
       
       const panel = this._controlsCache.socialPanel;
       if (!panel) return;
       
-      // Update like count
       const likeCount = panel.querySelector('.like-btn .social-count');
       if (likeCount) {
         likeCount.textContent = this._formatCount(this.engagement.likes);
       }
       
-      // Update favorite count
       const favCount = panel.querySelector('.favorite-btn .social-count');
       if (favCount) {
         favCount.textContent = this._formatCount(this.engagement.favorites);
       }
       
-      // Update share count
       const shareCount = panel.querySelector('.share-btn .social-count');
       if (shareCount) {
         shareCount.textContent = this._formatCount(this.engagement.shares);
       }
       
-      // Update button states
       const likeBtn = panel.querySelector('.like-btn');
       if (likeBtn) {
         likeBtn.classList.toggle('active', this.engagement.isLiked);
@@ -2507,13 +2067,6 @@
       }
     }
     
-    // =====================================================
-    // QUALITY & ADAPTIVE STREAMING
-    // =====================================================
-    
-    /**
-     * Set playback quality
-     */
     setQuality(quality) {
       if (quality === this.currentQuality) return;
       
@@ -2521,26 +2074,16 @@
       this.currentQuality = quality;
       this.stats.qualityChanges++;
       
-      // For HLS/DASH, this would trigger adaptive bitrate switch
-      // For static files, this would load different source URL
       this._emit('playback:quality-change', {
         from: this.currentQuality,
         to: quality
       });
       
-      // Update StateManager if available
       if (window.stateManager) {
         window.stateManager.setPreference('quality', quality);
       }
     }
     
-    // =====================================================
-    // EVENT SYSTEM
-    // =====================================================
-    
-    /**
-     * Subscribe to player events
-     */
     on(event, callback) {
       if (!this.eventListeners.has(event)) {
         this.eventListeners.set(event, []);
@@ -2550,7 +2093,6 @@
         listeners.push(callback);
       }
       
-      // Return unsubscribe function
       return () => {
         const callbacks = this.eventListeners.get(event);
         if (callbacks) {
@@ -2560,9 +2102,6 @@
       };
     }
     
-    /**
-     * Unsubscribe from event
-     */
     off(event, callback) {
       const callbacks = this.eventListeners.get(event);
       if (callbacks && callback) {
@@ -2571,9 +2110,6 @@
       }
     }
     
-    /**
-     * Emit event to listeners
-     */
     _emit(event, data) {
       const callbacks = this.eventListeners.get(event);
       if (callbacks) {
@@ -2586,7 +2122,6 @@
         });
       }
       
-      // Also emit to global event system
       if (window.dispatchEvent) {
         try {
           window.dispatchEvent(new CustomEvent(`player:${event}`, {
@@ -2598,13 +2133,6 @@
       }
     }
     
-    // =====================================================
-    // UTILITIES
-    // =====================================================
-    
-    /**
-     * Format time in seconds to MM:SS or H:MM:SS
-     */
     _formatTime(seconds) {
       if (!seconds || isNaN(seconds)) return '0:00';
       
@@ -2618,9 +2146,6 @@
       return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
     
-    /**
-     * Format count with K/M suffixes
-     */
     _formatCount(num) {
       if (!num) return '0';
       if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -2628,15 +2153,7 @@
       return num.toString();
     }
     
-    // =====================================================
-    // CLEANUP & DESTROY
-    // =====================================================
-    
-    /**
-     * Cleanup attachment without full destroy
-     */
     _cleanupAttachment() {
-      // Remove event listeners
       if (this._listenersAttached && this.video) {
         const events = [
           'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
@@ -2655,7 +2172,6 @@
         this._listenersAttached = false;
       }
       
-      // Clear timeouts
       if (this.bufferingTimeout) {
         clearTimeout(this.bufferingTimeout);
         this.bufferingTimeout = null;
@@ -2669,17 +2185,14 @@
         this.networkCheckInterval = null;
       }
       
-      // Remove controls
       if (this.controls && this.controls.parentNode) {
         this.controls.parentNode.removeChild(this.controls);
       }
       
-      // Cleanup telemetry
       if (this.watchSession && this.watchSession.isActive) {
         this.watchSession.end();
       }
       
-      // Reset flags
       this.isPlaying = false;
       this.isBuffering = false;
       this.viewRecorded = false;
@@ -2687,9 +2200,6 @@
       this._audioRendererRecoveryAttempted = false;
     }
     
-    /**
-     * Destroy player and cleanup all resources
-     */
     destroy() {
       if (this._isDestroyed) {
         console.log('ℹ️ Player already destroyed');
@@ -2699,26 +2209,18 @@
       console.log('🗑️ Destroying EnhancedVideoPlayer...');
       this._isDestroyed = true;
       
-      // Preserve source for potential re-initialization
       this._preserveSource();
-      
-      // Cleanup attachment
       this._cleanupAttachment();
       
-      // Pause and reset video
       if (this.video) {
         this.video.pause();
         this.video.removeAttribute('src');
         this.video.load();
-        
-        // Restore native controls as fallback
         this.video.controls = true;
       }
       
-      // Clear event listeners map
       this.eventListeners.clear();
       
-      // Clear references
       this.video = null;
       this.container = null;
       this.controls = null;
@@ -2731,13 +2233,6 @@
       this._emit('player:destroyed', { contentId: this.contentId });
     }
     
-    // =====================================================
-    // GETTERS & STATE
-    // =====================================================
-    
-    /**
-     * Get player stats
-     */
     getStats() {
       return {
         ...this.stats,
@@ -2750,9 +2245,6 @@
       };
     }
     
-    /**
-     * Get current playback state
-     */
     getPlaybackState() {
       if (!this.video) return null;
       
@@ -2770,9 +2262,6 @@
       };
     }
     
-    /**
-     * Check if player is ready
-     */
     isReady() {
       return this._isAttached && !this._isDestroyed && this.video ? this.video.readyState >= 2 : false;
     }
@@ -2782,25 +2271,20 @@
   // GLOBAL EXPORT & INITIALIZATION
   // =====================================================
   
-  // Export for global access
   window.EnhancedVideoPlayer = EnhancedVideoPlayer;
   window.BantuVideoPlayer = EnhancedVideoPlayer;
   
-  // Auto-initialize if video element exists with data attributes
   document.addEventListener('DOMContentLoaded', () => {
     const videoEl = document.getElementById('inlineVideoPlayer');
     const container = videoEl ? (videoEl.closest('.video-container, .inline-player') || videoEl.parentElement) : null;
     
     if (videoEl && container) {
-      // Check for initialization data
       const initData = {
         contentId: videoEl.dataset ? videoEl.dataset.contentId : null,
         autoplay: videoEl.dataset ? videoEl.dataset.autoplay === 'true' : false,
         muted: videoEl.dataset ? videoEl.dataset.muted === 'true' : false,
         contentMetadata: window.currentContent || null,
-        // --- SAFE collection context extraction to prevent fatal errors ---
         collectionContext: (() => {
-          // Only proceed if currentContent exists and is an object
           if (window.currentContent && typeof window.currentContent === 'object') {
             return {
               collectionId: window.currentContent.series_id || window.currentContent.playlist_id || null,
@@ -2810,7 +2294,6 @@
               itemType: window.currentContent.media_type === 'audio' ? 'track' : 'episode'
             };
           }
-          // Return empty/default context if window.currentContent is missing or invalid
           return {
             collectionId: null,
             playlistId: null,
@@ -2819,20 +2302,15 @@
             itemType: null
           };
         })()
-        // --- END SAFE FIXED BLOCK ---
       };
       
-      // Delay to ensure dependencies load
       setTimeout(() => {
         try {
           const player = new EnhancedVideoPlayer(initData);
           player.attach(videoEl, container, initData).catch(err => {
             console.warn('⚠️ Player attach had issues:', err);
           });
-          
-          // Expose for debugging
           window.bantuPlayer = player;
-          
         } catch (error) {
           console.error('❌ Failed to auto-initialize player:', error);
         }
@@ -2840,7 +2318,6 @@
     }
   });
   
-  // Export for module systems
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = EnhancedVideoPlayer;
   }
@@ -2850,5 +2327,6 @@
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments (this.player?.property = value)');
   console.log('   🔧 CRITICAL FIX: Replaced with safe conditional checks (if (this.player) { this.player.property = value })');
+  console.log('   🔧 CRITICAL FIX: All RPC calls use window.supabaseClient.rpc() for video-player compatibility');
   
 })();
