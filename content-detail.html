@@ -209,6 +209,10 @@
     display: none;
 }
 
+.album-tracklist-container.expanded {
+    display: flex;
+}
+
 .album-track-card {
     display: flex;
     align-items: center;
@@ -657,7 +661,7 @@
                 </video>
                 <!-- 🎵 AUTOPLAY OVERLAY (Browser autoplay unlock) -->
                 <div id="initialPlayOverlay" class="initial-play-overlay hidden">
-                    <button id="initialPlayButton">▶ Play Album</button>
+                    <button id="initialPlayButton" type="button">▶ Play Album</button>
                 </div>
                 <!-- PHASE 4: Quality Badge and Network Speed Indicator -->
                 <div class="quality-indicator" id="qualityBadge">Auto</div>
@@ -838,34 +842,34 @@
                 </div>
                 <div class="hero-actions">
                     <!-- Resume button will be added dynamically here -->
-                    <button class="btn btn-primary" id="playBtn">
+                    <button class="btn btn-primary" id="playBtn" type="button">
                         <i class="fas fa-play"></i>
                         <span>Play Now</span>
                     </button>
-                    <button class="btn btn-secondary" id="likeBtn">
+                    <button class="btn btn-secondary" id="likeBtn" type="button">
                         <i class="far fa-heart"></i>
                         <span>Like</span>
                     </button>
-                    <button class="btn btn-secondary" id="favoriteBtn">
+                    <button class="btn btn-secondary" id="favoriteBtn" type="button">
                         <i class="far fa-star"></i>
                         <span>Favorite</span>
                     </button>
                     <!-- ✅ PHASE 2: WATCH LATER BUTTON ADDED HERE -->
-                    <button class="btn btn-secondary" id="watchLaterBtn">
+                    <button class="btn btn-secondary" id="watchLaterBtn" type="button">
                         <i class="far fa-clock"></i>
                         <span>Watch Later</span>
                     </button>
-                    <button class="btn btn-secondary" id="shareBtn">
+                    <button class="btn btn-secondary" id="shareBtn" type="button">
                         <i class="fas fa-share"></i>
                         <span>Share</span>
                     </button>
                     <!-- ✅ NEW: Close player button (only visible when player is active) -->
-                    <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;">
+                    <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;" type="button">
                         <i class="fas fa-times"></i>
                         <span>Close Player</span>
                     </button>
                     <!-- ✅ FIX #2: ALBUM TOGGLE BUTTON -->
-                    <button id="album-toggle-btn" class="album-toggle-btn">
+                    <button id="album-toggle-btn" class="album-toggle-btn" type="button">
                         <i class="fas fa-list"></i>
                         <span>Album Tracks</span>
                     </button>
@@ -894,7 +898,7 @@
                     <h3 id="creatorDisplayName">Creator Name</h3>
                     <p>Verified Creator • Joined 2024</p>
                 </div>
-                <button id="connectCreatorBtn" class="connect-btn">
+                <button id="connectCreatorBtn" class="connect-btn" type="button">
                     <i class="fas fa-user-plus"></i>
                     <span>Connect</span>
                 </button>
@@ -953,7 +957,7 @@
         <section class="comments-section">
             <div class="section-header">
                 <h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2>
-                <button id="refreshCommentsBtn" class="refresh-btn">
+                <button id="refreshCommentsBtn" class="refresh-btn" type="button">
                     <i class="fas fa-redo"></i> Refresh
                 </button>
             </div>
@@ -963,7 +967,7 @@
                 </div>
                 <div class="comment-input-container">
                     <textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea>
-                    <button id="sendCommentBtn" class="send-comment-btn">
+                    <button id="sendCommentBtn" class="send-comment-btn" type="button">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
@@ -982,7 +986,7 @@
         <section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
             <div class="section-header">
                 <h2 class="section-title">Continue Watching</h2>
-                <button class="refresh-btn" id="refreshContinueBtn" title="Refresh">
+                <button class="refresh-btn" id="refreshContinueBtn" title="Refresh" type="button">
                     <i class="fas fa-redo"></i>
                 </button>
             </div>
@@ -1043,7 +1047,7 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
     <!-- Back to Top Button -->
-    <button id="backToTopBtn" class="back-to-top">
+    <button id="backToTopBtn" class="back-to-top" type="button">
         <i class="fas fa-arrow-up"></i>
     </button>
 
@@ -1055,7 +1059,7 @@
         <div class="analytics-content">
             <div class="analytics-header">
                 <h2>Content Analytics</h2>
-                <button id="close-analytics" class="close-search-btn">
+                <button id="close-analytics" class="close-search-btn" type="button">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1096,7 +1100,7 @@
                 <i class="search-icon fas fa-search"></i>
                 <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
             </div>
-            <button id="close-search-btn" class="close-search-btn">
+            <button id="close-search-btn" class="close-search-btn" type="button">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -1132,7 +1136,7 @@
     <div id="notifications-panel" class="notifications-panel">
         <div class="notifications-header">
             <h2>Notifications</h2>
-            <button id="close-notifications" class="icon-btn">
+            <button id="close-notifications" class="icon-btn" type="button">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -1140,20 +1144,20 @@
             <!-- Notifications loaded here -->
         </div>
         <div class="notifications-footer">
-            <button id="mark-all-read" class="text-btn">Mark all as read</button>
-            <button id="notification-settings" class="text-btn">Settings</button>
+            <button id="mark-all-read" class="text-btn" type="button">Mark all as read</button>
+            <button id="notification-settings" class="text-btn" type="button">Settings</button>
         </div>
     </div>
 
     <!-- Theme Selector -->
     <div id="theme-selector" class="theme-selector">
-        <button class="theme-option" data-theme="dark">
+        <button class="theme-option" data-theme="dark" type="button">
             <i class="fas fa-moon"></i> Dark
         </button>
-        <button class="theme-option" data-theme="light">
+        <button class="theme-option" data-theme="light" type="button">
             <i class="fas fa-sun"></i> Light
         </button>
-        <button class="theme-option" data-theme="high-contrast">
+        <button class="theme-option" data-theme="high-contrast" type="button">
             <i class="fas fa-eye"></i> High Contrast
         </button>
     </div>
@@ -1163,7 +1167,7 @@
         <div class="playlist-modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Add to Playlist</h2>
-                <button class="playlist-modal-close" id="close-playlist-modal">
+                <button class="playlist-modal-close" id="close-playlist-modal" type="button">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1172,9 +1176,9 @@
             </div>
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <input type="text" id="new-playlist-name" placeholder="New playlist name...">
-                <button id="create-playlist-btn">Create</button>
+                <button id="create-playlist-btn" type="button">Create</button>
             </div>
-            <button id="quick-watch-later-btn">
+            <button id="quick-watch-later-btn" type="button">
                 <i class="far fa-clock"></i> Add to Watch Later
             </button>
         </div>
@@ -1185,7 +1189,7 @@
         <div class="analytics-content">
             <div class="analytics-header">
                 <h2>My Badges</h2>
-                <button id="close-badges" class="close-search-btn">
+                <button id="close-badges" class="close-search-btn" type="button">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1202,7 +1206,7 @@
         <div class="analytics-content">
             <div class="analytics-header">
                 <h2>Watch Party</h2>
-                <button id="close-watch-party" class="close-search-btn">
+                <button id="close-watch-party" class="close-search-btn" type="button">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
