@@ -15,16 +15,26 @@
 // 🔧 CRITICAL FIX (2026-05-19): Removed all optional chaining assignments
 // 🔧 CRITICAL FIX (2026-05-19): Safe conditional checks for all player properties
 // 🔧 AUDIO RENDERER FIX (2026-05-19): Automatic mute fallback for AUDIO_RENDERER_ERROR
-// 🔧 VERSION: v2.2.0 - Audio renderer error recovery
+// 🎯 YOUTUBE-STYLE PLAYLIST INTEGRATION (2026-05-21):
+// - Player ended event triggers window.playNextPlaylistItem()
+// - No playlist logic in player - only fires event for content-detail to handle
+// - One-way communication: player -> content-detail (not vice versa)
+// 🔧 VERSION: v2.3.0 - YouTube-style playlist integration
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v2.2.0 - Audio Renderer Fix)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v2.3.0 - YouTube-Style Playlist Integration)');
 
   /**
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
    * collection awareness, and robust media handling
+   * 
+   * 🎯 YOUTUBE-STYLE ARCHITECTURE:
+   * - Player ONLY handles playback
+   * - On 'ended', calls window.playNextPlaylistItem() if available
+   * - Content-detail.js owns all playlist navigation logic
+   * - Single source of truth: window.currentPlaylistItems/Index
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -45,7 +55,7 @@
         // Error Handling
         retryCount: options.retryCount ?? 3,
         retryDelay: options.retryDelay ?? 2000,
-        bufferThreshold: options.bufferThreshold ?? 10, // seconds
+        bufferThreshold: options.bufferThreshold ?? 10,
         networkCheckInterval: options.networkCheckInterval ?? 5000,
         
         // UI
@@ -99,14 +109,14 @@
         playlistId: null,
         currentSortIndex: null,
         episodeNumber: null,
-        itemType: null // 'episode' | 'track' | 'video'
+        itemType: null
       };
       
       // Content metadata
       this.contentId = options.contentId || null;
       this.contentMetadata = options.contentMetadata || null;
       
-      // Supabase integration - CRITICAL FIX: Use window.supabaseClient
+      // Supabase integration
       this.supabase = options.supabase || window.supabaseClient || window.supabase;
       this.userId = options.userId || window.AuthHelper?.getUserProfile?.()?.id || null;
       
@@ -140,7 +150,7 @@
       this._isDestroyed = false;
       this._listenersAttached = false;
       this._sourcePreserved = null;
-      this._audioRendererRecoveryAttempted = false; // Track audio renderer recovery
+      this._audioRendererRecoveryAttempted = false;
       
       // Mobile detection
       this._isMobile = /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(
@@ -802,15 +812,35 @@
       });
     }
     
+    // =====================================================
+    // 🎯 YOUTUBE-STYLE ENDED HANDLER (CRITICAL)
+    // =====================================================
     _handleEnded() {
       this.isPlaying = false;
       this._updatePlayButton(false);
       
-      if (this.config.enableCollectionNav && this.config.autoplay) {
+      console.log('🏁 Media track completed. Checking for playlist progression...');
+      
+      // 🎯 YOUTUBE-STYLE ARCHITECTURE:
+      // Player ONLY calls the global function if it exists
+      // Content-detail.js owns the playlist logic
+      if (typeof window.playNextPlaylistItem === 'function') {
+        console.log('🎬 Invoking window.playNextPlaylistItem() for auto-advance');
+        window.playNextPlaylistItem();
+      } else if (window.ContentCollectionsEngine && typeof window.ContentCollectionsEngine.getNextItem === 'function') {
+        // Fallback for legacy collection engine
+        console.log('🎬 Using ContentCollectionsEngine for auto-advance');
+        const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
+        if (nextItem) {
+          window.location.href = `content-detail.html?id=${nextItem.id}`;
+        }
+      } else if (this.config.enableCollectionNav && this.config.autoplay) {
+        console.log('⚠️ No playlist controller found, using local auto-advance');
         this._autoAdvance();
+      } else {
+        console.log('🎵 No playlist controller bound to window');
       }
       
-      console.log('🏁 Ended');
       this._emit('playback:ended', {
         totalWatchTime: this.stats.totalWatchTime,
         duration: this.video ? this.video.duration : 0
@@ -1599,7 +1629,6 @@
       const duration = this.video.duration || 0;
       const clamped = Math.max(0, Math.min(time, duration));
       
-      // 🔧 CRITICAL FIX: Safe assignment without optional chaining
       if (this.video) {
         this.video.currentTime = clamped;
       }
@@ -1622,7 +1651,6 @@
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0.25, Math.min(4, rate));
-      // 🔧 CRITICAL FIX: Safe assignment
       if (this.video) {
         this.video.playbackRate = clamped;
       }
@@ -1636,7 +1664,6 @@
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0, Math.min(1, volume));
-      // 🔧 CRITICAL FIX: Safe assignment
       if (this.video) {
         this.video.volume = clamped;
         this.video.muted = clamped === 0;
@@ -1656,7 +1683,6 @@
     
     toggleMute() {
       if (!this.video || this._isDestroyed) return;
-      // 🔧 CRITICAL FIX: Safe assignment
       if (this.video) {
         this.video.muted = !this.video.muted;
       }
@@ -1706,7 +1732,6 @@
         document.msFullscreenElement
       );
       
-      // 🔧 CRITICAL FIX: Safe assignment
       if (isCurrentlyFullscreen !== this.isFullscreen) {
         this.isFullscreen = isCurrentlyFullscreen;
         this._updateFullscreenButton();
@@ -1746,7 +1771,6 @@
     }
     
     _initializeTelemetrySession() {
-      // 🔧 CRITICAL FIX: Use window.supabaseClient for RPC calls
       if (!this.config.enableTelemetry || !this.supabase || !this.contentId) return;
       
       if (!this.playbackSessionId) {
@@ -1798,7 +1822,6 @@
       console.log('👁️ View threshold reached, recording...');
       
       try {
-        // 🔧 CRITICAL FIX: Use window.supabaseClient.rpc() for RPC calls
         const { error } = await this.supabase
           .rpc('increment_content_views', {
             content_id_input: parseInt(this.contentId)
@@ -1940,7 +1963,6 @@
             .eq('content_id', parseInt(this.contentId));
         }
         
-        // 🔧 CRITICAL FIX: Use window.supabaseClient.rpc() for RPC
         await this.supabase.rpc('increment_engagement_stats_likes', {
           target_content_id: parseInt(this.contentId),
           increment_value: willLike ? 1 : -1
@@ -2274,6 +2296,14 @@
   window.EnhancedVideoPlayer = EnhancedVideoPlayer;
   window.BantuVideoPlayer = EnhancedVideoPlayer;
   
+  // 🎯 YOUTUBE-STYLE: Expose a helper function for content-detail to register
+  window._setupPlayerEndedCallback = function(callback) {
+    if (typeof callback === 'function') {
+      window._playerEndedCallback = callback;
+      console.log('✅ Player ended callback registered (YouTube-style)');
+    }
+  };
+  
   document.addEventListener('DOMContentLoaded', () => {
     const videoEl = document.getElementById('inlineVideoPlayer');
     const container = videoEl ? (videoEl.closest('.video-container, .inline-player') || videoEl.parentElement) : null;
@@ -2322,11 +2352,11 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.2.0 - Audio Renderer Fix)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.3.0 - YouTube-Style Playlist Integration)');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
-  console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments (this.player?.property = value)');
-  console.log('   🔧 CRITICAL FIX: Replaced with safe conditional checks (if (this.player) { this.player.property = value })');
-  console.log('   🔧 CRITICAL FIX: All RPC calls use window.supabaseClient.rpc() for video-player compatibility');
+  console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments');
+  console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
+  console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
   
 })();
