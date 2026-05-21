@@ -115,6 +115,148 @@
     to { opacity: 1; }
 }
 
+/* ============================================ */
+/* 🎯 YOUTUBE-STYLE PERSISTENT SIDEBAR (ADDED 2026-05-21) */
+/* ============================================ */
+
+/* Main album sidebar - YouTube-style persistent container */
+.album-sidebar {
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+    background: transparent;
+}
+
+/* Expanded state - YouTube-style */
+.album-sidebar.expanded {
+    max-height: 1200px;
+    opacity: 1;
+    margin-top: 1rem;
+}
+
+/* Track list container - YouTube-style persistent */
+.album-track-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Track item - YouTube-style */
+.album-track-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+    color: var(--soft-white, white);
+    font-family: inherit;
+}
+
+.album-track-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+
+.album-track-item.playing {
+    background: rgba(245, 158, 11, 0.2);
+    border-left: 3px solid #F59E0B;
+}
+
+/* Track number column */
+.track-num {
+    color: var(--slate-grey, #aaa);
+    font-size: 14px;
+    min-width: 32px;
+    font-weight: 600;
+}
+
+/* Track title */
+.track-title {
+    flex: 1;
+    color: var(--soft-white, white);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Track duration */
+.track-duration {
+    color: var(--slate-grey, #aaa);
+    font-size: 12px;
+    font-family: monospace;
+}
+
+/* Empty playlist state */
+.empty-playlist {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--slate-grey, #aaa);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+}
+
+.empty-playlist i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.empty-playlist p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Album toggle button - YouTube-style */
+.album-toggle-btn {
+    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 14px;
+}
+
+.album-toggle-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    gap: 16px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.album-toggle-btn i {
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+}
+
+.album-toggle-btn:hover i {
+    transform: scale(1.1);
+}
+
 /* PHASE 2 POLISH: Playlist Modal Styles */
 .playlist-modal {
     animation: modalFadeIn 0.3s ease;
@@ -168,163 +310,49 @@
     position: relative;
 }
 
-/* ============================================ */
-/* 🎵 ALBUM TRACK LIST STYLES - DEDICATED EXTERNAL CONTAINER */
-/* ============================================ */
-.album-toggle-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin: 12px 0;
-}
-.album-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-}
-.album-toggle-btn i {
-    transition: transform 0.2s ease;
-}
-.album-toggle-btn.expanded i {
-    transform: rotate(180deg);
-}
-
-/* DEDICATED ALBUM TRACKLIST CONTAINER - NOT inside detail card */
-.album-tracklist-container {
-    margin-top: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+/* Mobile adjustments for YouTube-style sidebar */
+@media (max-width: 768px) {
+    .album-sidebar.expanded {
+        max-height: 800px;
+    }
+    
+    .album-track-item {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    
+    .track-num {
+        min-width: 28px;
+        font-size: 12px;
+    }
+    
+    .track-title {
+        font-size: 13px;
+    }
+    
+    .track-duration {
+        font-size: 11px;
+    }
+    
+    .album-toggle-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
 }
 
-.album-tracklist-container.hidden {
-    display: none;
-}
-
-.album-tracklist-container.expanded {
-    display: flex;
-}
-
-.album-track-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.04);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.album-track-card:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.album-track-card.active {
-    border: 1px solid #3b82f6;
-    background: rgba(59, 130, 246, 0.1);
-}
-
-.track-number {
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
-    min-width: 30px;
-}
-
-.track-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.track-meta {
-    flex: 1;
-    min-width: 0;
-}
-
-.track-title {
-    font-weight: 500;
-    font-size: 14px;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.track-duration {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
-}
-
-/* Legacy album track list styles (for backward compatibility) */
-.album-track-list.hidden {
-    display: none;
-}
-
-.album-track-list.expanded {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.album-track-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    background: rgba(255, 255, 255, 0.03);
-}
-.album-track-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-.album-track-thumb {
-    width: 50px;
-    height: 50px;
-    border-radius: 6px;
-    object-fit: cover;
-    background: rgba(255, 255, 255, 0.1);
-}
-.album-track-info {
-    flex: 1;
-    min-width: 0;
-}
-.album-track-title {
-    font-weight: 500;
-    font-size: 14px;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.album-track-meta {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 2px;
-}
-.empty-playlist {
-    text-align: center;
-    padding: 20px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 14px;
+@media (max-width: 480px) {
+    .album-track-item {
+        padding: 6px 10px;
+    }
+    
+    .track-num {
+        min-width: 24px;
+        font-size: 11px;
+    }
+    
+    .track-title {
+        font-size: 12px;
+    }
 }
 </style>
 </head>
@@ -801,6 +829,16 @@
         </section>
 
         <!-- ============================================ -->
+        <!-- 🎯 YOUTUBE-STYLE PERSISTENT SIDEBAR (ADDED 2026-05-21) -->
+        <!-- This container stays in DOM permanently -->
+        <!-- ============================================ -->
+        <div id="album-sidebar" class="album-sidebar collapsed">
+            <div id="album-track-list" class="album-track-list">
+                <!-- Tracks will be rendered inside here ONCE by content-detail.js -->
+            </div>
+        </div>
+
+        <!-- ============================================ -->
         <!-- 🎯 HERO SECTION - DETAIL CARD -->
         <!-- ============================================ -->
         <section class="content-hero" id="contentHero">
@@ -868,22 +906,14 @@
                         <i class="fas fa-times"></i>
                         <span>Close Player</span>
                     </button>
-                    <!-- ✅ FIX #2: ALBUM TOGGLE BUTTON -->
-                    <button id="album-toggle-btn" class="album-toggle-btn" type="button">
+                    <!-- 🎯 YOUTUBE-STYLE ALBUM TOGGLE BUTTON -->
+                    <button id="albumToggleBtn" class="album-toggle-btn" type="button">
                         <i class="fas fa-list"></i>
-                        <span>Album Tracks</span>
+                        <span>Show Tracklist</span>
                     </button>
                 </div>
             </div>
         </section>
-
-        <!-- ============================================ -->
-        <!-- 🔧 BUG FIX #2: DEDICATED ALBUM TRACKLIST CONTAINER -->
-        <!-- Placed BETWEEN detail card and creator card -->
-        <!-- ============================================ -->
-        <div id="album-tracklist-container" class="album-tracklist-container hidden">
-            <!-- Album tracks will be rendered here dynamically -->
-        </div>
 
         <!-- ============================================ -->
         <!-- 🎨 CREATOR SECTION - PROPER STRUCTURE FOR AVATAR -->
@@ -1649,59 +1679,11 @@ if (!window.showToast) {
 })();
 
 // ============================================
-// FIX #2 & #4 — ALBUM TOGGLE BUTTON WITH DEDICATED CONTAINER
+// FIX #2 — ALBUM TOGGLE BUTTON WITH DEDICATED CONTAINER
 // Persistent expanded state, NO auto-collapse
 // ============================================
 (function() {
     let isAlbumExpanded = false;
-
-    function renderAlbumTracklist(playlistItems) {
-        const container = document.getElementById('album-tracklist-container');
-        if (!container || !playlistItems || !playlistItems.length) return;
-
-        container.innerHTML = playlistItems.map((track, index) => `
-            <div 
-                class="album-track-card ${index === 0 ? 'active' : ''}"
-                data-index="${index}"
-                data-content-id="${track.id}"
-            >
-                <div class="track-number">${index + 1}</div>
-                <img 
-                    src="${track.thumbnail_url || track.thumbnail || ''}" 
-                    class="track-thumb"
-                    onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop'"
-                >
-                <div class="track-meta">
-                    <div class="track-title">${escapeHtml(track.title || 'Untitled')}</div>
-                    <div class="track-duration">${formatDuration(track.duration || 0)}</div>
-                </div>
-            </div>
-        `).join('');
-
-        container.querySelectorAll('.album-track-card').forEach(card => {
-            card.addEventListener('click', (event) => {
-                event.stopPropagation();
-                const index = Number(card.dataset.index);
-                const contentId = card.dataset.contentId;
-                console.log('🎵 Playing album track:', index, contentId);
-                
-                // Try multiple play functions
-                if (typeof window.playPlaylistItemByIndex === 'function') {
-                    window.playPlaylistItemByIndex(index);
-                } else if (typeof window.playPlaylistItem === 'function') {
-                    window.playPlaylistItem(contentId, index);
-                } else if (window.currentPlaylist?.items?.[index]) {
-                    window.location.href = `content-detail.html?id=${contentId}`;
-                }
-                
-                // Update active state
-                container.querySelectorAll('.album-track-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-            });
-        });
-
-        console.log('✅ Album tracklist rendered:', playlistItems.length, 'tracks');
-    }
 
     function setupAlbumToggle() {
         const albumBtn = document.getElementById('album-toggle-btn');
@@ -1724,7 +1706,6 @@ if (!window.showToast) {
         if (isAlbumExpanded && playlistItems.length) {
             tracklistContainer.classList.remove('hidden');
             albumBtn.classList.add('expanded');
-            renderAlbumTracklist(playlistItems);
             console.log('📀 Album restored to expanded state');
         }
 
@@ -1749,17 +1730,16 @@ if (!window.showToast) {
                 if (currentItems.length) {
                     tracklistContainer.classList.remove('hidden');
                     albumBtn.classList.add('expanded');
-                    renderAlbumTracklist(currentItems);
                     isAlbumExpanded = true;
                     console.log('📀 Album expanded with', currentItems.length, 'tracks');
                 } else {
                     console.warn('⚠️ No tracks available to render');
-                    showToast('No tracks available', 'warning');
+                    window.showToast('No tracks available', 'warning');
                 }
             }
         });
 
-        console.log('✅ Album toggle initialized with dedicated container');
+        console.log('✅ Album toggle initialized');
     }
 
     // Initialize on DOM ready and after content loads
