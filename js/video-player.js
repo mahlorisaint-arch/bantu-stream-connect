@@ -19,12 +19,16 @@
 // - Player ended event triggers window.playNextPlaylistItem()
 // - No playlist logic in player - only fires event for content-detail to handle
 // - One-way communication: player -> content-detail (not vice versa)
-// 🔧 VERSION: v2.3.0 - YouTube-style playlist integration
+// 🔧 DESKTOP AUTOPLAY AUDIO FIX (2026-05-22):
+// - Enhanced safePlay() with user interaction audio restoration
+// - Muted recovery with click/keydown listener to unmute
+// - Persistent audio restoration after first user interaction
+// 🔧 VERSION: v2.4.0 - Desktop Autoplay Audio Fix + YouTube-style playlist
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v2.3.0 - YouTube-Style Playlist Integration)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v2.4.0 - Desktop Autoplay Audio Fix)');
 
   /**
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
@@ -35,6 +39,11 @@
    * - On 'ended', calls window.playNextPlaylistItem() if available
    * - Content-detail.js owns all playlist navigation logic
    * - Single source of truth: window.currentPlaylistItems/Index
+   * 
+   * 🔧 DESKTOP AUTOPLAY FIX:
+   * - safePlay() attempts unmuted playback first
+   * - Falls back to muted with click/keydown listener to restore audio
+   * - Audio restored on first user interaction
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -102,6 +111,10 @@
       this.watchSession = null;
       this.viewRecorded = false;
       this.viewValidated = false;
+      
+      // Audio restoration tracking
+      this._audioRestoreListenerAttached = false;
+      this._pendingAudioRestore = false;
       
       // Phase 1D: Collection/Queue context
       this.collectionContext = {
@@ -1565,39 +1578,111 @@
       return Promise.resolve();
     }
     
+    // =====================================================
+    // 🔧 DESKTOP AUTOPLAY AUDIO FIX (ENHANCED)
+    // =====================================================
     async safePlay() {
       if (!this.video || this._isDestroyed) {
         return Promise.reject('Player destroyed');
       }
       
       try {
+        // First attempt: normal playback with unmuted audio
         await this.video.play();
-        console.log('▶️ Playback started successfully');
+        
+        // Success! Unmute if needed
+        this.video.muted = false;
+        this.config.muted = false;
+        
+        // Clean up any pending audio restoration listeners
+        this._cleanupAudioRestoreListeners();
+        
+        console.log('▶️ Playback started successfully with unmuted audio');
+        this._emit('playback:audio-restored', { method: 'direct' });
         return true;
+        
       } catch (error) {
         console.warn('⚠️ Initial play blocked or failed:', error.message);
         
-        if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
-          console.log('🔄 Attempting recovery: Muting video and retrying...');
-          if (this.video) {
-            this.video.muted = true;
-            this.config.muted = true;
-          }
+        // Second attempt: Force mute and retry
+        this.video.muted = true;
+        this.config.muted = true;
+        
+        try {
+          await this.video.play();
+          console.log('✅ Playback recovered in muted mode');
           
-          try {
-            if (this.video) {
-              await this.video.play();
-            }
-            console.log('✅ Playback recovered in muted mode');
-            return true;
-          } catch (retryError) {
-            console.error('❌ Hard playback failure:', retryError);
-            throw retryError;
-          }
+          // Set up audio restoration on first user interaction
+          this._setupAudioRestoreOnInteraction();
+          
+          this._emit('playback:audio-muted', { 
+            reason: error.message,
+            willRestoreOnInteraction: true 
+          });
+          return true;
+          
+        } catch (retryError) {
+          console.error('❌ Hard playback failure:', retryError);
+          
+          // Show play overlay to let user initiate manually
+          this._showPlayOverlay();
+          
+          this._emit('playback:fatal-error', { error: retryError });
+          throw retryError;
+        }
+      }
+    }
+    
+    // =====================================================
+    // 🔧 AUDIO RESTORATION ON USER INTERACTION
+    // =====================================================
+    _setupAudioRestoreOnInteraction() {
+      if (this._audioRestoreListenerAttached) {
+        console.log('🔊 Audio restore listener already attached');
+        return;
+      }
+      
+      this._pendingAudioRestore = true;
+      this._audioRestoreListenerAttached = true;
+      
+      const restoreAudio = () => {
+        if (!this._pendingAudioRestore) return;
+        if (!this.video || this._isDestroyed) return;
+        
+        // Only restore if video is still muted
+        if (this.video.muted) {
+          this.video.muted = false;
+          console.log('🔊 Audio restored after user interaction');
+          this._emit('playback:audio-restored', { method: 'user-interaction' });
         }
         
-        throw error;
+        this._pendingAudioRestore = false;
+        this._cleanupAudioRestoreListeners();
+      };
+      
+      // Listen for click, keydown, or touch events
+      document.addEventListener('click', restoreAudio, { once: true });
+      document.addEventListener('keydown', restoreAudio, { once: true });
+      document.addEventListener('touchstart', restoreAudio, { once: true });
+      
+      // Also listen on video container for immediate interaction
+      if (this.container) {
+        this.container.addEventListener('click', restoreAudio, { once: true });
+        this.container.addEventListener('touchstart', restoreAudio, { once: true });
       }
+      
+      console.log('🔊 Audio restore listener attached - will unmute on first user interaction');
+    }
+    
+    _cleanupAudioRestoreListeners() {
+      if (!this._audioRestoreListenerAttached) return;
+      
+      this._pendingAudioRestore = false;
+      this._audioRestoreListenerAttached = false;
+      
+      // Note: can't easily remove listeners added with { once: true }
+      // but they auto-cleanup after firing
+      console.log('🔇 Audio restore listeners cleaned up');
     }
     
     async play() {
@@ -1686,6 +1771,13 @@
       if (this.video) {
         this.video.muted = !this.video.muted;
       }
+      
+      // If user manually unmutes, cancel pending auto-restore
+      if (this.video && !this.video.muted) {
+        this._pendingAudioRestore = false;
+        console.log('🔊 User manually unmuted, cancelling auto-restore');
+      }
+      
       this._updateVolumeUI();
       console.log(`🔇 Mute: ${this.video ? this.video.muted : false}`);
       this._emit('playback:mute', { muted: this.video ? this.video.muted : false });
@@ -2194,6 +2286,9 @@
         this._listenersAttached = false;
       }
       
+      // Clean up audio restore listeners
+      this._cleanupAudioRestoreListeners();
+      
       if (this.bufferingTimeout) {
         clearTimeout(this.bufferingTimeout);
         this.bufferingTimeout = null;
@@ -2352,11 +2447,12 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.3.0 - YouTube-Style Playlist Integration)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.4.0 - Desktop Autoplay Audio Fix)');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments');
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
   console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
+  console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with user interaction audio restoration');
   
 })();
