@@ -14,13 +14,15 @@
 // ✅ Collection-aware playback
 // ✅ Queue integration
 // ✅ Next/Previous track support
-// ✅ Autoplay with queue
 // ✅ Playback state persistence
-// ✅ Playlist autoplay on completion
 // ✅ Queue state sync with UI
-// ✅ Playlist progression tracking
-// ✅ Views FIX #1-4: Proper view recording with DB confirmation
-// 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system (album UI now ONLY in content-detail.js)
+// 🔧 VIEWS FIX #1-4: Proper view recording with DB confirmation
+// 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system
+// 🚨 CRITICAL AUTOPLAY FIX (2026-05-22):
+// ✅ REMOVED duplicate autoplay system - NO LONGER handles ended events
+// ✅ Player now ONLY fires ended event for content-detail.js to handle
+// ✅ Centralized playlist progression in content-detail.js only
+// ✅ One-way communication: player -> content-detail (not vice versa)
 
 /**
  * PHASE 1 CRITICAL FIXES:
@@ -34,32 +36,36 @@
  * 
  * PHASE 1D ENHANCEMENTS:
  * 8. Next/Previous track support
- * 9. Queue-aware autoplay
+ * 9. Queue-aware navigation (but NOT autoplay)
  * 10. Collection item highlighting
  * 11. Playback state persistence
- * 12. Playlist autoplay on video end
- * 13. Queue UI sync methods
+ * 12. Queue UI sync methods
  * 
  * 🔥 CRITICAL FIX #7-9:
- * 14. Prevent cleanup during active playback
- * 15. Prevent cleanup during UI interactions (play, pause, settings, album expand)
- * 16. Only destroy player on page unload or true content change
+ * 13. Prevent cleanup during active playback
+ * 14. Prevent cleanup during UI interactions (play, pause, settings, album expand)
+ * 15. Only destroy player on page unload or true content change
  * 
  * 🔧 VIEWS FIX #1-4:
- * 17. Removed premature early exit in view recording
- * 18. Added proper DB confirmation with viewPersisted flag
- * 19. Added frontend optimistic update for views
- * 20. Added incrementContentViews RPC call
+ * 16. Removed premature early exit in view recording
+ * 17. Added proper DB confirmation with viewPersisted flag
+ * 18. Added frontend optimistic update for views
+ * 19. Added incrementContentViews RPC call
  * 
  * 🔧 ALBUM ARCHITECTURE FIX:
- * 21. REMOVED duplicate album toggle system (setupAlbumToggleWithRetry, setupBasicAlbumToggle, getAlbumTracks)
- * 22. Album UI now handled EXCLUSIVELY by content-detail.js
+ * 20. REMOVED duplicate album toggle system
+ * 
+ * 🚨 DUPLICATE AUTOPLAY REMOVAL (2026-05-22):
+ * 21. REMOVED all ended event handlers for auto-advance
+ * 22. Player does NOT own playlist logic anymore
+ * 23. content-detail.js is the SOLE controller for playlist progression
+ * 24. Navigation buttons (next/prev) still work but call content-detail functions
  */
 
 (function() {
   'use strict';
 
-  console.log('🎬 VideoPlayerFeatures module loading... (Phase 1 + Phase 1D Enhanced)');
+  console.log('🎬 VideoPlayerFeatures module loading... (Phase 1 + Phase 1D Enhanced - NO AUTOPLAY)');
 
   class VideoPlayerFeatures {
     constructor() {
@@ -70,10 +76,13 @@
       // Initialization state
       this.initialized = false;
       
-      // Queue management
+      // Queue management (for UI only - NOT autoplay)
       this.currentQueueIndex = 0;
       this.queueItems = [];
-      this.boundHandleVideoEnded = null;
+      
+      // 🚨 REMOVED: this.boundHandleVideoEnded - NO LONGER USED
+      // Playlist progression is now handled EXCLUSIVELY by content-detail.js
+      
       this.playlistSyncInterval = null;
       
       // ✅ CRITICAL FIX #7-9: Track cleanup state to prevent premature destruction
@@ -264,10 +273,12 @@
 
     // =====================================================
     // PHASE 1D: Queue & Collection Management
+    // 🚨 NOTE: These navigation buttons call content-detail functions
+    // They do NOT handle autoplay themselves
     // =====================================================
 
     setupQueueControls() {
-      console.log('🎵 Setting up queue controls...');
+      console.log('🎵 Setting up queue controls (navigation only - NO AUTOPLAY)...');
       
       const nextBtn = document.getElementById('nextTrackBtn');
       if (nextBtn) {
@@ -276,7 +287,7 @@
         newNextBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          this.playNextTrack();
+          this.playNextTrack(); // This calls content-detail functions
         });
       }
       
@@ -287,7 +298,7 @@
         newPrevBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          this.playPreviousTrack();
+          this.playPreviousTrack(); // This calls content-detail functions
         });
       }
       
@@ -305,29 +316,28 @@
           e.preventDefault();
           const isActive = autoplayToggle.classList.toggle('active');
           localStorage.setItem('bantu_autoplay_enabled', isActive);
-          console.log('🎵 Autoplay:', isActive ? 'ON' : 'OFF');
+          console.log('🎵 Autoplay setting saved:', isActive ? 'ON' : 'OFF');
+          console.log('ℹ️ Note: Autoplay is now handled by content-detail.js (YouTube-style)');
         });
       }
       
-      console.log('✅ Queue controls setup complete');
+      console.log('✅ Queue controls setup complete (navigation only)');
     }
     
+    // =====================================================
+    // 🚨 NAVIGATION METHODS - Call content-detail functions
+    // These do NOT handle autoplay - they just trigger navigation
+    // =====================================================
+    
     playNextTrack() {
-      console.log('⏭️ Playing next track...');
+      console.log('⏭️ Navigation: Playing next track (via content-detail)...');
       
-      if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
-        const currentIndex = window.currentPlaylistItems.findIndex(
-          i => i.id === window.currentContent?.id
-        );
-        
-        if (currentIndex >= 0 && currentIndex + 1 < window.currentPlaylistItems.length) {
-          const nextItem = window.currentPlaylistItems[currentIndex + 1];
-          
-          if (typeof window.playPlaylistItemByIndex === 'function') {
-            window.playPlaylistItemByIndex(currentIndex + 1);
-          } else if (typeof window.playPlaylistItem === 'function') {
-            window.playPlaylistItem(nextItem.id, currentIndex + 1);
-          }
+      // 🚨 CRITICAL: Use content-detail's playlist navigation
+      // This is the ONLY correct path for playlist progression
+      if (typeof window.playPlaylistItemByIndex === 'function' && window.currentPlaylistItems?.length > 0) {
+        const currentIndex = window.currentPlaylistIndex || 0;
+        if (currentIndex + 1 < window.currentPlaylistItems.length) {
+          window.playPlaylistItemByIndex(currentIndex + 1);
           return;
         } else {
           console.log('🏁 End of playlist reached');
@@ -336,11 +346,13 @@
         }
       }
       
+      // Fallback for queue manager
       if (window.QueueManager && typeof window.QueueManager.playNext === 'function') {
         window.QueueManager.playNext();
         return;
       }
       
+      // Fallback for local queue
       if (this.queueItems.length > 0 && this.currentQueueIndex < this.queueItems.length - 1) {
         this.currentQueueIndex++;
         this.loadQueueItem(this.currentQueueIndex);
@@ -352,21 +364,13 @@
     }
     
     playPreviousTrack() {
-      console.log('⏮️ Playing previous track...');
+      console.log('⏮️ Navigation: Playing previous track (via content-detail)...');
       
-      if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
-        const currentIndex = window.currentPlaylistItems.findIndex(
-          i => i.id === window.currentContent?.id
-        );
-        
+      // 🚨 CRITICAL: Use content-detail's playlist navigation
+      if (typeof window.playPlaylistItemByIndex === 'function' && window.currentPlaylistItems?.length > 0) {
+        const currentIndex = window.currentPlaylistIndex || 0;
         if (currentIndex > 0) {
-          const prevItem = window.currentPlaylistItems[currentIndex - 1];
-          
-          if (typeof window.playPlaylistItemByIndex === 'function') {
-            window.playPlaylistItemByIndex(currentIndex - 1);
-          } else if (typeof window.playPlaylistItem === 'function') {
-            window.playPlaylistItem(prevItem.id, currentIndex - 1);
-          }
+          window.playPlaylistItemByIndex(currentIndex - 1);
           return;
         } else {
           console.log('📭 Already at first item');
@@ -374,11 +378,13 @@
         }
       }
       
+      // Fallback for queue manager
       if (window.QueueManager && typeof window.QueueManager.playPrevious === 'function') {
         window.QueueManager.playPrevious();
         return;
       }
       
+      // Fallback for local queue
       if (this.queueItems.length > 0 && this.currentQueueIndex > 0) {
         this.currentQueueIndex--;
         this.loadQueueItem(this.currentQueueIndex);
@@ -493,49 +499,21 @@
       return activeFound;
     }
     
-    setupAutoplayOnEnded() {
-      const videoElement = document.getElementById('inlineVideoPlayer');
-      if (!videoElement) return;
-      
-      if (this.boundHandleVideoEnded) {
-        videoElement.removeEventListener('ended', this.boundHandleVideoEnded);
-      }
-      
-      this.boundHandleVideoEnded = () => {
-        const autoplayToggle = document.getElementById('autoplayToggle');
-        const isAutoplayEnabled = autoplayToggle?.classList.contains('active') !== false;
-        
-        if (isAutoplayEnabled) {
-          console.log('🎬 Video ended, autoplaying next...');
-          
-          if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
-            const currentIndex = window.currentPlaylistItems.findIndex(
-              i => i.id === window.currentContent?.id
-            );
-            
-            if (currentIndex >= 0 && currentIndex + 1 < window.currentPlaylistItems.length) {
-              const nextItem = window.currentPlaylistItems[currentIndex + 1];
-              
-              setTimeout(() => {
-                if (typeof window.playPlaylistItemByIndex === 'function') {
-                  window.playPlaylistItemByIndex(currentIndex + 1);
-                } else if (typeof window.playPlaylistItem === 'function') {
-                  window.playPlaylistItem(nextItem.id, currentIndex + 1);
-                }
-              }, 500);
-              return;
-            }
-          }
-          
-          this.playNextTrack();
-        } else {
-          console.log('⏸️ Video ended, autoplay disabled');
-        }
-      };
-      
-      videoElement.addEventListener('ended', this.boundHandleVideoEnded);
-      console.log('✅ Autoplay on ended handler setup complete');
-    }
+    // =====================================================
+    // 🚨 AUTOPLAY ON ENDED - COMPLETELY REMOVED
+    // The player's 'ended' event is now handled EXCLUSIVELY by content-detail.js
+    // This function is intentionally left empty/removed
+    // =====================================================
+    
+    // 🚨 REMOVED: setupAutoplayOnEnded() - NO LONGER EXISTS
+    // 🚨 REMOVED: this.boundHandleVideoEnded - NO LONGER EXISTS
+    // 🚨 REMOVED: ended event listener for autoplay
+    
+    // The correct flow is:
+    // 1. video-player.js fires 'ended' event
+    // 2. content-detail.js's setupPlayerEndedListener() catches it
+    // 3. content-detail.js calls window.playNextPlaylistItem()
+    // 4. content-detail.js handles all playlist logic
     
     syncQueueWithPlaylistUI() {
       if (this.playlistSyncInterval) {
@@ -952,18 +930,21 @@
       window.videoPlayerFeatures = this;
       
       console.log('🚀 Initializing Phase 1 video player fixes and Phase 1D enhancements...');
+      console.log('🎯 NOTE: Autoplay is now handled by content-detail.js (YouTube-style)');
+      console.log('🎯 video-player-features.js does NOT contain any ended event handlers');
       
       this.removeDuplicateControls();
       this.setupFullscreenFix();
       this.setupMemoryLeakFix();
-      this.setupQueueControls();
-      this.restoreQueueFromStorage();
-      this.setupAutoplayOnEnded();
+      this.setupQueueControls(); // Navigation only - no autoplay
+      // 🚨 REMOVED: this.setupAutoplayOnEnded() - NO LONGER EXISTS
       this.setupPlaybackStateCleanup();
       this.syncQueueWithPlaylistUI();
+      this.restoreQueueFromStorage();
       
       this.initialized = true;
       console.log('✅ Phase 1 and Phase 1D fixes initialized successfully');
+      console.log('✅ NO duplicate autoplay system - ended events go to content-detail.js only');
       
       this.setupAdditionalEventListeners();
       this.setupPlaybackTracking();
@@ -984,6 +965,10 @@
       
       videoElement.addEventListener('ended', () => {
         this.markPlaybackEnded();
+        // 🚨 IMPORTANT: Do NOT handle autoplay here!
+        // The ended event is also handled by content-detail.js's setupPlayerEndedListener()
+        // That is the correct place for playlist progression logic
+        console.log('🎬 Video ended - playlist progression handled by content-detail.js');
       });
       
       console.log('✅ Playback tracking initialized');
@@ -1076,7 +1061,7 @@
               if (autoplayToggle) {
                 const isActive = autoplayToggle.classList.toggle('active');
                 localStorage.setItem('bantu_autoplay_enabled', isActive);
-                console.log('🎵 Autoplay toggled via keyboard:', isActive ? 'ON' : 'OFF');
+                console.log('🎵 Autoplay setting saved via keyboard:', isActive ? 'ON' : 'OFF');
               }
             }
             break;
@@ -1170,7 +1155,7 @@
       }
       
       if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
-        const currentIndex = window.currentPlaylistItems.findIndex(i => i.id === contentId);
+        const currentIndex = window.currentPlaylistIndex || 0;
         const progressEl = document.getElementById('playlistProgress');
         
         if (progressEl && currentIndex >= 0) {
@@ -1293,8 +1278,10 @@
   console.log('  ✅ CRITICAL FIX #7: Prevent cleanup during active playback');
   console.log('  ✅ CRITICAL FIX #8: Prevent cleanup during UI interactions');
   console.log('  ✅ CRITICAL FIX #9: Only destroy player on page unload or true content change');
-  console.log('  ✅ Playlist autoplay and queue sync');
-  console.log('  🔧 VIEWS FIX #1-4: View recording with RPC and frontend updates (NO premature early exit)');
-  console.log('  🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system - album UI now ONLY in content-detail.js');
+  console.log('  ✅ Queue UI sync and navigation buttons');
+  console.log('  🔧 VIEWS FIX #1-4: View recording with RPC and frontend updates');
+  console.log('  🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system');
+  console.log('  🚨 DUPLICATE AUTOPLAY REMOVED: NO ended event handlers for auto-advance');
+  console.log('  🎯 Player progression now handled EXCLUSIVELY by content-detail.js');
 
 })();
