@@ -101,6 +101,12 @@
 // - Added playlistCompleting flag to prevent loops
 // - Fixed contentId desync during autoplay
 // ============================================
+// 🎯 DIRECT USER GESTURE PLAYBACK FIX (2026-05-22):
+// - Added startPlaybackFromUserGesture for immediate unmuted playback
+// - loadContentIntoPlayer now reuses existing player instance
+// - Added loadSource method for non-destructive source changes
+// - Fixed autoplay blocking with user interaction tracking
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
@@ -135,7 +141,195 @@ let isAlbumExpanded = false;
 let _albumToggleInitialized = false; // Prevent duplicate initialization
 
 // ============================================
-// 🎯 CENTRALIZED PLAYLIST UI SYNC FUNCTION (ADDED)
+// 🎯 DIRECT USER GESTURE PLAYBACK - FIX #1
+// ============================================
+const startPlaybackFromUserGesture = async () => {
+    try {
+        // Check both possible player references
+        const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+        if (!player || !player.video) {
+            console.error('❌ Player instance or native video element not found.');
+            return;
+        }
+
+        const video = player.video;
+
+        // CRITICAL: Force browser parameters directly in the click lifecycle loop
+        video.muted = false;
+        video.volume = 1.0;
+        window.userHasInteractedWithMedia = true;
+        document.body.classList.add('user-interacted');
+
+        await video.play();
+        console.log('🔊 Core playback successfully initiated via direct user gesture.');
+
+        // Hide the play overlay if visible
+        const overlay = document.getElementById('initialPlayOverlay');
+        if (overlay) overlay.classList.add('hidden');
+
+    } catch (error) {
+        console.warn('⚠️ Direct unmuted playback failed, attempting safe muted fallback:', error.message);
+        try {
+            const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+            if (player && player.video) {
+                player.video.muted = true;
+                await player.video.play();
+                console.log('✅ Muted fallback playback started');
+            }
+        } catch (fallbackError) {
+            console.error('❌ Fallback media playback completely blocked:', fallbackError);
+        }
+    }
+};
+
+// ============================================
+// 🎯 LOAD CONTENT INTO PLAYER - NON-DESTRUCTIVE (FIX #4)
+// ============================================
+async function loadContentIntoPlayer(content, index = null) {
+    if (!content) return;
+
+    const player = document.getElementById('inlinePlayer');
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    const placeholder = document.getElementById('videoPlaceholder');
+
+    if (!player || !videoElement) {
+        console.warn('Player elements not ready');
+        return;
+    }
+
+    // Update global state
+    if (index !== null) {
+        window.currentPlaylistIndex = index;
+    }
+    window.currentContentId = content.id;
+
+    player.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+
+    const heroPoster = document.getElementById('heroPoster');
+    if (heroPoster) heroPoster.style.opacity = '0.3';
+
+    const closeFromHero = document.getElementById('closePlayerFromHero');
+    if (closeFromHero) closeFromHero.style.display = 'flex';
+
+    // Get media URL
+    let fileUrl = getPlayableMediaUrl(content);
+    console.log('📥 Loading media URL:', fileUrl);
+
+    if (fileUrl && !fileUrl.startsWith('http')) {
+        if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
+        fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
+    }
+
+    if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
+        if (content.thumbnail_url) {
+            const cleanPath = content.thumbnail_url.startsWith('/') ? content.thumbnail_url.substring(1) : content.thumbnail_url;
+            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+        }
+    }
+
+    const isAudio = detectMediaType(content) === 'audio';
+
+    if (isAudio && content.thumbnail_url) {
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+        videoElement.setAttribute('poster', imgUrl);
+        videoElement.classList.add('audio-mode');
+    } else {
+        videoElement.removeAttribute('poster');
+        videoElement.classList.remove('audio-mode');
+    }
+
+    function getMediaMimeType(url = '') {
+        const lower = url.toLowerCase();
+        if (lower.endsWith('.mp4')) return 'video/mp4';
+        if (lower.endsWith('.webm')) return 'video/webm';
+        if (lower.endsWith('.mov')) return 'video/quicktime';
+        if (lower.endsWith('.mp3')) return 'audio/mpeg';
+        if (lower.endsWith('.wav')) return 'audio/wav';
+        if (lower.endsWith('.ogg')) return 'audio/ogg';
+        if (lower.endsWith('.m4a')) return 'audio/mp4';
+        return 'video/mp4';
+    }
+
+    // CRITICAL: REUSE existing player instead of destroying and recreating
+    if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
+        // Use loadSource method if available (non-destructive)
+        console.log('♻️ Reusing existing player instance with loadSource');
+        await window.enhancedVideoPlayer.loadSource({
+            url: fileUrl,
+            type: getMediaMimeType(fileUrl),
+            title: content.title
+        });
+    } else if (enhancedVideoPlayer && typeof enhancedVideoPlayer.loadSource === 'function') {
+        console.log('♻️ Reusing existing player instance (fallback) with loadSource');
+        await enhancedVideoPlayer.loadSource({
+            url: fileUrl,
+            type: getMediaMimeType(fileUrl),
+            title: content.title
+        });
+    } else {
+        // Fallback: update source directly without destroying player
+        console.log('⚠️ loadSource not available, updating video source directly');
+        
+        // Stop watch session if active
+        if (watchSession) {
+            watchSession.stop();
+            watchSession = null;
+        }
+
+        // Remove all source elements and recreate
+        while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
+        videoElement.removeAttribute('src');
+        
+        const source = document.createElement('source');
+        source.src = fileUrl;
+        source.type = getMediaMimeType(fileUrl);
+        videoElement.appendChild(source);
+        videoElement.load();
+    }
+
+    // Update streaming manager if needed
+    setTimeout(() => {
+        if (streamingManager) {
+            streamingManager.destroy();
+            streamingManager = null;
+        }
+        initializeStreamingManager();
+    }, 100);
+
+    // Autoplay after source is ready (respecting user interaction)
+    setTimeout(async () => {
+        try {
+            const canAutoplay = document.body.classList.contains('user-interacted');
+            if (!canAutoplay) {
+                console.log('⛔ Autoplay blocked until user interaction');
+                showInitialPlayOverlay();
+                return;
+            }
+            
+            const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+            if (player && typeof player.play === 'function') {
+                await player.play();
+            } else {
+                await videoElement.play();
+            }
+            console.log('▶️ Playback started successfully');
+            
+            const overlay = document.getElementById('initialPlayOverlay');
+            if (overlay) overlay.classList.add('hidden');
+        } catch (error) {
+            console.warn('⚠️ Playback blocked:', error);
+            showInitialPlayOverlay();
+        }
+    }, 300);
+
+    setTimeout(() => {
+        player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+// ============================================
+// 🎯 CENTRALIZED PLAYLIST UI SYNC FUNCTION
 // ============================================
 function syncPlaylistUI() {
     if (!window.currentPlaylistItems || window.currentPlaylistItems.length === 0) {
@@ -182,7 +376,7 @@ function syncPlaylistUI() {
 }
 
 // ============================================
-// 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD (UPDATED)
+// 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD
 // ============================================
 window.playNextPlaylistItem = async function() {
     // Prevent multiple simultaneous completions
@@ -223,15 +417,11 @@ window.playNextPlaylistItem = async function() {
     console.log(`⏭️ Advancing to track ${nextIndex + 1}:`, nextItem.title);
 
     // Load the next content into player
-    if (typeof loadContentIntoPlayer === 'function') {
-        await loadContentIntoPlayer(nextItem, nextIndex);
-    } else {
-        console.error('❌ loadContentIntoPlayer function not available');
-    }
+    await loadContentIntoPlayer(nextItem, nextIndex);
 };
 
 // ============================================
-// 🎯 RESET COMPLETION LOCK FOR NEW PLAYLISTS (ADDED)
+// 🎯 RESET COMPLETION LOCK FOR NEW PLAYLISTS
 // ============================================
 function resetPlaylistCompletionLock() {
     window.playlistCompleting = false;
@@ -239,7 +429,7 @@ function resetPlaylistCompletionLock() {
 }
 
 // ============================================
-// 🎯 PLAY PLAYLIST ITEM BY INDEX WITH SYNC (UPDATED)
+// 🎯 PLAY PLAYLIST ITEM BY INDEX WITH SYNC
 // ============================================
 async function playPlaylistItemByIndex(index) {
     if (!window.currentPlaylistItems?.[index]) {
@@ -266,7 +456,7 @@ async function playPlaylistItemByIndex(index) {
 window.playPlaylistItemByIndex = playPlaylistItemByIndex;
 
 // ============================================
-// 🎯 PLAY PLAYLIST ITEM BY CONTENT ID WITH SYNC (ADDED)
+// 🎯 PLAY PLAYLIST ITEM BY CONTENT ID WITH SYNC
 // ============================================
 window.playPlaylistItem = async (contentId, index) => {
     if (window.currentPlaylistItems && window.currentPlaylistItems[index] && window.currentPlaylistItems[index].id === contentId) {
@@ -479,7 +669,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
 
         window.currentPlaylistItems = normalizedItems;
         window.currentPlaylistIndex = 0;
-        resetPlaylistCompletionLock(); // Reset completion lock for new playlist
+        resetPlaylistCompletionLock();
 
         const { data: playlistMeta, error: metaError } = await window.supabaseClient
             .from('creator_playlists')
@@ -639,7 +829,7 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
 
     window.currentPlaylistItems = normalizedItems;
     window.currentPlaylistIndex = 0;
-    resetPlaylistCompletionLock(); // Reset completion lock for new playlist
+    resetPlaylistCompletionLock();
 
     const { data: playlistMeta, error: metaError } = await window.supabaseClient
         .from('creator_playlists')
@@ -743,104 +933,321 @@ function highlightActivePlaylistItem(contentId) {
     });
 }
 
-function renderPlaylistQueue(items) {
-    const container = document.getElementById('playlistQueue');
-    if (!container) {
-        console.warn('⚠️ Playlist queue container not found');
-        return;
-    }
-    if (!items || items.length === 0) {
-        container.innerHTML = `
-            <div class="playlist-empty">
-                <i class="fas fa-music"></i>
-                <p>No items in this playlist</p>
-            </div>
-        `;
-        return;
-    }
-    container.innerHTML = items.map((item, index) => `
-        <div class="playlist-queue-item ${index === 0 ? 'active' : ''}" 
-             data-index="${index}" 
-             data-content-id="${item.id}">
-            <div class="playlist-thumb">
-                <img src="${item.thumbnail_url || 'assets/default-thumbnail.jpg'}" 
-                     alt="${escapeHtml(item.title || 'Untitled')}"
-                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=140&h=80&fit=crop'">
-            </div>
-            <div class="playlist-meta">
-                <div class="playlist-item-title">${escapeHtml(item.title || 'Untitled')}</div>
-                <div class="playlist-item-subtitle">${formatDuration(item.duration || 0)}</div>
-            </div>
-        </div>
-    `).join('');
-    setupPlaylistQueueEvents();
-}
+// ============================================
+// 🎯 SETUP EVENT LISTENERS WITH DIRECT USER GESTURE
+// ============================================
+function setupEventListeners() {
+    console.log('🔧 Setting up event listeners with direct user gesture playback...');
 
-function setupPlaylistQueueEvents() {
-    document.querySelectorAll('.playlist-queue-item').forEach(item => {
-        item.addEventListener('click', async () => {
-            const index = Number(item.dataset.index);
-            await playPlaylistItemByIndex(index);
+    // DIRECT USER GESTURE PLAYBACK - FIX #1
+    const playBtn = document.getElementById('playBtn');
+    if (playBtn) {
+        // Remove existing listeners
+        const newPlayBtn = playBtn.cloneNode(true);
+        playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
+        newPlayBtn.addEventListener('click', startPlaybackFromUserGesture);
+        console.log('✅ Play button bound to direct user gesture');
+    }
+
+    const playAlbumBtn = document.getElementById('playAlbumBtn');
+    if (playAlbumBtn) {
+        const newPlayAlbumBtn = playAlbumBtn.cloneNode(true);
+        playAlbumBtn.parentNode.replaceChild(newPlayAlbumBtn, playAlbumBtn);
+        newPlayAlbumBtn.addEventListener('click', startPlaybackFromUserGesture);
+        console.log('✅ Play Album button bound to direct user gesture');
+    }
+
+    // Play now button from playlist
+    const playNowBtn = document.getElementById('playNowBtn');
+    if (playNowBtn) {
+        const newPlayNowBtn = playNowBtn.cloneNode(true);
+        playNowBtn.parentNode.replaceChild(newPlayNowBtn, playNowBtn);
+        newPlayNowBtn.addEventListener('click', startPlaybackFromUserGesture);
+        console.log('✅ Play Now button bound to direct user gesture');
+    }
+
+    const poster = document.getElementById('heroPoster');
+    if (poster) {
+        const newPoster = poster.cloneNode(true);
+        poster.parentNode.replaceChild(newPoster, poster);
+        newPoster.addEventListener('click', startPlaybackFromUserGesture);
+    }
+
+    const closeFromHero = document.getElementById('closePlayerFromHero');
+    if (closeFromHero) {
+        closeFromHero.addEventListener('click', function() {
+            closeVideoPlayer();
         });
-    });
-}
-
-// ============================================
-// 🚀 PHASE 5: UPDATED CONTENT PROFILE FETCHING WITH .maybeSingle()
-// ============================================
-async function fetchContentProfileDetails(contentId) {
-    try {
-        const { data: mediaAsset, error: fetchError } = await window.supabaseClient
-            .from('Content')
-            .select(`
-                id,
-                title,
-                description,
-                thumbnail_url,
-                file_url,
-                duration,
-                media_type,
-                content_format,
-                created_at,
-                user_id,
-                user_profiles!user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                ),
-                content_engagement_stats (
-                    total_views,
-                    total_valid_views,
-                    total_likes,
-                    total_comments
-                )
-            `)
-            .eq('id', contentId)
-            .maybeSingle();
-
-        if (fetchError) throw fetchError;
-        if (!mediaAsset) return null;
-
-        const clientPayload = {
-            ...mediaAsset,
-            views_count: mediaAsset.content_engagement_stats?.total_views || 0,
-            likes_count: mediaAsset.content_engagement_stats?.total_likes || 0,
-            valid_views_count: mediaAsset.content_engagement_stats?.total_valid_views || 0,
-            comments_count: mediaAsset.content_engagement_stats?.total_comments || 0,
-            creator: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || (isPlaylistMode && currentPlaylist ? currentPlaylist.creator_name : 'Creator'),
-            creator_display_name: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || (isPlaylistMode && currentPlaylist ? currentPlaylist.creator_name : 'Creator'),
-            creator_id: mediaAsset.user_id
-        };
-        return clientPayload;
-    } catch (error) {
-        console.error("Critical Profile Fetch Interruption:", error.message);
-        return null;
     }
+
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const fullPlayerBtn = document.getElementById('fullPlayerBtn');
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+            if (player) {
+                player.toggleFullscreen();
+            }
+        });
+    }
+    if (fullPlayerBtn) {
+        fullPlayerBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+            if (player) {
+                player.toggleFullscreen();
+            }
+        });
+    }
+
+    requestAnimationFrame(() => {
+        setupAlbumToggle();
+    });
+    
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', handleLikeButtonClick);
+    }
+    
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', async function() {
+            if (!currentContent) return;
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                showToast('Sign in to favorite content', 'warning');
+                return;
+            }
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
+                return;
+            }
+            const isFavorited = favoriteBtn.classList.contains('active');
+            const favCountEl = document.getElementById('favoritesCount');
+            const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
+            const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
+            try {
+                favoriteBtn.classList.toggle('active', !isFavorited);
+                favoriteBtn.innerHTML = !isFavorited
+                    ? '<i class="fas fa-star"></i><span>Favorited</span>'
+                    : '<i class="far fa-star"></i><span>Favorite</span>';
+                if (favCountEl) {
+                    favCountEl.textContent = formatNumber(newFavorites);
+                }
+                if (!isFavorited) {
+                    favoritedContentCache.add(currentContent.id);
+                    const { error } = await window.supabaseClient
+                        .from('favorites')
+                        .insert({
+                            user_id: userProfile.id,
+                            content_id: currentContent.id
+                        });
+                    if (error) throw error;
+                } else {
+                    favoritedContentCache.delete(currentContent.id);
+                    const { error } = await window.supabaseClient
+                        .from('favorites')
+                        .delete()
+                        .eq('user_id', userProfile.id)
+                        .eq('content_id', currentContent.id);
+                    if (error) throw error;
+                }
+                const { error: updateError } = await window.supabaseClient
+                    .from('Content')
+                    .update({ favorites_count: newFavorites })
+                    .eq('id', currentContent.id);
+                if (updateError) {
+                    console.warn('Favorites count update failed:', updateError);
+                }
+                currentContent.favorites_count = newFavorites;
+                showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
+                await refreshCountsFromSource();
+            } catch (error) {
+                console.error('Favorite update failed:', error);
+                favoriteBtn.classList.toggle('active', isFavorited);
+                favoriteBtn.innerHTML = isFavorited
+                    ? '<i class="fas fa-star"></i><span>Favorited</span>'
+                    : '<i class="far fa-star"></i><span>Favorite</span>';
+                if (favCountEl) {
+                    favCountEl.textContent = formatNumber(currentFavorites);
+                }
+                showToast('Failed to update favorite', 'error');
+            }
+        });
+    }
+    
+    setupWatchLaterButton();
+    
+    const refreshBtn = document.getElementById('refreshCommentsBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async function() {
+            const contentIdForComments = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+            if (contentIdForComments) {
+                showToast('Refreshing comments...', 'info');
+                await loadComments(contentIdForComments);
+                showToast('Comments refreshed!', 'success');
+            }
+        });
+    }
+    
+    const sendBtn = document.getElementById('sendCommentBtn');
+    const commentInput = document.getElementById('commentInput');
+    if (sendBtn && commentInput) {
+        sendBtn.addEventListener('click', async function() {
+            const text = commentInput.value.trim();
+            if (!text) {
+                showToast('Please enter a comment', 'warning');
+                return;
+            }
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                showToast('You need to sign in to comment', 'warning');
+                return;
+            }
+            const contentIdForComment = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+            if (!contentIdForComment) return;
+            const originalHTML = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            sendBtn.disabled = true;
+            try {
+                const userProfile = window.AuthHelper.getUserProfile();
+                const displayName = window.AuthHelper.getDisplayName();
+                const avatarUrl = window.AuthHelper.getAvatarUrl();
+                if (!userProfile?.id) {
+                    throw new Error('User profile not found');
+                }
+                const { data: newComment, error: insertError } = await window.supabaseClient
+                    .from('comments')
+                    .insert({
+                        content_id: contentIdForComment,
+                        user_id: userProfile.id,
+                        author_name: displayName,
+                        comment_text: text,
+                        author_avatar: avatarUrl || null,
+                        created_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+                if (insertError) {
+                    console.error('Comment insert error:', insertError);
+                    throw insertError;
+                }
+                console.log('✅ Comment inserted:', newComment);
+                await loadComments(contentIdForComment);
+                await refreshCountsFromSource();
+                commentInput.value = '';
+                showToast('Comment added!', 'success');
+                if (window.track?.contentComment) {
+                    window.track.contentComment(contentIdForComment);
+                }
+            } catch (error) {
+                console.error('❌ Comment submission failed:', error);
+                showToast(error.message || 'Failed to add comment', 'error');
+            } finally {
+                sendBtn.innerHTML = originalHTML;
+                sendBtn.disabled = false;
+            }
+        });
+        commentInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
+                e.preventDefault();
+                sendBtn.click();
+            }
+        });
+    }
+    
+    const backToTopBtn = document.getElementById('backToTopBtn');
+    if (backToTopBtn) {
+        backToTopBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.style.display = 'flex';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+    }
+    
+    const pipBtn = document.getElementById('pipBtn');
+    if (pipBtn) {
+        pipBtn.addEventListener('click', function() {
+            const video = document.getElementById('inlineVideoPlayer');
+            if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
+                video.requestPictureInPicture();
+            }
+        });
+    }
+    
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async function() {
+            if (!currentContent) return;
+            const shareText = `📺 ${currentContent.title}
+${currentContent.description || 'Check out this amazing content!'}
+👉 Watch on Bantu Stream Connect
+NO DNA, JUST RSA
+`;
+            const shareUrl = window.location.href;
+            try {
+                if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
+                    await navigator.share({
+                        title: 'Bantu Stream Connect',
+                        text: shareText,
+                        url: shareUrl
+                    });
+                } else {
+                    await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
+                    showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
+                    if (window.track?.contentShare) {
+                        window.track.contentShare(currentContent.id, 'clipboard');
+                    }
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Share failed:', err);
+                    showToast('Failed to share. Try copying link manually.', 'error');
+                }
+            }
+        });
+    }
+    setupConnectButtons();
+    setupInitialPlayButton();
+    setupViewSyncListener();
+    console.log('✅ Event listeners setup complete');
 }
 
 // ============================================
-// 🚀 PHASE 5: UPDATED VIEW RECORDING WITH PLAYBACK SESSIONS
+// 🎯 INITIAL PLAY OVERLAY
+// ============================================
+function showInitialPlayOverlay() {
+    const overlay = document.getElementById('initialPlayOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+}
+
+function setupInitialPlayButton() {
+    const playButton = document.getElementById('initialPlayButton');
+    if (!playButton) return;
+    
+    const newPlayButton = playButton.cloneNode(true);
+    playButton.parentNode.replaceChild(newPlayButton, playButton);
+    
+    newPlayButton.addEventListener('click', startPlaybackFromUserGesture);
+    console.log('✅ Initial play overlay button bound to direct user gesture');
+}
+
+// ============================================
+// 🎯 HANDLE PLAY FUNCTION (Legacy compatibility)
+// ============================================
+function handlePlay() {
+    console.log('🎬 handlePlay CALLED - Delegating to startPlaybackFromUserGesture');
+    startPlaybackFromUserGesture();
+}
+
+// ============================================
+// 🎯 WATCH SESSION MANAGER (Keep existing implementation)
 // ============================================
 class WatchSessionManager {
     constructor(contentId, userId) {
@@ -984,7 +1391,7 @@ class WatchSessionManager {
 window.WatchSessionManager = WatchSessionManager;
 
 // ============================================
-// 🚀 PHASE 5: UPDATED LIKE BUTTON WITH ATOMIC RPC
+// 🎯 LIKE BUTTON FUNCTIONS
 // ============================================
 async function handleLikeButtonClick() {
     if (!currentContent) return;
@@ -1100,6 +1507,8 @@ async function checkUserLike(contentId, userId) {
 // ============================================
 document.addEventListener('click', () => {
     document.body.classList.add('user-interacted');
+    window.userHasInteractedWithMedia = true;
+    console.log('🎯 User interaction detected - autoplay unlocked');
 }, { once: true });
 
 // ============================================
@@ -1209,7 +1618,6 @@ async function loadCriticalContentData(contentId) {
         _cachedAt: Date.now()
     };
 
-    // Update global contentId
     window.currentContentId = currentContent.id;
 
     localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
@@ -1307,7 +1715,6 @@ async function loadContentFromURLLegacy() {
             episode_number: seriesData?.episode_number || null
         };
         
-        // Update global contentId
         window.currentContentId = currentContent.id;
         
         updateContentUI(currentContent);
@@ -1361,34 +1768,56 @@ async function initializeFavoriteButton(contentId, userId) {
 }
 
 // ============================================
-// 🚀 PHASE 5: UPDATED RECOMMENDATION ENGINE
+// 🚀 FETCH CONTENT PROFILE DETAILS
 // ============================================
-async function getEngineRecommendations(genreList, limit = 10) {
+async function fetchContentProfileDetails(contentId) {
     try {
-        let query = window.supabaseClient
-            .from('content_public_metrics')
+        const { data: mediaAsset, error: fetchError } = await window.supabaseClient
+            .from('Content')
             .select(`
                 id,
                 title,
+                description,
                 thumbnail_url,
-                total_views,
-                total_likes,
-                total_valid_views,
-                engagement_score
+                file_url,
+                duration,
+                media_type,
+                content_format,
+                created_at,
+                user_id,
+                user_profiles!user_id (
+                    id,
+                    full_name,
+                    username,
+                    avatar_url
+                ),
+                content_engagement_stats (
+                    total_views,
+                    total_valid_views,
+                    total_likes,
+                    total_comments
+                )
             `)
-            .order('total_views', { ascending: false })
-            .limit(limit);
+            .eq('id', contentId)
+            .maybeSingle();
 
-        const { data, error } = await query;
-        if (error) {
-            console.error("Recommendation Processing Failure:", error.message);
-            return [];
-        }
-        console.log(`🎯 PHASE 5: Loaded ${data?.length || 0} recommendations from content_public_metrics`);
-        return data || [];
+        if (fetchError) throw fetchError;
+        if (!mediaAsset) return null;
+
+        const clientPayload = {
+            ...mediaAsset,
+            views_count: mediaAsset.content_engagement_stats?.total_views || 0,
+            likes_count: mediaAsset.content_engagement_stats?.total_likes || 0,
+            valid_views_count: mediaAsset.content_engagement_stats?.total_valid_views || 0,
+            comments_count: mediaAsset.content_engagement_stats?.total_comments || 0,
+            creator: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || (isPlaylistMode && currentPlaylist ? currentPlaylist.creator_name : 'Creator'),
+            creator_display_name: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || (isPlaylistMode && currentPlaylist ? currentPlaylist.creator_name : 'Creator'),
+            creator_id: mediaAsset.user_id
+        };
+        return clientPayload;
     } catch (error) {
-        console.error('Recommendation engine error:', error);
-        return [];
+        console.error("Critical Profile Fetch Interruption:", error.message);
+        return null;
     }
 }
 
@@ -1460,8 +1889,13 @@ function resetViewRecordingState() {
 }
 
 function initializeWatchSessionOnPlay() {
-    if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
-        console.log('🚫 Cannot initialize watch session: missing content, user, or video');
+    if (!currentContent || !currentUserId) {
+        console.log('🚫 Cannot initialize watch session: missing content or user');
+        return;
+    }
+    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+    if (!player?.video) {
+        console.log('🚫 Cannot initialize watch session: video element not ready');
         return;
     }
     if (watchSession) {
@@ -1476,7 +1910,7 @@ function initializeWatchSessionOnPlay() {
         console.log('🎬 PHASE 5: Initializing WatchSessionManager with session:', sessionId);
         watchSession = new WatchSessionManager(currentContent.id, currentUserId);
         watchSession.initializeSession('Web', 'Desktop');
-        watchSession.start(enhancedVideoPlayer.video);
+        watchSession.start(player.video);
         window._watchSession = watchSession;
         console.log('✅ PHASE 5: Watch session started with ledger-style telemetry');
     } catch (error) {
@@ -1484,228 +1918,59 @@ function initializeWatchSessionOnPlay() {
     }
 }
 
-function handlePlay() {
-    console.log('🎬 handlePlay CALLED - Starting view recording with PHASE 5 ledger system...');
-    if (!currentContent) {
-        showToast('No content to play', 'error');
-        return;
-    }
+function closeVideoPlayer() {
     const player = document.getElementById('inlinePlayer');
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    if (!player || !videoElement) {
-        showToast('Video player not available', 'error');
-        return;
+    const video = document.getElementById('inlineVideoPlayer');
+    if (player) {
+        player.style.display = 'none';
     }
-    console.log('🎬 View recording will be handled by WatchSessionManager with 30-second threshold');
-    markContentAsViewed(currentContent.id);
-    loadHeavyVideoFeatures().then(() => {
-        player.style.display = 'block';
-        const placeholder = document.getElementById('videoPlaceholder');
-        if (placeholder) placeholder.style.display = 'none';
-        const heroPoster = document.getElementById('heroPoster');
-        if (heroPoster) heroPoster.style.opacity = '0.3';
-        const closeFromHero = document.getElementById('closePlayerFromHero');
-        if (closeFromHero) closeFromHero.style.display = 'flex';
-        videoElement.muted = false;
-        videoElement.defaultMuted = false;
-        videoElement.volume = 1.0;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        let fileUrl = getPlayableMediaUrl(currentContent);
-        console.log('📥 Raw file_url from database:', fileUrl);
-        if (fileUrl && !fileUrl.startsWith('http')) {
-            if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
-            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
-        }
-        if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined' || fileUrl === '') {
-            if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
-                const cleanPath = currentContent.thumbnail_url.startsWith('/') ? currentContent.thumbnail_url.substring(1) : currentContent.thumbnail_url;
-                fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-            }
-        }
-        console.log('🎵 Final file URL:', fileUrl);
-        const mediaType = detectMediaType(currentContent);
-        const isAudioFile = mediaType === 'audio';
-        const isVideoFile = !isAudioFile;
-        if (!fileUrl || (!isAudioFile && !isVideoFile)) {
-            console.error('❌ Invalid file format:', fileUrl);
-            showToast('Invalid file format', 'error');
-            return;
-        }
-        if (isAudioFile && currentContent.thumbnail_url) {
-            const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
-            videoElement.setAttribute('poster', imgUrl);
-            videoElement.classList.add('audio-mode');
-        } else {
-            videoElement.removeAttribute('poster');
-            videoElement.classList.remove('audio-mode');
-        }
-        const videoContainer = document.querySelector('.video-container');
-        if (videoContainer) {
-            videoContainer.setAttribute('data-media-type', isAudioFile ? 'audio' : 'video');
-        }
-        if (enhancedVideoPlayer) {
-            try { enhancedVideoPlayer.destroy(); } catch(e) {}
-            enhancedVideoPlayer = null;
-        }
-        if (watchSession) {
-            watchSession.stop();
-            watchSession = null;
-        }
-        while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
-        videoElement.removeAttribute('src');
-        videoElement.src = '';
-        function getMediaMimeType(url = '') {
-            const lower = url.toLowerCase();
-            if (lower.endsWith('.mp4')) return 'video/mp4';
-            if (lower.endsWith('.webm')) return 'video/webm';
-            if (lower.endsWith('.mov')) return 'video/quicktime';
-            if (lower.endsWith('.mp3')) return 'audio/mpeg';
-            if (lower.endsWith('.wav')) return 'audio/wav';
-            if (lower.endsWith('.ogg')) return 'audio/ogg';
-            if (lower.endsWith('.m4a')) return 'audio/mp4';
-            return 'video/mp4';
-        }
-        const source = document.createElement('source');
-        source.src = fileUrl;
-        source.type = getMediaMimeType(fileUrl);
-        videoElement.appendChild(source);
-        videoElement.load();
-        initializeEnhancedVideoPlayer();
-        setTimeout(() => {
-            if (streamingManager) {
-                streamingManager.destroy();
-                streamingManager = null;
-            }
-            initializeStreamingManager();
-        }, 100);
-        setTimeout(async () => {
-            try {
-                const canAutoplay = document.body.classList.contains('user-interacted');
-                if (!canAutoplay) {
-                    console.log('⛔ Autoplay blocked until user interaction');
-                    showInitialPlayOverlay();
-                    return;
-                }
-                if (enhancedVideoPlayer) {
-                    await enhancedVideoPlayer.play();
-                } else {
-                    await videoElement.play();
-                }
-                console.log('▶️ Playback started successfully');
-            } catch (error) {
-                console.warn('⚠️ Playback blocked:', error);
-                showInitialPlayOverlay();
-            }
-        }, 500);
-        setTimeout(() => {
-            player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-    }).catch(err => {
-        console.error('Failed to load video features:', err);
-        showToast('Video player error', 'error');
-    });
-}
-
-function showInitialPlayOverlay() {
-    const overlay = document.getElementById('initialPlayOverlay');
-    if (!overlay) return;
-    overlay.classList.remove('hidden');
-}
-
-async function loadContentIntoPlayer(content, index = null) {
-    if (!content) return;
-    const player = document.getElementById('inlinePlayer');
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (!player || !videoElement) {
-        console.warn('Player elements not ready');
-        return;
-    }
-    player.style.display = 'block';
-    if (placeholder) placeholder.style.display = 'none';
-    const heroPoster = document.getElementById('heroPoster');
-    if (heroPoster) heroPoster.style.opacity = '0.3';
-    const closeFromHero = document.getElementById('closePlayerFromHero');
-    if (closeFromHero) closeFromHero.style.display = 'flex';
-    let fileUrl = getPlayableMediaUrl(content);
-    console.log('📥 Loading media URL:', fileUrl);
-    if (fileUrl && !fileUrl.startsWith('http')) {
-        if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
-        fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
-    }
-    if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
-        if (content.thumbnail_url) {
-            const cleanPath = content.thumbnail_url.startsWith('/') ? content.thumbnail_url.substring(1) : content.thumbnail_url;
-            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-        }
-    }
-    const isAudio = detectMediaType(content) === 'audio';
-    if (isAudio && content.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-        videoElement.setAttribute('poster', imgUrl);
-        videoElement.classList.add('audio-mode');
-    } else {
-        videoElement.removeAttribute('poster');
-        videoElement.classList.remove('audio-mode');
-    }
-    function getMediaMimeType(url = '') {
-        const lower = url.toLowerCase();
-        if (lower.endsWith('.mp4')) return 'video/mp4';
-        if (lower.endsWith('.webm')) return 'video/webm';
-        if (lower.endsWith('.mov')) return 'video/quicktime';
-        if (lower.endsWith('.mp3')) return 'audio/mpeg';
-        if (lower.endsWith('.wav')) return 'audio/wav';
-        if (lower.endsWith('.ogg')) return 'audio/ogg';
-        if (lower.endsWith('.m4a')) return 'audio/mp4';
-        return 'video/mp4';
-    }
-    if (enhancedVideoPlayer) {
-        try { enhancedVideoPlayer.destroy(); } catch(e) {}
-        enhancedVideoPlayer = null;
+    if (video) {
+        video.pause();
+        video.currentTime = 0;
     }
     if (watchSession) {
         watchSession.stop();
         watchSession = null;
     }
-    while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
-    videoElement.removeAttribute('src');
-    const source = document.createElement('source');
-    source.src = fileUrl;
-    source.type = getMediaMimeType(fileUrl);
-    videoElement.appendChild(source);
-    videoElement.load();
-    initializeEnhancedVideoPlayer();
-    setTimeout(() => {
-        if (streamingManager) {
-            streamingManager.destroy();
-            streamingManager = null;
+    const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
+    if (playerInstance) {
+        if (playerInstance.video) {
+            playerInstance.video.pause();
+            playerInstance.video.currentTime = 0;
         }
-        initializeStreamingManager();
-    }, 100);
-    setTimeout(async () => {
-        try {
-            const canAutoplay = document.body.classList.contains('user-interacted');
-            if (!canAutoplay) {
-                console.log('⛔ Autoplay blocked until user interaction');
-                showInitialPlayOverlay();
-                return;
-            }
-            if (enhancedVideoPlayer) {
-                await enhancedVideoPlayer.play();
-            } else {
-                await videoElement.play();
-            }
-            console.log('▶️ Playback started successfully');
-            const overlay = document.getElementById('initialPlayOverlay');
-            if (overlay) overlay.classList.add('hidden');
-        } catch (error) {
-            console.warn('⚠️ Playback blocked:', error);
-            showInitialPlayOverlay();
+        // Don't destroy the player instance - just pause it
+        // playerInstance.destroy() would break the non-destructive architecture
+    }
+    if (streamingManager) {
+        streamingManager.destroy();
+        streamingManager = null;
+    }
+    if (viewValidationTimer) {
+        clearTimeout(viewValidationTimer);
+        viewValidationTimer = null;
+    }
+    if (window._currentPlayingContentId) {
+        if (window.cleanupContentSession) {
+            window.cleanupContentSession(window._currentPlayingContentId);
         }
-    }, 300);
-    setTimeout(() => {
-        player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+        window._currentPlayingContentId = null;
+    }
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (placeholder) {
+        placeholder.style.display = 'flex';
+    }
+    const heroPoster = document.getElementById('heroPoster');
+    if (heroPoster) {
+        heroPoster.style.opacity = '1';
+    }
+    const closeFromHero = document.getElementById('closePlayerFromHero');
+    if (closeFromHero) {
+        closeFromHero.style.display = 'none';
+    }
+    const hero = document.querySelector('.content-hero');
+    if (hero) {
+        hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 function getPlayableMediaUrl(content) {
@@ -1776,7 +2041,7 @@ function initializeEnhancedVideoPlayer() {
             quality: 'auto'
         };
         console.log('🎬 Creating EnhancedVideoPlayer with safe assignments...');
-        enhancedVideoPlayer = new EnhancedVideoPlayer({
+        const player = new EnhancedVideoPlayer({
             autoplay: preferences.autoplay,
             defaultSpeed: preferences.playbackSpeed,
             defaultQuality: preferences.quality,
@@ -1786,9 +2051,15 @@ function initializeEnhancedVideoPlayer() {
             supabaseClient: window.supabaseClient,
             userId: currentUserId
         });
-        enhancedVideoPlayer.attach(videoElement, videoContainer);
-        if (enhancedVideoPlayer.setCurrentTime) {
-            enhancedVideoPlayer.setCurrentTime = function(time) {
+        
+        // Store reference in both places for compatibility
+        enhancedVideoPlayer = player;
+        window.enhancedVideoPlayer = player;
+        
+        player.attach(videoElement, videoContainer);
+        
+        if (player.setCurrentTime) {
+            player.setCurrentTime = function(time) {
                 if (this.player) {
                     if (typeof time !== 'undefined') {
                         this.player.currentTime = time;
@@ -1796,51 +2067,68 @@ function initializeEnhancedVideoPlayer() {
                 }
             };
         }
-        if (enhancedVideoPlayer.setVolume) {
-            enhancedVideoPlayer.setVolume = function(value) {
+        if (player.setVolume) {
+            player.setVolume = function(value) {
                 if (this.player) {
                     this.player.volume = value;
                 }
             };
         }
-        if (enhancedVideoPlayer.setMuted) {
-            enhancedVideoPlayer.setMuted = function(isMuted) {
+        if (player.setMuted) {
+            player.setMuted = function(isMuted) {
                 if (this.player) {
                     this.player.muted = isMuted;
                 }
             };
         }
-        enhancedVideoPlayer.on('play', () => {
+        
+        // Add loadSource method for non-destructive source changes
+        player.loadSource = async function(sourceConfig) {
+            if (!player.video) return;
+            player.video.pause();
+            player.video.src = sourceConfig.url;
+            player.video.load();
+            if (document.body.classList.contains('user-interacted')) {
+                try {
+                    await player.video.play();
+                } catch(e) {
+                    console.warn('Auto-play after source change blocked:', e);
+                }
+            }
+            console.log('🔄 Source changed without destroying player:', sourceConfig.url);
+        };
+        
+        player.on('play', () => {
             console.log('▶️ Video playing...');
             if (window.stateManager) {
                 window.stateManager.setState('session.playing', true);
             }
             initializeWatchSessionOnPlay();
         });
-        enhancedVideoPlayer.on('pause', () => {
+        player.on('pause', () => {
             if (window.stateManager) {
                 window.stateManager.setState('session.playing', false);
             }
         });
-        enhancedVideoPlayer.on('volumechange', (volume) => {
+        player.on('volumechange', (volume) => {
             if (window.stateManager) {
                 window.stateManager.setState('session.volume', volume);
             }
         });
-        enhancedVideoPlayer.on('error', (event) => {
-            const media = enhancedVideoPlayer?.video;
+        player.on('error', (event) => {
+            const media = player?.video;
             if (media && media.error === null && media.networkState !== 3) {
                 return;
             }
             console.error('🔴 Video player error:', event);
             showToast('Playback error occurred', 'error');
         });
-        enhancedVideoPlayer.on('loadeddata', () => {
+        player.on('loadeddata', () => {
             console.log('✅ Video metadata loaded, ready to play');
             const placeholder = document.getElementById('videoPlaceholder');
             if (placeholder) placeholder.style.display = 'none';
         });
-        enhancedVideoPlayer.on('canplay', () => {
+        player.on('canplay', () => {
             console.log('✅ Video can start playing');
         });
         console.log('✅ Enhanced video player initialized with safe assignments and contentId:', window.currentContentId);
@@ -1851,195 +2139,564 @@ function initializeEnhancedVideoPlayer() {
     }
 }
 
-function closeVideoPlayer() {
-    const player = document.getElementById('inlinePlayer');
-    const video = document.getElementById('inlineVideoPlayer');
-    if (player) {
-        player.style.display = 'none';
-    }
-    if (video) {
-        video.pause();
-        video.currentTime = 0;
-    }
-    if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-    }
-    if (enhancedVideoPlayer) {
-        if (enhancedVideoPlayer.video) {
-            enhancedVideoPlayer.video.pause();
-            enhancedVideoPlayer.video.currentTime = 0;
-        }
-        enhancedVideoPlayer.destroy();
-        enhancedVideoPlayer = null;
-    }
-    if (streamingManager) {
-        streamingManager.destroy();
-        streamingManager = null;
-    }
-    if (viewValidationTimer) {
-        clearTimeout(viewValidationTimer);
-        viewValidationTimer = null;
-    }
-    if (window._currentPlayingContentId) {
-        if (window.cleanupContentSession) {
-            window.cleanupContentSession(window._currentPlayingContentId);
-        }
-        window._currentPlayingContentId = null;
-    }
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) {
-        placeholder.style.display = 'flex';
-    }
-    const heroPoster = document.getElementById('heroPoster');
-    if (heroPoster) {
-        heroPoster.style.opacity = '1';
-    }
-    const closeFromHero = document.getElementById('closePlayerFromHero');
-    if (closeFromHero) {
-        closeFromHero.style.display = 'none';
-    }
-    const hero = document.querySelector('.content-hero');
-    if (hero) {
-        hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
+// ============================================
+// UI UPDATE FUNCTIONS
+// ============================================
+let likedContentCache = new Set();
+let favoritedContentCache = new Set();
 
-function initializeKeyboardShortcuts() {
-    if (!window.KeyboardShortcuts) {
-        console.warn('⚠️ KeyboardShortcuts not loaded yet');
-        return;
+function updateContentUI(content) {
+    if (!content) return;
+    safeSetText('contentTitle', content.title);
+    const creatorName = content.creator || (currentPlaylist?.creator_name || currentPlaylist?.creator_username || 'Creator');
+    safeSetText('creatorName', creatorName);
+    safeSetText('creatorDisplayName', creatorName);
+    safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
+    safeSetText('viewsCountFull', formatNumber(content.views_count));
+    safeSetText('likesCount', formatNumber(content.likes_count));
+    safeSetText('favoritesCount', formatNumber(content.favorites_count));
+    safeSetText('commentsCount', `(${formatNumber(content.comments_count)})`);
+    const duration = formatDuration(content.duration || 3600);
+    safeSetText('durationText', duration);
+    safeSetText('contentDurationFull', duration);
+    safeSetText('uploadDate', formatDate(content.created_at));
+    safeSetText('contentGenre', content.genre || 'General');
+    safeSetText('contentDescriptionShort', truncateText(content.description, 150));
+    safeSetText('contentDescriptionFull', content.description);
+    
+    const creatorAvatar = document.getElementById('creatorAvatar');
+    if (creatorAvatar && content.user_profiles) {
+        const avatarUrl = content.user_profiles.avatar_url;
+        const displayName = content.user_profiles.full_name || content.user_profiles.username || (currentPlaylist?.creator_name || 'Creator');
+        const initial = displayName.charAt(0).toUpperCase();
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && avatarUrl !== '') {
+            const fixedAvatarUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+            creatorAvatar.innerHTML = `
+                <img src="${fixedAvatarUrl}" 
+                     alt="${escapeHtml(displayName)}" 
+                     style="width:100%; height:100%; border-radius:50%; object-fit:cover;"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22>${initial}</text></svg>'">
+            `;
+            console.log('✅ Creator avatar set from URL:', fixedAvatarUrl);
+        } else {
+            creatorAvatar.innerHTML = `
+                <div style="
+                    width:100%;
+                    height:100%;
+                    border-radius:50%;
+                    background:linear-gradient(135deg, #1D4ED8, #F59E0B);
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    color:white;
+                    font-weight:bold;
+                    font-size:1.5rem;
+                ">${initial}</div>
+            `;
+            console.log('✅ Creator avatar fallback to initials:', initial);
+        }
     }
-    if (!enhancedVideoPlayer?.video) {
-        console.warn('⚠️ Video player not ready for keyboard shortcuts');
-        return;
-    }
-    try {
-        keyboardShortcuts = new window.KeyboardShortcuts({
-            videoElement: enhancedVideoPlayer.video,
-            supabaseClient: window.supabaseClient,
-            contentId: currentContent?.id
-        });
-        window.keyboardShortcuts = keyboardShortcuts;
-        console.log('✅ Keyboard shortcuts initialized');
-    } catch (error) {
-        console.error('❌ Failed to initialize keyboard shortcuts:', error);
-    }
-}
-
-function initializePlaylistModal() {
-    if (!window.PlaylistModal) {
-        console.warn('⚠️ PlaylistModal not loaded yet');
-        return;
-    }
-    if (!currentUserId || !(currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id))) {
-        console.warn('⚠️ Cannot initialize playlist modal: missing user or content');
-        return;
-    }
-    const contentIdForModal = currentContent?.id || (currentPlaylistItems && currentPlaylistItems[0]?.id);
-    if (!contentIdForModal) return;
-    try {
-        playlistModal = new window.PlaylistModal({
-            supabase: window.supabaseClient,
-            userId: currentUserId,
-            contentId: contentIdForModal
-        });
-        window.playlistModal = playlistModal;
-        const watchLaterBtn = document.getElementById('watchLaterBtn');
-        if (watchLaterBtn) {
-            const newBtn = watchLaterBtn.cloneNode(true);
-            watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
-            newBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (!currentUserId) {
-                    showToast('Please sign in to use playlists', 'warning');
-                    const redirect = encodeURIComponent(window.location.href);
-                    window.location.href = `login.html?redirect=${redirect}`;
-                    return;
-                }
-                playlistModal.open();
+    
+    const creatorSection = document.querySelector('.creator-section');
+    const creatorInfo = document.querySelector('.creator-info');
+    if (creatorSection && content.creator_id) {
+        creatorSection.style.cursor = 'pointer';
+        if (creatorInfo) {
+            const newCreatorInfo = creatorInfo.cloneNode(true);
+            creatorInfo.parentNode.replaceChild(newCreatorInfo, creatorInfo);
+            newCreatorInfo.addEventListener('click', function(e) {
+                if (e.target.closest('.connect-btn')) return;
+                window.location.href = `creator-channel.html?id=${content.creator_id}&name=${encodeURIComponent(content.creator_display_name || creatorName)}`;
             });
         }
-        console.log('✅ Playlist modal initialized');
-    } catch (error) {
-        console.error('❌ Failed to initialize playlist modal:', error);
+    }
+    
+    const posterPlaceholder = document.getElementById('posterPlaceholder');
+    if (posterPlaceholder && content.thumbnail_url) {
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+        posterPlaceholder.innerHTML = `
+            <img src="${imgUrl}" alt="${content.title}" 
+                 style="width:100%; height:100%; object-fit:cover; border-radius: 12px;"
+                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop'">
+            <div class="play-overlay">
+                <div class="play-icon-large">
+                    <i class="fas fa-play"></i>
+                </div>
+            </div>
+        `;
     }
 }
 
-async function initializePlaylistManager() {
-    if (typeof window.PlaylistManager !== 'function') {
-        console.warn('⚠️ PlaylistManager class not found — check script load order');
-        return;
+function addResumeButton(progressSeconds) {
+    const heroActions = document.querySelector('.hero-actions');
+    if (!heroActions) return;
+    if (document.getElementById('resumeBtn')) return;
+    const resumeBtn = document.createElement('button');
+    resumeBtn.id = 'resumeBtn';
+    resumeBtn.className = 'btn btn-primary resume-btn';
+    resumeBtn.innerHTML = `
+        <i class="fas fa-play"></i>
+        <span>Resume (${formatDuration(progressSeconds)})</span>
+    `;
+    resumeBtn.addEventListener('click', startPlaybackFromUserGesture);
+    const playBtn = document.getElementById('playBtn');
+    if (playBtn) {
+        heroActions.insertBefore(resumeBtn, playBtn);
+        playBtn.style.display = 'none';
+    } else {
+        heroActions.prepend(resumeBtn);
     }
-    if (!currentUserId) {
-        console.log('🔓 Guest user — playlist features disabled');
-        return;
-    }
+}
+
+// ============================================
+// COMMENT FUNCTIONS
+// ============================================
+async function loadComments(contentId) {
     try {
-        playlistManager = new window.PlaylistManager({
-            supabase: window.supabaseClient,
-            userId: currentUserId,
-            watchLaterName: 'Watch Later',
-            onPlaylistUpdated: function(data) {
-                console.log('📋 Playlist updated:', data);
-                updateWatchLaterButtonState();
-            },
-            onError: function(err) {
-                console.error('❌ Playlist error:', err);
-                showToast('Playlist error: ' + (err.error || err.message), 'error');
+        console.log('💬 Loading comments for content:', contentId);
+        const { data: comments, error } = await window.supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('content_id', contentId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        console.log(`✅ Loaded ${comments.length} comments`);
+        renderComments(comments || []);
+        const countEl = document.getElementById('commentsCount');
+        if (countEl) {
+            countEl.textContent = `(${comments.length})`;
+        }
+        if (currentContent) {
+            const { error: updateError } = await window.supabaseClient
+                .from('Content')
+                .update({ comments_count: comments.length })
+                .eq('id', currentContent.id);
+            if (updateError) {
+                console.warn('Failed to update comments_count:', updateError);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Comments load failed:', error);
+        showToast('Failed to load comments', 'error');
+        renderComments([]);
+    }
+}
+
+function renderComments(comments) {
+    const container = document.getElementById('commentsList');
+    const noComments = document.getElementById('noComments');
+    const countEl = document.getElementById('commentsCount');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!comments || comments.length === 0) {
+        if (noComments) noComments.style.display = 'flex';
+        if (countEl) countEl.textContent = '(0)';
+        return;
+    }
+    if (noComments) noComments.style.display = 'none';
+    if (countEl) countEl.textContent = `(${comments.length})`;
+    const fragment = document.createDocumentFragment();
+    comments.forEach(comment => {
+        const commentEl = createCommentElement(comment);
+        fragment.appendChild(commentEl);
+    });
+    container.appendChild(fragment);
+}
+
+function createCommentElement(comment) {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    let authorName = comment.author_name || 'User';
+    let avatarUrl = comment.author_avatar || null;
+    const time = formatCommentTime(comment.created_at);
+    const commentText = comment.comment_text || '';
+    const initial = authorName.charAt(0).toUpperCase();
+    div.innerHTML = `
+        <div class="comment-header">
+            <div class="comment-avatar-sm">
+                ${avatarUrl ?
+                    `<img src="${avatarUrl}" alt="${authorName}" 
+                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);">` :
+                    `<div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+                        color: white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: bold;
+                        font-size: 14px;
+                        border: 2px solid rgba(29, 78, 216, 0.2);
+                    ">
+                        ${initial}
+                    </div>`
+                }
+            </div>
+            <div class="comment-user">
+                <strong>${escapeHtml(authorName)}</strong>
+                <div class="comment-time">${time}</div>
+            </div>
+        </div>
+        <div class="comment-content">
+            ${escapeHtml(commentText)}
+        </div>
+    `;
+    return div;
+}
+
+async function loadRelatedContent(contentId) {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('Content')
+            .select('id, title, thumbnail_url, user_id, genre, duration, media_type, status, user_profiles!user_id(full_name, username)')
+            .neq('id', contentId)
+            .eq('status', 'published')
+            .limit(6);
+        if (error) throw error;
+        const relatedWithViews = await Promise.all(
+            (data || []).map(async (item) => {
+                const { count: realViews } = await window.supabaseClient
+                    .from('content_views')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', item.id);
+                return { ...item, real_views_count: realViews || 0 };
+            })
+        );
+        renderRelatedContent(relatedWithViews);
+    } catch (error) {
+        console.error('Error loading related content:', error);
+        renderRelatedContent([]);
+    }
+}
+
+function renderRelatedContent(items) {
+    const container = document.getElementById('relatedGrid');
+    if (!container) return;
+    if (!items || items.length === 0) {
+        container.innerHTML = `
+            <div class="related-placeholder card">
+                <i class="fas fa-video-slash"></i>
+                <p>No related content found</p>
+            </div>
+        `;
+        return;
+    }
+    container.innerHTML = '';
+    items.forEach(item => {
+        const card = document.createElement('a');
+        card.className = 'content-card';
+        card.href = `content-detail.html?id=${item.id}`;
+        card.onclick = function(e) {
+            e.preventDefault();
+            window.location.href = `content-detail.html?id=${item.id}`;
+        };
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
+        const title = item.title || 'Untitled';
+        const viewsCount = item.real_views_count !== undefined ? item.real_views_count : 0;
+        card.innerHTML = `
+            <div class="card-thumbnail">
+                <img src="${imgUrl}" alt="${title}" 
+                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                <div class="thumbnail-overlay"></div>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">${truncateText(title, 50)}</h3>
+                <div class="related-meta">
+                    <i class="fas fa-eye"></i>
+                    <span>${formatNumber(viewsCount)} views</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// ============================================
+// CONNECT BUTTONS
+// ============================================
+function setupConnectButtons() {
+    function checkConnectionStatus(creatorId) {
+        return new Promise(async (resolve) => {
+            if (!window.AuthHelper?.isAuthenticated() || !creatorId) {
+                resolve(false);
+                return;
+            }
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                resolve(false);
+                return;
+            }
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('connectors')
+                    .select('id')
+                    .eq('connector_id', userProfile.id)
+                    .eq('connected_id', creatorId)
+                    .single();
+                resolve(!error && data !== null);
+            } catch (err) {
+                console.warn('Connection check error:', err);
+                resolve(false);
             }
         });
-        await updateWatchLaterButtonState();
-        console.log('✅ PlaylistManager initialized');
-    } catch (error) {
-        console.error('❌ Failed to initialize PlaylistManager:', error);
-        showToast('Watch Later unavailable', 'warning');
     }
-}
-
-async function initializeRecommendationEngine() {
-    if (!window.RecommendationEngine) {
-        console.warn('⚠️ RecommendationEngine not loaded');
-        return;
-    }
-    if (!currentContent?.id) {
-        console.warn('⚠️ No content loaded for recommendations');
-        return;
-    }
-    try {
-        recommendationEngine = new window.RecommendationEngine({
-            supabase: window.supabaseClient,
-            userId: currentUserId,
-            currentContentId: currentContent.id,
-            limit: 8,
-            minWatchThreshold: 0.5,
-            cacheDuration: 60000
+    
+    const connectBtn = document.getElementById('connectBtn');
+    if (connectBtn && currentContent?.creator_id) {
+        checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
+            if (isConnected) {
+                connectBtn.classList.add('connected');
+                connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+            }
         });
-        await loadRecommendationRails();
-        console.log('✅ RecommendationEngine initialized');
-    } catch (error) {
-        console.error('❌ Failed to initialize RecommendationEngine:', error);
-    }
-}
-
-async function initializeRecommendationEngineForPlaylist(contentId) {
-    if (!window.RecommendationEngine || !contentId) return;
-    try {
-        recommendationEngine = new window.RecommendationEngine({
-            supabase: window.supabaseClient,
-            userId: currentUserId,
-            currentContentId: contentId,
-            limit: 8,
-            minWatchThreshold: 0.5,
-            cacheDuration: 60000
+        connectBtn.addEventListener('click', async function() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+                return;
+            }
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
+                return;
+            }
+            const isConnected = connectBtn.classList.contains('connected');
+            try {
+                if (isConnected) {
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', userProfile.id)
+                        .eq('connected_id', currentContent.creator_id);
+                    if (error) throw error;
+                    connectBtn.classList.remove('connected');
+                    connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                    showToast('Disconnected', 'info');
+                } else {
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: userProfile.id,
+                            connected_id: currentContent.creator_id,
+                            connection_type: 'creator'
+                        });
+                    if (error) throw error;
+                    connectBtn.classList.add('connected');
+                    connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                    showToast('Connected successfully!', 'success');
+                    if (window.track?.userConnect) {
+                        window.track.userConnect(currentContent.creator_id);
+                    }
+                }
+            } catch (error) {
+                console.error('Connection update failed:', error);
+                showToast('Failed to update connection', 'error');
+            }
         });
-        await loadRecommendationRails();
-        console.log('✅ RecommendationEngine initialized for playlist');
-    } catch (error) {
-        console.error('❌ Failed to initialize RecommendationEngine:', error);
+    }
+    
+    const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+    if (connectCreatorBtn && currentContent?.creator_id) {
+        checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
+            if (isConnected) {
+                connectCreatorBtn.classList.add('connected');
+                connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+            }
+        });
+        connectCreatorBtn.addEventListener('click', async function() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+                return;
+            }
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
+                return;
+            }
+            const isConnected = connectCreatorBtn.classList.contains('connected');
+            try {
+                if (isConnected) {
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', userProfile.id)
+                        .eq('connected_id', currentContent.creator_id);
+                    if (error) throw error;
+                    connectCreatorBtn.classList.remove('connected');
+                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                    showToast('Disconnected', 'info');
+                } else {
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: userProfile.id,
+                            connected_id: currentContent.creator_id,
+                            connection_type: 'creator'
+                        });
+                    if (error) throw error;
+                    connectCreatorBtn.classList.add('connected');
+                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                    showToast('Connected successfully!', 'success');
+                    if (window.track?.userConnect) {
+                        window.track.userConnect(currentContent.creator_id);
+                    }
+                }
+            } catch (error) {
+                console.error('Connection update failed:', error);
+                showToast('Failed to update connection', 'error');
+            }
+        });
     }
 }
 
+// ============================================
+// WATCH LATER BUTTON
+// ============================================
+function setupWatchLaterButton() {
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (!watchLaterBtn) return;
+    watchLaterBtn.addEventListener('click', async function() {
+        if (!currentUserId) {
+            showToast('Please sign in to use Watch Later', 'warning');
+            return;
+        }
+        const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+        if (!contentIdForWatchLater) return;
+        if (playlistModal) {
+            playlistModal.open();
+        } else {
+            try {
+                const { data: existingList } = await window.supabaseClient
+                    .from('playlists')
+                    .select('id')
+                    .eq('user_id', currentUserId)
+                    .eq('name', 'Watch Later')
+                    .maybeSingle();
+                let playlistId = existingList?.id;
+                if (!playlistId) {
+                    const { data: newPlaylist } = await window.supabaseClient
+                        .from('playlists')
+                        .insert({
+                            user_id: currentUserId,
+                            name: 'Watch Later',
+                            description: 'Content to watch later',
+                            is_public: false
+                        })
+                        .select()
+                        .single();
+                    playlistId = newPlaylist.id;
+                }
+                const { data: existing } = await window.supabaseClient
+                    .from('playlist_items')
+                    .select('id')
+                    .eq('playlist_id', playlistId)
+                    .eq('content_id', contentIdForWatchLater)
+                    .maybeSingle();
+                if (existing) {
+                    showToast('Already in Watch Later', 'info');
+                    return;
+                }
+                await window.supabaseClient
+                    .from('playlist_items')
+                    .insert({
+                        playlist_id: playlistId,
+                        content_id: contentIdForWatchLater,
+                        added_at: new Date().toISOString()
+                    });
+                showToast('Added to Watch Later!', 'success');
+            } catch (error) {
+                console.error('Watch Later fallback failed:', error);
+                showToast('Failed to add to Watch Later', 'error');
+            }
+        }
+    });
+}
+
+async function updateWatchLaterButtonState() {
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (!watchLaterBtn || !playlistManager || !currentUserId) return;
+    const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+    if (!contentIdForWatchLater) return;
+    try {
+        const isInWatchLater = await playlistManager.isInWatchLater(contentIdForWatchLater);
+        if (isInWatchLater) {
+            watchLaterBtn.classList.add('active');
+            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+        } else {
+            watchLaterBtn.classList.remove('active');
+            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+        }
+    } catch (error) {
+        console.warn('Failed to check watch later state:', error);
+    }
+}
+
+function setupViewSyncListener() {
+    window.addEventListener('content-views-updated', async (event) => {
+        const { contentId, viewsCount } = event.detail;
+        if (String(contentId) !== String(currentContent?.id)) return;
+        if (currentContent && viewsCount !== undefined) {
+            currentContent.views_count = viewsCount;
+            console.log('👁️ Frontend views synced via global event:', viewsCount);
+        } else {
+            const { data, error } = await window.supabaseClient
+                .from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', contentId);
+            if (!error && currentContent) {
+                currentContent.views_count = data?.length || 0;
+                console.log('👁️ Frontend views synced via fetch:', currentContent.views_count);
+            }
+        }
+        updateCountsUI(currentContent);
+    });
+}
+
+function updateCountsUI(content) {
+    const viewsEl = document.getElementById('viewsCount');
+    const viewsFullEl = document.getElementById('viewsCountFull');
+    const likesEl = document.getElementById('likesCount');
+    if (viewsEl) viewsEl.textContent = formatNumber(content.views_count) + ' views';
+    if (viewsFullEl) viewsFullEl.textContent = formatNumber(content.views_count);
+    if (likesEl) likesEl.textContent = formatNumber(content.likes_count);
+}
+
+async function refreshCountsFromSource() {
+    const contentIdForRefresh = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
+    if (!contentIdForRefresh) return;
+    try {
+        const { count: viewsCount } = await window.supabaseClient
+            .from('content_views')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', contentIdForRefresh);
+        const { count: likesCount } = await window.supabaseClient
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', contentIdForRefresh);
+        if (currentContent && viewsCount !== undefined) {
+            currentContent.views_count = viewsCount;
+            updateCountsUI(currentContent);
+        }
+        if (currentContent && likesCount !== undefined) {
+            currentContent.likes_count = likesCount;
+            const likesEl = document.getElementById('likesCount');
+            if (likesEl) likesEl.textContent = formatNumber(likesCount);
+        }
+    } catch (error) {
+        console.warn('Failed to refresh counts:', error);
+    }
+}
+
+// ============================================
+// STREAMING MANAGER
+// ============================================
 async function initializeStreamingManager() {
     if (!window.StreamingManager) {
         console.warn('⚠️ StreamingManager not loaded');
@@ -2142,6 +2799,24 @@ function setupDataSaverToggle() {
             streamingManager.toggleDataSaver(this.checked);
         }
     });
+}
+
+function updateQualityIndicator(quality) {
+    const qualityBadge = document.getElementById('qualityBadge');
+    if (qualityBadge) {
+        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
+    }
+}
+
+function updateNetworkSpeedIndicator(speedMbps) {
+    const speedBadge = document.getElementById('networkSpeedBadge');
+    if (!speedBadge) return;
+    if (speedMbps) {
+        speedBadge.style.display = 'inline-flex';
+        speedBadge.textContent = `${speedMbps.toFixed(1)} Mbps`;
+    } else {
+        speedBadge.style.display = 'none';
+    }
 }
 
 // ============================================
@@ -2423,708 +3098,467 @@ function applyMobileHeaderStyles() {
 
 window.addEventListener('resize', applyMobileHeaderStyles);
 
-function addResumeButton(progressSeconds) {
-    const heroActions = document.querySelector('.hero-actions');
-    if (!heroActions) return;
-    if (document.getElementById('resumeBtn')) return;
-    const resumeBtn = document.createElement('button');
-    resumeBtn.id = 'resumeBtn';
-    resumeBtn.className = 'btn btn-primary resume-btn';
-    resumeBtn.innerHTML = `
-        <i class="fas fa-play"></i>
-        <span>Resume (${formatDuration(progressSeconds)})</span>
-    `;
-    resumeBtn.addEventListener('click', handlePlay);
-    const playBtn = document.getElementById('playBtn');
-    if (playBtn) {
-        heroActions.insertBefore(resumeBtn, playBtn);
-        playBtn.style.display = 'none';
-    } else {
-        heroActions.prepend(resumeBtn);
+// ============================================
+// PLAYBACK FUNCTIONS
+// ============================================
+function initializeWatchSessionOnPlay() {
+    if (!currentContent || !currentUserId) {
+        console.log('🚫 Cannot initialize watch session: missing content or user');
+        return;
+    }
+    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+    if (!player?.video) {
+        console.log('🚫 Cannot initialize watch session: video element not ready');
+        return;
+    }
+    if (watchSession) {
+        watchSession.stop();
+        watchSession = null;
+    }
+    try {
+        const sessionKey = `bantu_view_session_${parseInt(currentContent.id)}`;
+        let sessionId = sessionStorage.getItem(sessionKey);
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem(sessionKey, sessionId);
+        console.log('🎬 PHASE 5: Initializing WatchSessionManager with session:', sessionId);
+        watchSession = new WatchSessionManager(currentContent.id, currentUserId);
+        watchSession.initializeSession('Web', 'Desktop');
+        watchSession.start(player.video);
+        window._watchSession = watchSession;
+        console.log('✅ PHASE 5: Watch session started with ledger-style telemetry');
+    } catch (error) {
+        console.error('❌ Failed to initialize watch session:', error);
     }
 }
 
-let likedContentCache = new Set();
-let favoritedContentCache = new Set();
-
-function updateContentUI(content) {
-    if (!content) return;
-    safeSetText('contentTitle', content.title);
-    const creatorName = content.creator || (currentPlaylist?.creator_name || currentPlaylist?.creator_username || 'Creator');
-    safeSetText('creatorName', creatorName);
-    safeSetText('creatorDisplayName', creatorName);
-    safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
-    safeSetText('viewsCountFull', formatNumber(content.views_count));
-    safeSetText('likesCount', formatNumber(content.likes_count));
-    safeSetText('favoritesCount', formatNumber(content.favorites_count));
-    safeSetText('commentsCount', `(${formatNumber(content.comments_count)})`);
-    const duration = formatDuration(content.duration || 3600);
-    safeSetText('durationText', duration);
-    safeSetText('contentDurationFull', duration);
-    safeSetText('uploadDate', formatDate(content.created_at));
-    safeSetText('contentGenre', content.genre || 'General');
-    safeSetText('contentDescriptionShort', truncateText(content.description, 150));
-    safeSetText('contentDescriptionFull', content.description);
-    
-    const creatorAvatar = document.getElementById('creatorAvatar');
-    if (creatorAvatar && content.user_profiles) {
-        const avatarUrl = content.user_profiles.avatar_url;
-        const displayName = content.user_profiles.full_name || content.user_profiles.username || (currentPlaylist?.creator_name || 'Creator');
-        const initial = displayName.charAt(0).toUpperCase();
-        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && avatarUrl !== '') {
-            const fixedAvatarUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
-            creatorAvatar.innerHTML = `
-                <img src="${fixedAvatarUrl}" 
-                     alt="${escapeHtml(displayName)}" 
-                     style="width:100%; height:100%; border-radius:50%; object-fit:cover;"
-                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22>${initial}</text></svg>'">
-            `;
-            console.log('✅ Creator avatar set from URL:', fixedAvatarUrl);
-        } else {
-            creatorAvatar.innerHTML = `
-                <div style="
-                    width:100%;
-                    height:100%;
-                    border-radius:50%;
-                    background:linear-gradient(135deg, #1D4ED8, #F59E0B);
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    color:white;
-                    font-weight:bold;
-                    font-size:1.5rem;
-                ">${initial}</div>
-            `;
-            console.log('✅ Creator avatar fallback to initials:', initial);
+function markContentAsViewed(contentId) {
+    try {
+        let viewed = localStorage.getItem('bantu_viewed_content');
+        try {
+            viewed = JSON.parse(viewed || '[]');
+        } catch (e) {
+            console.warn('⚠️ Failed to parse viewed content:', e);
+            viewed = [];
         }
+        if (!Array.isArray(viewed)) {
+            console.warn('⚠️ viewed content was not an array, resetting...');
+            viewed = [];
+        }
+        if (viewed.includes(contentId)) {
+            return;
+        }
+        viewed.push(contentId);
+        if (viewed.length > 500) {
+            viewed = viewed.slice(-500);
+        }
+        localStorage.setItem('bantu_viewed_content', JSON.stringify(viewed));
+        console.log('✅ Marked content as viewed:', contentId);
+    } catch (error) {
+        console.error('❌ Failed to mark viewed content:', error);
     }
-    
-    const creatorSection = document.querySelector('.creator-section');
-    const creatorInfo = document.querySelector('.creator-info');
-    if (creatorSection && content.creator_id) {
-        creatorSection.style.cursor = 'pointer';
-        if (creatorInfo) {
-            const newCreatorInfo = creatorInfo.cloneNode(true);
-            creatorInfo.parentNode.replaceChild(newCreatorInfo, creatorInfo);
-            newCreatorInfo.addEventListener('click', function(e) {
-                if (e.target.closest('.connect-btn')) return;
-                window.location.href = `creator-channel.html?id=${content.creator_id}&name=${encodeURIComponent(content.creator_display_name || creatorName)}`;
+}
+
+// ============================================
+// PLAYLIST MANAGER FUNCTIONS
+// ============================================
+async function initializePlaylistManager() {
+    if (typeof window.PlaylistManager !== 'function') {
+        console.warn('⚠️ PlaylistManager class not found — check script load order');
+        return;
+    }
+    if (!currentUserId) {
+        console.log('🔓 Guest user — playlist features disabled');
+        return;
+    }
+    try {
+        playlistManager = new window.PlaylistManager({
+            supabase: window.supabaseClient,
+            userId: currentUserId,
+            watchLaterName: 'Watch Later',
+            onPlaylistUpdated: function(data) {
+                console.log('📋 Playlist updated:', data);
+                updateWatchLaterButtonState();
+            },
+            onError: function(err) {
+                console.error('❌ Playlist error:', err);
+                showToast('Playlist error: ' + (err.error || err.message), 'error');
+            }
+        });
+        await updateWatchLaterButtonState();
+        console.log('✅ PlaylistManager initialized');
+    } catch (error) {
+        console.error('❌ Failed to initialize PlaylistManager:', error);
+        showToast('Watch Later unavailable', 'warning');
+    }
+}
+
+function initializePlaylistModal() {
+    if (!window.PlaylistModal) {
+        console.warn('⚠️ PlaylistModal not loaded yet');
+        return;
+    }
+    if (!currentUserId || !(currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id))) {
+        console.warn('⚠️ Cannot initialize playlist modal: missing user or content');
+        return;
+    }
+    const contentIdForModal = currentContent?.id || (currentPlaylistItems && currentPlaylistItems[0]?.id);
+    if (!contentIdForModal) return;
+    try {
+        playlistModal = new window.PlaylistModal({
+            supabase: window.supabaseClient,
+            userId: currentUserId,
+            contentId: contentIdForModal
+        });
+        window.playlistModal = playlistModal;
+        const watchLaterBtn = document.getElementById('watchLaterBtn');
+        if (watchLaterBtn) {
+            const newBtn = watchLaterBtn.cloneNode(true);
+            watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!currentUserId) {
+                    showToast('Please sign in to use playlists', 'warning');
+                    const redirect = encodeURIComponent(window.location.href);
+                    window.location.href = `login.html?redirect=${redirect}`;
+                    return;
+                }
+                playlistModal.open();
             });
         }
-    }
-    
-    const posterPlaceholder = document.getElementById('posterPlaceholder');
-    if (posterPlaceholder && content.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-        posterPlaceholder.innerHTML = `
-            <img src="${imgUrl}" alt="${content.title}" 
-                 style="width:100%; height:100%; object-fit:cover; border-radius: 12px;"
-                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop'">
-            <div class="play-overlay">
-                <div class="play-icon-large">
-                    <i class="fas fa-play"></i>
-                </div>
-            </div>
-        `;
-    }
-}
-
-async function loadComments(contentId) {
-    try {
-        console.log('💬 Loading comments for content:', contentId);
-        const { data: comments, error } = await window.supabaseClient
-            .from('comments')
-            .select('*')
-            .eq('content_id', contentId)
-            .order('created_at', { ascending: false });
-        if (error) throw error;
-        console.log(`✅ Loaded ${comments.length} comments`);
-        renderComments(comments || []);
-        const countEl = document.getElementById('commentsCount');
-        if (countEl) {
-            countEl.textContent = `(${comments.length})`;
-        }
-        if (currentContent) {
-            const { error: updateError } = await window.supabaseClient
-                .from('Content')
-                .update({ comments_count: comments.length })
-                .eq('id', currentContent.id);
-            if (updateError) {
-                console.warn('Failed to update comments_count:', updateError);
-            }
-        }
+        console.log('✅ Playlist modal initialized');
     } catch (error) {
-        console.error('❌ Comments load failed:', error);
-        showToast('Failed to load comments', 'error');
-        renderComments([]);
+        console.error('❌ Failed to initialize playlist modal:', error);
     }
 }
 
-function renderComments(comments) {
-    const container = document.getElementById('commentsList');
-    const noComments = document.getElementById('noComments');
-    const countEl = document.getElementById('commentsCount');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!comments || comments.length === 0) {
-        if (noComments) noComments.style.display = 'flex';
-        if (countEl) countEl.textContent = '(0)';
+// ============================================
+// RECOMMENDATION ENGINE FUNCTIONS
+// ============================================
+async function initializeRecommendationEngine() {
+    if (!window.RecommendationEngine) {
+        console.warn('⚠️ RecommendationEngine not loaded');
         return;
     }
-    if (noComments) noComments.style.display = 'none';
-    if (countEl) countEl.textContent = `(${comments.length})`;
-    const fragment = document.createDocumentFragment();
-    comments.forEach(comment => {
-        const commentEl = createCommentElement(comment);
-        fragment.appendChild(commentEl);
-    });
-    container.appendChild(fragment);
-}
-
-function createCommentElement(comment) {
-    const div = document.createElement('div');
-    div.className = 'comment-item';
-    let authorName = comment.author_name || 'User';
-    let avatarUrl = comment.author_avatar || null;
-    const time = formatCommentTime(comment.created_at);
-    const commentText = comment.comment_text || '';
-    const initial = authorName.charAt(0).toUpperCase();
-    div.innerHTML = `
-        <div class="comment-header">
-            <div class="comment-avatar-sm">
-                ${avatarUrl ?
-                    `<img src="${avatarUrl}" alt="${authorName}" 
-                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);">` :
-                    `<div style="
-                        width: 32px;
-                        height: 32px;
-                        border-radius: 50%;
-                        background: linear-gradient(135deg, #1D4ED8, #F59E0B);
-                        color: white;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-weight: bold;
-                        font-size: 14px;
-                        border: 2px solid rgba(29, 78, 216, 0.2);
-                    ">
-                        ${initial}
-                    </div>`
-                }
-            </div>
-            <div class="comment-user">
-                <strong>${escapeHtml(authorName)}</strong>
-                <div class="comment-time">${time}</div>
-            </div>
-        </div>
-        <div class="comment-content">
-            ${escapeHtml(commentText)}
-        </div>
-    `;
-    return div;
-}
-
-async function loadRelatedContent(contentId) {
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('Content')
-            .select('id, title, thumbnail_url, user_id, genre, duration, media_type, status, user_profiles!user_id(full_name, username)')
-            .neq('id', contentId)
-            .eq('status', 'published')
-            .limit(6);
-        if (error) throw error;
-        const relatedWithViews = await Promise.all(
-            (data || []).map(async (item) => {
-                const { count: realViews } = await window.supabaseClient
-                    .from('content_views')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('content_id', item.id);
-                return { ...item, real_views_count: realViews || 0 };
-            })
-        );
-        renderRelatedContent(relatedWithViews);
-    } catch (error) {
-        console.error('Error loading related content:', error);
-        renderRelatedContent([]);
-    }
-}
-
-function renderRelatedContent(items) {
-    const container = document.getElementById('relatedGrid');
-    if (!container) return;
-    if (!items || items.length === 0) {
-        container.innerHTML = `
-            <div class="related-placeholder card">
-                <i class="fas fa-video-slash"></i>
-                <p>No related content found</p>
-            </div>
-        `;
+    if (!currentContent?.id) {
+        console.warn('⚠️ No content loaded for recommendations');
         return;
     }
-    container.innerHTML = '';
-    items.forEach(item => {
-        const card = document.createElement('a');
-        card.className = 'content-card';
-        card.href = `content-detail.html?id=${item.id}`;
-        card.onclick = function(e) {
-            e.preventDefault();
-            window.location.href = `content-detail.html?id=${item.id}`;
-        };
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
-        const title = item.title || 'Untitled';
-        const viewsCount = item.real_views_count !== undefined ? item.real_views_count : 0;
-        card.innerHTML = `
+    try {
+        recommendationEngine = new window.RecommendationEngine({
+            supabase: window.supabaseClient,
+            userId: currentUserId,
+            currentContentId: currentContent.id,
+            limit: 8,
+            minWatchThreshold: 0.5,
+            cacheDuration: 60000
+        });
+        await loadRecommendationRails();
+        console.log('✅ RecommendationEngine initialized');
+    } catch (error) {
+        console.error('❌ Failed to initialize RecommendationEngine:', error);
+    }
+}
+
+async function initializeRecommendationEngineForPlaylist(contentId) {
+    if (!window.RecommendationEngine || !contentId) return;
+    try {
+        recommendationEngine = new window.RecommendationEngine({
+            supabase: window.supabaseClient,
+            userId: currentUserId,
+            currentContentId: contentId,
+            limit: 8,
+            minWatchThreshold: 0.5,
+            cacheDuration: 60000
+        });
+        await loadRecommendationRails();
+        console.log('✅ RecommendationEngine initialized for playlist');
+    } catch (error) {
+        console.error('❌ Failed to initialize RecommendationEngine:', error);
+    }
+}
+
+async function loadRecommendationRails() {
+    if (!recommendationEngine) return;
+    try {
+        const recommendations = await recommendationEngine.getRecommendations();
+        renderRecommendationRails(recommendations);
+    } catch (error) {
+        console.error('Failed to load recommendations:', error);
+    }
+}
+
+function renderRecommendationRails(recommendations) {
+    const container = document.getElementById('recommendationGrid');
+    if (!container) return;
+    if (!recommendations || recommendations.length === 0) {
+        container.innerHTML = '<div class="no-recommendations">No recommendations available</div>';
+        return;
+    }
+    container.innerHTML = recommendations.map(item => `
+        <a href="content-detail.html?id=${item.id}" class="content-card">
             <div class="card-thumbnail">
-                <img src="${imgUrl}" alt="${title}" 
-                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                     alt="${escapeHtml(item.title)}" 
+                     loading="lazy">
                 <div class="thumbnail-overlay"></div>
             </div>
             <div class="card-content">
-                <h3 class="card-title">${truncateText(title, 50)}</h3>
+                <h3 class="card-title">${truncateText(item.title, 45)}</h3>
                 <div class="related-meta">
                     <i class="fas fa-eye"></i>
-                    <span>${formatNumber(viewsCount)} views</span>
+                    <span>${formatNumber(item.total_views || 0)} views</span>
                 </div>
             </div>
+        </a>
+    `).join('');
+}
+
+// ============================================
+// CONTINUE WATCHING FUNCTIONS
+// ============================================
+async function loadContinueWatching(userId, limit) {
+    if (limit === undefined) limit = 8;
+    const section = document.getElementById('continueWatchingSection');
+    if (!section) return;
+    if (!userId || !window.supabaseClient) {
+        section.style.display = 'none';
+        return;
+    }
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('watch_progress')
+            .select(`
+                content_id,
+                last_position,
+                is_completed,
+                updated_at,
+                Content (
+                    id,
+                    title,
+                    thumbnail_url,
+                    genre,
+                    duration,
+                    status,
+                    user_profiles!user_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                )
+            `)
+            .eq('user_id', userId)
+            .eq('is_completed', false)
+            .neq('last_position', 0)
+            .eq('Content.status', 'published')
+            .order('updated_at', { ascending: false })
+            .limit(limit);
+        if (error) throw error;
+        if (!data || data.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        renderContinueWatching(data);
+        section.style.display = 'block';
+    } catch (error) {
+        console.error('❌ Failed to load continue watching:', error);
+        section.style.display = 'none';
+    }
+}
+
+function renderContinueWatching(items) {
+    const container = document.getElementById('continueGrid');
+    if (!container) return;
+    container.innerHTML = items.map(item => {
+        const content = item.Content;
+        if (!content) return '';
+        const progress = content.duration > 0
+            ? Math.min(100, Math.round((item.last_position / content.duration) * 100))
+            : 0;
+        const timeWatched = formatDuration(item.last_position);
+        const totalTime = formatDuration(content.duration);
+        const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url)
+            || content.thumbnail_url
+            || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+        const creatorName = content.user_profiles?.full_name
+            || content.user_profiles?.username
+            || (isPlaylistMode && currentPlaylist ? currentPlaylist.creator_name : 'Creator');
+        return `
+            <a href="content-detail.html?id=${content.id}" class="content-card continue-card" data-content-id="${content.id}">
+                <div class="card-thumbnail">
+                    <img src="${thumbnailUrl}" 
+                         alt="${escapeHtml(content.title)}" 
+                         loading="lazy"
+                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                    <div class="progress-bar-overlay">
+                        <div class="progress-fill" style="width:${progress}%"></div>
+                    </div>
+                    <div class="resume-badge">
+                        <i class="fas fa-play"></i> Resume
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">${truncateText(content.title, 45)}</h3>
+                    <div class="related-meta">
+                        <span>${timeWatched} / ${totalTime}</span>
+                    </div>
+                    <div class="creator-chip">
+                        <i class="fas fa-user"></i>
+                        ${truncateText(creatorName, 20)}
+                    </div>
+                </div>
+            </a>
         `;
-        container.appendChild(card);
+    }).join('');
+    container.querySelectorAll('.continue-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (window.track?.continueWatchingClick) {
+                const contentId = card.dataset.contentId;
+                window.track.continueWatchingClick(contentId);
+            }
+        });
     });
 }
 
-function setupEventListeners() {
-    console.log('🔧 Setting up event listeners...');
-    const playBtn = document.getElementById('playBtn');
-    if (playBtn) {
-        playBtn.addEventListener('click', handlePlay);
-    }
-    const poster = document.getElementById('heroPoster');
-    if (poster) {
-        poster.addEventListener('click', handlePlay);
-    }
-    const closeFromHero = document.getElementById('closePlayerFromHero');
-    if (closeFromHero) {
-        closeFromHero.addEventListener('click', function() {
-            closeVideoPlayer();
+// ============================================
+// THEME SELECTOR
+// ============================================
+function initThemeSelector() {
+    console.log('🎨 Initializing theme selector...');
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeToggle.checked = savedTheme === 'light';
+        themeToggle.addEventListener('change', function(e) {
+            const newTheme = e.target.checked ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            console.log('Theme changed to:', newTheme);
         });
     }
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const fullPlayerBtn = document.getElementById('fullPlayerBtn');
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (enhancedVideoPlayer) {
-                enhancedVideoPlayer.toggleFullscreen();
-            }
+}
+
+// ============================================
+// SIDEBAR FUNCTIONS
+// ============================================
+function setupCompleteSidebar() {
+    const menuBtn = document.getElementById('menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            if (mainContent) mainContent.classList.toggle('sidebar-open');
         });
     }
-    if (fullPlayerBtn) {
-        fullPlayerBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (enhancedVideoPlayer) {
-                enhancedVideoPlayer.toggleFullscreen();
-            }
-        });
-    }
-    requestAnimationFrame(() => {
-        setupAlbumToggle();
-    });
-    
-    const likeBtn = document.getElementById('likeBtn');
-    if (likeBtn) {
-        likeBtn.addEventListener('click', handleLikeButtonClick);
-    }
-    
-    const playAlbumBtn = document.getElementById('play-album-btn');
-    if (playAlbumBtn) {
-        playAlbumBtn.addEventListener('click', async (e) => {
+    const resizeHandle = document.getElementById('sidebar-resize-handle');
+    if (resizeHandle) {
+        let isResizing = false;
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'ew-resize';
             e.preventDefault();
-            e.stopPropagation();
-            console.log('▶️ Play Album clicked');
-            try {
-                if (window.enhancedPlayer && typeof window.enhancedPlayer.play === 'function') {
-                    await window.enhancedPlayer.play();
-                    console.log('✅ Album playback started');
-                } else if (enhancedVideoPlayer && typeof enhancedVideoPlayer.play === 'function') {
-                    await enhancedVideoPlayer.play();
-                    console.log('✅ Album playback started (fallback)');
-                } else {
-                    console.error('❌ Enhanced player missing');
-                }
-            } catch (error) {
-                console.error('❌ Failed to start playback:', error);
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const newWidth = e.clientX;
+            if (newWidth >= 200 && newWidth <= 400) {
+                sidebar.style.width = newWidth + 'px';
+                localStorage.setItem('sidebar_width', newWidth);
             }
+        });
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
         });
     }
-    
-    const favoriteBtn = document.getElementById('favoriteBtn');
-    if (favoriteBtn) {
-        favoriteBtn.addEventListener('click', async function() {
-            if (!currentContent) return;
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                showToast('Sign in to favorite content', 'warning');
-                return;
-            }
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
-                return;
-            }
-            const isFavorited = favoriteBtn.classList.contains('active');
-            const favCountEl = document.getElementById('favoritesCount');
-            const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-            const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
-            try {
-                favoriteBtn.classList.toggle('active', !isFavorited);
-                favoriteBtn.innerHTML = !isFavorited
-                    ? '<i class="fas fa-star"></i><span>Favorited</span>'
-                    : '<i class="far fa-star"></i><span>Favorite</span>';
-                if (favCountEl) {
-                    favCountEl.textContent = formatNumber(newFavorites);
-                }
-                if (!isFavorited) {
-                    favoritedContentCache.add(currentContent.id);
-                    const { error } = await window.supabaseClient
-                        .from('favorites')
-                        .insert({
-                            user_id: userProfile.id,
-                            content_id: currentContent.id
-                        });
-                    if (error) throw error;
-                } else {
-                    favoritedContentCache.delete(currentContent.id);
-                    const { error } = await window.supabaseClient
-                        .from('favorites')
-                        .delete()
-                        .eq('user_id', userProfile.id)
-                        .eq('content_id', currentContent.id);
-                    if (error) throw error;
-                }
-                const { error: updateError } = await window.supabaseClient
-                    .from('Content')
-                    .update({ favorites_count: newFavorites })
-                    .eq('id', currentContent.id);
-                if (updateError) {
-                    console.warn('Favorites count update failed:', updateError);
-                }
-                currentContent.favorites_count = newFavorites;
-                showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
-                await refreshCountsFromSource();
-            } catch (error) {
-                console.error('Favorite update failed:', error);
-                favoriteBtn.classList.toggle('active', isFavorited);
-                favoriteBtn.innerHTML = isFavorited
-                    ? '<i class="fas fa-star"></i><span>Favorited</span>'
-                    : '<i class="far fa-star"></i><span>Favorite</span>';
-                if (favCountEl) {
-                    favCountEl.textContent = formatNumber(currentFavorites);
-                }
-                showToast('Failed to update favorite', 'error');
-            }
-        });
+    const savedWidth = localStorage.getItem('sidebar_width');
+    if (savedWidth && sidebar) {
+        sidebar.style.width = savedWidth + 'px';
     }
-    setupWatchLaterButton();
-    
-    const refreshBtn = document.getElementById('refreshCommentsBtn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', async function() {
-            const contentIdForComments = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-            if (contentIdForComments) {
-                showToast('Refreshing comments...', 'info');
-                await loadComments(contentIdForComments);
-                showToast('Comments refreshed!', 'success');
-            }
-        });
-    }
-    
-    const sendBtn = document.getElementById('sendCommentBtn');
-    const commentInput = document.getElementById('commentInput');
-    if (sendBtn && commentInput) {
-        sendBtn.addEventListener('click', async function() {
-            const text = commentInput.value.trim();
-            if (!text) {
-                showToast('Please enter a comment', 'warning');
-                return;
-            }
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                showToast('You need to sign in to comment', 'warning');
-                return;
-            }
-            const contentIdForComment = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-            if (!contentIdForComment) return;
-            const originalHTML = sendBtn.innerHTML;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            sendBtn.disabled = true;
-            try {
-                const userProfile = window.AuthHelper.getUserProfile();
-                const displayName = window.AuthHelper.getDisplayName();
-                const avatarUrl = window.AuthHelper.getAvatarUrl();
-                if (!userProfile?.id) {
-                    throw new Error('User profile not found');
-                }
-                const { data: newComment, error: insertError } = await window.supabaseClient
-                    .from('comments')
-                    .insert({
-                        content_id: contentIdForComment,
-                        user_id: userProfile.id,
-                        author_name: displayName,
-                        comment_text: text,
-                        author_avatar: avatarUrl || null,
-                        created_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
-                if (insertError) {
-                    console.error('Comment insert error:', insertError);
-                    throw insertError;
-                }
-                console.log('✅ Comment inserted:', newComment);
-                await loadComments(contentIdForComment);
-                await refreshCountsFromSource();
-                commentInput.value = '';
-                showToast('Comment added!', 'success');
-                if (window.track?.contentComment) {
-                    window.track.contentComment(contentIdForComment);
-                }
-            } catch (error) {
-                console.error('❌ Comment submission failed:', error);
-                showToast(error.message || 'Failed to add comment', 'error');
-            } finally {
-                sendBtn.innerHTML = originalHTML;
-                sendBtn.disabled = false;
-            }
-        });
-        commentInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
-                e.preventDefault();
-                sendBtn.click();
-            }
-        });
-    }
-    
-    const backToTopBtn = document.getElementById('backToTopBtn');
-    if (backToTopBtn) {
-        backToTopBtn.addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        window.addEventListener('scroll', function() {
-            if (window.pageYOffset > 300) {
-                backToTopBtn.style.display = 'flex';
-            } else {
-                backToTopBtn.style.display = 'none';
-            }
-        });
-    }
-    
-    const pipBtn = document.getElementById('pipBtn');
-    if (pipBtn) {
-        pipBtn.addEventListener('click', function() {
-            const video = document.getElementById('inlineVideoPlayer');
-            if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
-                video.requestPictureInPicture();
-            }
-        });
-    }
-    
-    const shareBtn = document.getElementById('shareBtn');
-    if (shareBtn) {
-        shareBtn.addEventListener('click', async function() {
-            if (!currentContent) return;
-            const shareText = `📺 ${currentContent.title}
-${currentContent.description || 'Check out this amazing content!'}
-👉 Watch on Bantu Stream Connect
-NO DNA, JUST RSA
-`;
-            const shareUrl = window.location.href;
-            try {
-                if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
-                    await navigator.share({
-                        title: 'Bantu Stream Connect',
-                        text: shareText,
-                        url: shareUrl
-                    });
-                } else {
-                    await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
-                    showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
-                    if (window.track?.contentShare) {
-                        window.track.contentShare(currentContent.id, 'clipboard');
-                    }
-                }
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('Share failed:', err);
-                    showToast('Failed to share. Try copying link manually.', 'error');
-                }
-            }
-        });
-    }
-    setupConnectButtons();
-    setupInitialPlayButton();
-    setupViewSyncListener();
-    console.log('✅ Event listeners setup complete');
 }
 
-function setupViewSyncListener() {
-    window.addEventListener('content-views-updated', async (event) => {
-        const { contentId, viewsCount } = event.detail;
-        if (String(contentId) !== String(currentContent?.id)) return;
-        if (currentContent && viewsCount !== undefined) {
-            currentContent.views_count = viewsCount;
-            console.log('👁️ Frontend views synced via global event:', viewsCount);
-        } else {
-            const { data, error } = await window.supabaseClient
-                .from('content_views')
-                .select('*', { count: 'exact', head: true })
-                .eq('content_id', contentId);
-            if (!error && currentContent) {
-                currentContent.views_count = data?.length || 0;
-                console.log('👁️ Frontend views synced via fetch:', currentContent.views_count);
+function setupNavigationButtons() {
+    const backBtn = document.getElementById('backNavBtn');
+    const forwardBtn = document.getElementById('forwardNavBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            window.history.back();
+        });
+    }
+    if (forwardBtn) {
+        forwardBtn.addEventListener('click', () => {
+            window.history.forward();
+        });
+    }
+}
+
+function setupNavButtonScrollAnimation() {
+    const header = document.querySelector('.glass-header');
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        if (header) {
+            if (currentScroll > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
             }
         }
-        updateCountsUI(currentContent);
+        lastScroll = currentScroll;
     });
 }
 
-function setupConnectButtons() {
-    function checkConnectionStatus(creatorId) {
-        return new Promise(async (resolve) => {
-            if (!window.AuthHelper?.isAuthenticated() || !creatorId) {
-                resolve(false);
-                return;
-            }
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                resolve(false);
-                return;
-            }
-            try {
-                const { data, error } = await window.supabaseClient
-                    .from('connectors')
-                    .select('id')
-                    .eq('connector_id', userProfile.id)
-                    .eq('connected_id', creatorId)
-                    .single();
-                resolve(!error && data !== null);
-            } catch (err) {
-                console.warn('Connection check error:', err);
-                resolve(false);
+// ============================================
+// GLOBAL NAVIGATION
+// ============================================
+function initGlobalNavigation() {
+    const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
+    if (homeBtn) {
+        const newHomeBtn = homeBtn.cloneNode(true);
+        homeBtn.parentNode.replaceChild(newHomeBtn, homeBtn);
+        newHomeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            window.location.href = 'https://bantustreamconnect.com/';
+        });
+    }
+    const createBtn = document.querySelector('.nav-icon:nth-child(3)');
+    if (createBtn) {
+        const newCreateBtn = createBtn.cloneNode(true);
+        createBtn.parentNode.replaceChild(newCreateBtn, createBtn);
+        newCreateBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            if (window.AuthHelper?.isAuthenticated()) {
+                window.location.href = 'creator-upload.html';
+            } else {
+                showToast('Please sign in to upload content', 'warning');
+                window.location.href = `login.html?redirect=creator-upload.html`;
             }
         });
     }
-    
-    const connectBtn = document.getElementById('connectBtn');
-    if (connectBtn && currentContent?.creator_id) {
-        checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
-            if (isConnected) {
-                connectBtn.classList.add('connected');
-                connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-            }
-        });
-        connectBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-                if (shouldLogin) {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-                return;
-            }
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
-                return;
-            }
-            const isConnected = connectBtn.classList.contains('connected');
-            try {
-                if (isConnected) {
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', userProfile.id)
-                        .eq('connected_id', currentContent.creator_id);
-                    if (error) throw error;
-                    connectBtn.classList.remove('connected');
-                    connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-                    showToast('Disconnected', 'info');
-                } else {
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: userProfile.id,
-                            connected_id: currentContent.creator_id,
-                            connection_type: 'creator'
-                        });
-                    if (error) throw error;
-                    connectBtn.classList.add('connected');
-                    connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-                    showToast('Connected successfully!', 'success');
-                    if (window.track?.userConnect) {
-                        window.track.userConnect(currentContent.creator_id);
-                    }
-                }
-            } catch (error) {
-                console.error('Connection update failed:', error);
-                showToast('Failed to update connection', 'error');
-            }
-        });
-    }
-    
-    const connectCreatorBtn = document.getElementById('connectCreatorBtn');
-    if (connectCreatorBtn && currentContent?.creator_id) {
-        checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
-            if (isConnected) {
-                connectCreatorBtn.classList.add('connected');
-                connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-            }
-        });
-        connectCreatorBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-                if (shouldLogin) {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-                return;
-            }
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
-                return;
-            }
-            const isConnected = connectCreatorBtn.classList.contains('connected');
-            try {
-                if (isConnected) {
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', userProfile.id)
-                        .eq('connected_id', currentContent.creator_id);
-                    if (error) throw error;
-                    connectCreatorBtn.classList.remove('connected');
-                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-                    showToast('Disconnected', 'info');
-                } else {
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: userProfile.id,
-                            connected_id: currentContent.creator_id,
-                            connection_type: 'creator'
-                        });
-                    if (error) throw error;
-                    connectCreatorBtn.classList.add('connected');
-                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-                    showToast('Connected successfully!', 'success');
-                    if (window.track?.userConnect) {
-                        window.track.userConnect(currentContent.creator_id);
-                    }
-                }
-            } catch (error) {
-                console.error('Connection update failed:', error);
-                showToast('Failed to update connection', 'error');
+    const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
+    if (dashboardBtn) {
+        const newDashboardBtn = dashboardBtn.cloneNode(true);
+        dashboardBtn.parentNode.replaceChild(newDashboardBtn, dashboardBtn);
+        newDashboardBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            if (window.AuthHelper?.isAuthenticated()) {
+                window.location.href = 'creator-dashboard.html';
+            } else {
+                showToast('Please sign in to access dashboard', 'warning');
+                window.location.href = `login.html?redirect=creator-dashboard.html`;
             }
         });
     }
 }
 
+// ============================================
 // MODAL & PANEL SYSTEMS
+// ============================================
 function initAnalyticsModal() {
     const analyticsBtn = document.getElementById('analytics-btn');
     const analyticsModal = document.getElementById('analytics-modal');
@@ -3589,409 +4023,9 @@ function formatNotificationTime(timestamp) {
     return new Date(timestamp).toLocaleDateString();
 }
 
-function initGlobalNavigation() {
-    const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
-    if (homeBtn) {
-        const newHomeBtn = homeBtn.cloneNode(true);
-        homeBtn.parentNode.replaceChild(newHomeBtn, homeBtn);
-        newHomeBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            window.location.href = 'https://bantustreamconnect.com/';
-        });
-    }
-    const createBtn = document.querySelector('.nav-icon:nth-child(3)');
-    if (createBtn) {
-        const newCreateBtn = createBtn.cloneNode(true);
-        createBtn.parentNode.replaceChild(newCreateBtn, createBtn);
-        newCreateBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            if (window.AuthHelper?.isAuthenticated()) {
-                window.location.href = 'creator-upload.html';
-            } else {
-                showToast('Please sign in to upload content', 'warning');
-                window.location.href = `login.html?redirect=creator-upload.html`;
-            }
-        });
-    }
-    const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
-    if (dashboardBtn) {
-        const newDashboardBtn = dashboardBtn.cloneNode(true);
-        dashboardBtn.parentNode.replaceChild(newDashboardBtn, dashboardBtn);
-        newDashboardBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            if (window.AuthHelper?.isAuthenticated()) {
-                window.location.href = 'creator-dashboard.html';
-            } else {
-                showToast('Please sign in to access dashboard', 'warning');
-                window.location.href = `login.html?redirect=creator-dashboard.html`;
-            }
-        });
-    }
-}
-
-async function loadContinueWatching(userId, limit) {
-    if (limit === undefined) limit = 8;
-    const section = document.getElementById('continueWatchingSection');
-    if (!section) return;
-    if (!userId || !window.supabaseClient) {
-        section.style.display = 'none';
-        return;
-    }
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('watch_progress')
-            .select(`
-                content_id,
-                last_position,
-                is_completed,
-                updated_at,
-                Content (
-                    id,
-                    title,
-                    thumbnail_url,
-                    genre,
-                    duration,
-                    status,
-                    user_profiles!user_id (
-                        id,
-                        full_name,
-                        username,
-                        avatar_url
-                    )
-                )
-            `)
-            .eq('user_id', userId)
-            .eq('is_completed', false)
-            .neq('last_position', 0)
-            .eq('Content.status', 'published')
-            .order('updated_at', { ascending: false })
-            .limit(limit);
-        if (error) throw error;
-        if (!data || data.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
-        renderContinueWatching(data);
-        section.style.display = 'block';
-    } catch (error) {
-        console.error('❌ Failed to load continue watching:', error);
-        section.style.display = 'none';
-    }
-}
-
-function renderContinueWatching(items) {
-    const container = document.getElementById('continueGrid');
-    if (!container) return;
-    container.innerHTML = items.map(item => {
-        const content = item.Content;
-        if (!content) return '';
-        const progress = content.duration > 0
-            ? Math.min(100, Math.round((item.last_position / content.duration) * 100))
-            : 0;
-        const timeWatched = formatDuration(item.last_position);
-        const totalTime = formatDuration(content.duration);
-        const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url)
-            || content.thumbnail_url
-            || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-        const creatorName = content.user_profiles?.full_name
-            || content.user_profiles?.username
-            || (isPlaylistMode && currentPlaylist ? currentPlaylist.creator_name : 'Creator');
-        return `
-            <a href="content-detail.html?id=${content.id}" class="content-card continue-card" data-content-id="${content.id}">
-                <div class="card-thumbnail">
-                    <img src="${thumbnailUrl}" 
-                         alt="${escapeHtml(content.title)}" 
-                         loading="lazy"
-                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                    <div class="progress-bar-overlay">
-                        <div class="progress-fill" style="width:${progress}%"></div>
-                    </div>
-                    <div class="resume-badge">
-                        <i class="fas fa-play"></i> Resume
-                    </div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">${truncateText(content.title, 45)}</h3>
-                    <div class="related-meta">
-                        <span>${timeWatched} / ${totalTime}</span>
-                    </div>
-                    <div class="creator-chip">
-                        <i class="fas fa-user"></i>
-                        ${truncateText(creatorName, 20)}
-                    </div>
-                </div>
-            </a>
-        `;
-    }).join('');
-    container.querySelectorAll('.continue-card').forEach(card => {
-        card.addEventListener('click', function(e) {
-            if (window.track?.continueWatchingClick) {
-                const contentId = card.dataset.contentId;
-                window.track.continueWatchingClick(contentId);
-            }
-        });
-    });
-}
-
-function setupContinueWatchingRefresh() {
-    const refreshBtn = document.getElementById('refreshContinueBtn');
-    if (!refreshBtn) return;
-    refreshBtn.addEventListener('click', async function() {
-        if (!currentUserId) return;
-        showToast('Refreshing...', 'info');
-        refreshBtn.disabled = true;
-        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        try {
-            await loadContinueWatching(currentUserId);
-            showToast('Updated!', 'success');
-        } catch (error) {
-            console.error('Refresh failed:', error);
-            showToast('Refresh failed', 'error');
-        } finally {
-            refreshBtn.disabled = false;
-            refreshBtn.innerHTML = '<i class="fas fa-redo"></i>';
-        }
-    });
-}
-
-function setupCollectionPlaybackActions() {
-    const playAllBtn = document.getElementById('playAllBtn');
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    if (playAllBtn) {
-        playAllBtn.addEventListener('click', () => {
-            if (window.QueueManager) {
-                window.QueueManager.currentIndex = 0;
-                window.QueueManager.loadCurrentItem();
-            }
-        });
-    }
-    if (shuffleBtn) {
-        shuffleBtn.addEventListener('click', () => {
-            if (window.QueueManager && window.QueueManager.shuffleQueue) {
-                window.QueueManager.shuffleQueue();
-                showToast('Queue shuffled!', 'success');
-            }
-        });
-    }
-}
-
-function setupWatchLaterButton() {
-    const watchLaterBtn = document.getElementById('watchLaterBtn');
-    if (!watchLaterBtn) return;
-    watchLaterBtn.addEventListener('click', async function() {
-        if (!currentUserId) {
-            showToast('Please sign in to use Watch Later', 'warning');
-            return;
-        }
-        const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-        if (!contentIdForWatchLater) return;
-        if (playlistModal) {
-            playlistModal.open();
-        } else {
-            try {
-                const { data: existingList } = await window.supabaseClient
-                    .from('playlists')
-                    .select('id')
-                    .eq('user_id', currentUserId)
-                    .eq('name', 'Watch Later')
-                    .maybeSingle();
-                let playlistId = existingList?.id;
-                if (!playlistId) {
-                    const { data: newPlaylist } = await window.supabaseClient
-                        .from('playlists')
-                        .insert({
-                            user_id: currentUserId,
-                            name: 'Watch Later',
-                            description: 'Content to watch later',
-                            is_public: false
-                        })
-                        .select()
-                        .single();
-                    playlistId = newPlaylist.id;
-                }
-                const { data: existing } = await window.supabaseClient
-                    .from('playlist_items')
-                    .select('id')
-                    .eq('playlist_id', playlistId)
-                    .eq('content_id', contentIdForWatchLater)
-                    .maybeSingle();
-                if (existing) {
-                    showToast('Already in Watch Later', 'info');
-                    return;
-                }
-                await window.supabaseClient
-                    .from('playlist_items')
-                    .insert({
-                        playlist_id: playlistId,
-                        content_id: contentIdForWatchLater,
-                        added_at: new Date().toISOString()
-                    });
-                showToast('Added to Watch Later!', 'success');
-            } catch (error) {
-                console.error('Watch Later fallback failed:', error);
-                showToast('Failed to add to Watch Later', 'error');
-            }
-        }
-    });
-}
-
-async function updateWatchLaterButtonState() {
-    const watchLaterBtn = document.getElementById('watchLaterBtn');
-    if (!watchLaterBtn || !playlistManager || !currentUserId) return;
-    const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-    if (!contentIdForWatchLater) return;
-    try {
-        const isInWatchLater = await playlistManager.isInWatchLater(contentIdForWatchLater);
-        if (isInWatchLater) {
-            watchLaterBtn.classList.add('active');
-            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
-        } else {
-            watchLaterBtn.classList.remove('active');
-            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
-        }
-    } catch (error) {
-        console.warn('Failed to check watch later state:', error);
-    }
-}
-
-async function refreshCountsFromSource() {
-    const contentIdForRefresh = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-    if (!contentIdForRefresh) return;
-    try {
-        const { count: viewsCount } = await window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', contentIdForRefresh);
-        const { count: likesCount } = await window.supabaseClient
-            .from('content_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', contentIdForRefresh);
-        if (currentContent && viewsCount !== undefined) {
-            currentContent.views_count = viewsCount;
-            updateCountsUI(currentContent);
-        }
-        if (currentContent && likesCount !== undefined) {
-            currentContent.likes_count = likesCount;
-            const likesEl = document.getElementById('likesCount');
-            if (likesEl) likesEl.textContent = formatNumber(likesCount);
-        }
-    } catch (error) {
-        console.warn('Failed to refresh counts:', error);
-    }
-}
-
-function updateCountsUI(content) {
-    const viewsEl = document.getElementById('viewsCount');
-    const viewsFullEl = document.getElementById('viewsCountFull');
-    const likesEl = document.getElementById('likesCount');
-    if (viewsEl) viewsEl.textContent = formatNumber(content.views_count) + ' views';
-    if (viewsFullEl) viewsFullEl.textContent = formatNumber(content.views_count);
-    if (likesEl) likesEl.textContent = formatNumber(content.likes_count);
-}
-
-async function loadSecondaryContentData(contentId) {
-    if (!contentId) return;
-    Promise.all([
-        loadComments(contentId),
-        loadRelatedContent(contentId),
-        currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
-        currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
-    ]).catch(err => console.warn('⚠️ Secondary data load failed:', err));
-}
-
-async function loadSecondaryContentDataForPlaylist() {
-    if (!currentPlaylistItems || !currentPlaylistItems.length) return;
-    const firstItemId = currentPlaylistItems[0]?.id;
-    if (firstItemId) {
-        Promise.all([
-            loadComments(firstItemId),
-            currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
-            currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
-        ]).catch(err => console.warn('⚠️ Playlist secondary data load failed:', err));
-    }
-}
-
-function setupInitialPlayButton() {
-    const playButton = document.getElementById('initialPlayButton');
-    if (!playButton) return;
-    playButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const video = document.getElementById('inlineVideoPlayer');
-        if (!video) return;
-        try {
-            if (enhancedVideoPlayer) {
-                await enhancedVideoPlayer.play();
-            } else {
-                await video.play();
-            }
-            const overlay = document.getElementById('initialPlayOverlay');
-            if (overlay) overlay.classList.add('hidden');
-            console.log('▶️ User initiated playback');
-        } catch (error) {
-            console.error('❌ User playback failed:', error);
-            showToast('Playback failed. Please try again.', 'error');
-        }
-    });
-}
-
-function refreshContentInBackground(contentId) {
-    try {
-        setTimeout(async () => {
-            const [viewsRes, likesRes] = await Promise.all([
-                window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
-                window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', contentId)
-            ]);
-            if (currentContent) {
-                currentContent.views_count = viewsRes.count || 0;
-                currentContent.likes_count = likesRes.count || 0;
-                updateCountsUI(currentContent);
-                currentContent._cachedAt = Date.now();
-                localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
-            }
-        }, 100);
-    } catch(e) { console.warn('Background refresh failed:', e); }
-}
-
-async function loadRecommendationRails() {
-    if (!recommendationEngine) return;
-    try {
-        const recommendations = await recommendationEngine.getRecommendations();
-        renderRecommendationRails(recommendations);
-    } catch (error) {
-        console.error('Failed to load recommendations:', error);
-    }
-}
-
-function renderRecommendationRails(recommendations) {
-    const container = document.getElementById('recommendationGrid');
-    if (!container) return;
-    if (!recommendations || recommendations.length === 0) {
-        container.innerHTML = '<div class="no-recommendations">No recommendations available</div>';
-        return;
-    }
-    container.innerHTML = recommendations.map(item => `
-        <a href="content-detail.html?id=${item.id}" class="content-card">
-            <div class="card-thumbnail">
-                <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-                     alt="${escapeHtml(item.title)}" 
-                     loading="lazy">
-                <div class="thumbnail-overlay"></div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title">${truncateText(item.title, 45)}</h3>
-                <div class="related-meta">
-                    <i class="fas fa-eye"></i>
-                    <span>${formatNumber(item.total_views || 0)} views</span>
-                </div>
-            </div>
-        </a>
-    `).join('');
-}
-
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 function safeSetText(elementId, text) {
     const el = document.getElementById(elementId);
     if (el) el.textContent = text || '';
@@ -4076,184 +4110,70 @@ function formatCommentTime(timestamp) {
     }
 }
 
-function markContentAsViewed(contentId) {
-    try {
-        let viewed = localStorage.getItem('bantu_viewed_content');
-        try {
-            viewed = JSON.parse(viewed || '[]');
-        } catch (e) {
-            console.warn('⚠️ Failed to parse viewed content:', e);
-            viewed = [];
-        }
-        if (!Array.isArray(viewed)) {
-            console.warn('⚠️ viewed content was not an array, resetting...');
-            viewed = [];
-        }
-        if (viewed.includes(contentId)) {
-            return;
-        }
-        viewed.push(contentId);
-        if (viewed.length > 500) {
-            viewed = viewed.slice(-500);
-        }
-        localStorage.setItem('bantu_viewed_content', JSON.stringify(viewed));
-        console.log('✅ Marked content as viewed:', contentId);
-    } catch (error) {
-        console.error('❌ Failed to mark viewed content:', error);
-    }
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-function updateQualityIndicator(quality) {
-    const qualityBadge = document.getElementById('qualityBadge');
-    if (qualityBadge) {
-        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
-    }
-}
-
-function updateNetworkSpeedIndicator(speedMbps) {
-    const speedBadge = document.getElementById('networkSpeedBadge');
-    if (!speedBadge) return;
-    if (speedMbps) {
-        speedBadge.style.display = 'inline-flex';
-        speedBadge.textContent = `${speedMbps.toFixed(1)} Mbps`;
-    } else {
-        speedBadge.style.display = 'none';
-    }
-}
-
-function initThemeSelector() {
-    console.log('🎨 Initializing theme selector...');
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        themeToggle.checked = savedTheme === 'light';
-        themeToggle.addEventListener('change', function(e) {
-            const newTheme = e.target.checked ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            console.log('Theme changed to:', newTheme);
-        });
-    }
-}
-
-function setupCompleteSidebar() {
-    const menuBtn = document.getElementById('menu-btn');
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.querySelector('.main-content');
-    if (menuBtn && sidebar) {
-        menuBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            if (mainContent) mainContent.classList.toggle('sidebar-open');
-        });
-    }
-    const resizeHandle = document.getElementById('sidebar-resize-handle');
-    if (resizeHandle) {
-        let isResizing = false;
-        resizeHandle.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.body.style.cursor = 'ew-resize';
-            e.preventDefault();
-        });
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const newWidth = e.clientX;
-            if (newWidth >= 200 && newWidth <= 400) {
-                sidebar.style.width = newWidth + 'px';
-                localStorage.setItem('sidebar_width', newWidth);
+async function waitForAuthHelper() {
+    return new Promise((resolve) => {
+        const check = setInterval(() => {
+            if (window.AuthHelper && window.AuthHelper.isInitialized) {
+                clearInterval(check);
+                resolve();
             }
-        });
-        document.addEventListener('mouseup', () => {
-            isResizing = false;
-            document.body.style.cursor = '';
-        });
-    }
-    const savedWidth = localStorage.getItem('sidebar_width');
-    if (savedWidth && sidebar) {
-        sidebar.style.width = savedWidth + 'px';
-    }
-}
-
-function setupNavigationButtons() {
-    const backBtn = document.getElementById('backNavBtn');
-    const forwardBtn = document.getElementById('forwardNavBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', () => {
-            window.history.back();
-        });
-    }
-    if (forwardBtn) {
-        forwardBtn.addEventListener('click', () => {
-            window.history.forward();
-        });
-    }
-}
-
-function setupNavButtonScrollAnimation() {
-    const header = document.querySelector('.glass-header');
-    let lastScroll = 0;
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset;
-        if (header) {
-            if (currentScroll > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
-        }
-        lastScroll = currentScroll;
+        }, 50);
+        setTimeout(() => {
+            clearInterval(check);
+            console.warn('⚠️ AuthHelper not loaded within timeout, continuing anyway');
+            resolve();
+        }, 2000);
     });
 }
 
-// UIScaleController - Safe fallback
-if (typeof window.UIScaleController === 'undefined') {
-    window.UIScaleController = class UIScaleController {
-        constructor() {
-            this.scale = 100;
-            this.container = null;
-        }
-        init() {
-            this.container = document.querySelector('.main-content');
-            const savedScale = localStorage.getItem('ui_scale');
-            if (savedScale) {
-                this.setScale(parseInt(savedScale));
-            }
-            const scaleUpBtn = document.getElementById('scaleUpBtn');
-            const scaleDownBtn = document.getElementById('scaleDownBtn');
-            const scaleResetBtn = document.getElementById('scaleResetBtn');
-            if (scaleUpBtn) {
-                scaleUpBtn.addEventListener('click', () => this.scaleUp());
-            }
-            if (scaleDownBtn) {
-                scaleDownBtn.addEventListener('click', () => this.scaleDown());
-            }
-            if (scaleResetBtn) {
-                scaleResetBtn.addEventListener('click', () => this.resetScale());
-            }
-        }
-        setScale(value) {
-            this.scale = Math.min(150, Math.max(70, value));
-            if (this.container) {
-                this.container.style.fontSize = this.scale + '%';
-            }
-            localStorage.setItem('ui_scale', this.scale);
-            const scaleIndicator = document.getElementById('scaleIndicator');
-            if (scaleIndicator) {
-                scaleIndicator.textContent = this.scale + '%';
-            }
-        }
-        scaleUp() {
-            this.setScale(this.scale + 10);
-        }
-        scaleDown() {
-            this.setScale(this.scale - 10);
-        }
-        resetScale() {
-            this.setScale(100);
+// ============================================
+// PLAYER ENDED LISTENER FOR AUTO-ADVANCE
+// ============================================
+function setupPlayerEndedListener() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    if (!videoElement) {
+        setTimeout(setupPlayerEndedListener, 500);
+        return;
+    }
+    const handleEnded = () => {
+        console.log('🎬 Media track completed. Checking for playlist progression...');
+        if (typeof window.playNextPlaylistItem === 'function') {
+            window.playNextPlaylistItem();
+        } else {
+            console.log('🎵 No playlist controller bound to window');
         }
     };
+    videoElement.removeEventListener('ended', handleEnded);
+    videoElement.addEventListener('ended', handleEnded);
+    console.log('✅ Player ended listener attached for auto-advance');
 }
 
+function updateContentDetails(content) {
+    updateContentUI(content);
+}
+
+// ============================================
+// GLOBAL EXPORTS
+// ============================================
 window.manualRecordView = async function() {
     if (!currentContent?.id) {
         console.error('No current content');
@@ -4306,6 +4226,8 @@ window.incrementContentViews = incrementContentViews;
 window.resetViewRecordingState = resetViewRecordingState;
 window.syncPlaylistUI = syncPlaylistUI;
 window.resetPlaylistCompletionLock = resetPlaylistCompletionLock;
+window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
+window.loadContentIntoPlayer = loadContentIntoPlayer;
 
 window.addEventListener('beforeunload', function() {
     if (viewValidationTimer) {
@@ -4323,7 +4245,7 @@ window.addEventListener('beforeunload', function() {
 });
 
 // ============================================
-// 🎯 OPTIMIZED INITIALIZATION WITH YOUTUBE-STYLE PLAYLIST ARCHITECTURE
+// OPTIMIZED INITIALIZATION
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🎬 Content Detail: Starting optimized load sequence with YouTube-style playlist architecture...');
@@ -4458,7 +4380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof UIScaleController !== 'undefined') {
         window.uiScaleController = new UIScaleController();
         window.uiScaleController.init();
-    } else {
+    } else if (typeof window.UIScaleController !== 'undefined') {
         window.uiScaleController = new window.UIScaleController();
         window.uiScaleController.init();
     }
@@ -4518,7 +4440,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setTimeout(() => {
-            if (enhancedVideoPlayer?.video) {
+            const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+            if (player?.video) {
                 initializeKeyboardShortcuts();
             }
         }, 1000);
@@ -4583,66 +4506,121 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ Content Detail initialization complete with YouTube-style playlist architecture and centralized UI sync');
 });
 
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : '#3b82f6'};
-        color: white;
-        border-radius: 8px;
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+async function loadSecondaryContentData(contentId) {
+    if (!contentId) return;
+    Promise.all([
+        loadComments(contentId),
+        loadRelatedContent(contentId),
+        currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
+        currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
+    ]).catch(err => console.warn('⚠️ Secondary data load failed:', err));
 }
 
-async function waitForAuthHelper() {
-    return new Promise((resolve) => {
-        const check = setInterval(() => {
-            if (window.AuthHelper && window.AuthHelper.isInitialized) {
-                clearInterval(check);
-                resolve();
-            }
-        }, 50);
-        setTimeout(() => {
-            clearInterval(check);
-            console.warn('⚠️ AuthHelper not loaded within timeout, continuing anyway');
-            resolve();
-        }, 2000);
-    });
+async function loadSecondaryContentDataForPlaylist() {
+    if (!currentPlaylistItems || !currentPlaylistItems.length) return;
+    const firstItemId = currentPlaylistItems[0]?.id;
+    if (firstItemId) {
+        Promise.all([
+            loadComments(firstItemId),
+            currentUserId ? loadContinueWatching(currentUserId) : Promise.resolve(),
+            currentUserId && window.PlaylistManager && !playlistManager ? initializePlaylistManager() : Promise.resolve()
+        ]).catch(err => console.warn('⚠️ Playlist secondary data load failed:', err));
+    }
 }
 
-function setupPlayerEndedListener() {
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    if (!videoElement) {
-        setTimeout(setupPlayerEndedListener, 500);
+function initializeKeyboardShortcuts() {
+    if (!window.KeyboardShortcuts) {
+        console.warn('⚠️ KeyboardShortcuts not loaded yet');
         return;
     }
-    const handleEnded = () => {
-        console.log('🎬 Media track completed. Checking for playlist progression...');
-        if (typeof window.playNextPlaylistItem === 'function') {
-            window.playNextPlaylistItem();
-        } else {
-            console.log('🎵 No playlist controller bound to window');
-        }
-    };
-    videoElement.removeEventListener('ended', handleEnded);
-    videoElement.addEventListener('ended', handleEnded);
-    console.log('✅ Player ended listener attached for auto-advance');
+    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+    if (!player?.video) {
+        console.warn('⚠️ Video player not ready for keyboard shortcuts');
+        return;
+    }
+    try {
+        keyboardShortcuts = new window.KeyboardShortcuts({
+            videoElement: player.video,
+            supabaseClient: window.supabaseClient,
+            contentId: currentContent?.id
+        });
+        window.keyboardShortcuts = keyboardShortcuts;
+        console.log('✅ Keyboard shortcuts initialized');
+    } catch (error) {
+        console.error('❌ Failed to initialize keyboard shortcuts:', error);
+    }
 }
 
-function updateContentDetails(content) {
-    // This is an alias for updateContentUI for compatibility
-    updateContentUI(content);
+function refreshContentInBackground(contentId) {
+    try {
+        setTimeout(async () => {
+            const [viewsRes, likesRes] = await Promise.all([
+                window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
+                window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', contentId)
+            ]);
+            if (currentContent) {
+                currentContent.views_count = viewsRes.count || 0;
+                currentContent.likes_count = likesRes.count || 0;
+                updateCountsUI(currentContent);
+                currentContent._cachedAt = Date.now();
+                localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
+            }
+        }, 100);
+    } catch(e) { console.warn('Background refresh failed:', e); }
+}
+
+// UIScaleController - Safe fallback
+if (typeof window.UIScaleController === 'undefined') {
+    window.UIScaleController = class UIScaleController {
+        constructor() {
+            this.scale = 100;
+            this.container = null;
+        }
+        init() {
+            this.container = document.querySelector('.main-content');
+            const savedScale = localStorage.getItem('ui_scale');
+            if (savedScale) {
+                this.setScale(parseInt(savedScale));
+            }
+            const scaleUpBtn = document.getElementById('scaleUpBtn');
+            const scaleDownBtn = document.getElementById('scaleDownBtn');
+            const scaleResetBtn = document.getElementById('scaleResetBtn');
+            if (scaleUpBtn) {
+                scaleUpBtn.addEventListener('click', () => this.scaleUp());
+            }
+            if (scaleDownBtn) {
+                scaleDownBtn.addEventListener('click', () => this.scaleDown());
+            }
+            if (scaleResetBtn) {
+                scaleResetBtn.addEventListener('click', () => this.resetScale());
+            }
+        }
+        setScale(value) {
+            this.scale = Math.min(150, Math.max(70, value));
+            if (this.container) {
+                this.container.style.fontSize = this.scale + '%';
+            }
+            localStorage.setItem('ui_scale', this.scale);
+            const scaleIndicator = document.getElementById('scaleIndicator');
+            if (scaleIndicator) {
+                scaleIndicator.textContent = this.scale + '%';
+            }
+        }
+        scaleUp() {
+            this.setScale(this.scale + 10);
+        }
+        scaleDown() {
+            this.setScale(this.scale - 10);
+        }
+        resetScale() {
+            this.setScale(100);
+        }
+    };
 }
 
 console.log('✅ Content detail script loaded with ALL CRITICAL FIXES APPLIED:');
+console.log('  ✅ DIRECT USER GESTURE PLAYBACK (startPlaybackFromUserGesture)');
+console.log('  ✅ NON-DESTRUCTIVE PLAYER SOURCE CHANGES (loadSource method)');
 console.log('  ✅ YouTube-style persistent DOM sidebar (never recreated)');
 console.log('  ✅ CSS class-based toggle (max-height, opacity, NOT display:none)');
 console.log('  ✅ Single tracklist render (albumTracksRendered flag)');
