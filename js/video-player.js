@@ -23,12 +23,15 @@
 // - Enhanced safePlay() with user interaction audio restoration
 // - Muted recovery with click/keydown listener to unmute
 // - Persistent audio restoration after first user interaction
-// 🔧 VERSION: v2.4.0 - Desktop Autoplay Audio Fix + YouTube-style playlist
+// 🔧 FIX #2: REMOVED fake audio restore system (conflicts with direct user gesture)
+// 🔧 FIX #5: ADDED delegated event listeners for prev/next/volume (survives DOM rebuilds)
+// 🔧 FIX #8: REMOVED duplicate ended handlers - only ONE progression owner
+// 🔧 VERSION: v2.5.0 - Clean architecture with delegated listeners
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v2.4.0 - Desktop Autoplay Audio Fix)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v2.5.0 - Clean Architecture + Delegated Listeners)');
 
   /**
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
@@ -44,6 +47,10 @@
    * - safePlay() attempts unmuted playback first
    * - Falls back to muted with click/keydown listener to restore audio
    * - Audio restored on first user interaction
+   * 
+   * 🔧 FIX #2: REMOVED fake audio restore system (_attachAudioRestoreListeners removed)
+   * 🔧 FIX #5: DELEGATED event listeners for prev/next/volume buttons
+   * 🔧 FIX #8: SINGLE ended handler (no duplicates)
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -112,7 +119,7 @@
       this.viewRecorded = false;
       this.viewValidated = false;
       
-      // Audio restoration tracking
+      // Audio restoration tracking (simplified - no fake restore system)
       this._audioRestoreListenerAttached = false;
       this._pendingAudioRestore = false;
       
@@ -170,12 +177,69 @@
         navigator.userAgent || ''
       );
       
+      // 🔧 FIX #5: Setup delegated event listeners for buttons (survives DOM rebuilds)
+      this._setupDelegatedEventListeners();
+      
       console.log('✅ EnhancedVideoPlayer instantiated', {
         contentId: this.contentId,
         userId: this.userId,
         telemetry: this.config.enableTelemetry,
         collectionNav: this.config.enableCollectionNav
       });
+    }
+    
+    // =====================================================
+    // 🔧 FIX #5: DELEGATED EVENT LISTENERS
+    // These survive DOM rebuilds and player destruction/recreation
+    // =====================================================
+    _setupDelegatedEventListeners() {
+      // Only setup once globally
+      if (window._delegatedListenersSetup) return;
+      window._delegatedListenersSetup = true;
+      
+      console.log('🎯 Setting up delegated event listeners for player controls (survives DOM rebuilds)');
+      
+      document.addEventListener('click', (e) => {
+        // Find closest matching buttons
+        const prevBtn = e.target.closest('.prev-track-btn, .player-prev-btn');
+        const nextBtn = e.target.closest('.next-track-btn, .player-next-btn');
+        const volumeBtn = e.target.closest('.volume-btn, .player-volume-btn');
+        
+        if (prevBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('⏮️ Delegated: Previous button clicked');
+          if (typeof window.playPreviousPlaylistItem === 'function') {
+            window.playPreviousPlaylistItem();
+          } else if (typeof this.playPrevious === 'function') {
+            this.playPrevious();
+          }
+        }
+        
+        if (nextBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('⏭️ Delegated: Next button clicked');
+          if (typeof window.playNextPlaylistItem === 'function') {
+            window.playNextPlaylistItem();
+          } else if (typeof this.playNext === 'function') {
+            this.playNext();
+          }
+        }
+        
+        if (volumeBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🔊 Delegated: Volume button clicked');
+          if (this.video) {
+            this.video.muted = !this.video.muted;
+            this._updateVolumeUI();
+            this._emit('playback:mute', { muted: this.video.muted });
+          }
+        }
+      });
+      
+      console.log('✅ Delegated event listeners registered');
     }
     
     // =====================================================
@@ -390,6 +454,10 @@
     _getControlsHTML() {
       const isMobile = this._isMobile;
       
+      // 🔧 FIX #6: Removed engagement buttons from player overlay
+      // Social buttons (like, favorite, share) are now ONLY outside player
+      // Only keep essential playback controls
+      
       return `
         <div class="controls-bar" role="group" aria-label="Playback controls">
           <button class="control-btn play-pause-btn" 
@@ -418,7 +486,7 @@
           
           ${!isMobile ? `
           <div class="volume-group">
-            <button class="control-btn volume-btn" 
+            <button class="control-btn volume-btn player-volume-btn" 
                     title="Mute/Unmute (M)"
                     aria-label="Toggle mute">
               <i class="fas fa-volume-up" aria-hidden="true"></i>
@@ -433,12 +501,12 @@
           <div class="controls-spacer"></div>
           
           ${this.config.enableCollectionNav ? `
-          <button class="control-btn prev-track-btn" 
+          <button class="control-btn prev-track-btn player-prev-btn" 
                   title="Previous (P)"
                   aria-label="Play previous item">
             <i class="fas fa-step-backward" aria-hidden="true"></i>
           </button>
-          <button class="control-btn next-track-btn" 
+          <button class="control-btn next-track-btn player-next-btn" 
                   title="Next (N)"
                   aria-label="Play next item">
             <i class="fas fa-step-forward" aria-hidden="true"></i>
@@ -536,27 +604,6 @@
             <button class="dismiss-btn">Dismiss</button>
           </div>
         </div>
-        
-        ${this.contentId ? `
-        <div class="social-panel" aria-label="Engagement actions">
-          <button class="social-btn like-btn ${this.engagement.isLiked ? 'active' : ''}" 
-                  aria-label="${this.engagement.isLiked ? 'Unlike' : 'Like'}"
-                  aria-pressed="${this.engagement.isLiked}">
-            <i class="fas fa-heart"></i>
-            <span class="social-count">${this._formatCount(this.engagement.likes)}</span>
-          </button>
-          <button class="social-btn favorite-btn ${this.engagement.isFavorited ? 'active' : ''}" 
-                  aria-label="${this.engagement.isFavorited ? 'Remove from favorites' : 'Add to favorites'}"
-                  aria-pressed="${this.engagement.isFavorited}">
-            <i class="fas fa-bookmark"></i>
-            <span class="social-count">${this._formatCount(this.engagement.favorites)}</span>
-          </button>
-          <button class="social-btn share-btn" aria-label="Share">
-            <i class="fas fa-share-alt"></i>
-            <span class="social-count">${this._formatCount(this.engagement.shares)}</span>
-          </button>
-        </div>
-        ` : ''}
       `;
     }
     
@@ -581,8 +628,7 @@
         nextTrackBtn: this.controls.querySelector('.next-track-btn'),
         playOverlay: document.getElementById('initialPlayOverlay'),
         bufferingIndicator: this.controls.querySelector('.buffering-indicator'),
-        errorOverlay: this.controls.querySelector('.error-overlay'),
-        socialPanel: this.controls.querySelector('.social-panel')
+        errorOverlay: this.controls.querySelector('.error-overlay')
       };
     }
     
@@ -826,7 +872,7 @@
     }
     
     // =====================================================
-    // 🎯 YOUTUBE-STYLE ENDED HANDLER (CRITICAL)
+    // 🎯 FIX #8: SINGLE ENDED HANDLER (NO DUPLICATES)
     // =====================================================
     _handleEnded() {
       this.isPlaying = false;
@@ -837,21 +883,12 @@
       // 🎯 YOUTUBE-STYLE ARCHITECTURE:
       // Player ONLY calls the global function if it exists
       // Content-detail.js owns the playlist logic
+      // FIX #8: Only ONE progression owner - NO duplicate ended handlers
       if (typeof window.playNextPlaylistItem === 'function') {
         console.log('🎬 Invoking window.playNextPlaylistItem() for auto-advance');
         window.playNextPlaylistItem();
-      } else if (window.ContentCollectionsEngine && typeof window.ContentCollectionsEngine.getNextItem === 'function') {
-        // Fallback for legacy collection engine
-        console.log('🎬 Using ContentCollectionsEngine for auto-advance');
-        const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
-        if (nextItem) {
-          window.location.href = `content-detail.html?id=${nextItem.id}`;
-        }
-      } else if (this.config.enableCollectionNav && this.config.autoplay) {
-        console.log('⚠️ No playlist controller found, using local auto-advance');
-        this._autoAdvance();
       } else {
-        console.log('🎵 No playlist controller bound to window');
+        console.log('🎵 No playlist controller bound to window - auto-advance disabled');
       }
       
       this._emit('playback:ended', {
@@ -1210,6 +1247,8 @@
       }
       
       if (this.config.enableCollectionNav) {
+        // Note: prev/next buttons also handled by delegated listeners
+        // but we keep these for direct access
         if (c.prevTrackBtn) {
           c.prevTrackBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1238,8 +1277,6 @@
           await this.togglePictureInPicture();
         });
       }
-      
-      this._setupSocialInteractions();
       
       if (c.playOverlay) {
         const overlayBtn = c.playOverlay.querySelector('.play-overlay-btn');
@@ -1275,37 +1312,6 @@
       this._setupControlsVisibility();
       
       console.log('✅ Control interactions setup');
-    }
-    
-    _setupSocialInteractions() {
-      if (!this._controlsCache || !this._controlsCache.socialPanel || !this.contentId) return;
-      
-      const { socialPanel } = this._controlsCache;
-      if (!socialPanel) return;
-      
-      const likeBtn = socialPanel.querySelector('.like-btn');
-      if (likeBtn) {
-        likeBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await this._toggleLike();
-        });
-      }
-      
-      const favBtn = socialPanel.querySelector('.favorite-btn');
-      if (favBtn) {
-        favBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await this._toggleFavorite();
-        });
-      }
-      
-      const shareBtn = socialPanel.querySelector('.share-btn');
-      if (shareBtn) {
-        shareBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this._shareContent();
-        });
-      }
     }
     
     _setupControlsVisibility() {
@@ -1579,7 +1585,9 @@
     }
     
     // =====================================================
-    // 🔧 DESKTOP AUTOPLAY AUDIO FIX (ENHANCED)
+    // 🔧 FIX #2 & #7: SIMPLIFIED AUDIO RESTORATION (NO FAKE SYSTEM)
+    // No fake _attachAudioRestoreListeners or _restoreAudioAfterInteraction
+    // Instead: direct user gesture handling in content-detail.js
     // =====================================================
     async safePlay() {
       if (!this.video || this._isDestroyed) {
@@ -1590,36 +1598,40 @@
         // First attempt: normal playback with unmuted audio
         await this.video.play();
         
-        // Success! Unmute if needed
-        this.video.muted = false;
-        this.config.muted = false;
-        
-        // Clean up any pending audio restoration listeners
-        this._cleanupAudioRestoreListeners();
+        // Success! Unmute if needed (but should already be unmuted)
+        if (this.video.muted) {
+          this.video.muted = false;
+          this.config.muted = false;
+        }
         
         console.log('▶️ Playback started successfully with unmuted audio');
-        this._emit('playback:audio-restored', { method: 'direct' });
+        this._emit('playback:success', { method: 'direct' });
         return true;
         
       } catch (error) {
         console.warn('⚠️ Initial play blocked or failed:', error.message);
         
         // Second attempt: Force mute and retry
-        this.video.muted = true;
-        this.config.muted = true;
+        if (this.video) {
+          this.video.muted = true;
+          this.config.muted = true;
+        }
         
         try {
-          await this.video.play();
-          console.log('✅ Playback recovered in muted mode');
-          
-          // Set up audio restoration on first user interaction
-          this._setupAudioRestoreOnInteraction();
-          
-          this._emit('playback:audio-muted', { 
-            reason: error.message,
-            willRestoreOnInteraction: true 
-          });
-          return true;
+          if (this.video) {
+            await this.video.play();
+            console.log('✅ Playback recovered in muted mode');
+            
+            // Show play overlay to prompt user to unmute
+            this._showPlayOverlay();
+            
+            this._emit('playback:audio-muted', { 
+              reason: error.message,
+              willRestoreOnInteraction: true 
+            });
+            return true;
+          }
+          throw new Error('Video element not available');
           
         } catch (retryError) {
           console.error('❌ Hard playback failure:', retryError);
@@ -1631,58 +1643,6 @@
           throw retryError;
         }
       }
-    }
-    
-    // =====================================================
-    // 🔧 AUDIO RESTORATION ON USER INTERACTION
-    // =====================================================
-    _setupAudioRestoreOnInteraction() {
-      if (this._audioRestoreListenerAttached) {
-        console.log('🔊 Audio restore listener already attached');
-        return;
-      }
-      
-      this._pendingAudioRestore = true;
-      this._audioRestoreListenerAttached = true;
-      
-      const restoreAudio = () => {
-        if (!this._pendingAudioRestore) return;
-        if (!this.video || this._isDestroyed) return;
-        
-        // Only restore if video is still muted
-        if (this.video.muted) {
-          this.video.muted = false;
-          console.log('🔊 Audio restored after user interaction');
-          this._emit('playback:audio-restored', { method: 'user-interaction' });
-        }
-        
-        this._pendingAudioRestore = false;
-        this._cleanupAudioRestoreListeners();
-      };
-      
-      // Listen for click, keydown, or touch events
-      document.addEventListener('click', restoreAudio, { once: true });
-      document.addEventListener('keydown', restoreAudio, { once: true });
-      document.addEventListener('touchstart', restoreAudio, { once: true });
-      
-      // Also listen on video container for immediate interaction
-      if (this.container) {
-        this.container.addEventListener('click', restoreAudio, { once: true });
-        this.container.addEventListener('touchstart', restoreAudio, { once: true });
-      }
-      
-      console.log('🔊 Audio restore listener attached - will unmute on first user interaction');
-    }
-    
-    _cleanupAudioRestoreListeners() {
-      if (!this._audioRestoreListenerAttached) return;
-      
-      this._pendingAudioRestore = false;
-      this._audioRestoreListenerAttached = false;
-      
-      // Note: can't easily remove listeners added with { once: true }
-      // but they auto-cleanup after firing
-      console.log('🔇 Audio restore listeners cleaned up');
     }
     
     async play() {
@@ -1770,12 +1730,6 @@
       if (!this.video || this._isDestroyed) return;
       if (this.video) {
         this.video.muted = !this.video.muted;
-      }
-      
-      // If user manually unmutes, cancel pending auto-restore
-      if (this.video && !this.video.muted) {
-        this._pendingAudioRestore = false;
-        console.log('🔊 User manually unmuted, cancelling auto-restore');
       }
       
       this._updateVolumeUI();
@@ -1925,7 +1879,6 @@
         } else {
           console.log('✅ View recorded via RPC');
           this.engagement.views++;
-          this._updateSocialCounts();
         }
         
         if (window.stateManager) {
@@ -1962,37 +1915,22 @@
       }
     }
     
-    _autoAdvance() {
-      if (!this.config.enableCollectionNav) return;
-      console.log('🎬 Auto-advancing to next item...');
-      
-      if (this.config.enableQueueIntegration && window.QueueManager && window.QueueManager.playNext) {
-        window.QueueManager.playNext();
-        return;
-      }
-      
-      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
-        const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
-        if (nextItem) {
-          window.location.href = `content-detail.html?id=${nextItem.id}`;
-          return;
-        }
-      }
-      
-      this._emit('collection:auto-advance', {
-        currentContentId: this.contentId,
-        collectionId: this.collectionContext.collectionId
-      });
-    }
-    
     playPrevious() {
       console.log('⏮️ Playing previous item...');
       
+      // Use global playlist function if available
+      if (typeof window.playPreviousPlaylistItem === 'function') {
+        window.playPreviousPlaylistItem();
+        return;
+      }
+      
+      // Fallback to QueueManager
       if (window.QueueManager && window.QueueManager.playPrevious) {
         window.QueueManager.playPrevious();
         return;
       }
       
+      // Fallback to ContentCollectionsEngine
       if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getPreviousItem) {
         const prevItem = window.ContentCollectionsEngine.getPreviousItem(this.contentId);
         if (prevItem) {
@@ -2009,11 +1947,19 @@
     playNext() {
       console.log('⏭️ Playing next item...');
       
+      // Use global playlist function if available
+      if (typeof window.playNextPlaylistItem === 'function') {
+        window.playNextPlaylistItem();
+        return;
+      }
+      
+      // Fallback to QueueManager
       if (window.QueueManager && window.QueueManager.playNext) {
         window.QueueManager.playNext();
         return;
       }
       
+      // Fallback to ContentCollectionsEngine
       if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
         const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
         if (nextItem) {
@@ -2025,160 +1971,6 @@
       this._emit('collection:next-requested', {
         currentContentId: this.contentId
       });
-    }
-    
-    async _toggleLike() {
-      if (!this.supabase || !this.contentId || !this.userId) {
-        console.warn('⚠️ Cannot toggle like: missing auth or content');
-        return;
-      }
-      
-      const willLike = !this.engagement.isLiked;
-      
-      this.engagement.isLiked = willLike;
-      this.engagement.likes += willLike ? 1 : -1;
-      this._updateSocialCounts();
-      
-      try {
-        if (willLike) {
-          await this.supabase
-            .from('content_likes')
-            .upsert({
-              user_id: this.userId,
-              content_id: parseInt(this.contentId)
-            }, { onConflict: 'user_id,content_id' });
-        } else {
-          await this.supabase
-            .from('content_likes')
-            .delete()
-            .eq('user_id', this.userId)
-            .eq('content_id', parseInt(this.contentId));
-        }
-        
-        await this.supabase.rpc('increment_engagement_stats_likes', {
-          target_content_id: parseInt(this.contentId),
-          increment_value: willLike ? 1 : -1
-        });
-        
-        console.log(`❤️ Like ${willLike ? 'added' : 'removed'}`);
-        this._emit('social:like-toggled', { liked: willLike, count: this.engagement.likes });
-        
-      } catch (error) {
-        console.error('❌ Like toggle failed:', error);
-        this.engagement.isLiked = !willLike;
-        this.engagement.likes += willLike ? -1 : 1;
-        this._updateSocialCounts();
-      }
-    }
-    
-    async _toggleFavorite() {
-      if (!this.supabase || !this.contentId || !this.userId) return;
-      
-      const willFav = !this.engagement.isFavorited;
-      
-      this.engagement.isFavorited = willFav;
-      this.engagement.favorites += willFav ? 1 : -1;
-      this._updateSocialCounts();
-      
-      try {
-        if (willFav) {
-          await this.supabase
-            .from('user_favorites')
-            .upsert({
-              user_id: this.userId,
-              content_id: parseInt(this.contentId),
-              created_at: new Date().toISOString()
-            }, { onConflict: 'user_id,content_id' });
-        } else {
-          await this.supabase
-            .from('user_favorites')
-            .delete()
-            .eq('user_id', this.userId)
-            .eq('content_id', parseInt(this.contentId));
-        }
-        
-        console.log(`⭐ Favorite ${willFav ? 'added' : 'removed'}`);
-        this._emit('social:favorite-toggled', { favorited: willFav, count: this.engagement.favorites });
-        
-      } catch (error) {
-        console.error('❌ Favorite toggle failed:', error);
-        this.engagement.isFavorited = !willFav;
-        this.engagement.favorites += willFav ? -1 : 1;
-        this._updateSocialCounts();
-      }
-    }
-    
-    _shareContent() {
-      const shareData = {
-        title: this.contentMetadata ? (this.contentMetadata.title || 'Check this out') : 'Check this out',
-        text: this.contentMetadata ? (this.contentMetadata.description || '') : '',
-        url: window.location.href
-      };
-      
-      if (navigator.share) {
-        navigator.share(shareData)
-          .then(() => {
-            this.engagement.shares++;
-            this._updateSocialCounts();
-            this._emit('social:shared', { method: 'web-share' });
-          })
-          .catch(() => {
-            this._shareFallback(shareData);
-          });
-      } else {
-        this._shareFallback(shareData);
-      }
-    }
-    
-    _shareFallback(data) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(data.url).then(() => {
-          this.engagement.shares++;
-          this._updateSocialCounts();
-          
-          if (window.state && window.state.showToast) {
-            window.state.showToast('Link copied to clipboard!', { type: 'success' });
-          }
-          
-          this._emit('social:shared', { method: 'clipboard' });
-        });
-      }
-    }
-    
-    _updateSocialCounts() {
-      if (!this._controlsCache || !this._controlsCache.socialPanel) return;
-      
-      const panel = this._controlsCache.socialPanel;
-      if (!panel) return;
-      
-      const likeCount = panel.querySelector('.like-btn .social-count');
-      if (likeCount) {
-        likeCount.textContent = this._formatCount(this.engagement.likes);
-      }
-      
-      const favCount = panel.querySelector('.favorite-btn .social-count');
-      if (favCount) {
-        favCount.textContent = this._formatCount(this.engagement.favorites);
-      }
-      
-      const shareCount = panel.querySelector('.share-btn .social-count');
-      if (shareCount) {
-        shareCount.textContent = this._formatCount(this.engagement.shares);
-      }
-      
-      const likeBtn = panel.querySelector('.like-btn');
-      if (likeBtn) {
-        likeBtn.classList.toggle('active', this.engagement.isLiked);
-        likeBtn.setAttribute('aria-pressed', this.engagement.isLiked ? 'true' : 'false');
-        likeBtn.setAttribute('aria-label', this.engagement.isLiked ? 'Unlike' : 'Like');
-      }
-      
-      const favBtn = panel.querySelector('.favorite-btn');
-      if (favBtn) {
-        favBtn.classList.toggle('active', this.engagement.isFavorited);
-        favBtn.setAttribute('aria-pressed', this.engagement.isFavorited ? 'true' : 'false');
-        favBtn.setAttribute('aria-label', this.engagement.isFavorited ? 'Remove from favorites' : 'Add to favorites');
-      }
     }
     
     setQuality(quality) {
@@ -2285,9 +2077,6 @@
         
         this._listenersAttached = false;
       }
-      
-      // Clean up audio restore listeners
-      this._cleanupAudioRestoreListeners();
       
       if (this.bufferingTimeout) {
         clearTimeout(this.bufferingTimeout);
@@ -2399,6 +2188,15 @@
     }
   };
   
+  // Helper for delegated prev/next functions
+  window.playPreviousPlaylistItem = window.playPreviousPlaylistItem || function() {
+    console.log('⏮️ Default playPreviousPlaylistItem - override in content-detail.js');
+  };
+  
+  window.playNextPlaylistItem = window.playNextPlaylistItem || function() {
+    console.log('⏭️ Default playNextPlaylistItem - override in content-detail.js');
+  };
+  
   document.addEventListener('DOMContentLoaded', () => {
     const videoEl = document.getElementById('inlineVideoPlayer');
     const container = videoEl ? (videoEl.closest('.video-container, .inline-player') || videoEl.parentElement) : null;
@@ -2436,6 +2234,7 @@
             console.warn('⚠️ Player attach had issues:', err);
           });
           window.bantuPlayer = player;
+          window.enhancedVideoPlayer = player;
         } catch (error) {
           console.error('❌ Failed to auto-initialize player:', error);
         }
@@ -2447,12 +2246,15 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.4.0 - Desktop Autoplay Audio Fix)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.5.0 - Clean Architecture)');
+  console.log('   🔧 FIX #2: REMOVED fake audio restore system');
+  console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
+  console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
+  console.log('   🔧 FIX #8: SINGLE ended handler (no duplicates)');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
-  console.log('   🔧 CRITICAL FIX: Removed all optional chaining assignments');
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
   console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
-  console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with user interaction audio restoration');
+  console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with muted fallback');
   
 })();
