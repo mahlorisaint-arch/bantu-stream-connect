@@ -107,6 +107,14 @@
 // - Added loadSource method for non-destructive source changes
 // - Fixed autoplay blocking with user interaction tracking
 // ============================================
+// 🚨 ENGAGEMENT SYSTEM FIX (2026-05-22) - INTEGRATED FROM ChatGPT/Gemini:
+// - Fixed view recording to use content_views table (NOT views_count column)
+// - Added proper engagement state persistence (likes, favorites, watch later)
+// - Added recordView() function that inserts into content_views correctly
+// - Fixed toggleLike/toggleFavorite/toggleWatchLater with proper table references
+// - Added loadAllEngagementStates() to restore UI after refresh
+// - Added shareContent() with content_shares and content_events persistence
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
@@ -140,33 +148,492 @@ let viewValidationTimer = null; // For cleanup
 let isAlbumExpanded = false;
 let _albumToggleInitialized = false; // Prevent duplicate initialization
 
+// 🚨 ENGAGEMENT STATE CACHES
+let likedContentCache = new Set();
+let favoritedContentCache = new Set();
+let watchLaterContentCache = new Set();
+
+// ============================================
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-22)
+// ============================================
+
+/**
+ * 🚨 FIXED: Record view using content_views table (NOT views_count column)
+ * This is the SOURCE OF TRUTH for view counting
+ */
+async function recordView(contentId, userId, sessionId, viewDuration = null) {
+    if (!contentId) {
+        console.error('❌ Cannot record view: missing contentId');
+        return false;
+    }
+    
+    try {
+        const deviceType = /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+        const finalSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const duration = viewDuration !== null ? viewDuration : 30;
+        
+        // INSERT into content_views (the SOURCE OF TRUTH for views)
+        const { error: insertError } = await window.supabaseClient
+            .from('content_views')
+            .insert({
+                content_id: contentId,
+                user_id: userId || null,
+                session_id: finalSessionId,
+                counted_as_view: true,
+                view_duration: duration,
+                device_type: deviceType,
+                viewed_at: new Date().toISOString()
+            });
+        
+        if (insertError) {
+            console.error('❌ View insert failed:', insertError);
+            return false;
+        }
+        
+        console.log(`✅ View recorded for content ${contentId} (duration: ${duration}s)`);
+        
+        // Increment the aggregated counter via RPC
+        try {
+            await window.supabaseClient.rpc('increment_content_views', {
+                content_id_input: contentId
+            });
+            console.log('✅ Aggregated view counter incremented');
+        } catch (rpcError) {
+            console.warn('⚠️ RPC increment failed (non-critical):', rpcError.message);
+        }
+        
+        // Update frontend display
+        incrementFrontendViewCount();
+        
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('content-views-updated', {
+            detail: { contentId: contentId, viewsCount: null }
+        }));
+        
+        return true;
+    } catch (error) {
+        console.error('❌ View recording error:', error);
+        return false;
+    }
+}
+
+/**
+ * 🚨 FIXED: Load ALL engagement states for current user
+ * Called when content loads or user changes
+ */
+async function loadAllEngagementStates(contentId, userId) {
+    if (!userId || !contentId) {
+        console.log('⚠️ Cannot load engagement states: missing userId or contentId');
+        return { liked: false, favorited: false, watchLater: false };
+    }
+
+    try {
+        const [likeRes, favRes, wlRes] = await Promise.all([
+            window.supabaseClient.from('content_likes').select('id').eq('content_id', contentId).eq('user_id', userId).maybeSingle(),
+            window.supabaseClient.from('favorites').select('id').eq('content_id', contentId).eq('user_id', userId).maybeSingle(),
+            window.supabaseClient.from('watch_later').select('id').eq('content_id', contentId).eq('user_id', userId).maybeSingle()
+        ]);
+        
+        const states = {
+            liked: !!likeRes.data,
+            favorited: !!favRes.data,
+            watchLater: !!wlRes.data
+        };
+        
+        // Update caches
+        if (states.liked) likedContentCache.add(contentId);
+        else likedContentCache.delete(contentId);
+        
+        if (states.favorited) favoritedContentCache.add(contentId);
+        else favoritedContentCache.delete(contentId);
+        
+        if (states.watchLater) watchLaterContentCache.add(contentId);
+        else watchLaterContentCache.delete(contentId);
+        
+        console.log(`✅ Engagement states loaded: liked=${states.liked}, favorited=${states.favorited}, watchLater=${states.watchLater}`);
+        return states;
+    } catch (error) {
+        console.error('❌ Failed to load engagement states:', error);
+        return { liked: false, favorited: false, watchLater: false };
+    }
+}
+
+/**
+ * 🚨 FIXED: Update UI buttons based on engagement states
+ */
+function updateEngagementUI(states) {
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        if (states.liked) {
+            likeBtn.classList.add('active');
+            likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+        } else {
+            likeBtn.classList.remove('active');
+            likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+        }
+    }
+    
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+        if (states.favorited) {
+            favoriteBtn.classList.add('active');
+            favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+        } else {
+            favoriteBtn.classList.remove('active');
+            favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+        }
+    }
+    
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+        if (states.watchLater) {
+            watchLaterBtn.classList.add('active');
+            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+        } else {
+            watchLaterBtn.classList.remove('active');
+            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+        }
+    }
+    
+    console.log('✅ Engagement UI updated');
+}
+
+/**
+ * 🚨 FIXED: Toggle like with proper table operations
+ */
+async function toggleLike(contentId, userId, isCurrentlyLiked) {
+    if (!userId) {
+        showToast('Sign in to like content', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlyLiked) {
+            const { error } = await window.supabaseClient
+                .from('content_likes')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', contentId);
+            if (error) throw error;
+            likedContentCache.delete(contentId);
+            showToast('Like removed', 'info');
+            return false;
+        } else {
+            const { error } = await window.supabaseClient
+                .from('content_likes')
+                .insert({ user_id: userId, content_id: contentId });
+            if (error && error.code !== '23505') throw error;
+            likedContentCache.add(contentId);
+            showToast('Liked!', 'success');
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Like toggle failed:', error);
+        showToast('Failed to update like', 'error');
+        return isCurrentlyLiked;
+    }
+}
+
+/**
+ * 🚨 FIXED: Toggle favorite with proper table operations
+ */
+async function toggleFavorite(contentId, userId, isCurrentlyFavorited) {
+    if (!userId) {
+        showToast('Sign in to favorite content', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlyFavorited) {
+            const { error } = await window.supabaseClient
+                .from('favorites')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', contentId);
+            if (error) throw error;
+            favoritedContentCache.delete(contentId);
+            showToast('Removed from favorites', 'info');
+            return false;
+        } else {
+            const { error } = await window.supabaseClient
+                .from('favorites')
+                .insert({ user_id: userId, content_id: contentId });
+            if (error && error.code !== '23505') throw error;
+            favoritedContentCache.add(contentId);
+            showToast('Added to favorites!', 'success');
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Favorite toggle failed:', error);
+        showToast('Failed to update favorite', 'error');
+        return isCurrentlyFavorited;
+    }
+}
+
+/**
+ * 🚨 FIXED: Toggle watch later with proper table operations
+ */
+async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
+    if (!userId) {
+        showToast('Sign in to use Watch Later', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlySaved) {
+            const { error } = await window.supabaseClient
+                .from('watch_later')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', contentId);
+            if (error) throw error;
+            watchLaterContentCache.delete(contentId);
+            showToast('Removed from Watch Later', 'info');
+            return false;
+        } else {
+            const { error } = await window.supabaseClient
+                .from('watch_later')
+                .insert({ user_id: userId, content_id: contentId });
+            if (error && error.code !== '23505') throw error;
+            watchLaterContentCache.add(contentId);
+            showToast('Added to Watch Later!', 'success');
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Watch Later toggle failed:', error);
+        showToast('Failed to update Watch Later', 'error');
+        return isCurrentlySaved;
+    }
+}
+
+/**
+ * 🚨 FIXED: Handle like button click with optimistic UI
+ */
+async function handleLikeButtonClick() {
+    if (!currentContent?.id) {
+        console.warn('No current content for like action');
+        return;
+    }
+    
+    if (!currentUserId) {
+        showToast('Sign in to like content', 'warning');
+        return;
+    }
+    
+    const likeBtn = document.getElementById('likeBtn');
+    const likesCountEl = document.getElementById('likesCount');
+    const isCurrentlyLiked = likeBtn?.classList.contains('active') || false;
+    
+    // Get current count for optimistic update
+    let currentCount = parseInt(likesCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    const newCount = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
+    
+    // OPTIMISTIC UI UPDATE
+    if (likeBtn) {
+        likeBtn.classList.toggle('active', !isCurrentlyLiked);
+        likeBtn.innerHTML = !isCurrentlyLiked
+            ? '<i class="fas fa-heart"></i><span>Liked</span>'
+            : '<i class="far fa-heart"></i><span>Like</span>';
+    }
+    if (likesCountEl) {
+        likesCountEl.textContent = formatNumber(newCount);
+    }
+    
+    // Actual API call
+    const newState = await toggleLike(currentContent.id, currentUserId, isCurrentlyLiked);
+    
+    // If API failed, revert optimistic update
+    if (newState === isCurrentlyLiked) {
+        if (likeBtn) {
+            likeBtn.classList.toggle('active', isCurrentlyLiked);
+            likeBtn.innerHTML = isCurrentlyLiked
+                ? '<i class="fas fa-heart"></i><span>Liked</span>'
+                : '<i class="far fa-heart"></i><span>Like</span>';
+        }
+        if (likesCountEl) {
+            likesCountEl.textContent = formatNumber(currentCount);
+        }
+    } else {
+        if (currentContent) {
+            currentContent.likes_count = newCount;
+        }
+        await refreshCountsFromSource();
+        if (window.track?.contentLike) {
+            window.track.contentLike(currentContent.id, newState);
+        }
+    }
+}
+
+/**
+ * 🚨 FIXED: Handle favorite button click
+ */
+async function handleFavoriteButtonClick() {
+    if (!currentContent?.id) {
+        console.warn('No current content for favorite action');
+        return;
+    }
+    
+    if (!currentUserId) {
+        showToast('Sign in to favorite content', 'warning');
+        return;
+    }
+    
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const favCountEl = document.getElementById('favoritesCount');
+    const isCurrentlyFavorited = favoriteBtn?.classList.contains('active') || false;
+    
+    let currentCount = parseInt(favCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    const newCount = isCurrentlyFavorited ? currentCount - 1 : currentCount + 1;
+    
+    // Optimistic UI
+    if (favoriteBtn) {
+        favoriteBtn.classList.toggle('active', !isCurrentlyFavorited);
+        favoriteBtn.innerHTML = !isCurrentlyFavorited
+            ? '<i class="fas fa-star"></i><span>Favorited</span>'
+            : '<i class="far fa-star"></i><span>Favorite</span>';
+    }
+    if (favCountEl) {
+        favCountEl.textContent = formatNumber(newCount);
+    }
+    
+    const newState = await toggleFavorite(currentContent.id, currentUserId, isCurrentlyFavorited);
+    
+    if (newState === isCurrentlyFavorited) {
+        if (favoriteBtn) {
+            favoriteBtn.classList.toggle('active', isCurrentlyFavorited);
+            favoriteBtn.innerHTML = isCurrentlyFavorited
+                ? '<i class="fas fa-star"></i><span>Favorited</span>'
+                : '<i class="far fa-star"></i><span>Favorite</span>';
+        }
+        if (favCountEl) {
+            favCountEl.textContent = formatNumber(currentCount);
+        }
+    } else {
+        if (currentContent) {
+            currentContent.favorites_count = newCount;
+        }
+        await refreshCountsFromSource();
+    }
+}
+
+/**
+ * 🚨 FIXED: Handle watch later button click
+ */
+async function handleWatchLaterButtonClick() {
+    if (!currentContent?.id) {
+        console.warn('No current content for watch later action');
+        return;
+    }
+    
+    if (!currentUserId) {
+        showToast('Sign in to use Watch Later', 'warning');
+        return;
+    }
+    
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    const isCurrentlySaved = watchLaterBtn?.classList.contains('active') || false;
+    
+    // Optimistic UI
+    if (watchLaterBtn) {
+        watchLaterBtn.classList.toggle('active', !isCurrentlySaved);
+        watchLaterBtn.innerHTML = !isCurrentlySaved
+            ? '<i class="fas fa-clock"></i><span>Watch Later</span>'
+            : '<i class="far fa-clock"></i><span>Watch Later</span>';
+    }
+    
+    const newState = await toggleWatchLater(currentContent.id, currentUserId, isCurrentlySaved);
+    
+    if (newState === isCurrentlySaved) {
+        if (watchLaterBtn) {
+            watchLaterBtn.classList.toggle('active', isCurrentlySaved);
+            watchLaterBtn.innerHTML = isCurrentlySaved
+                ? '<i class="fas fa-clock"></i><span>Watch Later</span>'
+                : '<i class="far fa-clock"></i><span>Watch Later</span>';
+        }
+    }
+}
+
+/**
+ * 🚨 FIXED: Share content with persistence
+ */
+async function shareContent(contentId, userId) {
+    if (!contentId) return;
+    
+    const shareText = `📺 ${currentContent?.title || 'Check this out!'}\nWatch on Bantu Stream Connect\nNO DNA, JUST RSA`;
+    const shareUrl = window.location.href;
+    
+    try {
+        if (navigator.share && navigator.canShare?.({ text: shareText, url: shareUrl })) {
+            await navigator.share({
+                title: 'Bantu Stream Connect',
+                text: shareText,
+                url: shareUrl
+            });
+        } else {
+            await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+            showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
+        }
+        
+        // PERSISTENCE: Record share in content_shares
+        if (userId) {
+            await window.supabaseClient
+                .from('content_shares')
+                .insert({
+                    content_id: contentId,
+                    user_id: userId,
+                    shared_at: new Date().toISOString()
+                });
+            
+            // Record event for analytics
+            await window.supabaseClient
+                .from('content_events')
+                .insert({
+                    content_id: contentId,
+                    user_id: userId,
+                    event_type: 'share',
+                    created_at: new Date().toISOString()
+                });
+            
+            console.log(`✅ Share recorded for content ${contentId}`);
+        }
+        
+        updateShareCount(1);
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error('Share failed:', err);
+            showToast('Failed to share. Try copying link manually.', 'error');
+        }
+    }
+}
+
+function updateShareCount(delta) {
+    const shareCountEl = document.getElementById('sharesCount');
+    if (shareCountEl) {
+        let current = parseInt(shareCountEl.textContent?.replace(/\D/g, '') || '0');
+        let newCount = current + delta;
+        shareCountEl.textContent = formatNumber(newCount);
+    }
+}
+
 // ============================================
 // 🎯 DIRECT USER GESTURE PLAYBACK - FIX #1
 // ============================================
 const startPlaybackFromUserGesture = async () => {
     try {
-        // Check both possible player references
         const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
         if (!player || !player.video) {
             console.error('❌ Player instance or native video element not found.');
             return;
         }
-
         const video = player.video;
-
-        // CRITICAL: Force browser parameters directly in the click lifecycle loop
         video.muted = false;
         video.volume = 1.0;
         window.userHasInteractedWithMedia = true;
         document.body.classList.add('user-interacted');
-
         await video.play();
         console.log('🔊 Core playback successfully initiated via direct user gesture.');
-
-        // Hide the play overlay if visible
         const overlay = document.getElementById('initialPlayOverlay');
         if (overlay) overlay.classList.add('hidden');
-
     } catch (error) {
         console.warn('⚠️ Direct unmuted playback failed, attempting safe muted fallback:', error.message);
         try {
@@ -183,53 +650,40 @@ const startPlaybackFromUserGesture = async () => {
 };
 
 // ============================================
-// 🎯 LOAD CONTENT INTO PLAYER - NON-DESTRUCTIVE (FIX #4)
+// 🎯 LOAD CONTENT INTO PLAYER - NON-DESTRUCTIVE
 // ============================================
 async function loadContentIntoPlayer(content, index = null) {
     if (!content) return;
-
     const player = document.getElementById('inlinePlayer');
     const videoElement = document.getElementById('inlineVideoPlayer');
     const placeholder = document.getElementById('videoPlaceholder');
-
     if (!player || !videoElement) {
         console.warn('Player elements not ready');
         return;
     }
-
-    // Update global state
     if (index !== null) {
         window.currentPlaylistIndex = index;
     }
     window.currentContentId = content.id;
-
     player.style.display = 'block';
     if (placeholder) placeholder.style.display = 'none';
-
     const heroPoster = document.getElementById('heroPoster');
     if (heroPoster) heroPoster.style.opacity = '0.3';
-
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) closeFromHero.style.display = 'flex';
-
-    // Get media URL
     let fileUrl = getPlayableMediaUrl(content);
     console.log('📥 Loading media URL:', fileUrl);
-
     if (fileUrl && !fileUrl.startsWith('http')) {
         if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
         fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
     }
-
     if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
         if (content.thumbnail_url) {
             const cleanPath = content.thumbnail_url.startsWith('/') ? content.thumbnail_url.substring(1) : content.thumbnail_url;
             fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
         }
     }
-
     const isAudio = detectMediaType(content) === 'audio';
-
     if (isAudio && content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
         videoElement.setAttribute('poster', imgUrl);
@@ -238,7 +692,6 @@ async function loadContentIntoPlayer(content, index = null) {
         videoElement.removeAttribute('poster');
         videoElement.classList.remove('audio-mode');
     }
-
     function getMediaMimeType(url = '') {
         const lower = url.toLowerCase();
         if (lower.endsWith('.mp4')) return 'video/mp4';
@@ -250,10 +703,7 @@ async function loadContentIntoPlayer(content, index = null) {
         if (lower.endsWith('.m4a')) return 'audio/mp4';
         return 'video/mp4';
     }
-
-    // CRITICAL: REUSE existing player instead of destroying and recreating
     if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
-        // Use loadSource method if available (non-destructive)
         console.log('♻️ Reusing existing player instance with loadSource');
         await window.enhancedVideoPlayer.loadSource({
             url: fileUrl,
@@ -268,27 +718,19 @@ async function loadContentIntoPlayer(content, index = null) {
             title: content.title
         });
     } else {
-        // Fallback: update source directly without destroying player
         console.log('⚠️ loadSource not available, updating video source directly');
-        
-        // Stop watch session if active
         if (watchSession) {
             watchSession.stop();
             watchSession = null;
         }
-
-        // Remove all source elements and recreate
         while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
         videoElement.removeAttribute('src');
-        
         const source = document.createElement('source');
         source.src = fileUrl;
         source.type = getMediaMimeType(fileUrl);
         videoElement.appendChild(source);
         videoElement.load();
     }
-
-    // Update streaming manager if needed
     setTimeout(() => {
         if (streamingManager) {
             streamingManager.destroy();
@@ -296,8 +738,6 @@ async function loadContentIntoPlayer(content, index = null) {
         }
         initializeStreamingManager();
     }, 100);
-
-    // Autoplay after source is ready (respecting user interaction)
     setTimeout(async () => {
         try {
             const canAutoplay = document.body.classList.contains('user-interacted');
@@ -306,7 +746,6 @@ async function loadContentIntoPlayer(content, index = null) {
                 showInitialPlayOverlay();
                 return;
             }
-            
             const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
             if (player && typeof player.play === 'function') {
                 await player.play();
@@ -314,7 +753,6 @@ async function loadContentIntoPlayer(content, index = null) {
                 await videoElement.play();
             }
             console.log('▶️ Playback started successfully');
-            
             const overlay = document.getElementById('initialPlayOverlay');
             if (overlay) overlay.classList.add('hidden');
         } catch (error) {
@@ -322,7 +760,6 @@ async function loadContentIntoPlayer(content, index = null) {
             showInitialPlayOverlay();
         }
     }, 300);
-
     setTimeout(() => {
         player.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
@@ -336,42 +773,38 @@ function syncPlaylistUI() {
         console.warn('⚠️ syncPlaylistUI: No playlist items available');
         return;
     }
-
     const currentItem = window.currentPlaylistItems[window.currentPlaylistIndex];
     if (!currentItem) {
         console.warn('⚠️ syncPlaylistUI: No current item at index', window.currentPlaylistIndex);
         return;
     }
-
-    // 1. Sync global content state variables
     window.currentContentId = currentItem.id || currentItem.contentId;
-
-    // 2. Clear out old active track styling and highlight the current one
     document.querySelectorAll('.album-track-item').forEach(track => {
         track.classList.remove('active', 'playing');
     });
-
     const activeTrack = document.querySelector(`.album-track-item[data-index="${window.currentPlaylistIndex}"]`);
     if (activeTrack) {
         activeTrack.classList.add('active', 'playing');
         activeTrack.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-
-    // 3. Update Title, Creators, Metadata Cards across the page
     if (typeof updateContentDetails === 'function') {
         updateContentDetails(currentItem);
     } else if (currentItem) {
-        // Fallback to updateContentUI if updateContentDetails doesn't exist
         updateContentUI(currentItem);
     }
-
-    // 4. Handle "Play Album" persistent display layout
     const playAlbumBtn = document.getElementById('playAlbumBtn');
     if (playAlbumBtn) {
         playAlbumBtn.style.display = 'none';
     }
     document.body.classList.add('playlist-playing');
-
+    
+    // 🚨 Load engagement states for new playlist item
+    if (currentUserId && currentItem.id) {
+        loadAllEngagementStates(currentItem.id, currentUserId).then(states => {
+            updateEngagementUI(states);
+        });
+    }
+    
     console.log(`✅ UI Refreshed: Track [${window.currentPlaylistIndex + 1}] - ${currentItem.title} (contentId: ${window.currentContentId})`);
 }
 
@@ -379,44 +812,29 @@ function syncPlaylistUI() {
 // 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD
 // ============================================
 window.playNextPlaylistItem = async function() {
-    // Prevent multiple simultaneous completions
     if (window.playlistCompleting) {
         console.log('🚫 Playlist completion already in progress, skipping');
         return;
     }
-
     const items = window.currentPlaylistItems || [];
     let index = window.currentPlaylistIndex || 0;
-
     if (!items.length) {
         console.warn('⚠️ No playlist items available');
         return;
     }
-
     const nextIndex = index + 1;
-
-    // Check if playlist has reached its conclusion
     if (nextIndex >= items.length) {
         window.playlistCompleting = true;
         console.log('🏁 Playlist sequence fully completed.');
-        
-        // Reset completion flag after a delay to allow new playlist starts
         setTimeout(() => {
             window.playlistCompleting = false;
         }, 1000);
         return;
     }
-
     window.currentPlaylistIndex = nextIndex;
-    
-    // Fire UI updates BEFORE loading media so the client feels instant
     syncPlaylistUI();
-
     const nextItem = items[nextIndex];
-
     console.log(`⏭️ Advancing to track ${nextIndex + 1}:`, nextItem.title);
-
-    // Load the next content into player
     await loadContentIntoPlayer(nextItem, nextIndex);
 };
 
@@ -436,18 +854,12 @@ async function playPlaylistItemByIndex(index) {
         console.warn('⚠️ No playlist item at index:', index);
         return;
     }
-    
     const item = window.currentPlaylistItems[index];
     window.currentPlaylistIndex = index;
     window.currentContent = item;
-    
-    // Sync UI before playing
     syncPlaylistUI();
-    
-    // Update queue item active state
     document.querySelectorAll('.playlist-queue-item').forEach(el => el.classList.remove('active'));
     document.querySelector(`.playlist-queue-item[data-index="${index}"]`)?.classList.add('active');
-    
     await setCurrentContentFromPlaylistItem(item, index);
     await loadContentIntoPlayer(item);
     console.log('▶️ Playing playlist item:', item.title);
@@ -474,17 +886,14 @@ window.playPlaylistItem = async (contentId, index) => {
 // ============================================
 function renderAlbumTracks(tracks = []) {
     const container = document.getElementById('album-track-list');
-
     if (!container) {
         console.error('❌ Album track list container missing from DOM');
         return;
     }
-
     if (albumTracksRendered) {
         console.log('⚠️ Album tracks already rendered, skipping destructive re-render');
         return;
     }
-
     if (!tracks || !tracks.length) {
         console.warn('⚠️ No tracks available to render');
         container.innerHTML = `
@@ -495,13 +904,11 @@ function renderAlbumTracks(tracks = []) {
         `;
         return;
     }
-
     const sortedTracks = [...tracks].sort((a, b) => {
         const orderA = a.playlist_relation?.sort_index || a.sort_index || 0;
         const orderB = b.playlist_relation?.sort_index || b.sort_index || 0;
         return orderA - orderB;
     });
-
     container.innerHTML = sortedTracks.map((item, index) => `
         <button class="album-track-item ${currentContent?.id === item.id ? 'active playing' : ''}" 
                 data-index="${index}" 
@@ -512,7 +919,6 @@ function renderAlbumTracks(tracks = []) {
             <span class="track-duration">${formatDuration(item.duration || 0)}</span>
         </button>
     `).join('');
-
     container.querySelectorAll('.album-track-item').forEach(trackItem => {
         trackItem.addEventListener('click', async (event) => {
             event.stopPropagation();
@@ -521,7 +927,6 @@ function renderAlbumTracks(tracks = []) {
             await playPlaylistItemByIndex(index);
         });
     });
-
     albumTracksRendered = true;
     console.log(`✅ Album tracklist rendered (once): ${sortedTracks.length} tracks`);
 }
@@ -531,14 +936,11 @@ function renderAlbumTracks(tracks = []) {
 // ============================================
 function toggleAlbumTracklist() {
     const sidebar = document.getElementById('album-sidebar');
-    
     if (!sidebar) {
         console.error('❌ Album sidebar missing from DOM');
         return;
     }
-
     const isExpanded = sidebar.classList.contains('expanded');
-    
     if (isExpanded) {
         sidebar.classList.remove('expanded');
         console.log('📀 Album collapsed');
@@ -557,28 +959,22 @@ function setupAlbumToggle() {
         return;
     }
     albumSidebarInitialized = true;
-
     const toggleBtn = document.getElementById('albumToggleBtn');
     const sidebar = document.getElementById('album-sidebar');
-
     if (!toggleBtn) {
         console.warn('⚠️ Album toggle button not found');
         return;
     }
-
     if (!sidebar) {
         console.warn('⚠️ Album sidebar not found');
         return;
     }
-
     const newToggleBtn = toggleBtn.cloneNode(true);
     toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-    
     newToggleBtn.addEventListener('click', (event) => {
         event.stopPropagation();
         toggleAlbumTracklist();
     });
-
     console.log('✅ Album toggle initialized (YouTube-style)');
 }
 
@@ -589,7 +985,6 @@ async function loadPlaylistMode(playlistId, playlistType) {
     try {
         showLoading('Loading playlist...');
         console.log('🔄 Loading playlist structure for ID:', playlistId);
-        
         const { data: playlistItems, error } = await window.supabaseClient
             .from('playlist_contents')
             .select(`
@@ -624,12 +1019,10 @@ async function loadPlaylistMode(playlistId, playlistType) {
             .eq('playlist_id', playlistId)
             .eq('Content.status', 'published')
             .order('sort_index', { ascending: true });
-
         if (error) {
             console.error('❌ Playlist query error:', error);
             throw error;
         }
-
         if (!playlistItems || playlistItems.length === 0) {
             console.warn('⚠️ No published items found in playlist');
             const { data: rawItems } = await window.supabaseClient
@@ -639,9 +1032,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
             console.log('🔍 Raw playlist_contents rows:', rawItems);
             throw new Error('Playlist contains no published items');
         }
-
         console.log('✅ Playlist items loaded successfully:', playlistItems.length);
-
         const normalizedItems = playlistItems
             .map(item => {
                 let contentData = item.Content;
@@ -662,15 +1053,12 @@ async function loadPlaylistMode(playlistId, playlistType) {
                 };
             })
             .filter(Boolean);
-
         if (normalizedItems.length === 0) {
             throw new Error('No valid published content items in playlist');
         }
-
         window.currentPlaylistItems = normalizedItems;
         window.currentPlaylistIndex = 0;
         resetPlaylistCompletionLock();
-
         const { data: playlistMeta, error: metaError } = await window.supabaseClient
             .from('creator_playlists')
             .select(`
@@ -683,7 +1071,6 @@ async function loadPlaylistMode(playlistId, playlistType) {
             `)
             .eq('id', playlistId)
             .maybeSingle();
-
         if (!metaError && playlistMeta) {
             currentPlaylist = {
                 ...playlistMeta,
@@ -694,16 +1081,12 @@ async function loadPlaylistMode(playlistId, playlistType) {
             window.currentPlaylist = currentPlaylist;
             console.log('📀 Playlist metadata loaded:', playlistMeta.name);
         }
-
         console.log(`📀 Loaded playlist: ${currentPlaylist?.name || 'Playlist'} with ${window.currentPlaylistItems.length} items`);
-
         renderAlbumTracks(window.currentPlaylistItems);
-
         if (window.currentPlaylistItems.length > 0) {
             await setCurrentContentFromPlaylistItem(window.currentPlaylistItems[0], 0);
             await loadContentIntoPlayer(window.currentPlaylistItems[0]);
         }
-
         hideLoading();
     } catch (error) {
         console.error('❌ Playlist mode failed:', error);
@@ -731,7 +1114,6 @@ async function loadPlaylistMode(playlistId, playlistType) {
 
 async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     console.log('🔄 Loading playlist using two-query fallback for ID:', playlistId);
-
     const { data: playlistRows, error: playlistError } = await window.supabaseClient
         .from('playlist_contents')
         .select(`
@@ -746,24 +1128,18 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
         `)
         .eq('playlist_id', playlistId)
         .order('sort_index', { ascending: true });
-
     if (playlistError) {
         console.error('❌ Playlist rows error:', playlistError);
         throw playlistError;
     }
-
     console.log('📀 Playlist rows loaded:', playlistRows?.length || 0);
-
     if (!playlistRows || playlistRows.length === 0) {
         throw new Error('Playlist has no content');
     }
-
     const contentIds = playlistRows.map(row => row.content_id).filter(Boolean);
-
     if (!contentIds.length) {
         throw new Error('No valid content IDs in playlist');
     }
-
     const { data: contentRows, error: contentError } = await window.supabaseClient
         .from('Content')
         .select(`
@@ -793,19 +1169,15 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
         `)
         .in('id', contentIds)
         .eq('status', 'published');
-
     if (contentError) {
         console.error('❌ Content fetch error:', contentError);
         throw contentError;
     }
-
     console.log('🎵 Content rows loaded:', contentRows?.length || 0);
-
     const contentMap = new Map();
     contentRows?.forEach(content => {
         contentMap.set(String(content.id), content);
     });
-
     const normalizedItems = playlistRows
         .map(row => {
             const content = contentMap.get(String(row.content_id));
@@ -822,15 +1194,12 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
             };
         })
         .filter(Boolean);
-
     if (!normalizedItems.length) {
         throw new Error('No valid published content items in playlist');
     }
-
     window.currentPlaylistItems = normalizedItems;
     window.currentPlaylistIndex = 0;
     resetPlaylistCompletionLock();
-
     const { data: playlistMeta, error: metaError } = await window.supabaseClient
         .from('creator_playlists')
         .select(`
@@ -843,7 +1212,6 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
         `)
         .eq('id', playlistId)
         .maybeSingle();
-
     if (!metaError && playlistMeta) {
         currentPlaylist = {
             ...playlistMeta,
@@ -854,25 +1222,18 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
         window.currentPlaylist = currentPlaylist;
         console.log('📀 Playlist metadata loaded:', playlistMeta.name);
     }
-
     console.log(`📀 Loaded playlist (fallback): ${currentPlaylist?.name || 'Playlist'} with ${window.currentPlaylistItems.length} items`);
-
     renderAlbumTracks(window.currentPlaylistItems);
-
     if (window.currentPlaylistItems.length > 0) {
         await setCurrentContentFromPlaylistItem(window.currentPlaylistItems[0], 0);
         await loadContentIntoPlayer(window.currentPlaylistItems[0]);
     }
-
     hideLoading();
 }
 
 async function setCurrentContentFromPlaylistItem(item, index) {
     if (!item) return;
-
-    // Update global contentId
     window.currentContentId = item.id;
-
     currentContent = {
         id: item.id,
         title: item.title || 'Untitled',
@@ -897,23 +1258,19 @@ async function setCurrentContentFromPlaylistItem(item, index) {
         _playlistIndex: index,
         _playlistId: currentPlaylist?.id
     };
-
     updateContentUI(currentContent);
     highlightActivePlaylistItem(item.id);
     updateActiveTrackInSidebar(item.id);
-
     if (currentUserId && currentContent?.id) {
-        await initializeLikeButton(currentContent.id, currentUserId);
-        await initializeFavoriteButton(currentContent.id, currentUserId);
+        const states = await loadAllEngagementStates(currentContent.id, currentUserId);
+        updateEngagementUI(states);
     }
-
     console.log('🎵 Set current content from playlist:', currentContent.title, 'Index:', index, 'contentId:', window.currentContentId);
 }
 
 function updateActiveTrackInSidebar(contentId) {
     const container = document.getElementById('album-track-list');
     if (!container) return;
-
     container.querySelectorAll('.album-track-item').forEach(item => {
         if (item.dataset.contentId === String(contentId)) {
             item.classList.add('playing', 'active');
@@ -938,17 +1295,13 @@ function highlightActivePlaylistItem(contentId) {
 // ============================================
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners with direct user gesture playback...');
-
-    // DIRECT USER GESTURE PLAYBACK - FIX #1
     const playBtn = document.getElementById('playBtn');
     if (playBtn) {
-        // Remove existing listeners
         const newPlayBtn = playBtn.cloneNode(true);
         playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
         newPlayBtn.addEventListener('click', startPlaybackFromUserGesture);
         console.log('✅ Play button bound to direct user gesture');
     }
-
     const playAlbumBtn = document.getElementById('playAlbumBtn');
     if (playAlbumBtn) {
         const newPlayAlbumBtn = playAlbumBtn.cloneNode(true);
@@ -956,8 +1309,6 @@ function setupEventListeners() {
         newPlayAlbumBtn.addEventListener('click', startPlaybackFromUserGesture);
         console.log('✅ Play Album button bound to direct user gesture');
     }
-
-    // Play now button from playlist
     const playNowBtn = document.getElementById('playNowBtn');
     if (playNowBtn) {
         const newPlayNowBtn = playNowBtn.cloneNode(true);
@@ -965,21 +1316,18 @@ function setupEventListeners() {
         newPlayNowBtn.addEventListener('click', startPlaybackFromUserGesture);
         console.log('✅ Play Now button bound to direct user gesture');
     }
-
     const poster = document.getElementById('heroPoster');
     if (poster) {
         const newPoster = poster.cloneNode(true);
         poster.parentNode.replaceChild(newPoster, poster);
         newPoster.addEventListener('click', startPlaybackFromUserGesture);
     }
-
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) {
         closeFromHero.addEventListener('click', function() {
             closeVideoPlayer();
         });
     }
-
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fullPlayerBtn = document.getElementById('fullPlayerBtn');
     if (fullscreenBtn) {
@@ -1000,84 +1348,42 @@ function setupEventListeners() {
             }
         });
     }
-
     requestAnimationFrame(() => {
         setupAlbumToggle();
     });
     
+    // 🚨 FIXED: Engagement button listeners
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
-        likeBtn.addEventListener('click', handleLikeButtonClick);
+        const newLikeBtn = likeBtn.cloneNode(true);
+        likeBtn.parentNode.replaceChild(newLikeBtn, likeBtn);
+        newLikeBtn.addEventListener('click', handleLikeButtonClick);
     }
     
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
-        favoriteBtn.addEventListener('click', async function() {
-            if (!currentContent) return;
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                showToast('Sign in to favorite content', 'warning');
-                return;
-            }
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
-                return;
-            }
-            const isFavorited = favoriteBtn.classList.contains('active');
-            const favCountEl = document.getElementById('favoritesCount');
-            const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-            const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
-            try {
-                favoriteBtn.classList.toggle('active', !isFavorited);
-                favoriteBtn.innerHTML = !isFavorited
-                    ? '<i class="fas fa-star"></i><span>Favorited</span>'
-                    : '<i class="far fa-star"></i><span>Favorite</span>';
-                if (favCountEl) {
-                    favCountEl.textContent = formatNumber(newFavorites);
-                }
-                if (!isFavorited) {
-                    favoritedContentCache.add(currentContent.id);
-                    const { error } = await window.supabaseClient
-                        .from('favorites')
-                        .insert({
-                            user_id: userProfile.id,
-                            content_id: currentContent.id
-                        });
-                    if (error) throw error;
-                } else {
-                    favoritedContentCache.delete(currentContent.id);
-                    const { error } = await window.supabaseClient
-                        .from('favorites')
-                        .delete()
-                        .eq('user_id', userProfile.id)
-                        .eq('content_id', currentContent.id);
-                    if (error) throw error;
-                }
-                const { error: updateError } = await window.supabaseClient
-                    .from('Content')
-                    .update({ favorites_count: newFavorites })
-                    .eq('id', currentContent.id);
-                if (updateError) {
-                    console.warn('Favorites count update failed:', updateError);
-                }
-                currentContent.favorites_count = newFavorites;
-                showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
-                await refreshCountsFromSource();
-            } catch (error) {
-                console.error('Favorite update failed:', error);
-                favoriteBtn.classList.toggle('active', isFavorited);
-                favoriteBtn.innerHTML = isFavorited
-                    ? '<i class="fas fa-star"></i><span>Favorited</span>'
-                    : '<i class="far fa-star"></i><span>Favorite</span>';
-                if (favCountEl) {
-                    favCountEl.textContent = formatNumber(currentFavorites);
-                }
-                showToast('Failed to update favorite', 'error');
+        const newFavoriteBtn = favoriteBtn.cloneNode(true);
+        favoriteBtn.parentNode.replaceChild(newFavoriteBtn, favoriteBtn);
+        newFavoriteBtn.addEventListener('click', handleFavoriteButtonClick);
+    }
+    
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+        const newWatchLaterBtn = watchLaterBtn.cloneNode(true);
+        watchLaterBtn.parentNode.replaceChild(newWatchLaterBtn, watchLaterBtn);
+        newWatchLaterBtn.addEventListener('click', handleWatchLaterButtonClick);
+    }
+    
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        const newShareBtn = shareBtn.cloneNode(true);
+        shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+        newShareBtn.addEventListener('click', async () => {
+            if (currentContent?.id) {
+                await shareContent(currentContent.id, currentUserId);
             }
         });
     }
-    
-    setupWatchLaterButton();
     
     const refreshBtn = document.getElementById('refreshCommentsBtn');
     if (refreshBtn) {
@@ -1090,7 +1396,6 @@ function setupEventListeners() {
             }
         });
     }
-    
     const sendBtn = document.getElementById('sendCommentBtn');
     const commentInput = document.getElementById('commentInput');
     if (sendBtn && commentInput) {
@@ -1155,7 +1460,6 @@ function setupEventListeners() {
             }
         });
     }
-    
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (backToTopBtn) {
         backToTopBtn.addEventListener('click', function() {
@@ -1169,46 +1473,12 @@ function setupEventListeners() {
             }
         });
     }
-    
     const pipBtn = document.getElementById('pipBtn');
     if (pipBtn) {
         pipBtn.addEventListener('click', function() {
             const video = document.getElementById('inlineVideoPlayer');
             if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
                 video.requestPictureInPicture();
-            }
-        });
-    }
-    
-    const shareBtn = document.getElementById('shareBtn');
-    if (shareBtn) {
-        shareBtn.addEventListener('click', async function() {
-            if (!currentContent) return;
-            const shareText = `📺 ${currentContent.title}
-${currentContent.description || 'Check out this amazing content!'}
-👉 Watch on Bantu Stream Connect
-NO DNA, JUST RSA
-`;
-            const shareUrl = window.location.href;
-            try {
-                if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
-                    await navigator.share({
-                        title: 'Bantu Stream Connect',
-                        text: shareText,
-                        url: shareUrl
-                    });
-                } else {
-                    await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
-                    showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
-                    if (window.track?.contentShare) {
-                        window.track.contentShare(currentContent.id, 'clipboard');
-                    }
-                }
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('Share failed:', err);
-                    showToast('Failed to share. Try copying link manually.', 'error');
-                }
             }
         });
     }
@@ -1230,24 +1500,19 @@ function showInitialPlayOverlay() {
 function setupInitialPlayButton() {
     const playButton = document.getElementById('initialPlayButton');
     if (!playButton) return;
-    
     const newPlayButton = playButton.cloneNode(true);
     playButton.parentNode.replaceChild(newPlayButton, playButton);
-    
     newPlayButton.addEventListener('click', startPlaybackFromUserGesture);
     console.log('✅ Initial play overlay button bound to direct user gesture');
 }
 
-// ============================================
-// 🎯 HANDLE PLAY FUNCTION (Legacy compatibility)
-// ============================================
 function handlePlay() {
     console.log('🎬 handlePlay CALLED - Delegating to startPlaybackFromUserGesture');
     startPlaybackFromUserGesture();
 }
 
 // ============================================
-// 🎯 WATCH SESSION MANAGER (Keep existing implementation)
+// 🎯 WATCH SESSION MANAGER (Updated with recordView)
 // ============================================
 class WatchSessionManager {
     constructor(contentId, userId) {
@@ -1262,11 +1527,9 @@ class WatchSessionManager {
         this.isActive = false;
         this.viewRecorded = false;
     }
-
     _generateUUID() {
         return crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
-
     async initializeSession(platform = 'Web', deviceType = 'Desktop') {
         try {
             const { error } = await window.supabaseClient
@@ -1292,7 +1555,6 @@ class WatchSessionManager {
             return false;
         }
     }
-
     startHeartbeatLoop(videoElement) {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
         this.heartbeatInterval = setInterval(async () => {
@@ -1307,7 +1569,6 @@ class WatchSessionManager {
                 this.maxProgressSeconds = currentTime;
             }
             this.lastHeartbeatTime = now;
-
             const { error: hbError } = await window.supabaseClient
                 .from('playback_heartbeats')
                 .insert({
@@ -1323,7 +1584,6 @@ class WatchSessionManager {
                 console.error("Heartbeat sync failed:", hbError.message);
                 return;
             }
-
             await window.supabaseClient
                 .from('playback_sessions')
                 .update({
@@ -1333,9 +1593,9 @@ class WatchSessionManager {
                     last_heartbeat_at: new Date().toISOString()
                 })
                 .eq('playback_session_id', this.playbackSessionId);
-
+            // 🚨 FIXED: Use recordView function (content_views table)
             if (!this.viewRecorded && this.totalWatchTimeMs >= 30000) {
-                await this.validateView();
+                await recordView(this.contentId, this.userId, this.playbackSessionId, this.maxProgressSeconds);
                 this.viewRecorded = true;
                 incrementFrontendViewCount();
                 window.dispatchEvent(new CustomEvent('content-views-updated', {
@@ -1347,7 +1607,6 @@ class WatchSessionManager {
             }
         }, 10000);
     }
-
     async validateView() {
         try {
             const { error } = await window.supabaseClient.rpc('validate_playback_view', {
@@ -1365,12 +1624,10 @@ class WatchSessionManager {
             console.error('View validation error:', error);
         }
     }
-
     start(videoElement) {
         if (!videoElement) return;
         this.startHeartbeatLoop(videoElement);
     }
-
     stop() {
         this.isActive = false;
         if (this.heartbeatInterval) {
@@ -1391,95 +1648,14 @@ class WatchSessionManager {
 window.WatchSessionManager = WatchSessionManager;
 
 // ============================================
-// 🎯 LIKE BUTTON FUNCTIONS
+// 🎯 LIKE BUTTON FUNCTIONS (Legacy compatibility)
 // ============================================
-async function handleLikeButtonClick() {
-    if (!currentContent) return;
-    if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('Sign in to like content', 'warning');
-        return;
-    }
-    const userProfile = window.AuthHelper.getUserProfile();
-    if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-    }
-    const likeBtn = document.getElementById('likeBtn');
-    const likesCountEl = document.getElementById('likesCount');
-    const isLiked = likeBtn.classList.contains('active');
-    let currentCount = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-
-    likeBtn.classList.toggle('active', !isLiked);
-    likeBtn.innerHTML = !isLiked
-        ? '<i class="fas fa-heart"></i><span>Liked</span>'
-        : '<i class="far fa-heart"></i><span>Like</span>';
-    likesCountEl.textContent = formatNumber(isLiked ? currentCount - 1 : currentCount + 1);
-
-    try {
-        if (!isLiked) {
-            const { error: ledgerError } = await window.supabaseClient
-                .from('content_likes')
-                .insert({
-                    user_id: userProfile.id,
-                    content_id: currentContent.id
-                });
-            if (ledgerError && ledgerError.code !== '23505') {
-                throw ledgerError;
-            }
-            await window.supabaseClient.rpc('increment_engagement_stats_likes', {
-                target_content_id: currentContent.id,
-                increment_value: 1
-            });
-            likedContentCache.add(currentContent.id);
-            showToast('Liked!', 'success');
-        } else {
-            const { error: deleteError } = await window.supabaseClient
-                .from('content_likes')
-                .delete()
-                .eq('user_id', userProfile.id)
-                .eq('content_id', currentContent.id);
-            if (deleteError) throw deleteError;
-            await window.supabaseClient.rpc('increment_engagement_stats_likes', {
-                target_content_id: currentContent.id,
-                increment_value: -1
-            });
-            likedContentCache.delete(currentContent.id);
-            showToast('Like removed', 'info');
-        }
-        await refreshCountsFromSource();
-        if (window.track?.contentLike) {
-            window.track.contentLike(currentContent.id, !isLiked);
-        }
-    } catch (error) {
-        console.error('Like operation failed:', error);
-        likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked
-            ? '<i class="fas fa-heart"></i><span>Liked</span>'
-            : '<i class="far fa-heart"></i><span>Like</span>';
-        likesCountEl.textContent = formatNumber(currentCount);
-        showToast('Failed: ' + error.message, 'error');
-    }
-}
-
+// Note: handleLikeButtonClick is now defined above with Engagement fixes
+// Keep this for backward compatibility
 async function initializeLikeButton(contentId, userId) {
-    const likeBtn = document.getElementById('likeBtn');
-    if (!likeBtn) return;
-    likeBtn.classList.remove('active');
-    likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
     if (!userId || !contentId) return;
-    let isLiked = likedContentCache.has(contentId);
-    if (!isLiked) {
-        isLiked = await checkUserLike(contentId, userId);
-        if (isLiked) {
-            likedContentCache.add(contentId);
-        }
-    }
-    if (isLiked) {
-        likeBtn.classList.add('active');
-        likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
-    }
-    likeBtn.onclick = handleLikeButtonClick;
-    console.log(`✅ Like button initialized for content ${contentId}: ${isLiked ? 'liked' : 'not liked'}`);
+    const states = await loadAllEngagementStates(contentId, userId);
+    updateEngagementUI(states);
 }
 
 async function checkUserLike(contentId, userId) {
@@ -1491,10 +1667,7 @@ async function checkUserLike(contentId, userId) {
             .eq('user_id', userId)
             .eq('content_id', contentId)
             .maybeSingle();
-        if (error) {
-            console.warn('Like check failed:', error.message);
-            return false;
-        }
+        if (error) return false;
         return !!data;
     } catch (error) {
         console.error('Like check error:', error);
@@ -1550,20 +1723,23 @@ async function loadCriticalContentData(contentId) {
             if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
                 currentContent = parsed;
                 updateContentUI(currentContent);
+                // 🚨 Load engagement states
+                if (currentUserId) {
+                    const states = await loadAllEngagementStates(contentId, currentUserId);
+                    updateEngagementUI(states);
+                }
                 console.log('📦 Loaded from cache:', contentId);
                 refreshContentInBackground(contentId);
                 return;
             }
         } catch(e) { console.warn('Cache parse error:', e); }
     }
-
     const profileData = await fetchContentProfileDetails(contentId);
     if (!profileData) {
         console.warn('Profile fetch failed, falling back to legacy method');
         await loadContentFromURLLegacy();
         return;
     }
-
     let watchProgress = null;
     if (currentUserId) {
         const { data: progressData } = await window.supabaseClient
@@ -1574,19 +1750,16 @@ async function loadCriticalContentData(contentId) {
             .maybeSingle();
         watchProgress = progressData;
     }
-
     const { data: streamingData } = await window.supabaseClient
         .from('Content')
         .select('quality_profiles, hls_manifest_url, data_saver_url')
         .eq('id', contentId)
         .maybeSingle();
-
     const { data: seriesData } = await window.supabaseClient
         .from('Content')
         .select('series_id, episode_number')
         .eq('id', contentId)
         .maybeSingle();
-
     currentContent = {
         id: profileData.id,
         title: profileData.title || 'Untitled',
@@ -1617,11 +1790,14 @@ async function loadCriticalContentData(contentId) {
         episode_number: seriesData?.episode_number || null,
         _cachedAt: Date.now()
     };
-
     window.currentContentId = currentContent.id;
-
     localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
     updateContentUI(currentContent);
+    // 🚨 Load engagement states
+    if (currentUserId) {
+        const states = await loadAllEngagementStates(contentId, currentUserId);
+        updateEngagementUI(states);
+    }
     if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
         addResumeButton(currentContent.watch_progress);
     }
@@ -1652,17 +1828,14 @@ async function loadContentFromURLLegacy() {
             .eq('id', contentId)
             .maybeSingle();
         if (contentError || !contentData) throw contentError || new Error('Content not found');
-
         const { count: viewsCount, error: viewsError } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', contentId);
-
         const { count: likesCount, error: likesError } = await window.supabaseClient
             .from('content_likes')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', contentId);
-
         let watchProgress = null;
         if (currentUserId) {
             const { data: progressData } = await window.supabaseClient
@@ -1673,19 +1846,16 @@ async function loadContentFromURLLegacy() {
                 .maybeSingle();
             watchProgress = progressData;
         }
-
         const { data: streamingData } = await window.supabaseClient
             .from('Content')
             .select('quality_profiles, hls_manifest_url, data_saver_url')
             .eq('id', contentId)
             .maybeSingle();
-
         const { data: seriesData } = await window.supabaseClient
             .from('Content')
             .select('series_id, episode_number')
             .eq('id', contentId)
             .maybeSingle();
-
         currentContent = {
             id: contentData.id,
             title: contentData.title || 'Untitled',
@@ -1714,10 +1884,13 @@ async function loadContentFromURLLegacy() {
             series_id: seriesData?.series_id || null,
             episode_number: seriesData?.episode_number || null
         };
-        
         window.currentContentId = currentContent.id;
-        
         updateContentUI(currentContent);
+        // 🚨 Load engagement states
+        if (currentUserId) {
+            const states = await loadAllEngagementStates(contentId, currentUserId);
+            updateEngagementUI(states);
+        }
         if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
             addResumeButton(currentContent.watch_progress);
         }
@@ -1738,33 +1911,9 @@ async function loadContentFromURLLegacy() {
 }
 
 async function initializeFavoriteButton(contentId, userId) {
-    const favoriteBtn = document.getElementById('favoriteBtn');
-    if (!favoriteBtn) return;
-    favoriteBtn.classList.remove('active');
-    favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
     if (!userId || !contentId) return;
-    try {
-        const { data: favoriteData, error } = await window.supabaseClient
-            .from('favorites')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('content_id', contentId)
-            .maybeSingle();
-        if (error) throw error;
-        const isFavorited = !!favoriteData;
-        favoriteBtn.classList.toggle('active', isFavorited);
-        favoriteBtn.classList.toggle('favorited', isFavorited);
-        favoriteBtn.dataset.favorited = isFavorited ? 'true' : 'false';
-        if (isFavorited) {
-            favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
-            favoritedContentCache.add(contentId);
-        } else {
-            favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
-        }
-        console.log(`✅ Favorite button initialized for content ${contentId}: ${isFavorited ? 'favorited' : 'not favorited'}`);
-    } catch (err) {
-        console.error('⚠️ Could not sync favorite button data:', err.message);
-    }
+    const states = await loadAllEngagementStates(contentId, userId);
+    updateEngagementUI(states);
 }
 
 // ============================================
@@ -1800,10 +1949,8 @@ async function fetchContentProfileDetails(contentId) {
             `)
             .eq('id', contentId)
             .maybeSingle();
-
         if (fetchError) throw fetchError;
         if (!mediaAsset) return null;
-
         const clientPayload = {
             ...mediaAsset,
             views_count: mediaAsset.content_engagement_stats?.total_views || 0,
@@ -1938,8 +2085,6 @@ function closeVideoPlayer() {
             playerInstance.video.pause();
             playerInstance.video.currentTime = 0;
         }
-        // Don't destroy the player instance - just pause it
-        // playerInstance.destroy() would break the non-destructive architecture
     }
     if (streamingManager) {
         streamingManager.destroy();
@@ -2051,13 +2196,9 @@ function initializeEnhancedVideoPlayer() {
             supabaseClient: window.supabaseClient,
             userId: currentUserId
         });
-        
-        // Store reference in both places for compatibility
         enhancedVideoPlayer = player;
         window.enhancedVideoPlayer = player;
-        
         player.attach(videoElement, videoContainer);
-        
         if (player.setCurrentTime) {
             player.setCurrentTime = function(time) {
                 if (this.player) {
@@ -2081,8 +2222,6 @@ function initializeEnhancedVideoPlayer() {
                 }
             };
         }
-        
-        // Add loadSource method for non-destructive source changes
         player.loadSource = async function(sourceConfig) {
             if (!player.video) return;
             player.video.pause();
@@ -2097,7 +2236,6 @@ function initializeEnhancedVideoPlayer() {
             }
             console.log('🔄 Source changed without destroying player:', sourceConfig.url);
         };
-        
         player.on('play', () => {
             console.log('▶️ Video playing...');
             if (window.stateManager) {
@@ -2142,9 +2280,6 @@ function initializeEnhancedVideoPlayer() {
 // ============================================
 // UI UPDATE FUNCTIONS
 // ============================================
-let likedContentCache = new Set();
-let favoritedContentCache = new Set();
-
 function updateContentUI(content) {
     if (!content) return;
     safeSetText('contentTitle', content.title);
@@ -2163,7 +2298,6 @@ function updateContentUI(content) {
     safeSetText('contentGenre', content.genre || 'General');
     safeSetText('contentDescriptionShort', truncateText(content.description, 150));
     safeSetText('contentDescriptionFull', content.description);
-    
     const creatorAvatar = document.getElementById('creatorAvatar');
     if (creatorAvatar && content.user_profiles) {
         const avatarUrl = content.user_profiles.avatar_url;
@@ -2196,7 +2330,6 @@ function updateContentUI(content) {
             console.log('✅ Creator avatar fallback to initials:', initial);
         }
     }
-    
     const creatorSection = document.querySelector('.creator-section');
     const creatorInfo = document.querySelector('.creator-info');
     if (creatorSection && content.creator_id) {
@@ -2210,7 +2343,6 @@ function updateContentUI(content) {
             });
         }
     }
-    
     const posterPlaceholder = document.getElementById('posterPlaceholder');
     if (posterPlaceholder && content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
@@ -2442,7 +2574,6 @@ function setupConnectButtons() {
             }
         });
     }
-    
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn && currentContent?.creator_id) {
         checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
@@ -2498,7 +2629,6 @@ function setupConnectButtons() {
             }
         });
     }
-    
     const connectCreatorBtn = document.getElementById('connectCreatorBtn');
     if (connectCreatorBtn && currentContent?.creator_id) {
         checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
@@ -2562,80 +2692,15 @@ function setupConnectButtons() {
 function setupWatchLaterButton() {
     const watchLaterBtn = document.getElementById('watchLaterBtn');
     if (!watchLaterBtn) return;
-    watchLaterBtn.addEventListener('click', async function() {
-        if (!currentUserId) {
-            showToast('Please sign in to use Watch Later', 'warning');
-            return;
-        }
-        const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-        if (!contentIdForWatchLater) return;
-        if (playlistModal) {
-            playlistModal.open();
-        } else {
-            try {
-                const { data: existingList } = await window.supabaseClient
-                    .from('playlists')
-                    .select('id')
-                    .eq('user_id', currentUserId)
-                    .eq('name', 'Watch Later')
-                    .maybeSingle();
-                let playlistId = existingList?.id;
-                if (!playlistId) {
-                    const { data: newPlaylist } = await window.supabaseClient
-                        .from('playlists')
-                        .insert({
-                            user_id: currentUserId,
-                            name: 'Watch Later',
-                            description: 'Content to watch later',
-                            is_public: false
-                        })
-                        .select()
-                        .single();
-                    playlistId = newPlaylist.id;
-                }
-                const { data: existing } = await window.supabaseClient
-                    .from('playlist_items')
-                    .select('id')
-                    .eq('playlist_id', playlistId)
-                    .eq('content_id', contentIdForWatchLater)
-                    .maybeSingle();
-                if (existing) {
-                    showToast('Already in Watch Later', 'info');
-                    return;
-                }
-                await window.supabaseClient
-                    .from('playlist_items')
-                    .insert({
-                        playlist_id: playlistId,
-                        content_id: contentIdForWatchLater,
-                        added_at: new Date().toISOString()
-                    });
-                showToast('Added to Watch Later!', 'success');
-            } catch (error) {
-                console.error('Watch Later fallback failed:', error);
-                showToast('Failed to add to Watch Later', 'error');
-            }
-        }
-    });
+    const newWatchLaterBtn = watchLaterBtn.cloneNode(true);
+    watchLaterBtn.parentNode.replaceChild(newWatchLaterBtn, watchLaterBtn);
+    newWatchLaterBtn.addEventListener('click', handleWatchLaterButtonClick);
 }
 
 async function updateWatchLaterButtonState() {
-    const watchLaterBtn = document.getElementById('watchLaterBtn');
-    if (!watchLaterBtn || !playlistManager || !currentUserId) return;
-    const contentIdForWatchLater = currentContent?.id || (currentPlaylistItems && currentPlaylistItems.length > 0 && currentPlaylistItems[0]?.id);
-    if (!contentIdForWatchLater) return;
-    try {
-        const isInWatchLater = await playlistManager.isInWatchLater(contentIdForWatchLater);
-        if (isInWatchLater) {
-            watchLaterBtn.classList.add('active');
-            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
-        } else {
-            watchLaterBtn.classList.remove('active');
-            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
-        }
-    } catch (error) {
-        console.warn('Failed to check watch later state:', error);
-    }
+    if (!currentUserId || !currentContent?.id) return;
+    const states = await loadAllEngagementStates(currentContent.id, currentUserId);
+    updateEngagementUI(states);
 }
 
 function setupViewSyncListener() {
@@ -2956,6 +3021,11 @@ function setupAuthListeners() {
             showToast('Welcome back!', 'success');
             if (currentUserId) {
                 await loadContinueWatching(currentUserId);
+                // Reload engagement states for current content
+                if (currentContent?.id) {
+                    const states = await loadAllEngagementStates(currentContent.id, currentUserId);
+                    updateEngagementUI(states);
+                }
             }
             if (window.PlaylistManager && !playlistManager) {
                 await initializePlaylistManager();
@@ -3101,36 +3171,6 @@ window.addEventListener('resize', applyMobileHeaderStyles);
 // ============================================
 // PLAYBACK FUNCTIONS
 // ============================================
-function initializeWatchSessionOnPlay() {
-    if (!currentContent || !currentUserId) {
-        console.log('🚫 Cannot initialize watch session: missing content or user');
-        return;
-    }
-    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-    if (!player?.video) {
-        console.log('🚫 Cannot initialize watch session: video element not ready');
-        return;
-    }
-    if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-    }
-    try {
-        const sessionKey = `bantu_view_session_${parseInt(currentContent.id)}`;
-        let sessionId = sessionStorage.getItem(sessionKey);
-        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem(sessionKey, sessionId);
-        console.log('🎬 PHASE 5: Initializing WatchSessionManager with session:', sessionId);
-        watchSession = new WatchSessionManager(currentContent.id, currentUserId);
-        watchSession.initializeSession('Web', 'Desktop');
-        watchSession.start(player.video);
-        window._watchSession = watchSession;
-        console.log('✅ PHASE 5: Watch session started with ledger-style telemetry');
-    } catch (error) {
-        console.error('❌ Failed to initialize watch session:', error);
-    }
-}
-
 function markContentAsViewed(contentId) {
     try {
         let viewed = localStorage.getItem('bantu_viewed_content');
@@ -3214,16 +3254,7 @@ function initializePlaylistModal() {
         if (watchLaterBtn) {
             const newBtn = watchLaterBtn.cloneNode(true);
             watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
-            newBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (!currentUserId) {
-                    showToast('Please sign in to use playlists', 'warning');
-                    const redirect = encodeURIComponent(window.location.href);
-                    window.location.href = `login.html?redirect=${redirect}`;
-                    return;
-                }
-                playlistModal.open();
-            });
+            newBtn.addEventListener('click', handleWatchLaterButtonClick);
         }
         console.log('✅ Playlist modal initialized');
     } catch (error) {
@@ -4180,37 +4211,7 @@ window.manualRecordView = async function() {
         return false;
     }
     console.log('🔧 Manually recording view for content:', currentContent.id);
-    try {
-        const { error: rpcError } = await window.supabaseClient
-            .rpc('increment_content_views', {
-                content_id_input: currentContent.id
-            });
-        if (rpcError) {
-            console.error('RPC failed:', rpcError);
-            return false;
-        }
-        const sessionId = 'manual_' + Date.now();
-        const { error: insertError } = await window.supabaseClient
-            .from('content_views')
-            .insert({
-                content_id: currentContent.id,
-                viewer_id: currentUserId,
-                session_id: sessionId,
-                counted_as_view: true,
-                device_type: 'desktop'
-            });
-        if (insertError) {
-            console.warn('Insert warning:', insertError);
-        }
-        incrementFrontendViewCount();
-        await refreshCountsFromSource();
-        console.log('✅ Manual view recorded successfully');
-        showToast('View recorded!', 'success');
-        return true;
-    } catch (error) {
-        console.error('Manual view recording failed:', error);
-        return false;
-    }
+    return await recordView(currentContent.id, currentUserId, null, 30);
 };
 
 window.hasViewedContentRecently = hasViewedContentRecently;
@@ -4228,6 +4229,13 @@ window.syncPlaylistUI = syncPlaylistUI;
 window.resetPlaylistCompletionLock = resetPlaylistCompletionLock;
 window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
 window.loadContentIntoPlayer = loadContentIntoPlayer;
+window.recordView = recordView;
+window.loadAllEngagementStates = loadAllEngagementStates;
+window.updateEngagementUI = updateEngagementUI;
+window.toggleLike = toggleLike;
+window.toggleFavorite = toggleFavorite;
+window.toggleWatchLater = toggleWatchLater;
+window.shareContent = shareContent;
 
 window.addEventListener('beforeunload', function() {
     if (viewValidationTimer) {
@@ -4399,7 +4407,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('🎵 Playlist mode detected (YouTube-style):', playlistId, playlistType);
             isPlaylistMode = true;
             await loadPlaylistMode(playlistId, playlistType);
-            // Initial UI sync after playlist loads
             syncPlaylistUI();
         } else if (contentId) {
             console.log('🎬 Single content mode detected:', contentId);
@@ -4629,4 +4636,8 @@ console.log('  ✅ Centralized playNextPlaylistItem function with completion gua
 console.log('  ✅ syncPlaylistUI() for centralized UI updates');
 console.log('  ✅ Player only fires ended event; content-detail handles navigation');
 console.log('  ✅ contentId desync fixed with window.currentContentId');
+console.log('  ✅ ENGAGEMENT SYSTEM FIXES: recordView uses content_views table');
+console.log('  ✅ ENGAGEMENT SYSTEM FIXES: loadAllEngagementStates for persistence');
+console.log('  ✅ ENGAGEMENT SYSTEM FIXES: toggleLike/toggleFavorite/toggleWatchLater with correct tables');
+console.log('  ✅ SHARE PERSISTENCE: shareContent records to content_shares and content_events');
 console.log('  🚀 Ready for production deployment.');
