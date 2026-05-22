@@ -20,6 +20,20 @@
 /* - max-height + opacity transitions (NOT display:none) */
 /* - Persistent tracklist container that never gets recreated */
 /* ============================================ */
+/* 🚨 CRITICAL FIX #3: MOBILE CONTROLS POINTER EVENTS (2026-05-22) */
+/* - Added pointer-events: auto !important for video player controls */
+/* - Added touch-action: manipulation for better mobile touch */
+/* - Fixed z-index stacking for controls to ensure clickability */
+/* ============================================ */
+/* 🚨 CRITICAL FIX #6: REMOVED ENGAGEMENT BUTTONS FROM PLAYER (2026-05-22) */
+/* - Hidden .player-engagement-actions and .engagement-controls-container */
+/* - Kept engagement buttons only outside player */
+/* ============================================ */
+/* 🚨 CRITICAL FIX #7: UNIFORM GLASSMORPHISM (2026-05-22) */
+/* - Force premium dark streaming finish on all control backgrounds */
+/* - Removed any blue background overrides */
+/* - Added consistent backdrop-filter blur */
+/* ============================================ */
 
 /* ============================================ */
 /* CSS VARIABLES & THEME SUPPORT */
@@ -87,6 +101,125 @@
 /* Apply UI Scale */
 html {
   font-size: calc(16px * var(--ui-scale));
+}
+
+/* ============================================ */
+/* 🚨 CRITICAL FIX #3: VIDEO PLAYER CONTROLS - POINTER EVENTS & TOUCH */
+/* ============================================ */
+
+/* Main video player controls container - ensure clickability */
+.video-player-controls {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  z-index: 9999 !important;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* All control buttons must be clickable on mobile */
+.video-player-controls button,
+.player-control-btn,
+.control-btn,
+.enhanced-video-controls .control-btn,
+.video-controls button {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 10000;
+}
+
+/* Ensure the entire controls bar is interactive */
+.controls-bar,
+.enhanced-video-controls .controls-bar {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+/* Progress bar and volume slider need to be interactive */
+.progress-container,
+.volume-bar,
+.enhanced-video-controls .progress-container,
+.enhanced-video-controls .volume-bar {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* ============================================ */
+/* 🚨 CRITICAL FIX #6: REMOVE ENGAGEMENT BUTTONS INSIDE PLAYER */
+/* ============================================ */
+
+/* Hide engagement actions inside the player overlay */
+.player-workspace .player-engagement-actions,
+.player-workspace .engagement-controls-container,
+.video-container .player-engagement-actions,
+.video-container .engagement-controls-container,
+.enhanced-video-controls .player-engagement-actions,
+.enhanced-video-controls .engagement-controls-container {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Also hide any views/save/share buttons inside the video player area */
+.video-container .views-btn,
+.video-container .save-btn,
+.video-container .share-btn,
+.video-container [data-action="views"],
+.video-container [data-action="save"],
+.video-container [data-action="share"] {
+  display: none !important;
+}
+
+/* ============================================ */
+/* 🚨 CRITICAL FIX #7: UNIFORM PREMIUM GLASSMORPHISM */
+/* ============================================ */
+
+/* Force glassmorphism on video player controls - override any blue backgrounds */
+.video-player-controls,
+.enhanced-video-controls,
+.enhanced-video-controls .controls-bar,
+.video-controls {
+  background: rgba(15, 15, 15, 0.6) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Ensure no blue background on any control element */
+.control-btn,
+.player-control-btn,
+.video-player-controls button,
+.enhanced-video-controls button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.control-btn:hover,
+.player-control-btn:hover,
+.video-player-controls button:hover,
+.enhanced-video-controls button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Override any media query that might add blue backgrounds */
+@media (max-width: 768px) {
+  .video-player-controls,
+  .enhanced-video-controls,
+  .enhanced-video-controls .controls-bar {
+    background: rgba(15, 15, 15, 0.7) !important;
+    backdrop-filter: blur(25px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  }
 }
 
 /* ============================================ */
@@ -2507,7 +2640,7 @@ video.audio-mode {
 }
 
 /* ============================================ */
-/* VIDEO PLAYER CONTROLS */
+/* ENHANCED VIDEO CONTROLS - GLASSMORPHISM OVERRIDE */
 /* ============================================ */
 .enhanced-video-controls {
   position: absolute;
@@ -2533,19 +2666,20 @@ video.audio-mode {
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 15, 15, 0.8) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
   border-radius: 0;
   margin: 0;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 .enhanced-video-controls .control-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   color: var(--soft-white);
   display: flex;
   align-items: center;
@@ -2555,8 +2689,8 @@ video.audio-mode {
 }
 
 .enhanced-video-controls .control-btn:hover {
-  background: rgba(255, 107, 53, 0.25);
-  border-color: var(--bantu-blue);
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: var(--warm-gold) !important;
   transform: scale(1.1);
 }
 
@@ -4214,8 +4348,45 @@ input:checked + .toggle-slider:before {
   display: none !important;
 }
 
+/* ============================================ */
+/* ADDITIONAL SAFEGUARDS FOR MOBILE CONTROLS */
+/* ============================================ */
+
+/* Ensure all player buttons are clickable on mobile */
+@media (max-width: 768px) {
+  .video-player-controls button,
+  .player-control-btn,
+  .control-btn,
+  .enhanced-video-controls .control-btn,
+  .video-controls button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    border-radius: 22px !important;
+  }
+  
+  /* Ensure progress bar is touch-friendly */
+  .progress-container,
+  .enhanced-video-controls .progress-container {
+    min-height: 20px !important;
+    margin: 0 8px !important;
+  }
+  
+  /* Ensure volume control is touch-friendly */
+  .volume-bar,
+  .enhanced-video-controls .volume-bar {
+    min-width: 60px !important;
+    min-height: 20px !important;
+  }
+}
+
+/* Final glassmorphism override for any blue backgrounds */
 .enhanced-video-controls {
-  display: block !important;
-  opacity: 1 !important;
-  pointer-events: all !important;
+  background: linear-gradient(to top, rgba(15, 15, 15, 0.95), rgba(15, 15, 15, 0.6), transparent) !important;
+}
+
+.enhanced-video-controls .controls-bar {
+  background: rgba(15, 15, 15, 0.8) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
