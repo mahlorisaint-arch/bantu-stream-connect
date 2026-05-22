@@ -94,14 +94,23 @@
 // - Centralized playNextPlaylistItem function - ADDED
 // - Player only fires ended event; content-detail handles navigation - ADDED
 // ============================================
+// 🚨 CRITICAL AUTOPLAY SYNC FIX (2026-05-22):
+// - Added syncPlaylistUI() for centralized UI updates
+// - Added completion guard to prevent duplicate playlist completions
+// - Enhanced playNextPlaylistItem with UI sync before navigation
+// - Added playlistCompleting flag to prevent loops
+// - Fixed contentId desync during autoplay
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
-// 🎯 YOUTUBE-STYLE GLOBAL PLAYLIST STATE (ADDED)
+// 🎯 YOUTUBE-STYLE GLOBAL PLAYLIST STATE
 // ============================================
 window.currentPlaylistItems = [];
 window.currentPlaylistIndex = 0;
 window.currentPlaylist = null;
+window.currentContentId = null;
+window.playlistCompleting = false;
 let albumTracksRendered = false;
 let albumSidebarInitialized = false;
 
@@ -126,9 +135,62 @@ let isAlbumExpanded = false;
 let _albumToggleInitialized = false; // Prevent duplicate initialization
 
 // ============================================
-// 🎯 CENTRALIZED NEXT TRACK FUNCTION - YOUTUBE ARCHITECTURE (ADDED)
+// 🎯 CENTRALIZED PLAYLIST UI SYNC FUNCTION (ADDED)
+// ============================================
+function syncPlaylistUI() {
+    if (!window.currentPlaylistItems || window.currentPlaylistItems.length === 0) {
+        console.warn('⚠️ syncPlaylistUI: No playlist items available');
+        return;
+    }
+
+    const currentItem = window.currentPlaylistItems[window.currentPlaylistIndex];
+    if (!currentItem) {
+        console.warn('⚠️ syncPlaylistUI: No current item at index', window.currentPlaylistIndex);
+        return;
+    }
+
+    // 1. Sync global content state variables
+    window.currentContentId = currentItem.id || currentItem.contentId;
+
+    // 2. Clear out old active track styling and highlight the current one
+    document.querySelectorAll('.album-track-item').forEach(track => {
+        track.classList.remove('active', 'playing');
+    });
+
+    const activeTrack = document.querySelector(`.album-track-item[data-index="${window.currentPlaylistIndex}"]`);
+    if (activeTrack) {
+        activeTrack.classList.add('active', 'playing');
+        activeTrack.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 3. Update Title, Creators, Metadata Cards across the page
+    if (typeof updateContentDetails === 'function') {
+        updateContentDetails(currentItem);
+    } else if (currentItem) {
+        // Fallback to updateContentUI if updateContentDetails doesn't exist
+        updateContentUI(currentItem);
+    }
+
+    // 4. Handle "Play Album" persistent display layout
+    const playAlbumBtn = document.getElementById('playAlbumBtn');
+    if (playAlbumBtn) {
+        playAlbumBtn.style.display = 'none';
+    }
+    document.body.classList.add('playlist-playing');
+
+    console.log(`✅ UI Refreshed: Track [${window.currentPlaylistIndex + 1}] - ${currentItem.title} (contentId: ${window.currentContentId})`);
+}
+
+// ============================================
+// 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD (UPDATED)
 // ============================================
 window.playNextPlaylistItem = async function() {
+    // Prevent multiple simultaneous completions
+    if (window.playlistCompleting) {
+        console.log('🚫 Playlist completion already in progress, skipping');
+        return;
+    }
+
     const items = window.currentPlaylistItems || [];
     let index = window.currentPlaylistIndex || 0;
 
@@ -137,23 +199,88 @@ window.playNextPlaylistItem = async function() {
         return;
     }
 
-    index++;
+    const nextIndex = index + 1;
 
-    if (index >= items.length) {
-        console.log('🏁 Playlist completed');
+    // Check if playlist has reached its conclusion
+    if (nextIndex >= items.length) {
+        window.playlistCompleting = true;
+        console.log('🏁 Playlist sequence fully completed.');
+        
+        // Reset completion flag after a delay to allow new playlist starts
+        setTimeout(() => {
+            window.playlistCompleting = false;
+        }, 1000);
         return;
     }
 
-    const nextItem = items[index];
-    window.currentPlaylistIndex = index;
+    window.currentPlaylistIndex = nextIndex;
+    
+    // Fire UI updates BEFORE loading media so the client feels instant
+    syncPlaylistUI();
 
-    console.log(`⏭️ Advancing to track ${index + 1}:`, nextItem.title);
+    const nextItem = items[nextIndex];
 
-    await loadContentIntoPlayer(nextItem, index);
+    console.log(`⏭️ Advancing to track ${nextIndex + 1}:`, nextItem.title);
+
+    // Load the next content into player
+    if (typeof loadContentIntoPlayer === 'function') {
+        await loadContentIntoPlayer(nextItem, nextIndex);
+    } else {
+        console.error('❌ loadContentIntoPlayer function not available');
+    }
 };
 
 // ============================================
-// 🎯 PERSISTENT TRACKLIST RENDER - ONCE ONLY (ADDED)
+// 🎯 RESET COMPLETION LOCK FOR NEW PLAYLISTS (ADDED)
+// ============================================
+function resetPlaylistCompletionLock() {
+    window.playlistCompleting = false;
+    console.log('✅ Playlist completion lock reset');
+}
+
+// ============================================
+// 🎯 PLAY PLAYLIST ITEM BY INDEX WITH SYNC (UPDATED)
+// ============================================
+async function playPlaylistItemByIndex(index) {
+    if (!window.currentPlaylistItems?.[index]) {
+        console.warn('⚠️ No playlist item at index:', index);
+        return;
+    }
+    
+    const item = window.currentPlaylistItems[index];
+    window.currentPlaylistIndex = index;
+    window.currentContent = item;
+    
+    // Sync UI before playing
+    syncPlaylistUI();
+    
+    // Update queue item active state
+    document.querySelectorAll('.playlist-queue-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.playlist-queue-item[data-index="${index}"]`)?.classList.add('active');
+    
+    await setCurrentContentFromPlaylistItem(item, index);
+    await loadContentIntoPlayer(item);
+    console.log('▶️ Playing playlist item:', item.title);
+}
+
+window.playPlaylistItemByIndex = playPlaylistItemByIndex;
+
+// ============================================
+// 🎯 PLAY PLAYLIST ITEM BY CONTENT ID WITH SYNC (ADDED)
+// ============================================
+window.playPlaylistItem = async (contentId, index) => {
+    if (window.currentPlaylistItems && window.currentPlaylistItems[index] && window.currentPlaylistItems[index].id === contentId) {
+        await playPlaylistItemByIndex(index);
+    } else {
+        const foundIndex = window.currentPlaylistItems.findIndex(i => i.id === contentId);
+        if (foundIndex !== -1) {
+            await playPlaylistItemByIndex(foundIndex);
+        }
+    }
+};
+
+// ============================================
+// 🎯 PERSISTENT TRACKLIST RENDER - ONCE ONLY
 // ============================================
 function renderAlbumTracks(tracks = []) {
     const container = document.getElementById('album-track-list');
@@ -186,7 +313,7 @@ function renderAlbumTracks(tracks = []) {
     });
 
     container.innerHTML = sortedTracks.map((item, index) => `
-        <button class="album-track-item ${currentContent?.id === item.id ? 'playing' : ''}" 
+        <button class="album-track-item ${currentContent?.id === item.id ? 'active playing' : ''}" 
                 data-index="${index}" 
                 data-content-id="${item.id}"
                 type="button">
@@ -210,7 +337,7 @@ function renderAlbumTracks(tracks = []) {
 }
 
 // ============================================
-// 🎯 TOGGLE FUNCTION - CSS CLASS ONLY (ADDED)
+// 🎯 TOGGLE FUNCTION - CSS CLASS ONLY
 // ============================================
 function toggleAlbumTracklist() {
     const sidebar = document.getElementById('album-sidebar');
@@ -232,7 +359,7 @@ function toggleAlbumTracklist() {
 }
 
 // ============================================
-// 🎯 SETUP ALBUM TOGGLE - ONE TIME (ADDED)
+// 🎯 SETUP ALBUM TOGGLE - ONE TIME
 // ============================================
 function setupAlbumToggle() {
     if (albumSidebarInitialized) {
@@ -352,6 +479,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
 
         window.currentPlaylistItems = normalizedItems;
         window.currentPlaylistIndex = 0;
+        resetPlaylistCompletionLock(); // Reset completion lock for new playlist
 
         const { data: playlistMeta, error: metaError } = await window.supabaseClient
             .from('creator_playlists')
@@ -511,6 +639,7 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
 
     window.currentPlaylistItems = normalizedItems;
     window.currentPlaylistIndex = 0;
+    resetPlaylistCompletionLock(); // Reset completion lock for new playlist
 
     const { data: playlistMeta, error: metaError } = await window.supabaseClient
         .from('creator_playlists')
@@ -551,6 +680,9 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
 async function setCurrentContentFromPlaylistItem(item, index) {
     if (!item) return;
 
+    // Update global contentId
+    window.currentContentId = item.id;
+
     currentContent = {
         id: item.id,
         title: item.title || 'Untitled',
@@ -585,32 +717,8 @@ async function setCurrentContentFromPlaylistItem(item, index) {
         await initializeFavoriteButton(currentContent.id, currentUserId);
     }
 
-    console.log('🎵 Set current content from playlist:', currentContent.title, 'Index:', index);
+    console.log('🎵 Set current content from playlist:', currentContent.title, 'Index:', index, 'contentId:', window.currentContentId);
 }
-
-async function playPlaylistItemByIndex(index) {
-    if (!window.currentPlaylistItems?.[index]) return;
-    const item = window.currentPlaylistItems[index];
-    window.currentPlaylistIndex = index;
-    window.currentContent = item;
-    document.querySelectorAll('.playlist-queue-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.playlist-queue-item[data-index="${index}"]`)?.classList.add('active');
-    await setCurrentContentFromPlaylistItem(item, index);
-    await loadContentIntoPlayer(item);
-    console.log('▶️ Playing playlist item:', item.title);
-}
-
-window.playPlaylistItemByIndex = playPlaylistItemByIndex;
-window.playPlaylistItem = async (contentId, index) => {
-    if (currentPlaylistItems && currentPlaylistItems[index] && currentPlaylistItems[index].id === contentId) {
-        await playPlaylistItemByIndex(index);
-    } else {
-        const foundIndex = currentPlaylistItems.findIndex(i => i.id === contentId);
-        if (foundIndex !== -1) {
-            await playPlaylistItemByIndex(foundIndex);
-        }
-    }
-};
 
 function updateActiveTrackInSidebar(contentId) {
     const container = document.getElementById('album-track-list');
@@ -618,9 +726,9 @@ function updateActiveTrackInSidebar(contentId) {
 
     container.querySelectorAll('.album-track-item').forEach(item => {
         if (item.dataset.contentId === String(contentId)) {
-            item.classList.add('playing');
+            item.classList.add('playing', 'active');
         } else {
-            item.classList.remove('playing');
+            item.classList.remove('playing', 'active');
         }
     });
 }
@@ -1101,6 +1209,9 @@ async function loadCriticalContentData(contentId) {
         _cachedAt: Date.now()
     };
 
+    // Update global contentId
+    window.currentContentId = currentContent.id;
+
     localStorage.setItem(`content_${contentId}`, JSON.stringify(currentContent));
     updateContentUI(currentContent);
     if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
@@ -1195,6 +1306,10 @@ async function loadContentFromURLLegacy() {
             series_id: seriesData?.series_id || null,
             episode_number: seriesData?.episode_number || null
         };
+        
+        // Update global contentId
+        window.currentContentId = currentContent.id;
+        
         updateContentUI(currentContent);
         if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
             addResumeButton(currentContent.watch_progress);
@@ -1667,7 +1782,7 @@ function initializeEnhancedVideoPlayer() {
             defaultQuality: preferences.quality,
             defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
             muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
-            contentId: currentContent?.id || null,
+            contentId: window.currentContentId || currentContent?.id || null,
             supabaseClient: window.supabaseClient,
             userId: currentUserId
         });
@@ -1728,7 +1843,7 @@ function initializeEnhancedVideoPlayer() {
         enhancedVideoPlayer.on('canplay', () => {
             console.log('✅ Video can start playing');
         });
-        console.log('✅ Enhanced video player initialized with safe assignments');
+        console.log('✅ Enhanced video player initialized with safe assignments and contentId:', window.currentContentId);
     } catch (error) {
         console.error('❌ Failed to initialize enhanced video player:', error);
         showToast('Video player failed to load. Using basic player.', 'warning');
@@ -3950,7 +4065,7 @@ function formatCommentTime(timestamp) {
         const diffDays = Math.floor(diffMs / 86400000);
         if (diffMins < 1) return 'Just now';
         if (diffMins < 60) return diffMins + ' min ago';
-        if (diffHours < 24) return diffHours + ' hour' + (diffHours !== 1 ? 's' : '') + ' ago';
+        if (diffHours < 60) return diffHours + ' hour' + (diffHours !== 1 ? 's' : '') + ' ago';
         if (diffDays < 7) return diffDays + ' day' + (diffDays !== 1 ? 's' : '') + ' ago';
         return date.toLocaleDateString('en-US', {
             month: 'short',
@@ -4189,6 +4304,8 @@ window.renderAlbumTracks = renderAlbumTracks;
 window.incrementFrontendViewCount = incrementFrontendViewCount;
 window.incrementContentViews = incrementContentViews;
 window.resetViewRecordingState = resetViewRecordingState;
+window.syncPlaylistUI = syncPlaylistUI;
+window.resetPlaylistCompletionLock = resetPlaylistCompletionLock;
 
 window.addEventListener('beforeunload', function() {
     if (viewValidationTimer) {
@@ -4251,7 +4368,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .album-track-item:hover {
                 background: var(--hover-bg, rgba(255,255,255,0.1));
             }
-            .album-track-item.playing {
+            .album-track-item.active, .album-track-item.playing {
                 background: rgba(245, 158, 11, 0.2);
                 border-left: 3px solid #F59E0B;
             }
@@ -4268,6 +4385,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             .track-duration {
                 color: var(--text-secondary, #aaa);
                 font-size: 12px;
+            }
+            .playlist-playing #playAlbumBtn {
+                display: none !important;
             }
         `;
         document.head.appendChild(style);
@@ -4357,6 +4477,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('🎵 Playlist mode detected (YouTube-style):', playlistId, playlistType);
             isPlaylistMode = true;
             await loadPlaylistMode(playlistId, playlistType);
+            // Initial UI sync after playlist loads
+            syncPlaylistUI();
         } else if (contentId) {
             console.log('🎬 Single content mode detected:', contentId);
             await loadCriticalContentData(contentId);
@@ -4458,7 +4580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 5000);
 
-    console.log('✅ Content Detail initialization complete with YouTube-style playlist architecture');
+    console.log('✅ Content Detail initialization complete with YouTube-style playlist architecture and centralized UI sync');
 });
 
 function showToast(message, type = 'info') {
@@ -4515,11 +4637,18 @@ function setupPlayerEndedListener() {
     console.log('✅ Player ended listener attached for auto-advance');
 }
 
+function updateContentDetails(content) {
+    // This is an alias for updateContentUI for compatibility
+    updateContentUI(content);
+}
+
 console.log('✅ Content detail script loaded with ALL CRITICAL FIXES APPLIED:');
 console.log('  ✅ YouTube-style persistent DOM sidebar (never recreated)');
 console.log('  ✅ CSS class-based toggle (max-height, opacity, NOT display:none)');
 console.log('  ✅ Single tracklist render (albumTracksRendered flag)');
 console.log('  ✅ Global playlist state (window.currentPlaylistItems, window.currentPlaylistIndex)');
-console.log('  ✅ Centralized playNextPlaylistItem function');
+console.log('  ✅ Centralized playNextPlaylistItem function with completion guard');
+console.log('  ✅ syncPlaylistUI() for centralized UI updates');
 console.log('  ✅ Player only fires ended event; content-detail handles navigation');
+console.log('  ✅ contentId desync fixed with window.currentContentId');
 console.log('  🚀 Ready for production deployment.');
