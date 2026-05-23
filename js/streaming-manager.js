@@ -5,6 +5,11 @@
 // ✅ FIXED: No creator_id references (this file never used it)
 // ✅ FIXED: Network speed test now uses non-authenticated CDN endpoint (no 401 errors)
 // ✅ FIXED: Graceful fallback when network test fails
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23):
+// - FIX #2: Added contentId synchronization (updateContentId method)
+// - FIX #2: Initialize method now checks for contentId updates
+// - FIX #7: Added realtime quality preference sync across tabs
+// - Added reinitialize method for playlist track changes
 
 (function() {
   'use strict';
@@ -40,16 +45,25 @@
     this.originalVideoUrl = null;
     this.contentType = 'video'; // 'video' or 'audio'
     this._networkCheckInterval = null; // ✅ Added for cleanup
+    this._currentHlsManifestUrl = null; // 🚨 Store for reinitialization
+    this._isInitialized = false; // 🚨 Track initialization state
     
     // Callbacks
     this.onQualityChange = config.onQualityChange || null;
     this.onDataSaverToggle = config.onDataSaverToggle || null;
     this.onError = config.onError || null;
+    this.onContentChange = config.onContentChange || null; // 🚨 New callback for content changes
     
     // Load saved preferences
     this._loadUserPreferences();
     
-    console.log('✅ StreamingManager initialized');
+    // 🚨 Listen for contentId changes from other components
+    this._setupContentIdListener();
+    
+    // 🚨 Listen for storage events to sync preferences across tabs
+    this._setupStorageListener();
+    
+    console.log('✅ StreamingManager initialized with contentId:', this.contentId);
   }
 
   // ============================================
@@ -58,6 +72,12 @@
 
   StreamingManager.prototype.initialize = async function() {
     console.log('📡 StreamingManager.initialize() called for content:', this.contentId);
+    
+    // 🚨 Skip if already initialized with same contentId
+    if (this._isInitialized && this._lastInitializedContentId === this.contentId) {
+      console.log('⚠️ StreamingManager already initialized for this content, skipping');
+      return;
+    }
     
     // Store original video URL
     this.originalVideoUrl = this.video.src || 
@@ -75,9 +95,9 @@
       // Get content media type
       const { data: contentData, error: contentError } = await this.supabase
         .from('Content')
-        .select('media_type, hls_manifest_url, quality_profiles')
+        .select('media_type, hls_manifest_url, quality_profiles, file_url')
         .eq('id', this.contentId)
-        .single();
+        .maybeSingle();
       
       if (contentError) {
         console.warn('⚠️ Could not fetch content type:', contentError);
@@ -88,7 +108,14 @@
         this.contentType = 'audio';
         console.log('🎵 Audio content detected - skipping HLS initialization');
         // For audio, we don't need HLS, just use direct file
+        this._isInitialized = true;
+        this._lastInitializedContentId = this.contentId;
         return;
+      }
+      
+      // Store HLS manifest URL for potential reinitialization
+      if (contentData?.hls_manifest_url) {
+        this._currentHlsManifestUrl = contentData.hls_manifest_url;
       }
       
       // Load available qualities from database
@@ -108,12 +135,69 @@
       // Apply saved quality preference
       await this._applyQualityPreference();
       
+      this._isInitialized = true;
+      this._lastInitializedContentId = this.contentId;
+      
     } catch (error) {
       console.error('❌ StreamingManager initialization error:', error);
       this._handleError('init', error);
     }
     
-    console.log('✅ StreamingManager fully initialized for', this.contentType);
+    console.log('✅ StreamingManager fully initialized for', this.contentType, 'contentId:', this.contentId);
+  };
+
+  /**
+   * 🚨 FIX #2: Reinitialize streaming for new content
+   * Called when playlist track changes to update contentId
+   */
+  StreamingManager.prototype.reinitialize = async function(newContentId) {
+    if (this.contentId === newContentId && this._isInitialized) {
+      console.log('⚠️ StreamingManager already using contentId:', newContentId);
+      return;
+    }
+    
+    console.log(`🔄 Reinitializing StreamingManager: ${this.contentId} -> ${newContentId}`);
+    
+    // Destroy current HLS instance
+    if (this.hlsInstance) {
+      try {
+        this.hlsInstance.destroy();
+        this.hlsInstance = null;
+      } catch (e) {
+        console.warn('HLS destroy during reinit error:', e);
+      }
+    }
+    
+    // Update contentId
+    this.contentId = newContentId;
+    this._isInitialized = false;
+    this._currentHlsManifestUrl = null;
+    
+    // Reinitialize with new content
+    await this.initialize();
+    
+    // Notify callback
+    if (this.onContentChange) {
+      this.onContentChange({
+        contentId: this.contentId,
+        timestamp: Date.now()
+      });
+    }
+  };
+
+  /**
+   * 🚨 FIX #2: Update contentId without full reinit (lighter operation)
+   * For when only the ID changes but streaming source remains similar
+   */
+  StreamingManager.prototype.updateContentId = function(newContentId) {
+    if (this.contentId === newContentId) {
+      return;
+    }
+    
+    console.log(`📡 StreamingManager contentId updated: ${this.contentId} -> ${newContentId}`);
+    this.contentId = newContentId;
+    this._lastInitializedContentId = null;
+    this._isInitialized = false;
   };
 
   StreamingManager.prototype.setQuality = async function(quality) {
@@ -229,6 +313,10 @@
     return this.contentType;
   };
 
+  StreamingManager.prototype.getCurrentContentId = function() {
+    return this.contentId;
+  };
+
   StreamingManager.prototype.destroy = function() {
     // Stop network monitoring
     if (this._networkCheckInterval) {
@@ -245,6 +333,9 @@
       }
       this.hlsInstance = null;
     }
+    
+    this._isInitialized = false;
+    this._lastInitializedContentId = null;
     
     console.log('🛑 StreamingManager destroyed');
   };
@@ -392,7 +483,6 @@
     
     try {
       // Use a reliable, small image from a fast CDN that doesn't require authentication
-      // This image is approximately 50-100KB, giving a good speed estimate
       const testImageUrl = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/index.js';
       const testSizeKB = 80; // Approximate size in KB
       const startTime = Date.now();
@@ -421,14 +511,12 @@
       const durationSec = durationMs / 1000;
       
       // Calculate speed in bits per second
-      // (size in KB * 8 bits per byte * 1024 bytes per KB) / seconds
       if (durationSec > 0) {
         const speedBps = (testSizeKB * 8 * 1024) / durationSec;
         this.networkSpeed = Math.round(speedBps);
         
         console.log('🌐 Network speed:', (this.networkSpeed / 1000000).toFixed(2), 'Mbps', `(test took ${durationMs}ms)`);
       } else {
-        // If duration is 0 or extremely small, assume very fast connection
         this.networkSpeed = 10000000; // 10 Mbps
         console.log('🌐 Network speed: Very fast (>10 Mbps)');
       }
@@ -440,9 +528,7 @@
       
     } catch (error) {
       // Silent fallback - don't pollute console with expected errors
-      // Just use a reasonable default speed
       if (error.name !== 'AbortError') {
-        // Only log non-abort errors, and do so quietly
         console.debug('Network speed measurement unavailable, using default profile');
       }
       this.networkSpeed = 2000000; // Default to 2 Mbps (good for 720p)
@@ -455,7 +541,6 @@
     if (!this.networkSpeed) return;
     
     // Bitrate thresholds (bits per second)
-    // Using safe thresholds that work well with most connections
     if (this.networkSpeed > 8000000) {      // > 8 Mbps
       this.setQuality('1080p');
     } else if (this.networkSpeed > 4000000) { // > 4 Mbps
@@ -516,6 +601,46 @@
     }
   };
 
+  // 🚨 FIX #2: Setup listener for contentId changes from other components
+  StreamingManager.prototype._setupContentIdListener = function() {
+    window.addEventListener('contentIdChanged', (event) => {
+      if (event.detail && event.detail.contentId) {
+        const newContentId = event.detail.contentId;
+        if (this.contentId !== newContentId) {
+          console.log(`📡 StreamingManager received contentIdChanged event: ${this.contentId} -> ${newContentId}`);
+          this.updateContentId(newContentId);
+          // Reinitialize for new content
+          this.reinitialize(newContentId).catch(err => {
+            console.warn('Reinitialization after contentIdChanged failed:', err);
+          });
+        }
+      }
+    });
+  };
+
+  // 🚨 FIX #7: Setup storage listener for cross-tab preference sync
+  StreamingManager.prototype._setupStorageListener = function() {
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'bsc_quality_preference' && event.newValue) {
+        const newQuality = event.newValue;
+        if (this.currentQuality !== newQuality && newQuality !== 'auto') {
+          console.log(`📡 Quality preference changed in another tab: ${newQuality}`);
+          this.setQuality(newQuality).catch(err => {
+            console.warn('Failed to sync quality preference:', err);
+          });
+        }
+      }
+      
+      if (event.key === 'bsc_data_saver') {
+        const newDataSaver = event.newValue === 'true';
+        if (this.isDataSaverMode !== newDataSaver) {
+          console.log(`📡 Data saver preference changed in another tab: ${newDataSaver}`);
+          this.toggleDataSaver(newDataSaver);
+        }
+      }
+    });
+  };
+
   // Export
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = StreamingManager;
@@ -523,5 +648,9 @@
     window.StreamingManager = StreamingManager;
   }
   
-  console.log('✅ StreamingManager module loaded successfully');
+  console.log('✅ StreamingManager module loaded successfully with engagement fixes:');
+  console.log('  ✅ contentId synchronization (updateContentId, reinitialize)');
+  console.log('  ✅ contentIdChanged event listener');
+  console.log('  ✅ Cross-tab preference sync via storage events');
+  console.log('  ✅ Reinitialization for playlist track changes');
 })();
