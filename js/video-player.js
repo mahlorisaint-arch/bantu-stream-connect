@@ -30,41 +30,94 @@
 // - Fixed view recording to use content_views table (NOT views_count column)
 // - Added proper engagement state persistence integration
 // - Fixed recordView to insert into content_views correctly
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23):
+// - FIX #1: RPC view recording integration (recordContentViewRPC)
+// - FIX #2: Global contentId synchronization
+// - FIX #8: Threshold-based view recording (15 sec or 30% duration)
+// - Added updateContentId method for playlist track changes
+// - Added syncEngagementState method for UI consistency
 // ============================================
-// 🔧 VERSION: v2.6.0 - Engagement System Integration
+// 🔧 VERSION: v2.7.0 - Engagement System Full Integration
 // ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v2.6.0 - Engagement System Integration)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v2.7.0 - Engagement System Full Integration)');
+
+  // Global reference for RPC view recording
+  let _globalRecordContentViewRPC = null;
 
   /**
-   * 🚨 FIXED: Record view using content_views table (NOT views_count column)
-   * This function correctly inserts into the source of truth table
+   * 🚨 FIX #1: Get the global RPC view recording function
    */
-  async function recordViewToContentViews(contentId, userId, sessionId, viewDuration, deviceType) {
+  function getRecordContentViewRPC() {
+    if (_globalRecordContentViewRPC) return _globalRecordContentViewRPC;
+    if (window.recordContentViewRPC) {
+      _globalRecordContentViewRPC = window.recordContentViewRPC;
+      return _globalRecordContentViewRPC;
+    }
+    if (window.recordView) {
+      _globalRecordContentViewRPC = window.recordView;
+      return _globalRecordContentViewRPC;
+    }
+    return null;
+  }
+
+  /**
+   * 🚨 FIX #1 & #8: Record view using RPC with dynamic threshold
+   * This function delegates to the centralized RPC system
+   */
+  async function recordViewViaRPC(contentId, userId, sessionId, progressSeconds, deviceType) {
     if (!contentId) {
       console.error('❌ Cannot record view: missing contentId');
       return false;
     }
     
+    const recordFn = getRecordContentViewRPC();
+    if (!recordFn) {
+      console.warn('⚠️ No RPC view recording function available, using fallback');
+      return await recordViewFallback(contentId, userId, sessionId, progressSeconds, deviceType);
+    }
+    
+    try {
+      const finalDeviceType = deviceType || (/Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop');
+      const finalSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const result = await recordFn(contentId, userId, finalSessionId, finalDeviceType);
+      
+      if (result && result.success) {
+        console.log(`✅ View recorded via RPC for content ${contentId} at ${progressSeconds}s`);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ RPC view recording error:', error);
+      return await recordViewFallback(contentId, userId, sessionId, progressSeconds, deviceType);
+    }
+  }
+
+  /**
+   * Fallback view recording if RPC is not available
+   */
+  async function recordViewFallback(contentId, userId, sessionId, progressSeconds, deviceType) {
+    if (!contentId) return false;
+    
     try {
       const finalSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const duration = viewDuration !== null && viewDuration !== undefined ? viewDuration : 30;
-      const device = deviceType || (/Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop');
+      const finalDeviceType = deviceType || (/Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop');
       
-      // INSERT into content_views (the SOURCE OF TRUTH for views)
       const { error: insertError } = window.supabaseClient
         ? await window.supabaseClient
             .from('content_views')
             .insert({
-              content_id: contentId,
+              content_id: parseInt(contentId),
               user_id: userId || null,
               session_id: finalSessionId,
               counted_as_view: true,
-              view_duration: duration,
-              device_type: device,
+              view_duration: Math.min(progressSeconds || 30, 300),
+              device_type: finalDeviceType,
               viewed_at: new Date().toISOString()
             })
         : { error: new Error('Supabase client not available') };
@@ -74,15 +127,14 @@
         return false;
       }
       
-      console.log(`✅ View recorded for content ${contentId} (duration: ${duration}s)`);
+      console.log(`✅ View recorded via fallback for content ${contentId} (duration: ${progressSeconds || 30}s)`);
       
       // Increment the aggregated counter via RPC
       try {
         if (window.supabaseClient) {
           await window.supabaseClient.rpc('increment_content_views', {
-            content_id_input: contentId
+            content_id_input: parseInt(contentId)
           });
-          console.log('✅ Aggregated view counter incremented');
         }
       } catch (rpcError) {
         console.warn('⚠️ RPC increment failed (non-critical):', rpcError.message);
@@ -105,10 +157,11 @@
    * - Content-detail.js owns all playlist navigation logic
    * - Single source of truth: window.currentPlaylistItems/Index
    * 
-   * 🚨 ENGAGEMENT SYSTEM:
-   * - View recording uses content_views table directly
-   * - No broken views_count column references
-   * - Proper session tracking for analytics
+   * 🚨 ENGAGEMENT SYSTEM (2026-05-23):
+   * - RPC view recording integration
+   * - Dynamic threshold (min 15 seconds or 30% of duration)
+   * - contentId synchronization with global state
+   * - Engagement state sync with UI
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -141,6 +194,10 @@
         enableTelemetry: options.enableTelemetry ?? true,
         heartbeatInterval: options.heartbeatInterval ?? 10000,
         validViewThreshold: options.validViewThreshold ?? 30,
+        
+        // 🚨 FIX #8: Dual threshold for view recording
+        minViewThresholdSeconds: options.minViewThreshold ?? 15,
+        percentageViewThreshold: options.percentageViewThreshold ?? 0.3, // 30%
         
         // Phase 1D: Collection/Queue
         enableCollectionNav: options.enableCollectionNav ?? true,
@@ -176,6 +233,7 @@
       this.watchSession = null;
       this.viewRecorded = false;
       this.viewValidated = false;
+      this._viewThresholdReached = false;
       
       // Audio restoration tracking (simplified - no fake restore system)
       this._audioRestoreListenerAttached = false;
@@ -238,11 +296,16 @@
       // 🔧 FIX #5: Setup delegated event listeners for buttons (survives DOM rebuilds)
       this._setupDelegatedEventListeners();
       
+      // 🚨 Setup contentId change listener
+      this._setupContentIdListener();
+      
       console.log('✅ EnhancedVideoPlayer instantiated', {
         contentId: this.contentId,
         userId: this.userId,
         telemetry: this.config.enableTelemetry,
-        collectionNav: this.config.enableCollectionNav
+        collectionNav: this.config.enableCollectionNav,
+        viewThreshold: this.config.minViewThresholdSeconds,
+        percentageThreshold: this.config.percentageViewThreshold
       });
     }
     
@@ -301,6 +364,21 @@
     }
     
     // =====================================================
+    // 🚨 FIX #2: Setup contentId change listener
+    // =====================================================
+    _setupContentIdListener() {
+      window.addEventListener('contentIdChanged', (event) => {
+        if (event.detail && event.detail.contentId) {
+          const newContentId = event.detail.contentId;
+          if (this.contentId !== newContentId) {
+            console.log(`📡 Player received contentIdChanged event: ${this.contentId} -> ${newContentId}`);
+            this.updateContentId(newContentId);
+          }
+        }
+      });
+    }
+    
+    // =====================================================
     // MIME TYPE & MEDIA DETECTION
     // =====================================================
     
@@ -341,6 +419,23 @@
       if (metadata.media_type) return metadata.media_type;
       if (this.isAudioSource(url)) return 'audio';
       return 'video';
+    }
+    
+    /**
+     * 🚨 FIX #8: Calculate dynamic threshold based on video duration
+     * Uses min(15 seconds, 30% of duration) for view recording
+     */
+    _getDynamicViewThreshold() {
+      if (!this.video) return this.config.minViewThresholdSeconds;
+      
+      const duration = this.video.duration || 0;
+      if (duration <= 0) return this.config.minViewThresholdSeconds;
+      
+      const thirtyPercentDuration = duration * this.config.percentageViewThreshold;
+      const thresholdSeconds = Math.min(this.config.minViewThresholdSeconds, thirtyPercentDuration);
+      
+      // Ensure at least 3 seconds for very short content
+      return Math.max(3, thresholdSeconds);
     }
     
     // =====================================================
@@ -959,10 +1054,13 @@
       this._updateTimeDisplay();
       this._updateProgressBar();
       
-      // 🚨 FIXED: Record view using content_views table
-      if (!this.viewRecorded && this.video && 
-          this.video.currentTime >= this.config.validViewThreshold) {
-        this._recordView();
+      // 🚨 FIX #1 & #8: Record view using dynamic threshold
+      if (!this.viewRecorded && this.video && this.video.currentTime > 0) {
+        const dynamicThreshold = this._getDynamicViewThreshold();
+        if (this.video.currentTime >= dynamicThreshold && !this._viewThresholdReached) {
+          this._viewThresholdReached = true;
+          this._recordViewViaRPC();
+        }
       }
       
       if (this.video && this.video.currentTime % 10 < 0.1) {
@@ -1605,6 +1703,8 @@
       }
       
       this._audioRendererRecoveryAttempted = false;
+      this.viewRecorded = false;
+      this._viewThresholdReached = false;
       
       if (this.isAudioSource(url)) {
         if (this.video) this.video.classList.add('audio-mode');
@@ -1630,8 +1730,6 @@
       
       this.retryAttempts = 0;
       this.errorState = null;
-      this.viewRecorded = false;
-      this.viewValidated = false;
       
       if (this.video) this.video.load();
       
@@ -1641,6 +1739,45 @@
       this._emit('source:changed', { url, contentId, type });
       
       return Promise.resolve();
+    }
+    
+    // =====================================================
+    // 🚨 FIX #2: Update contentId for playlist track changes
+    // =====================================================
+    updateContentId(newContentId) {
+      if (this.contentId === newContentId) {
+        console.log('⚠️ Player contentId unchanged:', newContentId);
+        return;
+      }
+      
+      console.log(`🔄 Player contentId updated: ${this.contentId} -> ${newContentId}`);
+      this.contentId = newContentId;
+      
+      // Reset view recording state for new content
+      this.viewRecorded = false;
+      this._viewThresholdReached = false;
+      this.viewValidated = false;
+      
+      // Update session if needed
+      if (this.watchSession && typeof this.watchSession.updateContentId === 'function') {
+        this.watchSession.updateContentId(newContentId);
+      }
+      
+      this._emit('content:changed', { contentId: newContentId });
+    }
+    
+    /**
+     * 🚨 Sync engagement state with UI (for when external changes happen)
+     */
+    syncEngagementState(engagementData) {
+      if (engagementData) {
+        if (engagementData.isLiked !== undefined) this.engagement.isLiked = engagementData.isLiked;
+        if (engagementData.isFavorited !== undefined) this.engagement.isFavorited = engagementData.isFavorited;
+        if (engagementData.views !== undefined) this.engagement.views = engagementData.views;
+        if (engagementData.likes !== undefined) this.engagement.likes = engagementData.likes;
+      }
+      
+      this._emit('engagement:synced', { engagement: this.engagement });
     }
     
     // =====================================================
@@ -1897,10 +2034,17 @@
             sessionId: this.playbackSessionId,
             heartbeatInterval: this.config.heartbeatInterval,
             validViewThreshold: this.config.validViewThreshold,
+            minViewThreshold: this.config.minViewThresholdSeconds,
+            percentageViewThreshold: this.config.percentageViewThreshold,
             collectionId: this.collectionContext.collectionId,
             playlistId: this.collectionContext.playlistId,
             sortIndex: this.collectionContext.currentSortIndex,
             episodeNumber: this.collectionContext.episodeNumber,
+            onViewRecorded: (data) => {
+              this.viewRecorded = true;
+              console.log('✅ View recorded via telemetry');
+              this._emit('telemetry:view-recorded', data);
+            },
             onViewValidated: (data) => {
               this.viewValidated = true;
               console.log('✅ View validated via telemetry');
@@ -1921,27 +2065,30 @@
     }
     
     // =====================================================
-    // 🚨 FIXED: Record view using content_views table
+    // 🚨 FIX #1 & #8: Record view using RPC with dynamic threshold
     // =====================================================
-    async _recordView() {
+    async _recordViewViaRPC() {
       if (this.viewRecorded || !this.supabase || !this.contentId) return;
       
       this.viewRecorded = true;
-      console.log('👁️ View threshold reached, recording to content_views...');
+      const currentProgress = this.video ? Math.floor(this.video.currentTime) : 30;
+      const dynamicThreshold = this._getDynamicViewThreshold();
       
-      const success = await recordViewToContentViews(
+      console.log(`👁️ View threshold reached (${dynamicThreshold}s), recording via RPC for content ${this.contentId}...`);
+      
+      const success = await recordViewViaRPC(
         this.contentId,
         this.userId,
         this.playbackSessionId,
-        Math.floor(this.video ? this.video.currentTime : 30),
+        currentProgress,
         this._isMobile ? 'mobile' : 'desktop'
       );
       
       if (success) {
-        console.log('✅ View recorded via content_views table');
+        console.log('✅ View recorded via RPC successfully');
         this.engagement.views++;
       } else {
-        console.warn('⚠️ View recording failed');
+        console.warn('⚠️ View recording via RPC failed');
       }
       
       if (window.stateManager) {
@@ -1951,6 +2098,8 @@
       this._emit('telemetry:view-recorded', {
         contentId: this.contentId,
         sessionId: this.playbackSessionId,
+        progressSeconds: currentProgress,
+        threshold: dynamicThreshold,
         timestamp: Date.now(),
         success: success
       });
@@ -2143,6 +2292,7 @@
       this.isPlaying = false;
       this.isBuffering = false;
       this.viewRecorded = false;
+      this._viewThresholdReached = false;
       this.viewValidated = false;
       this._audioRendererRecoveryAttempted = false;
     }
@@ -2188,7 +2338,8 @@
         isFullscreen: this.isFullscreen,
         isPiP: this.isPiP,
         viewRecorded: this.viewRecorded,
-        viewValidated: this.viewValidated
+        viewValidated: this.viewValidated,
+        viewThreshold: this._getDynamicViewThreshold()
       };
     }
     
@@ -2212,6 +2363,61 @@
     isReady() {
       return this._isAttached && !this._isDestroyed && this.video ? this.video.readyState >= 2 : false;
     }
+    
+    /**
+     * 🚨 Load source without destroying player instance
+     * Used for playlist track changes to preserve player state
+     */
+    loadSource(sourceConfig) {
+      if (!this.video) return Promise.reject('Player not attached');
+      if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
+      
+      const url = sourceConfig.url;
+      const type = sourceConfig.type || this.getMediaMimeType(url);
+      const contentId = sourceConfig.contentId || this.contentId;
+      
+      console.log('🔄 Loading new source without destroying player:', { url, contentId });
+      
+      // Update contentId
+      if (contentId && contentId !== this.contentId) {
+        this.updateContentId(contentId);
+      }
+      
+      // Reset view recording flags for new source
+      this.viewRecorded = false;
+      this._viewThresholdReached = false;
+      
+      // Pause current playback
+      this.video.pause();
+      
+      // Update source
+      while (this.video.firstChild) {
+        this.video.removeChild(this.video.firstChild);
+      }
+      this.video.removeAttribute('src');
+      
+      const source = document.createElement('source');
+      source.src = url;
+      source.type = type;
+      this.video.appendChild(source);
+      
+      // Load and attempt to play if user has interacted
+      this.video.load();
+      
+      if (document.body.classList.contains('user-interacted')) {
+        this.play().catch(err => {
+          console.warn('Auto-play after source change blocked:', err);
+          this._showPlayOverlay();
+        });
+      }
+      
+      // Update preserved source
+      this._sourcePreserved = { url, type, method: 'loadSource' };
+      
+      this._emit('source:loaded', { url, contentId, type });
+      
+      return Promise.resolve();
+    }
   }
   
   // =====================================================
@@ -2222,7 +2428,7 @@
   window.BantuVideoPlayer = EnhancedVideoPlayer;
   
   // Expose recordView function globally for content-detail.js to use
-  window._recordViewToContentViews = recordViewToContentViews;
+  window._recordViewViaRPC = recordViewViaRPC;
   
   // 🎯 YOUTUBE-STYLE: Expose a helper function for content-detail to register
   window._setupPlayerEndedCallback = function(callback) {
@@ -2290,17 +2496,20 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.6.0 - Engagement System Integration)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.7.0 - Engagement System Full Integration)');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
   console.log('   🔧 FIX #8: SINGLE ended handler (no duplicates)');
+  console.log('   🚨 FIX #1: RPC view recording integration');
+  console.log('   🚨 FIX #2: contentId synchronization (updateContentId method)');
+  console.log('   🚨 FIX #8: Dynamic threshold (min 15 sec or 30% of duration)');
   console.log('   🚨 ENGAGEMENT FIX: recordView uses content_views table correctly');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
   console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
   console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with muted fallback');
-  console.log('   🚀 Ready for production deployment with Engagement System');
+  console.log('   🚀 Ready for production deployment with Engagement System Full Integration');
   
 })();
