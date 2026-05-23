@@ -1,11 +1,18 @@
 // Bantu Stream Connect Service Worker
-// Version: 6.0.0 - CRITICAL: SUPABASE API NEVER CACHED
-// Last updated: 2026-05-20 - FIXED: Removed ALL Supabase API caching (root cause of 503 errors)
+// Version: 7.0.0 - CRITICAL: Supabase API NEVER CACHED + Engagement System Support
+// Last updated: 2026-05-23 - FIXED: Removed ALL Supabase API caching (root cause of 503 errors)
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23):
+// - Enhanced Supabase API detection (covers all engagement endpoints)
+// - Added view recording endpoint protection (content_views)
+// - Added like/favorite/watch later endpoint protection
+// - Improved offline queue for engagement actions
+// - Added retry logic for failed engagement syncs
+// - Enhanced background sync for engagement data
 
-const CACHE_NAME = 'bantu-stream-connect-v6';
-const STATIC_CACHE = 'bantu-static-v6';
-const DYNAMIC_CACHE = 'bantu-dynamic-v6';
-const IMAGE_CACHE = 'bantu-images-v6';
+const CACHE_NAME = 'bantu-stream-connect-v7';
+const STATIC_CACHE = 'bantu-static-v7';
+const DYNAMIC_CACHE = 'bantu-dynamic-v7';
+const IMAGE_CACHE = 'bantu-images-v7';
 
 // ⚠️ API_CACHE REMOVED - Supabase endpoints should NEVER be cached
 
@@ -29,6 +36,12 @@ const STATIC_ASSETS = [
     '/js/supabase-helper.js',
     '/js/auth-helper.js',
     '/js/content-detail.js',
+    '/js/streaming-manager.js',
+    '/js/video-player.js',
+    '/js/video-player-features.js',
+    '/js/playlist-manager.js',
+    '/js/recommendation-engine.js',
+    '/js/state-manager.js',
     '/manifest.json',
     '/assets/icon/bantu_stream_connect_icon_192x192.png',
     '/assets/icon/bantu_stream_connect_icon_512x512.png'
@@ -40,11 +53,27 @@ const EXTERNAL_ASSETS = [
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
+// 🚨 Engagement endpoints that must NEVER be cached
+const ENGAGEMENT_ENDPOINTS = [
+    '/rest/v1/content_views',
+    '/rest/v1/content_likes',
+    '/rest/v1/favorites',
+    '/rest/v1/watch_later',
+    '/rest/v1/comments',
+    '/rest/v1/content_shares',
+    '/rest/v1/content_events',
+    '/rest/v1/playlist_items',
+    '/rest/v1/playlists',
+    '/rest/v1/watch_progress',
+    '/rest/v1/playback_sessions',
+    '/rest/v1/playback_heartbeats'
+];
+
 // ============================================
 // INSTALL: Force clear ALL old caches with NO auto-reload
 // ============================================
 self.addEventListener('install', event => {
-    console.log('🚀 Service Worker: Installing v6 - CRITICAL SUPABASE CACHE FIX...');
+    console.log('🚀 Service Worker: Installing v7 - CRITICAL ENGAGEMENT CACHE PROTECTION...');
     
     // Force clear ALL existing caches before installing
     event.waitUntil(
@@ -130,7 +159,7 @@ self.addEventListener('install', event => {
             }
         })
         .then(() => {
-            console.log('✅ Service Worker: Install completed - v6 ready');
+            console.log('✅ Service Worker: Install completed - v7 ready');
             // CRITICAL FIX: Do NOT call skipWaiting() automatically
             // This prevents the infinite reload loop
         })
@@ -141,7 +170,7 @@ self.addEventListener('install', event => {
 // ACTIVATE: Clean up but DO NOT claim clients immediately
 // ============================================
 self.addEventListener('activate', event => {
-    console.log('🚀 Service Worker: Activating v6...');
+    console.log('🚀 Service Worker: Activating v7...');
     
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -149,7 +178,7 @@ self.addEventListener('activate', event => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     // Delete any caches that don't match our current versions
-                    if (!cacheName.includes('v6') && 
+                    if (!cacheName.includes('v7') && 
                         cacheName !== CACHE_NAME && 
                         cacheName !== STATIC_CACHE && 
                         cacheName !== DYNAMIC_CACHE && 
@@ -160,7 +189,7 @@ self.addEventListener('activate', event => {
                 })
             );
         }).then(() => {
-            console.log('✅ Service Worker: Activation completed - v6 active');
+            console.log('✅ Service Worker: Activation completed - v7 active');
             // CRITICAL FIX: Do NOT call clients.claim() automatically
             // This prevents the service worker from taking control immediately
         })
@@ -168,8 +197,44 @@ self.addEventListener('activate', event => {
 });
 
 // ============================================
+// 🚨 HELPER: Check if URL is an engagement endpoint
+// ============================================
+function isEngagementEndpoint(url) {
+    const pathname = url.pathname;
+    const search = url.search;
+    
+    // Check against known engagement endpoints
+    for (const endpoint of ENGAGEMENT_ENDPOINTS) {
+        if (pathname.includes(endpoint)) {
+            return true;
+        }
+    }
+    
+    // Check for specific table operations
+    if (pathname.includes('/rest/v1/rpc/')) {
+        const rpcName = pathname.split('/rest/v1/rpc/')[1];
+        const engagementRPCs = [
+            'record_content_view',
+            'validate_playback_view',
+            'increment_content_views',
+            'toggle_content_like',
+            'toggle_favorite',
+            'toggle_watch_later',
+            'record_content_share',
+            'increment_engagement_stats_likes'
+        ];
+        if (engagementRPCs.some(rpc => rpcName?.includes(rpc))) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// ============================================
 // FETCH: Optimized caching strategies
 // 🚨 CRITICAL: Supabase API endpoints are NEVER cached
+// 🚨 ENGAGEMENT: All engagement endpoints are NEVER cached
 // ============================================
 self.addEventListener('fetch', event => {
     const requestUrl = new URL(event.request.url);
@@ -189,48 +254,58 @@ self.addEventListener('fetch', event => {
     
     // ============================================
     // 🚨🚨🚨 CRITICAL FIX: NEVER CACHE SUPABASE API REQUESTS 🚨🚨🚨
-    // This is the root cause of the 503 errors and stale playlist data
+    // This includes all engagement endpoints (views, likes, favorites, watch later)
     // ============================================
     if (requestUrl.hostname.includes('supabase.co')) {
-        // NEVER cache ANY Supabase endpoint:
-        // - /rest/v1/* (all REST API calls)
-        // - /auth/v1/* (authentication)
-        // - /storage/v1/* (storage)
-        if (requestUrl.pathname.includes('/rest/v1/') ||
+        // Check if this is an engagement endpoint for extra logging
+        const isEngagement = isEngagementEndpoint(requestUrl);
+        
+        if (isEngagement) {
+            console.log('🚨 ENGAGEMENT API request - NEVER CACHING:', requestUrl.pathname);
+        } else if (requestUrl.pathname.includes('/rest/v1/') ||
             requestUrl.pathname.includes('/auth/v1/') ||
             requestUrl.pathname.includes('/storage/v1/')) {
-            
             console.log('🚨 Supabase API request - NEVER CACHING:', requestUrl.pathname);
-            
-            event.respondWith(
-                fetch(event.request)
-                    .then(response => {
-                        if (!response.ok) {
-                            console.warn(`⚠️ Supabase API returned ${response.status}: ${requestUrl.pathname}`);
-                        }
-                        return response;
-                    })
-                    .catch(error => {
-                        console.error('❌ Supabase API fetch failed:', error);
-                        // Return a proper error response
-                        return new Response(
-                            JSON.stringify({ 
-                                error: 'Network error', 
-                                message: 'Unable to reach server. Please check your connection.' 
-                            }),
-                            { 
-                                status: 503, 
-                                headers: { 'Content-Type': 'application/json' }
-                            }
-                        );
-                    })
-            );
-            return;
+        } else {
+            console.log('🚨 Supabase request - NEVER CACHING:', requestUrl.pathname);
         }
         
-        // For other Supabase requests (not API), still don't cache
-        console.log('🚨 Supabase request - NEVER CACHING:', requestUrl.pathname);
-        event.respondWith(fetch(event.request));
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    if (!response.ok) {
+                        console.warn(`⚠️ Supabase API returned ${response.status}: ${requestUrl.pathname}`);
+                        // For 409 Conflict (duplicate), still return the response but don't cache
+                        if (response.status === 409) {
+                            console.log('⚠️ 409 Conflict detected - this is normal for duplicate engagement actions');
+                        }
+                    }
+                    return response;
+                })
+                .catch(error => {
+                    console.error('❌ Supabase API fetch failed:', error);
+                    
+                    // For engagement endpoints, queue the action for retry when online
+                    if (isEngagement && event.request.method !== 'GET') {
+                        console.log('📦 Queuing engagement action for retry when online');
+                        event.waitUntil(
+                            queueEngagementForRetry(event.request)
+                        );
+                    }
+                    
+                    // Return a proper error response
+                    return new Response(
+                        JSON.stringify({ 
+                            error: 'Network error', 
+                            message: 'Unable to reach server. Please check your connection.' 
+                        }),
+                        { 
+                            status: 503, 
+                            headers: { 'Content-Type': 'application/json' }
+                        }
+                    );
+                })
+        );
         return;
     }
     
@@ -247,6 +322,14 @@ self.addEventListener('fetch', event => {
         event.respondWith(
             new Response('', { status: 404, statusText: 'Not Found - Corrupted Path' })
         );
+        return;
+    }
+    
+    // ============================================
+    // Block POST/PUT/DELETE requests to cache (should never be cached)
+    // ============================================
+    if (event.request.method !== 'GET') {
+        event.respondWith(fetch(event.request));
         return;
     }
     
@@ -382,6 +465,41 @@ self.addEventListener('fetch', event => {
 });
 
 // ============================================
+// 🚨 ENGAGEMENT QUEUE FOR OFFLINE RETRY
+// ============================================
+
+async function queueEngagementForRetry(request) {
+    try {
+        const db = await openDatabase();
+        const transaction = db.transaction(['pending_engagement'], 'readwrite');
+        const store = transaction.objectStore('pending_engagement');
+        
+        // Clone the request to store it
+        const requestData = {
+            url: request.url,
+            method: request.method,
+            headers: Object.fromEntries(request.headers.entries()),
+            body: await request.clone().text(),
+            timestamp: Date.now(),
+            retries: 0
+        };
+        
+        store.add(requestData);
+        
+        console.log('📦 Engagement action queued for retry');
+        
+        // Register for background sync if available
+        if ('sync' in self.registration) {
+            await self.registration.sync.register('sync-engagement');
+            console.log('✅ Background sync registered for engagement');
+        }
+        
+    } catch (error) {
+        console.error('❌ Failed to queue engagement for retry:', error);
+    }
+}
+
+// ============================================
 // MESSAGE HANDLER: Allow client to trigger cache clearing
 // CRITICAL: NO auto-reload on messages
 // ============================================
@@ -418,6 +536,10 @@ self.addEventListener('message', event => {
             event.source.postMessage({ type: 'RELOAD_REQUESTED' });
         }
     }
+    
+    if (event.data.type === 'SYNC_ENGAGEMENT') {
+        event.waitUntil(syncPendingEngagement());
+    }
 });
 
 // ============================================
@@ -429,7 +551,90 @@ self.addEventListener('sync', event => {
     if (event.tag === 'sync-content-views') {
         event.waitUntil(syncContentViews());
     }
+    
+    if (event.tag === 'sync-engagement') {
+        event.waitUntil(syncPendingEngagement());
+    }
 });
+
+// ============================================
+// 🚨 SYNC PENDING ENGAGEMENT ACTIONS
+// ============================================
+async function syncPendingEngagement() {
+    console.log('🔄 Syncing pending engagement actions...');
+    
+    try {
+        const db = await openDatabase();
+        
+        // Check if object store exists
+        if (!db.objectStoreNames.contains('pending_engagement')) {
+            console.log('ℹ️ No pending_engagement store found');
+            return;
+        }
+        
+        const transaction = db.transaction(['pending_engagement'], 'readwrite');
+        const store = transaction.objectStore('pending_engagement');
+        const allRequests = await getAllFromStore(db, 'pending_engagement');
+        
+        if (!allRequests || allRequests.length === 0) {
+            console.log('ℹ️ No pending engagement actions to sync');
+            return;
+        }
+        
+        console.log(`📤 Syncing ${allRequests.length} pending engagement actions...`);
+        
+        const syncPromises = allRequests.map(async (requestData) => {
+            try {
+                // Check if this is an engagement endpoint
+                const url = new URL(requestData.url);
+                const isEngagement = isEngagementEndpoint(url);
+                
+                if (!isEngagement) {
+                    // Not an engagement endpoint, skip or delete
+                    await deleteFromStore(db, 'pending_engagement', requestData.id);
+                    return;
+                }
+                
+                // Replay the request
+                const fetchOptions = {
+                    method: requestData.method,
+                    headers: new Headers(requestData.headers),
+                    body: requestData.body
+                };
+                
+                const response = await fetch(requestData.url, fetchOptions);
+                
+                if (response.ok || response.status === 409) {
+                    // Success or duplicate (409 is acceptable for engagement)
+                    console.log(`✅ Synced engagement action: ${requestData.url}`);
+                    await deleteFromStore(db, 'pending_engagement', requestData.id);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error(`❌ Failed to sync engagement action: ${requestData.url}`, error);
+                
+                // Update retry count
+                requestData.retries = (requestData.retries || 0) + 1;
+                if (requestData.retries < 5) {
+                    // Update in store for next retry
+                    await updateInStore(db, 'pending_engagement', requestData);
+                } else {
+                    // Max retries exceeded, delete it
+                    console.warn(`🗑️ Max retries exceeded for engagement action, deleting: ${requestData.url}`);
+                    await deleteFromStore(db, 'pending_engagement', requestData.id);
+                }
+            }
+        });
+        
+        await Promise.allSettled(syncPromises);
+        console.log('✅ Engagement sync completed');
+        
+    } catch (error) {
+        console.error('❌ Engagement sync failed:', error);
+    }
+}
 
 // ============================================
 // PUSH NOTIFICATIONS
@@ -519,6 +724,12 @@ self.addEventListener('notificationclick', event => {
 async function syncContentViews() {
     try {
         const db = await openDatabase();
+        
+        if (!db.objectStoreNames.contains('pending_views')) {
+            console.log('ℹ️ No pending_views store found');
+            return;
+        }
+        
         const views = await getAllFromStore(db, 'pending_views');
         
         if (views.length === 0) return;
@@ -557,31 +768,49 @@ async function syncContentViews() {
 }
 
 // ============================================
-// IndexedDB helper functions
+// IndexedDB helper functions with engagement store
 // ============================================
 function openDatabase() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('BantuOfflineDB', 2);
+        const request = indexedDB.open('BantuOfflineDB', 3);
         
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
         
         request.onupgradeneeded = event => {
             const db = event.target.result;
+            const oldVersion = event.oldVersion;
             
+            console.log(`📀 Upgrading IndexedDB from version ${oldVersion} to ${event.newVersion}`);
+            
+            // Create pending_views store
             if (!db.objectStoreNames.contains('pending_views')) {
                 const viewStore = db.createObjectStore('pending_views', { keyPath: 'id', autoIncrement: true });
                 viewStore.createIndex('timestamp', 'timestamp', { unique: false });
+                console.log('✅ Created pending_views store');
             }
             
+            // Create cached_content store
             if (!db.objectStoreNames.contains('cached_content')) {
                 const contentStore = db.createObjectStore('cached_content', { keyPath: 'id' });
                 contentStore.createIndex('expires', 'expires', { unique: false });
                 contentStore.createIndex('timestamp', 'timestamp', { unique: false });
+                console.log('✅ Created cached_content store');
             }
             
+            // Create user_preferences store
             if (!db.objectStoreNames.contains('user_preferences')) {
                 db.createObjectStore('user_preferences', { keyPath: 'key' });
+                console.log('✅ Created user_preferences store');
+            }
+            
+            // 🚨 Create pending_engagement store for offline engagement actions
+            if (!db.objectStoreNames.contains('pending_engagement')) {
+                const engagementStore = db.createObjectStore('pending_engagement', { keyPath: 'id', autoIncrement: true });
+                engagementStore.createIndex('url', 'url', { unique: false });
+                engagementStore.createIndex('timestamp', 'timestamp', { unique: false });
+                engagementStore.createIndex('retries', 'retries', { unique: false });
+                console.log('✅ Created pending_engagement store');
             }
         };
     });
@@ -594,7 +823,7 @@ function getAllFromStore(db, storeName) {
         const request = store.getAll();
         
         request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => resolve(request.result || []);
     });
 }
 
@@ -609,12 +838,28 @@ function deleteFromStore(db, storeName, id) {
     });
 }
 
+function updateInStore(db, storeName, data) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(data);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+    });
+}
+
 // ============================================
 // Clean up expired cache entries periodically
 // ============================================
 async function cleanupExpiredCache() {
     try {
         const db = await openDatabase();
+        
+        if (!db.objectStoreNames.contains('cached_content')) {
+            return;
+        }
+        
         const transaction = db.transaction(['cached_content'], 'readwrite');
         const store = transaction.objectStore('cached_content');
         const index = store.index('expires');
@@ -630,6 +875,24 @@ async function cleanupExpiredCache() {
             }
         };
         
+        // Also clean up old pending engagement entries (older than 7 days)
+        if (db.objectStoreNames.contains('pending_engagement')) {
+            const engagementTx = db.transaction(['pending_engagement'], 'readwrite');
+            const engagementStore = engagementTx.objectStore('pending_engagement');
+            const engagementIndex = engagementStore.index('timestamp');
+            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            
+            const engagementRequest = engagementIndex.openCursor(IDBKeyRange.upperBound(sevenDaysAgo));
+            
+            engagementRequest.onsuccess = event => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    engagementStore.delete(cursor.primaryKey);
+                    cursor.continue();
+                }
+            };
+        }
+        
     } catch (error) {
         console.error('Cache cleanup failed:', error);
     }
@@ -638,4 +901,7 @@ async function cleanupExpiredCache() {
 // Run cleanup every hour
 setInterval(cleanupExpiredCache, 60 * 60 * 1000);
 
-console.log('✅ Service Worker v6 loaded - SUPABASE API NEVER CACHED - This fixes the 503 errors');
+console.log('✅ Service Worker v7 loaded - ENGAGEMENT API NEVER CACHED - This fixes engagement sync issues');
+console.log('  🚨 Engagement endpoints protected: content_views, content_likes, favorites, watch_later, comments');
+console.log('  🚨 Offline queue for engagement actions with background sync');
+console.log('  🚨 Retry logic for failed engagement syncs (max 5 retries)');
