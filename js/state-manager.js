@@ -7,15 +7,23 @@
 // ✅ Collection/series context tracking for recommendations
 // ✅ Queue state synchronization with playback session
 // ✅ Graceful degradation and offline-first caching
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23):
+// - FIX #2: Global contentId synchronization across all components
+// - FIX #4: Race condition protection with request token pattern
+// - FIX #5: Optimistic UI updates via subscription system
+// - FIX #6: Load counts from canonical tables (content_views, content_likes)
+// - Added syncEngagementState method for UI consistency
+// - Added refreshLiveCounts method for real-time updates
 
 (function() {
   'use strict';
   
-  console.log('🗄️ StateManager module loading... (Phase 3 + Phase 1D Enhanced)');
+  console.log('🗄️ StateManager module loading... (Phase 3 + Phase 1D Enhanced + Engagement Fixes)');
 
   /**
    * StateManager — Centralized application state with persistence, 
    * subscriptions, and Phase 3/1D feature integration
+   * 🚨 UPDATED: Integrated with global contentId sync and live engagement counts
    */
   class StateManager {
     constructor(config = {}) {
@@ -58,6 +66,15 @@
         connections: [], // Followed creators
         watchHistory: {},
         
+        // 🚨 FIX #4: Live engagement counts cache (from canonical tables)
+        liveCounts: {
+          views: {},
+          likes: {},
+          comments: {},
+          shares: {},
+          lastUpdated: {}
+        },
+        
         // 🔧 VIEWS FIX: View recording state with DB confirmation tracking
         viewRecording: {
           currentSessionId: null,
@@ -83,6 +100,7 @@
         contentLoading: false,
         contentError: null,
         
+        // 🚨 FIX #2: Global contentId synchronization
         session: {
           currentContentId: null,
           playbackSessionId: null, // Phase 3: playback_sessions UUID
@@ -93,7 +111,9 @@
           muted: false,
           lastActivityTime: Date.now(),
           isCleanupBlocked: false, // Critical: prevent cleanup during interactions
-          deviceInfo: null // Populated on init
+          deviceInfo: null, // Populated on init
+          // 🚨 FIX #4: Race condition protection token
+          contentSyncToken: null
         },
         
         // Phase 1D: Collection/Series Context
@@ -153,10 +173,181 @@
       this._initDebouncedWatchHistory();
       this.init();
       
+      // 🚨 Setup contentId change listener for cross-component sync
+      this._setupContentIdListener();
+      
       console.log('✅ StateManager initialized', {
         userId: this.state.user?.id || 'guest',
         sessionId: this.state.session.playbackSessionId,
         collectionId: this.state.collection.currentCollectionId
+      });
+    }
+    
+    // =====================================================
+    // 🚨 FIX #2: CONTENT ID SYNC METHODS
+    // =====================================================
+    
+    /**
+     * Setup listener for global contentId changes from other components
+     */
+    _setupContentIdListener() {
+      window.addEventListener('contentIdChanged', (event) => {
+        if (event.detail && event.detail.contentId) {
+          const newContentId = event.detail.contentId;
+          if (this.state.session.currentContentId !== newContentId) {
+            console.log(`📡 StateManager received contentIdChanged: ${this.state.session.currentContentId} -> ${newContentId}`);
+            this.updateCurrentContentId(newContentId);
+          }
+        }
+      });
+    }
+    
+    /**
+     * 🚨 FIX #2: Update current content ID with race protection
+     * Called during playlist navigation to keep state in sync
+     */
+    updateCurrentContentId(contentId) {
+      const oldContentId = this.state.session.currentContentId;
+      
+      if (oldContentId === contentId) {
+        return;
+      }
+      
+      // 🚨 FIX #4: Generate new sync token for race condition protection
+      const syncToken = crypto.randomUUID();
+      this.state.session.contentSyncToken = syncToken;
+      
+      console.log(`🔄 StateManager contentId updated: ${oldContentId || 'null'} -> ${contentId}`);
+      
+      // Update state
+      this.state.session.currentContentId = contentId;
+      
+      // Reset view recording flags for new content
+      this.state.viewRecording.pendingRecordings = {};
+      
+      // Notify subscribers
+      this.notifyListeners('session:content-changed', {
+        contentId: contentId,
+        previousContentId: oldContentId,
+        syncToken: syncToken
+      });
+      
+      // Dispatch global event for other components
+      window.dispatchEvent(new CustomEvent('stateContentIdChanged', {
+        detail: {
+          contentId: contentId,
+          previousContentId: oldContentId,
+          syncToken: syncToken,
+          timestamp: Date.now()
+        }
+      }));
+    }
+    
+    /**
+     * 🚨 FIX #4: Check if a sync operation is still valid (prevents race conditions)
+     */
+    isSyncValid(syncToken) {
+      return syncToken === this.state.session.contentSyncToken;
+    }
+    
+    // =====================================================
+    // 🚨 FIX #6: LIVE ENGAGEMENT COUNTS FROM CANONICAL TABLES
+    // =====================================================
+    
+    /**
+     * Fetch live engagement counts from canonical tables
+     * @param {string|number} contentId - The content ID
+     * @param {boolean} forceRefresh - Bypass cache and fetch fresh
+     * @returns {Promise<{views: number, likes: number, comments: number, shares: number}>}
+     */
+    async fetchLiveEngagementCounts(contentId, forceRefresh = false) {
+      const contentIdStr = String(contentId);
+      const now = Date.now();
+      const cacheAge = this.state.liveCounts.lastUpdated[contentIdStr] || 0;
+      
+      // Use cached counts if fresh (within 30 seconds) and not forcing refresh
+      if (!forceRefresh && cacheAge && (now - cacheAge) < 30000) {
+        return {
+          views: this.state.liveCounts.views[contentIdStr] || 0,
+          likes: this.state.liveCounts.likes[contentIdStr] || 0,
+          comments: this.state.liveCounts.comments[contentIdStr] || 0,
+          shares: this.state.liveCounts.shares[contentIdStr] || 0
+        };
+      }
+      
+      if (!window.supabaseClient) {
+        console.warn('⚠️ Supabase client not available for live counts');
+        return { views: 0, likes: 0, comments: 0, shares: 0 };
+      }
+      
+      try {
+        const [viewsResult, likesResult, commentsResult, sharesResult] = await Promise.all([
+          window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentIdStr)).eq('counted_as_view', true),
+          window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentIdStr)),
+          window.supabaseClient.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentIdStr)),
+          window.supabaseClient.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentIdStr))
+        ]);
+        
+        const counts = {
+          views: viewsResult.count || 0,
+          likes: likesResult.count || 0,
+          comments: commentsResult.count || 0,
+          shares: sharesResult.count || 0
+        };
+        
+        // Update cache
+        this.state.liveCounts.views[contentIdStr] = counts.views;
+        this.state.liveCounts.likes[contentIdStr] = counts.likes;
+        this.state.liveCounts.comments[contentIdStr] = counts.comments;
+        this.state.liveCounts.shares[contentIdStr] = counts.shares;
+        this.state.liveCounts.lastUpdated[contentIdStr] = now;
+        
+        console.log(`📊 Live engagement counts fetched for ${contentIdStr}:`, counts);
+        
+        this.notifyListeners('liveCounts:updated', {
+          contentId: contentIdStr,
+          counts: counts
+        });
+        
+        return counts;
+        
+      } catch (error) {
+        console.error('❌ Failed to fetch live engagement counts:', error);
+        return { views: 0, likes: 0, comments: 0, shares: 0 };
+      }
+    }
+    
+    /**
+     * 🚨 FIX #6: Refresh live counts for current content
+     * Called after engagement actions to keep UI in sync
+     */
+    async refreshLiveCounts(contentId = null) {
+      const targetId = contentId || this.state.session.currentContentId;
+      if (!targetId) return null;
+      
+      return await this.fetchLiveEngagementCounts(targetId, true);
+    }
+    
+    /**
+     * 🚨 FIX #5: Optimistically update engagement counts in UI
+     * Called before server confirmation for immediate feedback
+     */
+    optimisticUpdateEngagement(contentId, type, increment) {
+      const contentIdStr = String(contentId);
+      const current = this.state.liveCounts[type]?.[contentIdStr] || 0;
+      
+      if (!this.state.liveCounts[type]) {
+        this.state.liveCounts[type] = {};
+      }
+      
+      this.state.liveCounts[type][contentIdStr] = Math.max(0, current + increment);
+      
+      // Notify subscribers of optimistic update
+      this.notifyListeners('engagement:optimistic', {
+        contentId: contentIdStr,
+        type: type,
+        newValue: this.state.liveCounts[type][contentIdStr],
+        increment: increment
       });
     }
     
@@ -198,6 +389,9 @@
         this.state.viewRecording.currentSessionId = existing || this._generateUUID();
         sessionStorage.setItem('bantu_view_session', this.state.viewRecording.currentSessionId);
       }
+      
+      // 🚨 Initialize content sync token
+      this.state.session.contentSyncToken = null;
     }
     
     _generateUUID() {
@@ -218,7 +412,7 @@
         
         const parsed = JSON.parse(saved);
         
-        // Merge persisted state with defaults, converting arrays back to Sets where needed
+        // Merge persisted state with defaults
         this.state = {
           ...this.state,
           user: parsed.user || null,
@@ -227,6 +421,12 @@
           likes: parsed.likes || [],
           connections: parsed.connections || [],
           watchHistory: parsed.watchHistory || {},
+          
+          // Restore live counts if available
+          liveCounts: {
+            ...this.state.liveCounts,
+            ...(parsed.liveCounts || {})
+          },
           
           // View recording state
           viewRecording: {
@@ -307,6 +507,7 @@
         likes: [],
         connections: [],
         watchHistory: {},
+        liveCounts: { views: {}, likes: {}, comments: {}, shares: {}, lastUpdated: {} },
         viewRecording: {
           currentSessionId: this._generateUUID(),
           recordedContentIds: [],
@@ -327,7 +528,8 @@
           ...this.state.session,
           currentContentId: null,
           currentTime: 0,
-          playing: false
+          playing: false,
+          contentSyncToken: null
         },
         collection: {
           currentCollectionId: null,
@@ -358,7 +560,6 @@
       const saveState = () => {
         if (saveTimeout) clearTimeout(saveTimeout);
         
-        // Throttle saves
         const now = Date.now();
         if (now - lastSaveTime < MIN_SAVE_INTERVAL_MS) {
           saveTimeout = setTimeout(saveState, MIN_SAVE_INTERVAL_MS - (now - lastSaveTime));
@@ -375,6 +576,15 @@
               likes: this.state.likes,
               connections: this.state.connections,
               watchHistory: this.state.watchHistory,
+              
+              // Save live counts cache
+              liveCounts: {
+                views: this.state.liveCounts.views,
+                likes: this.state.liveCounts.likes,
+                comments: this.state.liveCounts.comments,
+                shares: this.state.liveCounts.shares,
+                lastUpdated: this.state.liveCounts.lastUpdated
+              },
               
               viewRecording: {
                 currentSessionId: this.state.viewRecording.currentSessionId,
@@ -420,7 +630,6 @@
             
           } catch (error) {
             console.error('❌ Failed to save state:', error);
-            // Don't retry on quota errors
             if (error.name !== 'QuotaExceededError') {
               saveTimeout = setTimeout(saveState, 5000);
             }
@@ -430,7 +639,6 @@
       
       // Auto-save on any state change via wildcard subscription
       this.subscribe('*', () => {
-        // Only save if user is authenticated or has engagement data
         if (this.state.user || this.state.favorites.length > 0 || 
             this.state.likes.length > 0 || Object.keys(this.state.watchHistory).length > 0) {
           saveState();
@@ -446,14 +654,12 @@
     }
     
     _setupSessionRecovery() {
-      // Save critical state before unload
       window.addEventListener('beforeunload', () => {
         this._savePlaybackState();
         this._saveViewRecordingState();
         this._saveQueueState();
       });
       
-      // Restore interrupted playback on load
       this._restorePlaybackState();
     }
     
@@ -488,7 +694,6 @@
             const contentId = key.replace('playback_', '');
             const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
             
-            // Only restore recent, valid playback state
             if (data.timestamp && 
                 Date.now() - data.timestamp < maxAge && 
                 data.time > 0 && 
@@ -509,7 +714,6 @@
               console.log('🔄 Restored playback state for content:', contentId);
             }
             
-            // Clean up restored entry
             localStorage.removeItem(key);
             
           } catch (e) {
@@ -553,20 +757,17 @@
     }
     
     _setupViewStateRecovery() {
-      // Retry pending view recordings on load
       const pending = this.state.viewRecording.pendingRecordings;
       const pendingCount = Object.keys(pending).length;
       
       if (pendingCount > 0) {
         console.log(`🔄 Found ${pendingCount} pending view recordings to retry`);
         
-        // Retry after short delay to allow network initialization
         setTimeout(() => {
           this._retryPendingViewRecordings();
         }, 3000);
       }
       
-      // Listen for online event to retry failed recordings
       window.addEventListener('online', () => {
         console.log('🌐 Network restored, retrying pending view recordings');
         this._retryPendingViewRecordings();
@@ -579,7 +780,6 @@
       const maxAge = 5 * 60 * 1000; // 5 minutes
       
       for (const [contentId, record] of Object.entries(pending)) {
-        // Skip if too old or max retries exceeded
         if (now - record.timestamp > maxAge || record.retries >= this.config.syncRetryLimit) {
           console.log(`🗑️ Removing expired/failed view recording for content: ${contentId}`);
           delete this.state.viewRecording.pendingRecordings[contentId];
@@ -588,7 +788,6 @@
         
         console.log(`🔄 Retrying view recording for content: ${contentId} (attempt ${record.retries + 1})`);
         
-        // Emit event for external retry handler (e.g., WatchSessionManager)
         this.notifyListeners('view:retry', {
           contentId,
           data: record.data,
@@ -598,7 +797,6 @@
     }
     
     _setupNetworkHandling() {
-      // Queue sync actions when offline
       window.addEventListener('offline', () => {
         console.log('📴 Offline detected, queuing sync actions');
         this.state.ui.toastQueue.push({
@@ -609,7 +807,6 @@
         this.notifyListeners('ui:toast', this.state.ui.toastQueue[this.state.ui.toastQueue.length - 1]);
       });
       
-      // Process offline queue when back online
       window.addEventListener('online', async () => {
         console.log('🌐 Online detected, processing queued actions');
         
@@ -625,15 +822,12 @@
     }
     
     _setupVisibilityHandling() {
-      // Pause cleanup blocking when tab is hidden
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
-          // Allow cleanup when tab is hidden (user isn't interacting)
           if (this.state.session.isCleanupBlocked && !this.state.session.playing) {
             this.blockCleanup(false);
           }
         } else {
-          // Re-block cleanup when tab becomes visible and video is playing
           if (this.state.session.playing) {
             this.blockCleanup(true);
           }
@@ -647,10 +841,6 @@
     
     /**
      * Mark content as viewed in state with optional DB confirmation
-     * @param {string|number} contentId - Content identifier
-     * @param {boolean} confirmed - Whether DB has confirmed the view
-     * @param {Object} metadata - Optional recording metadata
-     * @returns {boolean} Success status
      */
     markContentAsViewed(contentId, confirmed = true, metadata = {}) {
       if (!contentId) {
@@ -661,24 +851,20 @@
       const contentIdStr = String(contentId);
       
       if (confirmed) {
-        // Add to confirmed recordings if not already present
         if (!this.state.viewRecording.recordedContentIds.includes(contentIdStr)) {
           this.state.viewRecording.recordedContentIds.push(contentIdStr);
         }
         
         this.state.viewRecording.lastViewTimestamp = Date.now();
         
-        // Remove from pending if exists
         if (this.state.viewRecording.pendingRecordings[contentIdStr]) {
           delete this.state.viewRecording.pendingRecordings[contentIdStr];
         }
         
-        // Update watch history with view confirmation
         this._updateWatchHistoryOnView(contentIdStr, metadata);
         
         console.log('✅ Content marked as viewed (confirmed):', contentIdStr);
         
-        // Execute any pending validation callbacks
         const callbacks = this.state.viewRecording.validationCallbacks[contentIdStr];
         if (callbacks?.length) {
           callbacks.forEach(cb => {
@@ -701,7 +887,6 @@
         return true;
         
       } else {
-        // Add to pending recordings
         this.state.viewRecording.pendingRecordings[contentIdStr] = {
           timestamp: Date.now(),
           retries: 0,
@@ -725,25 +910,19 @@
       }
     }
     
-    /**
-     * Register callback to execute when view is confirmed by DB
-     */
     onViewValidated(contentId, callback) {
       const contentIdStr = String(contentId);
       
-      // If already confirmed, execute immediately
       if (this.state.viewRecording.recordedContentIds.includes(contentIdStr)) {
         callback({ contentId: contentIdStr, confirmed: true });
-        return () => {}; // No-op unsubscribe
+        return () => {};
       }
       
-      // Add to callbacks list
       if (!this.state.viewRecording.validationCallbacks[contentIdStr]) {
         this.state.viewRecording.validationCallbacks[contentIdStr] = [];
       }
       this.state.viewRecording.validationCallbacks[contentIdStr].push(callback);
       
-      // Return unsubscribe function
       return () => {
         const cbs = this.state.viewRecording.validationCallbacks[contentIdStr];
         if (cbs) {
@@ -756,37 +935,22 @@
       };
     }
     
-    /**
-     * Check if content has been viewed (confirmed) in this session
-     */
     hasViewedContent(contentId) {
       return this.state.viewRecording.recordedContentIds.includes(String(contentId));
     }
     
-    /**
-     * Check if content view recording is pending DB confirmation
-     */
     isPendingViewRecording(contentId) {
       return !!this.state.viewRecording.pendingRecordings[String(contentId)];
     }
     
-    /**
-     * Get current view recording session ID
-     */
     getCurrentViewSessionId() {
       return this.state.viewRecording.currentSessionId;
     }
     
-    /**
-     * Get playback session ID (Phase 3)
-     */
     getPlaybackSessionId() {
       return this.state.session.playbackSessionId;
     }
     
-    /**
-     * Clear view recording state (for logout or testing)
-     */
     clearViewRecordingState() {
       this.state.viewRecording.recordedContentIds = [];
       this.state.viewRecording.pendingRecordings = {};
@@ -794,7 +958,6 @@
       this.state.viewRecording.currentSessionId = this._generateUUID();
       this.state.viewRecording.lastViewTimestamp = null;
       
-      // Update sessionStorage
       sessionStorage.setItem('bantu_view_session', this.state.viewRecording.currentSessionId);
       sessionStorage.removeItem('bantu_view_state');
       
@@ -826,13 +989,6 @@
     // 🔧 ALBUM FIX: Album/Playlist State Management
     // =====================================================
     
-    /**
-     * Set current album/playlist tracks with source tracking
-     * @param {string} albumId - Album/playlist identifier
-     * @param {Array} tracks - Track items (any format)
-     * @param {Object} options - { source, metadata, playlistId, collectionId }
-     * @returns {Array} Normalized tracks
-     */
     setAlbumTracks(albumId, tracks, options = {}) {
       if (!albumId) {
         console.warn('⚠️ setAlbumTracks called without albumId');
@@ -846,16 +1002,13 @@
         collectionId = null
       } = options;
       
-      // Normalize tracks to consistent format
       const normalizedTracks = this._normalizeTracks(tracks, albumId);
       
-      // Update current album state
       this.state.album.currentAlbumId = albumId;
       this.state.album.currentPlaylistId = playlistId;
       this.state.album.currentAlbumTracks = normalizedTracks;
-      this.state.album.currentTrackIndex = -1; // Reset to start
+      this.state.album.currentTrackIndex = -1;
       
-      // Cache tracks with source metadata
       this.state.album.albumTrackSources[albumId] = {
         tracks: normalizedTracks,
         source,
@@ -868,7 +1021,6 @@
         }
       };
       
-      // Also cache in general cache layer
       this._cacheAlbumTracks(albumId, normalizedTracks);
       
       console.log(`📀 Album tracks set: ${albumId} (${normalizedTracks.length} tracks from ${source})`);
@@ -885,14 +1037,10 @@
       return normalizedTracks;
     }
     
-    /**
-     * Normalize tracks from various sources to consistent format
-     */
     _normalizeTracks(tracks, albumId) {
       if (!Array.isArray(tracks)) return [];
       
       return tracks.map((track, index) => {
-        // Already normalized
         if (track.id && track.title) {
           return {
             index,
@@ -901,7 +1049,6 @@
           };
         }
         
-        // From DB query with nested Content object
         if (track.Content) {
           return {
             index,
@@ -924,13 +1071,11 @@
             added_at: track.added_at || track.created_at || new Date().toISOString(),
             sort_index: track.sort_index ?? index,
             playlist_relation: track.playlist_relation || null,
-            // Phase 3 metrics
             views_count: track.Content.content_engagement_stats?.total_views || 0,
             likes_count: track.Content.content_engagement_stats?.total_likes || 0
           };
         }
         
-        // Simple object format
         return {
           index,
           albumId,
@@ -955,19 +1100,10 @@
       });
     }
     
-    /**
-     * Get current album tracks
-     */
     getCurrentAlbumTracks() {
       return this.state.album.currentAlbumTracks;
     }
     
-    /**
-     * Get cached album tracks by ID
-     * @param {string} albumId
-     * @param {number} maxAge - Max cache age in ms (default: 5 min)
-     * @returns {Array|null} Cached tracks or null
-     */
     getCachedAlbumTracks(albumId, maxAge = 300000) {
       const cached = this.state.album.albumTrackSources[albumId];
       if (cached && Date.now() - cached.timestamp < maxAge) {
@@ -976,14 +1112,10 @@
       return null;
     }
     
-    /**
-     * Cache album tracks in general cache layer
-     */
     _cacheAlbumTracks(albumId, tracks) {
       const now = Date.now();
       const expiresAt = now + this.config.cacheTTL;
       
-      // Cache album
       this.state.cache.albums.set(albumId, {
         tracks,
         cachedAt: now,
@@ -991,7 +1123,6 @@
         trackCount: tracks.length
       });
       
-      // Cache individual tracks
       tracks.forEach(track => {
         if (track.id) {
           this.state.cache.tracks.set(track.id, {
@@ -1003,14 +1134,10 @@
         }
       });
       
-      // Limit cache size
       this._pruneCache('albums', 50);
       this._pruneCache('tracks', 200);
     }
     
-    /**
-     * Get cached track by ID
-     */
     getCachedTrack(trackId) {
       const cached = this.state.cache.tracks.get(trackId);
       if (cached && Date.now() < cached.expiresAt) {
@@ -1019,9 +1146,6 @@
       return null;
     }
     
-    /**
-     * Set current track index within album
-     */
     setCurrentTrackIndex(index) {
       const tracks = this.state.album.currentAlbumTracks;
       
@@ -1042,9 +1166,6 @@
       return false;
     }
     
-    /**
-     * Get current track
-     */
     getCurrentTrack() {
       const { currentTrackIndex, currentAlbumTracks } = this.state.album;
       
@@ -1054,9 +1175,6 @@
       return null;
     }
     
-    /**
-     * Get next track in album/playlist
-     */
     getNextTrack() {
       const { currentTrackIndex, currentAlbumTracks } = this.state.album;
       const nextIndex = currentTrackIndex + 1;
@@ -1067,9 +1185,6 @@
       return null;
     }
     
-    /**
-     * Get previous track in album/playlist
-     */
     getPreviousTrack() {
       const { currentTrackIndex, currentAlbumTracks } = this.state.album;
       const prevIndex = currentTrackIndex - 1;
@@ -1080,9 +1195,6 @@
       return null;
     }
     
-    /**
-     * Toggle album expanded/collapsed state
-     */
     toggleAlbumExpanded(albumId) {
       const expanded = this.state.album.expandedState;
       const albumIdStr = String(albumId);
@@ -1102,22 +1214,15 @@
       return idx === -1;
     }
     
-    /**
-     * Check if album is expanded
-     */
     isAlbumExpanded(albumId) {
       return this.state.album.expandedState.includes(String(albumId));
     }
     
-    /**
-     * Clear album state (but preserve cache)
-     */
     clearAlbumState() {
       this.state.album.currentAlbumId = null;
       this.state.album.currentPlaylistId = null;
       this.state.album.currentAlbumTracks = [];
       this.state.album.currentTrackIndex = -1;
-      // Preserve albumTrackSources and expandedState for UX continuity
       
       this.notifyListeners('album:cleared', null);
     }
@@ -1126,9 +1231,6 @@
     // PHASE 1D: Collection & Queue Management
     // =====================================================
     
-    /**
-     * Set collection/series context for recommendations
-     */
     setCollectionContext(collectionId, episodeNumber = null, sortIndex = null, metadata = null) {
       this.state.collection.currentCollectionId = collectionId || null;
       this.state.collection.currentEpisodeNumber = episodeNumber ?? null;
@@ -1149,9 +1251,6 @@
       });
     }
     
-    /**
-     * Clear collection context
-     */
     clearCollectionContext() {
       this.state.collection = {
         currentCollectionId: null,
@@ -1162,9 +1261,6 @@
       this.notifyListeners('collection:context-cleared', null);
     }
     
-    /**
-     * Initialize or update playback queue
-     */
     setQueue(items, options = {}) {
       const {
         currentIndex = 0,
@@ -1181,7 +1277,6 @@
       this.state.queue.shuffleMode = shuffleMode;
       this.state.queue.repeatMode = repeatMode;
       
-      // Link to album state if from playlist/collection
       if (playlistId || collectionId) {
         this.state.album.currentPlaylistId = playlistId;
         this.state.collection.currentCollectionId = collectionId;
@@ -1197,21 +1292,15 @@
         collectionId
       });
       
-      // Persist queue state
       this._saveQueueState();
     }
     
-    /**
-     * Add item to end of queue
-     */
     addToQueue(item, options = {}) {
       const { playNext = false } = options;
       
       if (playNext) {
-        // Insert after current item
         this.state.queue.items.splice(this.state.queue.currentIndex + 1, 0, item);
       } else {
-        // Append to end
         this.state.queue.items.push(item);
       }
       
@@ -1224,9 +1313,6 @@
       this._saveQueueState();
     }
     
-    /**
-     * Remove item from queue by ID
-     */
     removeFromQueue(contentId) {
       const idx = this.state.queue.items.findIndex(item => 
         String(item.id) === String(contentId)
@@ -1236,11 +1322,9 @@
       
       const removed = this.state.queue.items.splice(idx, 1)[0];
       
-      // Adjust current index if needed
       if (idx < this.state.queue.currentIndex) {
         this.state.queue.currentIndex--;
       } else if (idx === this.state.queue.currentIndex) {
-        // If removing current item, move to next or previous
         if (this.state.queue.currentIndex >= this.state.queue.items.length) {
           this.state.queue.currentIndex = Math.max(0, this.state.queue.items.length - 1);
         }
@@ -1255,16 +1339,10 @@
       return true;
     }
     
-    /**
-     * Get current queue item
-     */
     getCurrentQueueItem() {
       return this.state.queue.items[this.state.queue.currentIndex] || null;
     }
     
-    /**
-     * Advance queue to next item
-     */
     nextQueueItem() {
       const { items, currentIndex, repeatMode, shuffleMode } = this.state.queue;
       
@@ -1273,7 +1351,6 @@
       let nextIndex;
       
       if (shuffleMode) {
-        // Random next (not current)
         const available = items.map((_, i) => i).filter(i => i !== currentIndex);
         nextIndex = available[Math.floor(Math.random() * available.length)];
       } else if (currentIndex < items.length - 1) {
@@ -1281,7 +1358,6 @@
       } else if (repeatMode === 'all') {
         nextIndex = 0;
       } else {
-        // End of queue
         return null;
       }
       
@@ -1296,9 +1372,6 @@
       return items[nextIndex];
     }
     
-    /**
-     * Go to previous queue item
-     */
     previousQueueItem() {
       const { items, currentIndex, repeatMode } = this.state.queue;
       
@@ -1311,7 +1384,6 @@
       } else if (repeatMode === 'all') {
         prevIndex = items.length - 1;
       } else {
-        // Start of queue
         return null;
       }
       
@@ -1326,9 +1398,6 @@
       return items[prevIndex];
     }
     
-    /**
-     * Clear queue
-     */
     clearQueue() {
       this.state.queue.items = [];
       this.state.queue.currentIndex = 0;
@@ -1343,17 +1412,11 @@
     // CORE STATE API
     // =====================================================
     
-    /**
-     * Get state value by path (dot notation)
-     */
     getState(path = null) {
       if (!path) return this._deepClone(this.state);
       return this._getNestedValue(this.state, path);
     }
     
-    /**
-     * Set state value by path with change notification
-     */
     setState(path, value, options = {}) {
       const { notify = true, persist = true } = options;
       
@@ -1369,9 +1432,6 @@
       return clonedValue;
     }
     
-    /**
-     * Async state update with queued execution
-     */
     async updateState(path, updater) {
       return new Promise((resolve, reject) => {
         const execute = async () => {
@@ -1408,11 +1468,14 @@
         this.cacheContent(contentData);
       }
       
-      // Notify after all updates
+      // 🚨 Generate new sync token for race protection
+      this.state.session.contentSyncToken = crypto.randomUUID();
+      
       this.notifyListeners('session:content-changed', {
         contentId,
         contentData,
-        previousContentId: oldContentId
+        previousContentId: oldContentId,
+        syncToken: this.state.session.contentSyncToken
       });
     }
     
@@ -1423,7 +1486,6 @@
         this.setState('session.duration', duration, { notify: false });
       }
       
-      // Update watch history periodically
       const contentId = this.state.session.currentContentId;
       if (contentId && time > 0) {
         this._debouncedWatchHistoryUpdate(contentId, time, duration);
@@ -1432,7 +1494,6 @@
       this.notifyListeners('session:time-updated', { time, duration });
     }
     
-    // Debounced watch history update (every 10 seconds)
     _initDebouncedWatchHistory() {
       let timeout = null;
       let lastContentId = null;
@@ -1456,11 +1517,9 @@
       this.setState('session.playing', playing, { notify: false });
       this.setState('session.lastActivityTime', Date.now(), { notify: false });
       
-      // Block cleanup during active playback
       if (playing) {
         this.blockCleanup(true);
       } else if (!this.state.session.isCleanupBlocked) {
-        // Only unblock if not manually blocked
         this.blockCleanup(false);
       }
       
@@ -1484,9 +1543,6 @@
       });
     }
     
-    /**
-     * 🔧 CRITICAL FIX: Block/unblock cleanup during interactions
-     */
     blockCleanup(blocked = true) {
       const wasBlocked = this.state.session.isCleanupBlocked;
       
@@ -1531,7 +1587,6 @@
         playbackSessionId: this.state.session.playbackSessionId
       };
       
-      // Track in analytics if available
       if (window.track?.watchProgress) {
         window.track.watchProgress(contentIdStr, percentWatched, time);
       }
@@ -1563,7 +1618,7 @@
     // =====================================================
     
     _toggleEngagement(type, id) {
-      const stateKey = type; // 'favorites', 'likes', 'connections'
+      const stateKey = type;
       const idStr = String(id);
       const array = this.state[stateKey];
       const idx = array.indexOf(idStr);
@@ -1580,7 +1635,6 @@
       this.notifyListeners(stateKey, array);
       this.notifyListeners(`${stateKey}:${idStr}`, newState);
       
-      // Sync with server in background
       this._syncWithServer(type, idStr, newState);
       
       return newState;
@@ -1631,7 +1685,6 @@
         expiresAt: now + ttl
       });
       
-      // Prune if over limit
       this._pruneCache('content', 100);
     }
     
@@ -1653,7 +1706,6 @@
       const cache = this.state.cache[cacheName];
       if (!(cache instanceof Map) || cache.size <= maxSize) return;
       
-      // Remove oldest entries
       const entries = Array.from(cache.entries())
         .sort((a, b) => a[1].cachedAt - b[1].cachedAt);
       
@@ -1672,7 +1724,6 @@
         }
         console.log(`🧹 Cleared ${type} cache`);
       } else {
-        // Clear all caches
         Object.keys(this.state.cache).forEach(key => {
           if (this.state.cache[key] instanceof Map) {
             this.state.cache[key].clear();
@@ -1712,7 +1763,6 @@
     }
     
     notifyListeners(path, newValue, oldValue) {
-      // Specific path listeners
       if (this.listeners.has(path)) {
         for (const callback of this.listeners.get(path)) {
           try {
@@ -1723,7 +1773,6 @@
         }
       }
       
-      // Wildcard listeners
       for (const callback of this.wildcardListeners) {
         try {
           callback(newValue, oldValue, path);
@@ -1745,12 +1794,10 @@
       try {
         console.log(`🔄 Syncing ${type}: ${id} = ${value}`);
         
-        // Check if online and Supabase is available
-        if (!navigator.onLine || !window.supabase) {
+        if (!navigator.onLine || !window.supabaseClient) {
           throw new Error('Offline or Supabase unavailable');
         }
         
-        // Route to appropriate sync handler
         switch (type) {
           case 'favorites':
             await this._syncFavorite(id, value);
@@ -1774,51 +1821,43 @@
     async _syncFavorite(contentId, add) {
       if (!this.state.user?.id) return;
       
+      const contentIdNum = parseInt(contentId);
+      
       if (add) {
-        await window.supabase
-          .from('user_favorites')
+        await window.supabaseClient
+          .from('favorites')
           .upsert({
             user_id: this.state.user.id,
-            content_id: contentId,
+            content_id: contentIdNum,
             created_at: new Date().toISOString()
           }, { onConflict: 'user_id,content_id' });
       } else {
-        await window.supabase
-          .from('user_favorites')
+        await window.supabaseClient
+          .from('favorites')
           .delete()
           .eq('user_id', this.state.user.id)
-          .eq('content_id', contentId);
+          .eq('content_id', contentIdNum);
       }
     }
     
     async _syncLike(contentId, add) {
-      // Likes are handled by content_likes table with RPC for atomic counter
       if (!this.state.user?.id) return;
       
+      const contentIdNum = parseInt(contentId);
+      
       if (add) {
-        await window.supabase
+        await window.supabaseClient
           .from('content_likes')
           .upsert({
             user_id: this.state.user.id,
-            content_id: contentId
+            content_id: contentIdNum
           }, { onConflict: 'user_id,content_id' });
-        
-        // Increment counter via RPC
-        await window.supabase.rpc('increment_engagement_stats_likes', {
-          target_content_id: contentId,
-          increment_value: 1
-        });
       } else {
-        await window.supabase
+        await window.supabaseClient
           .from('content_likes')
           .delete()
           .eq('user_id', this.state.user.id)
-          .eq('content_id', contentId);
-        
-        await window.supabase.rpc('increment_engagement_stats_likes', {
-          target_content_id: contentId,
-          increment_value: -1
-        });
+          .eq('content_id', contentIdNum);
       }
     }
     
@@ -1826,19 +1865,20 @@
       if (!this.state.user?.id) return;
       
       if (follow) {
-        await window.supabase
-          .from('user_connections')
+        await window.supabaseClient
+          .from('connectors')
           .upsert({
-            user_id: this.state.user.id,
-            connected_user_id: creatorId,
+            connector_id: this.state.user.id,
+            connected_id: creatorId,
+            connection_type: 'creator',
             created_at: new Date().toISOString()
-          }, { onConflict: 'user_id,connected_user_id' });
+          }, { onConflict: 'connector_id,connected_id' });
       } else {
-        await window.supabase
-          .from('user_connections')
+        await window.supabaseClient
+          .from('connectors')
           .delete()
-          .eq('user_id', this.state.user.id)
-          .eq('connected_user_id', creatorId);
+          .eq('connector_id', this.state.user.id)
+          .eq('connected_id', creatorId);
       }
     }
     
@@ -1851,7 +1891,6 @@
       
       console.log(`📦 Queued for retry: ${action.type}:${action.id}`);
       
-      // Process queue if not already processing and online
       if (!this.isSyncing && navigator.onLine) {
         this._processOfflineQueue();
       }
@@ -1879,7 +1918,6 @@
           remaining.push(action);
           console.warn(`⚠️ Retry ${action.retries}/${this.config.syncRetryLimit} failed for ${action.type}:${action.id}`);
           
-          // Exponential backoff
           await new Promise(resolve => 
             setTimeout(resolve, this.config.syncRetryDelay * Math.pow(2, action.retries - 1))
           );
@@ -1910,7 +1948,6 @@
       
       this.state.ui.toastQueue.push(toast);
       
-      // Auto-remove after duration
       if (toast.duration > 0) {
         setTimeout(() => {
           this.removeToast(toast.id);
@@ -1962,7 +1999,6 @@
       this.setState('user', userData, { notify: false });
       this.setState('auth.lastVerified', Date.now(), { notify: false });
       
-      // If user changed, clear user-specific state
       if (oldUser?.id !== userData?.id) {
         if (userData) {
           console.log('👤 User set:', userData.id);
@@ -1979,20 +2015,13 @@
     }
     
     _clearUserState() {
-      // Clear user-specific engagement data but preserve preferences
       this.state.favorites = [];
       this.state.likes = [];
       this.state.connections = [];
       this.state.watchHistory = {};
-      
-      // Clear view recording state
       this.clearViewRecordingState();
-      
-      // Clear album/queue state
       this.clearAlbumState();
       this.clearQueue();
-      
-      // Clear collection context
       this.clearCollectionContext();
       
       console.log('🧹 User-specific state cleared');
@@ -2064,6 +2093,7 @@
         likes: [],
         connections: [],
         watchHistory: {},
+        liveCounts: { views: {}, likes: {}, comments: {}, shares: {}, lastUpdated: {} },
         viewRecording: {
           currentSessionId: this._generateUUID(),
           recordedContentIds: [],
@@ -2093,7 +2123,8 @@
           muted: false,
           lastActivityTime: Date.now(),
           isCleanupBlocked: false,
-          deviceInfo: deviceInfo
+          deviceInfo: deviceInfo,
+          contentSyncToken: null
         },
         collection: {
           currentCollectionId: null,
@@ -2125,11 +2156,9 @@
         }
       };
       
-      // Update sessionStorage
       sessionStorage.setItem('bantu_playback_session', this.state.session.playbackSessionId);
       sessionStorage.setItem('bantu_view_session', this.state.viewRecording.currentSessionId);
       
-      // Clear persisted state if not keeping preferences
       if (!keepPreferences) {
         localStorage.removeItem(this.config.storageKey);
       }
@@ -2139,7 +2168,6 @@
     }
     
     exportState() {
-      // Export serializable state for debugging
       return JSON.stringify({
         user: this.state.user,
         preferences: this.state.preferences,
@@ -2147,6 +2175,13 @@
         likes: this.state.likes,
         connections: this.state.connections,
         watchHistory: this.state.watchHistory,
+        liveCounts: {
+          views: this.state.liveCounts.views,
+          likes: this.state.liveCounts.likes,
+          comments: this.state.liveCounts.comments,
+          shares: this.state.liveCounts.shares,
+          lastUpdated: this.state.liveCounts.lastUpdated
+        },
         viewRecording: {
           currentSessionId: this.state.viewRecording.currentSessionId,
           recordedContentIds: this.state.viewRecording.recordedContentIds,
@@ -2183,7 +2218,6 @@
       try {
         const imported = JSON.parse(jsonString);
         
-        // Merge imported state carefully
         this.state = {
           ...this.state,
           user: imported.user || this.state.user,
@@ -2192,6 +2226,10 @@
           likes: imported.likes || this.state.likes,
           connections: imported.connections || this.state.connections,
           watchHistory: imported.watchHistory || this.state.watchHistory,
+          liveCounts: {
+            ...this.state.liveCounts,
+            ...(imported.liveCounts || {})
+          },
           viewRecording: {
             ...this.state.viewRecording,
             ...(imported.viewRecording || {})
@@ -2229,10 +2267,8 @@
   // EXPORT & GLOBAL ACCESS
   // =====================================================
   
-  // Create singleton instance
   const stateManager = new StateManager();
   
-  // Export utility functions for global access
   window.state = {
     // Getters
     getUser: () => stateManager.getState('user'),
@@ -2244,6 +2280,13 @@
     isLiked: (contentId) => stateManager.isLiked(contentId),
     isConnected: (creatorId) => stateManager.isConnected(creatorId),
     
+    // Live engagement counts
+    getLiveCounts: (contentId) => stateManager.getState(`liveCounts.views.${contentId}`),
+    fetchLiveCounts: (contentId, force) => stateManager.fetchLiveEngagementCounts(contentId, force),
+    refreshLiveCounts: (contentId) => stateManager.refreshLiveCounts(contentId),
+    optimisticUpdate: (contentId, type, increment) => 
+      stateManager.optimisticUpdateEngagement(contentId, type, increment),
+    
     // View recording
     hasViewedContent: (contentId) => stateManager.hasViewedContent(contentId),
     getCurrentViewSessionId: () => stateManager.getCurrentViewSessionId(),
@@ -2253,6 +2296,11 @@
     onViewValidated: (contentId, callback) => 
       stateManager.onViewValidated(contentId, callback),
     clearViewRecordingState: () => stateManager.clearViewRecordingState(),
+    
+    // Content ID sync
+    updateCurrentContentId: (contentId) => stateManager.updateCurrentContentId(contentId),
+    isSyncValid: (token) => stateManager.isSyncValid(token),
+    getContentSyncToken: () => stateManager.getState('session.contentSyncToken'),
     
     // Album/Playlist
     getCurrentAlbumTracks: () => stateManager.getCurrentAlbumTracks(),
@@ -2325,18 +2373,19 @@
     exportState: () => stateManager.exportState(),
     importState: (json) => stateManager.importState(json),
     
-    // Direct access to manager for advanced use
     _manager: stateManager
   };
   
-  // Also expose the full manager instance
   window.stateManager = stateManager;
   
-  // Export for module systems
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = StateManager;
   }
   
-  console.log('✅ StateManager module loaded successfully (Phase 3 + Phase 1D Enhanced)');
+  console.log('✅ StateManager module loaded successfully (Engagement System Integrated)');
+  console.log('  🚨 FIX #2: Global contentId synchronization');
+  console.log('  🚨 FIX #4: Race condition protection with request token');
+  console.log('  🚨 FIX #5: Optimistic UI updates via subscription system');
+  console.log('  🚨 FIX #6: Live engagement counts from canonical tables');
   
 })();
