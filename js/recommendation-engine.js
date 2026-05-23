@@ -9,15 +9,23 @@
 // ✅ Smart content relationships for collections/playlists
 // ✅ RPC-based personalized recommendations with graceful fallbacks
 // ✅ FIXED: Object.values(undefined) crashes with safe fallbacks
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23):
+// - FIX #2: Global contentId synchronization for recommendations
+// - FIX #6: Load counts from canonical tables (content_views, content_likes)
+// - Added updateCurrentContentId method for playlist track changes
+// - Added refreshRecommendations method for content changes
+// - Added syncWithGlobalState method for playlist synchronization
+// - Enhanced enrichment with live engagement counts
 
 (function() {
   'use strict';
   
-  console.log('🎯 RecommendationEngine module loading... (Phase 3 + Phase 1D Enhanced)');
+  console.log('🎯 RecommendationEngine module loading... (Phase 3 + Phase 1D Enhanced + Engagement Fixes)');
 
   /**
    * RecommendationEngine — Generates intelligent content recommendations
    * using SQL-based queries optimized for the Phase 3 schema
+   * 🚨 UPDATED: Integrated with global contentId sync and live engagement counts
    */
   class RecommendationEngine {
     constructor(config) {
@@ -71,11 +79,266 @@
       this.currentPlaylistId = config.currentPlaylistId || null;
       this.currentSortIndex = config.currentSortIndex || null;
       
+      // 🚨 FIX #2: Track last refresh token for race condition protection
+      this._refreshToken = null;
+      
+      // 🚨 Setup contentId change listener
+      this._setupContentIdListener();
+      
       console.log('✅ RecommendationEngine initialized', {
         userId: this.userId || 'guest',
         currentContentId: this.currentContentId,
         collectionId: this.currentCollectionId
       });
+    }
+
+    // =====================================================
+    // 🚨 FIX #2: CONTENT ID SYNC METHODS
+    // =====================================================
+
+    /**
+     * Setup listener for global contentId changes
+     */
+    _setupContentIdListener() {
+      window.addEventListener('contentIdChanged', (event) => {
+        if (event.detail && event.detail.contentId) {
+          const newContentId = event.detail.contentId;
+          if (this.currentContentId !== newContentId) {
+            console.log(`📡 RecommendationEngine received contentIdChanged: ${this.currentContentId} -> ${newContentId}`);
+            this.updateCurrentContentId(newContentId);
+          }
+        }
+      });
+    }
+
+    /**
+     * 🚨 FIX #2: Update current content ID when track changes
+     * Called during playlist navigation to refresh recommendations
+     */
+    updateCurrentContentId(contentId) {
+      if (this.currentContentId === contentId) {
+        return;
+      }
+      
+      console.log(`🔄 RecommendationEngine contentId updated: ${this.currentContentId} -> ${contentId}`);
+      this.currentContentId = contentId;
+      
+      // Generate new refresh token to prevent race conditions
+      this._refreshToken = crypto.randomUUID();
+      
+      // Clear cache for personalized recommendations when content changes
+      this.clearCache(this.TYPES.BECAUSE_YOU_WATCHED);
+      this.clearCache(this.TYPES.PERSONALIZED);
+      this.clearCache(this.TYPES.SIMILAR_GENRE);
+      
+      // Dispatch event for UI to refresh recommendations
+      this._dispatchRecommendationRefreshEvent();
+    }
+
+    /**
+     * Refresh recommendations based on current content
+     * Called after content change to update recommendation rails
+     */
+    async refreshRecommendations(options = {}) {
+      const token = this._refreshToken;
+      const refreshTypes = options.types || [
+        this.TYPES.BECAUSE_YOU_WATCHED,
+        this.TYPES.SIMILAR_GENRE,
+        this.TYPES.PERSONALIZED
+      ];
+      
+      console.log('🔄 Refreshing recommendations for content:', this.currentContentId);
+      
+      const results = {};
+      
+      for (const type of refreshTypes) {
+        // Check if this refresh is still valid (no newer refresh)
+        if (token !== this._refreshToken) {
+          console.log('⚠️ Recommendation refresh aborted - stale request (race condition)');
+          return null;
+        }
+        
+        try {
+          const recommendations = await this.getRecommendations(type, {
+            limit: options.limit || this.defaultLimit,
+            excludeContentId: this.currentContentId
+          });
+          
+          results[type] = recommendations;
+        } catch (error) {
+          console.warn(`Failed to refresh ${type}:`, error);
+          results[type] = [];
+        }
+      }
+      
+      // Dispatch event for UI to update recommendation rails
+      this._dispatchRecommendationUpdateEvent(results);
+      
+      return results;
+    }
+
+    /**
+     * Sync recommendation engine with global playlist state
+     */
+    syncWithGlobalState() {
+      if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+        const currentItem = window.currentPlaylistItems[window.currentPlaylistIndex];
+        if (currentItem && currentItem.id !== this.currentContentId) {
+          console.log('🔄 Syncing RecommendationEngine with global playlist state');
+          this.updateCurrentContentId(currentItem.id);
+          
+          if (window.currentPlaylist?.collection_id) {
+            this.currentCollectionId = window.currentPlaylist.collection_id;
+          }
+          if (window.currentPlaylistIndex !== undefined) {
+            this.currentSortIndex = window.currentPlaylistIndex;
+          }
+        }
+      }
+    }
+
+    /**
+     * Dispatch event for recommendation refresh
+     */
+    _dispatchRecommendationRefreshEvent() {
+      window.dispatchEvent(new CustomEvent('recommendations-refresh-started', {
+        detail: {
+          contentId: this.currentContentId,
+          timestamp: Date.now()
+        }
+      }));
+    }
+
+    /**
+     * Dispatch event with updated recommendations
+     */
+    _dispatchRecommendationUpdateEvent(results) {
+      window.dispatchEvent(new CustomEvent('recommendations-updated', {
+        detail: {
+          contentId: this.currentContentId,
+          recommendations: results,
+          timestamp: Date.now()
+        }
+      }));
+    }
+
+    // =====================================================
+    // 🚨 FIX #6: LIVE ENGAGEMENT COUNTS ENRICHMENT
+    // =====================================================
+
+    /**
+     * Fetch live engagement counts from canonical tables
+     */
+    async _fetchLiveEngagementCounts(contentId) {
+      if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
+      
+      try {
+        const [viewsResult, likesResult, commentsResult, sharesResult] = await Promise.all([
+          this.supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)).eq('counted_as_view', true),
+          this.supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
+          this.supabase.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
+          this.supabase.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId))
+        ]);
+        
+        return {
+          views: viewsResult.count || 0,
+          likes: likesResult.count || 0,
+          comments: commentsResult.count || 0,
+          shares: sharesResult.count || 0
+        };
+      } catch (error) {
+        console.warn('Failed to fetch live engagement counts:', error);
+        return { views: 0, likes: 0, comments: 0, shares: 0 };
+      }
+    }
+
+    /**
+     * Enrich recommendation items with additional metadata and live engagement counts
+     */
+    async _enrichRecommendations(items, options = {}) {
+      if (!items || items.length === 0) return [];
+      
+      const sourceType = options.sourceType || 'unknown';
+      
+      // Fetch live engagement counts for all items in parallel
+      const itemsWithLiveCounts = await Promise.all(items.map(async (item) => {
+        if (!item || !item.id) return item;
+        
+        const liveCounts = await this._fetchLiveEngagementCounts(item.id);
+        
+        // Fix media URLs using helper if available
+        const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
+        const fileUrl = window.SupabaseHelper?.fixMediaUrl?.(item.file_url) || item.file_url;
+        
+        // Calculate engagement score (likes per view, normalized)
+        const views = liveCounts.views || item.views_count || item.total_views || 1;
+        const likes = liveCounts.likes || item.likes_count || item.total_likes || 0;
+        const engagementScore = views > 0 ? Math.round((likes / views) * 1000) / 10 : 0;
+        
+        // PHASE 1D: Fetch series/collection metadata if applicable
+        let seriesInfo = null;
+        if (item.series_id) {
+          try {
+            const { data: seriesData } = await this.supabase
+              .from('creator_playlists')
+              .select('name, playlist_type, description')
+              .eq('id', item.series_id)
+              .eq('status', 'published')
+              .maybeSingle();
+            
+            if (seriesData) {
+              seriesInfo = {
+                id: item.series_id,
+                name: seriesData.name,
+                type: seriesData.playlist_type,
+                description: seriesData.description
+              };
+            }
+          } catch (e) {
+            // Silently ignore series fetch errors
+          }
+        }
+        
+        // Build enriched result with live engagement counts
+        return {
+          // Core content fields
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          thumbnail_url: thumbnailUrl,
+          file_url: fileUrl,
+          duration: item.duration,
+          media_type: item.media_type,
+          genre: item.genre,
+          created_at: item.created_at,
+          status: item.status,
+          
+          // 🚨 FIX #6: Metrics from canonical tables
+          views_count: liveCounts.views,
+          likes_count: liveCounts.likes,
+          comments_count: liveCounts.comments,
+          shares_count: liveCounts.shares,
+          engagement_score: engagementScore,
+          
+          // Creator info
+          user_id: item.user_id,
+          user_profiles: item.user_profiles || item.creator_profile,
+          
+          // PHASE 1D: Series/collection context
+          episode_number: item.episode_number,
+          series_id: item.series_id,
+          series_info: seriesInfo,
+          
+          // Watch progress (if applicable)
+          watch_progress: item.watch_progress || null,
+          
+          // Metadata
+          source_type: sourceType,
+          recommendation_timestamp: Date.now()
+        };
+      }));
+      
+      return itemsWithLiveCounts;
     }
 
     // =====================================================
@@ -90,7 +353,6 @@
      */
     async getRecommendations(type, options = {}) {
       // --- FIXED: Safe validation to prevent Object.values(undefined) crash ---
-      // Check if TYPES exists and is an object; if not, use an empty object for validation
       const validTypes = (this.TYPES && typeof this.TYPES === 'object') ? this.TYPES : {};
       const isValidType = Object.values(validTypes).includes(type);
       
@@ -170,13 +432,16 @@
               return [];
           }
           
-          // Cache results if enabled (and results is an array)
-          if (this.enableCache && results && Array.isArray(results) && results.length > 0) {
-            this._cache[cacheKey] = results;
+          // Enrich results with live engagement counts
+          const enrichedResults = await this._enrichRecommendations(results || [], { sourceType: type });
+          
+          // Cache results if enabled
+          if (this.enableCache && enrichedResults && Array.isArray(enrichedResults) && enrichedResults.length > 0) {
+            this._cache[cacheKey] = enrichedResults;
             this._lastFetch[cacheKey] = Date.now();
           }
           
-          return results || [];
+          return enrichedResults || [];
           
         } catch (error) {
           console.error('❌ Recommendation fetch failed for type', type + ':', error);
@@ -248,7 +513,7 @@
      * Set current content being viewed for exclusion in recommendations
      */
     setCurrentContent(contentId) {
-      this.currentContentId = contentId || null;
+      this.updateCurrentContentId(contentId);
       console.log('🎬 Current content set:', this.currentContentId);
     }
 
@@ -319,11 +584,6 @@
             user_id,
             created_at,
             status,
-            content_engagement_stats!inner (
-              total_views,
-              total_likes,
-              total_valid_views
-            ),
             user_profiles!user_id (
               id,
               full_name,
@@ -348,7 +608,7 @@
           return [];
         }
         
-        return await this._enrichRecommendations(data || [], { sourceType: 'collection' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getNextInCollection failed:', error);
@@ -398,7 +658,7 @@
               .filter(w => w.Content?.series_id && w.Content.series_id !== excludeCollectionId)
               .map(w => w.Content.series_id)
           )
-        ].slice(0, 5); // Limit to top 5 collections
+        ].slice(0, 5);
         
         if (collectionIds.length === 0) return [];
         
@@ -416,10 +676,6 @@
             user_id,
             created_at,
             status,
-            content_engagement_stats!inner (
-              total_views,
-              total_likes
-            ),
             user_profiles!user_id (
               full_name,
               username,
@@ -439,7 +695,7 @@
         
         if (error) throw error;
         
-        return await this._enrichRecommendations(data || [], { sourceType: 'watched_collection' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getBecauseYouWatchedCollection failed:', error);
@@ -458,62 +714,35 @@
       if (!collectionId) return [];
       
       try {
-        // Query using content_public_metrics view for read-optimized metrics
         const { data, error } = await this.supabase
-          .from('content_public_metrics')
+          .from('Content')
           .select(`
             id,
             title,
             thumbnail_url,
             genre,
             duration,
-            total_views,
-            total_likes,
-            created_at,
             episode_number,
             series_id,
             user_id,
+            created_at,
+            status,
             media_type,
-            Content!inner (
-              description,
-              file_url,
-              status,
-              user_profiles!user_id (
-                full_name,
-                username,
-                avatar_url
-              )
+            user_profiles!user_id (
+              full_name,
+              username,
+              avatar_url
             )
           `)
           .eq('series_id', collectionId)
-          .eq('Content.status', 'published')
+          .eq('status', 'published')
           .neq('id', excludeContentId)
-          .order('total_views', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(limit);
         
         if (error) throw error;
         
-        // Transform to match expected format
-        const transformed = (data || []).map(item => ({
-          id: item.id,
-          title: item.title,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          duration: item.duration,
-          episode_number: item.episode_number,
-          series_id: item.series_id,
-          user_id: item.user_id,
-          media_type: item.media_type,
-          description: item.Content?.description,
-          file_url: item.Content?.file_url,
-          status: item.Content?.status,
-          views_count: item.total_views,
-          likes_count: item.total_likes,
-          created_at: item.created_at,
-          user_profiles: item.Content?.user_profiles
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'popular_series' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getPopularInSeries failed:', error);
@@ -590,10 +819,6 @@
             user_id,
             created_at,
             status,
-            content_engagement_stats!inner (
-              total_views,
-              total_likes
-            ),
             user_profiles!user_id (
               full_name,
               username,
@@ -608,10 +833,7 @@
         
         if (error) throw error;
         
-        return await this._enrichRecommendations(data || [], { 
-          sourceType: 'similar_series',
-          seriesMeta: similarSeries 
-        });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getEpisodeRecommendations failed:', error);
@@ -662,42 +884,32 @@
         
         // Get recommendations matching top genre, excluding queue items
         const { data, error } = await this.supabase
-          .from('content_public_metrics')
+          .from('Content')
           .select(`
             id,
             title,
             thumbnail_url,
             genre,
-            total_views,
-            total_likes,
+            duration,
+            media_type,
+            user_id,
             created_at,
-            Content!inner (
-              description,
-              duration,
-              media_type,
-              user_id,
-              status,
-              user_profiles!user_id (full_name, username, avatar_url)
+            status,
+            user_profiles!user_id (
+              full_name,
+              username,
+              avatar_url
             )
           `)
           .eq('genre', topGenre)
-          .eq('Content.status', 'published')
+          .eq('status', 'published')
           .not('id', 'in', `(${contentIds.join(',')})`)
-          .order('total_likes', { ascending: false })
+          .neq('id', this.currentContentId)
           .limit(limit);
         
         if (error) throw error;
         
-        const transformed = (data || []).map(item => ({
-          ...item.Content,
-          views_count: item.total_views,
-          likes_count: item.total_likes,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          created_at: item.created_at
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'queue_continue' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getQueueContinue failed:', error);
@@ -711,7 +923,6 @@
     async _getQueueDiscover(options = {}) {
       if (!this.userId) return [];
       
-      const queueItems = options.queueItems || [];
       const limit = options.limit || 8;
       const excludeContentId = options.excludeContentId || this.currentContentId;
       
@@ -720,18 +931,16 @@
         const { data, error } = await this.supabase
           .rpc('get_personalized_recommendations', {
             p_user_id: this.userId,
-            p_limit: limit * 2, // Fetch extra to filter
-            p_exclude_content_id: excludeContentId,
-            p_exclude_queue_ids: queueItems.map(i => i.id).filter(Boolean)
+            p_limit: limit * 2,
+            p_exclude_content_id: excludeContentId
           });
         
         if (error) {
           console.warn('⚠️ Personalized RPC failed, falling back to trending');
-          return await this._getTrendingInInterests({ limit, excludeContentId });
+          return await this._getFallbackRecommendations(excludeContentId, limit);
         }
         
-        // Enrich and return top results
-        return await this._enrichRecommendations(data || [], { sourceType: 'queue_discover' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getQueueDiscover failed:', error);
@@ -766,7 +975,7 @@
           return await this._getFallbackRecommendations(excludeContentId, limit);
         }
         
-        return await this._enrichRecommendations(data || [], { sourceType: 'personalized' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getPersonalizedRecommendations failed:', error);
@@ -799,45 +1008,33 @@
         
         const genreList = genreData.map(g => g.genre).filter(Boolean);
         
-        // Fetch content matching top genres from read-optimized view
+        // Fetch content matching top genres
         const { data: recommendations, error: recsError } = await this.supabase
-          .from('content_public_metrics')
+          .from('Content')
           .select(`
             id,
             title,
             thumbnail_url,
             genre,
-            total_views,
-            total_likes,
+            duration,
+            media_type,
+            user_id,
             created_at,
-            Content!inner (
-              description,
-              duration,
-              media_type,
-              user_id,
-              status,
-              user_profiles!user_id (full_name, username, avatar_url)
+            status,
+            user_profiles!user_id (
+              full_name,
+              username,
+              avatar_url
             )
           `)
           .in('genre', genreList)
-          .eq('Content.status', 'published')
+          .eq('status', 'published')
           .neq('id', excludeContentId)
-          .order('total_likes', { ascending: false })
           .limit(limit);
         
         if (recsError) throw recsError;
         
-        // Transform to expected format
-        const transformed = (recommendations || []).map(item => ({
-          ...item.Content,
-          views_count: item.total_views,
-          likes_count: item.total_likes,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          created_at: item.created_at
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'because_you_watched' });
+        return recommendations || [];
         
       } catch (error) {
         console.error('❌ _getBecauseYouWatched failed:', error);
@@ -867,10 +1064,6 @@
             media_type,
             created_at,
             status,
-            content_engagement_stats!inner (
-              total_views,
-              total_likes
-            ),
             user_profiles!user_id (
               full_name,
               username,
@@ -885,14 +1078,7 @@
         
         if (error) throw error;
         
-        // Transform to include metrics
-        const transformed = (data || []).map(item => ({
-          ...item,
-          views_count: item.content_engagement_stats?.total_views || 0,
-          likes_count: item.content_engagement_stats?.total_likes || 0
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'more_from_creator' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getMoreFromCreator failed:', error);
@@ -924,45 +1110,35 @@
         const genreList = genresData.map(g => g.genre).filter(Boolean);
         const timeAgo = new Date(Date.now() - this._parseTimeWindow(timeWindow)).toISOString();
         
-        // Query trending content from read-optimized view
+        // Query trending content
         const { data: trending, error } = await this.supabase
-          .from('content_public_metrics')
+          .from('Content')
           .select(`
             id,
             title,
             thumbnail_url,
             genre,
-            total_views,
-            total_likes,
+            duration,
+            media_type,
+            user_id,
             created_at,
-            Content!inner (
-              description,
-              duration,
-              media_type,
-              user_id,
-              status,
-              user_profiles!user_id (full_name, username, avatar_url)
+            status,
+            user_profiles!user_id (
+              full_name,
+              username,
+              avatar_url
             )
           `)
           .in('genre', genreList)
-          .eq('Content.status', 'published')
+          .eq('status', 'published')
           .gte('created_at', timeAgo)
           .neq('id', excludeContentId)
-          .order('total_likes', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(limit);
         
         if (error) throw error;
         
-        const transformed = (trending || []).map(item => ({
-          ...item.Content,
-          views_count: item.total_views,
-          likes_count: item.total_likes,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          created_at: item.created_at
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'trending_interests' });
+        return trending || [];
         
       } catch (error) {
         console.error('❌ _getTrendingInInterests failed:', error);
@@ -1041,42 +1217,31 @@
       
       try {
         const { data, error } = await this.supabase
-          .from('content_public_metrics')
+          .from('Content')
           .select(`
             id,
             title,
             thumbnail_url,
             genre,
-            total_views,
-            total_likes,
+            duration,
+            media_type,
+            user_id,
             created_at,
-            Content!inner (
-              description,
-              duration,
-              media_type,
-              user_id,
-              status,
-              user_profiles!user_id (full_name, username, avatar_url)
+            status,
+            user_profiles!user_id (
+              full_name,
+              username,
+              avatar_url
             )
           `)
           .eq('genre', genre)
-          .eq('Content.status', 'published')
+          .eq('status', 'published')
           .neq('id', excludeContentId)
-          .order('total_views', { ascending: false })
           .limit(limit);
         
         if (error) throw error;
         
-        const transformed = (data || []).map(item => ({
-          ...item.Content,
-          views_count: item.total_views,
-          likes_count: item.total_likes,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          created_at: item.created_at
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'similar_genre' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getSimilarGenre failed:', error);
@@ -1091,45 +1256,31 @@
       try {
         // Enhanced fallback: prioritize high-engagement published content
         const { data, error } = await this.supabase
-          .from('content_public_metrics')
+          .from('Content')
           .select(`
             id,
             title,
             thumbnail_url,
             genre,
-            total_views,
-            total_likes,
+            duration,
+            media_type,
+            user_id,
             created_at,
-            Content!inner (
-              description,
-              duration,
-              media_type,
-              user_id,
-              status,
-              episode_number,
-              series_id,
-              user_profiles!user_id (full_name, username, avatar_url)
+            status,
+            user_profiles!user_id (
+              full_name,
+              username,
+              avatar_url
             )
           `)
-          .eq('Content.status', 'published')
+          .eq('status', 'published')
           .neq('id', excludeContentId)
-          // Order by engagement ratio (likes/views) with minimum view threshold
-          .order('total_likes', { ascending: false })
-          .order('total_views', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(limit);
         
         if (error) throw error;
         
-        const transformed = (data || []).map(item => ({
-          ...item.Content,
-          views_count: item.total_views,
-          likes_count: item.total_likes,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          created_at: item.created_at
-        }));
-        
-        return await this._enrichRecommendations(transformed, { sourceType: 'fallback' });
+        return data || [];
         
       } catch (error) {
         console.error('❌ _getFallbackRecommendations failed:', error);
@@ -1138,88 +1289,8 @@
     }
 
     // =====================================================
-    // ENRICHMENT & UTILITIES
+    // UTILITIES
     // =====================================================
-
-    /**
-     * Enrich recommendation items with additional metadata
-     */
-    async _enrichRecommendations(items, options = {}) {
-      if (!items || items.length === 0) return [];
-      
-      const sourceType = options.sourceType || 'unknown';
-      
-      return Promise.all(items.map(async (item) => {
-        // Fix media URLs using helper if available
-        const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
-        const fileUrl = window.SupabaseHelper?.fixMediaUrl?.(item.file_url) || item.file_url;
-        
-        // Calculate engagement score (likes per view, normalized)
-        const views = item.views_count || item.total_views || 1;
-        const likes = item.likes_count || item.total_likes || 0;
-        const engagementScore = views > 0 ? Math.round((likes / views) * 1000) / 10 : 0;
-        
-        // PHASE 1D: Fetch series/collection metadata if applicable
-        let seriesInfo = null;
-        if (item.series_id) {
-          try {
-            const { data: seriesData } = await this.supabase
-              .from('creator_playlists')
-              .select('name, playlist_type, description')
-              .eq('id', item.series_id)
-              .eq('status', 'published')
-              .maybeSingle();
-            
-            if (seriesData) {
-              seriesInfo = {
-                id: item.series_id,
-                name: seriesData.name,
-                type: seriesData.playlist_type,
-                description: seriesData.description
-              };
-            }
-          } catch (e) {
-            // Silently ignore series fetch errors
-          }
-        }
-        
-        // Build enriched result
-        return {
-          // Core content fields
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          thumbnail_url: thumbnailUrl,
-          file_url: fileUrl,
-          duration: item.duration,
-          media_type: item.media_type,
-          genre: item.genre,
-          created_at: item.created_at,
-          status: item.status,
-          
-          // Metrics (normalized field names)
-          views_count: item.views_count || item.total_views || 0,
-          likes_count: item.likes_count || item.total_likes || 0,
-          engagement_score: engagementScore,
-          
-          // Creator info
-          user_id: item.user_id,
-          user_profiles: item.user_profiles || item.creator_profile,
-          
-          // PHASE 1D: Series/collection context
-          episode_number: item.episode_number,
-          series_id: item.series_id,
-          series_info: seriesInfo,
-          
-          // Watch progress (if applicable)
-          watch_progress: item.watch_progress || null,
-          
-          // Metadata
-          source_type: sourceType,
-          recommendation_timestamp: Date.now()
-        };
-      }));
-    }
 
     /**
      * Generate cache key from type and options
@@ -1275,7 +1346,7 @@
       if (!queueItems || queueItems.length === 0) return [];
       
       const limit = options.limit || 5;
-      const strategy = options.strategy || 'genre_match'; // genre_match, creator_match, trending
+      const strategy = options.strategy || 'genre_match';
       
       try {
         // Analyze queue composition
@@ -1293,7 +1364,6 @@
         
         switch(strategy) {
           case 'genre_match':
-            // Find most common genre and recommend similar
             const genreCounts = {};
             queueMeta.forEach(item => {
               if (item.genre) genreCounts[item.genre] = (genreCounts[item.genre] || 0) + 1;
@@ -1310,7 +1380,6 @@
             break;
             
           case 'creator_match':
-            // Find most common creator and recommend their other content
             const creatorCounts = {};
             queueMeta.forEach(item => {
               if (item.creator_id) {
@@ -1330,7 +1399,6 @@
             
           case 'trending':
           default:
-            // Recommend trending content in user's interests
             recommendations = await this._getTrendingInInterests({
               limit: limit * 2,
               excludeContentId: null
@@ -1381,7 +1449,11 @@
     window.RecommendationEngine = RecommendationEngine;
   }
   
-  console.log('✅ RecommendationEngine module loaded successfully (Phase 3 + Phase 1D Enhanced)');
+  console.log('✅ RecommendationEngine module loaded successfully (Engagement System Integrated)');
   console.log('   Available types:', Object.values(RecommendationEngine.prototype.TYPES || {}));
+  console.log('  🚨 FIX #2: Global contentId synchronization');
+  console.log('  🚨 FIX #6: Live engagement counts from canonical tables');
+  console.log('  🚨 refreshRecommendations() for content changes');
+  console.log('  🚨 syncWithGlobalState() for playlist sync');
 
 })();
