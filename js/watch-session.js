@@ -9,15 +9,43 @@
 // ✅ Retry logic with exponential backoff for failed heartbeats
 // ✅ Safe sync lifecycle with visibility handling
 // ✅ FIXED: Missing methods (syncFinalState, onBeforeUnload, onVideoError)
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23):
+// - FIX #1: RPC view recording integration (recordContentViewRPC)
+// - FIX #2: Global contentId synchronization
+// - FIX #3: Threshold-based view recording (15 sec or 30% duration)
+// - FIX #4: Reset view state on content change
+// - FIX #5: Proper view validation with retry logic
+// - FIX #6: Event dispatch for cross-component sync
 
 (function() {
   'use strict';
 
-  console.log('🎬 WatchSession module loading... (Phase 3 Telemetry Engine + Phase 1D Enhanced)');
+  console.log('🎬 WatchSession module loading... (Phase 3 Telemetry Engine + Engagement Fixes)');
+
+  // Global reference for view recording across sessions
+  let _globalContentViewRPC = null;
+
+  /**
+   * Helper to get the global recordContentViewRPC function
+   */
+  function getRecordContentViewRPC() {
+    if (_globalContentViewRPC) return _globalContentViewRPC;
+    if (window.recordContentViewRPC) {
+      _globalContentViewRPC = window.recordContentViewRPC;
+      return _globalContentViewRPC;
+    }
+    if (window.recordView) {
+      _globalContentViewRPC = window.recordView;
+      return _globalContentViewRPC;
+    }
+    console.warn('⚠️ recordContentViewRPC not available, view recording will use fallback');
+    return null;
+  }
 
   /**
    * WatchSessionManager — Handles telemetry streaming via playback_sessions/heartbeats
    * Replaces legacy direct Content.views_count updates
+   * 🚨 UPDATED: Integrated with RPC view recording and contentId sync
    */
   function WatchSessionManager(config) {
     if (!config || !config.contentId || !config.supabase) {
@@ -45,6 +73,10 @@
     this.heartbeatIntervalMs = config.heartbeatInterval || 10000; // 10 seconds
     this.validViewThresholdSeconds = config.validViewThreshold || 30;
     
+    // 🚨 FIX #8: Dual threshold for view recording (15 seconds OR 30% of duration)
+    this.minViewThresholdSeconds = config.minViewThreshold || 15;
+    this.percentageViewThreshold = config.percentageViewThreshold || 0.3; // 30%
+    
     // State tracking
     this.sequenceNumber = 0;
     this.totalWatchTimeMs = 0;
@@ -58,6 +90,10 @@
     this.viewValidationConfirmed = false;
     this.viewRetryCount = 0;
     this.maxViewRetries = 3;
+    
+    // 🚨 FIX #4: Track if view has been recorded for this session
+    this.viewRecorded = false;
+    this.viewRecordedViaRPC = false;
 
     // Session lifecycle
     this.isActive = false;
@@ -83,6 +119,7 @@
     this.onAutoplayTrigger = config.onAutoplayTrigger || null;
     this.onError = config.onError || null;
     this.onProgressSync = config.onProgressSync || null;
+    this.onViewRecorded = config.onViewRecorded || null; // 🚨 New callback
 
     // Bound event handlers (for proper removal)
     this._boundTimeUpdate = null;
@@ -98,7 +135,9 @@
         playbackSessionId: this.playbackSessionId,
         contentId: this.contentId,
         collectionId: this.collectionId,
-        sortIndex: this.sortIndex
+        sortIndex: this.sortIndex,
+        viewThresholdSeconds: this.minViewThresholdSeconds,
+        percentageThreshold: this.percentageViewThreshold
       }
     );
 
@@ -132,6 +171,152 @@
     return 'Web';
   };
 
+  /**
+   * 🚨 FIX #3: Calculate dynamic threshold based on video duration
+   * Uses min(15 seconds, 30% of duration) for view recording
+   */
+  WatchSessionManager.prototype._getDynamicViewThreshold = function() {
+    if (!this.videoElement) return this.minViewThresholdSeconds;
+    
+    const duration = this.videoElement.duration || 0;
+    if (duration <= 0) return this.minViewThresholdSeconds;
+    
+    const thirtyPercentDuration = duration * this.percentageViewThreshold;
+    const thresholdSeconds = Math.min(this.minViewThresholdSeconds, thirtyPercentDuration);
+    
+    // Ensure at least 3 seconds for very short content
+    return Math.max(3, thresholdSeconds);
+  };
+
+  // =====================================================
+  // 🚨 FIX #1 & #2: RPC VIEW RECORDING WITH CONTENT ID SYNC
+  // =====================================================
+
+  /**
+   * Records a view using the RPC function
+   * This is the canonical source for view counting
+   */
+  WatchSessionManager.prototype._recordViewViaRPC = async function(progressSeconds) {
+    if (this.viewRecordedViaRPC) {
+      console.log('⏭️ View already recorded for this session, skipping');
+      return true;
+    }
+    
+    const recordViewFn = getRecordContentViewRPC();
+    if (!recordViewFn) {
+      console.warn('⚠️ No view recording function available, using fallback');
+      return await this._recordViewFallback(progressSeconds);
+    }
+    
+    try {
+      console.log(`📊 Recording view via RPC for content ${this.contentId} at ${progressSeconds}s`);
+      
+      const result = await recordViewFn(
+        this.contentId,
+        this.userId,
+        this.playbackSessionId,
+        this._getDeviceType()
+      );
+      
+      if (result && result.success) {
+        this.viewRecordedViaRPC = true;
+        this.viewRecorded = true;
+        
+        console.log(`✅ View recorded successfully for content ${this.contentId}, total views: ${result.views || 'updated'}`);
+        
+        // 🚨 Dispatch event for cross-component sync
+        this._dispatchViewRecordedEvent(progressSeconds);
+        
+        // Trigger callback
+        if (this.onViewRecorded) {
+          this.onViewRecorded({
+            contentId: this.contentId,
+            playbackSessionId: this.playbackSessionId,
+            progressSeconds: progressSeconds,
+            totalWatchTimeMs: this.totalWatchTimeMs
+          });
+        }
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ RPC view recording failed:', error);
+      return await this._recordViewFallback(progressSeconds);
+    }
+  };
+
+  /**
+   * Fallback view recording if RPC is not available
+   */
+  WatchSessionManager.prototype._recordViewFallback = async function(progressSeconds) {
+    if (this.viewRecorded) return true;
+    
+    try {
+      // Check if view already exists for this session
+      const { data: existing, error: checkError } = await this.supabase
+        .from('content_views')
+        .select('id')
+        .eq('content_id', parseInt(this.contentId))
+        .eq('session_id', this.playbackSessionId)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.warn('Check for existing view failed:', checkError);
+      }
+      
+      if (existing) {
+        console.log('⏭️ View already recorded for this session, skipping');
+        this.viewRecorded = true;
+        return true;
+      }
+      
+      const { error: insertError } = await this.supabase
+        .from('content_views')
+        .insert({
+          content_id: parseInt(this.contentId),
+          user_id: this.userId || null,
+          session_id: this.playbackSessionId,
+          counted_as_view: true,
+          view_duration: Math.min(progressSeconds, this.maxProgressSeconds),
+          device_type: this._getDeviceType(),
+          viewed_at: new Date().toISOString()
+        });
+      
+      if (insertError) throw insertError;
+      
+      this.viewRecorded = true;
+      console.log(`✅ View recorded via fallback for content ${this.contentId}`);
+      
+      // Dispatch event
+      this._dispatchViewRecordedEvent(progressSeconds);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Fallback view recording failed:', error);
+      return false;
+    }
+  };
+
+  WatchSessionManager.prototype._dispatchViewRecordedEvent = function(progressSeconds) {
+    try {
+      window.dispatchEvent(new CustomEvent('content-view-recorded', {
+        detail: {
+          contentId: this.contentId,
+          playbackSessionId: this.playbackSessionId,
+          userId: this.userId,
+          progressSeconds: progressSeconds,
+          totalWatchTimeMs: this.totalWatchTimeMs,
+          timestamp: Date.now()
+        }
+      }));
+      console.log('📡 Dispatched content-view-recorded event');
+    } catch (error) {
+      console.warn('⚠️ Failed to dispatch view recorded event:', error);
+    }
+  };
+
   // =====================================================
   // PHASE 1D: SESSION PERSISTENCE
   // =====================================================
@@ -148,6 +333,8 @@
         sequenceNumber: this.sequenceNumber,
         viewThresholdReached: this.viewThresholdReached,
         viewValidationConfirmed: this.viewValidationConfirmed,
+        viewRecorded: this.viewRecorded,
+        viewRecordedViaRPC: this.viewRecordedViaRPC,
         isCompleted: this.isCompleted,
         collectionId: this.collectionId,
         playlistId: this.playlistId,
@@ -182,6 +369,8 @@
           this.totalWatchTimeMs = data.totalWatchTimeMs || 0;
           this.sequenceNumber = data.sequenceNumber || 0;
           this.viewThresholdReached = data.viewThresholdReached || false;
+          this.viewRecorded = data.viewRecorded || false;
+          this.viewRecordedViaRPC = data.viewRecordedViaRPC || false;
           // Reset validation confirmed on restore to ensure re-validation for resumed sessions
           this.viewValidationConfirmed = false;
           this.isCompleted = data.isCompleted || false;
@@ -190,6 +379,7 @@
           console.log('📦 Session restored from storage:', {
             progress: this.maxProgressSeconds,
             watchTime: this.totalWatchTimeMs,
+            viewRecorded: this.viewRecorded,
             viewValidated: this.viewValidationConfirmed
           });
         } else {
@@ -209,6 +399,42 @@
     } catch (error) {
       console.warn('⚠️ Failed to clear session from storage:', error);
     }
+  };
+
+  // =====================================================
+  // 🚨 FIX #4: RESET VIEW STATE FOR NEW CONTENT
+  // =====================================================
+
+  WatchSessionManager.prototype.resetForNewContent = function(newContentId) {
+    console.log(`🔄 Resetting watch session for new content: ${newContentId} (was: ${this.contentId})`);
+    
+    // Stop current session
+    this.isActive = false;
+    this._stopHeartbeatLoop();
+    
+    // Reset all state for new content
+    this.contentId = newContentId;
+    this.playbackSessionId = this._generateUUID();
+    this.sequenceNumber = 0;
+    this.totalWatchTimeMs = 0;
+    this.maxProgressSeconds = 0;
+    this.viewThresholdReached = false;
+    this.viewValidationAttempted = false;
+    this.viewValidationConfirmed = false;
+    this.viewRecorded = false;
+    this.viewRecordedViaRPC = false;
+    this.viewRetryCount = 0;
+    this.isCompleted = false;
+    this.lastHeartbeatTime = Date.now();
+    this.lastSyncPosition = 0;
+    
+    // Update storage key
+    this.sessionStorageKey = `playback_session_${this.contentId}`;
+    
+    // Save reset state
+    this._saveToStorage();
+    
+    console.log(`✅ Watch session reset for content ${this.contentId}`);
   };
 
   // =====================================================
@@ -324,6 +550,12 @@
       }
     }
     
+    // Priority 4: Global playlist function
+    if (typeof window.playNextPlaylistItem === 'function') {
+      window.playNextPlaylistItem();
+      return;
+    }
+    
     console.log('⚠️ No autoplay handler available');
   };
 
@@ -412,7 +644,7 @@
   };
 
   // =====================================================
-  // HEARTBEAT LOOP (Phase 3 Core)
+  // HEARTBEAT LOOP (Phase 3 Core + Engagement Fixes)
   // =====================================================
 
   WatchSessionManager.prototype._heartbeatTick = async function() {
@@ -441,7 +673,7 @@
         .from('playback_heartbeats')
         .insert({
           playback_session_id: this.playbackSessionId,
-          content_id: this.contentId,
+          content_id: parseInt(this.contentId),
           user_id: this.userId,
           sequence_number: this.sequenceNumber,
           progress_seconds: currentTime,
@@ -466,13 +698,21 @@
         })
         .eq('playback_session_id', this.playbackSessionId);
 
-      // C. Check view threshold and validate if needed
+      // 🚨 FIX #3 & #8: Check view threshold and record view
+      const dynamicThreshold = this._getDynamicViewThreshold();
+      
+      if (!this.viewRecorded && this.totalWatchTimeMs >= dynamicThreshold * 1000) {
+        console.log(`👁️ View threshold reached (${dynamicThreshold}s), recording view...`);
+        await this._recordViewViaRPC(currentTime);
+      }
+
+      // C. Legacy validation (for content_engagement_stats sync)
       if (!this.viewValidationConfirmed && 
           currentTime >= this.validViewThresholdSeconds && 
           !this.viewThresholdReached) {
         
         this.viewThresholdReached = true;
-        console.log('👁️ View threshold reached (' + this.validViewThresholdSeconds + 's), validating...');
+        console.log('👁️ Validation threshold reached (' + this.validViewThresholdSeconds + 's), validating...');
         await this._validateViewViaRPC();
       }
 
@@ -539,6 +779,12 @@
     this.isActive = true;
     this.lastHeartbeatTime = Date.now();
 
+    // Reset view recorded flag for new session
+    this.viewRecorded = false;
+    this.viewRecordedViaRPC = false;
+    this.viewThresholdReached = false;
+    this.viewValidationConfirmed = false;
+
     // Merge config options
     if (options.collectionId) this.collectionId = options.collectionId;
     if (options.playlistId) this.playlistId = options.playlistId;
@@ -552,13 +798,12 @@
         .from('playback_sessions')
         .insert({
           playback_session_id: this.playbackSessionId,
-          content_id: this.contentId,
+          content_id: parseInt(this.contentId),
           user_id: this.userId,
           session_id: this.globalSessionId,
           platform: this._getPlatform(),
           device_type: this._getDeviceType(),
           started_at: new Date().toISOString(),
-          // PHASE 1D: Include collection/playlist context
           collection_id: this.collectionId,
           playlist_id: this.playlistId,
           sort_index: this.sortIndex,
@@ -586,7 +831,8 @@
       console.log('✅ WatchSession initialized:', {
         playbackSessionId: this.playbackSessionId,
         contentId: this.contentId,
-        collectionId: this.collectionId
+        collectionId: this.collectionId,
+        dynamicThreshold: this._getDynamicViewThreshold()
       });
       
       return true;
@@ -650,6 +896,13 @@
     const currentTime = Math.floor(this.videoElement.currentTime);
     const duration = this.videoElement.duration || 0;
     
+    // Final view recording check (ensure view is recorded even if user leaves early)
+    const dynamicThreshold = this._getDynamicViewThreshold();
+    if (!this.viewRecorded && this.totalWatchTimeMs >= dynamicThreshold * 1000) {
+      console.log(`👁️ Final check: Recording view at ${currentTime}s`);
+      await this._recordViewViaRPC(currentTime);
+    }
+    
     // Check for completion
     if (duration > 0 && currentTime / duration >= 0.9 && !this.isCompleted) {
       this.isCompleted = true;
@@ -674,7 +927,7 @@
           .from('watch_progress')
           .upsert({
             user_id: this.userId,
-            content_id: this.contentId,
+            content_id: parseInt(this.contentId),
             last_position: currentTime,
             total_watch_time: Math.floor(this.totalWatchTimeMs / 1000),
             is_completed: this.isCompleted,
@@ -856,6 +1109,8 @@
       totalWatchTimeMs: this.totalWatchTimeMs,
       viewThresholdReached: this.viewThresholdReached,
       viewValidationConfirmed: this.viewValidationConfirmed,
+      viewRecorded: this.viewRecorded,
+      viewRecordedViaRPC: this.viewRecordedViaRPC,
       collectionId: this.collectionId,
       playlistId: this.playlistId,
       sortIndex: this.sortIndex,
@@ -881,6 +1136,19 @@
   WatchSessionManager.prototype.setAutoplay = function(enabled) {
     this.shouldAutoplayNext = enabled;
     console.log('🎬 Autoplay set to:', enabled);
+  };
+
+  /**
+   * 🚨 Update contentId for the session (used during playlist track changes)
+   */
+  WatchSessionManager.prototype.updateContentId = function(newContentId) {
+    if (this.contentId === newContentId) {
+      console.log('⚠️ Content ID unchanged:', newContentId);
+      return;
+    }
+    
+    console.log(`🔄 Updating session contentId from ${this.contentId} to ${newContentId}`);
+    this.resetForNewContent(newContentId);
   };
 
   // =====================================================
@@ -945,6 +1213,10 @@
     window.WatchSessionManager = WatchSessionManager;
   }
 
-  console.log('✅ WatchSessionManager module loaded (Phase 3 + Phase 1D Enhanced)');
+  console.log('✅ WatchSessionManager module loaded (Phase 3 + Engagement Fixes)');
+  console.log('  ✅ RPC view recording integration');
+  console.log('  ✅ Dynamic threshold (15 sec or 30% of duration)');
+  console.log('  ✅ Reset view state on content change');
+  console.log('  ✅ Cross-component event dispatch');
 
 })();
