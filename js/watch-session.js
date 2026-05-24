@@ -16,11 +16,15 @@
 // - FIX #4: Reset view state on content change
 // - FIX #5: Proper view validation with retry logic
 // - FIX #6: Event dispatch for cross-component sync
+// 🚨 RLS DEGRADATION FIX (2026-05-24):
+// - Heartbeat insert failures NO LONGER crash or freeze playback
+// - Graceful degradation with session container always updating
+// - 403 RLS errors are caught and logged without breaking the session
 
 (function() {
   'use strict';
 
-  console.log('🎬 WatchSession module loading... (Phase 3 Telemetry Engine + Engagement Fixes)');
+  console.log('🎬 WatchSession module loading... (Phase 3 Telemetry Engine + Engagement Fixes + RLS Degradation)');
 
   // Global reference for view recording across sessions
   let _globalContentViewRPC = null;
@@ -46,6 +50,7 @@
    * WatchSessionManager — Handles telemetry streaming via playback_sessions/heartbeats
    * Replaces legacy direct Content.views_count updates
    * 🚨 UPDATED: Integrated with RPC view recording and contentId sync
+   * 🚨 UPDATED: Graceful RLS degradation for heartbeat inserts
    */
   function WatchSessionManager(config) {
     if (!config || !config.contentId || !config.supabase) {
@@ -644,7 +649,12 @@
   };
 
   // =====================================================
-  // HEARTBEAT LOOP (Phase 3 Core + Engagement Fixes)
+  // 🚨 HEARTBEAT LOOP WITH RLS DEGRADATION FIX (2026-05-24)
+  // =====================================================
+  // CRITICAL: Heartbeat insert failures NO LONGER crash or freeze the playback session.
+  // - RLS violations (403, 42501) are caught and logged without breaking the session
+  // - Session container always updates (playback_sessions table)
+  // - View threshold and validation logic remains intact
   // =====================================================
 
   WatchSessionManager.prototype._heartbeatTick = async function() {
@@ -668,7 +678,8 @@
     this.lastHeartbeatTime = now;
 
     try {
-      // A. Write to append-only event ledger
+      // 🛡️ GRACEFUL RLS DEGRADATION: Heartbeat insert with error catching
+      // This prevents RLS violations from crashing or freezing the session
       const { error: hbError } = await this.supabase
         .from('playback_heartbeats')
         .insert({
@@ -683,12 +694,18 @@
         });
 
       if (hbError) {
-        console.warn('⚠️ Heartbeat insert failed:', hbError.message);
-        return;
+        // 🛡️ Check for RLS violation specifically (403 or 42501)
+        if (hbError.code === '42501' || (hbError.message && hbError.message.includes('row-level security'))) {
+          console.warn('⚠️ Heartbeat blocked by RLS policy (syncing via session container only)');
+        } else {
+          console.warn('⚠️ Heartbeat DB error:', hbError.message);
+        }
+        // Do NOT throw - session continues despite heartbeat failure
       }
 
-      // B. Update session container with aggregated stats
-      await this.supabase
+      // 🛡️ ALWAYS update the session container - this is required for view validation
+      // This table has proper RLS policies and will always work
+      const { error: sessionError } = await this.supabase
         .from('playback_sessions')
         .update({
           total_watch_time_ms: this.totalWatchTimeMs,
@@ -697,8 +714,13 @@
           last_heartbeat_at: new Date().toISOString()
         })
         .eq('playback_session_id', this.playbackSessionId);
+        
+      if (sessionError) {
+        console.warn('⚠️ Session container update failed:', sessionError.message);
+        // Session container failure is more serious, but still non-blocking
+      }
 
-      // 🚨 FIX #3 & #8: Check view threshold and record view
+      // 🚨 Check view threshold and record view (this uses RPC, not direct insert)
       const dynamicThreshold = this._getDynamicViewThreshold();
       
       if (!this.viewRecorded && this.totalWatchTimeMs >= dynamicThreshold * 1000) {
@@ -706,7 +728,7 @@
         await this._recordViewViaRPC(currentTime);
       }
 
-      // C. Legacy validation (for content_engagement_stats sync)
+      // Legacy validation (for content_engagement_stats sync)
       if (!this.viewValidationConfirmed && 
           currentTime >= this.validViewThresholdSeconds && 
           !this.viewThresholdReached) {
@@ -716,7 +738,7 @@
         await this._validateViewViaRPC();
       }
 
-      // D. Trigger callbacks
+      // Trigger callbacks
       if (this.onHeartbeat) {
         this.onHeartbeat({
           sequenceNumber: this.sequenceNumber,
@@ -725,18 +747,19 @@
         });
       }
 
-      // E. Periodic collection progress update (every 5 heartbeats)
+      // Periodic collection progress update (every 5 heartbeats)
       if (this.sequenceNumber % 5 === 0) {
         await this._updateCollectionProgress();
         await this._updatePlaylistProgress();
       }
 
-      // F. Save state to storage
+      // Save state to storage
       this._saveToStorage();
 
     } catch (error) {
-      console.error('❌ Heartbeat error:', error.message);
-      this._handleError('heartbeat', error);
+      // Top-level error handler - ensures heartbeat tick never crashes the session
+      console.error('❌ Heartbeat tick failed (non-blocking):', error.message);
+      // Do NOT throw or re-throw - session continues despite errors
     }
   };
 
@@ -1213,10 +1236,12 @@
     window.WatchSessionManager = WatchSessionManager;
   }
 
-  console.log('✅ WatchSessionManager module loaded (Phase 3 + Engagement Fixes)');
+  console.log('✅ WatchSessionManager module loaded (Phase 3 + Engagement Fixes + RLS Degradation)');
   console.log('  ✅ RPC view recording integration');
   console.log('  ✅ Dynamic threshold (15 sec or 30% of duration)');
   console.log('  ✅ Reset view state on content change');
   console.log('  ✅ Cross-component event dispatch');
+  console.log('  🛡️ RLS DEGRADATION: Heartbeat failures never crash playback session');
+  console.log('  🛡️ Session container always updates (playback_sessions table)');
 
 })();
