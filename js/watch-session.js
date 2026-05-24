@@ -20,11 +20,14 @@
 // - Heartbeat insert failures NO LONGER crash or freeze playback
 // - Graceful degradation with session container always updating
 // - 403 RLS errors are caught and logged without breaking the session
+// 🔧 DESKTOP VIEW RECORDING DEBUG (2026-05-24):
+// - Added debug log in _heartbeatTick right before view threshold check
+// - Shows contentId, isDesktop, totalWatchTimeMs, dynamicThreshold, viewRecorded, videoCurrentTime
 
 (function() {
   'use strict';
 
-  console.log('🎬 WatchSession module loading... (Phase 3 Telemetry Engine + Engagement Fixes + RLS Degradation)');
+  console.log('🎬 WatchSession module loading... (Phase 3 Telemetry Engine + Engagement Fixes + RLS Degradation + Desktop Debug)');
 
   // Global reference for view recording across sessions
   let _globalContentViewRPC = null;
@@ -655,6 +658,7 @@
   // - RLS violations (403, 42501) are caught and logged without breaking the session
   // - Session container always updates (playback_sessions table)
   // - View threshold and validation logic remains intact
+  // 🔧 DESKTOP VIEW RECORDING DEBUG: Added debug log right before view threshold check
   // =====================================================
 
   WatchSessionManager.prototype._heartbeatTick = async function() {
@@ -722,6 +726,18 @@
 
       // 🚨 Check view threshold and record view (this uses RPC, not direct insert)
       const dynamicThreshold = this._getDynamicViewThreshold();
+      
+      // 🔧 DESKTOP VIEW RECORDING DEBUG - Add this right before the view threshold check
+      // This confirms whether desktop is hitting the threshold correctly
+      console.log('🔍 View check debug:', {
+        contentId: this.contentId,
+        isDesktop: this._getDeviceType() === 'desktop',
+        totalWatchTimeMs: this.totalWatchTimeMs,
+        dynamicThreshold: dynamicThreshold,
+        viewRecorded: this.viewRecorded,
+        videoCurrentTime: video.currentTime,
+        videoDuration: video.duration
+      });
       
       if (!this.viewRecorded && this.totalWatchTimeMs >= dynamicThreshold * 1000) {
         console.log(`👁️ View threshold reached (${dynamicThreshold}s), recording view...`);
@@ -1236,12 +1252,13 @@
     window.WatchSessionManager = WatchSessionManager;
   }
 
-  console.log('✅ WatchSessionManager module loaded (Phase 3 + Engagement Fixes + RLS Degradation)');
+  console.log('✅ WatchSessionManager module loaded (Phase 3 + Engagement Fixes + RLS Degradation + Desktop Debug)');
   console.log('  ✅ RPC view recording integration');
   console.log('  ✅ Dynamic threshold (15 sec or 30% of duration)');
   console.log('  ✅ Reset view state on content change');
   console.log('  ✅ Cross-component event dispatch');
   console.log('  🛡️ RLS DEGRADATION: Heartbeat failures never crash playback session');
   console.log('  🛡️ Session container always updates (playback_sessions table)');
+  console.log('  🔧 DESKTOP DEBUG: Added debug log in _heartbeatTick for view threshold check');
 
 })();
