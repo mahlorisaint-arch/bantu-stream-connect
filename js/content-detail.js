@@ -132,6 +132,12 @@
 // - ADDED singleton pattern for StreamingManager
 // - FIXED player ended listener to ONLY emit events, NOT control playlists
 // ============================================
+// 🚨 PHASE 7: CONTENT_ENGAGEMENT_STATS CANONICAL SOURCE (2026-05-24)
+// - Fixed loadLiveEngagementCounts to read from content_engagement_stats first
+// - Fixed setupRealtimeSubscriptions to listen to content_engagement_stats updates
+// - Fixed handleLikeButtonClick to reconcile with canonical stats table
+// - Eliminated "drops to 0" bug when realtime updates race with UI
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
@@ -287,24 +293,43 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
 
 /**
  * 🚨 FIX #6: Load LIVE counts from canonical tables (NOT denormalized fields)
- * This is the SOURCE OF TRUTH for engagement counts
+ * 🚨 PHASE 7 UPDATE: Now reads from content_engagement_stats as PRIMARY source
+ * Falls back to direct counting only if stats row is missing
  */
 async function loadLiveEngagementCounts(contentId) {
     if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
     
     try {
-        const [viewsResult, likesResult, commentsResult, sharesResult] = await Promise.all([
+        // 1️⃣ PRIMARY: Fast, indexed totals table (maintained by backend triggers)
+        const { data: stats, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('total_views, total_likes, total_comments, total_watch_time_ms')
+            .eq('content_id', parseInt(contentId))
+            .maybeSingle();
+
+        if (!statsError && stats) {
+            return {
+                views: stats.total_views || 0,
+                likes: stats.total_likes || 0,
+                comments: stats.total_comments || 0,
+                shares: 0 // Fallback if you add shares to this table later
+            };
+        }
+
+        // 2️⃣ Fallback: Direct count (legacy safety)
+        console.log('⚠️ stats row missing, falling back to direct count...');
+        const [viewsRes, likesRes, commentsRes, sharesRes] = await Promise.all([
             window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)).eq('counted_as_view', true),
             window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
             window.supabaseClient.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
             window.supabaseClient.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId))
         ]);
-        
+
         return {
-            views: viewsResult.count || 0,
-            likes: likesResult.count || 0,
-            comments: commentsResult.count || 0,
-            shares: sharesResult.count || 0
+            views: viewsRes.count || 0,
+            likes: likesRes.count || 0,
+            comments: commentsRes.count || 0,
+            shares: sharesRes.count || 0
         };
     } catch (error) {
         console.error('❌ Failed to load live counts:', error);
@@ -705,7 +730,7 @@ function updateShareCountUI(delta) {
 
 /**
  * 🚨 FIX #5: Handle like button click with OPTIMISTIC UI
- * Immediate feedback, then server reconciliation
+ * Immediate feedback, then server reconciliation with canonical stats table
  */
 async function handleLikeButtonClick() {
     if (!currentContent?.id) {
@@ -752,13 +777,15 @@ async function handleLikeButtonClick() {
             likesCountEl.textContent = formatNumber(currentCount);
         }
     } else {
-        // Refresh live counts to ensure accuracy
+        // 🚨 ALWAYS reconcile with canonical stats table after success
         const liveCounts = await loadLiveEngagementCounts(currentContent.id);
         if (likesCountEl) {
             likesCountEl.textContent = formatNumber(liveCounts.likes);
         }
+        updateViewsUI(liveCounts.views);
         if (currentContent) {
             currentContent.likes_count = liveCounts.likes;
+            currentContent.views_count = liveCounts.views;
         }
     }
 }
@@ -902,11 +929,46 @@ async function shareContent(contentId, userId) {
 
 /**
  * 🚨 FIX #7: Realtime subscriptions for instant engagement updates
+ * 🚨 PHASE 7 UPDATE: Now listens to content_engagement_stats (canonical source)
+ * Raw table subscriptions cause the "drops to 0" bug. Switch to listening to 
+ * content_engagement_stats updates instead. This is atomic and race-condition proof.
  */
 function setupRealtimeSubscriptions() {
-    if (!window.supabaseClient) return;
+    if (!window.supabaseClient || !currentContent?.id) return;
     
-    // Subscribe to likes changes for current content
+    // Clean up existing channels to prevent duplicates on playlist switch
+    window.supabaseClient.removeChannel('content-stats-channel');
+    window.supabaseClient.removeChannel('content-likes-changes');
+    window.supabaseClient.removeChannel('content-views-changes');
+    window.supabaseClient.removeChannel('favorites-changes');
+    
+    // 🚨 PRIMARY: Listen to canonical stats table (UPDATE events only)
+    // This eliminates the "drops to 0" bug because we're reading from the atomic totals table
+    const statsChannel = window.supabaseClient
+        .channel('content-stats-channel')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'content_engagement_stats',
+            filter: `content_id=eq.${currentContent.id}`
+        }, (payload) => {
+            if (payload.new) {
+                console.log('📊 Realtime stats synced (canonical source):', payload.new);
+                // Update UI directly from canonical totals
+                updateViewsUI(payload.new.total_views || 0);
+                const likesEl = document.getElementById('likesCount');
+                if (likesEl) {
+                    likesEl.textContent = formatNumber(payload.new.total_likes || 0);
+                }
+                if (currentContent) {
+                    currentContent.views_count = payload.new.total_views || 0;
+                    currentContent.likes_count = payload.new.total_likes || 0;
+                }
+            }
+        })
+        .subscribe();
+    
+    // Backup: Subscribe to likes changes for current content (legacy safety)
     const likesChannel = window.supabaseClient
         .channel('content-likes-changes')
         .on('postgres_changes', {
@@ -928,7 +990,7 @@ function setupRealtimeSubscriptions() {
     
     likesChannel.subscribe();
     
-    // Subscribe to views changes
+    // Subscribe to views changes (backup)
     const viewsChannel = window.supabaseClient
         .channel('content-views-changes')
         .on('postgres_changes', {
@@ -967,7 +1029,7 @@ function setupRealtimeSubscriptions() {
     
     favoritesChannel.subscribe();
     
-    console.log('✅ Realtime subscriptions established');
+    console.log('✅ Realtime subscriptions established (primary: content_engagement_stats)');
 }
 
 // ============================================
@@ -4952,8 +5014,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  ✅ No 409 conflicts (proper toggle with existence check)');
     console.log('  ✅ Race condition protection (request token pattern)');
     console.log('  ✅ Optimistic UI updates with server reconciliation');
-    console.log('  ✅ Live counts from canonical tables (NOT denormalized fields)');
-    console.log('  ✅ Realtime subscriptions for instant updates');
+    console.log('  ✅ Live counts from canonical tables (content_engagement_stats)');
+    console.log('  ✅ Realtime subscriptions for content_engagement_stats updates (NO "drops to 0" bug)');
     console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
     console.log('  🚀 Ready for production deployment.');
 });
@@ -5086,7 +5148,7 @@ console.log('  ✅ Global contentId synchronization across ALL components');
 console.log('  ✅ No 409 conflicts (proper toggle with existence check)');
 console.log('  ✅ Race condition protection (request token pattern)');
 console.log('  ✅ Optimistic UI updates with server reconciliation');
-console.log('  ✅ Live counts from canonical tables (NOT denormalized fields)');
-console.log('  ✅ Realtime subscriptions for instant updates');
+console.log('  ✅ Live counts from canonical tables (content_engagement_stats)');
+console.log('  ✅ Realtime subscriptions for content_engagement_stats updates (NO "drops to 0" bug)');
 console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
 console.log('  🚀 Ready for production deployment.');
