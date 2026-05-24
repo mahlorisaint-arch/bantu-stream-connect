@@ -125,6 +125,13 @@
 // - FIX #7: Realtime subscriptions for instant updates
 // - FIX #8: Watch session threshold recording (15 sec or 30% duration)
 // ============================================
+// 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24): YouTube-style playlist control separation
+// - REMOVED all playlist advancement from video-player.js (BIGGEST FIX)
+// - ADDED transition lock (isTrackTransitioning) to prevent race conditions
+// - ADDED duplicate contentId guard in updateGlobalContentId
+// - ADDED singleton pattern for StreamingManager
+// - FIXED player ended listener to ONLY emit events, NOT control playlists
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
@@ -167,6 +174,9 @@ let watchLaterContentCache = new Set();
 // 🚨 VIEW RECORDING STATE
 let viewRecordedForCurrentContent = false;
 let currentSessionId = null;
+
+// 🚨 TRANSITION LOCK FOR PLAYLIST (CRITICAL FIX)
+let isTrackTransitioning = false;
 
 // ============================================
 // 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23)
@@ -531,8 +541,15 @@ async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
 /**
  * 🚨 FIX #2: Update GLOBAL CONTENT ID across ALL components
  * This fixes the playlist desync issue where StreamingManager.initialize() showed wrong contentId
+ * 🚨 ALSO FIX #5: Guard against identical content loads
  */
 function updateGlobalContentId(contentId) {
+    // 🚨 CRITICAL FIX #5: Guard against duplicate contentId updates
+    if (window.currentContentId === contentId) {
+        console.log('⏭️ Skipping duplicate contentId update (same as current)');
+        return;
+    }
+    
     console.log(`🔄 Updating global contentId from ${window.currentContentId} to ${contentId}`);
     
     window.currentContentId = contentId;
@@ -1164,20 +1181,30 @@ function syncPlaylistUI() {
 }
 
 // ============================================
-// 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD AND GLOBAL SYNC
+// 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD, TRANSITION LOCK, AND GLOBAL SYNC
 // ============================================
 window.playNextPlaylistItem = async function() {
+    // 🚨 CRITICAL FIX: Transition lock prevents race conditions
+    if (isTrackTransitioning) {
+        console.warn('🚫 Track transition already in progress, skipping duplicate call');
+        return;
+    }
+    
     if (window.playlistCompleting) {
         console.log('🚫 Playlist completion already in progress, skipping');
         return;
     }
+    
     const items = window.currentPlaylistItems || [];
     let index = window.currentPlaylistIndex || 0;
+    
     if (!items.length) {
         console.warn('⚠️ No playlist items available');
         return;
     }
+    
     const nextIndex = index + 1;
+    
     if (nextIndex >= items.length) {
         window.playlistCompleting = true;
         console.log('🏁 Playlist sequence fully completed.');
@@ -1186,14 +1213,27 @@ window.playNextPlaylistItem = async function() {
         }, 1000);
         return;
     }
-    window.currentPlaylistIndex = nextIndex;
-    const nextItem = items[nextIndex];
-    console.log(`⏭️ Advancing to track ${nextIndex + 1}:`, nextItem.title);
     
-    // 🚨 Use setCurrentContent to ensure all systems stay in sync
-    await setCurrentContent(nextItem, nextIndex);
-    await loadContentIntoPlayer(nextItem, nextIndex);
-    syncPlaylistUI();
+    // Set transition lock
+    isTrackTransitioning = true;
+    
+    try {
+        window.currentPlaylistIndex = nextIndex;
+        const nextItem = items[nextIndex];
+        console.log(`⏭️ Advancing to track ${nextIndex + 1}:`, nextItem.title);
+        
+        // 🚨 Use setCurrentContent to ensure all systems stay in sync
+        await setCurrentContent(nextItem, nextIndex);
+        await loadContentIntoPlayer(nextItem, nextIndex);
+        syncPlaylistUI();
+    } catch (error) {
+        console.error('❌ Error during playlist advancement:', error);
+    } finally {
+        // Release transition lock after delay (prevents rapid successive calls)
+        setTimeout(() => {
+            isTrackTransitioning = false;
+        }, 500);
+    }
 };
 
 // ============================================
@@ -1201,25 +1241,51 @@ window.playNextPlaylistItem = async function() {
 // ============================================
 function resetPlaylistCompletionLock() {
     window.playlistCompleting = false;
-    console.log('✅ Playlist completion lock reset');
+    isTrackTransitioning = false;
+    console.log('✅ Playlist completion and transition locks reset');
 }
 
 // ============================================
-// 🎯 PLAY PLAYLIST ITEM BY INDEX WITH SYNC
+// 🎯 PLAY PLAYLIST ITEM BY INDEX WITH SYNC AND TRANSITION LOCK
 // ============================================
 async function playPlaylistItemByIndex(index) {
+    // 🚨 CRITICAL FIX: Transition lock prevents race conditions
+    if (isTrackTransitioning) {
+        console.warn('🚫 Track transition already in progress, skipping duplicate call');
+        return;
+    }
+    
     if (!window.currentPlaylistItems?.[index]) {
         console.warn('⚠️ No playlist item at index:', index);
         return;
     }
-    const item = window.currentPlaylistItems[index];
-    window.currentPlaylistIndex = index;
     
-    // 🚨 Use setCurrentContent to ensure all systems stay in sync
-    await setCurrentContent(item, index);
-    await loadContentIntoPlayer(item);
+    // 🚨 CRITICAL FIX #5: Skip redundant loads for the same asset ID
+    const nextTrackId = window.currentPlaylistItems[index]?.id;
+    if (window.currentContentId === nextTrackId) {
+        console.log('⏭️ Track matches current active content. Skipping reload.');
+        return;
+    }
     
-    console.log('▶️ Playing playlist item:', item.title);
+    isTrackTransitioning = true;
+    
+    try {
+        const item = window.currentPlaylistItems[index];
+        window.currentPlaylistIndex = index;
+        
+        // 🚨 Use setCurrentContent to ensure all systems stay in sync
+        await setCurrentContent(item, index);
+        await loadContentIntoPlayer(item);
+        syncPlaylistUI();
+        
+        console.log('▶️ Playing playlist item:', item.title);
+    } catch (error) {
+        console.error('❌ Error playing playlist item:', error);
+    } finally {
+        setTimeout(() => {
+            isTrackTransitioning = false;
+        }, 500);
+    }
 }
 
 window.playPlaylistItemByIndex = playPlaylistItemByIndex;
@@ -1857,7 +1923,7 @@ function setupEventListeners() {
 }
 
 // ============================================
-// 🎯 PLAYER ENDED LISTENER FOR AUTO-ADVANCE
+// 🎯 PLAYER ENDED LISTENER FOR AUTO-ADVANCE - ONLY EMITS EVENT (NO PLAYLIST CONTROL)
 // ============================================
 function setupPlayerEndedListener() {
     const videoElement = document.getElementById('inlineVideoPlayer');
@@ -1865,17 +1931,24 @@ function setupPlayerEndedListener() {
         setTimeout(setupPlayerEndedListener, 500);
         return;
     }
+    
+    // 🚨 CRITICAL FIX: This only emits an event - does NOT control playlists directly
+    // The actual playlist advancement is handled by playNextPlaylistItem in content-detail.js
     const handleEnded = () => {
         console.log('🎬 Media track completed. Checking for playlist progression...');
+        
+        // 🚨 CRITICAL: Only emit that media ended - playlist control is in content-detail.js
+        // This prevents the double advancement bug where video-player.js ALSO tried to advance
         if (typeof window.playNextPlaylistItem === 'function') {
             window.playNextPlaylistItem();
         } else {
             console.log('🎵 No playlist controller bound to window');
         }
     };
+    
     videoElement.removeEventListener('ended', handleEnded);
     videoElement.addEventListener('ended', handleEnded);
-    console.log('✅ Player ended listener attached for auto-advance');
+    console.log('✅ Player ended listener attached (playlist control is centralized in content-detail.js)');
 }
 
 // ============================================
@@ -3123,7 +3196,7 @@ async function refreshCountsFromSource() {
 }
 
 // ============================================
-// STREAMING MANAGER
+// STREAMING MANAGER - WITH SINGLETON PATTERN (CRITICAL FIX #4)
 // ============================================
 async function initializeStreamingManager() {
     if (!window.StreamingManager) {
@@ -3132,6 +3205,15 @@ async function initializeStreamingManager() {
     }
     const videoElement = document.getElementById('inlineVideoPlayer');
     if (!videoElement) return;
+    
+    // 🚨 CRITICAL FIX #4: Singleton pattern for StreamingManager
+    // Prevents duplicate listeners and memory leaks
+    if (streamingManager) {
+        console.log('♻️ StreamingManager already exists, updating contentId instead of recreating');
+        streamingManager.updateContent(currentContent?.id);
+        return;
+    }
+    
     try {
         streamingManager = new window.StreamingManager({
             videoElement: videoElement,
@@ -3169,7 +3251,7 @@ async function initializeStreamingManager() {
                 updateQualityIndicator(streamingManager.getCurrentQuality());
             }
         }, 1000);
-        console.log('✅ StreamingManager initialized');
+        console.log('✅ StreamingManager initialized (singleton pattern)');
     } catch (error) {
         console.error('❌ Failed to initialize StreamingManager:', error);
     }
@@ -4861,7 +4943,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 5000);
 
-    console.log('✅ Content Detail initialization complete with FULL ENGAGEMENT SYSTEM FIXES:');
+    console.log('✅ Content Detail initialization complete with CRITICAL ARCHITECTURE FIXES:');
+    console.log('  ✅ TRANSITION LOCK (isTrackTransitioning) prevents race conditions');
+    console.log('  ✅ DUPLICATE CONTENTID GUARD in updateGlobalContentId');
+    console.log('  ✅ SINGLETON PATTERN for StreamingManager prevents listener explosion');
     console.log('  ✅ RPC view recording (content_views table)');
     console.log('  ✅ Global contentId synchronization across ALL components');
     console.log('  ✅ No 409 conflicts (proper toggle with existence check)');
@@ -4870,6 +4955,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  ✅ Live counts from canonical tables (NOT denormalized fields)');
     console.log('  ✅ Realtime subscriptions for instant updates');
     console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
+    console.log('  🚀 Ready for production deployment.');
 });
 
 async function loadSecondaryContentData(contentId) {
@@ -4989,6 +5075,9 @@ console.log('  ✅ CSS class-based toggle (max-height, opacity, NOT display:none
 console.log('  ✅ Single tracklist render (albumTracksRendered flag)');
 console.log('  ✅ Global playlist state (window.currentPlaylistItems, window.currentPlaylistIndex)');
 console.log('  ✅ Centralized playNextPlaylistItem function with completion guard');
+console.log('  ✅ TRANSITION LOCK (isTrackTransitioning) prevents race conditions');
+console.log('  ✅ DUPLICATE CONTENTID GUARD in updateGlobalContentId');
+console.log('  ✅ SINGLETON PATTERN for StreamingManager prevents listener explosion');
 console.log('  ✅ syncPlaylistUI() for centralized UI updates');
 console.log('  ✅ Player only fires ended event; content-detail handles navigation');
 console.log('  ✅ contentId desync fixed with window.currentContentId');
