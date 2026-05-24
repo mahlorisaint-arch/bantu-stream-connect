@@ -140,9 +140,10 @@
 // ============================================
 // 🔥 SURGICAL FIXES (2026-05-24) - Applied from emergency patch:
 // - Fix #1: setupRealtimeSubscriptions - Supabase v2 compatible channel cleanup
-// - Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates
+// - Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates with _forceUpdateEngagementUI
 // - Fix #3: playNextPlaylistItem - Narrow-scope transition lock
 // - Fix #4: REMOVED token abort logic from loadAllEngagementStates (was killing valid requests)
+// - Fix #5: setCurrentContent - Ensures count loads AFTER DOM update with setTimeout
 // ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -298,15 +299,40 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
 }
 
 /**
+ * 🚨 NEW HELPER: Force UI update regardless of state
+ * 🔥 BULLETPROOF FIX #1: Direct DOM manipulation with debug logging
+ */
+function _forceUpdateEngagementUI(counts) {
+    // Update views
+    updateViewsUI(counts.views);
+    
+    // Update likes - DIRECT DOM manipulation to bypass any state issues
+    const likesEl = document.getElementById('likesCount');
+    if (likesEl && counts.likes !== undefined) {
+        const formatted = formatNumber(counts.likes);
+        if (likesEl.textContent !== formatted) {
+            likesEl.textContent = formatted;
+            console.log('🔧 Likes UI forced to:', formatted);
+        }
+    }
+    
+    // Update currentContent cache
+    if (currentContent) {
+        currentContent.views_count = counts.views;
+        currentContent.likes_count = counts.likes;
+    }
+}
+
+/**
  * 🚨 FIX #6: Load LIVE counts from canonical tables (NOT denormalized fields)
  * 🚨 PHASE 7 UPDATE: Now reads from content_engagement_stats as PRIMARY source
- * 🔥 SURGICAL FIX #2: Falls back to direct counting + UPDATES UI IMMEDIATELY
+ * 🔥 BULLETPROOF FIX #1: Force UI update + debug logging + fallback with setTimeout
  */
 async function loadLiveEngagementCounts(contentId) {
     if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
     
     try {
-        // 1️⃣ PRIMARY: Try content_engagement_stats (maintained by backend triggers)
+        // 1️⃣ PRIMARY: Try content_engagement_stats (fast, indexed)
         const { data: stats, error: statsError } = await window.supabaseClient
             .from('content_engagement_stats')
             .select('total_views, total_likes, total_comments')
@@ -314,22 +340,21 @@ async function loadLiveEngagementCounts(contentId) {
             .maybeSingle();
 
         if (!statsError && stats && (stats.total_views !== null || stats.total_likes !== null)) {
-            // ✅ Got valid stats - update UI immediately
             const result = {
                 views: stats.total_views || 0,
                 likes: stats.total_likes || 0,
                 comments: stats.total_comments || 0,
                 shares: 0
             };
-            // Update UI here too for immediate feedback
-            updateViewsUI(result.views);
-            const likesEl = document.getElementById('likesCount');
-            if (likesEl) likesEl.textContent = formatNumber(result.likes);
+            // 🚨 CRITICAL: Update UI IMMEDIATELY with stats
+            _forceUpdateEngagementUI(result);
+            console.log('✅ Counts from stats table:', result);
             return result;
         }
 
-        // 2️⃣ Fallback: Direct count from canonical event tables (content_views, content_likes)
-        console.log('⚠️ Stats row missing, using direct count fallback...');
+        // 2️⃣ Fallback: Direct count from canonical tables (content_views, content_likes)
+        console.log('⚠️ Stats row missing, using direct count fallback for content:', contentId);
+        
         const [viewsRes, likesRes] = await Promise.all([
             window.supabaseClient.from('content_views')
                 .select('*', { count: 'exact', head: true })
@@ -347,15 +372,18 @@ async function loadLiveEngagementCounts(contentId) {
             shares: 0
         };
         
-        // ✅ CRITICAL: Update UI with fallback counts immediately
-        updateViewsUI(result.views);
-        const likesEl = document.getElementById('likesCount');
-        if (likesEl) likesEl.textContent = formatNumber(result.likes);
+        console.log('🔍 Direct count result:', result, '| likesRes.count:', likesRes.count);
+        
+        // 🚨 CRITICAL: Force UI update with small delay to ensure DOM ready
+        setTimeout(() => {
+            _forceUpdateEngagementUI(result);
+            console.log('✅ UI forced update with fallback counts');
+        }, 50);
         
         return result;
     } catch (error) {
         console.error('❌ Failed to load live counts:', error);
-        // Return zeros but DON'T overwrite UI - preserve what's already shown
+        // Return zeros but preserve existing UI
         return { views: 0, likes: 0, comments: 0, shares: 0 };
     }
 }
@@ -629,7 +657,7 @@ function updateGlobalContentId(contentId) {
 
 /**
  * 🚨 FIX #2: Set current content with global ID sync
- * This centralizes content changes and ensures all systems stay in sync
+ * 🔥 BULLETPROOF FIX #2: Ensures count loads AFTER DOM update with setTimeout
  */
 async function setCurrentContent(content, index = null) {
     if (!content) return;
@@ -650,24 +678,35 @@ async function setCurrentContent(content, index = null) {
         window.currentPlaylistIndex = index;
     }
     
-    // Update UI
+    // Update basic UI immediately
     updateContentUI(content);
     
     // Load fresh engagement states for new content (with race protection)
     if (currentUserId) {
-        const states = await loadAllEngagementStates(content.id, currentUserId);
-        updateEngagementUI(states);
+        try {
+            const states = await loadAllEngagementStates(content.id, currentUserId);
+            updateEngagementUI(states);
+        } catch (e) {
+            console.warn('⚠️ Engagement states load failed:', e);
+        }
     }
     
-    // Load live counts from canonical tables
-    const liveCounts = await loadLiveEngagementCounts(content.id);
-    updateViewsUI(liveCounts.views);
-    
-    // Update likes count display
-    const likesCountEl = document.getElementById('likesCount');
-    if (likesCountEl) {
-        likesCountEl.textContent = formatNumber(liveCounts.likes);
-    }
+    // 🔥 BULLETPROOF FIX #2: Load counts AFTER a small delay to ensure DOM is fully rendered
+    // This fixes the "shows 0 then updates" race condition in playlist mode
+    setTimeout(async () => {
+        try {
+            const liveCounts = await loadLiveEngagementCounts(content.id);
+            
+            // Double-check we're still on the same content (playlist may have advanced)
+            if (currentContent?.id === content.id) {
+                // Update UI one more time as safety net
+                _forceUpdateEngagementUI(liveCounts);
+                console.log('✅ Final count sync for content', content.id, ':', liveCounts);
+            }
+        } catch (error) {
+            console.error('❌ Count load failed in setCurrentContent:', error);
+        }
+    }, 100); // Small delay ensures DOM is ready
     
     // Update favorites count display
     const favCountEl = document.getElementById('favoritesCount');
@@ -4972,9 +5011,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  ✅ Live counts from canonical tables (content_engagement_stats)');
     console.log('  ✅ Realtime subscriptions for content_engagement_stats updates (NO "drops to 0" bug)');
     console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
-    console.log('  🔥 SURGICAL FIXES APPLIED:');
-    console.log('    🔥 Fix #1: setupRealtimeSubscriptions - Supabase v2 compatible');
-    console.log('    🔥 Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates');
+    console.log('  🔥 BULLETPROOF FIXES APPLIED (2026-05-24):');
+    console.log('    🔥 Fix #1: loadLiveEngagementCounts - Force UI update + debug logging + _forceUpdateEngagementUI');
+    console.log('    🔥 Fix #2: setCurrentContent - Ensures count loads AFTER DOM update with setTimeout');
     console.log('    🔥 Fix #3: playNextPlaylistItem - Narrow-scope transition lock');
     console.log('    🔥 Fix #4: REMOVED token abort logic from loadAllEngagementStates');
     console.log('  🚀 Ready for production deployment.');
@@ -5111,5 +5150,8 @@ console.log('  ✅ Optimistic UI updates with server reconciliation');
 console.log('  ✅ Live counts from canonical tables (content_engagement_stats)');
 console.log('  ✅ Realtime subscriptions for content_engagement_stats updates (NO "drops to 0" bug)');
 console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
-console.log('  🔥 SURGICAL FIXES (2026-05-24) - Applied from emergency patch');
+console.log('  🔥 BULLETPROOF FIXES (2026-05-24) - Applied from emergency patch:');
+console.log('    🔥 _forceUpdateEngagementUI() - Direct DOM manipulation helper');
+console.log('    🔥 loadLiveEngagementCounts() - Force UI update + debug logging');
+console.log('    🔥 setCurrentContent() - setTimeout + double-check safety net');
 console.log('  🚀 Ready for production deployment.');
