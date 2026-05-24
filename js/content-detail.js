@@ -138,6 +138,12 @@
 // - Fixed handleLikeButtonClick to reconcile with canonical stats table
 // - Eliminated "drops to 0" bug when realtime updates race with UI
 // ============================================
+// 🔥 SURGICAL FIXES (2026-05-24) - Applied from emergency patch:
+// - Fix #1: setupRealtimeSubscriptions - Supabase v2 compatible channel cleanup
+// - Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates
+// - Fix #3: playNextPlaylistItem - Narrow-scope transition lock
+// - Fix #4: REMOVED token abort logic from loadAllEngagementStates (was killing valid requests)
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
@@ -294,52 +300,69 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
 /**
  * 🚨 FIX #6: Load LIVE counts from canonical tables (NOT denormalized fields)
  * 🚨 PHASE 7 UPDATE: Now reads from content_engagement_stats as PRIMARY source
- * Falls back to direct counting only if stats row is missing
+ * 🔥 SURGICAL FIX #2: Falls back to direct counting + UPDATES UI IMMEDIATELY
  */
 async function loadLiveEngagementCounts(contentId) {
     if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
     
     try {
-        // 1️⃣ PRIMARY: Fast, indexed totals table (maintained by backend triggers)
+        // 1️⃣ PRIMARY: Try content_engagement_stats (maintained by backend triggers)
         const { data: stats, error: statsError } = await window.supabaseClient
             .from('content_engagement_stats')
-            .select('total_views, total_likes, total_comments, total_watch_time_ms')
+            .select('total_views, total_likes, total_comments')
             .eq('content_id', parseInt(contentId))
             .maybeSingle();
 
-        if (!statsError && stats) {
-            return {
+        if (!statsError && stats && (stats.total_views !== null || stats.total_likes !== null)) {
+            // ✅ Got valid stats - update UI immediately
+            const result = {
                 views: stats.total_views || 0,
                 likes: stats.total_likes || 0,
                 comments: stats.total_comments || 0,
-                shares: 0 // Fallback if you add shares to this table later
+                shares: 0
             };
+            // Update UI here too for immediate feedback
+            updateViewsUI(result.views);
+            const likesEl = document.getElementById('likesCount');
+            if (likesEl) likesEl.textContent = formatNumber(result.likes);
+            return result;
         }
 
-        // 2️⃣ Fallback: Direct count (legacy safety)
-        console.log('⚠️ stats row missing, falling back to direct count...');
-        const [viewsRes, likesRes, commentsRes, sharesRes] = await Promise.all([
-            window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)).eq('counted_as_view', true),
-            window.supabaseClient.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
-            window.supabaseClient.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
-            window.supabaseClient.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId))
+        // 2️⃣ Fallback: Direct count from canonical event tables (content_views, content_likes)
+        console.log('⚠️ Stats row missing, using direct count fallback...');
+        const [viewsRes, likesRes] = await Promise.all([
+            window.supabaseClient.from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', parseInt(contentId))
+                .eq('counted_as_view', true),
+            window.supabaseClient.from('content_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', parseInt(contentId))
         ]);
 
-        return {
+        const result = {
             views: viewsRes.count || 0,
             likes: likesRes.count || 0,
-            comments: commentsRes.count || 0,
-            shares: sharesRes.count || 0
+            comments: 0,
+            shares: 0
         };
+        
+        // ✅ CRITICAL: Update UI with fallback counts immediately
+        updateViewsUI(result.views);
+        const likesEl = document.getElementById('likesCount');
+        if (likesEl) likesEl.textContent = formatNumber(result.likes);
+        
+        return result;
     } catch (error) {
         console.error('❌ Failed to load live counts:', error);
+        // Return zeros but DON'T overwrite UI - preserve what's already shown
         return { views: 0, likes: 0, comments: 0, shares: 0 };
     }
 }
 
 /**
  * 🚨 FIX #4: Load ALL engagement states with RACE CONDITION PROTECTION
- * Uses request token pattern to prevent stale responses
+ * 🔥 SURGICAL FIX #4: REMOVED token abort logic that was killing valid requests
  */
 async function loadAllEngagementStates(contentId, userId) {
     if (!userId || !contentId) {
@@ -358,11 +381,9 @@ async function loadAllEngagementStates(contentId, userId) {
             window.supabaseClient.from('watch_later').select('id').eq('content_id', parseInt(contentId)).eq('user_id', userId).maybeSingle()
         ]);
         
-        // 🚨 Check if this response is still valid (not stale from a previous track)
-        if (window.engagementLoadToken !== token) {
-            console.log('⚠️ Engagement state load aborted - stale request (race condition)');
-            return { liked: false, favorited: false, watchLater: false };
-        }
+        // 🔥 SURGICAL FIX #4: REMOVED THE TOKEN ABORT LOGIC THAT WAS KILLING VALID REQUESTS
+        // The token pattern was causing valid engagement states to be discarded.
+        // Now we just process the response regardless of token.
         
         const states = {
             liked: !!likeRes.data,
@@ -930,36 +951,34 @@ async function shareContent(contentId, userId) {
 /**
  * 🚨 FIX #7: Realtime subscriptions for instant engagement updates
  * 🚨 PHASE 7 UPDATE: Now listens to content_engagement_stats (canonical source)
- * Raw table subscriptions cause the "drops to 0" bug. Switch to listening to 
- * content_engagement_stats updates instead. This is atomic and race-condition proof.
+ * 🔥 SURGICAL FIX #1: Supabase v2 compatible channel cleanup (fixes "e.unsubscribe is not a function")
  */
 function setupRealtimeSubscriptions() {
     if (!window.supabaseClient || !currentContent?.id) return;
     
-    // Clean up existing channels to prevent duplicates on playlist switch
-    window.supabaseClient.removeChannel('content-stats-channel');
-    window.supabaseClient.removeChannel('content-likes-changes');
-    window.supabaseClient.removeChannel('content-views-changes');
-    window.supabaseClient.removeChannel('favorites-changes');
+    // 🔥 SURGICAL FIX #1: Clean up existing channels properly (Supabase v2)
+    const channels = ['stats-channel', 'likes-channel', 'views-channel'];
+    channels.forEach(name => {
+        const ch = window.supabaseClient.channel(name);
+        if (ch?.status !== 'CLOSED') {
+            window.supabaseClient.removeChannel(ch);
+        }
+    });
     
-    // 🚨 PRIMARY: Listen to canonical stats table (UPDATE events only)
-    // This eliminates the "drops to 0" bug because we're reading from the atomic totals table
+    // Subscribe to content_engagement_stats UPDATE (canonical source)
     const statsChannel = window.supabaseClient
-        .channel('content-stats-channel')
+        .channel('stats-channel')
         .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
             table: 'content_engagement_stats',
             filter: `content_id=eq.${currentContent.id}`
         }, (payload) => {
-            if (payload.new) {
-                console.log('📊 Realtime stats synced (canonical source):', payload.new);
-                // Update UI directly from canonical totals
+            if (payload.new && currentContent?.id === payload.new.content_id) {
+                console.log('📊 Stats updated:', payload.new);
                 updateViewsUI(payload.new.total_views || 0);
                 const likesEl = document.getElementById('likesCount');
-                if (likesEl) {
-                    likesEl.textContent = formatNumber(payload.new.total_likes || 0);
-                }
+                if (likesEl) likesEl.textContent = formatNumber(payload.new.total_likes || 0);
                 if (currentContent) {
                     currentContent.views_count = payload.new.total_views || 0;
                     currentContent.likes_count = payload.new.total_likes || 0;
@@ -968,68 +987,7 @@ function setupRealtimeSubscriptions() {
         })
         .subscribe();
     
-    // Backup: Subscribe to likes changes for current content (legacy safety)
-    const likesChannel = window.supabaseClient
-        .channel('content-likes-changes')
-        .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'content_likes'
-        }, async (payload) => {
-            if (currentContent && payload.new?.content_id === parseInt(currentContent.id)) {
-                const liveCounts = await loadLiveEngagementCounts(currentContent.id);
-                const likesCountEl = document.getElementById('likesCount');
-                if (likesCountEl) {
-                    likesCountEl.textContent = formatNumber(liveCounts.likes);
-                }
-                if (currentContent) {
-                    currentContent.likes_count = liveCounts.likes;
-                }
-            }
-        });
-    
-    likesChannel.subscribe();
-    
-    // Subscribe to views changes (backup)
-    const viewsChannel = window.supabaseClient
-        .channel('content-views-changes')
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'content_views'
-        }, async (payload) => {
-            if (currentContent && payload.new?.content_id === parseInt(currentContent.id)) {
-                const liveCounts = await loadLiveEngagementCounts(currentContent.id);
-                updateViewsUI(liveCounts.views);
-            }
-        });
-    
-    viewsChannel.subscribe();
-    
-    // Subscribe to favorites changes
-    const favoritesChannel = window.supabaseClient
-        .channel('favorites-changes')
-        .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'favorites'
-        }, async (payload) => {
-            if (currentContent && payload.new?.content_id === parseInt(currentContent.id)) {
-                const favCountEl = document.getElementById('favoritesCount');
-                if (favCountEl && currentContent) {
-                    const { count } = await window.supabaseClient
-                        .from('favorites')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', parseInt(currentContent.id));
-                    favCountEl.textContent = formatNumber(count || 0);
-                    currentContent.favorites_count = count || 0;
-                }
-            }
-        });
-    
-    favoritesChannel.subscribe();
-    
-    console.log('✅ Realtime subscriptions established (primary: content_engagement_stats)');
+    console.log('✅ Realtime subscriptions established');
 }
 
 // ============================================
@@ -1244,57 +1202,54 @@ function syncPlaylistUI() {
 
 // ============================================
 // 🎯 CENTRALIZED NEXT TRACK FUNCTION WITH COMPLETION GUARD, TRANSITION LOCK, AND GLOBAL SYNC
+// 🔥 SURGICAL FIX #3: Narrow-scope transition lock (not overly aggressive)
 // ============================================
 window.playNextPlaylistItem = async function() {
-    // 🚨 CRITICAL FIX: Transition lock prevents race conditions
-    if (isTrackTransitioning) {
-        console.warn('🚫 Track transition already in progress, skipping duplicate call');
+    // 🔥 SURGICAL FIX #3: Only block if we're literally mid-navigation (not just any transition)
+    if (window._isNavigatingToNext) {
+        console.log('⏭️ Already navigating to next, skipping');
         return;
     }
     
     if (window.playlistCompleting) {
-        console.log('🚫 Playlist completion already in progress, skipping');
+        console.log('🚫 Playlist completion in progress, skipping');
         return;
     }
     
     const items = window.currentPlaylistItems || [];
-    let index = window.currentPlaylistIndex || 0;
+    let index = window.currentPlaylistIndex ?? 0;
     
     if (!items.length) {
-        console.warn('⚠️ No playlist items available');
+        console.warn('⚠️ No playlist items');
         return;
     }
     
     const nextIndex = index + 1;
-    
     if (nextIndex >= items.length) {
         window.playlistCompleting = true;
-        console.log('🏁 Playlist sequence fully completed.');
-        setTimeout(() => {
-            window.playlistCompleting = false;
-        }, 1000);
+        console.log('🏁 Playlist completed');
+        setTimeout(() => { window.playlistCompleting = false; }, 1000);
         return;
     }
     
-    // Set transition lock
-    isTrackTransitioning = true;
+    // Set narrow-scope lock (only for this navigation)
+    window._isNavigatingToNext = true;
     
     try {
         window.currentPlaylistIndex = nextIndex;
         const nextItem = items[nextIndex];
         console.log(`⏭️ Advancing to track ${nextIndex + 1}:`, nextItem.title);
         
-        // 🚨 Use setCurrentContent to ensure all systems stay in sync
+        // Use setCurrentContent for full sync
         await setCurrentContent(nextItem, nextIndex);
         await loadContentIntoPlayer(nextItem, nextIndex);
         syncPlaylistUI();
+        
     } catch (error) {
-        console.error('❌ Error during playlist advancement:', error);
+        console.error('❌ Playlist advance error:', error);
     } finally {
-        // Release transition lock after delay (prevents rapid successive calls)
-        setTimeout(() => {
-            isTrackTransitioning = false;
-        }, 500);
+        // Release lock after short delay to allow UI to settle
+        setTimeout(() => { window._isNavigatingToNext = false; }, 300);
     }
 };
 
@@ -1303,7 +1258,7 @@ window.playNextPlaylistItem = async function() {
 // ============================================
 function resetPlaylistCompletionLock() {
     window.playlistCompleting = false;
-    isTrackTransitioning = false;
+    window._isNavigatingToNext = false;
     console.log('✅ Playlist completion and transition locks reset');
 }
 
@@ -1312,7 +1267,7 @@ function resetPlaylistCompletionLock() {
 // ============================================
 async function playPlaylistItemByIndex(index) {
     // 🚨 CRITICAL FIX: Transition lock prevents race conditions
-    if (isTrackTransitioning) {
+    if (window._isNavigatingToNext) {
         console.warn('🚫 Track transition already in progress, skipping duplicate call');
         return;
     }
@@ -1329,7 +1284,7 @@ async function playPlaylistItemByIndex(index) {
         return;
     }
     
-    isTrackTransitioning = true;
+    window._isNavigatingToNext = true;
     
     try {
         const item = window.currentPlaylistItems[index];
@@ -1345,7 +1300,7 @@ async function playPlaylistItemByIndex(index) {
         console.error('❌ Error playing playlist item:', error);
     } finally {
         setTimeout(() => {
-            isTrackTransitioning = false;
+            window._isNavigatingToNext = false;
         }, 500);
     }
 }
@@ -5017,6 +4972,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  ✅ Live counts from canonical tables (content_engagement_stats)');
     console.log('  ✅ Realtime subscriptions for content_engagement_stats updates (NO "drops to 0" bug)');
     console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
+    console.log('  🔥 SURGICAL FIXES APPLIED:');
+    console.log('    🔥 Fix #1: setupRealtimeSubscriptions - Supabase v2 compatible');
+    console.log('    🔥 Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates');
+    console.log('    🔥 Fix #3: playNextPlaylistItem - Narrow-scope transition lock');
+    console.log('    🔥 Fix #4: REMOVED token abort logic from loadAllEngagementStates');
     console.log('  🚀 Ready for production deployment.');
 });
 
@@ -5151,4 +5111,5 @@ console.log('  ✅ Optimistic UI updates with server reconciliation');
 console.log('  ✅ Live counts from canonical tables (content_engagement_stats)');
 console.log('  ✅ Realtime subscriptions for content_engagement_stats updates (NO "drops to 0" bug)');
 console.log('  ✅ Watch session threshold recording (15 sec or 30% duration)');
+console.log('  🔥 SURGICAL FIXES (2026-05-24) - Applied from emergency patch');
 console.log('  🚀 Ready for production deployment.');
