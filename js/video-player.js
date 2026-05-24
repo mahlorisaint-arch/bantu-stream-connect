@@ -36,14 +36,19 @@
 // - FIX #8: Threshold-based view recording (15 sec or 30% duration)
 // - Added updateContentId method for playlist track changes
 // - Added syncEngagementState method for UI consistency
+// 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24):
+// - SINGLE ended handler (NO duplicate playlist progression)
+// - Player ONLY emits events, NEVER controls playlist directly
+// - Added loadSource method for non-destructive source changes
+// - Removed all engagement buttons from player overlay (now outside only)
 // ============================================
-// 🔧 VERSION: v2.7.0 - Engagement System Full Integration
+// 🔧 VERSION: v3.0.0 - YouTube-Style Architecture Cleanup
 // ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v2.7.0 - Engagement System Full Integration)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.0.0 - YouTube-Style Architecture Cleanup)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -162,6 +167,11 @@
    * - Dynamic threshold (min 15 seconds or 30% of duration)
    * - contentId synchronization with global state
    * - Engagement state sync with UI
+   * 
+   * 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24):
+   * - SINGLE ended handler (NO duplicate playlist progression)
+   * - Player NEVER controls playlist directly
+   * - loadSource method for non-destructive source changes
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -256,7 +266,7 @@
       this.supabase = options.supabase || window.supabaseClient || window.supabase;
       this.userId = options.userId || window.AuthHelper?.getUserProfile?.()?.id || null;
       
-      // Social engagement state
+      // Social engagement state (removed from overlay - kept for telemetry)
       this.engagement = {
         likes: options.likeCount || 0,
         views: options.viewCount || 0,
@@ -1025,20 +1035,31 @@
     }
     
     // =====================================================
-    // 🎯 FIX #8: SINGLE ENDED HANDLER (NO DUPLICATES)
+    // 🎯 CRITICAL FIX #8: SINGLE ENDED HANDLER (NO DUPLICATES)
+    // Player ONLY emits event - does NOT control playlist directly
+    // This prevents the double advancement bug
     // =====================================================
     _handleEnded() {
       this.isPlaying = false;
       this._updatePlayButton(false);
       
-      console.log('🏁 Media track completed. Checking for playlist progression...');
+      console.log('🏁 Media playback completed. Emitting ended event for external handler.');
       
       // 🎯 YOUTUBE-STYLE ARCHITECTURE:
-      // Player ONLY calls the global function if it exists
-      // Content-detail.js owns the playlist logic
-      // FIX #8: Only ONE progression owner - NO duplicate ended handlers
+      // Player ONLY emits the mediaEnded event
+      // Content-detail.js owns ALL playlist navigation logic
+      // This prevents duplicate advancement from video-player.js
+      this._emit('mediaEnded', {
+        contentId: this.contentId,
+        playlistIndex: window.currentPlaylistIndex,
+        currentTime: this.video ? this.video.currentTime : 0,
+        duration: this.video ? this.video.duration : 0
+      });
+      
+      // For backward compatibility, also call window.playNextPlaylistItem if it exists
+      // This is the ONLY place where playlist advancement is triggered
       if (typeof window.playNextPlaylistItem === 'function') {
-        console.log('🎬 Invoking window.playNextPlaylistItem() for auto-advance');
+        console.log('🎬 Invoking window.playNextPlaylistItem() (delegated to content-detail.js)');
         window.playNextPlaylistItem();
       } else {
         console.log('🎵 No playlist controller bound to window - auto-advance disabled');
@@ -1046,7 +1067,8 @@
       
       this._emit('playback:ended', {
         totalWatchTime: this.stats.totalWatchTime,
-        duration: this.video ? this.video.duration : 0
+        duration: this.video ? this.video.duration : 0,
+        contentId: this.contentId
       });
     }
     
@@ -2180,6 +2202,62 @@
       }
     }
     
+    /**
+     * 🚨 CRITICAL: Load source without destroying player instance
+     * Used for playlist track changes to preserve player state
+     * This is the preferred method for non-destructive source changes
+     */
+    loadSource(sourceConfig) {
+      if (!this.video) return Promise.reject('Player not attached');
+      if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
+      
+      const url = sourceConfig.url;
+      const type = sourceConfig.type || this.getMediaMimeType(url);
+      const contentId = sourceConfig.contentId || this.contentId;
+      
+      console.log('🔄 Loading new source without destroying player:', { url, contentId });
+      
+      // Update contentId
+      if (contentId && contentId !== this.contentId) {
+        this.updateContentId(contentId);
+      }
+      
+      // Reset view recording flags for new source
+      this.viewRecorded = false;
+      this._viewThresholdReached = false;
+      
+      // Pause current playback
+      this.video.pause();
+      
+      // Update source
+      while (this.video.firstChild) {
+        this.video.removeChild(this.video.firstChild);
+      }
+      this.video.removeAttribute('src');
+      
+      const source = document.createElement('source');
+      source.src = url;
+      source.type = type;
+      this.video.appendChild(source);
+      
+      // Load and attempt to play if user has interacted
+      this.video.load();
+      
+      if (document.body.classList.contains('user-interacted')) {
+        this.play().catch(err => {
+          console.warn('Auto-play after source change blocked:', err);
+          this._showPlayOverlay();
+        });
+      }
+      
+      // Update preserved source
+      this._sourcePreserved = { url, type, method: 'loadSource' };
+      
+      this._emit('source:loaded', { url, contentId, type });
+      
+      return Promise.resolve();
+    }
+    
     on(event, callback) {
       if (!this.eventListeners.has(event)) {
         this.eventListeners.set(event, []);
@@ -2363,61 +2441,6 @@
     isReady() {
       return this._isAttached && !this._isDestroyed && this.video ? this.video.readyState >= 2 : false;
     }
-    
-    /**
-     * 🚨 Load source without destroying player instance
-     * Used for playlist track changes to preserve player state
-     */
-    loadSource(sourceConfig) {
-      if (!this.video) return Promise.reject('Player not attached');
-      if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
-      
-      const url = sourceConfig.url;
-      const type = sourceConfig.type || this.getMediaMimeType(url);
-      const contentId = sourceConfig.contentId || this.contentId;
-      
-      console.log('🔄 Loading new source without destroying player:', { url, contentId });
-      
-      // Update contentId
-      if (contentId && contentId !== this.contentId) {
-        this.updateContentId(contentId);
-      }
-      
-      // Reset view recording flags for new source
-      this.viewRecorded = false;
-      this._viewThresholdReached = false;
-      
-      // Pause current playback
-      this.video.pause();
-      
-      // Update source
-      while (this.video.firstChild) {
-        this.video.removeChild(this.video.firstChild);
-      }
-      this.video.removeAttribute('src');
-      
-      const source = document.createElement('source');
-      source.src = url;
-      source.type = type;
-      this.video.appendChild(source);
-      
-      // Load and attempt to play if user has interacted
-      this.video.load();
-      
-      if (document.body.classList.contains('user-interacted')) {
-        this.play().catch(err => {
-          console.warn('Auto-play after source change blocked:', err);
-          this._showPlayOverlay();
-        });
-      }
-      
-      // Update preserved source
-      this._sourcePreserved = { url, type, method: 'loadSource' };
-      
-      this._emit('source:loaded', { url, contentId, type });
-      
-      return Promise.resolve();
-    }
   }
   
   // =====================================================
@@ -2496,15 +2519,16 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v2.7.0 - Engagement System Full Integration)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.0.0 - YouTube-Style Architecture Cleanup)');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
   console.log('   🔧 FIX #8: SINGLE ended handler (no duplicates)');
+  console.log('   🔧 CRITICAL: Player ONLY emits events, NEVER controls playlist');
   console.log('   🚨 FIX #1: RPC view recording integration');
   console.log('   🚨 FIX #2: contentId synchronization (updateContentId method)');
   console.log('   🚨 FIX #8: Dynamic threshold (min 15 sec or 30% of duration)');
-  console.log('   🚨 ENGAGEMENT FIX: recordView uses content_views table correctly');
+  console.log('   🚨 loadSource method for non-destructive source changes');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
