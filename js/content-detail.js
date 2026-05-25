@@ -145,6 +145,11 @@
 // - Fix #4: REMOVED token abort logic from loadAllEngagementStates (was killing valid requests)
 // - Fix #5: setCurrentContent - Ensures count loads AFTER DOM update with setTimeout
 // ============================================
+// 🔥 SINGLE MODE FIX (2026-05-25) - Applied from ChatGPT + Gemini:
+// - Fix #1: startPlaybackFromUserGesture - Ensures player container is visible FIRST
+// - Fix #2: Added !window.isPlaylistMode guard to prevent playlist mode interference
+// - Fix #3: DOMContentLoaded initialization for single mode with setTimeout guard
+// ============================================
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
 // ============================================
@@ -1030,37 +1035,74 @@ function setupRealtimeSubscriptions() {
 }
 
 // ============================================
-// 🎯 DIRECT USER GESTURE PLAYBACK - FIX #1
+// 🎯 DIRECT USER GESTURE PLAYBACK - FIX #1 (UPDATED with Gemini protection)
 // ============================================
 const startPlaybackFromUserGesture = async () => {
-    try {
-        const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-        if (!player || !player.video) {
-            console.error('❌ Player instance or native video element not found.');
-            return;
-        }
-        const video = player.video;
-        video.muted = false;
-        video.volume = 1.0;
-        window.userHasInteractedWithMedia = true;
-        document.body.classList.add('user-interacted');
-        await video.play();
-        console.log('🔊 Core playback successfully initiated via direct user gesture.');
-        const overlay = document.getElementById('initialPlayOverlay');
-        if (overlay) overlay.classList.add('hidden');
-    } catch (error) {
-        console.warn('⚠️ Direct unmuted playback failed, attempting safe muted fallback:', error.message);
-        try {
-            const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-            if (player && player.video) {
-                player.video.muted = true;
-                await player.video.play();
-                console.log('✅ Muted fallback playback started');
-            }
-        } catch (fallbackError) {
-            console.error('❌ Fallback media playback completely blocked:', fallbackError);
-        }
+  try {
+    // 🚨 Ensure player container is visible FIRST (fixes single mode)
+    const player = document.getElementById('inlinePlayer');
+    const placeholder = document.getElementById('videoPlaceholder');
+    const heroPoster = document.getElementById('heroPoster');
+    
+    if (player) {
+      player.style.display = 'block';
+      player.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    if (placeholder) placeholder.style.display = 'none';
+    if (heroPoster) heroPoster.style.opacity = '0.3';
+    
+    // Get player instance
+    const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
+    if (!playerInstance || !playerInstance.video) {
+      console.error('❌ Player instance or native video element not found.');
+      return;
+    }
+    
+    const video = playerInstance.video;
+    
+    // --- CRITICAL PROTECTION FOR PLAYLIST MODE ---
+    // Only fall back to global currentContent if we are NOT in a playlist loop.
+    // This blocks single-mode code from hijacking a playlist track change.
+    if (!video.src && !window.isPlaylistMode && currentContent?.file_url) {
+      const fileUrl = getPlayableMediaUrl(currentContent);
+      if (fileUrl) {
+        console.log('🎬 Single Mode Fallback: Loading media source directly.');
+        video.src = fileUrl;
+        video.load();
+      }
+    }
+    
+    // Unlock autoplay
+    video.muted = false;
+    video.volume = 1.0;
+    window.userHasInteractedWithMedia = true;
+    document.body.classList.add('user-interacted');
+    
+    // Play with fallback
+    await video.play().catch(async (err) => {
+      console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
+      video.muted = true;
+      await video.play().catch(fallbackErr => {
+        console.error('❌ Fallback play failed:', fallbackErr);
+        showToast('Playback blocked. Please interact with the page and try again.', 'warning');
+      });
+    });
+    
+    console.log('🔊 Core playback successfully initiated via direct user gesture.');
+    
+    // Hide overlay
+    const overlay = document.getElementById('initialPlayOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    
+    // Initialize watch session if not already done
+    if (currentContent?.id && !watchSession) {
+      initializeWatchSessionOnPlay();
+    }
+    
+  } catch (error) {
+    console.warn('⚠️ Direct playback failed:', error.message);
+    showToast('Unable to start playback. Please try again.', 'error');
+  }
 };
 
 // ============================================
@@ -4961,6 +5003,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 100);
             setTimeout(() => clearInterval(waitForEngine), 5000);
         }
+
+        // 🔥 SINGLE MODE FIX: Ensure player is ready before showing play button (with Gemini protection)
+        if (!isPlaylistMode && currentContent?.id) {
+            setTimeout(() => {
+                const player = document.getElementById('inlinePlayer');
+                const video = document.getElementById('inlineVideoPlayer');
+                if (player && video && !window.enhancedVideoPlayer) {
+                    console.log('🎬 Single Mode Container Detected: Bootstrapping localized media engines...');
+                    initializeEnhancedVideoPlayer();
+                }
+            }, 300);
+        }
+
     } catch (err) {
         console.error('❌ Critical load failed:', err);
         showToast('Failed to load content. Retrying...', 'error');
@@ -5016,6 +5071,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('    🔥 Fix #2: setCurrentContent - Ensures count loads AFTER DOM update with setTimeout');
     console.log('    🔥 Fix #3: playNextPlaylistItem - Narrow-scope transition lock');
     console.log('    🔥 Fix #4: REMOVED token abort logic from loadAllEngagementStates');
+    console.log('  🔥 SINGLE MODE FIXES (2026-05-25):');
+    console.log('    🔥 startPlaybackFromUserGesture - Ensures player container visible FIRST + Gemini playlist protection (!window.isPlaylistMode)');
+    console.log('    🔥 DOMContentLoaded - Single mode player initialization guard with setTimeout and !isPlaylistMode check');
     console.log('  🚀 Ready for production deployment.');
 });
 
@@ -5154,4 +5212,7 @@ console.log('  🔥 BULLETPROOF FIXES (2026-05-24) - Applied from emergency patc
 console.log('    🔥 _forceUpdateEngagementUI() - Direct DOM manipulation helper');
 console.log('    🔥 loadLiveEngagementCounts() - Force UI update + debug logging');
 console.log('    🔥 setCurrentContent() - setTimeout + double-check safety net');
+console.log('  🔥 SINGLE MODE FIXES (2026-05-25) - Applied from ChatGPT + Gemini:');
+console.log('    🔥 startPlaybackFromUserGesture - Player container visibility + !window.isPlaylistMode guard');
+console.log('    🔥 DOMContentLoaded - Single mode player initialization guard');
 console.log('  🚀 Ready for production deployment.');
