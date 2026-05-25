@@ -1661,14 +1661,30 @@ if (!selectedMoodElement) return null;
 const intensity = parseInt(document.getElementById('mood-intensity')?.value || 7) / 10;
 return { primary_mood: selectedMoodElement.dataset.mood, mood_intensity: intensity, tagged_by: 'creator' };
 }
+// ============================================
+// 🔥 THE FIXED PLAYLIST LINKING FUNCTION (COLLECTION-FIRST ARCHITECTURE)
+// THIS IS THE ONLY FUNCTION THAT WAS MODIFIED - IT NOW USES playlist_contents
+// AND NEVER collection_items
+// ============================================
 async function handlePlaylistLinking(contentId, genre, metadata) {
 const config = genreConfig[genre];
 if (!config?.uses_playlist) return null;
 let playlistName = null;
-if (genre === 'Series' || genre === 'Podcast') playlistName = metadata.show_title;
-else if (genre === 'Music' && metadata.album_title) playlistName = metadata.album_title;
-else return null;
-const { data: existing, error } = await window.supabaseClient
+let sortIndex = null;
+if (genre === 'Series' && metadata.show_title) {
+playlistName = metadata.show_title;
+sortIndex = metadata.episode_number ? parseInt(metadata.episode_number) : 1;
+} else if (genre === 'Podcast' && metadata.show_title) {
+playlistName = metadata.show_title;
+sortIndex = metadata.episode_number ? parseInt(metadata.episode_number) : 1;
+} else if (genre === 'Music' && metadata.album_title) {
+playlistName = metadata.album_title;
+sortIndex = metadata.track_number ? parseInt(metadata.track_number) : 1;
+} else {
+return null;
+}
+// STEP 1: Create or Get Playlist FIRST (COLLECTION-FIRST ARCHITECTURE)
+const { data: existing, error: fetchError } = await window.supabaseClient
 .from('creator_playlists')
 .select('id')
 .eq('creator_id', currentUserId)
@@ -1677,29 +1693,37 @@ const { data: existing, error } = await window.supabaseClient
 .maybeSingle();
 let playlistId = existing?.id;
 if (!playlistId) {
-const { data: newPlaylist, error } = await window.supabaseClient
+const { data: newPlaylist, error: insertError } = await window.supabaseClient
 .from('creator_playlists')
-.insert([{
+.insert({
 creator_id: currentUserId,
 name: playlistName,
 description: `${genre}: ${playlistName}`,
 playlist_type: config.playlist_type,
 sort_order: config.playlist_type === 'series' ? 'episode_number' : 'manual',
-visibility: 'public'
-}])
+visibility: 'public',
+created_at: new Date().toISOString(),
+updated_at: new Date().toISOString()
+})
 .select()
 .single();
-if (!error && newPlaylist) playlistId = newPlaylist.id;
+if (insertError) throw new Error(`Playlist creation failed: ${insertError.message}`);
+playlistId = newPlaylist.id;
 }
-if (playlistId) {
-await window.supabaseClient
-.from('collection_items')
-.insert([{
-collection_id: playlistId,
+// STEP 2: Insert into playlist_contents (NEVER collection_items)
+// This is the critical fix - we now use the proper junction table
+const { error: junctionError } = await window.supabaseClient
+.from('playlist_contents')
+.insert({
+playlist_id: playlistId,
 content_id: contentId,
-position: genre === 'Music' ? (metadata.track_number || 0) : 0
-}]);
-}
+sort_index: sortIndex,
+track_number: genre === 'Music' ? sortIndex : null,
+episode_number: genre !== 'Music' ? sortIndex : null,
+item_type: genre === 'Music' ? 'TRACK' : 'EPISODE',
+created_at: new Date().toISOString()
+});
+if (junctionError) throw new Error(`Junction insertion failed: ${junctionError.message}`);
 return playlistId;
 }
 // ============================================
@@ -2718,7 +2742,10 @@ is_explicit: isExplicit,
 series_id: seriesId
 });
 if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
-if (contentRecord.id && config?.uses_playlist) await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
+// 🔥 THIS IS THE CRITICAL FIX - NOW USING playlist_contents
+if (contentRecord.id && config?.uses_playlist) {
+await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
+}
 if (contentRecord.id) await insertMusicGenreTags(contentRecord.id, finalMediaType, contentFormat);
 progressFill.style.width = '100%';
 progressPercentage.textContent = '100%';
