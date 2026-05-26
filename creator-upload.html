@@ -1621,7 +1621,7 @@ show_title: document.getElementById('field-show_title')?.value || null,
 season_number: document.getElementById('field-season_number')?.value ? parseInt(document.getElementById('field-season_number').value) : null,
 episode_number: document.getElementById('field-episode_number')?.value ? parseInt(document.getElementById('field-episode_number').value) : null,
 episode_title: document.getElementById('field-episode_title')?.value || null,
-guest_names: [], // Would need tags input implementation
+guest_names: [],
 explicit: document.getElementById('field-explicit')?.checked || false,
 category: document.getElementById('field-category')?.value || null,
 language: document.getElementById('field-language')?.value || 'English',
@@ -1633,7 +1633,6 @@ const genre = document.getElementById('content-genre').value;
 const config = genreConfig[genre];
 const metadata = {};
 if (!config) return metadata;
-// 🔥 PODCAST-SPECIFIC HANDLING
 if (config.isPodcastContent) {
 return collectPodcastMetadata();
 }
@@ -1641,7 +1640,6 @@ config.fields.forEach(field => {
 const element = document.getElementById(`field-${field.name}`);
 if (!element) return;
 if (field.type === 'tags') {
-// For music tags (existing system)
 const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
 metadata[field.name] = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
 } else if (field.type === 'checkbox') {
@@ -1663,8 +1661,6 @@ return { primary_mood: selectedMoodElement.dataset.mood, mood_intensity: intensi
 }
 // ============================================
 // 🔥 THE FIXED PLAYLIST LINKING FUNCTION (COLLECTION-FIRST ARCHITECTURE)
-// THIS IS THE ONLY FUNCTION THAT WAS MODIFIED - IT NOW USES playlist_contents
-// AND NEVER collection_items
 // ============================================
 async function handlePlaylistLinking(contentId, genre, metadata) {
 const config = genreConfig[genre];
@@ -1683,7 +1679,7 @@ sortIndex = metadata.track_number ? parseInt(metadata.track_number) : 1;
 } else {
 return null;
 }
-// STEP 1: Create or Get Playlist FIRST (COLLECTION-FIRST ARCHITECTURE)
+// STEP 1: Create or Get Playlist FIRST
 const { data: existing, error: fetchError } = await window.supabaseClient
 .from('creator_playlists')
 .select('id')
@@ -1711,7 +1707,6 @@ if (insertError) throw new Error(`Playlist creation failed: ${insertError.messag
 playlistId = newPlaylist.id;
 }
 // STEP 2: Insert into playlist_contents (NEVER collection_items)
-// This is the critical fix - we now use the proper junction table
 const { error: junctionError } = await window.supabaseClient
 .from('playlist_contents')
 .insert({
@@ -1726,14 +1721,10 @@ created_at: new Date().toISOString()
 if (junctionError) throw new Error(`Junction insertion failed: ${junctionError.message}`);
 return playlistId;
 }
-// ============================================
-// 🎬 VALIDATE MOVIE METADATA
-// ============================================
 function validateGenreMetadata() {
 const genre = document.getElementById('content-genre').value;
 const config = genreConfig[genre];
 if (!config) return true;
-// 🔥 PODCAST-SPECIFIC VALIDATION
 if (config.isPodcastContent) {
 const podcastMeta = collectPodcastMetadata();
 if (!podcastMeta?.show_title) {
@@ -1758,7 +1749,6 @@ return false;
 }
 return true;
 }
-// 🔥 MOVIE-SPECIFIC VALIDATION
 if (config.isMovieContent) {
 if (selectedGenres.length === 0) {
 showToast('Select at least 1 primary genre', 'error');
@@ -1774,7 +1764,6 @@ return false;
 }
 return true;
 }
-// Existing validation for non-movie content
 let isValid = true;
 for (const field of config.fields) {
 if (field.required) {
@@ -1803,9 +1792,6 @@ break;
 }
 return isValid;
 }
-// ============================================
-// GENRE/TAG LOADING FUNCTIONS (MUSIC - UNTOUCHED)
-// ============================================
 async function loadGenresForUpload() {
 try {
 const { data: genres, error } = await window.supabaseClient
@@ -1930,11 +1916,6 @@ if (explicitGroup) explicitGroup.style.display = isMusic ? 'block' : 'none';
 formatSelect.addEventListener('change', toggleMusicFields);
 toggleMusicFields();
 }
-// ============================================
-// 🎙️ PODCAST UPLOAD FUNCTIONS (NEW - CLEANLY ADDED)
-// ============================================
-
-// Create Podcast Series in creator_playlists
 async function createPodcastSeries(formData) {
 const { data, error } = await window.supabaseClient
 .from('creator_playlists')
@@ -1958,8 +1939,6 @@ host: formData.host || null
 if (error) throw error;
 return data;
 }
-
-// Upload Audio File to Supabase Storage
 async function uploadPodcastAudio(file) {
 const filePath = `podcasts/${currentUserId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
 const { error } = await window.supabaseClient.storage
@@ -1975,8 +1954,6 @@ const { data } = window.supabaseClient.storage
 .getPublicUrl(filePath);
 return data.publicUrl;
 }
-
-// Create Podcast Episode in Content table
 async function createPodcastEpisode({
 title,
 description,
@@ -1995,11 +1972,9 @@ file_url: audioUrl,
 thumbnail_url: thumbnail,
 creator_id: currentUserId,
 user_id: currentUserId,
-// 🔥 CRITICAL FIELDS FOR PODCASTS
 content_type: 'podcast',
 content_format: 'podcast_episode',
 series_id: podcastId,
-// Optional but powerful
 genres: ['Podcast'],
 moods: metadata?.mood ? [metadata.mood] : ['Informative'],
 tags: ['Podcast'],
@@ -2008,7 +1983,6 @@ region: 'Africa',
 language: metadata?.language || 'English',
 duration: duration || 0,
 status: 'published',
-// Podcast-specific metadata
 season_number: metadata?.season_number || null,
 episode_number: metadata?.episode_number || null,
 is_explicit: metadata?.explicit || false
@@ -2018,20 +1992,15 @@ is_explicit: metadata?.explicit || false
 if (error) throw error;
 return data;
 }
-
-// Full Podcast Upload Pipeline
 async function handlePodcastUpload(formData) {
 try {
 showLoading('Uploading podcast...');
-// 1. Create series (if new)
 let podcast = formData.podcastId;
 if (!podcast) {
 const newSeries = await createPodcastSeries(formData);
 podcast = newSeries.id;
 }
-// 2. Upload audio
 const audioUrl = await uploadPodcastAudio(formData.audioFile);
-// 3. Create episode
 const episode = await createPodcastEpisode({
 title: formData.title,
 description: formData.description,
@@ -2042,7 +2011,6 @@ podcastId: podcast,
 metadata: formData.metadata
 });
 showToast('Podcast uploaded successfully 🚀', 'success');
-// Redirect to podcast page
 window.location.href = `podcast-detail.html?id=${podcast}`;
 } catch (err) {
 console.error(err);
@@ -2051,8 +2019,6 @@ showToast('Upload failed: ' + (err.message || 'Unknown error'), 'error');
 hideLoading();
 }
 }
-
-// Auto-detect audio duration (PRO LEVEL)
 function getAudioDuration(file) {
 return new Promise((resolve) => {
 const audio = document.createElement('audio');
@@ -2069,12 +2035,6 @@ resolve(0);
 });
 });
 }
-
-// ============================================
-// 📰 NEWS UPLOAD FUNCTIONS (NEW - INTEGRATED)
-// ============================================
-
-// Build structured article body from textarea input
 function buildArticleBody(text) {
 if (!text) return [];
 return text.split('\n')
@@ -2084,15 +2044,11 @@ text: p.trim()
 }))
 .filter(p => p.text && p.text.length > 0);
 }
-
-// Estimate read time based on word count (avg 200 words/min)
 function estimateReadTime(text) {
 if (!text) return 3;
 const words = text.split(/\s+/).filter(w => w.length > 0).length;
 return Math.max(1, Math.ceil(words / 200));
 }
-
-// Check if user is verified journalist
 async function isUserJournalist(userId) {
 if (!userId) return false;
 try {
@@ -2107,8 +2063,6 @@ console.error('Journalist check error:', error);
 return false;
 }
 }
-
-// Collect news-specific metadata
 function collectNewsMetadata() {
 return {
 source_name: document.getElementById('news-source')?.value?.trim() || null,
@@ -2117,8 +2071,6 @@ read_time: parseInt(document.getElementById('read-time')?.value) || null,
 is_breaking: document.getElementById('is-breaking')?.checked || false
 };
 }
-
-// Validate news-specific fields
 function validateNewsFields() {
 const source = document.getElementById('news-source')?.value?.trim();
 const category = document.getElementById('news-category')?.value;
@@ -2137,10 +2089,6 @@ return false;
 }
 return true;
 }
-
-// ============================================
-// MEDIA FUNCTIONS (UNCHANGED)
-// ============================================
 function extractMediaDuration(file) {
 return new Promise((resolve, reject) => {
 const media = document.createElement(file.type.includes('audio') ? 'audio' : 'video');
@@ -2329,7 +2277,8 @@ lastLoadedBytes = 0;
 lastUpdateTime = 0;
 }
 // ============================================
-// 🎬 THE FIXED INSERT LOGIC - MOVIE PATH SEPARATE FROM MUSIC & PODCAST
+// 🔥 CRITICAL FIX: THE createContentRecord FUNCTION
+// EXPLICITLY DELETES series_id BEFORE SENDING TO SUPABASE
 // ============================================
 async function createContentRecord(data) {
 const genre = document.getElementById('content-genre').value;
@@ -2337,7 +2286,7 @@ const config = genreConfig[genre];
 const isMovieContent = config?.isMovieContent || false;
 const isPodcastContent = config?.isPodcastContent || false;
 const isNewsContent = selectedMediaType === 'news';
-// 🔥 NEWS-SPECIFIC PAYLOAD (NEW SYSTEM)
+// NEWS-SPECIFIC PAYLOAD
 if (isNewsContent) {
 const newsMeta = collectNewsMetadata();
 const rawBody = document.getElementById('article-body')?.value || '';
@@ -2362,14 +2311,12 @@ is_breaking: newsMeta.is_breaking
 content_format: 'long_form',
 chapters: null,
 duration: null,
-series_id: null,
 primary_genre_id: null,
 language_code: null,
 city: null,
 tempo: null,
 key_signature: null,
 is_explicit: false,
-// 📰 NEW NEWS SYSTEM FIELDS
 content_type: 'news',
 genres: ['News'],
 sa_genres: [],
@@ -2380,22 +2327,21 @@ country: 'South Africa',
 region: 'Africa',
 is_bantu_original: false,
 completion_rate: 0,
-// News article specific
 source_name: newsMeta.source_name,
 read_time: estimatedReadTime,
 is_breaking: newsMeta.is_breaking,
 article_body: buildArticleBody(rawBody)
 };
+// 🔥 CRITICAL: Remove series_id if it somehow exists
+delete contentData.series_id;
 const sanitizedData = sanitizeForSupabase(contentData);
-console.log('=== NEWS UPLOAD OBJECT ===');
-console.log('content_type:', sanitizedData.content_type);
-console.log('content_format:', sanitizedData.content_format);
-console.log('article_body preview:', sanitizedData.article_body?.slice(0, 2));
-const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+console.log('=== NEWS UPLOAD OBJECT (NO series_id) ===');
+console.log('Keys:', Object.keys(sanitizedData));
+const { data: result, error } = await window.supabaseClient.from('Content').insert(sanitizedData).select();
 if (error) throw error;
 return result[0];
 }
-// 🔥 PODCAST-SPECIFIC PAYLOAD (NEW SYSTEM)
+// PODCAST-SPECIFIC PAYLOAD
 if (isPodcastContent) {
 const podcastMeta = collectPodcastMetadata();
 const contentData = {
@@ -2414,15 +2360,12 @@ content_metadata: {},
 content_format: data.content_format || 'podcast_episode',
 chapters: data.chapters || [],
 duration: data.duration !== undefined ? data.duration : null,
-// 🔥 CRITICAL FIX: REMOVED series_id FROM HERE
-// Series relationships are handled by playlist_contents, NOT a column on Content
 primary_genre_id: null,
 language_code: podcastMeta?.language || null,
 city: null,
 tempo: null,
 key_signature: null,
 is_explicit: podcastMeta?.explicit || false,
-// 🎙️ NEW PODCAST SYSTEM FIELDS
 content_type: 'podcast',
 genres: ['Podcast'],
 sa_genres: [],
@@ -2433,20 +2376,19 @@ country: podcastMeta?.country || 'South Africa',
 region: 'Africa',
 is_bantu_original: false,
 completion_rate: 0,
-// Podcast episode metadata
 season_number: podcastMeta?.season_number || null,
 episode_number: podcastMeta?.episode_number || null
 };
+// 🔥 CRITICAL: Remove series_id if it somehow exists
+delete contentData.series_id;
 const sanitizedData = sanitizeForSupabase(contentData);
-console.log('=== PODCAST UPLOAD OBJECT ===');
-console.log('content_type:', sanitizedData.content_type);
-console.log('content_format:', sanitizedData.content_format);
-console.log('series_id NOT included (handled by playlist_contents)');
-const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+console.log('=== PODCAST UPLOAD OBJECT (NO series_id) ===');
+console.log('Keys:', Object.keys(sanitizedData));
+const { data: result, error } = await window.supabaseClient.from('Content').insert(sanitizedData).select();
 if (error) throw error;
 return result[0];
 }
-// 🔥 MOVIE-SPECIFIC PAYLOAD (EXISTING)
+// MOVIE-SPECIFIC PAYLOAD
 if (isMovieContent) {
 const movieMetadata = collectMovieMetadata();
 const contentData = {
@@ -2465,14 +2407,12 @@ content_metadata: {},
 content_format: data.content_format || null,
 chapters: data.chapters || [],
 duration: data.duration !== undefined ? data.duration : null,
-series_id: null,
 primary_genre_id: null,
 language_code: null,
 city: null,
 tempo: null,
 key_signature: null,
 is_explicit: false,
-// 🎬 NEW MOVIE SYSTEM FIELDS
 content_type: 'movie',
 genres: movieMetadata.genres || [],
 sa_genres: movieMetadata.sa_genres || [],
@@ -2488,17 +2428,16 @@ if (data.content_format === 'series_episode') {
 contentData.season_number = data.season_number || null;
 contentData.episode_number = data.episode_number || null;
 }
+// 🔥 CRITICAL: Remove series_id if it somehow exists
+delete contentData.series_id;
 const sanitizedData = sanitizeForSupabase(contentData);
-console.log('=== MOVIE UPLOAD OBJECT ===');
-console.log('content_type:', sanitizedData.content_type);
-console.log('genres:', sanitizedData.genres);
-console.log('sa_genres:', sanitizedData.sa_genres);
-console.log('country/region:', sanitizedData.country, sanitizedData.region);
-const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+console.log('=== MOVIE UPLOAD OBJECT (NO series_id) ===');
+console.log('Keys:', Object.keys(sanitizedData));
+const { data: result, error } = await window.supabaseClient.from('Content').insert(sanitizedData).select();
 if (error) throw error;
 return result[0];
 }
-// 🔥 MUSIC/OTHER PATH (EXISTING SYSTEM - UNTOUCHED)
+// MUSIC/OTHER PATH
 const cleanedMetadata = data.content_metadata ? cleanContentMetadata(data.content_metadata) : {};
 const contentData = {
 title: data.title || null,
@@ -2516,7 +2455,6 @@ content_metadata: cleanedMetadata,
 content_format: data.content_format || null,
 chapters: data.chapters || [],
 duration: data.duration !== undefined ? data.duration : null,
-series_id: null,
 primary_genre_id: data.primary_genre_id || null,
 language_code: data.language_code || null,
 city: data.city || null,
@@ -2528,11 +2466,12 @@ if (data.content_format === 'series_episode') {
 contentData.season_number = data.season_number || null;
 contentData.episode_number = data.episode_number || null;
 }
+// 🔥 CRITICAL: Remove series_id if it somehow exists
+delete contentData.series_id;
 const sanitizedData = sanitizeForSupabase(contentData);
-console.log('=== MUSIC/OTHER UPLOAD OBJECT (UNCHANGED) ===');
-console.log('primary_genre_id:', sanitizedData.primary_genre_id);
-console.log('content_metadata:', sanitizedData.content_metadata);
-const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
+console.log('=== MUSIC/OTHER UPLOAD OBJECT (NO series_id) ===');
+console.log('Keys:', Object.keys(sanitizedData));
+const { data: result, error } = await window.supabaseClient.from('Content').insert(sanitizedData).select();
 if (error) throw error;
 return result[0];
 }
@@ -2546,7 +2485,6 @@ tagged_by: moodData.tagged_by
 }]);
 }
 async function insertMusicGenreTags(contentId, mediaType, contentFormat) {
-// 🔥 ONLY RUN FOR MUSIC CONTENT
 const isMusic = contentFormat === 'music' || contentFormat === 'music_video';
 if (!isMusic) return;
 const selectedGenreId = document.getElementById('music-genre')?.value || null;
@@ -2600,15 +2538,12 @@ if (!currentUserId) { showToast('Please sign in to upload content'); authModal.c
 const title = document.getElementById('content-title').value.trim();
 const desc = document.getElementById('content-description').value.trim();
 const genre = document.getElementById('content-genre').value;
-// 🔥 NEWS-SPECIFIC VALIDATION
 if (selectedMediaType === 'news') {
-// Check if user is verified journalist
 const isJournalist = await isUserJournalist(currentUserId);
 if (!isJournalist) {
 showToast('Only verified journalists can publish news articles', 'error');
 return;
 }
-// Validate news fields
 if (!validateNewsFields()) {
 showToast('Please fill all required news fields', 'error');
 return;
@@ -2640,7 +2575,6 @@ let finalMediaType = selectedMediaType === 'news' ? 'article' : (selectedMediaFi
 if (selectedMediaType === 'short') finalMediaType = 'short';
 if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') finalMediaType = 'video';
 let contentFormat = selectedMediaType === 'news' ? 'long_form' : (document.getElementById('content_format')?.value || config?.content_format || (selectedMediaType === 'short' ? 'short' : 'long_form'));
-// 🔥 NEWS UPLOAD PATH (no media file upload needed)
 if (selectedMediaType === 'news') {
 progressText.textContent = 'Creating news article...';
 const contentRecord = await createContentRecord({
@@ -2662,14 +2596,11 @@ language_code: null,
 city: null,
 tempo: null,
 key_signature: null,
-is_explicit: false,
-series_id: null
+is_explicit: false
 });
-// Redirect to news detail page
 window.location.href = `news-detail.html?id=${contentRecord.id}`;
 return;
 }
-// 🔥 REGULAR MEDIA UPLOAD PATH
 progressText.textContent = 'Uploading media file...';
 const mediaUrl = await uploadFileWithProgress(selectedMediaFile, 'content-media', 'media', (l, t) => updateProgress(l, t));
 let thumbnailUrl = null;
@@ -2685,11 +2616,8 @@ const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
 const tempo = document.getElementById('tempo')?.value || null;
 const keySignature = document.getElementById('key_signature')?.value || null;
 const isExplicit = document.getElementById('is_explicit')?.checked || false;
-// 🔥 PODCAST SERIES HANDLING - We still create the series in creator_playlists,
-// but we DO NOT pass series_id to the Content table
-let seriesIdForPlaylist = null;
+// Series handling - stored ONLY in playlist_contents, NOT in Content table
 if (config?.isPodcastContent && contentMetadata?.show_title) {
-// Check if series exists, or create new one
 const { data: existingSeries } = await window.supabaseClient
 .from('creator_playlists')
 .select('id')
@@ -2697,11 +2625,8 @@ const { data: existingSeries } = await window.supabaseClient
 .eq('name', contentMetadata.show_title)
 .eq('playlist_type', 'podcast')
 .maybeSingle();
-if (existingSeries) {
-seriesIdForPlaylist = existingSeries.id;
-} else {
-// Create new podcast series
-const { data: newSeries } = await window.supabaseClient
+if (!existingSeries) {
+await window.supabaseClient
 .from('creator_playlists')
 .insert({
 creator_id: currentUserId,
@@ -2715,14 +2640,10 @@ category: contentMetadata.category,
 language: contentMetadata.language,
 country: contentMetadata.country
 }
-})
-.select()
-.single();
-if (newSeries) seriesIdForPlaylist = newSeries.id;
+});
 }
 }
-// IMPORTANT: We DO NOT pass seriesIdForPlaylist to createContentRecord
-// The Content table has NO series_id column - that's the correct architecture
+// IMPORTANT: Do NOT pass series_id to createContentRecord
 const contentRecord = await createContentRecord({
 title,
 description: desc,
@@ -2743,11 +2664,8 @@ city: cityTag,
 tempo: tempo,
 key_signature: keySignature,
 is_explicit: isExplicit
-// 🔥 CRITICAL: NO series_id field here
 });
 if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
-// 🔥 THIS IS THE CRITICAL FIX - NOW USING playlist_contents
-// The series relationship is stored HERE, not in the Content table
 if (contentRecord.id && config?.uses_playlist) {
 await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
 }
@@ -2798,7 +2716,6 @@ score += 15;
 document.getElementById('check-desc').classList.remove('completed');
 document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
 }
-// News doesn't require media file
 if (selectedMediaType === 'news' || selectedMediaFile) {
 document.getElementById('check-media').classList.add('completed');
 document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
@@ -2824,23 +2741,18 @@ score += 15;
 document.getElementById('check-genre').classList.remove('completed');
 document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
 }
-// 🔥 PODCAST/MOVIE/NEWS-SPECIFIC METADATA CHECK
 const isMovieContent = config?.isMovieContent;
 const isPodcastContent = config?.isPodcastContent;
 const isNews = selectedMediaType === 'news';
 let hasMetadata = false;
 if (isNews) {
-// Check news-specific fields
 hasMetadata = validateNewsFields();
 } else if (isPodcastContent) {
-// Check podcast-specific fields
 const podcastMeta = collectPodcastMetadata();
 hasMetadata = podcastMeta?.show_title && podcastMeta?.category && podcastMeta?.language && podcastMeta?.country;
 } else if (isMovieContent) {
-// Check movie-specific fields
 hasMetadata = selectedGenres.length > 0 && selectedSAGenres.length > 0 && selectedMood;
 } else if (config) {
-// Existing check for non-movie/podcast content
 hasMetadata = config.fields.some(f => {
 if (f.required) {
 const el = document.getElementById(`field-${f.name}`);
@@ -2856,7 +2768,7 @@ return el && el.value;
 return false;
 });
 } else {
-hasMetadata = true; // No config = no extra metadata needed
+hasMetadata = true;
 }
 if (hasMetadata || !config) {
 document.getElementById('check-metadata').classList.add('completed');
@@ -2877,7 +2789,6 @@ const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== nul
 const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
 const metadataValid = isNews ? validateNewsFields() : validateGenreMetadata();
 saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-// News doesn't require media file
 publishBtn.disabled = !title || !desc || (!isNews && !selectedMediaFile) || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
 if (isUploading) {
 publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
@@ -2899,11 +2810,9 @@ mediaName: selectedMediaFile?.name || null,
 hasThumbnail: !!selectedThumbnailFile,
 selectedMood: selectedMood,
 chapters: chapters,
-// Movie-specific
 selectedGenres: [...selectedGenres],
 selectedSAGenres: [...selectedSAGenres],
 movieTags: [...movieTags],
-// News-specific
 newsSource: document.getElementById('news-source')?.value || '',
 newsCategory: document.getElementById('news-category')?.value || '',
 readTime: document.getElementById('read-time')?.value || '3',
@@ -2931,11 +2840,9 @@ if (draft.chapters) {
 chapters = draft.chapters;
 renderChaptersList();
 }
-// Restore movie-specific state
 if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
 if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
 if (draft.movieTags) movieTags = [...draft.movieTags];
-// Restore news-specific state
 if (draft.newsSource) document.getElementById('news-source').value = draft.newsSource;
 if (draft.newsCategory) document.getElementById('news-category').value = draft.newsCategory;
 if (draft.readTime) document.getElementById('read-time').value = draft.readTime;
@@ -2961,13 +2868,10 @@ opt.addEventListener('click', () => {
 document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
 opt.classList.add('selected');
 selectedMediaType = opt.dataset.type;
-// Toggle shorts info
 document.getElementById('shorts-info').classList.toggle('active', selectedMediaType === 'short');
-// 🔥 Toggle news fields
 const newsFields = document.getElementById('news-fields');
 if (selectedMediaType === 'news') {
 newsFields.classList.add('active');
-// Auto-calculate read time when article body changes
 const articleBody = document.getElementById('article-body');
 const readTimeInput = document.getElementById('read-time');
 if (articleBody && readTimeInput) {
@@ -3013,7 +2917,6 @@ saveDraftToLocalStorage();
 });
 });
 document.getElementById('content-genre').addEventListener('change', () => {
-// Reset movie/podcast state when genre changes
 selectedGenres = [];
 selectedSAGenres = [];
 movieTags = [];
