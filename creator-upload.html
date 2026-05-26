@@ -2414,7 +2414,8 @@ content_metadata: {},
 content_format: data.content_format || 'podcast_episode',
 chapters: data.chapters || [],
 duration: data.duration !== undefined ? data.duration : null,
-series_id: data.series_id || null,
+// 🔥 CRITICAL FIX: REMOVED series_id FROM HERE
+// Series relationships are handled by playlist_contents, NOT a column on Content
 primary_genre_id: null,
 language_code: podcastMeta?.language || null,
 city: null,
@@ -2440,7 +2441,7 @@ const sanitizedData = sanitizeForSupabase(contentData);
 console.log('=== PODCAST UPLOAD OBJECT ===');
 console.log('content_type:', sanitizedData.content_type);
 console.log('content_format:', sanitizedData.content_format);
-console.log('series_id:', sanitizedData.series_id);
+console.log('series_id NOT included (handled by playlist_contents)');
 const { data: result, error } = await window.supabaseClient.from('Content').insert([sanitizedData]).select();
 if (error) throw error;
 return result[0];
@@ -2684,8 +2685,9 @@ const cityTag = selectedTags.find(t => t.type === 'city')?.name || null;
 const tempo = document.getElementById('tempo')?.value || null;
 const keySignature = document.getElementById('key_signature')?.value || null;
 const isExplicit = document.getElementById('is_explicit')?.checked || false;
-// 🔥 PODCAST SERIES HANDLING
-let seriesId = null;
+// 🔥 PODCAST SERIES HANDLING - We still create the series in creator_playlists,
+// but we DO NOT pass series_id to the Content table
+let seriesIdForPlaylist = null;
 if (config?.isPodcastContent && contentMetadata?.show_title) {
 // Check if series exists, or create new one
 const { data: existingSeries } = await window.supabaseClient
@@ -2696,7 +2698,7 @@ const { data: existingSeries } = await window.supabaseClient
 .eq('playlist_type', 'podcast')
 .maybeSingle();
 if (existingSeries) {
-seriesId = existingSeries.id;
+seriesIdForPlaylist = existingSeries.id;
 } else {
 // Create new podcast series
 const { data: newSeries } = await window.supabaseClient
@@ -2716,9 +2718,11 @@ country: contentMetadata.country
 })
 .select()
 .single();
-if (newSeries) seriesId = newSeries.id;
+if (newSeries) seriesIdForPlaylist = newSeries.id;
 }
 }
+// IMPORTANT: We DO NOT pass seriesIdForPlaylist to createContentRecord
+// The Content table has NO series_id column - that's the correct architecture
 const contentRecord = await createContentRecord({
 title,
 description: desc,
@@ -2738,11 +2742,12 @@ language_code: languageTag,
 city: cityTag,
 tempo: tempo,
 key_signature: keySignature,
-is_explicit: isExplicit,
-series_id: seriesId
+is_explicit: isExplicit
+// 🔥 CRITICAL: NO series_id field here
 });
 if (moodData && contentRecord.id) await addMoodTags(contentRecord.id, moodData);
 // 🔥 THIS IS THE CRITICAL FIX - NOW USING playlist_contents
+// The series relationship is stored HERE, not in the Content table
 if (contentRecord.id && config?.uses_playlist) {
 await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
 }
