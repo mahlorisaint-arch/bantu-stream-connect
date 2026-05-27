@@ -4,7 +4,7 @@
 // Complete implementation for Search, Analytics, Notifications, Voice Search, Profile */
 // ============================================ */
 
-console.log('📦 Shared Components v3.2 - Complete with all features and fixes...');
+console.log('📦 Shared Components v3.3 - Complete with all features and fixes...');
 
 // ============================================ */
 // GLOBAL VARIABLES */
@@ -19,6 +19,151 @@ window.platformComponents = window.platformComponents || {
     searchDebounceTimer: null,
     voiceRecognition: null,
     analyticsChart: null
+};
+
+// ============================================ */
+// THEME MANAGER - FIXED (AFFECTS ENTIRE PAGE)
+// ============================================ */
+
+const GlobalThemeManager = {
+    themes: ['dark', 'light', 'high-contrast'],
+    currentTheme: 'dark',
+    
+    init() {
+        // Load saved theme
+        const savedTheme = localStorage.getItem('bantu_theme');
+        if (savedTheme && this.themes.includes(savedTheme)) {
+            this.currentTheme = savedTheme;
+        }
+        
+        // Apply theme to entire page
+        this.applyThemeToDocument(this.currentTheme);
+        
+        // Setup theme selector
+        this.setupThemeSelector();
+        
+        console.log('🎨 Global Theme Manager initialized with theme:', this.currentTheme);
+    },
+    
+    applyThemeToDocument(theme) {
+        if (!theme || !this.themes.includes(theme)) {
+            theme = 'dark';
+        }
+        
+        const htmlElement = document.documentElement;
+        
+        // Remove all theme classes
+        this.themes.forEach(t => {
+            htmlElement.classList.remove(`theme-${t}`);
+        });
+        
+        // Add new theme class
+        htmlElement.classList.add(`theme-${theme}`);
+        
+        // Set data attribute for CSS
+        htmlElement.setAttribute('data-theme', theme);
+        
+        // Update meta theme color
+        this.updateMetaThemeColor(theme);
+        
+        // Save to localStorage
+        localStorage.setItem('bantu_theme', theme);
+        
+        this.currentTheme = theme;
+        
+        // Update active buttons
+        this.updateThemeButtons(theme);
+        
+        // Dispatch event
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+        
+        console.log('🎨 Theme applied to entire page:', theme);
+    },
+    
+    updateMetaThemeColor(theme) {
+        let meta = document.querySelector('meta[name="theme-color"]');
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('name', 'theme-color');
+            document.head.appendChild(meta);
+        }
+        
+        const colors = {
+            'dark': '#0A0E12',
+            'light': '#F8FAFC',
+            'high-contrast': '#000000'
+        };
+        
+        meta.setAttribute('content', colors[theme] || '#0A0E12');
+    },
+    
+    updateThemeButtons(theme) {
+        document.querySelectorAll('.theme-option').forEach(option => {
+            if (option.dataset.theme === theme) {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
+    },
+    
+    setupThemeSelector() {
+        const themeSelector = document.getElementById('theme-selector');
+        const themeToggle = document.getElementById('sidebar-theme-toggle');
+        
+        if (!themeSelector) return;
+        
+        // Setup theme options
+        document.querySelectorAll('.theme-option').forEach(option => {
+            const newOption = option.cloneNode(true);
+            option.parentNode?.replaceChild(newOption, option);
+            
+            newOption.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const theme = newOption.dataset.theme;
+                if (theme) {
+                    this.applyThemeToDocument(theme);
+                    themeSelector.classList.remove('active');
+                    if (window.showToast) {
+                        window.showToast(`Theme changed to ${theme}`, 'success');
+                    }
+                }
+            });
+        });
+        
+        // Setup sidebar theme toggle
+        if (themeToggle) {
+            const newToggle = themeToggle.cloneNode(true);
+            themeToggle.parentNode?.replaceChild(newToggle, themeToggle);
+            
+            newToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                themeSelector.classList.toggle('active');
+            });
+        }
+        
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (themeSelector.classList.contains('active') &&
+                !themeSelector.contains(e.target) &&
+                !themeToggle?.contains(e.target)) {
+                themeSelector.classList.remove('active');
+            }
+        });
+        
+        // Close on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && themeSelector.classList.contains('active')) {
+                themeSelector.classList.remove('active');
+            }
+        });
+    },
+    
+    getTheme() {
+        return this.currentTheme;
+    }
 };
 
 // ============================================ */
@@ -1644,7 +1789,7 @@ function setupSidebarScaleControls() {
 }
 
 // ============================================ */
-// THEME MANAGEMENT */
+// THEME MANAGEMENT - FIXED VERSION (AFFECTS ENTIRE PAGE)
 // ============================================ */
 function initThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
@@ -1653,19 +1798,28 @@ function initThemeSelector() {
     if (!themeSelector || !themeToggle) return;
     
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-    applyTheme(savedTheme);
+    applyThemeToDocument(savedTheme);
     
     document.querySelectorAll('.theme-option').forEach(option => {
-        option.onclick = (e) => {
+        const newOption = option.cloneNode(true);
+        option.parentNode?.replaceChild(newOption, option);
+        
+        newOption.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const theme = option.dataset.theme;
-            applyTheme(theme);
-            themeSelector.classList.remove('active');
+            const theme = newOption.dataset.theme;
+            if (theme) {
+                applyThemeToDocument(theme);
+                themeSelector.classList.remove('active');
+                showToast(`Theme changed to ${theme}`, 'success');
+            }
         };
     });
     
-    themeToggle.onclick = (e) => {
+    const newToggle = themeToggle.cloneNode(true);
+    themeToggle.parentNode?.replaceChild(newToggle, themeToggle);
+    
+    newToggle.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         themeSelector.classList.toggle('active');
@@ -1674,13 +1828,13 @@ function initThemeSelector() {
     document.addEventListener('click', (e) => {
         if (themeSelector.classList.contains('active') &&
             !themeSelector.contains(e.target) &&
-            !themeToggle.contains(e.target)) {
+            !newToggle.contains(e.target)) {
             themeSelector.classList.remove('active');
         }
     });
 }
 
-function applyTheme(theme) {
+function applyThemeToDocument(theme) {
     if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
         theme = 'dark';
     }
@@ -1688,6 +1842,18 @@ function applyTheme(theme) {
     const root = document.documentElement;
     root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
     root.classList.add(`theme-${theme}`);
+    root.setAttribute('data-theme', theme);
+    
+    // Update meta theme color
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        document.head.appendChild(meta);
+    }
+    
+    const colors = { dark: '#0A0E12', light: '#F8FAFC', 'high-contrast': '#000000' };
+    meta.setAttribute('content', colors[theme]);
     
     localStorage.setItem('bantu_theme', theme);
     
@@ -1695,9 +1861,10 @@ function applyTheme(theme) {
         option.classList.toggle('active', option.dataset.theme === theme);
     });
     
-    if (window.showToast) {
-        window.showToast(`Theme changed to ${theme}`, 'success');
-    }
+    // Dispatch event for components that need to react
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+    
+    console.log('🎨 Theme applied to entire page:', theme);
 }
 
 // ============================================ */
@@ -1883,6 +2050,9 @@ async function initSharedComponents() {
     
     console.log('🚀 Initializing shared components with complete features...');
     
+    // Setup theme selector FIRST (affects entire page)
+    initThemeSelector();
+    
     // Setup all components
     setupHeaderButtons();
     setupSearchModal();        // COMPLETE with thumbnail fix
@@ -1897,7 +2067,6 @@ async function initSharedComponents() {
     setupProfileDropdown();    // FIXED - no redirect, toggles dropdown
     setupLogout();
     setupAuthListener();
-    initThemeSelector();
     
     // Update profiles with user data
     await updateHeaderProfile();
@@ -1923,6 +2092,7 @@ async function initSharedComponents() {
     window.switchProfile = switchProfile;
     window.createNewProfile = createNewProfile;
     window.markNotificationAsRead = markNotificationAsRead;
+    window.applyThemeToDocument = applyThemeToDocument;
     
     window.platformComponents.initialized = true;
     console.log('✅ Shared components initialized successfully with all features');
@@ -1949,6 +2119,7 @@ if (typeof module !== 'undefined' && module.exports) {
         switchProfile,
         createNewProfile,
         markNotificationAsRead,
-        UIScaleController
+        UIScaleController,
+        applyThemeToDocument
     };
 }
