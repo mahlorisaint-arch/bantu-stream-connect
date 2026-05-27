@@ -1,0 +1,555 @@
+/* ============================================
+   UPCOMING EVENTS - Event Discovery Module
+   ============================================ */
+
+/* Section Container */
+#upcoming-events-section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+
+/* Section Title with Calendar Animation */
+#upcoming-events-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.events-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(29, 78, 216, 0.2));
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    color: var(--warm-gold);
+    margin-left: var(--spacing-sm);
+}
+
+.events-badge i {
+    animation: calendarShake 2s infinite;
+}
+
+@keyframes calendarShake {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(5deg);
+    }
+    75% {
+        transform: rotate(-5deg);
+    }
+}
+
+/* Events Grid */
+.events-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* Event Card */
+.event-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: calc(1.25rem * var(--ui-scale));
+    padding: calc(1.25rem * var(--ui-scale));
+    transition: all 0.3s ease;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.event-card:hover {
+    transform: translateY(calc(-0.3125rem * var(--ui-scale)));
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 calc(0.75rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.3);
+}
+
+/* Event Card Gradient Border Effect */
+.event-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--warm-gold), var(--bantu-blue), var(--warm-gold));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.event-card:hover::before {
+    opacity: 1;
+}
+
+/* Event Header */
+.event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.event-title-section {
+    flex: 1;
+}
+
+.event-title {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+    color: var(--soft-white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.event-title i {
+    color: var(--warm-gold);
+    font-size: var(--icon-md);
+}
+
+/* Event Date Badge */
+.event-date-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    padding: 8px 12px;
+    border-radius: 12px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.event-date-day {
+    font-size: var(--font-xl);
+    font-weight: 700;
+    color: white;
+    line-height: 1;
+}
+
+.event-date-month {
+    font-size: var(--font-xs);
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+}
+
+/* Event Time */
+.event-time {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--warm-gold);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+}
+
+.event-time i {
+    font-size: var(--icon-sm);
+}
+
+/* Event Description */
+.event-description {
+    color: var(--slate-grey);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.5;
+    font-size: var(--font-sm);
+}
+
+/* Event Meta Info */
+.event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.event-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-xs);
+    color: var(--slate-grey);
+}
+
+.event-meta-item i {
+    color: var(--warm-gold);
+    font-size: 12px;
+}
+
+/* Event Tags */
+.event-tags {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-md);
+}
+
+.event-tag {
+    background: rgba(255, 255, 255, 0.08);
+    padding: calc(0.25rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale));
+    border-radius: calc(0.75rem * var(--ui-scale));
+    font-size: var(--font-xs);
+    color: var(--slate-grey);
+    transition: all 0.2s ease;
+}
+
+.event-tag:hover {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warm-gold);
+}
+
+/* Event Actions */
+.event-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.reminder-btn {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid var(--warm-gold);
+    color: var(--warm-gold);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: calc(0.5rem * var(--ui-scale));
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: var(--font-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.reminder-btn:hover {
+    background: rgba(245, 158, 11, 0.3);
+    transform: translateY(-2px);
+}
+
+.reminder-btn.reminder-set {
+    background: var(--warm-gold);
+    color: var(--deep-black);
+}
+
+.details-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--card-border);
+    color: var(--soft-white);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: calc(0.5rem * var(--ui-scale));
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: var(--font-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.details-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Share Event Button */
+.share-event-btn {
+    background: none;
+    border: none;
+    color: var(--slate-grey);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-event-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--warm-gold);
+}
+
+/* Countdown Timer */
+.event-countdown {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-top: var(--spacing-md);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.countdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.countdown-value {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--warm-gold);
+    font-family: 'Orbitron', monospace;
+}
+
+.countdown-label {
+    font-size: 9px;
+    color: var(--slate-grey);
+    text-transform: uppercase;
+}
+
+/* Empty State */
+#no-events {
+    text-align: center;
+    padding: calc(3rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+#no-events .empty-icon {
+    font-size: calc(3rem * var(--ui-scale));
+    color: var(--warm-gold);
+    opacity: 0.5;
+    margin-bottom: var(--spacing-md);
+}
+
+#no-events h3 {
+    font-size: var(--font-lg);
+    margin-bottom: var(--spacing-xs);
+    color: var(--soft-white);
+}
+
+#no-events p {
+    color: var(--slate-grey);
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+#no-events .suggest-btn {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: none;
+    padding: 8px 20px;
+    border-radius: 30px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#no-events .suggest-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Event Skeleton Loading */
+.event-skeleton {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: calc(1.25rem * var(--ui-scale));
+    padding: calc(1.25rem * var(--ui-scale));
+}
+
+.event-skeleton-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+}
+
+.event-skeleton-title {
+    height: 24px;
+    width: 60%;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeletonWave 1.5s infinite;
+    border-radius: 4px;
+}
+
+.event-skeleton-date {
+    height: 50px;
+    width: 60px;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeletonWave 1.5s infinite;
+    border-radius: 12px;
+}
+
+.event-skeleton-line {
+    height: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin-bottom: var(--spacing-sm);
+    width: 100%;
+}
+
+.event-skeleton-line.short {
+    width: 60%;
+}
+
+@keyframes skeletonWave {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .event-card {
+        padding: calc(1rem * var(--ui-scale));
+    }
+    
+    .event-title {
+        font-size: var(--font-base);
+    }
+    
+    .event-date-badge {
+        padding: 4px 8px;
+        min-width: 50px;
+    }
+    
+    .event-date-day {
+        font-size: var(--font-lg);
+    }
+    
+    .event-meta {
+        gap: var(--spacing-sm);
+    }
+    
+    .event-actions {
+        gap: var(--spacing-xs);
+    }
+    
+    .reminder-btn, .details-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-xs);
+    }
+    
+    .events-badge {
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .events-badge {
+        display: none;
+    }
+    
+    .event-header {
+        flex-direction: column;
+    }
+    
+    .event-date-badge {
+        align-self: flex-start;
+        flex-direction: row;
+        gap: 8px;
+        padding: 4px 12px;
+    }
+    
+    .event-date-day {
+        font-size: var(--font-base);
+    }
+    
+    .event-meta {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .event-countdown {
+        width: 100%;
+        justify-content: space-around;
+    }
+}
+
+/* Light Theme */
+.theme-light .event-card {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.theme-light .event-title {
+    color: #1a1a1a;
+}
+
+.theme-light .event-tag {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* High Contrast Theme */
+.theme-high-contrast .event-card {
+    border-width: 2px;
+}
+
+.theme-high-contrast .event-card:hover {
+    border-color: var(--warm-gold);
+}
+
+.theme-high-contrast .reminder-btn {
+    border-width: 2px;
+}
+
+.theme-high-contrast .event-countdown {
+    border: 1px solid var(--soft-white);
+}
+
+/* Event Notification Animation */
+@keyframes eventNotify {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+        color: #F59E0B;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.notify-animation {
+    animation: eventNotify 0.5s ease;
+}
+
+/* Calendar View Toggle */
+.events-view-toggle {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.view-toggle-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--slate-grey);
+}
+
+.view-toggle-btn.active {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+    border-color: transparent;
+}
+
+.view-toggle-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+}
