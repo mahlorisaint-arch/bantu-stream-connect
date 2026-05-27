@@ -1,0 +1,474 @@
+/* ============================================ */
+/* BANTU WAVES: AFRICA RISING SECTION
+   Home Feed Component - Rising African Content
+/* ============================================ */
+
+.bantu-waves-africa-rising {
+    margin-bottom: var(--spacing-2xl, 2rem);
+    position: relative;
+    background: linear-gradient(135deg, rgba(29, 78, 216, 0.05), rgba(245, 158, 11, 0.05));
+    border-radius: var(--radius-2xl, 1.25rem);
+    padding: var(--spacing-lg, 1.5rem);
+}
+
+.bantu-waves-africa-rising .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg, 1.5rem);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.bantu-waves-africa-rising .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: var(--font-xl, 1.25rem);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    background: linear-gradient(135deg, var(--soft-white, #F8FAFC), var(--warm-gold, #F59E0B));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.bantu-waves-africa-rising .section-title i {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: var(--warm-gold, #F59E0B);
+}
+
+.section-subtitle {
+    color: var(--slate-grey, #94A3B8);
+    font-size: var(--font-sm, 0.875rem);
+    margin-left: var(--spacing-md, 1rem);
+}
+
+/* Africa Rising Grid */
+.africa-rising-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-lg, 1.5rem);
+}
+
+/* Africa Rising Card */
+.africa-rising-card {
+    background: var(--card-bg, rgba(15, 23, 42, 0.6));
+    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+    border-radius: var(--radius-xl, 1rem);
+    overflow: hidden;
+    transition: all var(--transition-normal, 0.3s ease);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.africa-rising-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.africa-rising-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--warm-gold, #F59E0B);
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Thumbnail */
+.africa-thumbnail {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+}
+
+.africa-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal, 0.3s ease);
+}
+
+.africa-rising-card:hover .africa-thumbnail img {
+    transform: scale(1.05);
+}
+
+.thumbnail-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-normal, 0.3s ease);
+    z-index: 2;
+}
+
+.africa-rising-card:hover .play-overlay {
+    opacity: 1;
+}
+
+.play-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(245, 158, 11, 0.9);
+    border-radius: var(--radius-full, 9999px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--deep-black, #0A0E12);
+    font-size: var(--icon-lg, 1.5rem);
+    transform: scale(0.8);
+    transition: transform var(--transition-normal, 0.3s ease);
+}
+
+.africa-rising-card:hover .play-icon {
+    transform: scale(1);
+}
+
+/* Badges */
+.duration-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm, 0.375rem);
+    font-size: var(--font-xs, 0.75rem);
+    z-index: 3;
+}
+
+.original-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, var(--warm-gold, #F59E0B), #f97316);
+    padding: 4px 10px;
+    border-radius: var(--radius-full, 9999px);
+    font-size: var(--font-xs, 0.75rem);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 3;
+    color: var(--deep-black, #0A0E12);
+}
+
+.country-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 4px 10px;
+    border-radius: var(--radius-full, 9999px);
+    font-size: var(--font-xs, 0.75rem);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 3;
+}
+
+/* Content Info */
+.africa-info {
+    padding: var(--spacing-md, 1rem);
+}
+
+.content-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: var(--radius-full, 9999px);
+    font-size: var(--font-xs, 0.75rem);
+    margin-bottom: var(--spacing-sm, 0.75rem);
+    text-transform: capitalize;
+}
+
+.africa-title {
+    font-size: var(--font-base, 1rem);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs, 0.5rem);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: var(--soft-white, #F8FAFC);
+}
+
+.africa-creator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs, 0.5rem);
+    margin-bottom: var(--spacing-sm, 0.75rem);
+}
+
+.creator-avatar-small {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full, 9999px);
+    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: var(--font-xs, 0.75rem);
+    font-weight: bold;
+    color: white;
+}
+
+.creator-avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.creator-name {
+    font-size: var(--font-sm, 0.875rem);
+    color: var(--slate-grey, #94A3B8);
+}
+
+.africa-stats {
+    display: flex;
+    gap: var(--spacing-md, 1rem);
+    font-size: var(--font-xs, 0.75rem);
+    color: var(--slate-grey, #94A3B8);
+    margin-bottom: var(--spacing-sm, 0.75rem);
+}
+
+.africa-stats i {
+    margin-right: 4px;
+    font-size: 10px;
+}
+
+.africa-description {
+    font-size: var(--font-xs, 0.75rem);
+    color: var(--slate-grey, #94A3B8);
+    line-height: 1.4;
+    margin-bottom: var(--spacing-md, 1rem);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Actions */
+.africa-actions {
+    display: flex;
+    gap: var(--spacing-sm, 0.75rem);
+    padding-top: var(--spacing-xs, 0.5rem);
+    border-top: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+}
+
+.africa-actions .action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md, 0.5rem);
+    color: var(--slate-grey, #94A3B8);
+    cursor: pointer;
+    transition: all var(--transition-fast, 0.15s ease);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-xs, 0.75rem);
+}
+
+.africa-actions .action-btn:hover {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warm-gold, #F59E0B);
+    transform: translateY(-2px);
+}
+
+.africa-actions .watch-btn {
+    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
+    color: white;
+}
+
+.africa-actions .watch-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Skeleton Loading */
+.skeleton-africa-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-xl, 1rem);
+    overflow: hidden;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-africa-card .skeleton-thumbnail {
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+}
+
+.skeleton-africa-card .skeleton-title {
+    height: 20px;
+    margin: 12px 12px 8px;
+    width: 80%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+}
+
+.skeleton-africa-card .skeleton-creator {
+    height: 16px;
+    margin: 0 12px 8px;
+    width: 60%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+}
+
+.skeleton-africa-card .skeleton-stats {
+    height: 14px;
+    margin: 0 12px 12px;
+    width: 70%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+}
+
+@keyframes skeletonPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+}
+
+/* Empty & Error States */
+.empty-state-africa,
+.error-state-africa {
+    text-align: center;
+    padding: var(--spacing-3xl, 3rem);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-xl, 1rem);
+    grid-column: 1 / -1;
+}
+
+.empty-state-africa i,
+.error-state-africa i {
+    font-size: var(--font-3xl, 1.875rem);
+    color: var(--slate-grey, #94A3B8);
+    margin-bottom: var(--spacing-md, 1rem);
+    opacity: 0.5;
+}
+
+.empty-state-africa h3,
+.error-state-africa h3 {
+    font-size: var(--font-lg, 1.125rem);
+    margin-bottom: var(--spacing-xs, 0.5rem);
+}
+
+.retry-btn {
+    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius-full, 9999px);
+    color: white;
+    font-weight: 600;
+    margin-top: var(--spacing-md, 1rem);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast, 0.15s ease);
+}
+
+.retry-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+/* Theme Adjustments */
+.theme-light .bantu-waves-africa-rising {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(217, 119, 6, 0.05));
+}
+
+.theme-light .africa-rising-card {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.theme-light .africa-actions .action-btn {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .africa-actions .action-btn:hover {
+    background: rgba(217, 119, 6, 0.1);
+}
+
+.theme-high-contrast .africa-rising-card {
+    border-width: 2px;
+}
+
+.theme-high-contrast .original-badge,
+.theme-high-contrast .watch-btn {
+    border: 2px solid var(--border-color);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .bantu-waves-africa-rising {
+        padding: var(--spacing-md, 1rem);
+    }
+    
+    .africa-rising-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md, 1rem);
+    }
+    
+    .africa-info {
+        padding: var(--spacing-sm, 0.75rem);
+    }
+    
+    .africa-stats {
+        gap: var(--spacing-sm, 0.75rem);
+        flex-wrap: wrap;
+    }
+    
+    .section-subtitle {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .africa-actions {
+        flex-wrap: wrap;
+    }
+    
+    .africa-actions .action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
