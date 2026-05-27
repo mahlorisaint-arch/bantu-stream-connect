@@ -1,0 +1,346 @@
+/* ============================================
+   COMMUNITY FAVORITES - Community-Driven Content Module
+   ============================================ */
+
+/* Section Container */
+#community-favorites-section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+
+/* Section Title Icon */
+#community-favorites-section .section-title i {
+    color: var(--warm-gold);
+}
+
+/* Community Badge */
+.community-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245, 158, 11, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    color: var(--warm-gold);
+    margin-left: var(--spacing-sm);
+}
+
+.community-badge i {
+    font-size: 10px;
+}
+
+/* Favorite Indicator Badge */
+.favorite-badge {
+    background: linear-gradient(135deg, #F59E0B, #f97316);
+    color: var(--deep-black);
+    font-weight: 700;
+}
+
+.favorite-badge i {
+    margin-right: 4px;
+}
+
+/* Card Favorite Count Display */
+.card-favorite-count {
+    position: absolute;
+    bottom: var(--spacing-xs);
+    left: var(--spacing-xs);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--warm-gold);
+}
+
+.card-favorite-count i {
+    font-size: 10px;
+}
+
+/* Community Rank Indicator */
+.community-rank {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.community-rank.top-1 {
+    background: linear-gradient(135deg, #F59E0B, #f97316);
+    color: var(--deep-black);
+}
+
+.community-rank.top-2 {
+    background: linear-gradient(135deg, #94A3B8, #64748B);
+    color: white;
+}
+
+.community-rank.top-3 {
+    background: linear-gradient(135deg, #CD7F32, #B87333);
+    color: white;
+}
+
+/* Community Stats Tooltip */
+.community-stats-tooltip {
+    position: relative;
+    cursor: help;
+    margin-left: 8px;
+}
+
+.community-stats-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 10px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 11px;
+    color: var(--slate-grey);
+    text-align: center;
+    pointer-events: none;
+}
+
+.community-stats-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Section Stats Bar */
+.community-favorites-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.community-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.community-stat-item i {
+    color: var(--warm-gold);
+    font-size: var(--icon-md);
+}
+
+.community-stat-item .stat-value {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--soft-white);
+}
+
+.community-stat-item .stat-label {
+    font-size: var(--font-xs);
+    color: var(--slate-grey);
+}
+
+/* Top Favorite Animation */
+@keyframes favoritePop {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+        color: #F59E0B;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.favorite-pop {
+    animation: favoritePop 0.5s ease;
+}
+
+/* Card Hover Enhancement for Community Favorites */
+#community-favorites-grid .content-card {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#community-favorites-grid .content-card:hover {
+    transform: translateY(calc(-0.5rem * var(--ui-scale)));
+    box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
+}
+
+#community-favorites-grid .content-card:hover .favorite-badge {
+    animation: favoritePop 0.5s ease;
+}
+
+/* Connector Badge Special Style for Community Favorites */
+#community-favorites-grid .connector-badge {
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    padding: calc(0.25rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale));
+    border-radius: calc(0.75rem * var(--ui-scale));
+}
+
+/* Empty State */
+#community-favorites-grid .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: calc(3rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+#community-favorites-grid .empty-state .empty-icon {
+    font-size: calc(3rem * var(--ui-scale));
+    color: var(--warm-gold);
+    opacity: 0.5;
+    margin-bottom: var(--spacing-md);
+}
+
+#community-favorites-grid .empty-state h3 {
+    font-size: var(--font-lg);
+    margin-bottom: var(--spacing-xs);
+    color: var(--soft-white);
+}
+
+#community-favorites-grid .empty-state p {
+    color: var(--slate-grey);
+    font-size: var(--font-sm);
+}
+
+/* Loading Skeleton Specific */
+#community-favorites-grid .skeleton-card .skeleton-thumbnail {
+    position: relative;
+}
+
+#community-favorites-grid .skeleton-card .skeleton-thumbnail::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    width: 60px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .community-favorites-stats {
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+    
+    .community-stat-item {
+        gap: 4px;
+    }
+    
+    .community-stat-item i {
+        font-size: var(--icon-sm);
+    }
+    
+    .community-stat-item .stat-value {
+        font-size: var(--font-base);
+    }
+    
+    .community-stat-item .stat-label {
+        font-size: 9px;
+    }
+    
+    .community-badge {
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+    
+    .card-favorite-count {
+        font-size: 8px;
+        padding: 1px 6px;
+    }
+    
+    .community-rank {
+        font-size: 8px;
+        padding: 1px 6px;
+        top: 4px;
+        right: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .community-favorites-stats {
+        display: none;
+    }
+    
+    .community-badge {
+        display: none;
+    }
+}
+
+/* Light Theme */
+.theme-light .community-badge {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.theme-light .card-favorite-count,
+.theme-light .community-rank {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.theme-light .community-stat-item .stat-value {
+    color: #1a1a1a;
+}
+
+/* High Contrast Theme */
+.theme-high-contrast .community-rank.top-1 {
+    background: #ff0000;
+    color: white;
+}
+
+.theme-high-contrast .community-rank.top-2 {
+    background: #666666;
+    color: white;
+}
+
+.theme-high-contrast .community-rank.top-3 {
+    background: #CD7F32;
+    color: black;
+}
+
+.theme-high-contrast .card-favorite-count {
+    border: 1px solid var(--warm-gold);
+}
+
+/* Refresh Animation */
+@keyframes communityRefresh {
+    0% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.community-refreshing {
+    animation: communityRefresh 0.5s ease;
+}
