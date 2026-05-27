@@ -1,0 +1,292 @@
+/* ============================================
+   FOR YOU - Personalized Recommendations Module
+   ============================================ */
+
+/* Section Container */
+#for-you-section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+
+/* Section Title Icon */
+#for-you-section .section-title i {
+    font-size: var(--font-xl);
+    color: var(--bantu-blue);
+}
+
+/* Personalized Badge */
+.personalized-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(29, 78, 216, 0.2), rgba(245, 158, 11, 0.2));
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    color: var(--warm-gold);
+    margin-left: var(--spacing-sm);
+}
+
+.personalized-badge i {
+    font-size: 10px;
+}
+
+/* Recommendation Score Indicator */
+.recommendation-score {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recommendation-score.high {
+    color: #10B981;
+}
+
+.recommendation-score.medium {
+    color: var(--warm-gold);
+}
+
+.recommendation-score.low {
+    color: var(--slate-grey);
+}
+
+/* Genre Tags */
+.genre-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.genre-tag {
+    background: rgba(29, 78, 216, 0.15);
+    border: 1px solid rgba(29, 78, 216, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    color: var(--bantu-blue);
+}
+
+.theme-light .genre-tag {
+    background: rgba(29, 78, 216, 0.1);
+    color: #1D4ED8;
+}
+
+/* Personalization Explanation Tooltip */
+.personalization-tooltip {
+    position: relative;
+    cursor: help;
+    margin-left: 8px;
+}
+
+.personalization-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 250px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 12px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+    color: var(--slate-grey);
+    text-align: center;
+    pointer-events: none;
+}
+
+.personalization-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* For You Card Enhancements */
+#for-you-grid .content-card {
+    position: relative;
+}
+
+#for-you-grid .content-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+    border-radius: var(--card-radius) var(--card-radius) 0 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+}
+
+#for-you-grid .content-card:hover::before {
+    opacity: 1;
+}
+
+/* Recommendation Animation */
+@keyframes recommendGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(29, 78, 216, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(29, 78, 216, 0);
+    }
+}
+
+#for-you-grid .content-card.recommended {
+    animation: recommendGlow 1.5s ease-out;
+}
+
+/* Loading State */
+.for-you-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--slate-grey);
+}
+
+.for-you-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(245, 158, 11, 0.2);
+    border-top-color: var(--warm-gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Empty State with Personalization CTA */
+#for-you-grid .empty-state {
+    text-align: center;
+    padding: calc(3rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+#for-you-grid .empty-state .empty-icon {
+    font-size: calc(3rem * var(--ui-scale));
+    color: var(--warm-gold);
+    opacity: 0.5;
+    margin-bottom: var(--spacing-md);
+}
+
+#for-you-grid .empty-state h3 {
+    font-size: var(--font-lg);
+    margin-bottom: var(--spacing-xs);
+    color: var(--soft-white);
+}
+
+#for-you-grid .empty-state p {
+    color: var(--slate-grey);
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+#for-you-grid .empty-state .action-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#for-you-grid .empty-state .cta-btn {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: none;
+    padding: 8px 20px;
+    border-radius: 30px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#for-you-grid .empty-state .cta-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Skeleton Loading Specific */
+#for-you-grid .skeleton-card .skeleton-thumbnail {
+    position: relative;
+}
+
+#for-you-grid .skeleton-card .skeleton-thumbnail::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 40px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .personalized-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    
+    .genre-tag {
+        font-size: 8px;
+        padding: 1px 6px;
+    }
+    
+    .personalization-tooltip .tooltip-text {
+        width: 200px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .personalized-badge {
+        display: none;
+    }
+}
+
+/* Light Theme */
+.theme-light #for-you-grid .content-card::before {
+    background: linear-gradient(90deg, #2563EB, #D97706);
+}
+
+.theme-light .recommendation-score {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* High Contrast Theme */
+.theme-high-contrast #for-you-grid .content-card {
+    border-width: 2px;
+}
+
+.theme-high-contrast #for-you-grid .content-card::before {
+    height: 4px;
+}
+
+.theme-high-contrast .recommendation-score {
+    border: 1px solid var(--soft-white);
+    background: var(--deep-black);
+}
