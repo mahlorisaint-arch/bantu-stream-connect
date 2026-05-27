@@ -1,0 +1,371 @@
+/* ============================================
+   LIVE NOW - Live Streaming Module
+   ============================================ */
+
+/* Section Container */
+#live-now-section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+
+/* Section Title with Live Indicator */
+#live-now-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239, 68, 68, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    color: #EF4444;
+    margin-left: var(--spacing-sm);
+}
+
+.live-indicator .pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #EF4444;
+    border-radius: 50%;
+    animation: livePulse 1.5s infinite;
+}
+
+@keyframes livePulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* Live Now Badge on Cards */
+.live-badge {
+    background: rgba(239, 68, 68, 0.95);
+    color: white;
+    animation: liveBadgePulse 2s infinite;
+}
+
+.live-badge i {
+    font-size: 10px;
+    margin-right: 4px;
+}
+
+@keyframes liveBadgePulse {
+    0% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    70% {
+        opacity: 0.9;
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+/* Live Stream Card Enhancements */
+#live-streams-grid .content-card {
+    position: relative;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+#live-streams-grid .content-card:hover {
+    border-color: #EF4444;
+    transform: translateY(calc(-0.5rem * var(--ui-scale)));
+}
+
+/* Live Viewer Count */
+.live-viewer-count {
+    position: absolute;
+    bottom: var(--spacing-xs);
+    right: var(--spacing-xs);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--soft-white);
+}
+
+.live-viewer-count i {
+    color: #EF4444;
+    font-size: 8px;
+    animation: viewerPulse 1s infinite;
+}
+
+@keyframes viewerPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Live Stream Duration/Elapsed Time */
+.live-elapsed {
+    position: absolute;
+    top: var(--spacing-xs);
+    right: var(--spacing-xs);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 9px;
+    font-weight: 500;
+    z-index: 4;
+    color: var(--soft-white);
+}
+
+/* Live Chat Preview (on hover) */
+.live-chat-preview {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    padding: 20px 8px 8px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.content-card:hover .live-chat-preview {
+    transform: translateY(0);
+}
+
+.live-chat-message {
+    font-size: 10px;
+    color: var(--soft-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.live-chat-message i {
+    color: var(--warm-gold);
+    margin-right: 4px;
+}
+
+/* Empty State for Live Streams */
+#no-live-streams {
+    text-align: center;
+    padding: calc(3rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+#no-live-streams .empty-icon {
+    font-size: calc(3rem * var(--ui-scale));
+    color: #EF4444;
+    opacity: 0.5;
+    margin-bottom: var(--spacing-md);
+}
+
+#no-live-streams h3 {
+    font-size: var(--font-lg);
+    margin-bottom: var(--spacing-xs);
+    color: var(--soft-white);
+}
+
+#no-live-streams p {
+    color: var(--slate-grey);
+    font-size: var(--font-sm);
+}
+
+#no-live-streams .notify-btn {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 30px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: var(--spacing-md);
+    transition: transform 0.2s ease;
+}
+
+#no-live-streams .notify-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Upcoming Stream Indicator */
+.upcoming-badge {
+    background: rgba(245, 158, 11, 0.9);
+    color: var(--deep-black);
+}
+
+.upcoming-badge i {
+    margin-right: 4px;
+}
+
+/* Live Stream Schedule Tooltip */
+.schedule-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.schedule-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 180px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 10px;
+    color: var(--slate-grey);
+    text-align: center;
+    pointer-events: none;
+}
+
+.schedule-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Skeleton Loading for Live Streams */
+#live-streams-grid .skeleton-card {
+    position: relative;
+}
+
+#live-streams-grid .skeleton-card .skeleton-thumbnail::after {
+    content: 'LIVE';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(239, 68, 68, 0.5);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .live-indicator {
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+    
+    .live-viewer-count {
+        font-size: 8px;
+        padding: 1px 6px;
+    }
+    
+    .live-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .live-indicator {
+        display: none;
+    }
+    
+    .live-chat-preview {
+        display: none;
+    }
+}
+
+/* Light Theme */
+.theme-light .live-viewer-count,
+.theme-light .live-elapsed {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+}
+
+.theme-light .live-badge {
+    background: rgba(239, 68, 68, 0.95);
+}
+
+/* High Contrast Theme */
+.theme-high-contrast .live-badge {
+    border: 1px solid white;
+    background: #ff0000;
+}
+
+.theme-high-contrast .live-viewer-count {
+    border: 1px solid var(--soft-white);
+}
+
+.theme-high-contrast #live-streams-grid .content-card {
+    border-width: 2px;
+}
+
+/* Stream Ended State */
+.stream-ended {
+    position: relative;
+    opacity: 0.7;
+}
+
+.stream-ended::after {
+    content: 'ENDED';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--slate-grey);
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* Notification Bell Animation */
+@keyframes bellRing {
+    0% {
+        transform: rotate(0);
+    }
+    10% {
+        transform: rotate(15deg);
+    }
+    20% {
+        transform: rotate(-10deg);
+    }
+    30% {
+        transform: rotate(5deg);
+    }
+    40% {
+        transform: rotate(-5deg);
+    }
+    50% {
+        transform: rotate(0);
+    }
+    100% {
+        transform: rotate(0);
+    }
+}
+
+.bell-ring {
+    animation: bellRing 1s ease;
+}
