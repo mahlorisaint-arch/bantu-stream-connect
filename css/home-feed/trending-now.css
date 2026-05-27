@@ -1,0 +1,390 @@
+/* ============================================
+   TRENDING NOW - Viral & Popular Content Module
+   ============================================ */
+
+/* Section Container */
+#trending-now-section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+
+/* Section Title with Fire Animation */
+#trending-now-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trending-flame {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    color: var(--warm-gold);
+    margin-left: var(--spacing-sm);
+}
+
+.trending-flame i {
+    animation: flameFlicker 1.5s infinite;
+}
+
+@keyframes flameFlicker {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+        color: #EF4444;
+    }
+}
+
+/* Trending Badge on Cards */
+.trending-badge {
+    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    color: white;
+    font-weight: 700;
+}
+
+.trending-badge i {
+    margin-right: 4px;
+}
+
+/* Trending Rank Indicator */
+.trending-rank {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Orbitron', monospace;
+}
+
+.trending-rank.top-1 {
+    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    color: white;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+}
+
+.trending-rank.top-2 {
+    background: linear-gradient(135deg, #94A3B8, #64748B);
+    color: white;
+}
+
+.trending-rank.top-3 {
+    background: linear-gradient(135deg, #CD7F32, #B87333);
+    color: white;
+}
+
+.trending-rank i {
+    font-size: 12px;
+}
+
+/* Trending Score Indicator */
+.trending-score {
+    position: absolute;
+    bottom: var(--spacing-xs);
+    left: var(--spacing-xs);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 600;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--warm-gold);
+}
+
+.trending-score i {
+    font-size: 8px;
+}
+
+/* Velocity Indicator (Trending Speed) */
+.velocity-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.velocity-up {
+    color: #10B981;
+}
+
+.velocity-up i {
+    animation: arrowUp 0.8s ease infinite;
+}
+
+@keyframes arrowUp {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+.velocity-down {
+    color: #EF4444;
+}
+
+.velocity-down i {
+    animation: arrowDown 0.8s ease infinite;
+}
+
+@keyframes arrowDown {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(2px);
+    }
+}
+
+.velocity-steady {
+    color: var(--slate-grey);
+}
+
+/* Trending Card Enhancements */
+#trending-grid .content-card {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#trending-grid .content-card:hover {
+    transform: translateY(calc(-0.5rem * var(--ui-scale)));
+    box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
+}
+
+#trending-grid .content-card:hover .trending-rank {
+    transform: scale(1.05);
+}
+
+/* Trending Section Stats */
+.trending-stats-bar {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.trending-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.trending-stat-item i {
+    color: var(--warm-gold);
+    font-size: var(--icon-md);
+}
+
+.trending-stat-item .stat-value {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--soft-white);
+}
+
+.trending-stat-item .stat-label {
+    font-size: var(--font-xs);
+    color: var(--slate-grey);
+}
+
+/* Time Period Selector */
+.trending-time-selector {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.time-option {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--slate-grey);
+}
+
+.time-option:hover {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--warm-gold);
+}
+
+.time-option.active {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+    border-color: transparent;
+}
+
+/* Trending Graph Sparkline (on hover) */
+.sparkline-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    z-index: 5;
+    padding: 8px;
+}
+
+.content-card:hover .sparkline-container {
+    transform: translateY(0);
+}
+
+.sparkline {
+    width: 100%;
+    height: 24px;
+}
+
+/* Empty State */
+#trending-grid .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: calc(3rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+#trending-grid .empty-state .empty-icon {
+    font-size: calc(3rem * var(--ui-scale));
+    color: var(--warm-gold);
+    opacity: 0.5;
+    margin-bottom: var(--spacing-md);
+}
+
+/* Loading Skeleton */
+#trending-grid .skeleton-card .skeleton-thumbnail {
+    position: relative;
+}
+
+#trending-grid .skeleton-card .skeleton-thumbnail::after {
+    content: '🔥';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 16px;
+    opacity: 0.3;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .trending-stats-bar {
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+    
+    .trending-stat-item {
+        gap: 4px;
+    }
+    
+    .trending-stat-item i {
+        font-size: var(--icon-sm);
+    }
+    
+    .trending-stat-item .stat-value {
+        font-size: var(--font-base);
+    }
+    
+    .trending-stat-item .stat-label {
+        font-size: 9px;
+    }
+    
+    .trending-rank {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    
+    .trending-flame {
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+    
+    .trending-time-selector {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .trending-stats-bar {
+        display: none;
+    }
+}
+
+/* Light Theme */
+.theme-light .trending-rank {
+    background: rgba(255, 255, 255, 0.9);
+    color: #1a1a1a;
+}
+
+.theme-light .trending-score {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.theme-light .trending-stat-item .stat-value {
+    color: #1a1a1a;
+}
+
+/* High Contrast Theme */
+.theme-high-contrast .trending-rank {
+    border: 1px solid var(--soft-white);
+}
+
+.theme-high-contrast .trending-rank.top-1 {
+    background: #ff0000;
+}
+
+.theme-high-contrast .trending-rank.top-2 {
+    background: #666666;
+}
+
+.theme-high-contrast .trending-rank.top-3 {
+    background: #CD7F32;
+}
+
+/* Pulse Animation for Top Trending */
+@keyframes trendingGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+.trending-pulse {
+    animation: trendingGlow 2s ease-out;
+}
