@@ -1,0 +1,228 @@
+/* ============================================
+   CONTINUE WATCHING - Progress Tracking Module
+   ============================================ */
+
+/* Section Container */
+#continue-watching-section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+
+/* Continue Watching Progress Bar */
+.watch-progress-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 5;
+}
+
+.watch-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warm-gold), #f97316);
+    border-radius: 0 2px 2px 0;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.watch-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.3), 
+        transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Continue Watching Badge */
+.continue-badge {
+    background: rgba(245, 158, 11, 0.95);
+    color: var(--deep-black);
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+}
+
+.continue-badge i {
+    font-size: var(--icon-xs);
+}
+
+/* Resume Time Display */
+.card-meta .resume-time {
+    color: var(--warm-gold);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-meta .resume-time i {
+    font-size: 10px;
+}
+
+.card-meta .progress-percent {
+    color: var(--slate-grey);
+    font-size: var(--font-xs);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 12px;
+}
+
+/* Card Thumbnail Overlay for Continue Watching */
+#continue-watching-section .card-thumbnail {
+    position: relative;
+}
+
+#continue-watching-section .thumbnail-overlay {
+    background: linear-gradient(to bottom, 
+        transparent 30%, 
+        rgba(0, 0, 0, 0.7) 100%);
+}
+
+/* Play Overlay Enhancement */
+#continue-watching-section .play-overlay {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#continue-watching-section .play-icon {
+    width: calc(3.5rem * var(--ui-scale));
+    height: calc(3.5rem * var(--ui-scale));
+    background: rgba(245, 158, 11, 0.9);
+}
+
+/* Specific Card Styles for Continue Watching */
+#continue-watching-grid .content-card {
+    position: relative;
+}
+
+#continue-watching-grid .content-card:hover .watch-progress-bar::after {
+    animation: shimmer 1s infinite;
+}
+
+/* Empty State for Continue Watching */
+#continue-watching-section .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: calc(3rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+}
+
+#continue-watching-section .empty-state .empty-icon {
+    font-size: calc(3rem * var(--ui-scale));
+    color: var(--warm-gold);
+    opacity: 0.5;
+    margin-bottom: var(--spacing-md);
+}
+
+#continue-watching-section .empty-state h3 {
+    font-size: var(--font-lg);
+    margin-bottom: var(--spacing-xs);
+    color: var(--soft-white);
+}
+
+#continue-watching-section .empty-state p {
+    color: var(--slate-grey);
+    font-size: var(--font-sm);
+}
+
+/* Animation for new cards */
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#continue-watching-grid .content-card.visible {
+    animation: slideInFromBottom 0.4s ease forwards;
+}
+
+/* Skeleton Loading Specific */
+#continue-watching-grid .skeleton-card .skeleton-thumbnail {
+    position: relative;
+}
+
+#continue-watching-grid .skeleton-card .skeleton-thumbnail::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 30%;
+    height: 4px;
+    background: rgba(245, 158, 11, 0.3);
+    border-radius: 0 2px 2px 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .watch-progress-container {
+        height: 3px;
+    }
+    
+    #continue-watching-section .play-icon {
+        width: calc(2.5rem * var(--ui-scale));
+        height: calc(2.5rem * var(--ui-scale));
+    }
+    
+    .card-meta .resume-time {
+        font-size: calc(0.625rem * var(--ui-scale));
+    }
+    
+    .card-meta .progress-percent {
+        font-size: calc(0.625rem * var(--ui-scale));
+        padding: 1px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .watch-progress-container {
+        height: 2px;
+    }
+    
+    #continue-watching-section .play-icon {
+        width: calc(2rem * var(--ui-scale));
+        height: calc(2rem * var(--ui-scale));
+        font-size: var(--icon-sm);
+    }
+}
+
+/* Light Theme */
+.theme-light .watch-progress-bar {
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+}
+
+.theme-light .continue-badge {
+    background: rgba(245, 158, 11, 0.95);
+    color: #1a1a1a;
+}
+
+/* High Contrast Theme */
+.theme-high-contrast .watch-progress-container {
+    border: 1px solid var(--warm-gold);
+}
+
+.theme-high-contrast .watch-progress-bar {
+    background: var(--warm-gold);
+}
+
+.theme-high-contrast .continue-badge {
+    border: 1px solid var(--soft-white);
+}
