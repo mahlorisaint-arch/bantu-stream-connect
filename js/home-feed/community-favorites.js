@@ -1,7 +1,10 @@
 /**
  * Community Favorites Module
- * Displays content most loved by the community based on favorites count,
- * with regional preferences and social proof indicators.
+ * Displays content most loved by the community based on engagement metrics,
+ * using content_engagement_stats for likes and shares ordering.
+ * 
+ * UPDATED: Now uses content_engagement_stats table for metrics.
+ * Order: total_likes DESC, total_shares DESC.
  */
 
 const CommunityFavorites = (function() {
@@ -131,12 +134,13 @@ const CommunityFavorites = (function() {
     
     /**
      * Load community statistics
+     * UPDATED: Uses content_engagement_stats for total likes/shares
      */
     async function loadCommunityStats() {
         try {
             if (!window.supabaseAuth) return;
             
-            // Get total favorites across platform
+            // Get total favorites across platform (using favorites_count from Content)
             const { data: favoritesData } = await window.supabaseAuth
                 .from('Content')
                 .select('favorites_count')
@@ -144,12 +148,26 @@ const CommunityFavorites = (function() {
             
             const totalFavorites = favoritesData?.reduce((sum, item) => sum + (item.favorites_count || 0), 0) || 0;
             
+            // Get total likes from content_engagement_stats
+            const { data: likesData } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('total_likes');
+            
+            const totalLikes = likesData?.reduce((sum, item) => sum + (item.total_likes || 0), 0) || 0;
+            
+            // Get total shares from content_engagement_stats
+            const { data: sharesData } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('total_shares');
+            
+            const totalShares = sharesData?.reduce((sum, item) => sum + (item.total_shares || 0), 0) || 0;
+            
             // Get unique connectors count
             const { count: connectorsCount } = await window.supabaseAuth
                 .from('connectors')
                 .select('*', { count: 'exact', head: true });
             
-            // Get today's active users (simplified)
+            // Get today's active users (simplified - using content_views)
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const { count: todayActive } = await window.supabaseAuth
@@ -159,6 +177,8 @@ const CommunityFavorites = (function() {
             
             communityStats = {
                 totalFavorites: totalFavorites,
+                totalLikes: totalLikes,
+                totalShares: totalShares,
                 connectorsCount: connectorsCount || 0,
                 todayActive: todayActive || 0,
                 lastUpdated: Date.now()
@@ -170,6 +190,8 @@ const CommunityFavorites = (function() {
             console.error('Error loading community stats:', err);
             communityStats = {
                 totalFavorites: 12500,
+                totalLikes: 45000,
+                totalShares: 8900,
                 connectorsCount: 12500,
                 todayActive: 342,
                 lastUpdated: Date.now()
@@ -178,7 +200,7 @@ const CommunityFavorites = (function() {
     }
     
     /**
-     * Add community stats bar
+     * Add community stats bar - Updated to show likes and shares
      */
     function addCommunityStatsBar() {
         const statsContainer = document.getElementById('community-favorites-stats');
@@ -193,24 +215,24 @@ const CommunityFavorites = (function() {
                 </div>
             </div>
             <div class="community-stat-item">
+                <i class="fas fa-thumbs-up"></i>
+                <div>
+                    <div class="stat-value">${formatNumber(communityStats?.totalLikes || 0)}</div>
+                    <div class="stat-label">Total Likes</div>
+                </div>
+            </div>
+            <div class="community-stat-item">
+                <i class="fas fa-share-alt"></i>
+                <div>
+                    <div class="stat-value">${formatNumber(communityStats?.totalShares || 0)}</div>
+                    <div class="stat-label">Total Shares</div>
+                </div>
+            </div>
+            <div class="community-stat-item">
                 <i class="fas fa-users"></i>
                 <div>
                     <div class="stat-value">${formatNumber(communityStats?.connectorsCount || 0)}</div>
                     <div class="stat-label">Community Members</div>
-                </div>
-            </div>
-            <div class="community-stat-item">
-                <i class="fas fa-user-plus"></i>
-                <div>
-                    <div class="stat-value">+${formatNumber(communityStats?.todayActive || 0)}</div>
-                    <div class="stat-label">Active Today</div>
-                </div>
-            </div>
-            <div class="community-stat-item">
-                <i class="fas fa-map-pin"></i>
-                <div>
-                    <div class="stat-value">11</div>
-                    <div class="stat-label">Languages</div>
                 </div>
             </div>
         `;
@@ -218,6 +240,7 @@ const CommunityFavorites = (function() {
     
     /**
      * Load community favorites content
+     * UPDATED: Now joins with content_engagement_stats and orders by total_likes DESC, total_shares DESC
      */
     async function loadContent() {
         console.log('⭐ Loading Community Favorites...');
@@ -245,14 +268,18 @@ const CommunityFavorites = (function() {
                 return;
             }
             
-            // Build complete dataset with metrics
+            // Build complete dataset with metrics from engagement_stats
             let sectionData = await buildSectionData(contentList);
             
             // Apply community boost logic
             sectionData = applyCommunityBoost(sectionData);
             
-            // Sort by favorites count (highest first)
-            sectionData.sort((a, b) => (b.metrics?.favorites || 0) - (a.metrics?.favorites || 0));
+            // Sort by engagement score (likes * 2 + shares) - likes take priority
+            sectionData.sort((a, b) => {
+                const scoreA = (a.metrics?.likes || 0) * 2 + (a.metrics?.shares || 0);
+                const scoreB = (b.metrics?.likes || 0) * 2 + (b.metrics?.shares || 0);
+                return scoreB - scoreA;
+            });
             
             // Add rank to top items
             sectionData = addRanks(sectionData);
@@ -279,26 +306,77 @@ const CommunityFavorites = (function() {
     
     /**
      * Fetch community favorites from Supabase
+     * UPDATED: Joins with content_engagement_stats to get like/share counts for ordering
      */
     async function fetchCommunityFavorites() {
         try {
-            // Fetch content with favorites_count > 0, ordered by favorites_count
-            const { data, error } = await window.supabaseAuth
+            // First, get content IDs ordered by engagement from content_engagement_stats
+            const { data: engagementData, error: engagementError } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_likes, total_shares')
+                .order('total_likes', { ascending: false })
+                .order('total_shares', { ascending: false })
+                .limit(MAX_ITEMS * 2); // Get extra to account for status filter
+            
+            if (engagementError) throw engagementError;
+            
+            if (!engagementData || engagementData.length === 0) {
+                return [];
+            }
+            
+            const contentIds = engagementData.map(e => e.content_id);
+            
+            // Now fetch the actual content data for those IDs
+            const { data: contentData, error: contentError } = await window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
-                    genre, language, created_at, views_count, favorites_count, 
-                    user_id, user_profiles!user_id (
-                        id, full_name, username, avatar_url, bio, location
+                    id, 
+                    title, 
+                    description, 
+                    thumbnail_url, 
+                    duration, 
+                    genre, 
+                    language, 
+                    created_at, 
+                    favorites_count,
+                    user_id,
+                    user_profiles!user_id (
+                        id, 
+                        full_name, 
+                        username, 
+                        avatar_url, 
+                        bio, 
+                        location
                     )
                 `)
                 .eq('status', 'published')
-                .gt('favorites_count', 0)
-                .order('favorites_count', { ascending: false })
+                .in('id', contentIds)
                 .limit(MAX_ITEMS);
             
-            if (error) throw error;
-            return data || [];
+            if (contentError) throw contentError;
+            
+            // Merge engagement data with content data
+            const mergedData = (contentData || []).map(content => {
+                const engagement = engagementData.find(e => e.content_id === content.id);
+                return {
+                    ...content,
+                    engagement_metrics: {
+                        total_likes: engagement?.total_likes || 0,
+                        total_shares: engagement?.total_shares || 0
+                    }
+                };
+            });
+            
+            // Sort by likes DESC, then shares DESC
+            mergedData.sort((a, b) => {
+                if (a.engagement_metrics.total_likes !== b.engagement_metrics.total_likes) {
+                    return b.engagement_metrics.total_likes - a.engagement_metrics.total_likes;
+                }
+                return b.engagement_metrics.total_shares - a.engagement_metrics.total_shares;
+            });
+            
+            return mergedData;
+            
         } catch (err) {
             console.error('Error fetching community favorites:', err);
             return [];
@@ -310,7 +388,10 @@ const CommunityFavorites = (function() {
      */
     function applyCommunityBoost(items) {
         return items.map(item => {
-            let score = (item.metrics?.favorites || 0) * 10 +
+            // Score based on likes and shares from engagement_stats, plus favorites
+            let score = (item.metrics?.likes || 0) * 10 +
+                       (item.metrics?.shares || 0) * 8 +
+                       (item.metrics?.favorites || 0) * 5 +
                        (item.metrics?.views || 0) +
                        ((item.metrics?.connectors || 0) * 5);
             
@@ -335,13 +416,13 @@ const CommunityFavorites = (function() {
                 boostReason = boostReason ? `${boostReason} + Local language` : 'Local language favorite';
             }
             
-            // Top performer badge
+            // Top performer badge based on likes
             let rankBadge = null;
-            if (item.metrics?.favorites > 1000) {
+            if (item.metrics?.likes > 5000) {
                 rankBadge = 'community-champion';
-            } else if (item.metrics?.favorites > 500) {
+            } else if (item.metrics?.likes > 1000) {
                 rankBadge = 'community-star';
-            } else if (item.metrics?.favorites > 100) {
+            } else if (item.metrics?.likes > 200) {
                 rankBadge = 'community-rising';
             }
             
@@ -365,7 +446,8 @@ const CommunityFavorites = (function() {
     }
     
     /**
-     * Build section data with metrics
+     * Build section data with metrics from content_engagement_stats
+     * UPDATED: Uses the new engagement_stats table instead of individual tables
      */
     async function buildSectionData(contentList) {
         if (!contentList || contentList.length === 0) return [];
@@ -373,74 +455,52 @@ const CommunityFavorites = (function() {
         const contentIds = contentList.map(c => c.id);
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
         
-        const metrics = await fetchAllMetrics(contentIds, creatorIds);
+        // Fetch engagement metrics from content_engagement_stats
+        const engagementMetrics = await fetchEngagementMetrics(contentIds);
+        const connectors = await fetchConnectorCounts(creatorIds);
         
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: metrics.views[item.id] || 0,
-                likes: metrics.likes[item.id] || 0,
-                shares: metrics.shares[item.id] || 0,
+                views: engagementMetrics[item.id]?.total_views || 0,
+                likes: engagementMetrics[item.id]?.total_likes || 0,
+                comments: engagementMetrics[item.id]?.total_comments || 0,
+                shares: engagementMetrics[item.id]?.total_shares || 0,
                 favorites: item.favorites_count || 0,
-                connectors: metrics.connectors[item.user_id] || 0
+                connectors: connectors[item.user_id] || 0
             }
         }));
     }
     
     /**
-     * Fetch all metrics in parallel
+     * Fetch engagement metrics from content_engagement_stats table
      */
-    async function fetchAllMetrics(contentIds, creatorIds) {
-        const [views, likes, shares, connectors] = await Promise.all([
-            fetchViewCounts(contentIds),
-            fetchLikeCounts(contentIds),
-            fetchShareCounts(contentIds),
-            fetchConnectorCounts(creatorIds)
-        ]);
+    async function fetchEngagementMetrics(contentIds) {
+        if (!contentIds.length) return {};
         
-        return { views, likes, shares, connectors };
-    }
-    
-    /**
-     * Fetch view counts
-     */
-    async function fetchViewCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch like counts
-     */
-    async function fetchLikeCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch share counts
-     */
-    async function fetchShareCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views, total_likes, total_comments, total_shares')
+                .in('content_id', contentIds);
+            
+            if (error) throw error;
+            
+            const metricsMap = {};
+            data?.forEach(row => {
+                metricsMap[row.content_id] = {
+                    total_views: row.total_views || 0,
+                    total_likes: row.total_likes || 0,
+                    total_comments: row.total_comments || 0,
+                    total_shares: row.total_shares || 0
+                };
+            });
+            
+            return metricsMap;
+        } catch (err) {
+            console.error('Error fetching engagement metrics:', err);
+            return {};
+        }
     }
     
     /**
@@ -449,14 +509,19 @@ const CommunityFavorites = (function() {
     async function fetchConnectorCounts(creatorIds) {
         if (!creatorIds || creatorIds.length === 0) return {};
         const limitedIds = creatorIds.slice(0, 50);
-        const { data } = await window.supabaseAuth
-            .from("connectors")
-            .select("connected_id")
-            .in("connected_id", limitedIds)
-            .eq("connection_type", "creator");
-        const counts = {};
-        data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
-        return counts;
+        try {
+            const { data } = await window.supabaseAuth
+                .from("connectors")
+                .select("connected_id")
+                .in("connected_id", limitedIds)
+                .eq("connection_type", "creator");
+            const counts = {};
+            data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
+            return counts;
+        } catch (err) {
+            console.error('Error fetching connector counts:', err);
+            return {};
+        }
     }
     
     /**
@@ -477,6 +542,8 @@ const CommunityFavorites = (function() {
             const initials = getInitials(displayName);
             const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
             const durationFormatted = formatDuration(content.duration || 0);
+            const likeCount = content.metrics?.likes || 0;
+            const shareCount = content.metrics?.shares || 0;
             const favoriteCount = content.metrics?.favorites || 0;
             const rank = content.rank;
             
@@ -537,12 +604,12 @@ const CommunityFavorites = (function() {
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                     <div class="card-badges">
                         ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                        <div class="card-badge favorite-badge">
-                            <i class="fas fa-star"></i> ${formatNumber(favoriteCount)} Favorites
+                        <div class="card-badge like-badge">
+                            <i class="fas fa-thumbs-up"></i> ${formatNumber(likeCount)} Likes
                         </div>
                     </div>
                     ${boostTooltip}
-                    <div class="card-favorite-count">
+                    <div class="card-engagement-count">
                         <i class="fas fa-heart"></i> ${formatNumber(favoriteCount)}
                     </div>
                     <div class="thumbnail-overlay"></div>
@@ -558,8 +625,9 @@ const CommunityFavorites = (function() {
                     </div>
                     <div class="card-meta">
                         <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
-                        <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
-                        <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
+                        <span><i class="fas fa-thumbs-up"></i> ${formatNumber(likeCount)}</span>
+                        <span><i class="fas fa-comment"></i> ${formatNumber(content.metrics?.comments || 0)}</span>
+                        <span><i class="fas fa-share-alt"></i> ${formatNumber(shareCount)}</span>
                         <span><i class="fas fa-language"></i> ${getLanguageName(content.language)}</span>
                     </div>
                     <div class="connector-info">
@@ -623,7 +691,7 @@ const CommunityFavorites = (function() {
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-icon"><i class="fas fa-heart-broken"></i></div>
                 <h3>No Community Favorites Yet</h3>
-                <p>Be the first to favorite content and help build our community!</p>
+                <p>Be the first to like and share content to help build our community!</p>
                 <button class="see-all-btn" id="explore-favorites-btn" style="margin-top: 16px;">
                     <i class="fas fa-fire"></i> Explore Trending
                 </button>
@@ -679,8 +747,8 @@ const CommunityFavorites = (function() {
         tooltipSpan.innerHTML = `
             <i class="fas fa-info-circle" style="font-size: 14px; color: var(--slate-grey);"></i>
             <span class="tooltip-text">
-                Based on total favorites across the Bantu community.
-                ${communityStats?.totalFavorites ? `Over ${formatNumber(communityStats.totalFavorites)} total favorites given!` : ''}
+                Based on community likes and shares across the Bantu platform.
+                ${communityStats?.totalLikes ? `Over ${formatNumber(communityStats.totalLikes)} total likes given!` : ''}
             </span>
         `;
         
