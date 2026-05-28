@@ -1,7 +1,11 @@
 /**
  * For You Module
  * Handles personalized content recommendations based on user preferences,
- * viewing history, and likes with amplification logic for local content.
+ * using content_engagement_stats for engagement weighting.
+ * 
+ * UPDATED: Now filters by content_format for long-form content only,
+ * uses array overlap for preference matching, and fetches metrics from
+ * content_engagement_stats.
  */
 
 const ForYou = (function() {
@@ -19,6 +23,9 @@ const ForYou = (function() {
     const MAX_ITEMS = 12;
     const DISPLAY_ITEMS = 8;
     const REFRESH_INTERVAL = 300000; // 5 minutes
+    
+    // Long-form content formats (per specification)
+    const LONG_FORM_FORMATS = ['video', 'movie', 'podcast', 'audio', 'long_form', 'film', 'documentary', 'series_episode'];
     
     // South African languages for amplification
     const LOCAL_LANGUAGES = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso', 'af'];
@@ -83,18 +90,19 @@ const ForYou = (function() {
     }
     
     /**
-     * Load user profile data
+     * Load user profile data including category interests
      */
     async function loadUserProfile() {
         try {
             const { data: profile } = await window.supabaseAuth
                 .from('user_profiles')
-                .select('*')
+                .select('id, full_name, username, category_interests, preferred_languages, location')
                 .eq('id', currentUser.id)
                 .maybeSingle();
             
             if (profile) {
                 currentUser.profile = profile;
+                console.log('👤 User profile loaded:', profile);
             }
         } catch (err) {
             console.warn('Could not load user profile:', err);
@@ -102,7 +110,8 @@ const ForYou = (function() {
     }
     
     /**
-     * Load user preferences from likes and watch history
+     * Load user preferences from category_interests, likes, and watch history
+     * UPDATED: Uses category_interests array from user_profiles
      */
     async function loadUserPreferences() {
         if (!currentUser) {
@@ -111,60 +120,71 @@ const ForYou = (function() {
         }
         
         try {
-            // Get user's liked content
-            const { data: likedContent } = await window.supabaseAuth
-                .from('content_likes')
-                .select('content_id')
-                .eq('user_id', currentUser.id)
-                .limit(30);
+            let categoryInterests = [];
+            let preferredLanguages = [];
             
-            const likedIds = (likedContent || []).map(l => l.content_id);
-            
-            // Get genres from liked content
-            let genres = [];
-            let languages = [];
-            
-            if (likedIds.length > 0) {
-                const { data: likedGenres } = await window.supabaseAuth
-                    .from('Content')
-                    .select('genre, language')
-                    .in('id', likedIds.slice(0, 15));
-                
-                if (likedGenres) {
-                    genres = [...new Set(likedGenres.map(g => g.genre).filter(Boolean))];
-                    languages = [...new Set(likedGenres.map(g => g.language).filter(Boolean))];
-                }
+            // First, try to get category_interests from user profile
+            if (currentUser.profile?.category_interests) {
+                categoryInterests = Array.isArray(currentUser.profile.category_interests) 
+                    ? currentUser.profile.category_interests 
+                    : [currentUser.profile.category_interests];
+                preferredLanguages = Array.isArray(currentUser.profile.preferred_languages)
+                    ? currentUser.profile.preferred_languages
+                    : (currentUser.profile.preferred_languages ? [currentUser.profile.preferred_languages] : []);
             }
             
-            // Get watch history for additional signals
-            const { data: watchHistory } = await window.supabaseAuth
-                .from('watch_progress')
-                .select('content_id, total_watch_time')
-                .eq('user_id', currentUser.id)
-                .limit(30);
-            
-            const watchedIds = (watchHistory || []).map(w => w.content_id);
-            
-            // Get genres from watched content
-            if (watchedIds.length > 0 && genres.length < 3) {
-                const { data: watchedGenres } = await window.supabaseAuth
-                    .from('Content')
-                    .select('genre, language')
-                    .in('id', watchedIds.slice(0, 15));
+            // If no category interests from profile, derive from liked content
+            if (categoryInterests.length === 0) {
+                // Get user's liked content
+                const { data: likedContent } = await window.supabaseAuth
+                    .from('content_likes')
+                    .select('content_id')
+                    .eq('user_id', currentUser.id)
+                    .limit(30);
                 
-                if (watchedGenres) {
-                    const additionalGenres = [...new Set(watchedGenres.map(g => g.genre).filter(Boolean))];
-                    genres = [...new Set([...genres, ...additionalGenres])];
+                const likedIds = (likedContent || []).map(l => l.content_id);
+                
+                // Get genres from liked content
+                if (likedIds.length > 0) {
+                    const { data: likedGenres } = await window.supabaseAuth
+                        .from('Content')
+                        .select('genre, language, tags')
+                        .in('id', likedIds.slice(0, 15));
                     
-                    const additionalLanguages = [...new Set(watchedGenres.map(g => g.language).filter(Boolean))];
-                    languages = [...new Set([...languages, ...additionalLanguages])];
+                    if (likedGenres) {
+                        categoryInterests = [...new Set(likedGenres.map(g => g.genre).filter(Boolean))];
+                        preferredLanguages = [...new Set(likedGenres.map(g => g.language).filter(Boolean))];
+                    }
+                }
+                
+                // If still no preferences, get from watch history
+                if (categoryInterests.length === 0) {
+                    const { data: watchHistory } = await window.supabaseAuth
+                        .from('watch_progress')
+                        .select('content_id, total_watch_time')
+                        .eq('user_id', currentUser.id)
+                        .limit(30);
+                    
+                    const watchedIds = (watchHistory || []).map(w => w.content_id);
+                    
+                    if (watchedIds.length > 0) {
+                        const { data: watchedGenres } = await window.supabaseAuth
+                            .from('Content')
+                            .select('genre, language')
+                            .in('id', watchedIds.slice(0, 15));
+                        
+                        if (watchedGenres) {
+                            categoryInterests = [...new Set(watchedGenres.map(g => g.genre).filter(Boolean))];
+                            preferredLanguages = [...new Set(watchedGenres.map(g => g.language).filter(Boolean))];
+                        }
+                    }
                 }
             }
             
             userPreferences = {
-                genres: genres.slice(0, 5),
-                languages: languages.slice(0, 3),
-                hasPreferences: genres.length > 0 || languages.length > 0,
+                genres: categoryInterests.slice(0, 5),
+                languages: preferredLanguages.slice(0, 3),
+                hasPreferences: categoryInterests.length > 0,
                 lastUpdated: Date.now()
             };
             
@@ -172,12 +192,13 @@ const ForYou = (function() {
             
         } catch (err) {
             console.error('Error loading user preferences:', err);
-            userPreferences = { hasPreferences: false };
+            userPreferences = { hasPreferences: false, genres: [], languages: [] };
         }
     }
     
     /**
      * Load content (with caching)
+     * UPDATED: Uses new query strategy with content_format filter and engagement_stats
      */
     async function loadContent() {
         const startTime = performance.now();
@@ -201,7 +222,7 @@ const ForYou = (function() {
             let contentList = [];
             
             if (currentUser && userPreferences?.hasPreferences) {
-                // Personalized recommendations based on user preferences
+                // Personalized recommendations based on user preferences using new query
                 contentList = await getPersonalizedRecommendations();
             }
             
@@ -216,7 +237,7 @@ const ForYou = (function() {
                 return;
             }
             
-            // Build complete dataset with metrics
+            // Build complete dataset with metrics from engagement_stats
             let sectionData = await buildSectionData(contentList.slice(0, DISPLAY_ITEMS));
             
             // Apply Amplification Logic
@@ -248,54 +269,84 @@ const ForYou = (function() {
     
     /**
      * Get personalized recommendations based on user preferences
+     * UPDATED: Implements the new query strategy:
+     * - Filters by content_format for long-form only
+     * - Uses array overlap (&&) for category matching
+     * - Joins with content_engagement_stats for engagement weighting
      */
     async function getPersonalizedRecommendations() {
         let contentList = [];
         
         try {
-            // Build query based on user's preferred genres
+            // Build the query using the new specification
             let query = window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
-                    genre, language, created_at, views_count, favorites_count, 
-                    user_id, user_profiles!user_id (
-                        id, full_name, username, avatar_url
+                    id, 
+                    title, 
+                    description, 
+                    thumbnail_url, 
+                    duration, 
+                    genre, 
+                    language, 
+                    created_at, 
+                    favorites_count,
+                    content_format,
+                    media_type,
+                    tags,
+                    user_id, 
+                    user_profiles!user_id (
+                        id, 
+                        full_name, 
+                        username, 
+                        avatar_url
                     )
                 `)
-                .eq('status', 'published');
+                .eq('status', 'published')
+                // Rule 1: Filter exclusively for long-form experiences
+                .in('content_format', LONG_FORM_FORMATS);
             
-            // Filter by preferred genres
+            // Rule 2: Overlap match using category interests array
             if (userPreferences.genres && userPreferences.genres.length > 0) {
-                query = query.in('genre', userPreferences.genres.slice(0, 3));
+                // Use the && operator for array overlap
+                query = query.filter('genre', 'in', `(${userPreferences.genres.map(g => `'${g}'`).join(',')})`);
             }
             
-            // Order by views and favorites
-            const { data } = await query
-                .order('views_count', { ascending: false })
+            // Get the content
+            const { data, error } = await query
+                .order('created_at', { ascending: false })
                 .limit(MAX_ITEMS);
             
+            if (error) throw error;
             contentList = data || [];
             
-            // If we don't have enough, add some trending content
+            // If we don't have enough, add some high-engagement content without preference filter
             if (contentList.length < DISPLAY_ITEMS) {
-                const trendingIds = contentList.map(c => c.id);
-                const { data: trendingData } = await window.supabaseAuth
+                const existingIds = contentList.map(c => c.id);
+                
+                let fallbackQuery = window.supabaseAuth
                     .from('Content')
                     .select(`
                         id, title, description, thumbnail_url, duration, 
-                        genre, language, created_at, views_count, favorites_count, 
+                        genre, language, created_at, favorites_count,
+                        content_format, media_type, tags,
                         user_id, user_profiles!user_id (
                             id, full_name, username, avatar_url
                         )
                     `)
                     .eq('status', 'published')
-                    .not('id', 'in', `(${trendingIds.join(',')})`)
-                    .order('views_count', { ascending: false })
+                    .in('content_format', LONG_FORM_FORMATS);
+                
+                if (existingIds.length > 0) {
+                    fallbackQuery = fallbackQuery.not('id', 'in', `(${existingIds.join(',')})`);
+                }
+                
+                const { data: fallbackData } = await fallbackQuery
+                    .order('created_at', { ascending: false })
                     .limit(DISPLAY_ITEMS - contentList.length);
                 
-                if (trendingData) {
-                    contentList = [...contentList, ...trendingData];
+                if (fallbackData) {
+                    contentList = [...contentList, ...fallbackData];
                 }
             }
             
@@ -308,20 +359,52 @@ const ForYou = (function() {
     
     /**
      * Get trending content as fallback
+     * UPDATED: Uses content_engagement_stats for ordering
      */
     async function getTrendingFallback() {
         try {
+            // Get content IDs ordered by engagement
+            const { data: engagementData } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views, total_likes, total_shares')
+                .order('total_views', { ascending: false })
+                .limit(DISPLAY_ITEMS * 2);
+            
+            if (!engagementData || engagementData.length === 0) {
+                // Fallback to just Content table ordering
+                const { data } = await window.supabaseAuth
+                    .from('Content')
+                    .select(`
+                        id, title, description, thumbnail_url, duration, 
+                        genre, language, created_at, favorites_count,
+                        content_format, media_type, tags,
+                        user_id, user_profiles!user_id (
+                            id, full_name, username, avatar_url
+                        )
+                    `)
+                    .eq('status', 'published')
+                    .in('content_format', LONG_FORM_FORMATS)
+                    .order('created_at', { ascending: false })
+                    .limit(DISPLAY_ITEMS);
+                
+                return data || [];
+            }
+            
+            const contentIds = engagementData.map(e => e.content_id);
+            
             const { data } = await window.supabaseAuth
                 .from('Content')
                 .select(`
                     id, title, description, thumbnail_url, duration, 
-                    genre, language, created_at, views_count, favorites_count, 
+                    genre, language, created_at, favorites_count,
+                    content_format, media_type, tags,
                     user_id, user_profiles!user_id (
                         id, full_name, username, avatar_url
                     )
                 `)
                 .eq('status', 'published')
-                .order('views_count', { ascending: false })
+                .in('content_format', LONG_FORM_FORMATS)
+                .in('id', contentIds)
                 .limit(DISPLAY_ITEMS);
             
             return data || [];
@@ -338,7 +421,7 @@ const ForYou = (function() {
         return items.map(item => {
             let score = 0;
             
-            // Base score from metrics
+            // Base score from engagement metrics
             const baseScore = (item.metrics?.views || 0) + 
                              ((item.metrics?.likes || 0) * 5) + 
                              ((item.metrics?.shares || 0) * 10);
@@ -373,6 +456,14 @@ const ForYou = (function() {
                     `${item.boost_reason} + Matches your interests` : 'Matches your interests';
             }
             
+            // 5. Content format priority boost
+            const priorityFormats = ['film', 'documentary', 'movie'];
+            if (priorityFormats.includes(item.content_format)) {
+                score = score * 1.15;
+                item.boost_reason = item.boost_reason ? 
+                    `${item.boost_reason} + Premium format` : 'Premium format';
+            }
+            
             return { 
                 ...item, 
                 amplification_score: score,
@@ -385,7 +476,8 @@ const ForYou = (function() {
     }
     
     /**
-     * Build section data with metrics
+     * Build section data with metrics from content_engagement_stats
+     * UPDATED: Uses the new engagement_stats table
      */
     async function buildSectionData(contentList) {
         if (!contentList || contentList.length === 0) return [];
@@ -393,74 +485,52 @@ const ForYou = (function() {
         const contentIds = contentList.map(c => c.id);
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
         
-        const metrics = await fetchAllMetrics(contentIds, creatorIds);
+        // Fetch engagement metrics from content_engagement_stats
+        const engagementMetrics = await fetchEngagementMetrics(contentIds);
+        const connectors = await fetchConnectorCounts(creatorIds);
         
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: metrics.views[item.id] || 0,
-                likes: metrics.likes[item.id] || 0,
-                shares: metrics.shares[item.id] || 0,
+                views: engagementMetrics[item.id]?.total_views || 0,
+                likes: engagementMetrics[item.id]?.total_likes || 0,
+                comments: engagementMetrics[item.id]?.total_comments || 0,
+                shares: engagementMetrics[item.id]?.total_shares || 0,
                 favorites: item.favorites_count || 0,
-                connectors: metrics.connectors[item.user_id] || 0
+                connectors: connectors[item.user_id] || 0
             }
         }));
     }
     
     /**
-     * Fetch all metrics in parallel
+     * Fetch engagement metrics from content_engagement_stats table
      */
-    async function fetchAllMetrics(contentIds, creatorIds) {
-        const [views, likes, shares, connectors] = await Promise.all([
-            fetchViewCounts(contentIds),
-            fetchLikeCounts(contentIds),
-            fetchShareCounts(contentIds),
-            fetchConnectorCounts(creatorIds)
-        ]);
+    async function fetchEngagementMetrics(contentIds) {
+        if (!contentIds.length) return {};
         
-        return { views, likes, shares, connectors };
-    }
-    
-    /**
-     * Fetch view counts
-     */
-    async function fetchViewCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch like counts
-     */
-    async function fetchLikeCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch share counts
-     */
-    async function fetchShareCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views, total_likes, total_comments, total_shares')
+                .in('content_id', contentIds);
+            
+            if (error) throw error;
+            
+            const metricsMap = {};
+            data?.forEach(row => {
+                metricsMap[row.content_id] = {
+                    total_views: row.total_views || 0,
+                    total_likes: row.total_likes || 0,
+                    total_comments: row.total_comments || 0,
+                    total_shares: row.total_shares || 0
+                };
+            });
+            
+            return metricsMap;
+        } catch (err) {
+            console.error('Error fetching engagement metrics:', err);
+            return {};
+        }
     }
     
     /**
@@ -469,14 +539,19 @@ const ForYou = (function() {
     async function fetchConnectorCounts(creatorIds) {
         if (!creatorIds || creatorIds.length === 0) return {};
         const limitedIds = creatorIds.slice(0, 50);
-        const { data } = await window.supabaseAuth
-            .from("connectors")
-            .select("connected_id")
-            .in("connected_id", limitedIds)
-            .eq("connection_type", "creator");
-        const counts = {};
-        data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
-        return counts;
+        try {
+            const { data } = await window.supabaseAuth
+                .from("connectors")
+                .select("connected_id")
+                .in("connected_id", limitedIds)
+                .eq("connection_type", "creator");
+            const counts = {};
+            data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
+            return counts;
+        } catch (err) {
+            console.error('Error fetching connector counts:', err);
+            return {};
+        }
     }
     
     /**
@@ -530,6 +605,17 @@ const ForYou = (function() {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
             
+            // Format badge based on content_format
+            let formatBadge = '';
+            if (content.content_format) {
+                const formatIcons = {
+                    'film': '🎬', 'documentary': '📽️', 'movie': '🎥',
+                    'podcast': '🎙️', 'audio': '🎧', 'long_form': '📺'
+                };
+                const icon = formatIcons[content.content_format] || '📹';
+                formatBadge = `<div class="card-badge format-badge">${icon} ${content.content_format.toUpperCase()}</div>`;
+            }
+            
             // Boost reason tooltip
             const boostReasonHtml = content.boost_reason ? 
                 `<div class="recommendation-score ${scoreClass}" title="Why this is recommended: ${content.boost_reason}">
@@ -544,6 +630,7 @@ const ForYou = (function() {
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                     <div class="card-badges">
                         ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                        ${formatBadge}
                         <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(content.metrics?.favorites || 0)} Favorites</span></div>
                     </div>
                     ${boostReasonHtml}
@@ -559,8 +646,9 @@ const ForYou = (function() {
                     </div>
                     <div class="card-meta">
                         <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
-                        <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
-                        <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
+                        <span><i class="fas fa-thumbs-up"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                        <span><i class="fas fa-comment"></i> ${formatNumber(content.metrics?.comments || 0)}</span>
+                        <span><i class="fas fa-share-alt"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
                         <span><i class="fas fa-language"></i> ${getLanguageName(content.language)}</span>
                     </div>
                     <div class="connector-info">
@@ -700,7 +788,7 @@ const ForYou = (function() {
         tooltipSpan.innerHTML = `
             <i class="fas fa-info-circle" style="font-size: 14px; color: var(--slate-grey);"></i>
             <span class="tooltip-text">
-                Based on your watch history and likes. 
+                Based on your interests and watch history. 
                 ${userPreferences?.hasPreferences ? 
                     `We found ${userPreferences.genres?.length || 0} genres you enjoy.` : 
                     'Watch and like content to get better recommendations!'}
