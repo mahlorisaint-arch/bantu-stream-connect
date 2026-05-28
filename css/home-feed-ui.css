@@ -193,7 +193,159 @@ RESPONSIVE ADJUSTMENTS
 }
 
 /* ============================================
-   CRITICAL MISSING GRID STYLES - RESTORED
+   WELCOME BANNER & STATS BAR - RESTORED
+   ============================================ */
+
+/* Welcome Banner */
+.welcome-banner {
+    background: linear-gradient(135deg, rgba(29, 78, 216, 0.15), rgba(245, 158, 11, 0.15));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 20px;
+    padding: 30px;
+    margin: 20px 0 30px 0;
+    backdrop-filter: blur(10px);
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.welcome-banner h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--soft-white, #F8FAFC);
+}
+
+.welcome-banner p {
+    font-size: 16px;
+    color: var(--slate-grey, #94A3B8);
+}
+
+#user-name {
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+/* Language Filter Bar */
+.language-filter-bar {
+    background: rgba(10, 14, 18, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+    border-radius: 50px;
+    margin: 20px 0;
+    padding: 10px 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.language-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 5px 0;
+}
+
+.language-filter-container::-webkit-scrollbar {
+    height: 4px;
+}
+
+.language-filter-container i {
+    color: var(--warm-gold, #F59E0B);
+    font-size: 18px;
+}
+
+.language-filter-label {
+    color: var(--soft-white, #F8FAFC);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.language-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.language-chip {
+    padding: 6px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+    border-radius: 30px;
+    color: var(--slate-grey, #94A3B8);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.language-chip:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: var(--warm-gold, #F59E0B);
+    color: var(--soft-white, #F8FAFC);
+}
+
+.language-chip.active {
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    color: white;
+    border-color: transparent;
+}
+
+.language-chip-more {
+    padding: 6px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed var(--card-border, rgba(148, 163, 184, 0.2));
+    border-radius: 30px;
+    color: var(--slate-grey, #94A3B8);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Community Stats Bar */
+.community-stats-bar {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(10, 14, 18, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+    border-radius: 60px;
+    margin: 20px 0 30px 0;
+    padding: 15px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.community-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.community-stat i {
+    color: var(--warm-gold, #F59E0B);
+    font-size: 24px;
+}
+
+.community-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--soft-white, #F8FAFC);
+}
+
+.community-stat-label {
+    font-size: 12px;
+    color: var(--slate-grey, #94A3B8);
+}
+
+/* ============================================
+   CONTENT GRID & CARDS - RESTORED
    ============================================ */
 
 /* Content Grid - Makes cards display in grid, not full width */
@@ -220,6 +372,12 @@ RESPONSIVE ADJUSTMENTS
     max-width: 100%;
 }
 
+.content-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+}
+
 /* Card Thumbnail - Fixed aspect ratio */
 .card-thumbnail {
     position: relative;
@@ -234,6 +392,10 @@ RESPONSIVE ADJUSTMENTS
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s ease;
+}
+
+.content-card:hover .card-thumbnail img {
+    transform: scale(1.05);
 }
 
 /* Card Content - Proper padding */
@@ -383,6 +545,11 @@ RESPONSIVE ADJUSTMENTS
     background: #10B981;
 }
 
+.continue-badge {
+    background: rgba(245, 158, 11, 0.9);
+    color: #0A0E12;
+}
+
 .thumbnail-overlay {
     position: absolute;
     top: 0;
@@ -394,13 +561,37 @@ RESPONSIVE ADJUSTMENTS
     z-index: 1;
 }
 
-/* Wavelets Container */
+/* Watch Progress Bar (Continue Watching) */
+.watch-progress-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 5;
+}
+
+.watch-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #F59E0B, #f97316);
+    border-radius: 0 2px 2px 0;
+    transition: width 0.3s ease;
+}
+
+/* ============================================
+   WAVELETS (Short-form content) - RESTORED
+   ============================================ */
 .wavelets-container {
     display: flex;
     gap: 16px;
     overflow-x: auto;
     padding: 10px 0;
     scrollbar-width: thin;
+}
+
+.wavelets-container::-webkit-scrollbar {
+    height: 6px;
 }
 
 .wavelet-card {
@@ -412,6 +603,13 @@ RESPONSIVE ADJUSTMENTS
     overflow: hidden;
     cursor: pointer;
     transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.wavelet-card:hover {
+    transform: translateY(-4px);
+    border-color: #F59E0B;
 }
 
 .wavelet-thumbnail {
@@ -424,6 +622,41 @@ RESPONSIVE ADJUSTMENTS
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.wavelet-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.wavelet-card:hover .wavelet-overlay {
+    opacity: 1;
+}
+
+.wavelet-overlay i {
+    font-size: 40px;
+    color: white;
+}
+
+.wavelet-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
 }
 
 .wavelet-info {
@@ -443,6 +676,15 @@ RESPONSIVE ADJUSTMENTS
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-bottom: 5px;
+}
+
+.wavelet-creator-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
 }
 
 .wavelet-creator-name {
@@ -458,9 +700,16 @@ RESPONSIVE ADJUSTMENTS
     margin-top: 5px;
 }
 
-/* Creator Cards Grid */
+.wavelet-connectors {
+    color: #F59E0B;
+}
+
+/* ============================================
+   CREATOR CARDS - RESTORED
+   ============================================ */
 .featured-creators {
     padding: 10px 0;
+    width: 100%;
 }
 
 .creator-card {
@@ -470,6 +719,12 @@ RESPONSIVE ADJUSTMENTS
     padding: 20px;
     text-align: center;
     transition: all 0.3s ease;
+    height: 100%;
+}
+
+.creator-card:hover {
+    transform: translateY(-4px);
+    border-color: #F59E0B;
 }
 
 .creator-avatar {
@@ -491,6 +746,7 @@ RESPONSIVE ADJUSTMENTS
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 5px;
+    color: var(--soft-white, #F8FAFC);
 }
 
 .creator-username {
@@ -504,6 +760,10 @@ RESPONSIVE ADJUSTMENTS
     color: var(--slate-grey, #94A3B8);
     margin-bottom: 15px;
     line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .creator-stats {
@@ -511,6 +771,10 @@ RESPONSIVE ADJUSTMENTS
     justify-content: center;
     gap: 20px;
     margin-bottom: 15px;
+}
+
+.stat {
+    text-align: center;
 }
 
 .stat-number {
@@ -524,6 +788,11 @@ RESPONSIVE ADJUSTMENTS
     color: var(--slate-grey, #94A3B8);
 }
 
+.creator-actions {
+    display: flex;
+    gap: 10px;
+}
+
 .view-channel-btn {
     background: linear-gradient(135deg, #1D4ED8, #F59E0B);
     border: none;
@@ -532,41 +801,83 @@ RESPONSIVE ADJUSTMENTS
     color: white;
     font-weight: 600;
     cursor: pointer;
-    width: 100%;
+    flex: 1;
 }
 
-/* Event Cards */
+.tip-creator-btn {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #F59E0B;
+    color: #F59E0B;
+    width: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* ============================================
+   EVENT CARDS - RESTORED
+   ============================================ */
 .events-grid {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    width: 100%;
 }
 
 .event-card {
     background: var(--card-bg, rgba(15, 23, 42, 0.6));
     border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
     border-radius: 16px;
-    padding: 16px;
+    padding: 20px;
     transition: all 0.3s ease;
     cursor: pointer;
+}
+
+.event-card:hover {
+    transform: translateX(4px);
+    border-color: #F59E0B;
+}
+
+.event-header {
+    margin-bottom: 10px;
 }
 
 .event-title {
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
+    color: var(--soft-white, #F8FAFC);
 }
 
 .event-time {
     font-size: 13px;
-    color: var(--warm-gold, #F59E0B);
-    margin-bottom: 10px;
+    color: #F59E0B;
 }
 
 .event-description {
     font-size: 13px;
     color: var(--slate-grey, #94A3B8);
     margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.event-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.reminder-btn {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid #F59E0B;
+    color: #F59E0B;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .event-tags {
@@ -580,9 +891,58 @@ RESPONSIVE ADJUSTMENTS
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
+    color: var(--slate-grey, #94A3B8);
 }
 
-/* Responsive */
+/* ============================================
+   BOTTOM NAVIGATION - RESTORED
+   ============================================ */
+.navigation-button-container {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 98;
+    pointer-events: none;
+}
+
+.navigation-button {
+    background: rgba(10, 14, 18, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+    border-radius: 60px;
+    padding: 10px 20px;
+    display: inline-flex;
+    gap: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+.nav-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--soft-white, #F8FAFC);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 20px;
+}
+
+.nav-icon:hover {
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    transform: translateY(-3px);
+}
+
+/* ============================================
+   RESPONSIVE - RESTORED
+   ============================================ */
 @media (max-width: 768px) {
     .content-grid {
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -600,6 +960,46 @@ RESPONSIVE ADJUSTMENTS
     
     .wavelet-card {
         width: 160px;
+    }
+    
+    .welcome-banner {
+        padding: 20px;
+    }
+    
+    .welcome-banner h2 {
+        font-size: 22px;
+    }
+    
+    .community-stats-bar {
+        padding: 12px 15px;
+        gap: 12px;
+    }
+    
+    .community-stat i {
+        font-size: 18px;
+    }
+    
+    .community-stat-value {
+        font-size: 16px;
+    }
+    
+    .community-stat-label {
+        font-size: 10px;
+    }
+    
+    .language-filter-label {
+        display: none;
+    }
+    
+    .navigation-button {
+        padding: 8px 16px;
+        gap: 10px;
+    }
+    
+    .nav-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
     }
 }
 
@@ -627,5 +1027,20 @@ RESPONSIVE ADJUSTMENTS
     
     .wavelet-card {
         width: 140px;
+    }
+    
+    .navigation-button {
+        padding: 6px 12px;
+        gap: 8px;
+    }
+    
+    .nav-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .section-title {
+        font-size: 18px;
     }
 }
