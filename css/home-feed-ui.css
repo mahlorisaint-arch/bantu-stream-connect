@@ -1,10 +1,193 @@
 /* ============================================
-   HOME FEED UI CSS - MIGRATED
-   ============================================
-   All UI styles have been migrated to:
-   - shared-components.css (header, sidebar, theme, modals)
-   - Individual module CSS files
-   ============================================ */
+HOME FEED UI - CORE UTILITIES & SKELETON
+============================================ */
+/* Cleaned: Removed migrated header, nav, sidebar, footer, and section-specific styles.
+   Preserved: Skeleton loading (unchanged), core UI utilities, modal foundations, 
+   back-to-top, toast system, and essential responsive adjustments.
+   All section-specific logic now resides in css/home-feed/*.css */
 
-/* This file is kept for backward compatibility only */
-/* Please use shared-components.css and module-specific CSS files */
+/* ============================================
+SKELETON LOADING (PRESERVED - DO NOT MODIFY)
+============================================ */
+.skeleton-card {
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+}
+.skeleton-thumbnail {
+    width: 100%;
+    height: var(--card-thumbnail-height);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+.skeleton-title {
+    height: calc(1.25rem * var(--ui-scale));
+    width: 80%;
+    margin: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+.skeleton-creator {
+    height: calc(0.75rem * var(--ui-scale));
+    width: 60%;
+    margin: 0 var(--spacing-md) var(--spacing-sm);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+.skeleton-stats {
+    height: calc(0.625rem * var(--ui-scale));
+    width: 70%;
+    margin: 0 var(--spacing-md) var(--spacing-md);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ============================================
+CORE UI UTILITIES
+============================================ */
+/* Toast Notification System */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    padding: 12px 24px;
+    border-radius: 50px;
+    color: var(--soft-white);
+    font-weight: 500;
+    animation: toastSlideIn 0.3s ease;
+    max-width: calc(18.75rem * var(--ui-scale));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-sm);
+    pointer-events: auto;
+}
+.toast i { font-size: var(--icon-md); }
+.toast.error { background: rgba(239, 68, 68, 0.9); }
+.toast.success { background: rgba(16, 185, 129, 0.9); }
+.toast.warning { background: rgba(245, 158, 11, 0.9); }
+.toast.info { background: var(--card-bg); }
+.toast-hide { animation: toastSlideOut 0.3s ease forwards; }
+
+@keyframes toastSlideIn {
+    from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+@keyframes toastSlideOut {
+    from { transform: translateX(-50%) translateY(0); opacity: 1; }
+    to { transform: translateX(-50%) translateY(100px); opacity: 0; }
+}
+
+/* Modal & Panel Foundations */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 1001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Back to Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: calc(7.5rem * var(--ui-scale));
+    right: calc(1.875rem * var(--ui-scale));
+    width: calc(3.125rem * var(--ui-scale));
+    height: calc(3.125rem * var(--ui-scale));
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 97;
+    font-size: var(--icon-md);
+}
+.back-to-top:hover {
+    transform: translateY(calc(-0.3125rem * var(--ui-scale)));
+    box-shadow: 0 calc(0.5rem * var(--ui-scale)) calc(1rem * var(--ui-scale)) rgba(29, 78, 216, 0.4);
+}
+
+/* ============================================
+RESPONSIVE ADJUSTMENTS
+============================================ */
+@media (max-width: 768px) {
+    .skeleton-card { border-radius: calc(1rem * var(--ui-scale)); }
+    .skeleton-thumbnail { height: calc(10rem * var(--ui-scale)); }
+    
+    .back-to-top {
+        bottom: calc(5rem * var(--ui-scale));
+        right: calc(1.25rem * var(--ui-scale));
+        width: calc(2.75rem * var(--ui-scale));
+        height: calc(2.75rem * var(--ui-scale));
+    }
+    
+    .toast {
+        bottom: calc(1.25rem * var(--ui-scale));
+        max-width: 90%;
+        font-size: var(--font-xs);
+    }
+}
+
+@media (max-width: 480px) {
+    .skeleton-thumbnail { height: calc(8.5rem * var(--ui-scale)); }
+    .back-to-top {
+        bottom: calc(4rem * var(--ui-scale));
+        right: calc(1rem * var(--ui-scale));
+        width: calc(2.5rem * var(--ui-scale));
+        height: calc(2.5rem * var(--ui-scale));
+        font-size: var(--icon-sm);
+    }
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-thumbnail,
+    .skeleton-title,
+    .skeleton-creator,
+    .skeleton-stats {
+        animation: none !important;
+    }
+}
