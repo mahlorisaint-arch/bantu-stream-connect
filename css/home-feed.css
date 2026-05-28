@@ -1,10 +1,7 @@
 /* ============================================
-   HOME FEED CSS - BASE STYLES ONLY
-   ============================================
-   Core variables and base styles only.
-   All component styles migrated to modular files.
-   ============================================ */
-
+HOME FEED CORE - VARIABLES & BASE LAYOUT
+============================================ */
+/* Base styles for Bantu Stream Connect Home Feed */
 :root {
     --deep-black: #0A0E12;
     --deep-navy: #0F172A;
@@ -14,10 +11,14 @@
     --warm-gold: #F59E0B;
     --error-color: #EF4444;
     --success-color: #10B981;
+    --glow-cycle-1: #00A3FF;
+    --glow-cycle-2: #0066FF;
+    --glow-cycle-3: #8B5CF6;
+    --glow-cycle-4: #EC4899;
     --card-bg: rgba(15, 23, 42, 0.6);
     --card-border: rgba(148, 163, 184, 0.2);
     
-    /* UI Scale */
+    /* DYNAMIC SCALING SYSTEM */
     --base-font-size: 16px;
     --ui-scale: 1;
     
@@ -38,9 +39,18 @@
     --spacing-lg: calc(1.5rem * var(--ui-scale));
     --spacing-xl: calc(2rem * var(--ui-scale));
     
-    /* Card */
+    /* Icon Sizes */
+    --icon-sm: calc(1rem * var(--ui-scale));
+    --icon-md: calc(1.25rem * var(--ui-scale));
+    --icon-lg: calc(1.5rem * var(--ui-scale));
+    --icon-xl: calc(2rem * var(--ui-scale));
+    
+    /* Card Sizes */
     --card-radius: calc(1.25rem * var(--ui-scale));
     --card-thumbnail-height: calc(8.75rem * var(--ui-scale));
+    
+    /* Button Sizes */
+    --btn-radius: calc(0.75rem * var(--ui-scale));
 }
 
 * {
@@ -49,22 +59,23 @@
     box-sizing: border-box;
 }
 
+html {
+    font-size: var(--base-font-size);
+}
+
 body {
     font-family: 'Inter', sans-serif;
+    font-size: var(--font-base);
     background: var(--deep-black);
     color: var(--soft-white);
     min-height: 100vh;
     overflow-x: hidden;
 }
 
-.container {
-    max-width: calc(75rem * var(--ui-scale));
-    margin: 0 auto;
-    padding: calc(1.5rem * var(--ui-scale));
-    padding-bottom: calc(6.25rem * var(--ui-scale));
-}
-
-/* Loading Screen (minimal) */
+/* ============================================
+CORE LAYOUT COMPONENTS
+============================================ */
+/* Loading Screen */
 .loading-screen {
     position: fixed;
     top: 0;
@@ -78,37 +89,292 @@ body {
     justify-content: center;
     z-index: 1000;
 }
-
 .spinner {
-    width: 50px;
-    height: 50px;
+    width: calc(3.125rem * var(--ui-scale));
+    height: calc(3.125rem * var(--ui-scale));
     border: 3px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     border-top-color: var(--bantu-blue);
     animation: spin 1s linear infinite;
+    margin-bottom: calc(1.25rem * var(--ui-scale));
 }
-
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-/* Scrollbar */
+/* Animated Background */
+.animated-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+}
+.glow-cycle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(calc(3.75rem * var(--ui-scale)));
+    opacity: 0.1;
+    animation: float 8s infinite ease-in-out;
+}
+.glow-1 { width: calc(25rem * var(--ui-scale)); height: calc(25rem * var(--ui-scale)); background: var(--glow-cycle-1); top: 10%; left: 5%; animation-delay: 0s; }
+.glow-2 { width: calc(18.75rem * var(--ui-scale)); height: calc(18.75rem * var(--ui-scale)); background: var(--glow-cycle-2); top: 60%; right: 10%; animation-delay: 2s; }
+.glow-3 { width: calc(21.875rem * var(--ui-scale)); height: calc(21.875rem * var(--ui-scale)); background: var(--glow-cycle-3); bottom: 10%; left: 20%; animation-delay: 4s; }
+.glow-4 { width: calc(15.625rem * var(--ui-scale)); height: calc(15.625rem * var(--ui-scale)); background: var(--glow-cycle-4); top: 20%; right: 20%; animation-delay: 6s; }
+@keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(calc(-1.25rem * var(--ui-scale))) scale(1.05); }
+}
+
+/* Main Container & Sections */
+#app {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+}
+.container {
+    max-width: calc(75rem * var(--ui-scale));
+    margin: 0 auto;
+    padding: calc(1.5rem * var(--ui-scale));
+    padding-bottom: calc(6.25rem * var(--ui-scale));
+}
+.section {
+    margin-bottom: calc(2.5rem * var(--ui-scale));
+}
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: calc(1.25rem * var(--ui-scale));
+}
+.section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+.see-all-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: calc(0.625rem * var(--ui-scale));
+    color: var(--warm-gold);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    text-decoration: none;
+}
+.see-all-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--warm-gold);
+}
+
+/* Content Grid */
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(calc(12.5rem * var(--ui-scale)), 1fr));
+    gap: calc(1.25rem * var(--ui-scale));
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: calc(3.75rem * var(--ui-scale)) calc(1.25rem * var(--ui-scale));
+    color: var(--slate-grey);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: calc(1rem * var(--ui-scale));
+    backdrop-filter: blur(10px);
+}
+.empty-icon {
+    font-size: var(--font-4xl);
+    margin-bottom: calc(1.25rem * var(--ui-scale));
+    color: var(--warm-gold);
+    opacity: 0.5;
+}
+
+/* ============================================
+SKELETON LOADING (CORE)
+============================================ */
+.skeleton-card {
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+}
+.skeleton-thumbnail {
+    width: 100%;
+    height: var(--card-thumbnail-height);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+.skeleton-title {
+    height: calc(1.25rem * var(--ui-scale));
+    width: 80%;
+    margin: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+.skeleton-creator {
+    height: calc(0.75rem * var(--ui-scale));
+    width: 60%;
+    margin: 0 var(--spacing-md) var(--spacing-sm);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+.skeleton-stats {
+    height: calc(0.625rem * var(--ui-scale));
+    width: 70%;
+    margin: 0 var(--spacing-md) var(--spacing-md);
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ============================================
+PERFORMANCE & ANIMATIONS
+============================================ */
+/* Fade in animation for main content */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Performance: Content cards start invisible then fade in */
+.content-card, .short-card, .creator-card {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.content-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: fadeInUp 0.3s ease forwards;
+}
+
+/* Critical CSS for immediate header rendering */
+.header, .category-tabs-container, .language-filter-bar {
+    will-change: transform;
+}
+
+/* Reduce motion if user prefers */
+@media (prefers-reduced-motion: reduce) {
+    .content-card, .short-card, .creator-card {
+        transition: none !important;
+        animation: none !important;
+    }
+    .skeleton-thumbnail, .skeleton-title, .skeleton-creator, .skeleton-stats {
+        animation: none !important;
+    }
+}
+
+/* ============================================
+SCROLLBAR & UTILITIES
+============================================ */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
-
 ::-webkit-scrollbar-track {
     background: var(--deep-navy);
 }
-
 ::-webkit-scrollbar-thumb {
     background: var(--bantu-blue);
     border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
     background: var(--warm-gold);
 }
 
-/* Note: All component styles are now in modular CSS files */
+/* Toast Container */
+#toast-container {
+    position: fixed;
+    bottom: calc(1.25rem * var(--ui-scale));
+    right: calc(1.25rem * var(--ui-scale));
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+.toast {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: calc(0.75rem * var(--ui-scale));
+    color: var(--soft-white);
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+    max-width: calc(18.75rem * var(--ui-scale));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-sm);
+}
+.toast i { font-size: var(--icon-md); }
+.toast.error { background: rgba(239, 68, 68, 0.9); }
+.toast.success { background: rgba(16, 185, 129, 0.9); }
+.toast.warning { background: rgba(245, 158, 11, 0.9); }
+.toast.info { background: var(--card-bg); }
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============================================
+RESPONSIVE DESIGN
+============================================ */
+@media (max-width: 768px) {
+    :root { --base-font-size: 14px; }
+    .container { padding: calc(1rem * var(--ui-scale)) calc(1rem * var(--ui-scale)) calc(8.125rem * var(--ui-scale)); }
+    .section-header { flex-direction: column; align-items: flex-start; gap: var(--spacing-xs); }
+    .content-grid { grid-template-columns: repeat(auto-fill, minmax(calc(10rem * var(--ui-scale)), 1fr)); gap: calc(1rem * var(--ui-scale)); }
+}
+@media (max-width: 480px) {
+    :root { --base-font-size: 13px; }
+    .header { padding: calc(0.5rem * var(--ui-scale)) calc(0.875rem * var(--ui-scale)); }
+    .logo-icon { width: calc(1.875rem * var(--ui-scale)); height: calc(1.875rem * var(--ui-scale)); }
+    .logo-text { font-size: var(--font-sm); max-width: calc(8.125rem * var(--ui-scale)); }
+    .icon-btn { width: calc(2.125rem * var(--ui-scale)); height: calc(2.125rem * var(--ui-scale)); font-size: var(--icon-sm); }
+    .content-grid { grid-template-columns: repeat(2, 1fr); gap: calc(0.75rem * var(--ui-scale)); }
+}
