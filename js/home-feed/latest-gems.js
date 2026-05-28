@@ -2,6 +2,11 @@
  * Latest Gems Module
  * Displays newly added content with freshness indicators,
  * category filtering, and publishing time tracking.
+ * 
+ * UPDATED: Now uses 48-hour time gate for recency,
+ * excludes short-form content (handled by Wavelets),
+ * and fetches metrics from content_engagement_stats.
+ * Includes fallback to absolute newest content when needed.
  */
 
 const LatestGems = (function() {
@@ -15,12 +20,22 @@ const LatestGems = (function() {
     let currentCategory = 'all';
     let newContentData = [];
     let scrollToNewBtn = null;
+    let usingFallbackMode = false;
     
     // Configuration
     const CACHE_KEY = 'feed_latestGems';
     const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
     const MAX_ITEMS = 12;
     const REFRESH_INTERVAL = 300000; // 5 minutes
+    const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
+    
+    // Valid content formats for Latest Gems (excludes 'short' and 'article')
+    // Includes: music, film, movie, long_form, podcast_episode, series_episode, video, audio, track, documentary
+    const VALID_CONTENT_FORMATS = [
+        'music', 'film', 'movie', 'long_form', 'podcast_episode', 
+        'series_episode', 'video', 'audio', 'track', 'documentary', 
+        'album_track', 'song'
+    ];
     
     // Categories for filtering
     const CATEGORIES = ['all', 'Music', 'STEM', 'Culture', 'News', 'Sports', 'Movies', 'Documentaries', 'Podcasts'];
@@ -126,7 +141,7 @@ const LatestGems = (function() {
     }
     
     /**
-     * Load publishing statistics
+     * Load publishing statistics - UPDATED to use new schema
      */
     async function loadPublishingStats() {
         try {
@@ -140,6 +155,7 @@ const LatestGems = (function() {
                 .from('Content')
                 .select('id', { count: 'exact', head: true })
                 .eq('status', 'published')
+                .in('content_format', VALID_CONTENT_FORMATS)
                 .gte('created_at', weekAgo.toISOString());
             
             // Get count published today
@@ -150,6 +166,7 @@ const LatestGems = (function() {
                 .from('Content')
                 .select('id', { count: 'exact', head: true })
                 .eq('status', 'published')
+                .in('content_format', VALID_CONTENT_FORMATS)
                 .gte('created_at', today.toISOString());
             
             // Get count of new creators this week
@@ -185,6 +202,9 @@ const LatestGems = (function() {
         const statsContainer = document.getElementById('latest-stats-bar');
         if (!statsContainer) return;
         
+        const fallbackNotice = usingFallbackMode ? 
+            '<div class="latest-stat-item fallback-notice"><i class="fas fa-clock"></i><div><div class="stat-value">Extended</div><div class="stat-label">Showing more gems</div></div></div>' : '';
+        
         statsContainer.innerHTML = `
             <div class="latest-stat-item">
                 <i class="fas fa-gem"></i>
@@ -208,12 +228,13 @@ const LatestGems = (function() {
                 </div>
             </div>
             <div class="latest-stat-item">
-                <i class="fas fa-clock"></i>
+                <i class="fas fa-hourglass-half"></i>
                 <div>
-                    <div class="stat-value">Fresh</div>
-                    <div class="stat-label">Daily Updates</div>
+                    <div class="stat-value">48h</div>
+                    <div class="stat-label">Fresh Window</div>
                 </div>
             </div>
+            ${fallbackNotice}
         `;
     }
     
@@ -247,10 +268,13 @@ const LatestGems = (function() {
     }
     
     /**
-     * Load latest content
+     * Load latest content - UPDATED with 48-hour time gate and fallback
      */
     async function loadContent() {
         console.log('💎 Loading Latest Gems...');
+        
+        // Reset fallback flag
+        usingFallbackMode = false;
         
         // Try cached data first
         const cachedData = loadFromCache();
@@ -268,14 +292,22 @@ const LatestGems = (function() {
         showSkeletons();
         
         try {
-            const contentList = await fetchLatestContent();
+            let contentList = await fetchLatestContent();
+            
+            // Check if we need fallback mode (no content in last 48 hours)
+            if (!contentList || contentList.length === 0) {
+                console.log('No content found in last 48 hours, using fallback mode');
+                usingFallbackMode = true;
+                contentList = await fetchFallbackContent();
+                addStatsBar(); // Update stats bar to show fallback notice
+            }
             
             if (!contentList || contentList.length === 0) {
                 showEmptyState();
                 return;
             }
             
-            // Build complete dataset with metrics
+            // Build complete dataset with metrics from engagement_stats
             let sectionData = await buildSectionData(contentList);
             
             // Apply freshness amplification
@@ -297,7 +329,7 @@ const LatestGems = (function() {
             // Animate cards
             animateCards();
             
-            console.log('✅ Latest Gems loaded:', sectionData.length, 'items');
+            console.log('✅ Latest Gems loaded:', sectionData.length, 'items', usingFallbackMode ? '(fallback mode)' : '(48h window)');
             
         } catch (err) {
             console.error("❌ Latest Gems Section Error:", err);
@@ -308,20 +340,42 @@ const LatestGems = (function() {
     }
     
     /**
-     * Fetch latest content from Supabase
+     * Fetch latest content from Supabase - UPDATED with 48-hour time gate
+     * Rule 1: Only standard content formats (excludes 'short')
+     * Rule 2: Only content from last 48 hours
      */
     async function fetchLatestContent() {
         try {
+            const fortyEightHoursAgo = new Date(Date.now() - FORTY_EIGHT_HOURS_MS);
+            
             let query = window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
-                    genre, language, created_at, views_count, favorites_count, 
-                    user_id, user_profiles!user_id (
-                        id, full_name, username, avatar_url, bio
+                    id, 
+                    title, 
+                    description, 
+                    thumbnail_url, 
+                    duration, 
+                    genre, 
+                    language, 
+                    created_at, 
+                    favorites_count,
+                    content_format,
+                    media_type,
+                    user_id, 
+                    user_profiles!user_id (
+                        id, 
+                        full_name, 
+                        username, 
+                        avatar_url, 
+                        bio
                     )
                 `)
                 .eq('status', 'published')
+                // Rule 1: Only display standard content formats (No vertical short loops)
+                .in('content_format', VALID_CONTENT_FORMATS)
+                // Rule 2: Ensure content is strictly under 48 hours old
+                .gte('created_at', fortyEightHoursAgo.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(MAX_ITEMS);
             
@@ -336,6 +390,56 @@ const LatestGems = (function() {
             return data || [];
         } catch (err) {
             console.error('Error fetching latest content:', err);
+            return [];
+        }
+    }
+    
+    /**
+     * Fetch fallback content when 48-hour window is empty
+     * Shows absolute newest content regardless of age
+     */
+    async function fetchFallbackContent() {
+        try {
+            let query = window.supabaseAuth
+                .from('Content')
+                .select(`
+                    id, 
+                    title, 
+                    description, 
+                    thumbnail_url, 
+                    duration, 
+                    genre, 
+                    language, 
+                    created_at, 
+                    favorites_count,
+                    content_format,
+                    media_type,
+                    user_id, 
+                    user_profiles!user_id (
+                        id, 
+                        full_name, 
+                        username, 
+                        avatar_url, 
+                        bio
+                    )
+                `)
+                .eq('status', 'published')
+                // Still exclude short content
+                .in('content_format', VALID_CONTENT_FORMATS)
+                .order('created_at', { ascending: false })
+                .limit(MAX_ITEMS);
+            
+            // Apply category filter if not 'all'
+            if (currentCategory !== 'all') {
+                query = query.eq('genre', currentCategory);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error fetching fallback content:', err);
             return [];
         }
     }
@@ -373,7 +477,8 @@ const LatestGems = (function() {
                 ...item,
                 freshness_score: freshnessScore,
                 freshness_label: freshnessLabel,
-                hours_old: hoursOld
+                hours_old: hoursOld,
+                is_fallback_content: hoursOld >= 48
             };
         });
     }
@@ -395,6 +500,9 @@ const LatestGems = (function() {
             } else if (item.hours_old < 168) {
                 indicatorClass = 'this-week';
                 indicatorIcon = '📅';
+            } else {
+                indicatorClass = 'older';
+                indicatorIcon = '💎';
             }
             
             return {
@@ -406,7 +514,8 @@ const LatestGems = (function() {
     }
     
     /**
-     * Build section data with metrics
+     * Build section data with metrics from content_engagement_stats
+     * UPDATED: Uses the new engagement_stats table
      */
     async function buildSectionData(contentList) {
         if (!contentList || contentList.length === 0) return [];
@@ -414,74 +523,52 @@ const LatestGems = (function() {
         const contentIds = contentList.map(c => c.id);
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
         
-        const metrics = await fetchAllMetrics(contentIds, creatorIds);
+        // Fetch engagement metrics from content_engagement_stats
+        const engagementMetrics = await fetchEngagementMetrics(contentIds);
+        const connectors = await fetchConnectorCounts(creatorIds);
         
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: metrics.views[item.id] || 0,
-                likes: metrics.likes[item.id] || 0,
-                shares: metrics.shares[item.id] || 0,
+                views: engagementMetrics[item.id]?.total_views || 0,
+                likes: engagementMetrics[item.id]?.total_likes || 0,
+                comments: engagementMetrics[item.id]?.total_comments || 0,
+                shares: engagementMetrics[item.id]?.total_shares || 0,
                 favorites: item.favorites_count || 0,
-                connectors: metrics.connectors[item.user_id] || 0
+                connectors: connectors[item.user_id] || 0
             }
         }));
     }
     
     /**
-     * Fetch all metrics in parallel
+     * Fetch engagement metrics from content_engagement_stats table
      */
-    async function fetchAllMetrics(contentIds, creatorIds) {
-        const [views, likes, shares, connectors] = await Promise.all([
-            fetchViewCounts(contentIds),
-            fetchLikeCounts(contentIds),
-            fetchShareCounts(contentIds),
-            fetchConnectorCounts(creatorIds)
-        ]);
+    async function fetchEngagementMetrics(contentIds) {
+        if (!contentIds.length) return {};
         
-        return { views, likes, shares, connectors };
-    }
-    
-    /**
-     * Fetch view counts
-     */
-    async function fetchViewCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch like counts
-     */
-    async function fetchLikeCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch share counts
-     */
-    async function fetchShareCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views, total_likes, total_comments, total_shares')
+                .in('content_id', contentIds);
+            
+            if (error) throw error;
+            
+            const metricsMap = {};
+            data?.forEach(row => {
+                metricsMap[row.content_id] = {
+                    total_views: row.total_views || 0,
+                    total_likes: row.total_likes || 0,
+                    total_comments: row.total_comments || 0,
+                    total_shares: row.total_shares || 0
+                };
+            });
+            
+            return metricsMap;
+        } catch (err) {
+            console.error('Error fetching engagement metrics:', err);
+            return {};
+        }
     }
     
     /**
@@ -490,14 +577,19 @@ const LatestGems = (function() {
     async function fetchConnectorCounts(creatorIds) {
         if (!creatorIds || creatorIds.length === 0) return {};
         const limitedIds = creatorIds.slice(0, 50);
-        const { data } = await window.supabaseAuth
-            .from("connectors")
-            .select("connected_id")
-            .in("connected_id", limitedIds)
-            .eq("connection_type", "creator");
-        const counts = {};
-        data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
-        return counts;
+        try {
+            const { data } = await window.supabaseAuth
+                .from("connectors")
+                .select("connected_id")
+                .in("connected_id", limitedIds)
+                .eq("connection_type", "creator");
+            const counts = {};
+            data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
+            return counts;
+        } catch (err) {
+            console.error('Error fetching connector counts:', err);
+            return {};
+        }
     }
     
     /**
@@ -519,7 +611,19 @@ const LatestGems = (function() {
     }
     
     /**
-     * Render latest gems cards
+     * Get format icon based on content_format
+     */
+    function getFormatIcon(contentFormat) {
+        const formatIcons = {
+            'music': '🎵', 'film': '🎬', 'movie': '🎥', 'long_form': '📺',
+            'podcast_episode': '🎙️', 'series_episode': '📺', 'video': '📹',
+            'audio': '🎧', 'track': '🎵', 'documentary': '📽️', 'album_track': '💿', 'song': '🎤'
+        };
+        return formatIcons[contentFormat] || '🎬';
+    }
+    
+    /**
+     * Render latest gems cards - UPDATED with format badge
      */
     function renderCards(contents) {
         const fragment = document.createDocumentFragment();
@@ -540,6 +644,9 @@ const LatestGems = (function() {
             const freshnessLabel = content.freshness_label || '';
             const indicatorIcon = content.indicator_icon || '🆕';
             const indicatorClass = content.indicator_class || '';
+            const formatIcon = getFormatIcon(content.content_format);
+            const formatLabel = content.content_format ? content.content_format.replace('_', ' ').toUpperCase() : 'NEW';
+            const isFallback = content.is_fallback_content;
             
             // Avatar HTML
             let avatarHtml = '';
@@ -567,6 +674,11 @@ const LatestGems = (function() {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
             
+            // Add fallback class for styling if needed
+            if (isFallback) {
+                card.classList.add('fallback-gem');
+            }
+            
             card.innerHTML = `
                 <div class="card-thumbnail">
                     <img src="${thumbnailUrl}" 
@@ -574,6 +686,9 @@ const LatestGems = (function() {
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                     <div class="card-badges">
+                        <div class="card-badge format-badge">
+                            ${formatIcon} ${formatLabel}
+                        </div>
                         <div class="card-badge new-badge">
                             <i class="fas fa-gem"></i> ${freshnessLabel || 'NEW'}
                         </div>
@@ -600,7 +715,8 @@ const LatestGems = (function() {
                     <div class="card-meta">
                         <span class="time-ago"><i class="fas fa-clock"></i> ${timeAgo}</span>
                         <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
-                        <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                        <span><i class="fas fa-thumbs-up"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                        <span><i class="fas fa-comment"></i> ${formatNumber(content.metrics?.comments || 0)}</span>
                     </div>
                     <div class="connector-info">
                         <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
@@ -660,8 +776,18 @@ const LatestGems = (function() {
                 <div class="empty-icon"><i class="fas fa-gem"></i></div>
                 <h3>No New Content</h3>
                 <p>Check back soon for fresh gems!</p>
+                <button class="see-all-btn" id="browse-library-btn" style="margin-top: 16px;">
+                    <i class="fas fa-compass"></i> Browse Library
+                </button>
             </div>
         `;
+        
+        const browseBtn = document.getElementById('browse-library-btn');
+        if (browseBtn) {
+            browseBtn.addEventListener('click', () => {
+                window.location.href = 'https://bantustreamconnect.com/content-library';
+            });
+        }
     }
     
     /**
