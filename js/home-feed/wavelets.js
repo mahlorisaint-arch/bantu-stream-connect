@@ -2,6 +2,9 @@
  * Wavelets Module (formerly Quick Bits)
  * Handles short-form vertical content with horizontal scrolling,
  * optimized for mobile viewing and quick engagement.
+ * 
+ * UPDATED: Now uses media_type = 'short' and status = 'published' filter.
+ * Metrics (views, likes, comments, shares) are fetched from content_engagement_stats.
  */
 
 const Wavelets = (function() {
@@ -153,23 +156,38 @@ const Wavelets = (function() {
     }
     
     /**
-     * Fetch wavelets from Supabase
+     * Fetch wavelets from Supabase using the new schema
+     * Filter: media_type = 'short' AND status = 'published'
      */
     async function fetchWavelets() {
         try {
-            // Fetch short content (duration <= 60 seconds or media_type = 'short')
+            // Updated query to use media_type = 'short' and status = 'published'
+            // Also joined with user_profiles to get creator information
             const { data, error } = await window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
-                    genre, language, created_at, views_count, favorites_count, 
-                    user_id, user_profiles!user_id (
-                        id, full_name, username, avatar_url
+                    id, 
+                    title, 
+                    description, 
+                    thumbnail_url, 
+                    duration, 
+                    genre, 
+                    language, 
+                    created_at,
+                    user_id,
+                    content_format,
+                    media_type,
+                    status,
+                    user_profiles!user_id (
+                        id, 
+                        full_name, 
+                        username, 
+                        avatar_url
                     )
                 `)
+                .eq('media_type', 'short')
                 .eq('status', 'published')
-                .or(`media_type.eq.short,duration.lte.60`)
-                .order('views_count', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(MAX_ITEMS);
             
             if (error) throw error;
@@ -181,7 +199,7 @@ const Wavelets = (function() {
     }
     
     /**
-     * Build section data with metrics
+     * Build section data with metrics from content_engagement_stats
      */
     async function buildSectionData(contentList) {
         if (!contentList || contentList.length === 0) return [];
@@ -189,96 +207,81 @@ const Wavelets = (function() {
         const contentIds = contentList.map(c => c.id);
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
         
-        const metrics = await fetchAllMetrics(contentIds, creatorIds);
+        // Fetch engagement metrics from the new table
+        const engagementMetrics = await fetchEngagementMetrics(contentIds);
+        const connectors = await fetchConnectorCounts(creatorIds);
         
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: metrics.views[item.id] || 0,
-                likes: metrics.likes[item.id] || 0,
-                shares: metrics.shares[item.id] || 0,
-                favorites: item.favorites_count || 0,
-                connectors: metrics.connectors[item.user_id] || 0
+                views: engagementMetrics[item.id]?.total_views || 0,
+                likes: engagementMetrics[item.id]?.total_likes || 0,
+                comments: engagementMetrics[item.id]?.total_comments || 0,
+                shares: engagementMetrics[item.id]?.total_shares || 0,
+                connectors: connectors[item.user_id] || 0
             }
         }));
     }
     
     /**
-     * Fetch all metrics in parallel
+     * Fetch engagement metrics from content_engagement_stats table
+     * This replaces the individual fetches from content_views, content_likes, content_shares
      */
-    async function fetchAllMetrics(contentIds, creatorIds) {
-        const [views, likes, shares, connectors] = await Promise.all([
-            fetchViewCounts(contentIds),
-            fetchLikeCounts(contentIds),
-            fetchShareCounts(contentIds),
-            fetchConnectorCounts(creatorIds)
-        ]);
+    async function fetchEngagementMetrics(contentIds) {
+        if (!contentIds.length) return {};
         
-        return { views, likes, shares, connectors };
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views, total_likes, total_comments, total_shares')
+                .in('content_id', contentIds);
+            
+            if (error) throw error;
+            
+            // Convert array to object keyed by content_id
+            const metricsMap = {};
+            data?.forEach(row => {
+                metricsMap[row.content_id] = {
+                    total_views: row.total_views || 0,
+                    total_likes: row.total_likes || 0,
+                    total_comments: row.total_comments || 0,
+                    total_shares: row.total_shares || 0
+                };
+            });
+            
+            return metricsMap;
+        } catch (err) {
+            console.error('Error fetching engagement metrics:', err);
+            return {};
+        }
     }
     
     /**
-     * Fetch view counts
-     */
-    async function fetchViewCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch like counts
-     */
-    async function fetchLikeCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch share counts
-     */
-    async function fetchShareCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch connector counts
+     * Fetch connector counts (unchanged, as it uses a separate table)
      */
     async function fetchConnectorCounts(creatorIds) {
         if (!creatorIds || creatorIds.length === 0) return {};
         const limitedIds = creatorIds.slice(0, 50);
-        const { data } = await window.supabaseAuth
-            .from("connectors")
-            .select("connected_id")
-            .in("connected_id", limitedIds)
-            .eq("connection_type", "creator");
-        const counts = {};
-        data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
-        return counts;
+        try {
+            const { data } = await window.supabaseAuth
+                .from("connectors")
+                .select("connected_id")
+                .in("connected_id", limitedIds)
+                .eq("connection_type", "creator");
+            const counts = {};
+            data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
+            return counts;
+        } catch (err) {
+            console.error('Error fetching connector counts:', err);
+            return {};
+        }
     }
     
     /**
      * Render wavelets
      */
     function renderWavelets(contents) {
+        if (!container) return;
         container.innerHTML = '';
         
         const fragment = document.createDocumentFragment();
@@ -346,6 +349,7 @@ const Wavelets = (function() {
                     </div>
                     <div class="wavelet-stats">
                         <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                        <span><i class="fas fa-comment"></i> ${formatNumber(content.metrics?.comments || 0)}</span>
                         <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
                         <span class="wavelet-connectors">
                             <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)}
@@ -375,6 +379,7 @@ const Wavelets = (function() {
      * Show skeleton loading state
      */
     function showSkeletons() {
+        if (!container) return;
         container.innerHTML = Array(6).fill().map(() => `
             <div class="wavelet-skeleton">
                 <div class="wavelet-skeleton-thumbnail"></div>
@@ -388,6 +393,7 @@ const Wavelets = (function() {
      * Show empty state
      */
     function showEmptyState() {
+        if (!container) return;
         container.innerHTML = `
             <div class="wavelets-empty" style="width: 100%; text-align: center;">
                 <i class="fas fa-bolt"></i>
@@ -401,6 +407,7 @@ const Wavelets = (function() {
      * Show error state
      */
     function showErrorState() {
+        if (!container) return;
         container.innerHTML = `
             <div class="wavelets-empty" style="width: 100%; text-align: center;">
                 <i class="fas fa-exclamation-triangle"></i>
