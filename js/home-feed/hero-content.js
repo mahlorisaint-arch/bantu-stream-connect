@@ -1,21 +1,20 @@
 /**
- * Hero Content Module - DIAGNOSTIC VERSION
+ * Hero Content Module - CORRECTED CONNECTORS COUNT
  * Handles cinematic hero section with video background, rotation logic,
  * creator recognition, social proof metrics, and audio control.
  * 
- * This version includes extensive logging to debug loading issues
+ * FIXED: Correctly counts connectors/followers using the connectors table
+ * - connector_id: the user who is following
+ * - connected_id: the user being followed (creator)
+ * - connection_type = 'creator' for creator follows
  */
 
 (function() {
     'use strict';
     
-    // DIAGNOSTIC: Log immediately when file loads
     console.log('🎬 [HERO-LOAD] hero-content.js file has been loaded and is executing!');
     console.log('🎬 [HERO-LOAD] Timestamp:', new Date().toISOString());
-    
-    // Check if supabaseAuth is available at load time
     console.log('🎬 [HERO-LOAD] window.supabaseAuth exists?', !!window.supabaseAuth);
-    console.log('🎬 [HERO-LOAD] window.supabaseAuth type:', typeof window.supabaseAuth);
     
     const HeroContent = {
         // Configuration
@@ -42,14 +41,18 @@
         async init() {
             console.log('🎬 [HERO-INIT] HeroContent.init() called');
             
+            // Prevent double initialization
+            if (this.state.initialized) {
+                console.log('⚠️ [HERO-INIT] Already initialized, skipping');
+                return;
+            }
+            
             // Cache DOM elements
             this.cacheElements();
             
             // Check if hero section exists
             if (!this.elements.heroSection) {
                 console.error('❌ [HERO-INIT] Hero section element NOT found! ID: cinematic-hero');
-                console.log('🔍 [HERO-INIT] Available elements with cinematic-hero id:', document.getElementById('cinematic-hero'));
-                console.log('🔍 [HERO-INIT] All sections:', document.querySelectorAll('section'));
                 return;
             }
             
@@ -88,19 +91,8 @@
                 heroFeaturedBadge: document.getElementById('hero-featured-badge')
             };
             
-            // Log which elements were found
-            const foundElements = Object.entries(this.elements)
-                .filter(([key, val]) => val !== null)
-                .map(([key]) => key);
-            
-            const missingElements = Object.entries(this.elements)
-                .filter(([key, val]) => val === null)
-                .map(([key]) => key);
-            
-            console.log(`✅ [HERO-CACHE] Found elements: ${foundElements.length} -`, foundElements);
-            if (missingElements.length) {
-                console.warn(`⚠️ [HERO-CACHE] Missing elements: ${missingElements.length} -`, missingElements);
-            }
+            const foundCount = Object.values(this.elements).filter(v => v !== null).length;
+            console.log(`✅ [HERO-CACHE] Found ${foundCount} of ${Object.keys(this.elements).length} elements`);
         },
         
         setupEventListeners() {
@@ -110,7 +102,6 @@
                 this.elements.heroExploreBtn.addEventListener('click', () => {
                     window.location.href = '/content-library';
                 });
-                console.log('✅ [HERO-EVENTS] Explore button listener added');
             }
             
             if (this.elements.heroWatchBtn) {
@@ -120,7 +111,6 @@
                         window.location.href = `content-detail.html?id=${contentId}`;
                     }
                 });
-                console.log('✅ [HERO-EVENTS] Watch button listener added');
             }
             
             this.setupAudioControl();
@@ -138,10 +128,8 @@
             this.showLoading();
             
             try {
-                // Check if supabaseAuth is available
                 if (!window.supabaseAuth) {
                     console.error('❌ [HERO-LOAD] window.supabaseAuth is not available!');
-                    console.log('🔍 [HERO-LOAD] Available window properties:', Object.keys(window).filter(k => k.includes('supabase') || k.includes('Supabase')));
                     this.showPlaceholder('Supabase client not available');
                     return;
                 }
@@ -149,8 +137,6 @@
                 console.log('✅ [HERO-LOAD] supabaseAuth is available');
                 
                 // Fetch published content with video files
-                console.log('🎬 [HERO-LOAD] Fetching content from Supabase...');
-                
                 const { data: allContent, error } = await window.supabaseAuth
                     .from('Content')
                     .select(`
@@ -187,22 +173,14 @@
                 
                 console.log(`📊 [HERO-LOAD] Fetched ${allContent.length} total content items`);
                 
-                // Log first few items for debugging
-                allContent.slice(0, 5).forEach((item, idx) => {
-                    console.log(`   Item ${idx + 1}: ID=${item.id}, Title="${item.title}", Format=${item.content_format}, HasVideo=${!!item.file_url}`);
-                });
-                
                 // Filter for video content
                 const videoContent = allContent.filter(item => {
-                    // Check by content_format
                     if (item.content_format && this.config.videoFormats.includes(item.content_format.toLowerCase())) {
                         return true;
                     }
-                    // Check by content_type
                     if (item.content_type && this.config.videoFormats.includes(item.content_type.toLowerCase())) {
                         return true;
                     }
-                    // Check file extension
                     const fileUrl = (item.file_url || '').toLowerCase();
                     for (const ext of this.config.videoExtensions) {
                         if (fileUrl.endsWith(ext)) {
@@ -216,14 +194,9 @@
                 
                 if (videoContent.length === 0) {
                     console.warn('⚠️ [HERO-LOAD] No video content found!');
-                    this.showPlaceholder('No video content available. Please upload videos.');
+                    this.showPlaceholder('No video content available');
                     return;
                 }
-                
-                // Log video titles
-                videoContent.forEach((video, idx) => {
-                    console.log(`   Video ${idx + 1}: "${video.title}" (${video.content_format || 'unknown format'})`);
-                });
                 
                 // Get stored selection or select random
                 const lastVideoId = localStorage.getItem('hero_last_content_id');
@@ -233,7 +206,6 @@
                 let selectedVideo = null;
                 
                 if (lastVideoId && lastVideoTime && (now - parseInt(lastVideoTime)) < this.config.rotationMs) {
-                    // Try to use existing video
                     selectedVideo = videoContent.find(v => v.id.toString() === lastVideoId);
                     if (selectedVideo) {
                         console.log(`🎬 [HERO-LOAD] Using existing video (within ${this.config.rotationHours} hours): "${selectedVideo.title}"`);
@@ -241,24 +213,21 @@
                 }
                 
                 if (!selectedVideo) {
-                    // Select random video
                     let availableVideos = videoContent;
                     if (lastVideoId && videoContent.length > 1) {
                         availableVideos = videoContent.filter(v => v.id.toString() !== lastVideoId);
                     }
-                    
                     const randomIndex = Math.floor(Math.random() * availableVideos.length);
                     selectedVideo = availableVideos[randomIndex];
                     
-                    // Save selection
                     localStorage.setItem('hero_last_content_id', selectedVideo.id.toString());
                     localStorage.setItem('hero_last_update_time', now.toString());
                     
                     console.log(`🎬 [HERO-LOAD] Selected NEW random video: "${selectedVideo.title}" (index: ${randomIndex} of ${availableVideos.length})`);
                 }
                 
-                // Get engagement stats
-                await this.fetchEngagementStats(selectedVideo);
+                // Fetch engagement stats and connectors count
+                await this.fetchEngagementData(selectedVideo);
                 
                 // Render the video
                 await this.renderContent(selectedVideo);
@@ -277,9 +246,10 @@
             }
         },
         
-        async fetchEngagementStats(content) {
+        async fetchEngagementData(content) {
             if (!content || !window.supabaseAuth) return;
             
+            // Fetch engagement stats
             try {
                 const { data, error } = await window.supabaseAuth
                     .from('content_engagement_stats')
@@ -296,13 +266,40 @@
                     content.total_views = 0;
                     content.total_likes = 0;
                     content.total_shares = 0;
-                    console.log('📊 [HERO-STATS] No stats available');
                 }
             } catch (err) {
                 console.warn('⚠️ [HERO-STATS] Could not fetch stats:', err);
                 content.total_views = 0;
                 content.total_likes = 0;
                 content.total_shares = 0;
+            }
+            
+            // FIXED: Fetch connectors count for the creator
+            // In connectors table:
+            // - connector_id: the user who is FOLLOWING
+            // - connected_id: the user being FOLLOWED (the creator)
+            // - connection_type = 'creator'
+            if (content.user_id) {
+                try {
+                    const { count, error: connError } = await window.supabaseAuth
+                        .from('connectors')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('connected_id', content.user_id)
+                        .eq('connection_type', 'creator');
+                    
+                    if (!connError) {
+                        content.connector_count = count || 0;
+                        console.log(`👥 [HERO-STATS] Creator ${content.user_id} has ${content.connector_count} connectors/followers`);
+                    } else {
+                        console.warn('⚠️ [HERO-STATS] Could not fetch connector count:', connError.message);
+                        content.connector_count = 0;
+                    }
+                } catch (err) {
+                    console.warn('⚠️ [HERO-STATS] Exception fetching connector count:', err);
+                    content.connector_count = 0;
+                }
+            } else {
+                content.connector_count = 0;
             }
         },
         
@@ -323,7 +320,7 @@
             // Update creator info
             this.updateCreatorInfo(content);
             
-            // Update metrics
+            // Update metrics (with correct connector count)
             this.updateMetrics(content);
             
             // Update badges
@@ -343,7 +340,6 @@
         updateText(content) {
             if (this.elements.heroTitle) {
                 this.elements.heroTitle.textContent = content.title || 'DISCOVER & CONNECT';
-                console.log(`📝 [HERO-RENDER] Title: ${this.elements.heroTitle.textContent}`);
             }
             
             if (this.elements.heroSubtitle) {
@@ -373,9 +369,7 @@
                 const img = document.createElement('img');
                 img.src = avatarUrl;
                 img.alt = creator.full_name || 'Creator';
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'cover';
+                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
                 img.onerror = () => {
                     this.elements.heroCreatorAvatar.innerHTML = '<span>' + (creator.full_name?.charAt(0).toUpperCase() || 'C') + '</span>';
                 };
@@ -388,24 +382,36 @@
         updateMetrics(content) {
             const views = this.formatNumber(content.total_views || 0);
             const favorites = this.formatNumber(content.favorites_count || 0);
+            // FIXED: Use the connector_count we fetched
+            const connectors = this.formatNumber(content.connector_count || 0);
             const shares = this.formatNumber(content.total_shares || 0);
             
             if (this.elements.heroViews) this.elements.heroViews.textContent = views;
             if (this.elements.heroFavorites) this.elements.heroFavorites.textContent = favorites;
+            if (this.elements.heroConnectors) this.elements.heroConnectors.textContent = connectors;
             if (this.elements.heroShares) this.elements.heroShares.textContent = shares;
             
-            console.log(`📊 [HERO-RENDER] Metrics: ${views} views, ${favorites} favorites, ${shares} shares`);
+            console.log(`📊 [HERO-RENDER] Metrics: ${views} views, ${favorites} favs, ${connectors} connectors, ${shares} shares`);
         },
         
         updateBadges(content) {
             if (this.elements.heroVerifiedBadge) {
-                const isVerified = (content.total_views || 0) > 10000;
+                const isVerified = (content.total_views || 0) > 10000 || (content.connector_count || 0) > 500;
                 this.elements.heroVerifiedBadge.style.display = isVerified ? 'inline-flex' : 'none';
             }
             
             if (this.elements.heroFeaturedBadge) {
                 this.elements.heroFeaturedBadge.style.display = 'flex';
-                this.elements.heroFeaturedBadge.innerHTML = '<i class="fas fa-star"></i> Featured Video';
+                this.elements.heroFeaturedBadge.innerHTML = '<i class="fas fa-crown"></i> FEATURED VIDEO';
+            }
+            
+            if (this.elements.heroTrendingText) {
+                const views = content.total_views || 0;
+                if (views > 1000) {
+                    this.elements.heroTrendingText.innerHTML = '<i class="fas fa-fire"></i> Trending ↑ 24h';
+                } else {
+                    this.elements.heroTrendingText.innerHTML = '<i class="fas fa-star"></i> Featured';
+                }
             }
         },
         
@@ -419,7 +425,6 @@
             
             if (!videoUrl) {
                 console.warn(`⚠️ [HERO-VIDEO] No video URL for content: ${content.title}`);
-                // Fallback to thumbnail
                 if (content.thumbnail_url) {
                     let thumbUrl = content.thumbnail_url;
                     if (!thumbUrl.startsWith('http')) {
@@ -433,7 +438,7 @@
             
             // Fix URL
             if (!videoUrl.startsWith('http')) {
-                videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${videoUrl.replace(/^\/+/, '')}`;
+                videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl.replace(/^\/+/, '')}`;
             }
             
             console.log(`🎬 [HERO-VIDEO] Loading video: ${videoUrl.substring(0, 80)}...`);
@@ -518,7 +523,9 @@
         
         async rotateContent() {
             console.log('🔄 [HERO-ROTATE] Rotating hero content...');
+            this.state.initialized = false;
             await this.loadContent();
+            this.state.initialized = true;
         },
         
         showLoading() {
@@ -544,14 +551,12 @@
                 this.elements.heroSubtitle.textContent = 'No video content available. Be the first to upload and share your story!';
             }
             
-            // Set default background
             if (this.elements.heroVideo) {
                 this.elements.heroVideo.style.backgroundImage = 'url(https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&h=1080&fit=crop)';
                 this.elements.heroVideo.style.backgroundSize = 'cover';
                 this.elements.heroVideo.style.backgroundPosition = 'center';
             }
             
-            // Reset metrics
             if (this.elements.heroViews) this.elements.heroViews.textContent = '0';
             if (this.elements.heroFavorites) this.elements.heroFavorites.textContent = '0';
             if (this.elements.heroConnectors) this.elements.heroConnectors.textContent = '0';
@@ -574,32 +579,27 @@
                 this.elements.heroVideo.pause();
                 this.elements.heroVideo.src = '';
             }
+            this.state.initialized = false;
             console.log('🎬 [HERO] Module destroyed');
         }
     };
     
     // Make available globally
     window.HeroContent = HeroContent;
-    
-    // DIAGNOSTIC: Log that the module is ready
     console.log('🎬 [HERO-LOAD] HeroContent module registered on window');
-    console.log('🎬 [HERO-LOAD] window.HeroContent exists:', !!window.HeroContent);
     
     // Auto-initialize with a delay to ensure DOM is ready
     if (document.readyState === 'loading') {
-        console.log('🎬 [HERO-LOAD] Document still loading, waiting for DOMContentLoaded');
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🎬 [HERO-LOAD] DOMContentLoaded fired, initializing...');
             setTimeout(() => window.HeroContent.init(), 100);
         });
     } else {
-        console.log('🎬 [HERO-LOAD] Document already loaded, initializing immediately...');
         setTimeout(() => window.HeroContent.init(), 100);
     }
     
-    // Also try to initialize if window.load fires (fallback)
+    // Fallback initialization
     window.addEventListener('load', () => {
-        if (!window.HeroContent.state || !window.HeroContent.state.initialized) {
+        if (!window.HeroContent.state.initialized) {
             console.log('🎬 [HERO-LOAD] Load event fallback, initializing...');
             setTimeout(() => window.HeroContent.init(), 100);
         }
