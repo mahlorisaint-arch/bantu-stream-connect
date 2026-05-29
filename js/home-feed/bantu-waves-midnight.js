@@ -3,6 +3,8 @@
    Home Feed Component - Late-Night Content Curation
    Features low-tempo, chill, atmospheric content for after-hours viewing
    Includes: Lo-Fi Beats, Late-Night Podcasts, Acoustic Sets, Neo-Noir Content
+   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
+   FIXED: Array sorting error when scoredItems is not an array
 /* ============================================ */
 
 console.log('🌙 Bantu Waves: Midnight Sessions section loading...');
@@ -77,7 +79,7 @@ const BantuWavesMidnight = {
         this.cacheElements();
         
         if (!this.elements.section) {
-            console.warn('Midnight Sessions section element not found');
+            console.warn('🌙 Midnight Sessions section element not found');
             return;
         }
 
@@ -91,7 +93,7 @@ const BantuWavesMidnight = {
         setInterval(() => this.checkMidnightMode(), 60 * 60 * 1000);
         
         this.state.initialized = true;
-        console.log('Midnight Sessions section initialized, midnight mode:', this.state.isMidnightMode);
+        console.log('🌙 Midnight Sessions section initialized, midnight mode:', this.state.isMidnightMode);
     },
 
     cacheElements() {
@@ -172,7 +174,7 @@ const BantuWavesMidnight = {
             }
         }
         
-        console.log('Midnight mode:', isMidnight, 'at hour:', currentHour);
+        console.log('🌙 Midnight mode:', isMidnight, 'at hour:', currentHour);
         return isMidnight;
     },
 
@@ -217,7 +219,7 @@ const BantuWavesMidnight = {
     },
 
     /* ============================================ */
-    /* DATA LOADING
+    /* DATA LOADING - FIXED: Uses supabaseAuth and proper sorting
     /* ============================================ */
     async loadMidnightContent(forceRefresh = false) {
         if (this.state.isLoading) return;
@@ -225,7 +227,7 @@ const BantuWavesMidnight = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('Midnight Sessions: Using cached data', cachedData.length, 'items');
+                console.log('📦 Midnight Sessions: Using cached data', cachedData.length, 'items');
                 this.state.content = cachedData;
                 this.render(cachedData);
                 return;
@@ -249,10 +251,12 @@ const BantuWavesMidnight = {
             const enrichedItems = await this.enrichItemsWithMetrics(allItems);
             
             // Calculate midnight score
-            const scoredItems = this.calculateMidnightScore(enrichedItems);
+            const scoredItems = this.calculateMidnightScoreForItems(enrichedItems);
             
-            // Sort by midnight score
-            const sortedItems = scoredItems.sort((a, b) => b.midnight_score - a.midnight_score);
+            // FIXED: Ensure scoredItems is an array before sorting
+            const sortedItems = Array.isArray(scoredItems) && scoredItems.length > 0
+                ? scoredItems.sort((a, b) => (b.midnight_score || 0) - (a.midnight_score || 0))
+                : [];
             
             // Take top items
             const topItems = sortedItems.slice(0, this.config.maxItems);
@@ -261,10 +265,10 @@ const BantuWavesMidnight = {
             this.cacheData(topItems);
             this.render(topItems);
             
-            console.log('Midnight Sessions loaded:', topItems.length, 'items');
+            console.log('✅ Midnight Sessions loaded:', topItems.length, 'items');
             
         } catch (error) {
-            console.error('Error loading Midnight Sessions:', error);
+            console.error('❌ Error loading Midnight Sessions:', error);
             this.showError();
         } finally {
             this.hideLoading();
@@ -273,143 +277,171 @@ const BantuWavesMidnight = {
     },
 
     async fetchMidnightContent() {
-        if (!window.supabaseClient) return [];
-
-        // Build query for midnight-appropriate content
-        let query = window.supabaseClient
-            .from('Content')
-            .select(`
-                id,
-                title,
-                description,
-                thumbnail_url,
-                file_url,
-                duration,
-                genre,
-                language,
-                country,
-                city,
-                content_format,
-                content_type,
-                views_count,
-                favorites_count,
-                shares_count,
-                created_at,
-                tempo,
-                moods,
-                tags,
-                is_bantu_original,
-                user_id,
-                user_profiles:user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('status', 'published')
-            .in('content_format', this.config.midnightFormats)
-            .limit(this.config.maxItems * 2);
-
-        // Filter by midnight moods (using overlaps with array column)
-        if (this.config.midnightMoods.length > 0) {
-            // Check if any of the midnight moods are in the moods array
-            const moodFilter = this.config.midnightMoods.map(m => `moods.cs.{${m}}`).join(',');
-            query = query.or(moodFilter);
-        }
-        
-        // Filter by tempo (low BPM for chill content)
-        if (this.config.tempoRange) {
-            query = query.gte('tempo', this.config.tempoRange.min)
-                         .lte('tempo', this.config.tempoRange.max);
-        }
-        
-        // Also include content from local cities
-        const cityFilter = this.config.localCities.map(c => `city.eq.${c}`).join(',');
-        query = query.or(cityFilter);
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error('Error fetching midnight content:', error);
+        // FIXED: Use window.supabaseAuth instead of window.supabaseClient
+        if (!window.supabaseAuth) {
+            console.error('Supabase Auth client not available');
             return [];
         }
 
-        return data || [];
+        try {
+            // Simplified query - fetch published content with basic filters
+            let query = window.supabaseAuth
+                .from('Content')
+                .select(`
+                    id,
+                    title,
+                    description,
+                    thumbnail_url,
+                    file_url,
+                    duration,
+                    genre,
+                    language,
+                    country,
+                    city,
+                    content_format,
+                    content_type,
+                    created_at,
+                    is_bantu_original,
+                    user_id,
+                    user_profiles:user_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                `)
+                .eq('status', 'published')
+                .limit(this.config.maxItems * 2);
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error('Error fetching midnight content:', error);
+                return [];
+            }
+
+            // Filter for midnight-appropriate content locally
+            let filteredData = (data || []).filter(item => {
+                // Filter by content format
+                if (!this.config.midnightFormats.includes(item.content_format)) {
+                    return false;
+                }
+                
+                // Filter by local cities
+                if (item.city && this.config.localCities.includes(item.city)) {
+                    return true;
+                }
+                
+                // Filter by SA languages
+                if (item.language && this.config.saLanguages.includes(item.language)) {
+                    return true;
+                }
+                
+                // Bantu Original gets automatic inclusion
+                if (item.is_bantu_original) {
+                    return true;
+                }
+                
+                // Filter by genre (if available)
+                if (item.genre && this.config.midnightGenres.some(g => 
+                    item.genre.toLowerCase().includes(g.toLowerCase())
+                )) {
+                    return true;
+                }
+                
+                return false;
+            });
+
+            return filteredData || [];
+        } catch (err) {
+            console.error('Exception in fetchMidnightContent:', err);
+            return [];
+        }
     },
 
     async fetchMidnightPlaylists() {
-        if (!window.supabaseClient) return [];
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return [];
 
-        // Fetch playlists suitable for midnight (ambient, chill, podcast series)
-        const { data, error } = await window.supabaseClient
-            .from('creator_playlists')
-            .select(`
-                id,
-                creator_id,
-                name,
-                description,
-                playlist_type,
-                custom_thumbnail_url,
-                banner_url,
-                is_featured,
-                visibility,
-                play_count,
-                created_at,
-                connectors_count,
-                user_profiles:creator_id (
+        try {
+            // Fetch playlists suitable for midnight (ambient, chill, podcast series)
+            const { data, error } = await window.supabaseAuth
+                .from('creator_playlists')
+                .select(`
                     id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('visibility', 'public')
-            .in('playlist_type', ['album', 'playlist', 'podcast'])
-            .limit(this.config.maxItems);
+                    creator_id,
+                    name,
+                    description,
+                    playlist_type,
+                    custom_thumbnail_url,
+                    banner_url,
+                    is_featured,
+                    visibility,
+                    play_count,
+                    created_at,
+                    connectors_count,
+                    user_profiles:creator_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                `)
+                .eq('visibility', 'public')
+                .in('playlist_type', ['album', 'playlist', 'podcast'])
+                .limit(this.config.maxItems);
 
-        if (error) {
-            console.error('Error fetching midnight playlists:', error);
+            if (error) {
+                console.error('Error fetching midnight playlists:', error);
+                return [];
+            }
+
+            // Filter playlists by name/description containing midnight keywords
+            const midnightKeywords = ['chill', 'lofi', 'ambient', 'night', 'midnight', 'relax', 'calm', 'sleep', 'study', 'focus'];
+            
+            const filteredPlaylists = (data || []).filter(playlist => {
+                const nameLower = (playlist.name || '').toLowerCase();
+                const descLower = (playlist.description || '').toLowerCase();
+                return midnightKeywords.some(keyword => 
+                    nameLower.includes(keyword) || descLower.includes(keyword)
+                );
+            });
+
+            return filteredPlaylists.map(playlist => ({
+                ...playlist,
+                is_playlist: true,
+                content_format: playlist.playlist_type === 'podcast' ? 'podcast_episode' : 'music'
+            }));
+        } catch (err) {
+            console.error('Exception in fetchMidnightPlaylists:', err);
             return [];
         }
-
-        // Filter playlists by name/description containing midnight keywords
-        const midnightKeywords = ['chill', 'lofi', 'ambient', 'night', 'midnight', 'relax', 'calm', 'sleep', 'study', 'focus'];
-        
-        const filteredPlaylists = (data || []).filter(playlist => {
-            const nameLower = (playlist.name || '').toLowerCase();
-            const descLower = (playlist.description || '').toLowerCase();
-            return midnightKeywords.some(keyword => 
-                nameLower.includes(keyword) || descLower.includes(keyword)
-            );
-        });
-
-        return filteredPlaylists.map(playlist => ({
-            ...playlist,
-            is_playlist: true,
-            content_format: playlist.playlist_type === 'podcast' ? 'podcast_episode' : 'music'
-        }));
     },
 
     async enrichItemsWithMetrics(items) {
         if (!items.length) return [];
 
         const contentIds = items.filter(i => !i.is_playlist).map(i => i.id);
-        const playlistIds = items.filter(i => i.is_playlist).map(i => i.id);
         
         // Fetch engagement stats for content
         let engagementMetrics = {};
-        if (contentIds.length) {
-            const { data, error } = await window.supabaseClient
-                .from('content_engagement_stats')
-                .select('content_id, total_views, total_likes, total_comments, total_shares')
-                .in('content_id', contentIds);
-            
-            if (!error && data) {
-                engagementMetrics = data.reduce((map, stat) => {
-                    map[stat.content_id] = stat;
-                    return map;
-                }, {});
+        if (contentIds.length && window.supabaseAuth) {
+            try {
+                const { data, error } = await window.supabaseAuth
+                    .from('content_engagement_stats')
+                    .select('content_id, total_views, total_likes, total_comments, total_shares')
+                    .in('content_id', contentIds);
+                
+                if (!error && data) {
+                    engagementMetrics = data.reduce((map, stat) => {
+                        map[stat.content_id] = stat;
+                        return map;
+                    }, {});
+                } else if (error) {
+                    console.warn('Error fetching engagement metrics:', error.message);
+                }
+            } catch (err) {
+                console.warn('Could not fetch engagement metrics:', err);
             }
         }
         
@@ -423,12 +455,21 @@ const BantuWavesMidnight = {
                 shares: 0,
                 connectors: item.connectors_count || 0
             } : {
-                views: engagementMetrics[item.id]?.total_views || item.views_count || 0,
+                views: engagementMetrics[item.id]?.total_views || 0,
                 likes: engagementMetrics[item.id]?.total_likes || 0,
                 comments: engagementMetrics[item.id]?.total_comments || 0,
-                shares: engagementMetrics[item.id]?.total_shares || item.shares_count || 0,
+                shares: engagementMetrics[item.id]?.total_shares || 0,
                 connectors: 0
             }
+        }));
+    },
+
+    calculateMidnightScoreForItems(items) {
+        if (!items || !items.length) return [];
+        
+        return items.map(item => ({
+            ...item,
+            midnight_score: this.calculateMidnightScore(item)
         }));
     },
 
@@ -440,19 +481,21 @@ const BantuWavesMidnight = {
         score += (item.metrics?.likes || 0) * 2;
         score += (item.metrics?.comments || 0) * 3;
         
-        // Midnight mood boost (if moods array exists)
-        if (item.moods && Array.isArray(item.moods)) {
-            const moodMatches = item.moods.filter(m => 
-                this.config.midnightMoods.includes(m)
-            ).length;
-            score *= (1 + (moodMatches * 0.2));
-        }
+        // Midnight mood boost (simplified - since moods column may not exist)
+        // Check title/description for mood keywords instead
+        const titleLower = (item.title || '').toLowerCase();
+        const descLower = (item.description || '').toLowerCase();
+        const moodMatches = this.config.midnightMoods.filter(mood => 
+            titleLower.includes(mood.toLowerCase()) || descLower.includes(mood.toLowerCase())
+        ).length;
+        score *= (1 + (moodMatches * 0.2));
         
-        // Tempo boost (lower tempo = more chill = higher midnight score)
-        if (item.tempo && item.tempo > 0) {
-            // Tempo 60 is ideal, higher tempo reduces score
-            const tempoScore = Math.max(0, 1 - ((item.tempo - 60) / 60));
-            score *= (0.8 + tempoScore * 0.5);
+        // Tempo boost (skip if tempo not available - use genre as proxy)
+        if (item.genre) {
+            const chillGenres = ['Ambient', 'Lo-Fi', 'Jazz', 'Soul', 'R&B', 'Acoustic'];
+            if (chillGenres.some(g => item.genre.toLowerCase().includes(g.toLowerCase()))) {
+                score *= 1.3;
+            }
         }
         
         // Local city boost
@@ -476,14 +519,16 @@ const BantuWavesMidnight = {
             if (durationMinutes >= 10 && durationMinutes <= 30) {
                 score *= 1.2;
             } else if (durationMinutes > 60) {
-                score *= 0.9; // Slightly penalize very long content
+                score *= 0.9;
             }
         }
         
         // Recency boost for new content
-        const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
-        if (daysOld < 7) score *= 1.2;
-        else if (daysOld < 30) score *= 1.1;
+        if (item.created_at) {
+            const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
+            if (daysOld < 7) score *= 1.2;
+            else if (daysOld < 30) score *= 1.1;
+        }
         
         return Math.round(score);
     },
@@ -494,7 +539,7 @@ const BantuWavesMidnight = {
     render(items) {
         if (!this.elements.container) return;
         
-        if (!items.length) {
+        if (!items || !items.length) {
             this.renderEmpty();
             return;
         }
@@ -512,7 +557,9 @@ const BantuWavesMidnight = {
         
         this.elements.container.innerHTML = '';
         this.elements.container.appendChild(fragment);
-        this.elements.section.classList.add('loaded');
+        if (this.elements.section) {
+            this.elements.section.classList.add('loaded');
+        }
     },
 
     createMidnightCard(item) {
@@ -575,7 +622,7 @@ const BantuWavesMidnight = {
                     ` : ''}
                     <div class="midnight-stats">
                         <span><i class="fas fa-headphones"></i> ${views}</span>
-                        ${item.tempo ? `<span><i class="fas fa-chart-line"></i> ${item.tempo} BPM</span>` : ''}
+                        ${item.genre ? `<span><i class="fas fa-music"></i> ${this.truncateText(item.genre, 15)}</span>` : ''}
                         ${item.language ? `<span><i class="fas fa-language"></i> ${this.getLanguageName(item.language)}</span>` : ''}
                     </div>
                     <div class="midnight-actions">
@@ -653,13 +700,27 @@ const BantuWavesMidnight = {
     },
 
     getMoodTags(item) {
-        const moods = item.moods || [];
-        // Filter moods that match midnight atmosphere
-        const midnightMoods = moods.filter(m => 
-            this.config.midnightMoods.includes(m) ||
-            m === 'Relaxing' || m === 'Chill' || m === 'Deep' || m === 'Emotional'
-        );
-        return midnightMoods.slice(0, 2);
+        // Generate mood tags from title/description or genre
+        const moods = [];
+        const titleLower = (item.title || '').toLowerCase();
+        const descLower = (item.description || '').toLowerCase();
+        
+        if (titleLower.includes('chill') || descLower.includes('chill')) moods.push('Chill');
+        if (titleLower.includes('relax') || descLower.includes('relax')) moods.push('Relaxing');
+        if (titleLower.includes('deep') || descLower.includes('deep')) moods.push('Deep');
+        if (titleLower.includes('soul') || descLower.includes('soul')) moods.push('Soulful');
+        if (titleLower.includes('peace') || descLower.includes('peace')) moods.push('Peaceful');
+        
+        // If no moods found, use genre
+        if (moods.length === 0 && item.genre) {
+            const genre = item.genre.toLowerCase();
+            if (genre.includes('jazz')) moods.push('Jazz');
+            else if (genre.includes('ambient')) moods.push('Ambient');
+            else if (genre.includes('lofi')) moods.push('Lo-Fi');
+            else if (genre.includes('acoustic')) moods.push('Acoustic');
+        }
+        
+        return moods.slice(0, 2);
     },
 
     getTimeBadge() {
@@ -725,7 +786,6 @@ const BantuWavesMidnight = {
 
     addToQueue(contentId, title) {
         this.showToast(`Added "${title}" to queue`, 'success');
-        // In production, this would integrate with a global queue system
     },
 
     /* ============================================ */
@@ -777,6 +837,7 @@ const BantuWavesMidnight = {
                 <div class="error-state-midnight">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>Unable to Load Midnight Sessions</h3>
+                    <p>Please check your connection and try again</p>
                     <button class="retry-btn" onclick="BantuWavesMidnight.loadMidnightContent(true)">
                         <i class="fas fa-redo"></i> Retry
                     </button>
@@ -797,7 +858,9 @@ const BantuWavesMidnight = {
                     return data;
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Cache read error:', e);
+        }
         return null;
     },
 
@@ -807,7 +870,9 @@ const BantuWavesMidnight = {
                 data: data,
                 timestamp: Date.now()
             }));
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Cache write error:', e);
+        }
     },
 
     /* ============================================ */
@@ -853,9 +918,28 @@ const BantuWavesMidnight = {
     },
 
     async getCurrentUser() {
-        if (window.AuthHelper?.isAuthenticated()) {
+        // FIXED: Use AuthHelper if available, or check supabaseAuth session
+        if (window.AuthHelper?.isAuthenticated && window.AuthHelper.isAuthenticated()) {
             return window.AuthHelper.getUserProfile();
         }
+        
+        // Try to get from supabaseAuth session
+        if (window.supabaseAuth) {
+            try {
+                const { data: { user } } = await window.supabaseAuth.auth.getUser();
+                if (user) {
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        full_name: user.user_metadata?.full_name || user.email,
+                        username: user.user_metadata?.username
+                    };
+                }
+            } catch (e) {
+                console.warn('Error getting user from supabaseAuth:', e);
+            }
+        }
+        
         if (window.getCurrentUser) {
             return await window.getCurrentUser();
         }
@@ -863,15 +947,59 @@ const BantuWavesMidnight = {
     },
 
     showToast(message, type) {
-        if (window.showToast) window.showToast(message, type);
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            console.log(`[${type}] ${message}`);
+        }
     }
 };
 
-// Auto-initialize
+// Auto-initialize with proper delay for supabaseAuth
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => BantuWavesMidnight.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (window.supabaseAuth) {
+                BantuWavesMidnight.init();
+            } else {
+                console.log('🌙 Midnight Sessions waiting for supabaseAuth...');
+                const authCheck = setInterval(() => {
+                    if (window.supabaseAuth) {
+                        clearInterval(authCheck);
+                        BantuWavesMidnight.init();
+                    }
+                }, 100);
+                setTimeout(() => {
+                    clearInterval(authCheck);
+                    if (!BantuWavesMidnight.state.initialized) {
+                        console.warn('🌙 Midnight Sessions: supabaseAuth not available, initializing anyway');
+                        BantuWavesMidnight.init();
+                    }
+                }, 5000);
+            }
+        }, 100);
+    });
 } else {
-    BantuWavesMidnight.init();
+    setTimeout(() => {
+        if (window.supabaseAuth) {
+            BantuWavesMidnight.init();
+        } else {
+            console.log('🌙 Midnight Sessions waiting for supabaseAuth...');
+            const authCheck = setInterval(() => {
+                if (window.supabaseAuth) {
+                    clearInterval(authCheck);
+                    BantuWavesMidnight.init();
+                }
+            }, 100);
+            setTimeout(() => {
+                clearInterval(authCheck);
+                if (!BantuWavesMidnight.state.initialized) {
+                    console.warn('🌙 Midnight Sessions: supabaseAuth not available, initializing anyway');
+                    BantuWavesMidnight.init();
+                }
+            }, 5000);
+        }
+    }, 100);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
