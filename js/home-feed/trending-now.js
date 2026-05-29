@@ -303,40 +303,56 @@ const TrendingNow = (function() {
      * Fetch trending content from Supabase
      */
     async function fetchTrendingContent() {
-        try {
-            // Calculate date based on time period
-            const startDate = new Date();
-            if (currentTimePeriod === 'today') {
-                startDate.setHours(0, 0, 0, 0);
-            } else if (currentTimePeriod === 'week') {
-                startDate.setDate(startDate.getDate() - 7);
-            } else {
-                startDate.setMonth(startDate.getMonth() - 1);
-            }
-            
-            // Fetch content with high view counts (trending signal)
-            const { data, error } = await window.supabaseAuth
-                .from('Content')
-                .select(`
-                    id, title, description, thumbnail_url, duration, 
-                    genre, language, created_at, views_count, favorites_count, 
-                    user_id, user_profiles!user_id (
-                        id, full_name, username, avatar_url, bio
-                    )
-                `)
-                .eq('status', 'published')
-                .gte('created_at', startDate.toISOString())
-                .gt('views_count', 100)
-                .order('views_count', { ascending: false })
-                .limit(MAX_ITEMS);
-            
-            if (error) throw error;
-            return data || [];
-        } catch (err) {
-            console.error('Error fetching trending content:', err);
-            return [];
-        }
+    if (!window.supabaseAuth) return [];
+    
+    try {
+        // Get content with engagement stats from content_engagement_stats
+        const { data: engagementData, error: engagementError } = await window.supabaseAuth
+            .from('content_engagement_stats')
+            .select('content_id, total_views, total_likes, total_shares')
+            .order('total_views', { ascending: false })
+            .limit(20);
+        
+        if (engagementError) throw engagementError;
+        
+        if (!engagementData || engagementData.length === 0) return [];
+        
+        const contentIds = engagementData.map(e => e.content_id);
+        
+        const { data: contentData, error: contentError } = await window.supabaseAuth
+            .from('Content')
+            .select(`
+                id, title, description, thumbnail_url, duration, 
+                genre, language, created_at, favorites_count,
+                user_id, user_profiles!user_id(id, full_name, username, avatar_url)
+            `)
+            .eq('status', 'published')
+            .in('id', contentIds)
+            .limit(12);
+        
+        if (contentError) throw contentError;
+        
+        // Merge engagement stats
+        const mergedData = (contentData || []).map(content => {
+            const stats = engagementData.find(e => e.content_id === content.id);
+            return {
+                ...content,
+                views_count: stats?.total_views || 0,
+                likes_count: stats?.total_likes || 0,
+                shares_count: stats?.total_shares || 0
+            };
+        });
+        
+        // Sort by total_views
+        mergedData.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+        
+        return mergedData;
+        
+    } catch (err) {
+        console.error('Error fetching trending content:', err);
+        return [];
     }
+}
     
     /**
      * Apply trending amplification logic
