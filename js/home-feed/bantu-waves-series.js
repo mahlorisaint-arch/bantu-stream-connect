@@ -4,6 +4,7 @@
    Displays series playlists from creator_playlists
    Filtered by playlist_type = 'series'
    Ordered by release date (latest first)
+   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
 /* ============================================ */
 
 console.log('📺 Bantu Waves: Series section loading...');
@@ -40,7 +41,7 @@ const BantuWavesSeries = {
         this.cacheElements();
         
         if (!this.elements.section) {
-            console.warn('Series section element not found');
+            console.warn('📺 Series section element not found');
             return;
         }
 
@@ -48,7 +49,7 @@ const BantuWavesSeries = {
         this.loadSeries();
         
         this.state.initialized = true;
-        console.log('Series section initialized');
+        console.log('📺 Series section initialized');
     },
 
     cacheElements() {
@@ -79,7 +80,7 @@ const BantuWavesSeries = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('Series: Using cached data', cachedData.length, 'items');
+                console.log('📦 Series: Using cached data', cachedData.length, 'items');
                 this.state.series = cachedData;
                 this.render(cachedData);
                 return;
@@ -97,10 +98,10 @@ const BantuWavesSeries = {
             this.cacheData(enrichedSeries);
             this.render(enrichedSeries);
             
-            console.log('Series loaded:', enrichedSeries.length);
+            console.log('✅ Series loaded:', enrichedSeries.length);
             
         } catch (error) {
-            console.error('Error loading series:', error);
+            console.error('❌ Error loading series:', error);
             this.showError();
         } finally {
             this.hideLoading();
@@ -109,44 +110,53 @@ const BantuWavesSeries = {
     },
 
     async fetchSeriesPlaylists() {
-        if (!window.supabaseClient) return [];
-
-        const { data, error } = await window.supabaseClient
-            .from('creator_playlists')
-            .select(`
-                id,
-                creator_id,
-                name,
-                description,
-                playlist_type,
-                custom_thumbnail_url,
-                banner_url,
-                is_featured,
-                visibility,
-                sort_order,
-                play_count,
-                created_at,
-                updated_at,
-                connectors_count,
-                series_metadata,
-                user_profiles:creator_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('playlist_type', this.config.playlistType)
-            .eq('visibility', 'public')
-            .order('created_at', { ascending: false })
-            .limit(this.config.maxItems);
-
-        if (error) {
-            console.error('Error fetching series:', error);
+        // FIXED: Use window.supabaseAuth instead of window.supabaseClient
+        if (!window.supabaseAuth) {
+            console.error('Supabase Auth client not available');
             return [];
         }
 
-        return data || [];
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('creator_playlists')
+                .select(`
+                    id,
+                    creator_id,
+                    name,
+                    description,
+                    playlist_type,
+                    custom_thumbnail_url,
+                    banner_url,
+                    is_featured,
+                    visibility,
+                    sort_order,
+                    play_count,
+                    created_at,
+                    updated_at,
+                    connectors_count,
+                    series_metadata,
+                    user_profiles:creator_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                `)
+                .eq('playlist_type', this.config.playlistType)
+                .eq('visibility', 'public')
+                .order('created_at', { ascending: false })
+                .limit(this.config.maxItems);
+
+            if (error) {
+                console.error('Error fetching series:', error);
+                return [];
+            }
+
+            return data || [];
+        } catch (err) {
+            console.error('Exception in fetchSeriesPlaylists:', err);
+            return [];
+        }
     },
 
     async enrichSeriesWithEpisodes(seriesList) {
@@ -194,7 +204,7 @@ const BantuWavesSeries = {
             const metadata = series.series_metadata || {};
             const totalSeasons = metadata.total_seasons || 1;
             const totalEpisodes = metadata.total_episodes || episodes.length;
-            const releaseYear = metadata.release_year || new Date(series.created_at).getFullYear();
+            const releaseYear = metadata.release_year || (series.created_at ? new Date(series.created_at).getFullYear() : new Date().getFullYear());
             
             return {
                 ...series,
@@ -213,61 +223,67 @@ const BantuWavesSeries = {
     },
 
     async fetchSeriesEpisodes(seriesId) {
-        if (!window.supabaseClient) return [];
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return [];
 
-        const { data, error } = await window.supabaseClient
-            .from('playlist_contents')
-            .select(`
-                id,
-                playlist_id,
-                content_id,
-                sort_index,
-                season_number,
-                track_number as episode_number,
-                display_title_override,
-                created_at,
-                Content:content_id (
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('playlist_contents')
+                .select(`
                     id,
-                    title,
-                    description,
-                    thumbnail_url,
-                    duration,
+                    playlist_id,
+                    content_id,
+                    sort_index,
+                    season_number,
+                    track_number as episode_number,
+                    display_title_override,
                     created_at,
-                    file_url,
-                    status,
-                    user_profiles:user_id (
+                    Content:content_id (
                         id,
-                        full_name,
-                        username,
-                        avatar_url
+                        title,
+                        description,
+                        thumbnail_url,
+                        duration,
+                        created_at,
+                        file_url,
+                        status,
+                        user_profiles:user_id (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url
+                        )
                     )
-                )
-            `)
-            .eq('playlist_id', seriesId)
-            .order('season_number', { ascending: true })
-            .order('sort_index', { ascending: true })
-            .limit(this.config.maxEpisodesPerSeries + 2);
+                `)
+                .eq('playlist_id', seriesId)
+                .order('season_number', { ascending: true })
+                .order('sort_index', { ascending: true })
+                .limit(this.config.maxEpisodesPerSeries + 2);
 
-        if (error) {
-            console.error(`Error fetching episodes for series ${seriesId}:`, error);
+            if (error) {
+                console.error(`Error fetching episodes for series ${seriesId}:`, error);
+                return [];
+            }
+
+            return (data || [])
+                .filter(item => item.Content)
+                .map(item => ({
+                    id: item.id,
+                    content_id: item.content_id,
+                    season: item.season_number || 1,
+                    episode: item.episode_number || item.sort_index + 1,
+                    title: item.display_title_override || item.Content?.title || `Episode ${item.episode_number || item.sort_index + 1}`,
+                    description: item.Content?.description,
+                    thumbnail_url: item.Content?.thumbnail_url,
+                    duration: item.Content?.duration,
+                    created_at: item.Content?.created_at,
+                    status: item.Content?.status,
+                    creator: item.Content?.user_profiles
+                }));
+        } catch (err) {
+            console.error(`Exception fetching episodes for series ${seriesId}:`, err);
             return [];
         }
-
-        return (data || [])
-            .filter(item => item.Content)
-            .map(item => ({
-                id: item.id,
-                content_id: item.content_id,
-                season: item.season_number || 1,
-                episode: item.episode_number || item.sort_index + 1,
-                title: item.display_title_override || item.Content?.title || `Episode ${item.episode_number || item.sort_index + 1}`,
-                description: item.Content?.description,
-                thumbnail_url: item.Content?.thumbnail_url,
-                duration: item.Content?.duration,
-                created_at: item.Content?.created_at,
-                status: item.Content?.status,
-                creator: item.Content?.user_profiles
-            }));
     },
 
     async fetchEpisodeMetrics(contentIds) {
@@ -275,13 +291,20 @@ const BantuWavesSeries = {
         
         const uniqueIds = [...new Set(contentIds)];
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return {};
+        
         try {
-            const { data, error } = await window.supabaseClient
+            const { data, error } = await window.supabaseAuth
                 .from('content_engagement_stats')
                 .select('content_id, total_views, total_likes, total_comments')
                 .in('content_id', uniqueIds);
             
-            if (error) throw error;
+            if (error) {
+                // Table might not exist or column missing - just return empty
+                console.warn('Error fetching episode metrics (may not be available):', error.message);
+                return {};
+            }
             
             const metricsMap = {};
             (data || []).forEach(stat => {
@@ -329,7 +352,9 @@ const BantuWavesSeries = {
         
         this.elements.container.innerHTML = '';
         this.elements.container.appendChild(fragment);
-        this.elements.section.classList.add('loaded');
+        if (this.elements.section) {
+            this.elements.section.classList.add('loaded');
+        }
     },
 
     createSeriesCard(series) {
@@ -340,6 +365,7 @@ const BantuWavesSeries = {
         const thumbnailUrl = series.thumbnail_url;
         const creator = series.user_profiles || {};
         const creatorName = creator.full_name || creator.username || 'Creator';
+        const creatorInitial = creatorName.charAt(0).toUpperCase();
         
         const episodeCount = series.episode_count || 0;
         const episodeText = episodeCount === 1 ? 'episode' : 'episodes';
@@ -374,8 +400,8 @@ const BantuWavesSeries = {
                     <div class="series-creator">
                         <div class="creator-avatar-small">
                             ${creator.avatar_url ? 
-                                `<img src="${this.fixImageUrl(creator.avatar_url)}" alt="${creatorName}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>${creatorName.charAt(0).toUpperCase()}</span>';">` :
-                                `<span>${creatorName.charAt(0).toUpperCase()}</span>`
+                                `<img src="${this.fixImageUrl(creator.avatar_url)}" alt="${creatorName}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>${creatorInitial}</span>';">` :
+                                `<span>${creatorInitial}</span>`
                             }
                         </div>
                         <span class="creator-name">${this.escapeHtml(creatorName)}</span>
@@ -454,6 +480,8 @@ const BantuWavesSeries = {
         
         if (episodeId) {
             window.location.href = `content-detail.html?id=${episodeId}`;
+        } else {
+            this.showToast('Episode not available', 'error');
         }
     },
 
@@ -465,28 +493,47 @@ const BantuWavesSeries = {
             return;
         }
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) {
+            this.showToast('Service unavailable', 'error');
+            return;
+        }
+        
         try {
-            const { data: existing } = await window.supabaseClient
+            // Check if already in watchlist
+            const { data: existing, error: fetchError } = await window.supabaseAuth
                 .from('watchlist')
                 .select('id')
                 .eq('user_id', user.id)
                 .eq('playlist_id', seriesId)
                 .maybeSingle();
             
+            if (fetchError && fetchError.code !== 'PGRST116') {
+                console.error('Error checking watchlist:', fetchError);
+                this.showToast('Error checking watchlist', 'error');
+                return;
+            }
+            
             if (existing) {
-                await window.supabaseClient
+                // Remove from watchlist
+                const { error: deleteError } = await window.supabaseAuth
                     .from('watchlist')
                     .delete()
                     .eq('id', existing.id);
+                    
+                if (deleteError) throw deleteError;
                 this.showToast('Removed from watchlist', 'info');
             } else {
-                await window.supabaseClient
+                // Add to watchlist
+                const { error: insertError } = await window.supabaseAuth
                     .from('watchlist')
                     .insert({
                         user_id: user.id,
                         playlist_id: seriesId,
                         added_at: new Date().toISOString()
                     });
+                    
+                if (insertError) throw insertError;
                 this.showToast('Added to watchlist!', 'success');
             }
         } catch (error) {
@@ -503,28 +550,47 @@ const BantuWavesSeries = {
             return;
         }
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) {
+            this.showToast('Service unavailable', 'error');
+            return;
+        }
+        
         try {
-            const { data: existing } = await window.supabaseClient
+            // Check if already subscribed to notifications
+            const { data: existing, error: fetchError } = await window.supabaseAuth
                 .from('series_notifications')
                 .select('id')
                 .eq('user_id', user.id)
                 .eq('playlist_id', seriesId)
                 .maybeSingle();
             
+            if (fetchError && fetchError.code !== 'PGRST116') {
+                console.error('Error checking notifications:', fetchError);
+                this.showToast('Error checking notifications', 'error');
+                return;
+            }
+            
             if (existing) {
-                await window.supabaseClient
+                // Disable notifications
+                const { error: deleteError } = await window.supabaseAuth
                     .from('series_notifications')
                     .delete()
                     .eq('id', existing.id);
+                    
+                if (deleteError) throw deleteError;
                 this.showToast('Notifications disabled', 'info');
             } else {
-                await window.supabaseClient
+                // Enable notifications
+                const { error: insertError } = await window.supabaseAuth
                     .from('series_notifications')
                     .insert({
                         user_id: user.id,
                         playlist_id: seriesId,
                         created_at: new Date().toISOString()
                     });
+                    
+                if (insertError) throw insertError;
                 this.showToast('Notifications enabled!', 'success');
             }
         } catch (error) {
@@ -583,6 +649,7 @@ const BantuWavesSeries = {
                 <div class="error-state-series">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>Unable to Load Series</h3>
+                    <p>Please check your connection and try again</p>
                     <button class="retry-btn" onclick="BantuWavesSeries.loadSeries(true)">
                         <i class="fas fa-redo"></i> Retry
                     </button>
@@ -600,7 +667,9 @@ const BantuWavesSeries = {
                     return data;
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Cache read error:', e);
+        }
         return null;
     },
 
@@ -610,7 +679,9 @@ const BantuWavesSeries = {
                 data: data,
                 timestamp: Date.now()
             }));
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Cache write error:', e);
+        }
     },
 
     fixImageUrl(url) {
@@ -642,9 +713,28 @@ const BantuWavesSeries = {
     },
 
     async getCurrentUser() {
-        if (window.AuthHelper?.isAuthenticated()) {
+        // FIXED: Use AuthHelper if available, or check supabaseAuth session
+        if (window.AuthHelper?.isAuthenticated && window.AuthHelper.isAuthenticated()) {
             return window.AuthHelper.getUserProfile();
         }
+        
+        // Try to get from supabaseAuth session
+        if (window.supabaseAuth) {
+            try {
+                const { data: { user } } = await window.supabaseAuth.auth.getUser();
+                if (user) {
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        full_name: user.user_metadata?.full_name || user.email,
+                        username: user.user_metadata?.username
+                    };
+                }
+            } catch (e) {
+                console.warn('Error getting user from supabaseAuth:', e);
+            }
+        }
+        
         if (window.getCurrentUser) {
             return await window.getCurrentUser();
         }
@@ -652,15 +742,59 @@ const BantuWavesSeries = {
     },
 
     showToast(message, type) {
-        if (window.showToast) window.showToast(message, type);
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            console.log(`[${type}] ${message}`);
+        }
     }
 };
 
-// Auto-initialize
+// Auto-initialize with proper delay for supabaseAuth
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => BantuWavesSeries.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (window.supabaseAuth) {
+                BantuWavesSeries.init();
+            } else {
+                console.log('📺 Series waiting for supabaseAuth...');
+                const authCheck = setInterval(() => {
+                    if (window.supabaseAuth) {
+                        clearInterval(authCheck);
+                        BantuWavesSeries.init();
+                    }
+                }, 100);
+                setTimeout(() => {
+                    clearInterval(authCheck);
+                    if (!BantuWavesSeries.state.initialized) {
+                        console.warn('📺 Series: supabaseAuth not available, initializing anyway');
+                        BantuWavesSeries.init();
+                    }
+                }, 5000);
+            }
+        }, 100);
+    });
 } else {
-    BantuWavesSeries.init();
+    setTimeout(() => {
+        if (window.supabaseAuth) {
+            BantuWavesSeries.init();
+        } else {
+            console.log('📺 Series waiting for supabaseAuth...');
+            const authCheck = setInterval(() => {
+                if (window.supabaseAuth) {
+                    clearInterval(authCheck);
+                    BantuWavesSeries.init();
+                }
+            }, 100);
+            setTimeout(() => {
+                clearInterval(authCheck);
+                if (!BantuWavesSeries.state.initialized) {
+                    console.warn('📺 Series: supabaseAuth not available, initializing anyway');
+                    BantuWavesSeries.init();
+                }
+            }, 5000);
+        }
+    }, 100);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
