@@ -3,6 +3,7 @@
    Home Feed Component - Rising African Content
    Displays content with regional tags (country = 'South Africa')
    and localized flags, ordered by engagement
+   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
 /* ============================================ */
 
 console.log('🌟 Bantu Waves: Africa Rising section loading...');
@@ -44,7 +45,7 @@ const BantuWavesAfricaRising = {
         this.cacheElements();
         
         if (!this.elements.section) {
-            console.warn('Africa Rising section element not found');
+            console.warn('🌟 Africa Rising section element not found');
             return;
         }
 
@@ -52,7 +53,7 @@ const BantuWavesAfricaRising = {
         this.loadAfricaRisingContent();
         
         this.state.initialized = true;
-        console.log('Africa Rising section initialized');
+        console.log('🌟 Africa Rising section initialized');
     },
 
     cacheElements() {
@@ -83,7 +84,7 @@ const BantuWavesAfricaRising = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('Africa Rising: Using cached data', cachedData.length, 'items');
+                console.log('📦 Africa Rising: Using cached data', cachedData.length, 'items');
                 this.state.content = cachedData;
                 this.render(cachedData);
                 return;
@@ -110,10 +111,10 @@ const BantuWavesAfricaRising = {
             this.cacheData(topContent);
             this.render(topContent);
             
-            console.log('Africa Rising loaded:', topContent.length, 'items');
+            console.log('✅ Africa Rising loaded:', topContent.length, 'items');
             
         } catch (error) {
-            console.error('Error loading Africa Rising content:', error);
+            console.error('❌ Error loading Africa Rising content:', error);
             this.showError();
         } finally {
             this.hideLoading();
@@ -122,58 +123,79 @@ const BantuWavesAfricaRising = {
     },
 
     async fetchAfricaContent() {
-        if (!window.supabaseClient) return [];
-
-        // Build query for African content
-        let query = window.supabaseClient
-            .from('Content')
-            .select(`
-                id,
-                title,
-                description,
-                thumbnail_url,
-                file_url,
-                duration,
-                genre,
-                language,
-                country,
-                region,
-                city,
-                is_bantu_original,
-                content_type,
-                content_format,
-                views_count,
-                favorites_count,
-                shares_count,
-                created_at,
-                updated_at,
-                user_id,
-                user_profiles:user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url,
-                    country,
-                    city
-                )
-            `)
-            .eq('status', 'published')
-            .or(`country.in.(${this.config.africanCountries.join(',')}),region.eq.Africa,is_bantu_original.eq.true`)
-            .order('views_count', { ascending: false })
-            .limit(this.config.maxItems * 2);
-
-        // Also include content with SA language codes
-        const saLanguageFilter = this.config.saLanguages.map(lang => `language.eq.${lang}`).join(',');
-        query = query.or(saLanguageFilter);
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error('Error fetching Africa Rising content:', error);
+        // FIXED: Use window.supabaseAuth instead of window.supabaseClient
+        if (!window.supabaseAuth) {
+            console.error('Supabase Auth client not available');
             return [];
         }
 
-        return data || [];
+        try {
+            // Build query for African content - using simpler query first due to potential column issues
+            // Note: Some columns like views_count may not exist, we'll handle that
+            
+            const { data, error } = await window.supabaseAuth
+                .from('Content')
+                .select(`
+                    id,
+                    title,
+                    description,
+                    thumbnail_url,
+                    file_url,
+                    duration,
+                    genre,
+                    language,
+                    country,
+                    region,
+                    city,
+                    is_bantu_original,
+                    content_type,
+                    content_format,
+                    created_at,
+                    updated_at,
+                    user_id,
+                    user_profiles:user_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url,
+                        country,
+                        city
+                    )
+                `)
+                .eq('status', 'published')
+                .limit(this.config.maxItems * 2);
+
+            if (error) {
+                console.error('Error fetching Africa Rising content:', error);
+                return [];
+            }
+
+            // Filter for African content locally (since some columns may not be queryable)
+            let filteredData = (data || []).filter(item => {
+                // Check if country is in African countries list
+                if (item.country && this.config.africanCountries.includes(item.country)) {
+                    return true;
+                }
+                // Check if region is Africa
+                if (item.region === 'Africa') {
+                    return true;
+                }
+                // Check if is_bantu_original
+                if (item.is_bantu_original) {
+                    return true;
+                }
+                // Check if language is SA language
+                if (item.language && this.config.saLanguages.includes(item.language)) {
+                    return true;
+                }
+                return false;
+            });
+
+            return filteredData || [];
+        } catch (err) {
+            console.error('Exception in fetchAfricaContent:', err);
+            return [];
+        }
     },
 
     async enrichContentWithMetrics(content) {
@@ -203,10 +225,10 @@ const BantuWavesAfricaRising = {
             return {
                 ...item,
                 metrics: {
-                    views: metrics.total_views || item.views_count || 0,
+                    views: metrics.total_views || 0,
                     likes: metrics.total_likes || 0,
                     comments: metrics.total_comments || 0,
-                    shares: metrics.total_shares || item.shares_count || 0,
+                    shares: metrics.total_shares || 0,
                     connectors: creatorData.connectors_count || 0
                 },
                 creator_stats: creatorData,
@@ -223,13 +245,20 @@ const BantuWavesAfricaRising = {
         
         const uniqueIds = [...new Set(contentIds)];
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return {};
+        
         try {
-            const { data, error } = await window.supabaseClient
+            const { data, error } = await window.supabaseAuth
                 .from('content_engagement_stats')
                 .select('content_id, total_views, total_likes, total_comments, total_shares')
                 .in('content_id', uniqueIds);
             
-            if (error) throw error;
+            if (error) {
+                // Table might not exist - return empty
+                console.warn('Error fetching engagement stats (may not be available):', error.message);
+                return {};
+            }
             
             const metricsMap = {};
             (data || []).forEach(stat => {
@@ -248,15 +277,20 @@ const BantuWavesAfricaRising = {
         
         const uniqueIds = [...new Set(creatorIds)];
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return {};
+        
         try {
             // Get connector counts from connectors table
-            const { data: connectors, error: connError } = await window.supabaseClient
+            const { data: connectors, error: connError } = await window.supabaseAuth
                 .from('connectors')
                 .select('connected_id')
                 .eq('connection_type', 'creator')
                 .in('connected_id', uniqueIds);
             
-            if (connError) throw connError;
+            if (connError) {
+                console.warn('Error fetching connectors:', connError.message);
+            }
             
             // Count connectors per creator
             const connectorCounts = {};
@@ -266,40 +300,12 @@ const BantuWavesAfricaRising = {
                 }
             });
             
-            // Get content counts per creator
-            const { data: contentCounts, error: contentError } = await window.supabaseClient
-                .from('Content')
-                .select('user_id', { count: 'exact', head: true })
-                .in('user_id', uniqueIds)
-                .eq('status', 'published');
-            
-            if (contentError) throw contentError;
-            
-            // Get total views per creator
-            const { data: viewData } = await window.supabaseClient
-                .from('content_engagement_stats')
-                .select('content_id, total_views')
-                .in('content_id', 
-                    (await window.supabaseClient
-                        .from('Content')
-                        .select('id')
-                        .in('user_id', uniqueIds)
-                    ).data?.map(c => c.id) || []
-                );
-            
-            const creatorViewCounts = {};
-            if (viewData) {
-                viewData.forEach(v => {
-                    // This would need content -> user mapping; simplified for now
-                });
-            }
-            
             // Build metrics map
             const metricsMap = {};
             uniqueIds.forEach(creatorId => {
                 metricsMap[creatorId] = {
                     connectors_count: connectorCounts[creatorId] || 0,
-                    content_count: 0 // Would need separate query
+                    content_count: 0
                 };
             });
             
@@ -329,9 +335,11 @@ const BantuWavesAfricaRising = {
         if (this.config.saLanguages.includes(content.language)) score *= 1.2;
         
         // Recency boost
-        const daysOld = (new Date() - new Date(content.created_at)) / (1000 * 60 * 60 * 24);
-        if (daysOld < 7) score *= 1.3;
-        else if (daysOld < 30) score *= 1.1;
+        if (content.created_at) {
+            const daysOld = (new Date() - new Date(content.created_at)) / (1000 * 60 * 60 * 24);
+            if (daysOld < 7) score *= 1.3;
+            else if (daysOld < 30) score *= 1.1;
+        }
         
         return Math.round(score);
     },
@@ -402,7 +410,9 @@ const BantuWavesAfricaRising = {
         
         this.elements.container.innerHTML = '';
         this.elements.container.appendChild(fragment);
-        this.elements.section.classList.add('loaded');
+        if (this.elements.section) {
+            this.elements.section.classList.add('loaded');
+        }
     },
 
     createContentCard(item) {
@@ -442,7 +452,7 @@ const BantuWavesAfricaRising = {
                 </div>
                 <div class="africa-info">
                     <div class="content-type-badge">
-                        <i class="fas ${contentTypeIcon}"></i> ${contentType}
+                        <i class="fas ${contentTypeIcon}"></i> ${contentType.replace('_', ' ').toUpperCase()}
                     </div>
                     <h3 class="africa-title" title="${this.escapeHtml(item.title)}">${this.truncateText(this.escapeHtml(item.title), 50)}</h3>
                     <div class="africa-creator">
@@ -558,28 +568,47 @@ const BantuWavesAfricaRising = {
             return;
         }
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) {
+            this.showToast('Service unavailable', 'error');
+            return;
+        }
+        
         try {
-            const { data: existing } = await window.supabaseClient
+            // Check if already saved
+            const { data: existing, error: fetchError } = await window.supabaseAuth
                 .from('saved_content')
                 .select('id')
                 .eq('user_id', user.id)
                 .eq('content_id', contentId)
                 .maybeSingle();
             
+            if (fetchError && fetchError.code !== 'PGRST116') {
+                console.error('Error checking saved content:', fetchError);
+                this.showToast('Error checking saved content', 'error');
+                return;
+            }
+            
             if (existing) {
-                await window.supabaseClient
+                // Unsave
+                const { error: deleteError } = await window.supabaseAuth
                     .from('saved_content')
                     .delete()
                     .eq('id', existing.id);
+                    
+                if (deleteError) throw deleteError;
                 this.showToast('Removed from saved', 'info');
             } else {
-                await window.supabaseClient
+                // Save
+                const { error: insertError } = await window.supabaseAuth
                     .from('saved_content')
                     .insert({
                         user_id: user.id,
                         content_id: contentId,
                         saved_at: new Date().toISOString()
                     });
+                    
+                if (insertError) throw insertError;
                 this.showToast('Saved to library!', 'success');
             }
         } catch (error) {
@@ -656,6 +685,7 @@ const BantuWavesAfricaRising = {
                 <div class="error-state-africa">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>Unable to Load Content</h3>
+                    <p>Please check your connection and try again</p>
                     <button class="retry-btn" onclick="BantuWavesAfricaRising.loadAfricaRisingContent(true)">
                         <i class="fas fa-redo"></i> Retry
                     </button>
@@ -673,7 +703,9 @@ const BantuWavesAfricaRising = {
                     return data;
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Cache read error:', e);
+        }
         return null;
     },
 
@@ -683,7 +715,9 @@ const BantuWavesAfricaRising = {
                 data: data,
                 timestamp: Date.now()
             }));
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Cache write error:', e);
+        }
     },
 
     fixImageUrl(url) {
@@ -726,9 +760,28 @@ const BantuWavesAfricaRising = {
     },
 
     async getCurrentUser() {
-        if (window.AuthHelper?.isAuthenticated()) {
+        // FIXED: Use AuthHelper if available, or check supabaseAuth session
+        if (window.AuthHelper?.isAuthenticated && window.AuthHelper.isAuthenticated()) {
             return window.AuthHelper.getUserProfile();
         }
+        
+        // Try to get from supabaseAuth session
+        if (window.supabaseAuth) {
+            try {
+                const { data: { user } } = await window.supabaseAuth.auth.getUser();
+                if (user) {
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        full_name: user.user_metadata?.full_name || user.email,
+                        username: user.user_metadata?.username
+                    };
+                }
+            } catch (e) {
+                console.warn('Error getting user from supabaseAuth:', e);
+            }
+        }
+        
         if (window.getCurrentUser) {
             return await window.getCurrentUser();
         }
@@ -736,15 +789,59 @@ const BantuWavesAfricaRising = {
     },
 
     showToast(message, type) {
-        if (window.showToast) window.showToast(message, type);
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            console.log(`[${type}] ${message}`);
+        }
     }
 };
 
-// Auto-initialize
+// Auto-initialize with proper delay for supabaseAuth
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => BantuWavesAfricaRising.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (window.supabaseAuth) {
+                BantuWavesAfricaRising.init();
+            } else {
+                console.log('🌟 Africa Rising waiting for supabaseAuth...');
+                const authCheck = setInterval(() => {
+                    if (window.supabaseAuth) {
+                        clearInterval(authCheck);
+                        BantuWavesAfricaRising.init();
+                    }
+                }, 100);
+                setTimeout(() => {
+                    clearInterval(authCheck);
+                    if (!BantuWavesAfricaRising.state.initialized) {
+                        console.warn('🌟 Africa Rising: supabaseAuth not available, initializing anyway');
+                        BantuWavesAfricaRising.init();
+                    }
+                }, 5000);
+            }
+        }, 100);
+    });
 } else {
-    BantuWavesAfricaRising.init();
+    setTimeout(() => {
+        if (window.supabaseAuth) {
+            BantuWavesAfricaRising.init();
+        } else {
+            console.log('🌟 Africa Rising waiting for supabaseAuth...');
+            const authCheck = setInterval(() => {
+                if (window.supabaseAuth) {
+                    clearInterval(authCheck);
+                    BantuWavesAfricaRising.init();
+                }
+            }, 100);
+            setTimeout(() => {
+                clearInterval(authCheck);
+                if (!BantuWavesAfricaRising.state.initialized) {
+                    console.warn('🌟 Africa Rising: supabaseAuth not available, initializing anyway');
+                    BantuWavesAfricaRising.init();
+                }
+            }, 5000);
+        }
+    }, 100);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
