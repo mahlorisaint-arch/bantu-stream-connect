@@ -198,7 +198,7 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo-icon">
-                    <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
+                    <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
@@ -485,7 +485,9 @@
     <div class="sidebar-menu" id="sidebar-menu">
         <div class="sidebar-header">
             <div class="sidebar-logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon"><i class="fas fa-film" style="color: var(--warm-gold); font-size: 18px;"></i></div>
+                <div class="logo-icon">
+                    <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
                 <span class="sidebar-logo-text">BANTU</span>
             </div>
             <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
@@ -583,6 +585,144 @@
     <div id="shortcuts-modal" class="analytics-modal" style="display: none;"><div class="analytics-content"><div class="analytics-header"><h2>Keyboard Shortcuts</h2><button id="close-shortcuts" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="shortcuts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;"><div><kbd>Ctrl+K</kbd> - Search</div><div><kbd>Alt+N</kbd> - Notifications</div><div><kbd>Alt+A</kbd> - Analytics</div><div><kbd>Alt+P</kbd> - Profile</div><div><kbd>Ctrl++</kbd> - Increase UI</div><div><kbd>Ctrl+-</kbd> - Decrease UI</div><div><kbd>Ctrl+0</kbd> - Reset UI</div><div><kbd>Alt+T</kbd> - Toggle Theme</div><div><kbd>/</kbd> - Focus Search</div><div><kbd>?</kbd> - Show Help</div></div></div></div></div>
 
     <div id="global-audio-player" class="audio-player hidden"><div class="player-track-info"><img id="player-art" src="" alt="Art"><div><h4 id="player-title">Track Title</h4><p id="player-creator">Creator</p></div></div><div class="player-controls"><button id="player-prev"><i class="fas fa-backward"></i></button><button id="player-play-pause"><i class="fas fa-play"></i></button><button id="player-next"><i class="fas fa-forward"></i></button></div><div class="player-progress"><div id="player-bar"></div></div></div>
+
+    <!-- Force profile update after page load and auth changes -->
+    <script>
+    (function() {
+        // Function to update all profile displays
+        async function updateAllProfiles() {
+            console.log('🔄 Updating all profile displays...');
+            
+            // Wait for auth to be ready
+            if (window.supabaseAuth) {
+                try {
+                    const { data: { session } } = await window.supabaseAuth.auth.getSession();
+                    const user = session?.user;
+                    
+                    if (user) {
+                        console.log('👤 User found:', user.email);
+                        
+                        // Fetch user profile
+                        const { data: profile } = await window.supabaseAuth
+                            .from('user_profiles')
+                            .select('full_name, username, avatar_url')
+                            .eq('id', user.id)
+                            .single();
+                        
+                        const displayName = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User';
+                        const initials = displayName.charAt(0).toUpperCase();
+                        
+                        // Update header profile
+                        const headerProfileImg = document.querySelector('#userProfilePlaceholder');
+                        const headerProfileName = document.querySelector('#current-profile-name');
+                        
+                        if (headerProfileName) headerProfileName.textContent = displayName;
+                        
+                        if (headerProfileImg) {
+                            headerProfileImg.innerHTML = '';
+                            if (profile?.avatar_url) {
+                                const avatarUrl = window.fixAvatarUrl ? window.fixAvatarUrl(profile.avatar_url) : profile.avatar_url;
+                                const img = document.createElement('img');
+                                img.src = avatarUrl;
+                                img.alt = displayName;
+                                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                                img.onerror = () => {
+                                    headerProfileImg.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
+                                };
+                                headerProfileImg.appendChild(img);
+                            } else {
+                                headerProfileImg.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
+                            }
+                        }
+                        
+                        // Update sidebar profile
+                        const sidebarAvatar = document.querySelector('#sidebar-profile-avatar');
+                        const sidebarName = document.querySelector('#sidebar-profile-name');
+                        const sidebarEmail = document.querySelector('#sidebar-profile-email');
+                        
+                        if (sidebarName) sidebarName.textContent = displayName;
+                        if (sidebarEmail) sidebarEmail.textContent = user.email || 'Logged in';
+                        
+                        if (sidebarAvatar) {
+                            sidebarAvatar.innerHTML = '';
+                            if (profile?.avatar_url) {
+                                const avatarUrl = window.fixAvatarUrl ? window.fixAvatarUrl(profile.avatar_url) : profile.avatar_url;
+                                const img = document.createElement('img');
+                                img.src = avatarUrl;
+                                img.alt = displayName;
+                                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                                img.onerror = () => {
+                                    sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:white;">${initials}</span>`;
+                                };
+                                sidebarAvatar.appendChild(img);
+                            } else {
+                                sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:white;">${initials}</span>`;
+                            }
+                        }
+                        
+                        // Update welcome message
+                        const welcomeName = document.querySelector('#user-name');
+                        if (welcomeName) welcomeName.textContent = displayName;
+                        
+                        const welcomeMsg = document.querySelector('#welcome-message');
+                        if (welcomeMsg) {
+                            const hour = new Date().getHours();
+                            let greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+                            welcomeMsg.innerHTML = `${greeting}, <span id="user-name">${displayName}</span>! 👋`;
+                        }
+                        
+                        console.log('✅ Profile updated for:', displayName);
+                    } else {
+                        console.log('👤 No user logged in - showing guest mode');
+                        
+                        // Set guest mode
+                        const headerProfileName = document.querySelector('#current-profile-name');
+                        if (headerProfileName) headerProfileName.textContent = 'Guest';
+                        
+                        const headerProfileImg = document.querySelector('#userProfilePlaceholder');
+                        if (headerProfileImg) {
+                            headerProfileImg.innerHTML = '<i class="fas fa-user"></i>';
+                        }
+                        
+                        const sidebarName = document.querySelector('#sidebar-profile-name');
+                        if (sidebarName) sidebarName.textContent = 'Guest';
+                        
+                        const sidebarEmail = document.querySelector('#sidebar-profile-email');
+                        if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+                        
+                        const sidebarAvatar = document.querySelector('#sidebar-profile-avatar');
+                        if (sidebarAvatar) {
+                            sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
+                        }
+                    }
+                } catch (err) {
+                    console.error('Profile update error:', err);
+                }
+            }
+        }
+        
+        // Run on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(updateAllProfiles, 500);
+            });
+        } else {
+            setTimeout(updateAllProfiles, 500);
+        }
+        
+        // Listen for auth state changes
+        if (window.supabaseAuth) {
+            window.supabaseAuth.auth.onAuthStateChange(() => {
+                console.log('🔐 Auth state changed, updating profiles...');
+                setTimeout(updateAllProfiles, 500);
+            });
+        }
+        
+        // Also listen for custom events
+        document.addEventListener('authReady', updateAllProfiles);
+        document.addEventListener('profileUpdated', updateAllProfiles);
+    })();
+    </script>
 
     <!-- =================================================================== -->
     <!-- JAVASCRIPT FILES - CORRECT ORDER -->
