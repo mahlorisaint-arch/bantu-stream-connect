@@ -172,6 +172,28 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .content-card { opacity: 0; transform: translateY(20px); transition: opacity 0.3s ease, transform 0.3s ease; }
         .content-card.visible { opacity: 1; transform: translateY(0); }
+        
+        /* Hero section placeholder styles */
+        .hero-video-play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid white;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+        .hero-video-play-btn:hover {
+            background: var(--warm-gold);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -765,5 +787,22 @@
     <!-- 6. Other Features -->
     <script src="js/audio-player.js"></script>
     <script src="js/community-pulse.js"></script>
+    
+    <!-- 7. FALLBACK: Force hero initialization if master init fails -->
+    <script>
+    (function() {
+        // Fallback to ensure hero loads even if master init fails
+        setTimeout(function() {
+            if (window.HeroContent && !window.HeroContent.state?.initialized) {
+                console.log('🔄 [FALLBACK] Master init may have failed, forcing hero initialization...');
+                window.HeroContent.init();
+            } else if (!window.HeroContent) {
+                console.error('❌ [FALLBACK] HeroContent module not found on window!');
+            } else {
+                console.log('✅ [FALLBACK] HeroContent already initialized');
+            }
+        }, 3000);
+    })();
+    </script>
 </body>
 </html>
