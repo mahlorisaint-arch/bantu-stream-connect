@@ -4,6 +4,7 @@
    Displays music playlists and albums from creator_playlists
    Filtered by playlist_type = 'album' or 'playlist'
    Ordered by engagement (play_count, connectors_count)
+   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
 /* ============================================ */
 
 console.log('🎵 Bantu Waves: Music section loading...');
@@ -88,7 +89,7 @@ const BantuWavesMusic = {
     },
 
     /* ============================================ */
-    /* DATA LOADING
+    /* DATA LOADING - FIXED: Uses supabaseAuth
     /* ============================================ */
     async loadMusicContent(forceRefresh = false) {
         if (this.state.isLoading) return;
@@ -108,7 +109,7 @@ const BantuWavesMusic = {
         this.state.isLoading = true;
 
         try {
-            // Fetch music playlists from creator_playlists
+            // Fetch music playlists from creator_playlists using supabaseAuth
             const playlists = await this.fetchMusicPlaylists();
             
             // Enrich with content and metrics
@@ -136,50 +137,55 @@ const BantuWavesMusic = {
     },
 
     async fetchMusicPlaylists() {
-        if (!window.supabaseClient) {
-            throw new Error('Supabase client not available');
-        }
-
-        // Build query for music playlists (albums and playlists)
-        let query = window.supabaseClient
-            .from('creator_playlists')
-            .select(`
-                id,
-                creator_id,
-                name,
-                description,
-                playlist_type,
-                custom_thumbnail_url,
-                banner_url,
-                is_featured,
-                visibility,
-                sort_order,
-                total_duration,
-                play_count,
-                created_at,
-                updated_at,
-                connectors_count,
-                series_metadata,
-                user_profiles:creator_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .in('playlist_type', this.config.playlistTypes)
-            .eq('visibility', 'public')
-            .order('play_count', { ascending: false })
-            .limit(this.config.maxItems * 2); // Fetch extra for engagement sorting
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error('Error fetching music playlists:', error);
+        // FIXED: Use window.supabaseAuth instead of window.supabaseClient
+        if (!window.supabaseAuth) {
+            console.error('Supabase Auth client not available');
             return [];
         }
 
-        return data || [];
+        try {
+            // Build query for music playlists (albums and playlists)
+            const { data, error } = await window.supabaseAuth
+                .from('creator_playlists')
+                .select(`
+                    id,
+                    creator_id,
+                    name,
+                    description,
+                    playlist_type,
+                    custom_thumbnail_url,
+                    banner_url,
+                    is_featured,
+                    visibility,
+                    sort_order,
+                    total_duration,
+                    play_count,
+                    created_at,
+                    updated_at,
+                    connectors_count,
+                    series_metadata,
+                    user_profiles:creator_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                `)
+                .in('playlist_type', this.config.playlistTypes)
+                .eq('visibility', 'public')
+                .order('play_count', { ascending: false })
+                .limit(this.config.maxItems * 2); // Fetch extra for engagement sorting
+
+            if (error) {
+                console.error('Error fetching music playlists:', error);
+                return [];
+            }
+
+            return data || [];
+        } catch (err) {
+            console.error('Exception in fetchMusicPlaylists:', err);
+            return [];
+        }
     },
 
     async enrichPlaylistsWithData(playlists) {
@@ -250,58 +256,64 @@ const BantuWavesMusic = {
     },
 
     async fetchPlaylistContents(playlistId) {
-        if (!window.supabaseClient) return [];
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return [];
 
-        const { data, error } = await window.supabaseClient
-            .from('playlist_contents')
-            .select(`
-                id,
-                playlist_id,
-                content_id,
-                sort_index,
-                track_number,
-                display_title_override,
-                Content:content_id (
+        try {
+            const { data, error } = await window.supabaseAuth
+                .from('playlist_contents')
+                .select(`
                     id,
-                    title,
-                    description,
-                    thumbnail_url,
-                    duration,
-                    genre,
-                    language,
-                    created_at,
-                    content_format,
-                    user_profiles:user_id (
+                    playlist_id,
+                    content_id,
+                    sort_index,
+                    track_number,
+                    display_title_override,
+                    Content:content_id (
                         id,
-                        full_name,
-                        username,
-                        avatar_url
+                        title,
+                        description,
+                        thumbnail_url,
+                        duration,
+                        genre,
+                        language,
+                        created_at,
+                        content_format,
+                        user_profiles:user_id (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url
+                        )
                     )
-                )
-            `)
-            .eq('playlist_id', playlistId)
-            .order('sort_index', { ascending: true });
+                `)
+                .eq('playlist_id', playlistId)
+                .order('sort_index', { ascending: true });
 
-        if (error) {
-            console.error(`Error fetching contents for playlist ${playlistId}:`, error);
+            if (error) {
+                console.error(`Error fetching contents for playlist ${playlistId}:`, error);
+                return [];
+            }
+
+            // Filter out items without content and map to simpler structure
+            return (data || [])
+                .filter(item => item.Content)
+                .map(item => ({
+                    id: item.id,
+                    content_id: item.content_id,
+                    sort_index: item.sort_index,
+                    track_number: item.track_number || item.sort_index + 1,
+                    title: item.display_title_override || item.Content?.title || 'Untitled',
+                    thumbnail_url: item.Content?.thumbnail_url,
+                    duration: item.Content?.duration,
+                    genre: item.Content?.genre,
+                    content_format: item.Content?.content_format,
+                    creator: item.Content?.user_profiles
+                }));
+        } catch (err) {
+            console.error(`Exception fetching playlist contents for ${playlistId}:`, err);
             return [];
         }
-
-        // Filter out items without content and map to simpler structure
-        return (data || [])
-            .filter(item => item.Content)
-            .map(item => ({
-                id: item.id,
-                content_id: item.content_id,
-                sort_index: item.sort_index,
-                track_number: item.track_number || item.sort_index + 1,
-                title: item.display_title_override || item.Content?.title || 'Untitled',
-                thumbnail_url: item.Content?.thumbnail_url,
-                duration: item.Content?.duration,
-                genre: item.Content?.genre,
-                content_format: item.Content?.content_format,
-                creator: item.Content?.user_profiles
-            }));
     },
 
     async fetchEngagementMetrics(contentIds) {
@@ -310,14 +322,18 @@ const BantuWavesMusic = {
         // Remove duplicates
         const uniqueIds = [...new Set(contentIds)];
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return {};
+        
         try {
-            const { data, error } = await window.supabaseClient
+            const { data, error } = await window.supabaseAuth
                 .from('content_engagement_stats')
                 .select('content_id, total_views, total_likes, total_comments, total_shares, total_watch_time_ms')
                 .in('content_id', uniqueIds);
             
             if (error) {
-                console.warn('Error fetching engagement metrics:', error);
+                // Check if error is because table doesn't exist or missing column
+                console.warn('Error fetching engagement metrics (may not be available):', error.message);
                 return {};
             }
             
@@ -346,11 +362,13 @@ const BantuWavesMusic = {
         score += totalContentEngagement;
         
         // Recency boost (newer playlists get slight boost)
-        const daysSinceCreation = (new Date() - new Date(playlist.created_at)) / (1000 * 60 * 60 * 24);
-        if (daysSinceCreation < 7) {
-            score *= 1.3; // 30% boost for new playlists
-        } else if (daysSinceCreation < 30) {
-            score *= 1.1; // 10% boost for recent playlists
+        if (playlist.created_at) {
+            const daysSinceCreation = (new Date() - new Date(playlist.created_at)) / (1000 * 60 * 60 * 24);
+            if (daysSinceCreation < 7) {
+                score *= 1.3; // 30% boost for new playlists
+            } else if (daysSinceCreation < 30) {
+                score *= 1.1; // 10% boost for recent playlists
+            }
         }
         
         // Featured boost
@@ -415,7 +433,9 @@ const BantuWavesMusic = {
         
         this.elements.container.innerHTML = '';
         this.elements.container.appendChild(fragment);
-        this.elements.section.classList.add('loaded');
+        if (this.elements.section) {
+            this.elements.section.classList.add('loaded');
+        }
     },
 
     createPlaylistCard(playlist) {
@@ -576,7 +596,7 @@ const BantuWavesMusic = {
     },
 
     /* ============================================ */
-    /* ACTIONS
+    /* ACTIONS - FIXED: Use supabaseAuth for all operations
     /* ============================================ */
     async playPlaylist(playlistId, contents) {
         if (!contents || contents.length === 0) {
@@ -594,18 +614,23 @@ const BantuWavesMusic = {
         // Start playing the first track
         const firstTrack = contents[0];
         if (firstTrack && window.playSmartLink) {
-            // Get audio URL - you'll need to fetch this from Content table
+            // Get audio URL - use supabaseAuth
             const audioUrl = await this.getContentAudioUrl(firstTrack.content_id);
             if (audioUrl) {
                 window.playSmartLink(audioUrl, firstTrack.title, firstTrack.creator?.full_name || 'Artist');
                 this.showToast(`Now playing: ${firstTrack.title}`, 'success');
+            } else {
+                this.showToast('Unable to play this track', 'error');
             }
         }
     },
 
     async getContentAudioUrl(contentId) {
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) return null;
+        
         try {
-            const { data, error } = await window.supabaseClient
+            const { data, error } = await window.supabaseAuth
                 .from('Content')
                 .select('file_url')
                 .eq('id', contentId)
@@ -627,31 +652,47 @@ const BantuWavesMusic = {
             return;
         }
         
+        // FIXED: Use window.supabaseAuth
+        if (!window.supabaseAuth) {
+            this.showToast('Service unavailable', 'error');
+            return;
+        }
+        
         try {
             // Check if already saved
-            const { data: existing } = await window.supabaseClient
+            const { data: existing, error: fetchError } = await window.supabaseAuth
                 .from('saved_playlists')
                 .select('id')
                 .eq('user_id', user.id)
                 .eq('playlist_id', playlistId)
                 .maybeSingle();
             
+            if (fetchError && fetchError.code !== 'PGRST116') {
+                console.error('Error checking saved playlist:', fetchError);
+                this.showToast('Error accessing saved playlists', 'error');
+                return;
+            }
+            
             if (existing) {
                 // Unsave
-                await window.supabaseClient
+                const { error: deleteError } = await window.supabaseAuth
                     .from('saved_playlists')
                     .delete()
                     .eq('id', existing.id);
+                    
+                if (deleteError) throw deleteError;
                 this.showToast('Removed from your library', 'info');
             } else {
                 // Save
-                await window.supabaseClient
+                const { error: insertError } = await window.supabaseAuth
                     .from('saved_playlists')
                     .insert({
                         user_id: user.id,
                         playlist_id: playlistId,
                         saved_at: new Date().toISOString()
                     });
+                    
+                if (insertError) throw insertError;
                 this.showToast('Added to your library', 'success');
             }
         } catch (error) {
@@ -767,9 +808,28 @@ const BantuWavesMusic = {
     },
 
     async getCurrentUser() {
-        if (window.AuthHelper?.isAuthenticated()) {
+        // FIXED: Use AuthHelper if available, or check supabaseAuth session
+        if (window.AuthHelper?.isAuthenticated && window.AuthHelper.isAuthenticated()) {
             return window.AuthHelper.getUserProfile();
         }
+        
+        // Try to get from supabaseAuth session
+        if (window.supabaseAuth) {
+            try {
+                const { data: { user } } = await window.supabaseAuth.auth.getUser();
+                if (user) {
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        full_name: user.user_metadata?.full_name || user.email,
+                        username: user.user_metadata?.username
+                    };
+                }
+            } catch (e) {
+                console.warn('Error getting user from supabaseAuth:', e);
+            }
+        }
+        
         if (window.getCurrentUser) {
             return await window.getCurrentUser();
         }
@@ -789,7 +849,28 @@ const BantuWavesMusic = {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => BantuWavesMusic.init());
 } else {
-    BantuWavesMusic.init();
+    // Small delay to ensure supabaseAuth is ready
+    setTimeout(() => {
+        if (window.supabaseAuth) {
+            BantuWavesMusic.init();
+        } else {
+            console.log('🎵 Music waiting for supabaseAuth...');
+            const authCheck = setInterval(() => {
+                if (window.supabaseAuth) {
+                    clearInterval(authCheck);
+                    BantuWavesMusic.init();
+                }
+            }, 100);
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(authCheck);
+                if (!BantuWavesMusic.state.initialized) {
+                    console.warn('🎵 Music: supabaseAuth not available, initializing anyway');
+                    BantuWavesMusic.init();
+                }
+            }, 5000);
+        }
+    }, 100);
 }
 
 // Export for use in other modules
