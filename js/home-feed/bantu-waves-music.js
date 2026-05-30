@@ -4,7 +4,11 @@
    Displays music playlists and albums from creator_playlists
    Filtered by playlist_type = 'album' or 'playlist'
    Ordered by engagement (play_count, connectors_count)
-   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
+   
+   UPDATED:
+   1. Hides playlists with no items/tracks
+   2. Shows correct total_views from content_engagement_stats
+   3. Redirects to playlist mode in content-detail
 /* ============================================ */
 
 console.log('🎵 Bantu Waves: Music section loading...');
@@ -115,8 +119,15 @@ const BantuWavesMusic = {
             // Enrich with content and metrics
             const enrichedPlaylists = await this.enrichPlaylistsWithData(playlists);
             
+            // FIX 1: Filter out playlists with no items/tracks
+            const playlistsWithContent = enrichedPlaylists.filter(playlist => 
+                playlist.contents && playlist.contents.length > 0
+            );
+            
+            console.log(`📊 Music: Filtered out ${enrichedPlaylists.length - playlistsWithContent.length} empty playlists`);
+            
             // Sort by engagement score
-            const sortedPlaylists = this.sortByEngagement(enrichedPlaylists);
+            const sortedPlaylists = this.sortByEngagement(playlistsWithContent);
             
             // Take top items
             const topPlaylists = sortedPlaylists.slice(0, this.config.maxItems);
@@ -125,7 +136,7 @@ const BantuWavesMusic = {
             this.cacheData(topPlaylists);
             this.render(topPlaylists);
             
-            console.log('✅ Music section loaded:', topPlaylists.length, 'playlists');
+            console.log('✅ Music section loaded:', topPlaylists.length, 'playlists with content');
             
         } catch (error) {
             console.error('❌ Error loading music section:', error);
@@ -204,7 +215,7 @@ const BantuWavesMusic = {
         // Build content maps
         const playlistContentMap = {};
         playlistContentsResults.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value) {
+            if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
                 playlistContentMap[playlistIds[index]] = result.value;
             } else {
                 playlistContentMap[playlistIds[index]] = [];
@@ -219,23 +230,27 @@ const BantuWavesMusic = {
             });
         });
 
-        // Fetch engagement metrics for all content
+        // FIX 2: Fetch engagement metrics for all content from content_engagement_stats
         const engagementMetrics = await this.fetchEngagementMetrics(allContentIds);
 
         // Enrich each playlist
         const enrichedPlaylists = playlists.map(playlist => {
             const contents = playlistContentMap[playlist.id] || [];
             
-            // Calculate playlist metrics from contents
+            // FIX 2: Calculate playlist metrics from contents using total_views from content_engagement_stats
             let totalViews = 0;
             let totalLikes = 0;
             let totalEngagement = 0;
             
             contents.forEach(item => {
                 const metrics = engagementMetrics[item.content_id] || {};
-                totalViews += metrics.total_views || 0;
-                totalLikes += metrics.total_likes || 0;
-                totalEngagement += (metrics.total_views || 0) + (metrics.total_likes || 0) * 2;
+                // Use total_views from content_engagement_stats
+                const itemViews = metrics.total_views || 0;
+                const itemLikes = metrics.total_likes || 0;
+                
+                totalViews += itemViews;
+                totalLikes += itemLikes;
+                totalEngagement += itemViews + (itemLikes * 2);
             });
             
             // Calculate engagement score
@@ -296,8 +311,9 @@ const BantuWavesMusic = {
             }
 
             // Filter out items without content and map to simpler structure
-            return (data || [])
-                .filter(item => item.Content)
+            // Also filter out items where Content is null (orphaned references)
+            const validItems = (data || [])
+                .filter(item => item && item.Content && item.Content.id)
                 .map(item => ({
                     id: item.id,
                     content_id: item.content_id,
@@ -308,8 +324,11 @@ const BantuWavesMusic = {
                     duration: item.Content?.duration,
                     genre: item.Content?.genre,
                     content_format: item.Content?.content_format,
-                    creator: item.Content?.user_profiles
+                    creator: item.Content?.user_profiles,
+                    created_at: item.Content?.created_at
                 }));
+            
+            return validItems;
         } catch (err) {
             console.error(`Exception fetching playlist contents for ${playlistId}:`, err);
             return [];
@@ -340,7 +359,13 @@ const BantuWavesMusic = {
             // Build map
             const metricsMap = {};
             (data || []).forEach(stat => {
-                metricsMap[stat.content_id] = stat;
+                metricsMap[stat.content_id] = {
+                    total_views: stat.total_views || 0,
+                    total_likes: stat.total_likes || 0,
+                    total_comments: stat.total_comments || 0,
+                    total_shares: stat.total_shares || 0,
+                    total_watch_time_ms: stat.total_watch_time_ms || 0
+                };
             });
             
             return metricsMap;
@@ -358,7 +383,7 @@ const BantuWavesMusic = {
         score += (playlist.play_count || 0) * 1;
         score += (playlist.connectors_count || 0) * 2;
         
-        // Content-level metrics
+        // Content-level metrics (from engagement_stats)
         score += totalContentEngagement;
         
         // Recency boost (newer playlists get slight boost)
@@ -445,7 +470,7 @@ const BantuWavesMusic = {
         card.dataset.playlistType = playlist.playlist_type;
         
         const thumbnailUrl = playlist.thumbnail_url;
-        const playlistTypeIcon = playlist.playlist_type === 'album' ? 'fa-album' : 'fa-list';
+        const playlistTypeIcon = playlist.playlist_type === 'album' ? 'fa-record-vinyl' : 'fa-list';
         const playlistTypeLabel = playlist.playlist_type === 'album' ? 'ALBUM' : 'PLAYLIST';
         
         const creator = playlist.user_profiles || {};
@@ -455,8 +480,8 @@ const BantuWavesMusic = {
         const trackCount = playlist.total_tracks || 0;
         const trackText = trackCount === 1 ? 'track' : 'tracks';
         
-        // Format play count
-        const playCount = this.formatNumber(playlist.play_count || 0);
+        // FIX 2: Use total_views from engagement_stats (calculated from all tracks)
+        const totalViews = this.formatNumber(playlist.total_views || 0);
         
         // Format duration
         const duration = this.formatDuration(playlist.total_duration || 0);
@@ -488,7 +513,7 @@ const BantuWavesMusic = {
                     </div>
                     <div class="playlist-meta">
                         <span><i class="fas fa-music"></i> ${trackCount} ${trackText}</span>
-                        <span><i class="fas fa-play-circle"></i> ${playCount}</span>
+                        <span><i class="fas fa-eye"></i> ${totalViews}</span>
                         ${duration ? `<span><i class="fas fa-clock"></i> ${duration}</span>` : ''}
                     </div>
                     ${playlist.description ? `
@@ -531,10 +556,10 @@ const BantuWavesMusic = {
             });
         }
         
-        // Make entire card clickable to view playlist
+        // FIX 3: Make entire card clickable to view playlist - redirect to content-detail with playlist_id
         card.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
-            this.viewPlaylist(playlist.id);
+            this.viewPlaylist(playlist.id, playlist.playlist_type);
         });
         
         return card;
@@ -702,7 +727,8 @@ const BantuWavesMusic = {
     },
 
     sharePlaylist(playlistId, playlistName) {
-        const shareUrl = `${window.location.origin}/playlist.html?id=${playlistId}`;
+        // FIX 3: Use content-detail with playlist_id parameter
+        const shareUrl = `${window.location.origin}/content-detail?playlist_id=${playlistId}&type=album`;
         
         if (navigator.share) {
             navigator.share({
@@ -725,8 +751,10 @@ const BantuWavesMusic = {
         });
     },
 
-    viewPlaylist(playlistId) {
-        window.location.href = `playlist-detail.html?id=${playlistId}&type=music`;
+    // FIX 3: Redirect to content-detail with playlist_id parameter
+    viewPlaylist(playlistId, playlistType) {
+        const type = playlistType === 'album' ? 'album' : 'playlist';
+        window.location.href = `content-detail?playlist_id=${playlistId}&type=${type}`;
     },
 
     navigateToMusicHub() {
