@@ -30,55 +30,145 @@
     font-size: 10px;
 }
 
-/* Recommendation Score Indicator */
+/* ============================================
+   GLASSMORPHISM BADGES - Split Layout (For You)
+   Top-Left: Priority badges (Format, New)
+   Bottom-Left: Secondary badges (Genre)
+   Top-Right: Recommendation score
+   Bottom-Right: Duration badge
+   ============================================ */
+
+/* Top-Left Badges Container */
+.for-you-badges-top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 6;
+    flex-wrap: wrap;
+    max-width: calc(100% - 24px);
+}
+
+/* Bottom-Left Badges Container (Genre tags) */
+.for-you-badges-bottom {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    gap: 6px;
+    z-index: 6;
+    flex-wrap: wrap;
+    max-width: calc(100% - 80px);
+}
+
+/* Individual Badge - Glassmorphism Style */
+.card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.card-badge:hover {
+    transform: translateY(-1px);
+    background: rgba(0, 0, 0, 0.75);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* New Badge */
+.new-badge {
+    background: linear-gradient(135deg, #10B981, #059669);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Format Badge */
+.format-badge {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(124, 58, 237, 0.9));
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Genre Badge - Bottom Left */
+.genre-badge {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(37, 99, 235, 0.85));
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.3);
+    padding: 3px 10px;
+    font-size: 9px;
+}
+
+/* Recommendation Score - Top Right */
 .recommendation-score {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 12px;
     background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    padding: 2px 6px;
-    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    padding: 4px 10px;
+    border-radius: 20px;
     font-size: 10px;
     font-weight: 600;
     z-index: 4;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .recommendation-score.high {
-    color: #10B981;
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: white;
 }
 
 .recommendation-score.medium {
-    color: var(--warm-gold);
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
 }
 
 .recommendation-score.low {
+    background: rgba(0, 0, 0, 0.8);
     color: var(--slate-grey);
 }
 
-/* Genre Tags */
+/* Duration Badge - Bottom Right */
+.duration-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    z-index: 4;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Genre Tags (fallback for card content) */
 .genre-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
-}
-
-.genre-tag {
-    background: rgba(29, 78, 216, 0.15);
-    border: 1px solid rgba(29, 78, 216, 0.3);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    color: var(--bantu-blue);
-}
-
-.theme-light .genre-tag {
-    background: rgba(29, 78, 216, 0.1);
-    color: #1D4ED8;
 }
 
 /* Personalization Explanation Tooltip */
@@ -117,6 +207,7 @@
 /* For You Card Enhancements */
 #for-you-grid .content-card {
     position: relative;
+    transition: all 0.3s ease;
 }
 
 #for-you-grid .content-card::before {
@@ -135,6 +226,11 @@
 
 #for-you-grid .content-card:hover::before {
     opacity: 1;
+}
+
+#for-you-grid .content-card:hover {
+    transform: translateY(calc(-0.5rem * var(--ui-scale)));
+    box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
 }
 
 /* Recommendation Animation */
@@ -233,27 +329,66 @@
     position: relative;
 }
 
-#for-you-grid .skeleton-card .skeleton-thumbnail::after {
-    content: '';
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 40px;
-    height: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-}
+/* ============================================
+   MOBILE RESPONSIVE - Badge Size Reduction
+   ============================================ */
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
     .personalized-badge {
         font-size: 10px;
         padding: 2px 8px;
     }
     
-    .genre-tag {
+    /* Mobile badge size reduction */
+    .for-you-badges-top {
+        top: 8px;
+        left: 8px;
+        gap: 5px;
+        max-width: calc(100% - 16px);
+    }
+    
+    .for-you-badges-bottom {
+        bottom: 8px;
+        left: 8px;
+        gap: 4px;
+        max-width: calc(100% - 70px);
+    }
+    
+    .card-badge {
+        padding: 2px 8px;
         font-size: 8px;
-        padding: 1px 6px;
+        gap: 4px;
+        border-radius: 14px;
+    }
+    
+    .card-badge i {
+        font-size: 7px;
+    }
+    
+    .genre-badge {
+        padding: 2px 8px;
+        font-size: 8px;
+    }
+    
+    .recommendation-score {
+        top: 8px;
+        right: 8px;
+        padding: 2px 8px;
+        font-size: 8px;
+        gap: 4px;
+        border-radius: 14px;
+    }
+    
+    .recommendation-score i {
+        font-size: 7px;
+    }
+    
+    .duration-badge {
+        bottom: 8px;
+        right: 8px;
+        padding: 2px 6px;
+        font-size: 8px;
+        border-radius: 10px;
     }
     
     .personalization-tooltip .tooltip-text {
@@ -266,27 +401,144 @@
     .personalized-badge {
         display: none;
     }
+    
+    /* EXTRA SMALL - Further badge reduction */
+    .for-you-badges-top {
+        top: 6px;
+        left: 6px;
+        gap: 4px;
+        max-width: calc(100% - 12px);
+    }
+    
+    .for-you-badges-bottom {
+        bottom: 6px;
+        left: 6px;
+        gap: 3px;
+        max-width: calc(100% - 60px);
+    }
+    
+    .card-badge {
+        padding: 2px 6px;
+        font-size: 7px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+    
+    .card-badge i {
+        font-size: 6px;
+    }
+    
+    .genre-badge {
+        padding: 1px 6px;
+        font-size: 7px;
+    }
+    
+    .recommendation-score {
+        top: 6px;
+        right: 6px;
+        padding: 2px 6px;
+        font-size: 7px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+    
+    .duration-badge {
+        bottom: 6px;
+        right: 6px;
+        padding: 1px 5px;
+        font-size: 7px;
+        border-radius: 8px;
+    }
+    
+    /* Only show 2 badges max on very small screens */
+    .for-you-badges-top .card-badge:nth-child(n+2) {
+        display: none;
+    }
+    
+    .for-you-badges-bottom .card-badge:nth-child(n+2) {
+        display: none;
+    }
 }
 
 /* Light Theme */
-.theme-light #for-you-grid .content-card::before {
-    background: linear-gradient(90deg, #2563EB, #D97706);
+.theme-light .card-badge {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    color: #1a1a1a;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.theme-light .new-badge {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: white;
+}
+
+.theme-light .format-badge {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(124, 58, 237, 0.95));
+    color: white;
+}
+
+.theme-light .genre-badge {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+    color: white;
 }
 
 .theme-light .recommendation-score {
     background: rgba(255, 255, 255, 0.9);
+    color: #1a1a1a;
+}
+
+.theme-light .recommendation-score.high {
+    background: #10B981;
+    color: white;
+}
+
+.theme-light .recommendation-score.medium {
+    background: #F59E0B;
+    color: white;
+}
+
+.theme-light #for-you-grid .content-card::before {
+    background: linear-gradient(90deg, #2563EB, #D97706);
 }
 
 /* High Contrast Theme */
+.theme-high-contrast .card-badge {
+    background: black;
+    border: 1px solid white;
+    color: white;
+    backdrop-filter: none;
+}
+
+.theme-high-contrast .new-badge,
+.theme-high-contrast .format-badge,
+.theme-high-contrast .genre-badge {
+    border: 1px solid #00ff00;
+    color: #00ff00;
+    background: black;
+}
+
+.theme-high-contrast .recommendation-score {
+    border: 1px solid var(--soft-white);
+    background: var(--deep-black);
+}
+
+.theme-high-contrast .recommendation-score.high {
+    background: #00ff00;
+    color: black;
+    border-color: black;
+}
+
+.theme-high-contrast .recommendation-score.medium {
+    background: #ffff00;
+    color: black;
+    border-color: black;
+}
+
 .theme-high-contrast #for-you-grid .content-card {
     border-width: 2px;
 }
 
 .theme-high-contrast #for-you-grid .content-card::before {
     height: 4px;
-}
-
-.theme-high-contrast .recommendation-score {
-    border: 1px solid var(--soft-white);
-    background: var(--deep-black);
 }
