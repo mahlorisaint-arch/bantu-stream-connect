@@ -42,46 +42,111 @@
     }
 }
 
-/* New Content Badge */
-.new-badge {
-    background: linear-gradient(135deg, #10B981, #059669);
-    color: white;
+/* ============================================
+   GLASSMORPHISM BADGES - New Style (No Duplicates)
+   ============================================ */
+
+/* Badges Container - Glassmorphism effect */
+.card-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 6;
+    flex-wrap: wrap;
+    max-width: calc(100% - 24px);
+}
+
+/* Individual Badge - Glassmorphism Style */
+.card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
     font-weight: 700;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
 }
 
-.new-badge i {
-    margin-right: 4px;
+.card-badge:hover {
+    transform: translateY(-1px);
+    background: rgba(0, 0, 0, 0.75);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
-/* Freshness Indicator */
+/* Format Badge specific styling */
+.format-badge {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8));
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Genre Badge styling */
+.genre-badge {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8));
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Sparkle Badge for extremely new content */
+.sparkle-badge {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 215, 0, 0.5);
+    animation: sparklePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sparklePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+    }
+}
+
+/* Freshness Indicator - Simplified (no duplicate) */
 .freshness-indicator {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 12px;
     background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    padding: 2px 8px;
+    backdrop-filter: blur(8px);
+    padding: 4px 10px;
     border-radius: 20px;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 600;
     z-index: 4;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .freshness-indicator.just-added {
-    background: #10B981;
+    background: linear-gradient(135deg, #10B981, #059669);
     color: white;
 }
 
 .freshness-indicator.today {
-    background: #F59E0B;
+    background: linear-gradient(135deg, #F59E0B, #D97706);
     color: var(--deep-black);
 }
 
 .freshness-indicator.this-week {
-    background: #3B82F6;
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
     color: white;
 }
 
@@ -275,7 +340,10 @@
     opacity: 0.3;
 }
 
-/* Mobile Responsive */
+/* ============================================
+   MOBILE RESPONSIVE - Badge Size Reduction (40-50%)
+   ============================================ */
+
 @media (max-width: 768px) {
     .latest-stats-bar {
         gap: var(--spacing-sm);
@@ -312,12 +380,50 @@
         font-size: 10px;
     }
     
-    .freshness-indicator {
+    /* MOBILE BADGE SIZE REDUCTION - 50% smaller */
+    .card-badges {
+        top: 8px;
+        left: 8px;
+        gap: 5px;
+        max-width: calc(100% - 16px);
+    }
+    
+    .card-badge {
+        padding: 2px 8px;
         font-size: 8px;
-        padding: 1px 6px;
+        gap: 4px;
+        border-radius: 14px;
+    }
+    
+    .card-badge i {
+        font-size: 7px;
+    }
+    
+    /* Freshness indicator also reduced on mobile */
+    .freshness-indicator {
+        top: 8px;
+        right: 8px;
+        padding: 2px 8px;
+        font-size: 8px;
+        gap: 4px;
+        border-radius: 14px;
+    }
+    
+    .freshness-indicator i {
+        font-size: 7px;
+    }
+    
+    /* Duration badge mobile reduction */
+    .duration-badge {
+        bottom: 8px;
+        right: 8px;
+        padding: 2px 6px;
+        font-size: 8px;
+        border-radius: 10px;
     }
 }
 
+/* Extra small devices (phones under 480px) - 60% reduction for badges */
 @media (max-width: 480px) {
     .latest-stats-bar {
         display: none;
@@ -330,9 +436,72 @@
     .category-filter-bar {
         margin-bottom: var(--spacing-md);
     }
+    
+    /* EXTRA SMALL - Badges 60% smaller */
+    .card-badges {
+        top: 6px;
+        left: 6px;
+        gap: 4px;
+        max-width: calc(100% - 12px);
+    }
+    
+    .card-badge {
+        padding: 2px 6px;
+        font-size: 7px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+    
+    .card-badge i {
+        font-size: 6px;
+    }
+    
+    .freshness-indicator {
+        top: 6px;
+        right: 6px;
+        padding: 2px 6px;
+        font-size: 7px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+    
+    .freshness-indicator i {
+        font-size: 6px;
+    }
+    
+    /* Only show one badge on very small screens to avoid clutter */
+    .card-badges {
+        max-width: 70%;
+    }
+    
+    .card-badge:not(:first-child) {
+        display: none;
+    }
+    
+    /* Keep sparkle badge always visible */
+    .card-badge.sparkle-badge {
+        display: inline-flex;
+    }
 }
 
 /* Light Theme */
+.theme-light .card-badge {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    color: #1a1a1a;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.theme-light .format-badge {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9));
+    color: white;
+}
+
+.theme-light .genre-badge {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9));
+    color: white;
+}
+
 .theme-light .freshness-indicator {
     background: rgba(255, 255, 255, 0.9);
     color: #1a1a1a;
@@ -343,23 +512,41 @@
     color: white;
 }
 
-.theme-light .latest-stat-item .stat-value {
-    color: #1a1a1a;
+.theme-light .freshness-indicator.today {
+    background: #F59E0B;
+    color: white;
+}
+
+.theme-light .freshness-indicator.this-week {
+    background: #3B82F6;
+    color: white;
 }
 
 /* High Contrast Theme */
-.theme-high-contrast .new-badge {
+.theme-high-contrast .card-badge {
+    background: black;
     border: 1px solid white;
+    color: white;
+    backdrop-filter: none;
+}
+
+.theme-high-contrast .format-badge,
+.theme-high-contrast .genre-badge {
+    background: black;
+    border: 1px solid #00ff00;
+    color: #00ff00;
 }
 
 .theme-high-contrast .freshness-indicator.just-added {
     background: #00ff00;
     color: black;
+    border: 1px solid black;
 }
 
 .theme-high-contrast .freshness-indicator.today {
     background: #ffff00;
     color: black;
+    border: 1px solid black;
 }
 
 .theme-high-contrast .filter-chip.active {
