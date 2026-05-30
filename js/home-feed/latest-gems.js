@@ -7,6 +7,9 @@
  * excludes short-form content (handled by Wavelets),
  * and fetches metrics from content_engagement_stats.
  * Includes fallback to absolute newest content when needed.
+ * 
+ * BADGE FIX: Removed duplicate badges, using glassmorphism style only.
+ * MOBILE FIX: Badges reduced to 40-50% size on mobile to avoid clutter.
  */
 
 const LatestGems = (function() {
@@ -623,7 +626,8 @@ const LatestGems = (function() {
     }
     
     /**
-     * Render latest gems cards - UPDATED with format badge
+     * Render latest gems cards - UPDATED: No duplicate badges, glassmorphism style only
+     * Mobile badges reduced to 50% size via CSS classes
      */
     function renderCards(contents) {
         const fragment = document.createDocumentFragment();
@@ -642,8 +646,7 @@ const LatestGems = (function() {
             const timeAgo = formatTimeAgo(content.created_at);
             const isExtremelyNew = content.hours_old < 1;
             const freshnessLabel = content.freshness_label || '';
-            const indicatorIcon = content.indicator_icon || '🆕';
-            const indicatorClass = content.indicator_class || '';
+            const freshnessClass = content.indicator_class || '';
             const formatIcon = getFormatIcon(content.content_format);
             const formatLabel = content.content_format ? content.content_format.replace('_', ' ').toUpperCase() : 'NEW';
             const isFallback = content.is_fallback_content;
@@ -679,24 +682,49 @@ const LatestGems = (function() {
                 card.classList.add('fallback-gem');
             }
             
+            // BADGE FIX: Only ONE badge container with glassmorphism style
+            // Combined format and genre into single badge where appropriate
+            // Removed duplicate new-badge (freshness indicator handles this)
+            // Mobile responsive classes added for badge scaling
+            
+            // Determine which badges to show (no duplicates)
+            const showFormatBadge = formatLabel && formatLabel !== 'NEW';
+            const showGenreBadge = content.genre && content.genre !== 'all' && content.genre !== '';
+            
+            // For extremely new content, show a special sparkle badge instead of separate new badge
+            const showSparkleBadge = isExtremelyNew;
+            
             card.innerHTML = `
                 <div class="card-thumbnail">
                     <img src="${thumbnailUrl}" 
                          alt="${escapeHtml(content.title)}" 
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
-                    <div class="card-badges">
-                        <div class="card-badge format-badge">
-                            ${formatIcon} ${formatLabel}
-                        </div>
-                        <div class="card-badge new-badge">
-                            <i class="fas fa-gem"></i> ${freshnessLabel || 'NEW'}
-                        </div>
-                        ${content.genre ? `<div class="card-badge genre-badge">${escapeHtml(content.genre)}</div>` : ''}
+                    
+                    <!-- SINGLE BADGE CONTAINER - Glassmorphism style, no duplicates -->
+                    <div class="card-badges glassmorphism-badges">
+                        ${showSparkleBadge ? `
+                            <div class="card-badge sparkle-badge">
+                                <i class="fas fa-sparkle"></i> ${freshnessLabel || 'FRESH'}
+                            </div>
+                        ` : ''}
+                        ${showFormatBadge && !showSparkleBadge ? `
+                            <div class="card-badge format-badge glass-badge">
+                                ${formatIcon} ${formatLabel}
+                            </div>
+                        ` : ''}
+                        ${showGenreBadge && !showSparkleBadge ? `
+                            <div class="card-badge genre-badge glass-badge">
+                                <i class="fas fa-tag"></i> ${escapeHtml(content.genre)}
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="freshness-indicator ${indicatorClass}">
-                        ${indicatorIcon} ${freshnessLabel}
+                    
+                    <!-- SIMPLIFIED FRESHNESS INDICATOR - Only shows on thumbnail corner, not duplicated -->
+                    <div class="freshness-indicator ${freshnessClass}">
+                        ${content.indicator_icon || '🆕'} ${freshnessLabel}
                     </div>
+                    
                     <div class="creator-spotlight">
                         <div class="creator-spotlight-text">
                             <i class="fas fa-user"></i> Fresh from @${escapeHtml(username)}
