@@ -6,6 +6,9 @@
  * UPDATED: Now filters by content_format for long-form content only,
  * uses array overlap for preference matching, and fetches metrics from
  * content_engagement_stats.
+ * 
+ * BADGE FIX: Split layout with glassmorphism badges
+ * GLITCH FIX: Added error boundaries, proper null checks, and RAF for animations
  */
 
 const ForYou = (function() {
@@ -16,6 +19,9 @@ const ForYou = (function() {
     let currentUser = null;
     let refreshInterval = null;
     let userPreferences = null;
+    let isLoading = false;
+    let initAttempts = 0;
+    const MAX_INIT_ATTEMPTS = 3;
     
     // Configuration
     const CACHE_KEY = 'feed_forYou';
@@ -31,37 +37,77 @@ const ForYou = (function() {
     const LOCAL_LANGUAGES = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso', 'af'];
     
     /**
-     * Initialize For You module
+     * Initialize For You module with error handling
      */
     async function init() {
-        console.log('🎯 For You Module initializing...');
-        
-        container = document.getElementById('for-you-grid');
-        
-        if (!container) {
-            console.warn('For You container not found');
+        // Prevent multiple simultaneous initializations
+        if (isLoading) {
+            console.log('🎯 For You already initializing, skipping...');
             return;
         }
         
-        // Get current user
-        await getCurrentUser();
+        isLoading = true;
+        console.log('🎯 For You Module initializing...');
         
-        // Load user preferences
-        await loadUserPreferences();
-        
-        // Load content
-        await loadContent();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
-        // Add personalization tooltip
-        addPersonalizationTooltip();
-        
-        // Start background refresh
-        startBackgroundRefresh();
-        
-        console.log('✅ For You Module initialized');
+        try {
+            container = document.getElementById('for-you-grid');
+            
+            if (!container) {
+                console.warn('For You container not found, creating fallback');
+                createFallbackContainer();
+            }
+            
+            // Get current user
+            await getCurrentUser();
+            
+            // Load user preferences
+            await loadUserPreferences();
+            
+            // Load content
+            await loadContent();
+            
+            // Setup see all button
+            setupSeeAllButton();
+            
+            // Add personalization tooltip
+            addPersonalizationTooltip();
+            
+            // Start background refresh
+            startBackgroundRefresh();
+            
+            console.log('✅ For You Module initialized successfully');
+            initAttempts = 0;
+            
+        } catch (err) {
+            console.error('❌ For You Module initialization error:', err);
+            initAttempts++;
+            
+            if (initAttempts < MAX_INIT_ATTEMPTS) {
+                console.log(`Retrying initialization (${initAttempts}/${MAX_INIT_ATTEMPTS})...`);
+                setTimeout(() => {
+                    isLoading = false;
+                    init();
+                }, 2000);
+            } else {
+                showErrorState();
+            }
+        } finally {
+            isLoading = false;
+        }
+    }
+    
+    /**
+     * Create fallback container if not present
+     */
+    function createFallbackContainer() {
+        const forYouSection = document.getElementById('for-you-section');
+        if (forYouSection && !document.getElementById('for-you-grid')) {
+            const grid = document.createElement('div');
+            grid.id = 'for-you-grid';
+            grid.className = 'content-grid';
+            forYouSection.appendChild(grid);
+            container = grid;
+        }
     }
     
     /**
@@ -111,7 +157,6 @@ const ForYou = (function() {
     
     /**
      * Load user preferences from category_interests, likes, and watch history
-     * UPDATED: Uses category_interests array from user_profiles
      */
     async function loadUserPreferences() {
         if (!currentUser) {
@@ -197,43 +242,53 @@ const ForYou = (function() {
     }
     
     /**
-     * Load content (with caching)
-     * UPDATED: Uses new query strategy with content_format filter and engagement_stats
+     * Load content (with caching and error handling)
      */
     async function loadContent() {
         const startTime = performance.now();
         
-        // Try cached data first
-        const cachedData = loadFromCache();
-        if (cachedData && cachedData.length > 0) {
-            console.log('📦 For You: Using cached data,', cachedData.length, 'items');
-            container.innerHTML = '';
-            renderCards(cachedData);
-            animateCards();
-            // Refresh in background
-            refreshInBackground();
+        // Don't load if already loading
+        if (isLoading) {
+            console.log('Already loading, skipping...');
             return;
         }
         
-        // Show skeletons
-        showSkeletons();
+        isLoading = true;
         
         try {
+            // Try cached data first
+            const cachedData = loadFromCache();
+            if (cachedData && cachedData.length > 0) {
+                console.log('📦 For You: Using cached data,', cachedData.length, 'items');
+                if (container) {
+                    container.innerHTML = '';
+                    renderCards(cachedData);
+                    animateCards();
+                }
+                // Refresh in background
+                refreshInBackground();
+                isLoading = false;
+                return;
+            }
+            
+            // Show skeletons
+            if (container) showSkeletons();
+            
             let contentList = [];
             
             if (currentUser && userPreferences?.hasPreferences) {
-                // Personalized recommendations based on user preferences using new query
                 contentList = await getPersonalizedRecommendations();
             }
             
             // Fallback to trending if no personalized content
-            if (contentList.length === 0) {
+            if (!contentList || contentList.length === 0) {
                 console.log('No personalized content, falling back to trending');
                 contentList = await getTrendingFallback();
             }
             
-            if (contentList.length === 0) {
+            if (!contentList || contentList.length === 0) {
                 showEmptyState();
+                isLoading = false;
                 return;
             }
             
@@ -247,8 +302,10 @@ const ForYou = (function() {
             sectionData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
             
             // Render
-            container.innerHTML = '';
-            renderCards(sectionData);
+            if (container) {
+                container.innerHTML = '';
+                renderCards(sectionData);
+            }
             
             // Cache the result
             saveToCache(sectionData);
@@ -264,20 +321,20 @@ const ForYou = (function() {
             if (!loadFromCache()) {
                 showErrorState();
             }
+        } finally {
+            isLoading = false;
         }
     }
     
     /**
      * Get personalized recommendations based on user preferences
-     * UPDATED: Implements the new query strategy:
-     * - Filters by content_format for long-form only
-     * - Uses array overlap (&&) for category matching
-     * - Joins with content_engagement_stats for engagement weighting
      */
     async function getPersonalizedRecommendations() {
         let contentList = [];
         
         try {
+            if (!window.supabaseAuth) return [];
+            
             // Build the query using the new specification
             let query = window.supabaseAuth
                 .from('Content')
@@ -303,13 +360,12 @@ const ForYou = (function() {
                     )
                 `)
                 .eq('status', 'published')
-                // Rule 1: Filter exclusively for long-form experiences
                 .in('content_format', LONG_FORM_FORMATS);
             
-            // Rule 2: Overlap match using category interests array
+            // Overlap match using category interests array
             if (userPreferences.genres && userPreferences.genres.length > 0) {
-                // Use the && operator for array overlap
-                query = query.filter('genre', 'in', `(${userPreferences.genres.map(g => `'${g}'`).join(',')})`);
+                const genreList = userPreferences.genres.map(g => `'${g.replace(/'/g, "''")}'`).join(',');
+                query = query.filter('genre', 'in', `(${genreList})`);
             }
             
             // Get the content
@@ -359,10 +415,11 @@ const ForYou = (function() {
     
     /**
      * Get trending content as fallback
-     * UPDATED: Uses content_engagement_stats for ordering
      */
     async function getTrendingFallback() {
         try {
+            if (!window.supabaseAuth) return [];
+            
             // Get content IDs ordered by engagement
             const { data: engagementData } = await window.supabaseAuth
                 .from('content_engagement_stats')
@@ -418,6 +475,8 @@ const ForYou = (function() {
      * Apply amplification logic to boost relevant content
      */
     function applyAmplificationLogic(items) {
+        if (!items || !Array.isArray(items)) return [];
+        
         return items.map(item => {
             let score = 0;
             
@@ -427,46 +486,44 @@ const ForYou = (function() {
                              ((item.metrics?.shares || 0) * 10);
             
             score = baseScore;
+            let boostReason = null;
             
-            // 1. Local Language Boost (IsiZulu, IsiXhosa, etc.)
+            // 1. Local Language Boost
             if (LOCAL_LANGUAGES.includes(item.language)) {
                 score = score * 1.3;
-                item.boost_reason = 'Local language content';
+                boostReason = 'Local language content';
             }
             
             // 2. Emerging Creator Boost (< 1000 connectors)
             if (item.metrics?.connectors < 1000) {
                 score = score * 1.2;
-                item.boost_reason = item.boost_reason ? 
-                    `${item.boost_reason} + Emerging creator` : 'Emerging creator';
+                boostReason = boostReason ? `${boostReason} + Emerging creator` : 'Emerging creator';
             }
             
             // 3. Freshness Boost (< 7 days old)
             const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
             if (daysOld < 7) {
                 score = score * 1.4;
-                item.boost_reason = item.boost_reason ? 
-                    `${item.boost_reason} + Fresh content` : 'Fresh content';
+                boostReason = boostReason ? `${boostReason} + Fresh content` : 'Fresh content';
             }
             
-            // 4. Genre Match Boost (if matches user preferences)
+            // 4. Genre Match Boost
             if (userPreferences?.genres?.includes(item.genre)) {
                 score = score * 1.25;
-                item.boost_reason = item.boost_reason ? 
-                    `${item.boost_reason} + Matches your interests` : 'Matches your interests';
+                boostReason = boostReason ? `${boostReason} + Matches your interests` : 'Matches your interests';
             }
             
             // 5. Content format priority boost
             const priorityFormats = ['film', 'documentary', 'movie'];
             if (priorityFormats.includes(item.content_format)) {
                 score = score * 1.15;
-                item.boost_reason = item.boost_reason ? 
-                    `${item.boost_reason} + Premium format` : 'Premium format';
+                boostReason = boostReason ? `${boostReason} + Premium format` : 'Premium format';
             }
             
             return { 
                 ...item, 
                 amplification_score: score,
+                boost_reason: boostReason,
                 metrics: {
                     ...item.metrics,
                     base_score: baseScore
@@ -477,7 +534,6 @@ const ForYou = (function() {
     
     /**
      * Build section data with metrics from content_engagement_stats
-     * UPDATED: Uses the new engagement_stats table
      */
     async function buildSectionData(contentList) {
         if (!contentList || contentList.length === 0) return [];
@@ -555,9 +611,11 @@ const ForYou = (function() {
     }
     
     /**
-     * Render content cards
+     * Render content cards with split badge layout
      */
     function renderCards(contents) {
+        if (!contents || !container) return;
+        
         const fragment = document.createDocumentFragment();
         
         contents.forEach((content, index) => {
@@ -579,7 +637,31 @@ const ForYou = (function() {
             if (scoreValue > 100) scoreClass = 'high';
             else if (scoreValue > 50) scoreClass = 'medium';
             
-            // Avatar HTML with error handling
+            // Format badge
+            let formatBadgeHtml = '';
+            if (content.content_format) {
+                const formatIcons = {
+                    'film': '🎬', 'documentary': '📽️', 'movie': '🎥',
+                    'podcast': '🎙️', 'audio': '🎧', 'long_form': '📺',
+                    'video': '📹', 'series_episode': '📺'
+                };
+                const icon = formatIcons[content.content_format] || '📹';
+                const formatLabel = content.content_format.replace('_', ' ').toUpperCase();
+                formatBadgeHtml = `<div class="card-badge format-badge">${icon} ${formatLabel}</div>`;
+            }
+            
+            // New badge
+            const newBadgeHtml = isNew ? `<div class="card-badge new-badge"><i class="fas fa-gem"></i> NEW</div>` : '';
+            
+            // Genre badge (bottom-left)
+            const genreBadgeHtml = content.genre ? 
+                `<div class="card-badge genre-badge"><i class="fas fa-tag"></i> ${escapeHtml(content.genre)}</div>` : '';
+            
+            // Boost reason tooltip for recommendation score
+            const boostReason = content.boost_reason || 'Personalized for you';
+            const scoreLabel = scoreValue > 0 ? scoreValue : 'Pick';
+            
+            // Avatar HTML
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
                 const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
@@ -605,38 +687,34 @@ const ForYou = (function() {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
             
-            // Format badge based on content_format
-            let formatBadge = '';
-            if (content.content_format) {
-                const formatIcons = {
-                    'film': '🎬', 'documentary': '📽️', 'movie': '🎥',
-                    'podcast': '🎙️', 'audio': '🎧', 'long_form': '📺'
-                };
-                const icon = formatIcons[content.content_format] || '📹';
-                formatBadge = `<div class="card-badge format-badge">${icon} ${content.content_format.toUpperCase()}</div>`;
-            }
-            
-            // Boost reason tooltip
-            const boostReasonHtml = content.boost_reason ? 
-                `<div class="recommendation-score ${scoreClass}" title="Why this is recommended: ${content.boost_reason}">
-                    <i class="fas fa-magic"></i> ${scoreValue > 0 ? scoreValue : 'Pick'}
-                 </div>` : '';
-            
             card.innerHTML = `
                 <div class="card-thumbnail">
                     <img src="${thumbnailUrl}" 
                          alt="${escapeHtml(content.title)}" 
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
-                    <div class="card-badges">
-                        ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                        ${formatBadge}
-                        <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(content.metrics?.favorites || 0)} Favorites</span></div>
+                    
+                    <!-- TOP-LEFT BADGES: Format and New badges -->
+                    <div class="for-you-badges-top">
+                        ${formatBadgeHtml}
+                        ${newBadgeHtml}
                     </div>
-                    ${boostReasonHtml}
+                    
+                    <!-- BOTTOM-LEFT BADGES: Genre badge -->
+                    <div class="for-you-badges-bottom">
+                        ${genreBadgeHtml}
+                    </div>
+                    
+                    <!-- TOP-RIGHT: Recommendation score -->
+                    <div class="recommendation-score ${scoreClass}" title="${escapeHtml(boostReason)}">
+                        <i class="fas fa-magic"></i> ${scoreLabel}
+                    </div>
+                    
+                    <!-- BOTTOM-RIGHT: Duration badge -->
+                    ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
+                    
                     <div class="thumbnail-overlay"></div>
                     <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-                    ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
                 </div>
                 <div class="card-content">
                     <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
@@ -654,7 +732,6 @@ const ForYou = (function() {
                     <div class="connector-info">
                         <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
                     </div>
-                    ${content.genre ? `<div class="genre-tags"><span class="genre-tag">${escapeHtml(content.genre)}</span></div>` : ''}
                 </div>
             `;
             
@@ -677,20 +754,28 @@ const ForYou = (function() {
     }
     
     /**
-     * Animate cards with stagger effect
+     * Animate cards with stagger effect using requestAnimationFrame
      */
     function animateCards() {
+        if (!container) return;
+        
         const cards = document.querySelectorAll('#for-you-grid .content-card');
+        if (!cards.length) return;
+        
         cards.forEach((card, i) => {
             setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-                card.classList.add('visible');
-                
-                // Add recommended animation to top card
-                if (i === 0) {
-                    card.classList.add('recommended');
-                    setTimeout(() => card.classList.remove('recommended'), 1500);
+                if (card) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                    card.classList.add('visible');
+                    
+                    // Add recommended animation to top card
+                    if (i === 0) {
+                        card.classList.add('recommended');
+                        setTimeout(() => {
+                            if (card) card.classList.remove('recommended');
+                        }, 1500);
+                    }
                 }
             }, i * 50);
         });
@@ -700,6 +785,7 @@ const ForYou = (function() {
      * Show skeleton loading state
      */
     function showSkeletons() {
+        if (!container) return;
         container.innerHTML = Array(4).fill().map(() => `
             <div class="skeleton-card">
                 <div class="skeleton-thumbnail"></div>
@@ -714,6 +800,7 @@ const ForYou = (function() {
      * Show empty state with personalization CTA
      */
     function showEmptyState() {
+        if (!container) return;
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-icon"><i class="fas fa-magic"></i></div>
@@ -750,6 +837,7 @@ const ForYou = (function() {
      * Show error state
      */
     function showErrorState() {
+        if (!container) return;
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -802,6 +890,8 @@ const ForYou = (function() {
      * Refresh content in background
      */
     async function refreshInBackground() {
+        if (isLoading) return;
+        
         try {
             // Refresh user preferences first
             await loadUserPreferences();
@@ -966,11 +1056,21 @@ const ForYou = (function() {
     };
 })();
 
-// Auto-initialize when DOM is ready
+// Auto-initialize when DOM is ready with error handling
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => ForYou.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            ForYou.init();
+        } catch (err) {
+            console.error('Failed to initialize For You:', err);
+        }
+    });
 } else {
-    ForYou.init();
+    try {
+        ForYou.init();
+    } catch (err) {
+        console.error('Failed to initialize For You:', err);
+    }
 }
 
 // Export for module usage
