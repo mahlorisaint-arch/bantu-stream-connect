@@ -4,7 +4,7 @@
  * and creator spotlight functionality.
  * 
  * FIXED: Proper loading states, Swiper initialization timing,
- * and mobile responsiveness.
+ * and mobile responsiveness. Added debugging for visibility issues.
  */
 
 const CreatorOfTheWeek = (function() {
@@ -54,6 +54,9 @@ const CreatorOfTheWeek = (function() {
             try {
                 console.log('⭐ Creator of the Week Module initializing...');
                 
+                // Make sure swiper container exists with navigation buttons
+                ensureSwiperContainer();
+                
                 creatorsList = document.getElementById('creators-list');
                 
                 if (!creatorsList) {
@@ -97,6 +100,26 @@ const CreatorOfTheWeek = (function() {
         })();
         
         return initPromise;
+    }
+    
+    /**
+     * Ensure swiper container has navigation buttons
+     */
+    function ensureSwiperContainer() {
+        const swiperContainer = document.getElementById('creators-swiper');
+        if (swiperContainer && !swiperContainer.querySelector('.swiper-button-next')) {
+            // Add navigation buttons
+            const prevBtn = document.createElement('div');
+            prevBtn.className = 'swiper-button-prev';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            
+            const nextBtn = document.createElement('div');
+            nextBtn.className = 'swiper-button-next';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            
+            swiperContainer.appendChild(prevBtn);
+            swiperContainer.appendChild(nextBtn);
+        }
     }
     
     /**
@@ -223,6 +246,8 @@ const CreatorOfTheWeek = (function() {
                 return;
             }
             
+            console.log(`📊 Fetched ${creators.length} creators, calculating scores...`);
+            
             // Calculate scores and sort
             const scoredCreators = calculateCreatorScores(creators);
             const topCreators = scoredCreators.slice(0, DISPLAY_CREATORS);
@@ -233,6 +258,8 @@ const CreatorOfTheWeek = (function() {
             }
             
             featuredCreators = topCreators;
+            
+            console.log(`🏆 Top ${topCreators.length} creators selected`);
             
             // Render
             renderCreators(topCreators);
@@ -246,6 +273,11 @@ const CreatorOfTheWeek = (function() {
             saveToCache(topCreators);
             
             console.log('✅ Creator of the Week loaded:', topCreators.length, 'creators');
+            
+            // Log creator names for debugging
+            topCreators.forEach((creator, idx) => {
+                console.log(`  ${idx + 1}. ${creator.full_name || creator.username} (Score: ${creator.creator_score})`);
+            });
             
             // Add spotlight animation to top creator
             setTimeout(() => {
@@ -294,6 +326,8 @@ const CreatorOfTheWeek = (function() {
                     contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
                 }
             });
+            
+            console.log(`📊 Found ${contentCountMap.size} creators with content`);
             
             // Get connector counts per creator
             const { data: connectorData, error: connectorError } = await window.supabaseAuth
@@ -381,7 +415,7 @@ const CreatorOfTheWeek = (function() {
         return creators.map(creator => {
             let score = 0;
             
-            // Content count contribution
+            // Content count contribution (max weight)
             score += (creator.video_count || 0) * SCORE_WEIGHTS.CONTENT_COUNT;
             
             // Connector count contribution
@@ -389,6 +423,11 @@ const CreatorOfTheWeek = (function() {
             
             // Engagement rate contribution
             score += (creator.engagement_rate || 0) * SCORE_WEIGHTS.ENGAGEMENT_RATE * 50;
+            
+            // Ensure minimum score for creators with content
+            if (score === 0 && creator.video_count > 0) {
+                score = 10;
+            }
             
             // Recency boost (newer creators get slight boost)
             if (creator.created_at) {
@@ -408,7 +447,7 @@ const CreatorOfTheWeek = (function() {
             creator.creator_score = Math.round(score);
             
             return creator;
-        }).sort((a, b) => b.creator_score - a.creator_score);
+        }).sort((a, b) => b.creator_score - a.creator_score).filter(c => c.video_count > 0);
     }
     
     /**
@@ -490,6 +529,9 @@ const CreatorOfTheWeek = (function() {
         
         // Attach event listeners to buttons
         attachButtonListeners();
+        
+        // Log rendered creators for debugging
+        console.log(`🎨 Rendered ${creators.length} creator cards`);
     }
     
     /**
@@ -564,6 +606,15 @@ const CreatorOfTheWeek = (function() {
             return;
         }
         
+        // Check if there are slides
+        const slides = document.querySelectorAll('#creators-list .swiper-slide');
+        if (slides.length === 0) {
+            console.warn('No slides found for swiper');
+            return;
+        }
+        
+        console.log(`🔄 Initializing Swiper with ${slides.length} slides`);
+        
         // Destroy existing swiper instance
         if (swiperInstance && swiperInstance.destroy) {
             swiperInstance.destroy(true, true);
@@ -607,7 +658,7 @@ const CreatorOfTheWeek = (function() {
                         disableOnInteraction: false,
                         pauseOnMouseEnter: true,
                     },
-                    loop: featuredCreators.length >= 3,
+                    loop: slides.length >= 3,
                     speed: 800,
                     effect: 'slide',
                     grabCursor: true,
@@ -616,11 +667,33 @@ const CreatorOfTheWeek = (function() {
                     resistanceRatio: 0.85,
                     observer: true,
                     observeParents: true,
+                    on: {
+                        init: function() {
+                            console.log('✅ Swiper initialized successfully with', slides.length, 'slides');
+                        },
+                        error: function(err) {
+                            console.error('Swiper initialization error:', err);
+                        }
+                    }
                 });
                 
-                console.log('✅ Swiper initialized successfully');
+                // Force update after initialization
+                setTimeout(() => {
+                    if (swiperInstance && swiperInstance.update) {
+                        swiperInstance.update();
+                    }
+                }, 200);
+                
             } catch (err) {
                 console.error('Error initializing Swiper:', err);
+                // Fallback: just show the slides as a grid without swiper
+                const swiperWrapper = document.querySelector('#creators-list');
+                if (swiperWrapper && swiperWrapper.parentElement) {
+                    swiperWrapper.parentElement.style.overflow = 'visible';
+                    swiperWrapper.style.display = 'grid';
+                    swiperWrapper.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
+                    swiperWrapper.style.gap = '20px';
+                }
             }
         }, 100);
     }
@@ -638,7 +711,11 @@ const CreatorOfTheWeek = (function() {
                     <div class="creator-skeleton-name"></div>
                     <div class="creator-skeleton-username"></div>
                     <div class="creator-skeleton-bio"></div>
-                    <div class="creator-skeleton-stats"></div>
+                    <div class="creator-skeleton-stats">
+                        <div class="stat-skeleton"></div>
+                        <div class="stat-skeleton"></div>
+                        <div class="stat-skeleton"></div>
+                    </div>
                 </div>
             </div>
         `).join('');
