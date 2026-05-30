@@ -2,6 +2,9 @@
  * Creator of the Week Module
  * Displays featured creators with scoring system, Swiper carousel,
  * and creator spotlight functionality.
+ * 
+ * FIXED: Proper loading states, Swiper initialization timing,
+ * and mobile responsiveness.
  */
 
 const CreatorOfTheWeek = (function() {
@@ -13,6 +16,8 @@ const CreatorOfTheWeek = (function() {
     let currentUser = null;
     let refreshInterval = null;
     let featuredCreators = [];
+    let initPromise = null;
+    let isLoading = false;
     
     // Configuration
     const CACHE_KEY = 'feed_creators';
@@ -33,48 +38,83 @@ const CreatorOfTheWeek = (function() {
      * Initialize Creator of the Week module
      */
     async function init() {
-        console.log('⭐ Creator of the Week Module initializing...');
-        
-        creatorsList = document.getElementById('creators-list');
-        
-        if (!creatorsList) {
-            console.warn('Creators list element not found, creating fallback');
-            createFallbackElements();
+        // Prevent multiple initializations
+        if (initPromise) {
+            console.log('⭐ Creator of the Week already initializing, waiting...');
+            return initPromise;
         }
         
-        // Get current user
-        await getCurrentUser();
+        if (isLoading) {
+            console.log('⭐ Creator of the Week already loading, skipping...');
+            return;
+        }
         
-        // Load content
-        await loadCreators();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
-        // Start background refresh
-        startBackgroundRefresh();
-        
-        // Setup resize handler for Swiper
-        window.addEventListener('resize', () => {
-            if (swiperInstance) {
-                swiperInstance.update();
+        isLoading = true;
+        initPromise = (async () => {
+            try {
+                console.log('⭐ Creator of the Week Module initializing...');
+                
+                creatorsList = document.getElementById('creators-list');
+                
+                if (!creatorsList) {
+                    console.warn('Creators list element not found, creating fallback');
+                    createFallbackElements();
+                    creatorsList = document.getElementById('creators-list');
+                }
+                
+                // Get current user
+                await getCurrentUser();
+                
+                // Load content
+                await loadCreators();
+                
+                // Setup see all button
+                setupSeeAllButton();
+                
+                // Start background refresh
+                startBackgroundRefresh();
+                
+                // Setup resize handler for Swiper
+                window.addEventListener('resize', () => {
+                    if (swiperInstance && swiperInstance.destroyed === false) {
+                        setTimeout(() => {
+                            if (swiperInstance && swiperInstance.update) {
+                                swiperInstance.update();
+                            }
+                        }, 100);
+                    }
+                });
+                
+                console.log('✅ Creator of the Week Module initialized');
+                
+            } catch (err) {
+                console.error('❌ Creator of the Week initialization error:', err);
+                showErrorState();
+            } finally {
+                isLoading = false;
+                initPromise = null;
             }
-        });
+        })();
         
-        console.log('✅ Creator of the Week Module initialized');
+        return initPromise;
     }
     
     /**
      * Create fallback elements if not present in DOM
      */
     function createFallbackElements() {
-        if (!document.getElementById('creators-swiper')) {
+        // Check if swiper container exists
+        let swiperContainer = document.getElementById('creators-swiper');
+        
+        if (!swiperContainer) {
             const featuredCreatorsDiv = document.querySelector('.featured-creators');
             if (featuredCreatorsDiv) {
                 featuredCreatorsDiv.innerHTML = `
                     <div class="swiper" id="creators-swiper">
                         <div class="swiper-wrapper" id="creators-list"></div>
                         <div class="swiper-pagination"></div>
+                        <div class="swiper-button-prev"></div>
+                        <div class="swiper-button-next"></div>
                     </div>
                 `;
             } else {
@@ -102,6 +142,8 @@ const CreatorOfTheWeek = (function() {
                             <div class="swiper" id="creators-swiper">
                                 <div class="swiper-wrapper" id="creators-list"></div>
                                 <div class="swiper-pagination"></div>
+                                <div class="swiper-button-prev"></div>
+                                <div class="swiper-button-next"></div>
                             </div>
                         </div>
                     `;
@@ -145,6 +187,21 @@ const CreatorOfTheWeek = (function() {
     async function loadCreators() {
         console.log('⭐ Loading Creator of the Week...');
         
+        // Make sure creatorsList exists
+        if (!creatorsList) {
+            console.warn('Creators list still not available, retrying...');
+            creatorsList = document.getElementById('creators-list');
+            if (!creatorsList) {
+                createFallbackElements();
+                creatorsList = document.getElementById('creators-list');
+                if (!creatorsList) {
+                    console.error('Cannot find creators list element');
+                    showErrorState();
+                    return;
+                }
+            }
+        }
+        
         // Try cached data first
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0) {
@@ -161,6 +218,7 @@ const CreatorOfTheWeek = (function() {
             const creators = await fetchFeaturedCreators();
             
             if (!creators || creators.length === 0) {
+                console.log('No creators found, showing empty state');
                 showEmptyState();
                 return;
             }
@@ -179,8 +237,10 @@ const CreatorOfTheWeek = (function() {
             // Render
             renderCreators(topCreators);
             
-            // Initialize Swiper
-            initializeSwiper();
+            // Initialize Swiper with a small delay to ensure DOM is ready
+            setTimeout(() => {
+                initializeSwiper();
+            }, 100);
             
             // Cache the result
             saveToCache(topCreators);
@@ -198,7 +258,11 @@ const CreatorOfTheWeek = (function() {
             
         } catch (err) {
             console.error("❌ Creator of the Week Error:", err);
-            if (!loadFromCache()) {
+            const cached = loadFromCache();
+            if (cached && cached.length > 0) {
+                renderCreators(cached);
+                initializeSwiper();
+            } else {
                 showErrorState();
             }
         }
@@ -208,12 +272,21 @@ const CreatorOfTheWeek = (function() {
      * Fetch featured creators from Supabase
      */
     async function fetchFeaturedCreators() {
+        if (!window.supabaseAuth) {
+            console.warn('SupabaseAuth not available');
+            return [];
+        }
+        
         try {
             // Get content counts per creator
-            const { data: contentData } = await window.supabaseAuth
+            const { data: contentData, error: contentError } = await window.supabaseAuth
                 .from('Content')
                 .select('user_id')
                 .eq('status', 'published');
+            
+            if (contentError) {
+                console.warn('Error fetching content data:', contentError.message);
+            }
             
             const contentCountMap = new Map();
             contentData?.forEach(item => {
@@ -223,10 +296,14 @@ const CreatorOfTheWeek = (function() {
             });
             
             // Get connector counts per creator
-            const { data: connectorData } = await window.supabaseAuth
+            const { data: connectorData, error: connectorError } = await window.supabaseAuth
                 .from('connectors')
                 .select('connected_id')
                 .eq('connection_type', 'creator');
+            
+            if (connectorError) {
+                console.warn('Error fetching connector data:', connectorError.message);
+            }
             
             const connectorCountMap = new Map();
             connectorData?.forEach(item => {
@@ -235,46 +312,61 @@ const CreatorOfTheWeek = (function() {
                 }
             });
             
-            // Get engagement metrics (likes per creator)
-            const { data: likesData } = await window.supabaseAuth
-                .from('content_likes')
-                .select('content_id, user_id');
+            // Get user profiles that have content
+            const creatorIds = Array.from(contentCountMap.keys());
             
-            // Get content to map likes to creators
-            const { data: contentForLikes } = await window.supabaseAuth
-                .from('Content')
-                .select('id, user_id');
+            if (creatorIds.length === 0) {
+                console.log('No creators with content found');
+                return [];
+            }
             
+            const { data: profiles, error: profilesError } = await window.supabaseAuth
+                .from('user_profiles')
+                .select('*')
+                .in('id', creatorIds.slice(0, MAX_CREATORS * 2));
+            
+            if (profilesError) {
+                console.warn('Error fetching profiles:', profilesError.message);
+                return [];
+            }
+            
+            if (!profiles || profiles.length === 0) {
+                return [];
+            }
+            
+            // Get engagement metrics from content_engagement_stats
+            const { data: engagementData } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_likes');
+            
+            // Map content to creator for likes
             const contentToCreator = new Map();
-            contentForLikes?.forEach(c => {
-                contentToCreator.set(c.id, c.user_id);
-            });
-            
-            const creatorLikesMap = new Map();
-            likesData?.forEach(like => {
-                const creatorId = contentToCreator.get(like.content_id);
-                if (creatorId) {
-                    creatorLikesMap.set(creatorId, (creatorLikesMap.get(creatorId) || 0) + 1);
+            contentData?.forEach(c => {
+                if (c.user_id) {
+                    contentToCreator.set(c.id, c.user_id);
                 }
             });
             
-            // Get all user profiles with content
-            const { data: profiles } = await window.supabaseAuth
-                .from('user_profiles')
-                .select('*')
-                .in('id', Array.from(contentCountMap.keys()))
-                .limit(MAX_CREATORS);
+            const creatorLikesMap = new Map();
+            engagementData?.forEach(stat => {
+                const creatorId = contentToCreator.get(stat.content_id);
+                if (creatorId) {
+                    creatorLikesMap.set(creatorId, (creatorLikesMap.get(creatorId) || 0) + (stat.total_likes || 0));
+                }
+            });
             
-            if (!profiles) return [];
-            
-            return profiles.map(profile => ({
-                ...profile,
-                video_count: contentCountMap.get(profile.id) || 0,
-                connector_count: connectorCountMap.get(profile.id) || 0,
-                like_count: creatorLikesMap.get(profile.id) || 0,
-                engagement_rate: profile.video_count > 0 ? 
-                    (creatorLikesMap.get(profile.id) || 0) / profile.video_count : 0
-            }));
+            return profiles.map(profile => {
+                const videoCount = contentCountMap.get(profile.id) || 0;
+                const likeCount = creatorLikesMap.get(profile.id) || 0;
+                
+                return {
+                    ...profile,
+                    video_count: videoCount,
+                    connector_count: connectorCountMap.get(profile.id) || 0,
+                    like_count: likeCount,
+                    engagement_rate: videoCount > 0 ? likeCount / videoCount : 0
+                };
+            });
             
         } catch (err) {
             console.error('Error fetching featured creators:', err);
@@ -296,17 +388,19 @@ const CreatorOfTheWeek = (function() {
             score += (creator.connector_count || 0) * SCORE_WEIGHTS.CONNECTOR_COUNT;
             
             // Engagement rate contribution
-            score += (creator.engagement_rate || 0) * SCORE_WEIGHTS.ENGAGEMENT_RATE * 100;
+            score += (creator.engagement_rate || 0) * SCORE_WEIGHTS.ENGAGEMENT_RATE * 50;
             
             // Recency boost (newer creators get slight boost)
-            const daysSinceJoin = (new Date() - new Date(creator.created_at)) / (1000 * 60 * 60 * 24);
-            if (daysSinceJoin < 30) {
-                score *= SCORE_WEIGHTS.RECENCY_BOOST;
-                creator.is_new = true;
+            if (creator.created_at) {
+                const daysSinceJoin = (new Date() - new Date(creator.created_at)) / (1000 * 60 * 60 * 24);
+                if (daysSinceJoin < 30) {
+                    score *= SCORE_WEIGHTS.RECENCY_BOOST;
+                    creator.is_new = true;
+                }
             }
             
             // Check if creator is verified (has high connector count)
-            if (creator.connector_count > 1000) {
+            if (creator.connector_count > 500) {
                 creator.is_verified = true;
                 score *= 1.1;
             }
@@ -322,6 +416,11 @@ const CreatorOfTheWeek = (function() {
      */
     function renderCreators(creators) {
         if (!creatorsList) return;
+        
+        if (!creators || creators.length === 0) {
+            showEmptyState();
+            return;
+        }
         
         creatorsList.innerHTML = creators.map((creator, index) => {
             const avatarUrl = creator.avatar_url ? fixAvatarUrl(creator.avatar_url) : null;
@@ -342,11 +441,11 @@ const CreatorOfTheWeek = (function() {
                     <div class="creator-card ${isCreatorOfWeek ? 'creator-of-week' : ''}">
                         ${isCreatorOfWeek ? '<div class="creator-week-special"><i class="fas fa-crown"></i> CREATOR OF THE WEEK</div>' : ''}
                         ${isTopCreator && !isCreatorOfWeek ? '<div class="founder-badge"><i class="fas fa-fire"></i> TOP CREATOR</div>' : ''}
-                        ${isNew ? '<div class="founder-badge" style="background: #10B981;"><i class="fas fa-sparkle"></i> NEW</div>' : ''}
+                        ${isNew && !isCreatorOfWeek ? '<div class="founder-badge" style="background: #10B981;"><i class="fas fa-sparkle"></i> NEW</div>' : ''}
                         <div class="creator-avatar">
                             ${avatarUrl ? `
                                 <img src="${avatarUrl}" 
-                                     alt="${fullName}" 
+                                     alt="${escapeHtml(fullName)}" 
                                      loading="lazy" 
                                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>';">
                                 <div class="avatar-overlay">
@@ -357,10 +456,10 @@ const CreatorOfTheWeek = (function() {
                             `}
                         </div>
                         <div class="creator-name">
-                            ${fullName}
+                            ${escapeHtml(fullName)}
                             ${isVerified ? '<span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>' : ''}
                         </div>
-                        <div class="creator-username">@${username}</div>
+                        <div class="creator-username">@${escapeHtml(username)}</div>
                         <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
                         <div class="creator-stats">
                             <div class="stat">
@@ -380,7 +479,7 @@ const CreatorOfTheWeek = (function() {
                             <button class="view-channel-btn" data-creator-id="${creator.id}">
                                 <i class="fas fa-eye"></i> View Channel
                             </button>
-                            <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${fullName}">
+                            <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${escapeHtml(fullName)}">
                                 <i class="fas fa-gift"></i>
                             </button>
                         </div>
@@ -399,24 +498,32 @@ const CreatorOfTheWeek = (function() {
     function attachButtonListeners() {
         // View channel buttons
         document.querySelectorAll('.view-channel-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const creatorId = btn.dataset.creatorId;
-                window.location.href = `creator-channel.html?id=${creatorId}`;
-            });
+            btn.removeEventListener('click', handleViewChannel);
+            btn.addEventListener('click', handleViewChannel);
         });
         
         // Tip creator buttons
         document.querySelectorAll('.tip-creator-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const creatorId = btn.dataset.creatorId;
-                const creatorName = btn.dataset.creatorName;
-                openTipModal(creatorId, creatorName);
-            });
+            btn.removeEventListener('click', handleTipCreator);
+            btn.addEventListener('click', handleTipCreator);
         });
+    }
+    
+    function handleViewChannel(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const creatorId = e.currentTarget.dataset.creatorId;
+        if (creatorId) {
+            window.location.href = `creator-channel.html?id=${creatorId}`;
+        }
+    }
+    
+    function handleTipCreator(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const creatorId = e.currentTarget.dataset.creatorId;
+        const creatorName = e.currentTarget.dataset.creatorName;
+        openTipModal(creatorId, creatorName);
     }
     
     /**
@@ -443,56 +550,79 @@ const CreatorOfTheWeek = (function() {
      * Initialize Swiper carousel
      */
     function initializeSwiper() {
+        // Check if Swiper is available
         if (typeof Swiper === 'undefined') {
             console.warn('Swiper not loaded, retrying in 500ms');
             setTimeout(initializeSwiper, 500);
             return;
         }
         
-        if (swiperInstance) {
-            swiperInstance.destroy(true, true);
+        // Check if swiper container exists
+        const swiperContainer = document.querySelector('#creators-swiper');
+        if (!swiperContainer) {
+            console.warn('Swiper container not found');
+            return;
         }
         
-        swiperInstance = new Swiper('#creators-swiper', {
-            slidesPerView: 1,
-            spaceBetween: 20,
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-            },
-            navigation: {
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-            },
-            breakpoints: {
-                640: {
-                    slidesPerView: 2,
-                    spaceBetween: 20,
-                },
-                1024: {
-                    slidesPerView: 3,
-                    spaceBetween: 30,
-                },
-                1280: {
-                    slidesPerView: 4,
-                    spaceBetween: 30,
-                }
-            },
-            autoplay: {
-                delay: 5000,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: true,
-            },
-            loop: true,
-            speed: 800,
-            effect: 'slide',
-            grabCursor: true,
-            touchRatio: 1,
-            resistance: true,
-            resistanceRatio: 0.85,
-        });
+        // Destroy existing swiper instance
+        if (swiperInstance && swiperInstance.destroy) {
+            swiperInstance.destroy(true, true);
+            swiperInstance = null;
+        }
         
-        console.log('✅ Swiper initialized');
+        // Wait for DOM to be fully ready
+        setTimeout(() => {
+            try {
+                swiperInstance = new Swiper('#creators-swiper', {
+                    slidesPerView: 1,
+                    spaceBetween: 20,
+                    pagination: {
+                        el: '.swiper-pagination',
+                        clickable: true,
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                    breakpoints: {
+                        640: {
+                            slidesPerView: 2,
+                            spaceBetween: 20,
+                        },
+                        768: {
+                            slidesPerView: 2,
+                            spaceBetween: 25,
+                        },
+                        1024: {
+                            slidesPerView: 3,
+                            spaceBetween: 30,
+                        },
+                        1280: {
+                            slidesPerView: 4,
+                            spaceBetween: 30,
+                        }
+                    },
+                    autoplay: {
+                        delay: 5000,
+                        disableOnInteraction: false,
+                        pauseOnMouseEnter: true,
+                    },
+                    loop: featuredCreators.length >= 3,
+                    speed: 800,
+                    effect: 'slide',
+                    grabCursor: true,
+                    touchRatio: 1,
+                    resistance: true,
+                    resistanceRatio: 0.85,
+                    observer: true,
+                    observeParents: true,
+                });
+                
+                console.log('✅ Swiper initialized successfully');
+            } catch (err) {
+                console.error('Error initializing Swiper:', err);
+            }
+        }, 100);
     }
     
     /**
@@ -508,11 +638,12 @@ const CreatorOfTheWeek = (function() {
                     <div class="creator-skeleton-name"></div>
                     <div class="creator-skeleton-username"></div>
                     <div class="creator-skeleton-bio"></div>
+                    <div class="creator-skeleton-stats"></div>
                 </div>
             </div>
         `).join('');
         
-        initializeSwiper();
+        // Don't initialize swiper with skeletons
     }
     
     /**
@@ -523,13 +654,18 @@ const CreatorOfTheWeek = (function() {
         
         creatorsList.innerHTML = `
             <div class="swiper-slide">
-                <div class="creator-card">
+                <div class="creator-card empty-creator-card">
                     <div class="empty-icon"><i class="fas fa-users"></i></div>
                     <h3>No Featured Creators</h3>
                     <p>Top creators will appear here soon!</p>
+                    <button class="see-all-btn" onclick="window.location.href='https://bantustreamconnect.com/creators'">
+                        Discover Creators
+                    </button>
                 </div>
             </div>
         `;
+        
+        // Initialize swiper with single slide
         initializeSwiper();
     }
     
@@ -541,13 +677,18 @@ const CreatorOfTheWeek = (function() {
         
         creatorsList.innerHTML = `
             <div class="swiper-slide">
-                <div class="creator-card">
+                <div class="creator-card error-creator-card">
                     <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
                     <h3>Unable to Load Creators</h3>
-                    <button class="see-all-btn" onclick="location.reload()">Retry</button>
+                    <p>Please check your connection and try again</p>
+                    <button class="retry-btn" onclick="CreatorOfTheWeek.refresh()">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
                 </div>
             </div>
         `;
+        
+        // Initialize swiper with single slide
         initializeSwiper();
     }
     
@@ -558,7 +699,8 @@ const CreatorOfTheWeek = (function() {
         const seeAllBtn = document.querySelector('#creator-of-the-week-section .see-all-btn');
         if (seeAllBtn) {
             seeAllBtn.addEventListener('click', (e) => {
-                // Allow default navigation to creators page
+                e.preventDefault();
+                window.location.href = 'https://bantustreamconnect.com/creators';
             });
         }
     }
@@ -575,7 +717,7 @@ const CreatorOfTheWeek = (function() {
                 
                 // Check if the top creator changed
                 if (featuredCreators.length > 0 && topCreators.length > 0 && 
-                    featuredCreators[0].id !== topCreators[0].id) {
+                    featuredCreators[0]?.id !== topCreators[0]?.id) {
                     console.log('⭐ New Creator of the Week detected!');
                     await loadCreators(); // Full refresh
                 }
@@ -684,13 +826,16 @@ const CreatorOfTheWeek = (function() {
      */
     function showToast(message, type = 'info') {
         const toastContainer = document.getElementById('toast-container');
-        if (!toastContainer) return;
+        if (!toastContainer) {
+            console.log(`[${type}] ${message}`);
+            return;
+        }
         
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.innerHTML = `
             <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         `;
         
         toastContainer.appendChild(toast);
@@ -704,6 +849,16 @@ const CreatorOfTheWeek = (function() {
      * Refresh module
      */
     async function refresh() {
+        // Clear cache to force refresh
+        try {
+            localStorage.removeItem(CACHE_KEY);
+            if (window.cacheManager && window.cacheManager.remove) {
+                window.cacheManager.remove(CACHE_KEY);
+            }
+        } catch (e) {
+            console.warn('Cache clear error:', e);
+        }
+        
         await getCurrentUser();
         await loadCreators();
     }
@@ -716,7 +871,7 @@ const CreatorOfTheWeek = (function() {
             clearInterval(refreshInterval);
             refreshInterval = null;
         }
-        if (swiperInstance) {
+        if (swiperInstance && swiperInstance.destroy) {
             swiperInstance.destroy(true, true);
             swiperInstance = null;
         }
@@ -734,11 +889,13 @@ const CreatorOfTheWeek = (function() {
     };
 })();
 
-// Auto-initialize when DOM is ready
+// Auto-initialize when DOM is ready with proper delay
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => CreatorOfTheWeek.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => CreatorOfTheWeek.init(), 200);
+    });
 } else {
-    CreatorOfTheWeek.init();
+    setTimeout(() => CreatorOfTheWeek.init(), 200);
 }
 
 // Export for module usage
