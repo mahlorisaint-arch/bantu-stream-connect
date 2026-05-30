@@ -1,6 +1,8 @@
 /* ============================================ */
 /* BANTU WAVES: PODCASTS SECTION
    Home Feed Component Styles
+   
+   UPDATED: Added styles for Connect button (Connected state)
 /* ============================================ */
 
 .bantu-waves-podcasts {
@@ -266,6 +268,52 @@
     transform: translateY(-2px);
 }
 
+/* Connect Button Styles (replaces Subscribe) */
+.podcast-actions .connect-btn {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+}
+
+.podcast-actions .connect-btn:hover {
+    background: rgba(16, 185, 129, 0.3);
+    color: #10B981;
+}
+
+.podcast-actions .connect-btn.connected {
+    background: rgba(16, 185, 129, 0.25);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.podcast-actions .connect-btn.connected i {
+    animation: connectedCheck 0.3s ease;
+}
+
+@keyframes connectedCheck {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Share Button */
+.podcast-actions .share-btn {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3B82F6;
+}
+
+.podcast-actions .share-btn:hover {
+    background: rgba(59, 130, 246, 0.3);
+    color: #3B82F6;
+}
+
 /* Skeleton Loading */
 .skeleton-podcast-card {
     background: rgba(255, 255, 255, 0.05);
@@ -369,8 +417,22 @@
     background: rgba(217, 119, 6, 0.1);
 }
 
+.theme-light .podcast-actions .connect-btn {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.theme-light .podcast-actions .connect-btn.connected {
+    background: rgba(16, 185, 129, 0.2);
+}
+
 .theme-high-contrast .podcast-card {
     border-width: 2px;
+}
+
+.theme-high-contrast .connect-btn.connected {
+    border: 2px solid #00ff00;
+    background: transparent;
+    color: #00ff00;
 }
 
 /* Mobile Responsive */
@@ -392,6 +454,11 @@
     
     .episode-date {
         margin-left: 0;
+    }
+    
+    .podcast-actions .action-btn {
+        padding: 6px 12px;
+        font-size: 11px;
     }
 }
 
