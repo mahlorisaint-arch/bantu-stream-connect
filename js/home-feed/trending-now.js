@@ -301,58 +301,74 @@ const TrendingNow = (function() {
     
     /**
      * Fetch trending content from Supabase
+     * FIXED: Now correctly uses total_views from content_engagement_stats table
      */
     async function fetchTrendingContent() {
-    if (!window.supabaseAuth) return [];
-    
-    try {
-        // Get content with engagement stats from content_engagement_stats
-        const { data: engagementData, error: engagementError } = await window.supabaseAuth
-            .from('content_engagement_stats')
-            .select('content_id, total_views, total_likes, total_shares')
-            .order('total_views', { ascending: false })
-            .limit(20);
+        if (!window.supabaseAuth) return [];
         
-        if (engagementError) throw engagementError;
-        
-        if (!engagementData || engagementData.length === 0) return [];
-        
-        const contentIds = engagementData.map(e => e.content_id);
-        
-        const { data: contentData, error: contentError } = await window.supabaseAuth
-            .from('Content')
-            .select(`
-                id, title, description, thumbnail_url, duration, 
-                genre, language, created_at, favorites_count,
-                user_id, user_profiles!user_id(id, full_name, username, avatar_url)
-            `)
-            .eq('status', 'published')
-            .in('id', contentIds)
-            .limit(12);
-        
-        if (contentError) throw contentError;
-        
-        // Merge engagement stats
-        const mergedData = (contentData || []).map(content => {
-            const stats = engagementData.find(e => e.content_id === content.id);
-            return {
-                ...content,
-                views_count: stats?.total_views || 0,
-                likes_count: stats?.total_likes || 0,
-                shares_count: stats?.total_shares || 0
-            };
-        });
-        
-        // Sort by total_views
-        mergedData.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-        
-        return mergedData;
-        
-    } catch (err) {
-        console.error('Error fetching trending content:', err);
-        return [];
+        try {
+            // Get content with engagement stats from content_engagement_stats
+            // ORDER BY total_views DESC to get most viewed content first
+            const { data: engagementData, error: engagementError } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views, total_likes, total_shares')
+                .order('total_views', { ascending: false })
+                .limit(20);
+            
+            if (engagementError) {
+                console.error('Error fetching engagement stats:', engagementError);
+                throw engagementError;
+            }
+            
+            if (!engagementData || engagementData.length === 0) {
+                console.log('No engagement stats found');
+                return [];
+            }
+            
+            const contentIds = engagementData.map(e => e.content_id);
+            
+            // Fetch content details
+            const { data: contentData, error: contentError } = await window.supabaseAuth
+                .from('Content')
+                .select(`
+                    id, title, description, thumbnail_url, duration, 
+                    genre, language, created_at, favorites_count,
+                    user_id, user_profiles!user_id(id, full_name, username, avatar_url)
+                `)
+                .eq('status', 'published')
+                .in('id', contentIds)
+                .limit(12);
+            
+            if (contentError) {
+                console.error('Error fetching content details:', contentError);
+                throw contentError;
+            }
+            
+            // Merge engagement stats - IMPORTANT: Use total_views from content_engagement_stats
+            const mergedData = (contentData || []).map(content => {
+                const stats = engagementData.find(e => e.content_id === content.id);
+                return {
+                    ...content,
+                    // CRITICAL FIX: Use total_views from content_engagement_stats table
+                    views_count: stats?.total_views || 0,
+                    likes_count: stats?.total_likes || 0,
+                    shares_count: stats?.total_shares || 0
+                };
+            });
+            
+            // Sort by total_views (most viewed first)
+            mergedData.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+            
+            console.log('📊 Fetched trending content with correct view counts:', 
+                mergedData.map(c => ({ title: c.title, views: c.views_count })));
+            
+            return mergedData;
+            
+        } catch (err) {
+            console.error('Error fetching trending content:', err);
+            return [];
+        }
     }
-}
     
     /**
      * Apply trending amplification logic
@@ -460,7 +476,7 @@ const TrendingNow = (function() {
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: metrics.views[item.id] || 0,
+                views: item.views_count || 0,  // Use the views_count from merged data
                 likes: metrics.likes[item.id] || 0,
                 shares: metrics.shares[item.id] || 0,
                 favorites: item.favorites_count || 0,
