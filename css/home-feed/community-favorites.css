@@ -94,6 +94,21 @@
     color: white;
 }
 
+/* Location Text - Desktop default */
+.creator-location {
+    font-size: 11px;
+    color: var(--slate-grey);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+}
+
+.creator-location i {
+    font-size: 9px;
+    color: var(--warm-gold);
+}
+
 /* Community Stats Tooltip */
 .community-stats-tooltip {
     position: relative;
@@ -246,7 +261,10 @@
     border-radius: 20px;
 }
 
-/* Mobile Responsive */
+/* ============================================ */
+/* MOBILE RESPONSIVE - Location Size Fix (25-30%)
+/* ============================================ */
+
 @media (max-width: 768px) {
     .community-favorites-stats {
         gap: var(--spacing-sm);
@@ -285,6 +303,23 @@
         top: 4px;
         right: 4px;
     }
+    
+    /* MOBILE FIX: Location text size reduced by 25-30% */
+    .creator-location {
+        font-size: 8px;
+        margin-left: 6px;
+        gap: 3px;
+    }
+    
+    .creator-location i {
+        font-size: 7px;
+    }
+    
+    /* Adjust creator-info flex wrap for better mobile layout */
+    .creator-info {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -294,6 +329,32 @@
     
     .community-badge {
         display: none;
+    }
+    
+    /* EXTRA SMALL: Location text reduced to 25% of original */
+    .creator-location {
+        font-size: 7px;
+        margin-left: 4px;
+        gap: 2px;
+    }
+    
+    .creator-location i {
+        font-size: 6px;
+    }
+    
+    /* Make creator-info stack properly on very small screens */
+    .creator-info {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        row-gap: 6px;
+    }
+    
+    /* Ensure location doesn't overflow */
+    .creator-location {
+        max-width: 100%;
+        white-space: normal;
+        word-break: break-word;
     }
 }
 
@@ -309,6 +370,10 @@
 
 .theme-light .community-stat-item .stat-value {
     color: #1a1a1a;
+}
+
+.theme-light .creator-location {
+    color: #6B7280;
 }
 
 /* High Contrast Theme */
@@ -329,6 +394,11 @@
 
 .theme-high-contrast .card-favorite-count {
     border: 1px solid var(--warm-gold);
+}
+
+.theme-high-contrast .creator-location {
+    border-left: 1px solid #ffff00;
+    padding-left: 6px;
 }
 
 /* Refresh Animation */
