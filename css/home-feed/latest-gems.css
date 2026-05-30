@@ -43,11 +43,12 @@
 }
 
 /* ============================================
-   GLASSMORPHISM BADGES - New Style (No Duplicates)
+   GLASSMORPHISM BADGES - Split Layout (Top-Left & Bottom-Left)
+   Fix: Badges are split to avoid clutter
    ============================================ */
 
-/* Badges Container - Glassmorphism effect */
-.card-badges {
+/* Top-Left Badges Container */
+.card-badges-top {
     position: absolute;
     top: 12px;
     left: 12px;
@@ -56,6 +57,18 @@
     z-index: 6;
     flex-wrap: wrap;
     max-width: calc(100% - 24px);
+}
+
+/* Bottom-Left Badges Container (for less important badges) */
+.card-badges-bottom {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 6;
+    flex-wrap: wrap;
+    max-width: calc(100% - 80px); /* Leave space for duration badge on right */
 }
 
 /* Individual Badge - Glassmorphism Style */
@@ -77,6 +90,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .card-badge:hover {
@@ -85,23 +99,37 @@
     border-color: rgba(255, 255, 255, 0.35);
 }
 
+/* Priority Badges (Top-Left) - Most important */
+.priority-badge {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.85));
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Secondary Badges (Bottom-Left) - Less important */
+.secondary-badge {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Format Badge specific styling */
 .format-badge {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8));
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.85));
     backdrop-filter: blur(8px);
     border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Genre Badge styling */
 .genre-badge {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8));
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(37, 99, 235, 0.85));
     backdrop-filter: blur(8px);
     border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Sparkle Badge for extremely new content */
+/* Sparkle Badge for extremely new content - HIGHEST PRIORITY (Top-Left) */
 .sparkle-badge {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
     backdrop-filter: blur(8px);
     border-color: rgba(255, 215, 0, 0.5);
     animation: sparklePulse 1.5s ease-in-out infinite;
@@ -116,7 +144,21 @@
     }
 }
 
-/* Freshness Indicator - Simplified (no duplicate) */
+/* Language Badge - Secondary (Bottom-Left) */
+.language-badge {
+    background: rgba(139, 92, 246, 0.8);
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Quality Badge - Secondary (Bottom-Left) */
+.quality-badge {
+    background: rgba(236, 72, 153, 0.8);
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Freshness Indicator - Top-Right (corner opposite duration) */
 .freshness-indicator {
     position: absolute;
     top: 12px;
@@ -148,6 +190,24 @@
 .freshness-indicator.this-week {
     background: linear-gradient(135deg, #3B82F6, #2563EB);
     color: white;
+}
+
+/* Duration Badge - Bottom-Right */
+.duration-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    z-index: 4;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Time Ago Display */
@@ -249,19 +309,6 @@
     box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
 }
 
-#new-content-grid .content-card:hover .new-badge {
-    animation: badgePulse 0.5s ease;
-}
-
-@keyframes badgePulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
-}
-
 /* Publishing Wave Animation */
 @keyframes publishingWave {
     0% {
@@ -341,7 +388,7 @@
 }
 
 /* ============================================
-   MOBILE RESPONSIVE - Badge Size Reduction (40-50%)
+   MOBILE RESPONSIVE - Badge Split Layout
    ============================================ */
 
 @media (max-width: 768px) {
@@ -380,12 +427,19 @@
         font-size: 10px;
     }
     
-    /* MOBILE BADGE SIZE REDUCTION - 50% smaller */
-    .card-badges {
+    /* MOBILE BADGE SIZE REDUCTION - Split layout adjustments */
+    .card-badges-top {
         top: 8px;
         left: 8px;
         gap: 5px;
         max-width: calc(100% - 16px);
+    }
+    
+    .card-badges-bottom {
+        bottom: 8px;
+        left: 8px;
+        gap: 5px;
+        max-width: calc(100% - 70px);
     }
     
     .card-badge {
@@ -399,7 +453,7 @@
         font-size: 7px;
     }
     
-    /* Freshness indicator also reduced on mobile */
+    /* Freshness indicator mobile */
     .freshness-indicator {
         top: 8px;
         right: 8px;
@@ -413,7 +467,7 @@
         font-size: 7px;
     }
     
-    /* Duration badge mobile reduction */
+    /* Duration badge mobile */
     .duration-badge {
         bottom: 8px;
         right: 8px;
@@ -423,7 +477,7 @@
     }
 }
 
-/* Extra small devices (phones under 480px) - 60% reduction for badges */
+/* Extra small devices (phones under 480px) */
 @media (max-width: 480px) {
     .latest-stats-bar {
         display: none;
@@ -437,12 +491,19 @@
         margin-bottom: var(--spacing-md);
     }
     
-    /* EXTRA SMALL - Badges 60% smaller */
-    .card-badges {
+    /* EXTRA SMALL - Further badge reduction */
+    .card-badges-top {
         top: 6px;
         left: 6px;
         gap: 4px;
         max-width: calc(100% - 12px);
+    }
+    
+    .card-badges-bottom {
+        bottom: 6px;
+        left: 6px;
+        gap: 4px;
+        max-width: calc(100% - 60px);
     }
     
     .card-badge {
@@ -469,18 +530,21 @@
         font-size: 6px;
     }
     
-    /* Only show one badge on very small screens to avoid clutter */
-    .card-badges {
-        max-width: 70%;
+    .duration-badge {
+        bottom: 6px;
+        right: 6px;
+        padding: 1px 5px;
+        font-size: 7px;
+        border-radius: 8px;
     }
     
-    .card-badge:not(:first-child) {
+    /* Only show top priority badges on very small screens */
+    .card-badges-bottom .card-badge:not(:first-child) {
         display: none;
     }
     
-    /* Keep sparkle badge always visible */
-    .card-badge.sparkle-badge {
-        display: inline-flex;
+    .card-badges-top .card-badge:not(:first-child) {
+        display: none;
     }
 }
 
@@ -492,13 +556,19 @@
     border-color: rgba(0, 0, 0, 0.1);
 }
 
-.theme-light .format-badge {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9));
+.theme-light .format-badge,
+.theme-light .priority-badge {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
     color: white;
 }
 
 .theme-light .genre-badge {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9));
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+    color: white;
+}
+
+.theme-light .secondary-badge {
+    background: rgba(0, 0, 0, 0.75);
     color: white;
 }
 
@@ -531,6 +601,12 @@
 }
 
 .theme-high-contrast .format-badge,
+.theme-high-contrast .priority-badge {
+    background: black;
+    border: 1px solid #00ff00;
+    color: #00ff00;
+}
+
 .theme-high-contrast .genre-badge {
     background: black;
     border: 1px solid #00ff00;
