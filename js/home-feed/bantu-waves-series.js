@@ -4,7 +4,11 @@
    Displays series playlists from creator_playlists
    Filtered by playlist_type = 'series'
    Ordered by release date (latest first)
-   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
+   
+   UPDATED:
+   1. Redirects to content-detail with playlist_id (like Music section)
+   2. Watchlist button uses watch_later table
+   3. Shows correct total_views from content_engagement_stats
 /* ============================================ */
 
 console.log('📺 Bantu Waves: Series section loading...');
@@ -25,7 +29,8 @@ const BantuWavesSeries = {
         isLoading: false,
         series: [],
         hasMore: true,
-        currentPage: 0
+        currentPage: 0,
+        watchlistStatus: {} // Track watchlist status per series
     },
 
     elements: {
@@ -94,6 +99,9 @@ const BantuWavesSeries = {
             const seriesList = await this.fetchSeriesPlaylists();
             const enrichedSeries = await this.enrichSeriesWithEpisodes(seriesList);
             
+            // Load watchlist status for each series
+            await this.loadWatchlistStatuses(enrichedSeries);
+            
             this.state.series = enrichedSeries;
             this.cacheData(enrichedSeries);
             this.render(enrichedSeries);
@@ -110,7 +118,6 @@ const BantuWavesSeries = {
     },
 
     async fetchSeriesPlaylists() {
-        // FIXED: Use window.supabaseAuth instead of window.supabaseClient
         if (!window.supabaseAuth) {
             console.error('Supabase Auth client not available');
             return [];
@@ -177,7 +184,7 @@ const BantuWavesSeries = {
             }
         });
 
-        // Fetch engagement metrics for all episodes
+        // Get all episode content IDs for engagement metrics
         const allEpisodeIds = [];
         Object.values(episodesMap).forEach(episodes => {
             episodes.forEach(ep => {
@@ -185,6 +192,7 @@ const BantuWavesSeries = {
             });
         });
         
+        // FIX 3: Fetch engagement metrics for all episodes
         const engagementMetrics = await this.fetchEpisodeMetrics(allEpisodeIds);
 
         // Enrich each series
@@ -193,7 +201,7 @@ const BantuWavesSeries = {
             const latestEpisode = episodes[0];
             const nextEpisode = episodes.find(ep => ep.status === 'pending') || null;
             
-            // Calculate total views
+            // FIX 3: Calculate total views from content_engagement_stats
             let totalViews = 0;
             episodes.forEach(ep => {
                 const metrics = engagementMetrics[ep.content_id] || {};
@@ -223,7 +231,6 @@ const BantuWavesSeries = {
     },
 
     async fetchSeriesEpisodes(seriesId) {
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) return [];
 
         try {
@@ -291,30 +298,71 @@ const BantuWavesSeries = {
         
         const uniqueIds = [...new Set(contentIds)];
         
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) return {};
         
         try {
             const { data, error } = await window.supabaseAuth
                 .from('content_engagement_stats')
-                .select('content_id, total_views, total_likes, total_comments')
+                .select('content_id, total_views, total_likes, total_comments, total_shares, total_watch_time_ms')
                 .in('content_id', uniqueIds);
             
             if (error) {
-                // Table might not exist or column missing - just return empty
                 console.warn('Error fetching episode metrics (may not be available):', error.message);
                 return {};
             }
             
             const metricsMap = {};
             (data || []).forEach(stat => {
-                metricsMap[stat.content_id] = stat;
+                metricsMap[stat.content_id] = {
+                    total_views: stat.total_views || 0,
+                    total_likes: stat.total_likes || 0,
+                    total_comments: stat.total_comments || 0,
+                    total_shares: stat.total_shares || 0,
+                    total_watch_time_ms: stat.total_watch_time_ms || 0
+                };
             });
             return metricsMap;
             
         } catch (error) {
             console.error('Error fetching episode metrics:', error);
             return {};
+        }
+    },
+
+    // FIX 2: Load watchlist status from watch_later table
+    async loadWatchlistStatuses(seriesList) {
+        const user = await this.getCurrentUser();
+        if (!user || !window.supabaseAuth) return;
+        
+        try {
+            // Get all content_ids from all episodes across all series
+            const allContentIds = [];
+            seriesList.forEach(series => {
+                if (series.episodes && series.episodes.length) {
+                    series.episodes.forEach(ep => {
+                        if (ep.content_id) allContentIds.push(ep.content_id);
+                    });
+                }
+            });
+            
+            if (allContentIds.length === 0) return;
+            
+            const { data, error } = await window.supabaseAuth
+                .from('watch_later')
+                .select('content_id')
+                .eq('user_id', user.id)
+                .in('content_id', allContentIds);
+            
+            if (!error && data) {
+                const watchedContentIds = new Set(data.map(w => w.content_id));
+                seriesList.forEach(series => {
+                    // Check if any episode of this series is in watchlist
+                    const isInWatchlist = series.episodes?.some(ep => watchedContentIds.has(ep.content_id)) || false;
+                    this.state.watchlistStatus[series.id] = isInWatchlist;
+                });
+            }
+        } catch (err) {
+            console.warn('Error loading watchlist statuses:', err);
         }
     },
 
@@ -371,7 +419,7 @@ const BantuWavesSeries = {
         const episodeText = episodeCount === 1 ? 'episode' : 'episodes';
         const seasonText = series.total_seasons === 1 ? '1 Season' : `${series.total_seasons} Seasons`;
         
-        // Format total views
+        // FIX 3: Use total_views from engagement_stats
         const totalViews = this.formatNumber(series.total_views || series.play_count || 0);
         
         // Get next episode info
@@ -382,6 +430,11 @@ const BantuWavesSeries = {
         const progressPercent = series.episode_count > 0 && series.total_episodes > 0 
             ? Math.round((series.episode_count / series.total_episodes) * 100)
             : 0;
+        
+        // Check watchlist status
+        const isInWatchlist = this.state.watchlistStatus[series.id] || false;
+        const watchlistButtonText = isInWatchlist ? 'In Watchlist' : 'Watchlist';
+        const watchlistButtonIcon = isInWatchlist ? 'fa-check-circle' : 'fa-bookmark';
         
         card.innerHTML = `
             <div class="series-card-inner">
@@ -422,8 +475,8 @@ const BantuWavesSeries = {
                         <p class="series-description">${this.truncateText(this.escapeHtml(series.description), 100)}</p>
                     ` : ''}
                     <div class="series-actions">
-                        <button class="action-btn watchlist-btn" data-series-id="${series.id}" title="Add to Watchlist">
-                            <i class="far fa-bookmark"></i> Watchlist
+                        <button class="action-btn watchlist-btn ${isInWatchlist ? 'active' : ''}" data-series-id="${series.id}" title="${isInWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}">
+                            <i class="fas ${watchlistButtonIcon}"></i> ${watchlistButtonText}
                         </button>
                         <button class="action-btn notify-btn" data-series-id="${series.id}" title="Get Notifications">
                             <i class="far fa-bell"></i> Notify
@@ -451,7 +504,7 @@ const BantuWavesSeries = {
         if (watchlistBtn) {
             watchlistBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.toggleWatchlist(series.id);
+                this.toggleWatchlist(series, watchlistBtn);
             });
         }
         
@@ -463,6 +516,7 @@ const BantuWavesSeries = {
             });
         }
         
+        // FIX 1: Redirect to content-detail with playlist_id (like Music section)
         card.addEventListener('click', () => {
             this.viewSeries(series.id);
         });
@@ -485,7 +539,8 @@ const BantuWavesSeries = {
         }
     },
 
-    async toggleWatchlist(seriesId) {
+    // FIX 2: Toggle watchlist using watch_later table
+    async toggleWatchlist(series, buttonElement) {
         const user = await this.getCurrentUser();
         if (!user) {
             this.showToast('Please sign in to add to watchlist', 'warning');
@@ -493,48 +548,67 @@ const BantuWavesSeries = {
             return;
         }
         
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) {
             this.showToast('Service unavailable', 'error');
             return;
         }
         
+        const isCurrentlyInWatchlist = this.state.watchlistStatus[series.id] || false;
+        
         try {
-            // Check if already in watchlist
-            const { data: existing, error: fetchError } = await window.supabaseAuth
-                .from('watchlist')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('playlist_id', seriesId)
-                .maybeSingle();
-            
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                console.error('Error checking watchlist:', fetchError);
-                this.showToast('Error checking watchlist', 'error');
-                return;
-            }
-            
-            if (existing) {
-                // Remove from watchlist
-                const { error: deleteError } = await window.supabaseAuth
-                    .from('watchlist')
-                    .delete()
-                    .eq('id', existing.id);
-                    
-                if (deleteError) throw deleteError;
+            if (isCurrentlyInWatchlist) {
+                // Remove from watchlist - delete from watch_later table
+                // Need to get all content_ids from episodes
+                const episodeContentIds = series.episodes?.map(ep => ep.content_id).filter(Boolean) || [];
+                
+                if (episodeContentIds.length > 0) {
+                    const { error: deleteError } = await window.supabaseAuth
+                        .from('watch_later')
+                        .delete()
+                        .eq('user_id', user.id)
+                        .in('content_id', episodeContentIds);
+                        
+                    if (deleteError) throw deleteError;
+                }
+                
+                this.state.watchlistStatus[series.id] = false;
                 this.showToast('Removed from watchlist', 'info');
+                
+                // Update button UI
+                if (buttonElement) {
+                    buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Watchlist';
+                    buttonElement.classList.remove('active');
+                }
             } else {
-                // Add to watchlist
+                // Add to watchlist - insert into watch_later table
+                const episodeContentIds = series.episodes?.map(ep => ep.content_id).filter(Boolean) || [];
+                
+                if (episodeContentIds.length === 0) {
+                    this.showToast('No episodes available to add', 'warning');
+                    return;
+                }
+                
+                // Insert each episode into watch_later
+                const inserts = episodeContentIds.map(content_id => ({
+                    user_id: user.id,
+                    content_id: content_id,
+                    created_at: new Date().toISOString()
+                }));
+                
                 const { error: insertError } = await window.supabaseAuth
-                    .from('watchlist')
-                    .insert({
-                        user_id: user.id,
-                        playlist_id: seriesId,
-                        added_at: new Date().toISOString()
-                    });
+                    .from('watch_later')
+                    .upsert(inserts, { onConflict: 'user_id, content_id' });
                     
                 if (insertError) throw insertError;
-                this.showToast('Added to watchlist!', 'success');
+                
+                this.state.watchlistStatus[series.id] = true;
+                this.showToast(`Added ${episodeContentIds.length} episode(s) to watchlist!`, 'success');
+                
+                // Update button UI
+                if (buttonElement) {
+                    buttonElement.innerHTML = '<i class="fas fa-check-circle"></i> In Watchlist';
+                    buttonElement.classList.add('active');
+                }
             }
         } catch (error) {
             console.error('Error toggling watchlist:', error);
@@ -550,7 +624,6 @@ const BantuWavesSeries = {
             return;
         }
         
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) {
             this.showToast('Service unavailable', 'error');
             return;
@@ -599,8 +672,9 @@ const BantuWavesSeries = {
         }
     },
 
+    // FIX 1: Redirect to content-detail with playlist_id (like Music section)
     viewSeries(seriesId) {
-        window.location.href = `series-detail.html?id=${seriesId}`;
+        window.location.href = `content-detail?playlist_id=${seriesId}&type=series`;
     },
 
     renderEmpty() {
@@ -713,12 +787,10 @@ const BantuWavesSeries = {
     },
 
     async getCurrentUser() {
-        // FIXED: Use AuthHelper if available, or check supabaseAuth session
         if (window.AuthHelper?.isAuthenticated && window.AuthHelper.isAuthenticated()) {
             return window.AuthHelper.getUserProfile();
         }
         
-        // Try to get from supabaseAuth session
         if (window.supabaseAuth) {
             try {
                 const { data: { user } } = await window.supabaseAuth.auth.getUser();
