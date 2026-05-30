@@ -9,6 +9,7 @@
  * 
  * BADGE FIX: Split layout with glassmorphism badges
  * GLITCH FIX: Added error boundaries, proper null checks, and RAF for animations
+ * FIXED: Infinite loading issue - proper error handling and fallback content
  */
 
 const ForYou = (function() {
@@ -21,6 +22,7 @@ const ForYou = (function() {
     let userPreferences = null;
     let isLoading = false;
     let initAttempts = 0;
+    let loadPromise = null;
     const MAX_INIT_ATTEMPTS = 3;
     
     // Configuration
@@ -42,7 +44,11 @@ const ForYou = (function() {
     async function init() {
         // Prevent multiple simultaneous initializations
         if (isLoading) {
-            console.log('🎯 For You already initializing, skipping...');
+            console.log('🎯 For You already initializing, waiting...');
+            // Wait for the existing load to complete
+            if (loadPromise) {
+                await loadPromise;
+            }
             return;
         }
         
@@ -55,12 +61,18 @@ const ForYou = (function() {
             if (!container) {
                 console.warn('For You container not found, creating fallback');
                 createFallbackContainer();
+                container = document.getElementById('for-you-grid');
+                if (!container) {
+                    console.error('Could not create For You container');
+                    isLoading = false;
+                    return;
+                }
             }
             
             // Get current user
             await getCurrentUser();
             
-            // Load user preferences
+            // Load user preferences (with error tolerance)
             await loadUserPreferences();
             
             // Load content
@@ -89,10 +101,12 @@ const ForYou = (function() {
                     init();
                 }, 2000);
             } else {
-                showErrorState();
+                // Show fallback content instead of error state
+                showFallbackContent();
             }
         } finally {
             isLoading = false;
+            loadPromise = null;
         }
     }
     
@@ -120,7 +134,9 @@ const ForYou = (function() {
                 return;
             }
             
-            const { data: { session } } = await window.supabaseAuth.auth.getSession();
+            const { data: { session }, error } = await window.supabaseAuth.auth.getSession();
+            if (error) throw error;
+            
             currentUser = session?.user || null;
             
             if (currentUser) {
@@ -139,12 +155,20 @@ const ForYou = (function() {
      * Load user profile data including category interests
      */
     async function loadUserProfile() {
+        if (!currentUser || !window.supabaseAuth) return;
+        
         try {
-            const { data: profile } = await window.supabaseAuth
+            // Fix: Use maybeSingle() instead of single() to avoid 400 error when no rows
+            const { data: profile, error } = await window.supabaseAuth
                 .from('user_profiles')
                 .select('id, full_name, username, category_interests, preferred_languages, location')
                 .eq('id', currentUser.id)
                 .maybeSingle();
+            
+            if (error) {
+                console.warn('Could not load user profile:', error.message);
+                return;
+            }
             
             if (profile) {
                 currentUser.profile = profile;
@@ -160,7 +184,7 @@ const ForYou = (function() {
      */
     async function loadUserPreferences() {
         if (!currentUser) {
-            userPreferences = null;
+            userPreferences = { hasPreferences: false, genres: [], languages: [] };
             return;
         }
         
@@ -172,56 +196,64 @@ const ForYou = (function() {
             if (currentUser.profile?.category_interests) {
                 categoryInterests = Array.isArray(currentUser.profile.category_interests) 
                     ? currentUser.profile.category_interests 
-                    : [currentUser.profile.category_interests];
+                    : (currentUser.profile.category_interests ? [currentUser.profile.category_interests] : []);
                 preferredLanguages = Array.isArray(currentUser.profile.preferred_languages)
                     ? currentUser.profile.preferred_languages
                     : (currentUser.profile.preferred_languages ? [currentUser.profile.preferred_languages] : []);
             }
             
-            // If no category interests from profile, derive from liked content
-            if (categoryInterests.length === 0) {
-                // Get user's liked content
-                const { data: likedContent } = await window.supabaseAuth
-                    .from('content_likes')
-                    .select('content_id')
-                    .eq('user_id', currentUser.id)
-                    .limit(30);
-                
-                const likedIds = (likedContent || []).map(l => l.content_id);
-                
-                // Get genres from liked content
-                if (likedIds.length > 0) {
-                    const { data: likedGenres } = await window.supabaseAuth
-                        .from('Content')
-                        .select('genre, language, tags')
-                        .in('id', likedIds.slice(0, 15));
-                    
-                    if (likedGenres) {
-                        categoryInterests = [...new Set(likedGenres.map(g => g.genre).filter(Boolean))];
-                        preferredLanguages = [...new Set(likedGenres.map(g => g.language).filter(Boolean))];
-                    }
-                }
-                
-                // If still no preferences, get from watch history
-                if (categoryInterests.length === 0) {
-                    const { data: watchHistory } = await window.supabaseAuth
-                        .from('watch_progress')
-                        .select('content_id, total_watch_time')
+            // If no category interests from profile, try to derive from liked content
+            if (categoryInterests.length === 0 && window.supabaseAuth) {
+                try {
+                    // Get user's liked content
+                    const { data: likedContent, error: likesError } = await window.supabaseAuth
+                        .from('content_likes')
+                        .select('content_id')
                         .eq('user_id', currentUser.id)
                         .limit(30);
                     
-                    const watchedIds = (watchHistory || []).map(w => w.content_id);
-                    
-                    if (watchedIds.length > 0) {
-                        const { data: watchedGenres } = await window.supabaseAuth
+                    if (!likesError && likedContent && likedContent.length > 0) {
+                        const likedIds = likedContent.map(l => l.content_id);
+                        
+                        // Get genres from liked content
+                        const { data: likedGenres } = await window.supabaseAuth
                             .from('Content')
                             .select('genre, language')
-                            .in('id', watchedIds.slice(0, 15));
+                            .in('id', likedIds.slice(0, 15));
                         
-                        if (watchedGenres) {
-                            categoryInterests = [...new Set(watchedGenres.map(g => g.genre).filter(Boolean))];
-                            preferredLanguages = [...new Set(watchedGenres.map(g => g.language).filter(Boolean))];
+                        if (likedGenres) {
+                            categoryInterests = [...new Set(likedGenres.map(g => g.genre).filter(Boolean))];
+                            preferredLanguages = [...new Set(likedGenres.map(g => g.language).filter(Boolean))];
                         }
+                    }
+                } catch (likesErr) {
+                    console.warn('Could not fetch liked content:', likesErr);
+                }
+                
+                // If still no preferences, try watch history
+                if (categoryInterests.length === 0) {
+                    try {
+                        const { data: watchHistory } = await window.supabaseAuth
+                            .from('watch_progress')
+                            .select('content_id, total_watch_time')
+                            .eq('user_id', currentUser.id)
+                            .limit(30);
+                        
+                        if (watchHistory && watchHistory.length > 0) {
+                            const watchedIds = watchHistory.map(w => w.content_id);
+                            
+                            const { data: watchedGenres } = await window.supabaseAuth
+                                .from('Content')
+                                .select('genre, language')
+                                .in('id', watchedIds.slice(0, 15));
+                            
+                            if (watchedGenres) {
+                                categoryInterests = [...new Set(watchedGenres.map(g => g.genre).filter(Boolean))];
+                                preferredLanguages = [...new Set(watchedGenres.map(g => g.language).filter(Boolean))];
+                            }
+                        }
+                    } catch (watchErr) {
+                        console.warn('Could not fetch watch history:', watchErr);
                     }
                 }
             }
@@ -248,82 +280,95 @@ const ForYou = (function() {
         const startTime = performance.now();
         
         // Don't load if already loading
-        if (isLoading) {
-            console.log('Already loading, skipping...');
-            return;
+        if (isLoading && loadPromise) {
+            console.log('Already loading, waiting for existing load...');
+            return loadPromise;
         }
         
-        isLoading = true;
-        
-        try {
-            // Try cached data first
-            const cachedData = loadFromCache();
-            if (cachedData && cachedData.length > 0) {
-                console.log('📦 For You: Using cached data,', cachedData.length, 'items');
+        // Create a new load promise
+        loadPromise = (async () => {
+            try {
+                // Try cached data first
+                const cachedData = loadFromCache();
+                if (cachedData && cachedData.length > 0) {
+                    console.log('📦 For You: Using cached data,', cachedData.length, 'items');
+                    if (container) {
+                        container.innerHTML = '';
+                        renderCards(cachedData);
+                        animateCards();
+                    }
+                    // Refresh in background
+                    refreshInBackground();
+                    return;
+                }
+                
+                // Show skeletons
+                if (container) showSkeletons();
+                
+                let contentList = [];
+                
+                // Try to get personalized recommendations
+                if (currentUser && userPreferences?.hasPreferences) {
+                    contentList = await getPersonalizedRecommendations();
+                }
+                
+                // Fallback to trending/recent content if no personalized content
+                if (!contentList || contentList.length === 0) {
+                    console.log('No personalized content, falling back to recent content');
+                    contentList = await getRecentContentFallback();
+                }
+                
+                // Second fallback - get any published content
+                if (!contentList || contentList.length === 0) {
+                    console.log('No recent content, falling back to any published content');
+                    contentList = await getAnyContentFallback();
+                }
+                
+                if (!contentList || contentList.length === 0) {
+                    showEmptyState();
+                    return;
+                }
+                
+                // Build complete dataset with metrics from engagement_stats
+                let sectionData = await buildSectionData(contentList.slice(0, DISPLAY_ITEMS));
+                
+                // Apply Amplification Logic
+                sectionData = applyAmplificationLogic(sectionData);
+                
+                // Sort by amplification score
+                sectionData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
+                
+                // Render
                 if (container) {
                     container.innerHTML = '';
-                    renderCards(cachedData);
-                    animateCards();
+                    renderCards(sectionData);
                 }
-                // Refresh in background
-                refreshInBackground();
-                isLoading = false;
-                return;
+                
+                // Cache the result
+                saveToCache(sectionData);
+                
+                // Animate cards
+                animateCards();
+                
+                const loadTime = performance.now() - startTime;
+                console.log(`📊 For You section loaded in ${loadTime.toFixed(0)}ms with ${sectionData.length} items`);
+                
+            } catch (err) {
+                console.error("❌ For You Section Error:", err);
+                const cached = loadFromCache();
+                if (cached && cached.length > 0) {
+                    if (container) {
+                        container.innerHTML = '';
+                        renderCards(cached);
+                        animateCards();
+                    }
+                } else {
+                    showFallbackContent();
+                }
             }
-            
-            // Show skeletons
-            if (container) showSkeletons();
-            
-            let contentList = [];
-            
-            if (currentUser && userPreferences?.hasPreferences) {
-                contentList = await getPersonalizedRecommendations();
-            }
-            
-            // Fallback to trending if no personalized content
-            if (!contentList || contentList.length === 0) {
-                console.log('No personalized content, falling back to trending');
-                contentList = await getTrendingFallback();
-            }
-            
-            if (!contentList || contentList.length === 0) {
-                showEmptyState();
-                isLoading = false;
-                return;
-            }
-            
-            // Build complete dataset with metrics from engagement_stats
-            let sectionData = await buildSectionData(contentList.slice(0, DISPLAY_ITEMS));
-            
-            // Apply Amplification Logic
-            sectionData = applyAmplificationLogic(sectionData);
-            
-            // Sort by amplification score
-            sectionData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
-            
-            // Render
-            if (container) {
-                container.innerHTML = '';
-                renderCards(sectionData);
-            }
-            
-            // Cache the result
-            saveToCache(sectionData);
-            
-            // Animate cards
-            animateCards();
-            
-            const loadTime = performance.now() - startTime;
-            console.log(`📊 For You section loaded in ${loadTime.toFixed(0)}ms`);
-            
-        } catch (err) {
-            console.error("❌ For You Section Error:", err);
-            if (!loadFromCache()) {
-                showErrorState();
-            }
-        } finally {
-            isLoading = false;
-        }
+        })();
+        
+        return loadPromise;
     }
     
     /**
@@ -335,7 +380,7 @@ const ForYou = (function() {
         try {
             if (!window.supabaseAuth) return [];
             
-            // Build the query using the new specification
+            // Build the query
             let query = window.supabaseAuth
                 .from('Content')
                 .select(`
@@ -362,10 +407,12 @@ const ForYou = (function() {
                 .eq('status', 'published')
                 .in('content_format', LONG_FORM_FORMATS);
             
-            // Overlap match using category interests array
+            // Only add genre filter if we have preferences
             if (userPreferences.genres && userPreferences.genres.length > 0) {
-                const genreList = userPreferences.genres.map(g => `'${g.replace(/'/g, "''")}'`).join(',');
-                query = query.filter('genre', 'in', `(${genreList})`);
+                const validGenres = userPreferences.genres.filter(g => g && typeof g === 'string');
+                if (validGenres.length > 0) {
+                    query = query.in('genre', validGenres);
+                }
             }
             
             // Get the content
@@ -373,12 +420,16 @@ const ForYou = (function() {
                 .order('created_at', { ascending: false })
                 .limit(MAX_ITEMS);
             
-            if (error) throw error;
+            if (error) {
+                console.warn('Error in personalized query:', error.message);
+                return [];
+            }
+            
             contentList = data || [];
             
-            // If we don't have enough, add some high-engagement content without preference filter
+            // If we don't have enough, add some recent content without preference filter
             if (contentList.length < DISPLAY_ITEMS) {
-                const existingIds = contentList.map(c => c.id);
+                const existingIds = contentList.map(c => c.id).filter(Boolean);
                 
                 let fallbackQuery = window.supabaseAuth
                     .from('Content')
@@ -397,11 +448,11 @@ const ForYou = (function() {
                     fallbackQuery = fallbackQuery.not('id', 'in', `(${existingIds.join(',')})`);
                 }
                 
-                const { data: fallbackData } = await fallbackQuery
+                const { data: fallbackData, error: fallbackError } = await fallbackQuery
                     .order('created_at', { ascending: false })
                     .limit(DISPLAY_ITEMS - contentList.length);
                 
-                if (fallbackData) {
+                if (!fallbackError && fallbackData) {
                     contentList = [...contentList, ...fallbackData];
                 }
             }
@@ -414,59 +465,68 @@ const ForYou = (function() {
     }
     
     /**
-     * Get trending content as fallback
+     * Get recent content as fallback (simpler query)
      */
-    async function getTrendingFallback() {
+    async function getRecentContentFallback() {
         try {
             if (!window.supabaseAuth) return [];
             
-            // Get content IDs ordered by engagement
-            const { data: engagementData } = await window.supabaseAuth
-                .from('content_engagement_stats')
-                .select('content_id, total_views, total_likes, total_shares')
-                .order('total_views', { ascending: false })
-                .limit(DISPLAY_ITEMS * 2);
-            
-            if (!engagementData || engagementData.length === 0) {
-                // Fallback to just Content table ordering
-                const { data } = await window.supabaseAuth
-                    .from('Content')
-                    .select(`
-                        id, title, description, thumbnail_url, duration, 
-                        genre, language, created_at, favorites_count,
-                        content_format, media_type, tags,
-                        user_id, user_profiles!user_id (
-                            id, full_name, username, avatar_url
-                        )
-                    `)
-                    .eq('status', 'published')
-                    .in('content_format', LONG_FORM_FORMATS)
-                    .order('created_at', { ascending: false })
-                    .limit(DISPLAY_ITEMS);
-                
-                return data || [];
-            }
-            
-            const contentIds = engagementData.map(e => e.content_id);
-            
-            const { data } = await window.supabaseAuth
+            const { data, error } = await window.supabaseAuth
                 .from('Content')
                 .select(`
                     id, title, description, thumbnail_url, duration, 
                     genre, language, created_at, favorites_count,
-                    content_format, media_type, tags,
+                    content_format, media_type,
                     user_id, user_profiles!user_id (
                         id, full_name, username, avatar_url
                     )
                 `)
                 .eq('status', 'published')
                 .in('content_format', LONG_FORM_FORMATS)
-                .in('id', contentIds)
+                .order('created_at', { ascending: false })
                 .limit(DISPLAY_ITEMS);
+            
+            if (error) {
+                console.warn('Error fetching recent content:', error.message);
+                return [];
+            }
             
             return data || [];
         } catch (err) {
-            console.error('Error getting trending fallback:', err);
+            console.error('Error getting recent content:', err);
+            return [];
+        }
+    }
+    
+    /**
+     * Get any content as final fallback (no format filter)
+     */
+    async function getAnyContentFallback() {
+        try {
+            if (!window.supabaseAuth) return [];
+            
+            // Simpler query - just get any published content
+            const { data, error } = await window.supabaseAuth
+                .from('Content')
+                .select(`
+                    id, title, description, thumbnail_url, duration, 
+                    genre, language, created_at, favorites_count,
+                    user_id, user_profiles!user_id (
+                        id, full_name, username, avatar_url
+                    )
+                `)
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .limit(DISPLAY_ITEMS);
+            
+            if (error) {
+                console.warn('Error fetching any content:', error.message);
+                return [];
+            }
+            
+            return data || [];
+        } catch (err) {
+            console.error('Error getting any content:', err);
             return [];
         }
     }
@@ -485,11 +545,11 @@ const ForYou = (function() {
                              ((item.metrics?.likes || 0) * 5) + 
                              ((item.metrics?.shares || 0) * 10);
             
-            score = baseScore;
+            score = baseScore || (item.favorites_count || 0) * 5;
             let boostReason = null;
             
             // 1. Local Language Boost
-            if (LOCAL_LANGUAGES.includes(item.language)) {
+            if (item.language && LOCAL_LANGUAGES.includes(item.language)) {
                 score = score * 1.3;
                 boostReason = 'Local language content';
             }
@@ -501,10 +561,12 @@ const ForYou = (function() {
             }
             
             // 3. Freshness Boost (< 7 days old)
-            const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
-            if (daysOld < 7) {
-                score = score * 1.4;
-                boostReason = boostReason ? `${boostReason} + Fresh content` : 'Fresh content';
+            if (item.created_at) {
+                const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
+                if (daysOld < 7) {
+                    score = score * 1.4;
+                    boostReason = boostReason ? `${boostReason} + Fresh content` : 'Fresh content';
+                }
             }
             
             // 4. Genre Match Boost
@@ -513,17 +575,10 @@ const ForYou = (function() {
                 boostReason = boostReason ? `${boostReason} + Matches your interests` : 'Matches your interests';
             }
             
-            // 5. Content format priority boost
-            const priorityFormats = ['film', 'documentary', 'movie'];
-            if (priorityFormats.includes(item.content_format)) {
-                score = score * 1.15;
-                boostReason = boostReason ? `${boostReason} + Premium format` : 'Premium format';
-            }
-            
             return { 
                 ...item, 
-                amplification_score: score,
-                boost_reason: boostReason,
+                amplification_score: Math.max(score, 100),
+                boost_reason: boostReason || 'Recommended for you',
                 metrics: {
                     ...item.metrics,
                     base_score: baseScore
@@ -533,22 +588,47 @@ const ForYou = (function() {
     }
     
     /**
+     * Show fallback content when all else fails
+     */
+    async function showFallbackContent() {
+        if (!container) return;
+        
+        try {
+            const fallbackContent = await getRecentContentFallback();
+            if (fallbackContent && fallbackContent.length > 0) {
+                const sectionData = await buildSectionData(fallbackContent);
+                renderCards(sectionData);
+                animateCards();
+            } else {
+                showEmptyState();
+            }
+        } catch (err) {
+            showEmptyState();
+        }
+    }
+    
+    /**
      * Build section data with metrics from content_engagement_stats
      */
     async function buildSectionData(contentList) {
         if (!contentList || contentList.length === 0) return [];
         
-        const contentIds = contentList.map(c => c.id);
+        const contentIds = contentList.map(c => c.id).filter(Boolean);
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
         
         // Fetch engagement metrics from content_engagement_stats
-        const engagementMetrics = await fetchEngagementMetrics(contentIds);
-        const connectors = await fetchConnectorCounts(creatorIds);
+        let engagementMetrics = {};
+        let connectors = {};
+        
+        if (window.supabaseAuth) {
+            engagementMetrics = await fetchEngagementMetrics(contentIds);
+            connectors = await fetchConnectorCounts(creatorIds);
+        }
         
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: engagementMetrics[item.id]?.total_views || 0,
+                views: engagementMetrics[item.id]?.total_views || item.views_count || 0,
                 likes: engagementMetrics[item.id]?.total_likes || 0,
                 comments: engagementMetrics[item.id]?.total_comments || 0,
                 shares: engagementMetrics[item.id]?.total_shares || 0,
@@ -562,7 +642,7 @@ const ForYou = (function() {
      * Fetch engagement metrics from content_engagement_stats table
      */
     async function fetchEngagementMetrics(contentIds) {
-        if (!contentIds.length) return {};
+        if (!contentIds.length || !window.supabaseAuth) return {};
         
         try {
             const { data, error } = await window.supabaseAuth
@@ -570,7 +650,10 @@ const ForYou = (function() {
                 .select('content_id, total_views, total_likes, total_comments, total_shares')
                 .in('content_id', contentIds);
             
-            if (error) throw error;
+            if (error) {
+                console.warn('Error fetching engagement metrics:', error.message);
+                return {};
+            }
             
             const metricsMap = {};
             data?.forEach(row => {
@@ -584,7 +667,7 @@ const ForYou = (function() {
             
             return metricsMap;
         } catch (err) {
-            console.error('Error fetching engagement metrics:', err);
+            console.warn('Error fetching engagement metrics:', err);
             return {};
         }
     }
@@ -593,19 +676,26 @@ const ForYou = (function() {
      * Fetch connector counts
      */
     async function fetchConnectorCounts(creatorIds) {
-        if (!creatorIds || creatorIds.length === 0) return {};
+        if (!creatorIds || creatorIds.length === 0 || !window.supabaseAuth) return {};
+        
         const limitedIds = creatorIds.slice(0, 50);
         try {
-            const { data } = await window.supabaseAuth
+            const { data, error } = await window.supabaseAuth
                 .from("connectors")
                 .select("connected_id")
                 .in("connected_id", limitedIds)
                 .eq("connection_type", "creator");
+            
+            if (error) {
+                console.warn('Error fetching connector counts:', error.message);
+                return {};
+            }
+            
             const counts = {};
             data?.forEach(row => counts[row.connected_id] = (counts[row.connected_id] || 0) + 1);
             return counts;
         } catch (err) {
-            console.error('Error fetching connector counts:', err);
+            console.warn('Error fetching connector counts:', err);
             return {};
         }
     }
@@ -628,12 +718,12 @@ const ForYou = (function() {
             const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
             const username = creatorProfile?.username || 'creator';
             const initials = getInitials(displayName);
-            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
+            const isNew = content.created_at ? (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000 : false;
             const durationFormatted = formatDuration(content.duration || 0);
             
             // Determine recommendation score class
             let scoreClass = 'low';
-            let scoreValue = Math.round((content.amplification_score || 0) / 1000);
+            let scoreValue = Math.round((content.amplification_score || 100) / 100);
             if (scoreValue > 100) scoreClass = 'high';
             else if (scoreValue > 50) scoreClass = 'medium';
             
@@ -657,7 +747,6 @@ const ForYou = (function() {
             const genreBadgeHtml = content.genre ? 
                 `<div class="card-badge genre-badge"><i class="fas fa-tag"></i> ${escapeHtml(content.genre)}</div>` : '';
             
-            // Boost reason tooltip for recommendation score
             const boostReason = content.boost_reason || 'Personalized for you';
             const scoreLabel = scoreValue > 0 ? scoreValue : 'Pick';
             
@@ -754,7 +843,7 @@ const ForYou = (function() {
     }
     
     /**
-     * Animate cards with stagger effect using requestAnimationFrame
+     * Animate cards with stagger effect
      */
     function animateCards() {
         if (!container) return;
@@ -764,12 +853,11 @@ const ForYou = (function() {
         
         cards.forEach((card, i) => {
             setTimeout(() => {
-                if (card) {
+                if (card && card.style) {
                     card.style.opacity = '1';
                     card.style.transform = 'translateY(0)';
                     card.classList.add('visible');
                     
-                    // Add recommended animation to top card
                     if (i === 0) {
                         card.classList.add('recommended');
                         setTimeout(() => {
@@ -807,18 +895,18 @@ const ForYou = (function() {
                 <h3>No Recommendations Yet</h3>
                 <p>Start watching and liking content to get personalized picks just for you!</p>
                 <div class="action-buttons">
-                    <button class="cta-btn" id="explore-trending-btn">
+                    <button class="cta-btn" id="explore-trending-btn-foryou">
                         <i class="fas fa-fire"></i> Explore Trending
                     </button>
-                    <button class="cta-btn" id="discover-creators-btn">
+                    <button class="cta-btn" id="discover-creators-btn-foryou">
                         <i class="fas fa-user-plus"></i> Discover Creators
                     </button>
                 </div>
             </div>
         `;
         
-        const exploreBtn = document.getElementById('explore-trending-btn');
-        const discoverBtn = document.getElementById('discover-creators-btn');
+        const exploreBtn = document.getElementById('explore-trending-btn-foryou');
+        const discoverBtn = document.getElementById('discover-creators-btn-foryou');
         
         if (exploreBtn) {
             exploreBtn.addEventListener('click', () => {
@@ -831,21 +919,6 @@ const ForYou = (function() {
                 window.location.href = 'https://bantustreamconnect.com/discover-creator';
             });
         }
-    }
-    
-    /**
-     * Show error state
-     */
-    function showErrorState() {
-        if (!container) return;
-        container.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                <h3>Unable to Load Recommendations</h3>
-                <p>Please check your connection and try again.</p>
-                <button class="cta-btn" onclick="location.reload()">Retry</button>
-            </div>
-        `;
     }
     
     /**
@@ -868,7 +941,6 @@ const ForYou = (function() {
         const sectionTitle = document.querySelector('#for-you-section .section-title');
         if (!sectionTitle) return;
         
-        // Check if tooltip already exists
         if (sectionTitle.querySelector('.personalization-tooltip')) return;
         
         const tooltipSpan = document.createElement('span');
@@ -893,11 +965,14 @@ const ForYou = (function() {
         if (isLoading) return;
         
         try {
-            // Refresh user preferences first
             await loadUserPreferences();
-            
-            // Then refresh content
-            await loadContent();
+            const cachedData = loadFromCache();
+            if (cachedData && cachedData.length > 0) {
+                // Just refresh preferences, not full content
+                addPersonalizationTooltip();
+            } else {
+                await loadContent();
+            }
         } catch (err) {
             console.log('Background refresh failed:', err);
         }
@@ -917,11 +992,11 @@ const ForYou = (function() {
      * Load from cache
      */
     function loadFromCache() {
-        if (window.cacheManager && typeof window.cacheManager.get === 'function') {
-            return window.cacheManager.get(CACHE_KEY);
-        }
-        
         try {
+            if (window.cacheManager && typeof window.cacheManager.get === 'function') {
+                return window.cacheManager.get(CACHE_KEY);
+            }
+            
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const parsed = JSON.parse(cached);
@@ -931,7 +1006,7 @@ const ForYou = (function() {
                 }
             }
         } catch (e) {
-            console.warn('Failed to load from localStorage cache:', e);
+            console.warn('Failed to load from cache:', e);
         }
         return null;
     }
@@ -940,17 +1015,17 @@ const ForYou = (function() {
      * Save to cache
      */
     function saveToCache(data) {
-        if (window.cacheManager && typeof window.cacheManager.set === 'function') {
-            window.cacheManager.set(CACHE_KEY, data, CACHE_TTL);
-        }
-        
         try {
+            if (window.cacheManager && typeof window.cacheManager.set === 'function') {
+                window.cacheManager.set(CACHE_KEY, data, CACHE_TTL);
+            }
+            
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 data: data,
                 timestamp: Date.now()
             }));
         } catch (e) {
-            console.warn('Failed to save to localStorage cache:', e);
+            console.warn('Failed to save to cache:', e);
         }
     }
     
@@ -1029,6 +1104,7 @@ const ForYou = (function() {
      * Refresh module
      */
     async function refresh() {
+        isLoading = false;
         await getCurrentUser();
         await loadUserPreferences();
         await loadContent();
@@ -1056,21 +1132,13 @@ const ForYou = (function() {
     };
 })();
 
-// Auto-initialize when DOM is ready with error handling
+// Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        try {
-            ForYou.init();
-        } catch (err) {
-            console.error('Failed to initialize For You:', err);
-        }
+        setTimeout(() => ForYou.init(), 100);
     });
 } else {
-    try {
-        ForYou.init();
-    } catch (err) {
-        console.error('Failed to initialize For You:', err);
-    }
+    setTimeout(() => ForYou.init(), 100);
 }
 
 // Export for module usage
