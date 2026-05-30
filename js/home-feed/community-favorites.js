@@ -5,6 +5,8 @@
  * 
  * UPDATED: Now uses content_engagement_stats table for metrics.
  * Order: total_likes DESC, total_shares DESC.
+ * 
+ * MOBILE FIX: Creator location text size reduced to 30-25% on mobile
  */
 
 const CommunityFavorites = (function() {
@@ -596,6 +598,10 @@ const CommunityFavorites = (function() {
                     ${rankIcon} #${rank}
                  </div>`;
             
+            // FIX: Added mobile-responsive location class for better sizing
+            const locationHtml = creatorProfile?.location ? 
+                `<span class="creator-location community-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creatorProfile.location)}</span>` : '';
+            
             card.innerHTML = `
                 <div class="card-thumbnail">
                     <img src="${thumbnailUrl}" 
@@ -621,7 +627,7 @@ const CommunityFavorites = (function() {
                     <div class="creator-info">
                         <div class="creator-avatar-small" style="width:28px;height:28px;border-radius:50%;overflow:hidden;">${avatarHtml}</div>
                         <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        ${creatorProfile?.location ? `<span class="creator-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creatorProfile.location)}</span>` : ''}
+                        ${locationHtml}
                     </div>
                     <div class="card-meta">
                         <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
