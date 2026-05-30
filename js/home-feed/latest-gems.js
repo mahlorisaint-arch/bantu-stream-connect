@@ -8,8 +8,8 @@
  * and fetches metrics from content_engagement_stats.
  * Includes fallback to absolute newest content when needed.
  * 
- * BADGE FIX: Removed duplicate badges, using glassmorphism style only.
- * MOBILE FIX: Badges reduced to 40-50% size on mobile to avoid clutter.
+ * BADGE FIX: Split layout - Top-left priority, Bottom-left secondary
+ * Top-right freshness indicator, Bottom-right duration badge
  */
 
 const LatestGems = (function() {
@@ -626,8 +626,24 @@ const LatestGems = (function() {
     }
     
     /**
-     * Render latest gems cards - UPDATED: No duplicate badges, glassmorphism style only
-     * Mobile badges reduced to 50% size via CSS classes
+     * Get language display name
+     */
+    function getLanguageDisplay(languageCode) {
+        const languageNames = {
+            'zu': 'isiZulu', 'xh': 'isiXhosa', 'af': 'Afrikaans',
+            'st': 'Sesotho', 'tn': 'Setswana', 'ss': 'Siswati',
+            've': 'Tshivenḓa', 'ts': 'Xitsonga', 'nr': 'isiNdebele',
+            'nso': 'Sepedi', 'en': 'English'
+        };
+        return languageNames[languageCode] || languageCode.toUpperCase();
+    }
+    
+    /**
+     * Render latest gems cards - SPLIT BADGE LAYOUT
+     * - TOP-LEFT: Priority badges (Sparkle for new content, or Format badge)
+     * - BOTTOM-LEFT: Secondary badges (Genre, Language)
+     * - TOP-RIGHT: Freshness indicator
+     * - BOTTOM-RIGHT: Duration badge
      */
     function renderCards(contents) {
         const fragment = document.createDocumentFragment();
@@ -677,22 +693,48 @@ const LatestGems = (function() {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
             
-            // Add fallback class for styling if needed
             if (isFallback) {
                 card.classList.add('fallback-gem');
             }
             
-            // BADGE FIX: Only ONE badge container with glassmorphism style
-            // Combined format and genre into single badge where appropriate
-            // Removed duplicate new-badge (freshness indicator handles this)
-            // Mobile responsive classes added for badge scaling
+            // ============================================
+            // SPLIT BADGE LAYOUT - Four corners
+            // ============================================
             
-            // Determine which badges to show (no duplicates)
-            const showFormatBadge = formatLabel && formatLabel !== 'NEW';
-            const showGenreBadge = content.genre && content.genre !== 'all' && content.genre !== '';
+            // TOP-LEFT: Priority badges (Sparkle or Format)
+            let topLeftBadgesHtml = '';
+            if (isExtremelyNew) {
+                topLeftBadgesHtml = `
+                    <div class="card-badge sparkle-badge priority-badge">
+                        <i class="fas fa-sparkle"></i> ${freshnessLabel || 'FRESH'}
+                    </div>
+                `;
+            } else if (formatLabel && formatLabel !== 'NEW') {
+                topLeftBadgesHtml = `
+                    <div class="card-badge format-badge priority-badge">
+                        ${formatIcon} ${formatLabel}
+                    </div>
+                `;
+            }
             
-            // For extremely new content, show a special sparkle badge instead of separate new badge
-            const showSparkleBadge = isExtremelyNew;
+            // BOTTOM-LEFT: Secondary badges (Genre, Language)
+            let bottomLeftBadgesHtml = '';
+            if (content.genre && content.genre !== 'all' && content.genre !== '') {
+                bottomLeftBadgesHtml += `
+                    <div class="card-badge genre-badge secondary-badge">
+                        <i class="fas fa-tag"></i> ${escapeHtml(content.genre)}
+                    </div>
+                `;
+            }
+            // Add language badge if not English and if we have space
+            if (content.language && content.language !== 'en' && !bottomLeftBadgesHtml.includes('genre')) {
+                const languageDisplay = getLanguageDisplay(content.language);
+                bottomLeftBadgesHtml += `
+                    <div class="card-badge language-badge secondary-badge">
+                        <i class="fas fa-language"></i> ${languageDisplay}
+                    </div>
+                `;
+            }
             
             card.innerHTML = `
                 <div class="card-thumbnail">
@@ -701,29 +743,23 @@ const LatestGems = (function() {
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                     
-                    <!-- SINGLE BADGE CONTAINER - Glassmorphism style, no duplicates -->
-                    <div class="card-badges glassmorphism-badges">
-                        ${showSparkleBadge ? `
-                            <div class="card-badge sparkle-badge">
-                                <i class="fas fa-sparkle"></i> ${freshnessLabel || 'FRESH'}
-                            </div>
-                        ` : ''}
-                        ${showFormatBadge && !showSparkleBadge ? `
-                            <div class="card-badge format-badge glass-badge">
-                                ${formatIcon} ${formatLabel}
-                            </div>
-                        ` : ''}
-                        ${showGenreBadge && !showSparkleBadge ? `
-                            <div class="card-badge genre-badge glass-badge">
-                                <i class="fas fa-tag"></i> ${escapeHtml(content.genre)}
-                            </div>
-                        ` : ''}
+                    <!-- TOP-LEFT BADGES: Priority badges (Sparkle/Format) -->
+                    <div class="card-badges-top">
+                        ${topLeftBadgesHtml}
                     </div>
                     
-                    <!-- SIMPLIFIED FRESHNESS INDICATOR - Only shows on thumbnail corner, not duplicated -->
+                    <!-- BOTTOM-LEFT BADGES: Secondary badges (Genre, Language) -->
+                    <div class="card-badges-bottom">
+                        ${bottomLeftBadgesHtml}
+                    </div>
+                    
+                    <!-- TOP-RIGHT: Freshness indicator -->
                     <div class="freshness-indicator ${freshnessClass}">
                         ${content.indicator_icon || '🆕'} ${freshnessLabel}
                     </div>
+                    
+                    <!-- BOTTOM-RIGHT: Duration badge -->
+                    ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
                     
                     <div class="creator-spotlight">
                         <div class="creator-spotlight-text">
@@ -732,7 +768,6 @@ const LatestGems = (function() {
                     </div>
                     <div class="thumbnail-overlay"></div>
                     <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-                    ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
                 </div>
                 <div class="card-content">
                     <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
