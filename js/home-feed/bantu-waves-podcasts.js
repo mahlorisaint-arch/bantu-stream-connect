@@ -4,7 +4,11 @@
    Displays podcast playlists from creator_playlists
    Filtered by playlist_type = 'podcast'
    Ordered by latest episode drops
-   FIXED: Uses window.supabaseAuth instead of window.supabaseClient
+   
+   UPDATED:
+   1. Redirects to content-detail with playlist_id (like Music section)
+   2. Uses 'Connect' instead of 'Subscribe' with proper connectors table
+   3. Shows 'Connected' state after connecting
 /* ============================================ */
 
 console.log('🎙️ Bantu Waves: Podcasts section loading...');
@@ -25,7 +29,8 @@ const BantuWavesPodcasts = {
         isLoading: false,
         podcasts: [],
         hasMore: true,
-        currentPage: 0
+        currentPage: 0,
+        connectionStatus: {} // Track connection status per podcast
     },
 
     elements: {
@@ -94,6 +99,9 @@ const BantuWavesPodcasts = {
             const podcasts = await this.fetchPodcastPlaylists();
             const enrichedPodcasts = await this.enrichPodcastsWithEpisodes(podcasts);
             
+            // Load connection status for each podcast
+            await this.loadConnectionStatuses(enrichedPodcasts);
+            
             this.state.podcasts = enrichedPodcasts;
             this.cacheData(enrichedPodcasts);
             this.render(enrichedPodcasts);
@@ -110,7 +118,6 @@ const BantuWavesPodcasts = {
     },
 
     async fetchPodcastPlaylists() {
-        // FIXED: Use window.supabaseAuth instead of window.supabaseClient
         if (!window.supabaseAuth) {
             console.error('Supabase Auth client not available');
             return [];
@@ -209,7 +216,6 @@ const BantuWavesPodcasts = {
     },
 
     async fetchPodcastEpisodes(podcastId) {
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) return [];
 
         try {
@@ -271,7 +277,6 @@ const BantuWavesPodcasts = {
         
         const uniqueIds = [...new Set(contentIds)];
         
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) return {};
         
         try {
@@ -281,7 +286,6 @@ const BantuWavesPodcasts = {
                 .in('content_id', uniqueIds);
             
             if (error) {
-                // Table might not exist or column missing - just return empty
                 console.warn('Error fetching episode metrics (may not be available):', error.message);
                 return {};
             }
@@ -295,6 +299,30 @@ const BantuWavesPodcasts = {
         } catch (error) {
             console.error('Error fetching episode metrics:', error);
             return {};
+        }
+    },
+
+    async loadConnectionStatuses(podcasts) {
+        const user = await this.getCurrentUser();
+        if (!user || !window.supabaseAuth) return;
+        
+        try {
+            const podcastIds = podcasts.map(p => p.id);
+            const { data, error } = await window.supabaseAuth
+                .from('connectors')
+                .select('podcast_id')
+                .eq('connector_id', user.id)
+                .eq('connection_type', 'podcast')
+                .in('podcast_id', podcastIds);
+            
+            if (!error && data) {
+                const connectedIds = new Set(data.map(c => c.podcast_id));
+                podcasts.forEach(podcast => {
+                    this.state.connectionStatus[podcast.id] = connectedIds.has(podcast.id);
+                });
+            }
+        } catch (err) {
+            console.warn('Error loading connection statuses:', err);
         }
     },
 
@@ -357,6 +385,11 @@ const BantuWavesPodcasts = {
         // Format total plays
         const totalPlays = this.formatNumber(podcast.total_plays || podcast.play_count || 0);
         
+        // Check connection status
+        const isConnected = this.state.connectionStatus[podcast.id] || false;
+        const connectButtonText = isConnected ? 'Connected' : 'Connect';
+        const connectButtonIcon = isConnected ? 'fa-check-circle' : 'fa-bell';
+        
         card.innerHTML = `
             <div class="podcast-card-inner">
                 <div class="podcast-thumbnail">
@@ -394,8 +427,8 @@ const BantuWavesPodcasts = {
                         <p class="podcast-description">${this.truncateText(this.escapeHtml(podcast.description), 80)}</p>
                     ` : ''}
                     <div class="podcast-actions">
-                        <button class="action-btn subscribe-btn" data-podcast-id="${podcast.id}" title="Subscribe">
-                            <i class="far fa-bell"></i> Subscribe
+                        <button class="action-btn connect-btn ${isConnected ? 'connected' : ''}" data-podcast-id="${podcast.id}" title="${isConnected ? 'Connected' : 'Connect to this podcast'}">
+                            <i class="fas ${connectButtonIcon}"></i> ${connectButtonText}
                         </button>
                         <button class="action-btn share-btn" data-podcast-id="${podcast.id}" title="Share">
                             <i class="fas fa-share-alt"></i>
@@ -419,11 +452,11 @@ const BantuWavesPodcasts = {
             });
         }
         
-        const subscribeBtn = card.querySelector('.subscribe-btn');
-        if (subscribeBtn) {
-            subscribeBtn.addEventListener('click', (e) => {
+        const connectBtn = card.querySelector('.connect-btn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.toggleSubscribe(podcast.id);
+                this.toggleConnect(podcast.id, connectBtn);
             });
         }
         
@@ -435,6 +468,7 @@ const BantuWavesPodcasts = {
             });
         }
         
+        // FIX 1: Redirect to content-detail with playlist_id (like Music section)
         card.addEventListener('click', () => {
             this.viewPodcast(podcast.id);
         });
@@ -461,65 +495,73 @@ const BantuWavesPodcasts = {
         }
     },
 
-    async toggleSubscribe(podcastId) {
+    // FIX 2: Use connectors table for podcast connections
+    async toggleConnect(podcastId, buttonElement) {
         const user = await this.getCurrentUser();
         if (!user) {
-            this.showToast('Please sign in to subscribe', 'warning');
+            this.showToast('Please sign in to connect', 'warning');
             window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
             return;
         }
         
-        // FIXED: Use window.supabaseAuth
         if (!window.supabaseAuth) {
             this.showToast('Service unavailable', 'error');
             return;
         }
         
+        const isCurrentlyConnected = this.state.connectionStatus[podcastId] || false;
+        
         try {
-            // Check if already subscribed
-            const { data: existing, error: fetchError } = await window.supabaseAuth
-                .from('podcast_subscriptions')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('playlist_id', podcastId)
-                .maybeSingle();
-            
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                console.error('Error checking subscription:', fetchError);
-                this.showToast('Error checking subscription', 'error');
-                return;
-            }
-            
-            if (existing) {
-                // Unsubscribe
+            if (isCurrentlyConnected) {
+                // Disconnect - remove from connectors table
                 const { error: deleteError } = await window.supabaseAuth
-                    .from('podcast_subscriptions')
+                    .from('connectors')
                     .delete()
-                    .eq('id', existing.id);
+                    .eq('connector_id', user.id)
+                    .eq('podcast_id', podcastId)
+                    .eq('connection_type', 'podcast');
                     
                 if (deleteError) throw deleteError;
-                this.showToast('Unsubscribed from podcast', 'info');
+                
+                this.state.connectionStatus[podcastId] = false;
+                this.showToast('Disconnected from podcast', 'info');
+                
+                // Update button UI
+                if (buttonElement) {
+                    buttonElement.innerHTML = '<i class="fas fa-bell"></i> Connect';
+                    buttonElement.classList.remove('connected');
+                }
             } else {
-                // Subscribe
+                // Connect - insert into connectors table
                 const { error: insertError } = await window.supabaseAuth
-                    .from('podcast_subscriptions')
+                    .from('connectors')
                     .insert({
-                        user_id: user.id,
-                        playlist_id: podcastId,
-                        subscribed_at: new Date().toISOString()
+                        connector_id: user.id,
+                        podcast_id: podcastId,
+                        connection_type: 'podcast',
+                        created_at: new Date().toISOString()
                     });
                     
                 if (insertError) throw insertError;
-                this.showToast('Subscribed to podcast!', 'success');
+                
+                this.state.connectionStatus[podcastId] = true;
+                this.showToast('Connected to podcast! You\'ll get updates', 'success');
+                
+                // Update button UI
+                if (buttonElement) {
+                    buttonElement.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+                    buttonElement.classList.add('connected');
+                }
             }
         } catch (error) {
-            console.error('Error toggling subscription:', error);
-            this.showToast('Error updating subscription', 'error');
+            console.error('Error toggling connection:', error);
+            this.showToast('Error updating connection', 'error');
         }
     },
 
     sharePodcast(podcastId, podcastName) {
-        const shareUrl = `${window.location.origin}/podcast.html?id=${podcastId}`;
+        // FIX 1: Use content-detail with playlist_id parameter
+        const shareUrl = `${window.location.origin}/content-detail?playlist_id=${podcastId}&type=podcast`;
         
         if (navigator.share) {
             navigator.share({
@@ -540,8 +582,9 @@ const BantuWavesPodcasts = {
         });
     },
 
+    // FIX 1: Redirect to content-detail with playlist_id (like Music section)
     viewPodcast(podcastId) {
-        window.location.href = `podcast-detail.html?id=${podcastId}`;
+        window.location.href = `content-detail?playlist_id=${podcastId}&type=podcast`;
     },
 
     renderEmpty() {
@@ -670,12 +713,10 @@ const BantuWavesPodcasts = {
     },
 
     async getCurrentUser() {
-        // FIXED: Use AuthHelper if available, or check supabaseAuth session
         if (window.AuthHelper?.isAuthenticated && window.AuthHelper.isAuthenticated()) {
             return window.AuthHelper.getUserProfile();
         }
         
-        // Try to get from supabaseAuth session
         if (window.supabaseAuth) {
             try {
                 const { data: { user } } = await window.supabaseAuth.auth.getUser();
