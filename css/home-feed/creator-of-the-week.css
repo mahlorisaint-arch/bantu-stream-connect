@@ -5,6 +5,8 @@
 /* Section Container */
 #creator-of-the-week-section {
     margin-bottom: calc(2.5rem * var(--ui-scale));
+    width: 100%;
+    overflow: visible;
 }
 
 /* Section Title with Star Animation */
@@ -45,7 +47,28 @@
     padding: calc(1.25rem * var(--ui-scale)) calc(0.625rem * var(--ui-scale));
     margin-bottom: calc(2.5rem * var(--ui-scale));
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    width: 100%;
+}
+
+/* Swiper Container Override */
+#creators-swiper {
+    width: 100%;
+    height: auto;
+    padding: 10px 0 50px;
+    overflow: visible;
+    margin: 0 auto;
+}
+
+.swiper-wrapper {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.swiper-slide {
+    height: auto;
+    display: flex;
 }
 
 /* Creator Card */
@@ -59,14 +82,15 @@
     cursor: pointer;
     text-decoration: none;
     color: inherit;
-    height: auto;
-    min-height: calc(25rem * var(--ui-scale));
+    height: 100%;
+    min-height: 380px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
     backdrop-filter: blur(10px);
     position: relative;
+    width: 100%;
 }
 
 .creator-card:hover {
@@ -81,6 +105,7 @@
     min-height: auto;
     justify-content: center;
     gap: 16px;
+    padding: 40px;
 }
 
 .empty-creator-card .empty-icon,
@@ -94,6 +119,7 @@
 .error-creator-card h3 {
     font-size: var(--font-lg);
     margin-bottom: 8px;
+    color: var(--soft-white);
 }
 
 .empty-creator-card p,
@@ -136,6 +162,7 @@
     justify-content: center;
     background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
     position: relative;
+    flex-shrink: 0;
 }
 
 .creator-avatar img {
@@ -205,6 +232,7 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    flex-grow: 1;
 }
 
 /* Creator Stats */
@@ -214,6 +242,7 @@
     margin-bottom: var(--spacing-lg);
     justify-content: center;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .stat {
@@ -237,6 +266,7 @@
     gap: var(--spacing-sm);
     width: 100%;
     justify-content: center;
+    margin-top: auto;
 }
 
 .view-channel-btn {
@@ -320,6 +350,7 @@
 #creators-swiper {
     padding: 10px 0 50px;
     overflow: visible;
+    width: 100%;
 }
 
 .swiper-pagination-bullet {
@@ -340,6 +371,7 @@
     height: 40px;
     border-radius: 50%;
     backdrop-filter: blur(4px);
+    z-index: 10;
 }
 
 .swiper-button-prev:after,
@@ -359,7 +391,7 @@
     border-radius: var(--card-radius);
     padding: calc(1.5625rem * var(--ui-scale));
     text-align: center;
-    min-height: calc(25rem * var(--ui-scale));
+    min-height: 380px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -396,7 +428,7 @@
 }
 
 .creator-skeleton-bio {
-    height: 40px;
+    height: 60px;
     width: 80%;
     margin: 0 auto var(--spacing-md);
     background: rgba(255, 255, 255, 0.05);
@@ -444,11 +476,32 @@
     box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
 }
 
+/* ============================================
+   FIX: Ensure Swiper slides are visible
+   ============================================ */
+#creators-list {
+    display: flex;
+    width: 100%;
+}
+
+#creators-list .swiper-slide {
+    height: auto;
+    display: flex;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Force visibility for all slides */
+.swiper-slide {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .creator-card {
         padding: calc(1rem * var(--ui-scale));
-        min-height: calc(20rem * var(--ui-scale));
+        min-height: 340px;
     }
     
     .creator-avatar {
@@ -528,6 +581,7 @@
     
     .creator-card {
         padding: calc(0.75rem * var(--ui-scale));
+        min-height: 300px;
     }
     
     .creator-avatar {
