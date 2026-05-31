@@ -74,26 +74,64 @@
     box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
 }
 
-/* Founder/Crown Badge */
-.founder-badge {
-    background: linear-gradient(135deg, var(--warm-gold), #f97316);
-    color: var(--deep-black);
-    padding: calc(0.25rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale));
-    border-radius: calc(0.75rem * var(--ui-scale));
-    font-size: var(--font-xs);
-    font-weight: bold;
+/* ============================================
+   GLASSMORPHISM BADGES - 50% OPACITY
+   ============================================ */
+
+/* Badges Container - Split layout (Top Creator right, NEW left) */
+.creator-badges-container {
     position: absolute;
     top: var(--spacing-sm);
+    left: var(--spacing-sm);
     right: var(--spacing-sm);
     display: flex;
-    align-items: center;
-    gap: 4px;
-    z-index: 5;
+    justify-content: space-between;
+    z-index: 10;
+    pointer-events: none;
 }
 
-.founder-badge i {
+/* Individual Badge - Glassmorphism with 50% opacity */
+.creator-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
     font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(0, 0, 0, 0.5); /* 50% opacity black base */
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    pointer-events: auto;
 }
+
+.creator-badge:hover {
+    transform: translateY(-1px);
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Top Creator Badge - Right side */
+.top-creator-badge {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.5), rgba(249, 115, 22, 0.5));
+    backdrop-filter: blur(12px);
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+/* NEW Badge - Left side */
+.new-badge-glass {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(5, 150, 105, 0.5));
+    backdrop-filter: blur(12px);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Legacy founder badge removed - replaced by glassmorphism badges */
 
 /* Creator Avatar */
 .creator-avatar {
@@ -515,9 +553,15 @@
         padding: 2px 8px;
     }
     
-    .founder-badge {
-        font-size: 9px;
-        padding: 2px 6px;
+    /* Mobile badge adjustments */
+    .creator-badge {
+        padding: 2px 8px;
+        font-size: 8px;
+        gap: 4px;
+    }
+    
+    .creator-badge i {
+        font-size: 7px;
     }
     
     .creator-week-special {
@@ -580,17 +624,20 @@
         font-size: 9px;
     }
     
+    .creator-badge {
+        padding: 2px 6px;
+        font-size: 7px;
+        gap: 3px;
+    }
+    
+    .creator-badge i {
+        font-size: 6px;
+    }
+    
     .creator-week-special {
         font-size: 8px;
         padding: 2px 8px;
         top: -8px;
-    }
-    
-    .founder-badge {
-        font-size: 8px;
-        padding: 2px 5px;
-        top: 5px;
-        right: 5px;
     }
     
     .swiper-button-prev,
@@ -608,8 +655,17 @@
     color: #1a1a1a;
 }
 
-.theme-light .founder-badge {
-    background: linear-gradient(135deg, #D97706, #EA580C);
+.theme-light .creator-badge {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+}
+
+.theme-light .top-creator-badge {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.5), rgba(249, 115, 22, 0.5));
+}
+
+.theme-light .new-badge-glass {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.5), rgba(5, 150, 105, 0.5));
 }
 
 .theme-light .creator-week-special {
@@ -625,10 +681,23 @@
     border-color: var(--warm-gold);
 }
 
-.theme-high-contrast .founder-badge {
-    background: #ff0000;
-    color: white;
+.theme-high-contrast .creator-badge {
+    background: black;
     border: 1px solid white;
+    color: white;
+    backdrop-filter: none;
+}
+
+.theme-high-contrast .top-creator-badge {
+    background: #ff0000;
+    border: 1px solid #ffff00;
+    color: yellow;
+}
+
+.theme-high-contrast .new-badge-glass {
+    background: #00ff00;
+    border: 1px solid black;
+    color: black;
 }
 
 .theme-high-contrast .creator-week-special {
