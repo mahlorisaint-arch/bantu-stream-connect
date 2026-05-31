@@ -5,6 +5,7 @@
  * 
  * FIXED: Proper loading states, Swiper initialization timing,
  * and mobile responsiveness. Added debugging for visibility issues.
+ * FIXED: Infinite loading issue - proper error handling and fallback content
  */
 
 const CreatorOfTheWeek = (function() {
@@ -18,6 +19,7 @@ const CreatorOfTheWeek = (function() {
     let featuredCreators = [];
     let initPromise = null;
     let isLoading = false;
+    let isInitialized = false;
     
     // Configuration
     const CACHE_KEY = 'feed_creators';
@@ -46,6 +48,11 @@ const CreatorOfTheWeek = (function() {
         
         if (isLoading) {
             console.log('⭐ Creator of the Week already loading, skipping...');
+            return;
+        }
+        
+        if (isInitialized) {
+            console.log('⭐ Creator of the Week already initialized, skipping...');
             return;
         }
         
@@ -88,6 +95,7 @@ const CreatorOfTheWeek = (function() {
                     }
                 });
                 
+                isInitialized = true;
                 console.log('✅ Creator of the Week Module initialized');
                 
             } catch (err) {
@@ -229,6 +237,7 @@ const CreatorOfTheWeek = (function() {
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0) {
             console.log('📦 Creators: Using cached data,', cachedData.length, 'items');
+            featuredCreators = cachedData;
             renderCreators(cachedData);
             initializeSwiper();
             return;
@@ -292,6 +301,7 @@ const CreatorOfTheWeek = (function() {
             console.error("❌ Creator of the Week Error:", err);
             const cached = loadFromCache();
             if (cached && cached.length > 0) {
+                featuredCreators = cached;
                 renderCreators(cached);
                 initializeSwiper();
             } else {
@@ -369,9 +379,13 @@ const CreatorOfTheWeek = (function() {
             }
             
             // Get engagement metrics from content_engagement_stats
-            const { data: engagementData } = await window.supabaseAuth
+            const { data: engagementData, error: engagementError } = await window.supabaseAuth
                 .from('content_engagement_stats')
                 .select('content_id, total_likes');
+            
+            if (engagementError) {
+                console.warn('Error fetching engagement metrics:', engagementError.message);
+            }
             
             // Map content to creator for likes
             const contentToCreator = new Map();
@@ -720,7 +734,7 @@ const CreatorOfTheWeek = (function() {
             </div>
         `).join('');
         
-        // Don't initialize swiper with skeletons
+        // Don't initialize swiper with skeletons - wait for real data
     }
     
     /**
@@ -786,6 +800,8 @@ const CreatorOfTheWeek = (function() {
      * Refresh content in background
      */
     async function refreshInBackground() {
+        if (isLoading) return;
+        
         try {
             const creators = await fetchFeaturedCreators();
             if (creators && creators.length > 0) {
@@ -818,11 +834,11 @@ const CreatorOfTheWeek = (function() {
      * Load from cache
      */
     function loadFromCache() {
-        if (window.cacheManager && typeof window.cacheManager.get === 'function') {
-            return window.cacheManager.get(CACHE_KEY);
-        }
-        
         try {
+            if (window.cacheManager && typeof window.cacheManager.get === 'function') {
+                return window.cacheManager.get(CACHE_KEY);
+            }
+            
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 const parsed = JSON.parse(cached);
@@ -832,7 +848,7 @@ const CreatorOfTheWeek = (function() {
                 }
             }
         } catch (e) {
-            console.warn('Failed to load from localStorage cache:', e);
+            console.warn('Failed to load from cache:', e);
         }
         return null;
     }
@@ -841,17 +857,17 @@ const CreatorOfTheWeek = (function() {
      * Save to cache
      */
     function saveToCache(data) {
-        if (window.cacheManager && typeof window.cacheManager.set === 'function') {
-            window.cacheManager.set(CACHE_KEY, data, CACHE_TTL);
-        }
-        
         try {
+            if (window.cacheManager && typeof window.cacheManager.set === 'function') {
+                window.cacheManager.set(CACHE_KEY, data, CACHE_TTL);
+            }
+            
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 data: data,
                 timestamp: Date.now()
             }));
         } catch (e) {
-            console.warn('Failed to save to localStorage cache:', e);
+            console.warn('Failed to save to cache:', e);
         }
     }
     
@@ -936,6 +952,7 @@ const CreatorOfTheWeek = (function() {
             console.warn('Cache clear error:', e);
         }
         
+        isInitialized = false;
         await getCurrentUser();
         await loadCreators();
     }
@@ -955,6 +972,7 @@ const CreatorOfTheWeek = (function() {
         if (creatorsList) {
             creatorsList.innerHTML = '';
         }
+        isInitialized = false;
         console.log('⭐ Creator of the Week Module destroyed');
     }
     
