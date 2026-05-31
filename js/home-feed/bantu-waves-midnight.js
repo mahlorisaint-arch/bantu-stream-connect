@@ -5,6 +5,7 @@
    Includes: Lo-Fi Beats, Late-Night Podcasts, Acoustic Sets, Neo-Noir Content
    FIXED: Uses window.supabaseAuth instead of window.supabaseClient
    FIXED: Array sorting error when scoredItems is not an array
+   FIXED: Audio player now receives contentId for view tracking (15-second rule)
 /* ============================================ */
 
 console.log('🌙 Bantu Waves: Midnight Sessions section loading...');
@@ -626,7 +627,7 @@ const BantuWavesMidnight = {
                         ${item.language ? `<span><i class="fas fa-language"></i> ${this.getLanguageName(item.language)}</span>` : ''}
                     </div>
                     <div class="midnight-actions">
-                        <button class="action-btn listen-now-btn" data-content-id="${item.id}" data-is-playlist="${item.is_playlist}">
+                        <button class="action-btn listen-now-btn" data-content-id="${item.id}" data-is-playlist="${item.is_playlist}" data-content-title="${this.escapeHtml(item.title)}" data-creator="${this.escapeHtml(creatorName)}" data-thumbnail="${thumbnailUrl}" data-file-url="${item.file_url || ''}">
                             <i class="fas fa-headphones"></i> Listen Now
                         </button>
                         <button class="action-btn add-queue-btn" data-content-id="${item.id}" title="Add to Queue">
@@ -646,7 +647,14 @@ const BantuWavesMidnight = {
                 if (isPlaylist) {
                     this.playPlaylist(item.id);
                 } else {
-                    this.playContent(item.id, item);
+                    // FIXED: Pass all necessary data to playContent including contentId for view tracking
+                    this.playContent(
+                        item.id,                                    // contentId (bigint) - CRITICAL for view tracking
+                        item.file_url || listenBtn.dataset.fileUrl, // audio URL
+                        item.title,                                 // title
+                        creatorName,                                // creator name
+                        thumbnailUrl                                // thumbnail URL
+                    );
                 }
             });
         }
@@ -659,12 +667,102 @@ const BantuWavesMidnight = {
             });
         }
         
-        // Make entire card clickable
+        // Make entire card clickable - FIXED to pass contentId
         card.addEventListener('click', () => {
-            this.playContent(item.id, item);
+            if (!item.is_playlist) {
+                this.playContent(
+                    item.id,                                    // contentId (bigint) - CRITICAL
+                    item.file_url,
+                    item.title,
+                    creatorName,
+                    thumbnailUrl
+                );
+            } else {
+                this.playPlaylist(item.id);
+            }
         });
         
         return card;
+    },
+
+    /* ============================================ */
+    /* PLAYBACK ACTIONS - FIXED: Now passes contentId to audio player for view tracking
+    /* ============================================ */
+    
+    /**
+     * Plays content with proper contentId for view tracking (15-second rule)
+     * @param {number|string} contentId - The bigint ID from Content table (CRITICAL for view recording)
+     * @param {string} fileUrl - The audio/video file URL
+     * @param {string} title - Content title
+     * @param {string} creatorName - Creator/artist name
+     * @param {string} thumbnailUrl - Thumbnail image URL
+     */
+    async playContent(contentId, fileUrl, title, creatorName, thumbnailUrl) {
+        const user = await this.getCurrentUser();
+        if (!user) {
+            this.showToast('Please sign in to play content', 'warning');
+            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+            return;
+        }
+        
+        // Check if audio player exists and we have a file URL
+        if (fileUrl && window.playSmartLink) {
+            const mediaUrl = this.fixImageUrl(fileUrl);
+            const fixedThumbnail = thumbnailUrl ? this.fixImageUrl(thumbnailUrl) : '';
+            
+            // CRITICAL FIX: Pass contentId as the 5th parameter for view tracking
+            // The audio player will record a view after 15 seconds of playback
+            window.playSmartLink(
+                mediaUrl,           // audio URL
+                title || 'Untitled Track',
+                creatorName || 'Unknown Artist',
+                fixedThumbnail,
+                contentId           // ✅ CONTENT ID (bigint) - This enables view recording!
+            );
+            
+            console.log(`🎵 Playing: "${title}" (ID: ${contentId}) - View will record after 15 seconds`);
+            this.showToast(`Now playing: ${title}`, 'success');
+        } else if (contentId) {
+            // Fallback: redirect to content detail page
+            window.location.href = `content-detail.html?id=${contentId}`;
+        } else {
+            this.showToast('Unable to play content - missing file URL', 'error');
+        }
+    },
+
+    async playPlaylist(playlistId) {
+        const user = await this.getCurrentUser();
+        if (!user) {
+            this.showToast('Please sign in to play playlist', 'warning');
+            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+            return;
+        }
+        
+        window.location.href = `playlist-detail.html?id=${playlistId}`;
+    },
+
+    startMidnightPlaylist() {
+        // Start a continuous midnight playlist
+        if (this.state.content.length > 0) {
+            const firstItem = this.state.content[0];
+            const creator = firstItem.user_profiles || {};
+            const creatorName = creator.full_name || creator.username || 'Artist';
+            const thumbnailUrl = this.getThumbnailUrl(firstItem);
+            
+            // FIXED: Pass contentId for view tracking
+            this.playContent(
+                firstItem.id,           // contentId (bigint)
+                firstItem.file_url,
+                firstItem.title,
+                creatorName,
+                thumbnailUrl
+            );
+            this.showToast('Starting Midnight Session playlist...', 'info');
+        }
+    },
+
+    addToQueue(contentId, title) {
+        this.showToast(`Added "${title}" to queue`, 'success');
     },
 
     getThumbnailUrl(item) {
@@ -741,51 +839,6 @@ const BantuWavesMidnight = {
             've': 'Tshivenda', 'ts': 'Xitsonga', 'nr': 'isiNdebele'
         };
         return languages[languageCode] || languageCode || 'English';
-    },
-
-    /* ============================================ */
-    /* PLAYBACK ACTIONS
-    /* ============================================ */
-    async playContent(contentId, item) {
-        const user = await this.getCurrentUser();
-        if (!user) {
-            this.showToast('Please sign in to play content', 'warning');
-            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            return;
-        }
-        
-        // Get audio/video URL
-        if (item?.file_url && window.playSmartLink) {
-            const mediaUrl = this.fixImageUrl(item.file_url);
-            window.playSmartLink(mediaUrl, item.title, item.user_profiles?.full_name || 'Artist');
-            this.showToast(`Now playing: ${item.title}`, 'success');
-        } else if (contentId) {
-            window.location.href = `content-detail.html?id=${contentId}`;
-        }
-    },
-
-    async playPlaylist(playlistId) {
-        const user = await this.getCurrentUser();
-        if (!user) {
-            this.showToast('Please sign in to play playlist', 'warning');
-            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            return;
-        }
-        
-        window.location.href = `playlist-detail.html?id=${playlistId}`;
-    },
-
-    startMidnightPlaylist() {
-        // Start a continuous midnight playlist
-        if (this.state.content.length > 0) {
-            const firstItem = this.state.content[0];
-            this.playContent(firstItem.id, firstItem);
-            this.showToast('Starting Midnight Session playlist...', 'info');
-        }
-    },
-
-    addToQueue(contentId, title) {
-        this.showToast(`Added "${title}" to queue`, 'success');
     },
 
     /* ============================================ */
