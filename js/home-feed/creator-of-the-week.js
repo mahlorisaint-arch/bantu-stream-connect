@@ -480,6 +480,8 @@ const CreatorOfTheWeek = (function() {
     
     /**
  * Render creators cards
+ * FIXED: NEW badge moved to left side, not overlapping TOP CREATOR badge
+ * FIXED: Glassmorphism badges with 50% opacity
  */
 function renderCreators(creators) {
     if (!creatorsList) return;
@@ -507,8 +509,11 @@ function renderCreators(creators) {
             <div class="swiper-slide">
                 <div class="creator-card ${isCreatorOfWeek ? 'creator-of-week' : ''}" style="opacity: 1; transform: translateY(0);">
                     ${isCreatorOfWeek ? '<div class="creator-week-special"><i class="fas fa-crown"></i> CREATOR OF THE WEEK</div>' : ''}
-                    ${isTopCreator && !isCreatorOfWeek ? '<div class="founder-badge"><i class="fas fa-fire"></i> TOP CREATOR</div>' : ''}
-                    ${isNew && !isCreatorOfWeek ? '<div class="founder-badge" style="background: #10B981;"><i class="fas fa-sparkle"></i> NEW</div>' : ''}
+                    <!-- BADGES: TOP CREATOR on right, NEW on left (glassmorphism with 50% opacity) -->
+                    <div class="creator-badges-container">
+                        ${isTopCreator && !isCreatorOfWeek ? '<div class="creator-badge top-creator-badge glass-badge"><i class="fas fa-fire"></i> TOP CREATOR</div>' : ''}
+                        ${isNew && !isCreatorOfWeek ? '<div class="creator-badge new-badge-glass glass-badge"><i class="fas fa-sparkle"></i> NEW</div>' : ''}
+                    </div>
                     <div class="creator-avatar">
                         ${avatarUrl ? `
                             <img src="${avatarUrl}" 
