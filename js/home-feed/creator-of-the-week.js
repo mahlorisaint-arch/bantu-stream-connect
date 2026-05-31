@@ -6,6 +6,7 @@
  * FIXED: Proper loading states, Swiper initialization timing,
  * and mobile responsiveness. Added debugging for visibility issues.
  * FIXED: Infinite loading issue - proper error handling and fallback content
+ * ADDED: Extensive debugging to identify visibility issues
  */
 
 const CreatorOfTheWeek = (function() {
@@ -71,6 +72,10 @@ const CreatorOfTheWeek = (function() {
                     createFallbackElements();
                     creatorsList = document.getElementById('creators-list');
                 }
+                
+                // DEBUG: Log element status
+                console.log('🔍 DEBUG: creatorsList element:', creatorsList);
+                console.log('🔍 DEBUG: creatorsList parent:', creatorsList?.parentElement);
                 
                 // Get current user
                 await getCurrentUser();
@@ -270,8 +275,17 @@ const CreatorOfTheWeek = (function() {
             
             console.log(`🏆 Top ${topCreators.length} creators selected`);
             
+            // DEBUG: Log the rendered HTML before rendering
+            console.log('🔍 DEBUG: About to render creators, container exists:', !!creatorsList);
+            console.log('🔍 DEBUG: Container dimensions:', creatorsList?.getBoundingClientRect());
+            
             // Render
             renderCreators(topCreators);
+            
+            // DEBUG: Log after rendering
+            console.log('🔍 DEBUG: After render, creatorsList innerHTML length:', creatorsList?.innerHTML?.length);
+            console.log('🔍 DEBUG: Number of .swiper-slide elements:', document.querySelectorAll('#creators-list .swiper-slide').length);
+            console.log('🔍 DEBUG: Number of .creator-card elements:', document.querySelectorAll('.creator-card').length);
             
             // Initialize Swiper with a small delay to ensure DOM is ready
             setTimeout(() => {
@@ -475,7 +489,7 @@ const CreatorOfTheWeek = (function() {
             return;
         }
         
-        creatorsList.innerHTML = creators.map((creator, index) => {
+        const html = creators.map((creator, index) => {
             const avatarUrl = creator.avatar_url ? fixAvatarUrl(creator.avatar_url) : null;
             const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences from South Africa.';
             const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
@@ -541,8 +555,28 @@ const CreatorOfTheWeek = (function() {
             `;
         }).join('');
         
+        creatorsList.innerHTML = html;
+        
+        // DEBUG: Verify HTML was inserted
+        console.log('🔍 DEBUG: HTML inserted into creatorsList, length:', html.length);
+        console.log('🔍 DEBUG: First 200 chars of HTML:', html.substring(0, 200));
+        
         // Attach event listeners to buttons
         attachButtonListeners();
+        
+        // DEBUG: Check if creator cards are visible
+        const cards = document.querySelectorAll('.creator-card');
+        console.log(`🔍 DEBUG: Found ${cards.length} creator cards in DOM`);
+        if (cards.length > 0) {
+            const firstCard = cards[0];
+            const styles = window.getComputedStyle(firstCard);
+            console.log('🔍 DEBUG: First card styles - display:', styles.display);
+            console.log('🔍 DEBUG: First card styles - visibility:', styles.visibility);
+            console.log('🔍 DEBUG: First card styles - opacity:', styles.opacity);
+            console.log('🔍 DEBUG: First card offsetHeight:', firstCard.offsetHeight);
+            console.log('🔍 DEBUG: First card offsetWidth:', firstCard.offsetWidth);
+            console.log('🔍 DEBUG: First card parent element:', firstCard.parentElement?.className);
+        }
         
         // Log rendered creators for debugging
         console.log(`🎨 Rendered ${creators.length} creator cards`);
@@ -629,6 +663,10 @@ const CreatorOfTheWeek = (function() {
         
         console.log(`🔄 Initializing Swiper with ${slides.length} slides`);
         
+        // DEBUG: Log swiper container dimensions
+        console.log('🔍 DEBUG: Swiper container dimensions:', swiperContainer.getBoundingClientRect());
+        console.log('🔍 DEBUG: Swiper container parent:', swiperContainer.parentElement?.className);
+        
         // Destroy existing swiper instance
         if (swiperInstance && swiperInstance.destroy) {
             swiperInstance.destroy(true, true);
@@ -684,6 +722,9 @@ const CreatorOfTheWeek = (function() {
                     on: {
                         init: function() {
                             console.log('✅ Swiper initialized successfully with', slides.length, 'slides');
+                            // DEBUG: Log swiper after initialization
+                            console.log('🔍 DEBUG: Swiper after init - slides:', this.slides?.length);
+                            console.log('🔍 DEBUG: Swiper wrapper dimensions:', this.wrapperEl?.getBoundingClientRect());
                         },
                         error: function(err) {
                             console.error('Swiper initialization error:', err);
@@ -695,6 +736,7 @@ const CreatorOfTheWeek = (function() {
                 setTimeout(() => {
                     if (swiperInstance && swiperInstance.update) {
                         swiperInstance.update();
+                        console.log('🔍 DEBUG: Swiper updated, current slide index:', swiperInstance.activeIndex);
                     }
                 }, 200);
                 
@@ -707,6 +749,7 @@ const CreatorOfTheWeek = (function() {
                     swiperWrapper.style.display = 'grid';
                     swiperWrapper.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
                     swiperWrapper.style.gap = '20px';
+                    console.log('🔍 DEBUG: Fallback grid mode activated');
                 }
             }
         }, 100);
