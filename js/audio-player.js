@@ -1,6 +1,6 @@
 /**
  * Bantu Audio Player - Glassmorphism Edition with View Tracking
- * FIXED: Proper contentId handling and view recording to content_views table
+ * FIXED: Proper error handling, Supabase integration, and view recording
  */
 const BantuAudio = {
   audio: new Audio(),
@@ -28,7 +28,14 @@ const BantuAudio = {
       closeBtn: document.getElementById('player-close-btn')
     };
 
-    if (supabaseClient) this.supabase = supabaseClient;
+    // Store supabase client
+    if (supabaseClient) {
+      this.supabase = supabaseClient;
+      console.log('🎵 Supabase client set for audio player');
+    } else if (window.supabaseAuth) {
+      this.supabase = window.supabaseAuth;
+      console.log('🎵 Using window.supabaseAuth for audio player');
+    }
 
     if (this.ui.container) this.ui.container.classList.add('hidden');
 
@@ -46,7 +53,7 @@ const BantuAudio = {
       this.ui.closeBtn.addEventListener('click', () => this.closeAndReset());
     }
 
-    this.audio.preload = 'none';
+    this.audio.preload = 'metadata';
     this.audio.crossOrigin = 'anonymous';
 
     this.audio.addEventListener('timeupdate', () => {
@@ -71,6 +78,30 @@ const BantuAudio = {
       this.clearViewTimer();
     });
 
+    this.audio.addEventListener('canplay', () => {
+      console.log('🎵 Audio ready to play');
+    });
+
+    // FIXED: Better error handling with retry
+    this.audio.addEventListener('error', (e) => {
+      console.error('🎵 Audio error:', e);
+      const error = this.audio.error;
+      if (error) {
+        console.error('Error code:', error.code, 'Message:', error.message);
+        if (error.code === 4) {
+          console.warn('Media source not supported or CORS issue');
+          if (typeof window.showToast === 'function') {
+            window.showToast('Audio format not supported. Try a different track.', 'error');
+          }
+        } else {
+          if (typeof window.showToast === 'function') {
+            window.showToast('Unable to play audio. Please try again.', 'error');
+          }
+        }
+      }
+      this.pause();
+    });
+
     // Progress bar seeking
     if (this.ui.container) {
       const progressBar = this.ui.container.querySelector('.player-progress');
@@ -79,33 +110,32 @@ const BantuAudio = {
           const rect = progressBar.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const percentage = x / rect.width;
-          if (this.audio.duration) {
+          if (this.audio.duration && !isNaN(this.audio.duration)) {
             this.audio.currentTime = percentage * this.audio.duration;
           }
         });
       }
     }
 
-    this.audio.addEventListener('error', (e) => {
-      console.warn('🎵 Audio error:', e);
-      this.pause();
-      if (typeof window.showToast === 'function') {
-        window.showToast('Unable to play audio. Please try again.', 'error');
-      }
-    });
-
-    // Expose to global window - IMPORTANT: now expects contentId parameter
+    // Expose to global window
     window.playSmartLink = (url, title, creator, art = '', contentId = null) => {
       this.play(url, title, creator, art, contentId);
     };
     window.showAudioPlayer = () => this.show();
     window.hideAudioPlayer = () => this.hide();
     
+    // Also expose a method to set supabase client after init
+    window.setAudioPlayerSupabase = (client) => {
+      this.supabase = client;
+      console.log('🎵 Supabase client updated');
+    };
+    
     console.log('🎵 Audio Player initialized with view tracking');
   },
 
   setSupabaseClient(client) {
     this.supabase = client;
+    console.log('🎵 Supabase client set via method');
   },
 
   show() {
@@ -136,16 +166,19 @@ const BantuAudio = {
     this.audio.load();
   },
 
-  // FIXED: Now expects contentId (bigint from Content table)
   play(url, title, creator, art = '', contentId = null) {
     console.log('🎵 Playing:', title, 'by', creator, 'contentId:', contentId);
     
+    // If same track and playing, pause
     if (this.state.track?.url === url && this.state.playing) {
       this.pause();
       return;
     }
 
-    if (this.state.playing) this.audio.pause();
+    // Stop current playback
+    if (this.state.playing) {
+      this.audio.pause();
+    }
     this.clearViewTimer();
     this.state.viewRecorded = false;
     
@@ -153,18 +186,31 @@ const BantuAudio = {
     this.state.contentId = contentId;
     this.state.sessionId = this.generateSessionId();
     
-    this.audio.src = url;
+    // FIXED: Handle URL properly - ensure it's a valid URL
+    let audioUrl = url;
+    if (audioUrl && !audioUrl.startsWith('http') && !audioUrl.startsWith('blob:')) {
+      // Try to fix relative URLs
+      if (window.SupabaseHelper?.fixMediaUrl) {
+        audioUrl = window.SupabaseHelper.fixMediaUrl(audioUrl);
+      } else {
+        audioUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${audioUrl.replace(/^\/+/, '')}`;
+      }
+    }
+    
+    this.audio.src = audioUrl;
     this.audio.load();
     
-    this.state.track = { url, title, creator, art, contentId };
+    this.state.track = { url: audioUrl, title, creator, art, contentId };
     this.updateUI();
     
+    // Attempt to play
     const playPromise = this.audio.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
         this.state.playing = true;
         this.updateUI();
         this.startViewTimer();
+        console.log('🎵 Playback started successfully');
       }).catch(e => {
         console.warn('Autoplay blocked:', e);
         this.state.playing = false;
@@ -189,7 +235,6 @@ const BantuAudio = {
       this.ui.creator.textContent = this.state.track.creator || 'Unknown Artist';
     }
     
-    // Fixed thumbnail handling
     if (this.ui.art && this.state.track) {
       const artUrl = this.state.track.art;
       if (artUrl && artUrl !== '' && artUrl !== '#') {
@@ -225,7 +270,12 @@ const BantuAudio = {
           this.state.playing = true;
           if (this.ui.playBtn) this.ui.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
           this.startViewTimer();
-        }).catch(e => console.warn('Play failed:', e));
+        }).catch(e => {
+          console.warn('Play failed:', e);
+          if (typeof window.showToast === 'function') {
+            window.showToast('Unable to play audio', 'error');
+          }
+        });
       } else {
         this.audio.play();
         this.state.playing = true;
@@ -245,6 +295,7 @@ const BantuAudio = {
       console.log('⏭️ No contentId provided, skipping view tracking');
       return;
     }
+    console.log('⏱️ View timer started for content:', this.state.contentId, '- will record after 15 seconds');
     this.state.viewTimer = setTimeout(() => {
       this.recordView();
     }, 15000);
@@ -259,6 +310,7 @@ const BantuAudio = {
 
   checkAndRecordView() {
     if (!this.state.viewRecorded && this.state.contentId && this.audio.currentTime >= 15) {
+      console.log('🎯 15 seconds reached, recording view for content:', this.state.contentId);
       this.recordView();
     }
   },
@@ -269,14 +321,12 @@ const BantuAudio = {
   },
 
   getCurrentUserId() {
-    // Try to get from window or localStorage
+    // Try multiple sources for user ID
     if (window.currentUserId) return window.currentUserId;
     if (localStorage.getItem('userId')) return localStorage.getItem('userId');
-    // Try to get from supabase session
-    if (this.supabase) {
-      this.supabase.auth.getSession().then(({ data }) => {
-        if (data.session?.user) return data.session.user.id;
-      }).catch(() => {});
+    if (window.AuthHelper?.getCurrentUser) {
+      const user = window.AuthHelper.getCurrentUser();
+      if (user?.id) return user.id;
     }
     return null;
   },
@@ -295,8 +345,15 @@ const BantuAudio = {
     this.state.viewRecorded = true;
     this.clearViewTimer();
     
-    if (!this.supabase) {
-      console.warn('⚠️ Supabase client not set. Call BantuAudio.setSupabaseClient()');
+    // Check for Supabase client - try multiple sources
+    let supabase = this.supabase;
+    if (!supabase && window.supabaseAuth) {
+      supabase = window.supabaseAuth;
+      this.supabase = supabase;
+    }
+    
+    if (!supabase) {
+      console.warn('⚠️ Supabase client not set. Views will not be recorded. Call BantuAudio.setSupabaseClient()');
       return;
     }
     
@@ -318,13 +375,14 @@ const BantuAudio = {
       device_type: deviceType,
       session_id: sessionId,
       user_id: viewerId,
-      counted_as_view: true
+      counted_as_view: true,
+      created_at: new Date().toISOString()
     };
     
-    console.log('📝 Recording view for content_id:', contentIdNum);
+    console.log('📝 Recording view for content_id:', contentIdNum, 'duration:', viewRecord.view_duration);
     
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('content_views')
         .insert([viewRecord])
         .select();
@@ -332,7 +390,10 @@ const BantuAudio = {
       if (error) {
         console.error('❌ Failed to record view:', error);
       } else {
-        console.log('✅ View recorded for content:', this.state.contentId, 'duration:', Math.floor(this.audio.currentTime || 15), 's');
+        console.log('✅ View recorded successfully for content:', this.state.contentId);
+        if (typeof window.showToast === 'function') {
+          // Silent success - don't annoy user with toast
+        }
       }
     } catch (err) {
       console.error('❌ View recording error:', err);
@@ -341,10 +402,16 @@ const BantuAudio = {
 
   previous() {
     console.log('Previous track - to be implemented');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Playlist feature coming soon', 'info');
+    }
   },
 
   next() {
     console.log('Next track - to be implemented');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Playlist feature coming soon', 'info');
+    }
   },
 
   isVisible() {
@@ -383,9 +450,14 @@ if (!document.querySelector('#audio-player-styles')) {
 
 // Initialize when DOM ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => BantuAudio.init());
+  document.addEventListener('DOMContentLoaded', () => {
+    // Try to get supabase client from window
+    const supabaseClient = window.supabaseAuth || null;
+    BantuAudio.init(supabaseClient);
+  });
 } else {
-  BantuAudio.init();
+  const supabaseClient = window.supabaseAuth || null;
+  BantuAudio.init(supabaseClient);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
