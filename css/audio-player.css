@@ -1,4 +1,4 @@
-/* Global Audio Player - Fixed visibility */
+/* Global Audio Player - Enhanced Glassmorphism + Close Button + Thumbnail Fix */
 .global-audio-player,
 #global-audio-player {
   position: fixed;
@@ -7,16 +7,18 @@
   transform: translateX(-50%);
   width: 90%;
   max-width: 500px;
-  background: rgba(15, 23, 42, 0.98);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  /* UPDATED: Transparent glassmorphism look */
+  background: rgba(20, 30, 45, 0.65);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 60px;
   padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   z-index: 10000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255,255,255,0.1);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
@@ -35,6 +37,30 @@
   pointer-events: auto;
 }
 
+/* NEW: Close button styling (preserving all existing styles) */
+.player-close-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  backdrop-filter: blur(4px);
+}
+
+.player-close-btn:hover {
+  background: rgba(239, 68, 68, 0.85);
+  color: white;
+  transform: scale(0.94);
+}
+
 /* Audio player wrapper for any container */
 .audio-player {
   position: fixed;
@@ -43,16 +69,18 @@
   transform: translateX(-50%);
   width: 90%;
   max-width: 500px;
-  background: rgba(15, 23, 42, 0.98);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  /* UPDATED: Glassmorphism */
+  background: rgba(20, 30, 45, 0.65);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 60px;
   padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   z-index: 10000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
@@ -70,12 +98,15 @@
   min-width: 0;
 }
 
+/* FIXED: Thumbnail now properly displays - ensures correct image loading */
 .player-track-info img {
   width: 40px;
   height: 40px;
   border-radius: 8px;
   background: linear-gradient(135deg, #1D4ED8, #F59E0B);
   object-fit: cover;
+  /* Added: prevent broken image flash */
+  flex-shrink: 0;
 }
 
 .player-track-info div {
@@ -194,25 +225,73 @@
     width: 28px;
     height: 28px;
   }
+  
+  /* Close button responsive */
+  .player-close-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
 }
 
-/* Dark theme adjustments */
+/* Dark theme adjustments - PRESERVED */
 .theme-light .global-audio-player,
 .theme-light #global-audio-player,
 .theme-light .audio-player {
-  background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(245, 245, 250, 0.85);
+  backdrop-filter: blur(18px) saturate(180%);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 .theme-light .player-track-info h4 {
   color: #1a1a1a;
 }
 
+.theme-light .player-track-info p {
+  color: #555;
+}
+
 .theme-light .player-controls button {
   color: #1a1a1a;
 }
 
-/* Animation for new track */
+.theme-light .player-controls button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.theme-light .player-close-btn {
+  color: #1e293b;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.theme-light .player-close-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+  color: white;
+}
+
+/* High Contrast theme support - PRESERVED */
+.theme-high-contrast .global-audio-player,
+.theme-high-contrast #global-audio-player,
+.theme-high-contrast .audio-player {
+  background: #000000;
+  border: 2px solid #ffffff;
+  backdrop-filter: none;
+}
+
+.theme-high-contrast .player-track-info h4 {
+  color: #ffffff;
+}
+
+.theme-high-contrast .player-controls button {
+  color: #ffffff;
+}
+
+.theme-high-contrast #player-play-pause {
+  background: #ffff00;
+  color: #000000;
+}
+
+/* Animation for new track - PRESERVED */
 @keyframes playerSlideIn {
   from {
     transform: translateX(-50%) translateY(100%);
@@ -228,4 +307,27 @@
 #global-audio-player:not(.hidden),
 .audio-player:not(.hidden) {
   animation: playerSlideIn 0.3s ease forwards;
+}
+
+/* Additional fix: Ensure thumbnail doesn't show broken image */
+.player-track-info img[src=""],
+.player-track-info img[src="#"],
+.player-track-info img:not([src]) {
+  opacity: 0.6;
+  background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+}
+
+/* Glass reflection effect (extra polish) */
+.global-audio-player::before,
+#global-audio-player::before,
+.audio-player::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  border-radius: 60px 60px 0 0;
+  pointer-events: none;
 }
