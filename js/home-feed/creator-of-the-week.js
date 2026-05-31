@@ -479,108 +479,96 @@ const CreatorOfTheWeek = (function() {
     }
     
     /**
-     * Render creators cards
-     */
-    function renderCreators(creators) {
-        if (!creatorsList) return;
+ * Render creators cards
+ */
+function renderCreators(creators) {
+    if (!creatorsList) return;
+    
+    if (!creators || creators.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    const html = creators.map((creator, index) => {
+        const avatarUrl = creator.avatar_url ? fixAvatarUrl(creator.avatar_url) : null;
+        const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences from South Africa.';
+        const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
+        const fullName = creator.full_name || creator.username || 'Creator';
+        const username = creator.username || 'creator';
+        const initials = getInitials(fullName);
+        const videoCount = creator.video_count || 0;
+        const connectorCount = creator.connector_count || 0;
+        const isTopCreator = videoCount > 5 || connectorCount > 100;
+        const isCreatorOfWeek = creator.isCreatorOfTheWeek || index === 0;
+        const isVerified = creator.is_verified || connectorCount > 500;
+        const isNew = creator.is_new;
         
-        if (!creators || creators.length === 0) {
-            showEmptyState();
-            return;
-        }
-        
-        const html = creators.map((creator, index) => {
-            const avatarUrl = creator.avatar_url ? fixAvatarUrl(creator.avatar_url) : null;
-            const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences from South Africa.';
-            const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
-            const fullName = creator.full_name || creator.username || 'Creator';
-            const username = creator.username || 'creator';
-            const initials = getInitials(fullName);
-            const videoCount = creator.video_count || 0;
-            const connectorCount = creator.connector_count || 0;
-            const isTopCreator = videoCount > 5 || connectorCount > 100;
-            const isCreatorOfWeek = creator.isCreatorOfTheWeek || index === 0;
-            const isVerified = creator.is_verified || connectorCount > 500;
-            const isNew = creator.is_new;
-            
-            return `
-                <div class="swiper-slide">
-                    <div class="creator-card ${isCreatorOfWeek ? 'creator-of-week' : ''}">
-                        ${isCreatorOfWeek ? '<div class="creator-week-special"><i class="fas fa-crown"></i> CREATOR OF THE WEEK</div>' : ''}
-                        ${isTopCreator && !isCreatorOfWeek ? '<div class="founder-badge"><i class="fas fa-fire"></i> TOP CREATOR</div>' : ''}
-                        ${isNew && !isCreatorOfWeek ? '<div class="founder-badge" style="background: #10B981;"><i class="fas fa-sparkle"></i> NEW</div>' : ''}
-                        <div class="creator-avatar">
-                            ${avatarUrl ? `
-                                <img src="${avatarUrl}" 
-                                     alt="${escapeHtml(fullName)}" 
-                                     loading="lazy" 
-                                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>';">
-                                <div class="avatar-overlay">
-                                    <i class="fas fa-camera" style="color: white; font-size: 12px;"></i>
-                                </div>
-                            ` : `
-                                <div class="creator-initials creator-initials-large">${initials}</div>
-                            `}
-                        </div>
-                        <div class="creator-name">
-                            ${escapeHtml(fullName)}
-                            ${isVerified ? '<span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>' : ''}
-                        </div>
-                        <div class="creator-username">@${escapeHtml(username)}</div>
-                        <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
-                        <div class="creator-stats">
-                            <div class="stat">
-                                <div class="stat-number">${videoCount}</div>
-                                <div class="stat-label">Videos</div>
+        return `
+            <div class="swiper-slide">
+                <div class="creator-card ${isCreatorOfWeek ? 'creator-of-week' : ''}" style="opacity: 1; transform: translateY(0);">
+                    ${isCreatorOfWeek ? '<div class="creator-week-special"><i class="fas fa-crown"></i> CREATOR OF THE WEEK</div>' : ''}
+                    ${isTopCreator && !isCreatorOfWeek ? '<div class="founder-badge"><i class="fas fa-fire"></i> TOP CREATOR</div>' : ''}
+                    ${isNew && !isCreatorOfWeek ? '<div class="founder-badge" style="background: #10B981;"><i class="fas fa-sparkle"></i> NEW</div>' : ''}
+                    <div class="creator-avatar">
+                        ${avatarUrl ? `
+                            <img src="${avatarUrl}" 
+                                 alt="${escapeHtml(fullName)}" 
+                                 loading="lazy" 
+                                 onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>';">
+                            <div class="avatar-overlay">
+                                <i class="fas fa-camera" style="color: white; font-size: 12px;"></i>
                             </div>
-                            <div class="stat">
-                                <div class="stat-number">${formatNumber(connectorCount)}</div>
-                                <div class="stat-label">Connectors</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-number">${creator.creator_score || 0}</div>
-                                <div class="stat-label">Impact Score</div>
-                            </div>
+                        ` : `
+                            <div class="creator-initials creator-initials-large">${initials}</div>
+                        `}
+                    </div>
+                    <div class="creator-name">
+                        ${escapeHtml(fullName)}
+                        ${isVerified ? '<span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>' : ''}
+                    </div>
+                    <div class="creator-username">@${escapeHtml(username)}</div>
+                    <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
+                    <div class="creator-stats">
+                        <div class="stat">
+                            <div class="stat-number">${videoCount}</div>
+                            <div class="stat-label">Videos</div>
                         </div>
-                        <div class="creator-actions">
-                            <button class="view-channel-btn" data-creator-id="${creator.id}">
-                                <i class="fas fa-eye"></i> View Channel
-                            </button>
-                            <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${escapeHtml(fullName)}">
-                                <i class="fas fa-gift"></i>
-                            </button>
+                        <div class="stat">
+                            <div class="stat-number">${formatNumber(connectorCount)}</div>
+                            <div class="stat-label">Connectors</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">${creator.creator_score || 0}</div>
+                            <div class="stat-label">Impact Score</div>
                         </div>
                     </div>
+                    <div class="creator-actions">
+                        <button class="view-channel-btn" data-creator-id="${creator.id}">
+                            <i class="fas fa-eye"></i> View Channel
+                        </button>
+                        <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${escapeHtml(fullName)}">
+                            <i class="fas fa-gift"></i>
+                        </button>
+                    </div>
                 </div>
-            `;
-        }).join('');
-        
-        creatorsList.innerHTML = html;
-        
-        // DEBUG: Verify HTML was inserted
-        console.log('🔍 DEBUG: HTML inserted into creatorsList, length:', html.length);
-        console.log('🔍 DEBUG: First 200 chars of HTML:', html.substring(0, 200));
-        
-        // Attach event listeners to buttons
-        attachButtonListeners();
-        
-        // DEBUG: Check if creator cards are visible
-        const cards = document.querySelectorAll('.creator-card');
-        console.log(`🔍 DEBUG: Found ${cards.length} creator cards in DOM`);
-        if (cards.length > 0) {
-            const firstCard = cards[0];
-            const styles = window.getComputedStyle(firstCard);
-            console.log('🔍 DEBUG: First card styles - display:', styles.display);
-            console.log('🔍 DEBUG: First card styles - visibility:', styles.visibility);
-            console.log('🔍 DEBUG: First card styles - opacity:', styles.opacity);
-            console.log('🔍 DEBUG: First card offsetHeight:', firstCard.offsetHeight);
-            console.log('🔍 DEBUG: First card offsetWidth:', firstCard.offsetWidth);
-            console.log('🔍 DEBUG: First card parent element:', firstCard.parentElement?.className);
-        }
-        
-        // Log rendered creators for debugging
-        console.log(`🎨 Rendered ${creators.length} creator cards`);
-    }
+            </div>
+        `;
+    }).join('');
+    
+    creatorsList.innerHTML = html;
+    
+    // CRITICAL FIX: Ensure all creator cards are visible by setting opacity to 1
+    document.querySelectorAll('.creator-card').forEach(card => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+    });
+    
+    // Attach event listeners to buttons
+    attachButtonListeners();
+    
+    // Log rendered creators for debugging
+    console.log(`🎨 Rendered ${creators.length} creator cards with visibility forced`);
+}
     
     /**
      * Attach event listeners to creator action buttons
