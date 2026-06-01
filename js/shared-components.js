@@ -1868,6 +1868,71 @@ function applyThemeToDocument(theme) {
 }
 
 // ============================================ */
+// CREATOR MODE TOGGLE - From explore-screen */
+// ============================================ */
+
+async function initCreatorMode() {
+    const creatorModeToggle = document.getElementById('creatorModeToggle');
+    const creatorModeSwitch = document.getElementById('creatorModeSwitch');
+    const creatorSection = document.querySelector('.sidebar-section[data-section="creator"]');
+    
+    if (!creatorModeToggle || !creatorModeSwitch) return;
+    
+    // Check if user is creator
+    async function checkCreatorStatus() {
+        const user = await getCurrentUser();
+        if (user && user.id && window.supabaseClient) {
+            try {
+                // Check if user has published content
+                const { data, error } = await window.supabaseClient
+                    .from('Content')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('status', 'published')
+                    .limit(1);
+                
+                if (!error && data && data.length > 0) {
+                    creatorModeToggle.style.display = 'flex';
+                    // Load saved preference
+                    const savedMode = localStorage.getItem('creator_mode') === 'true';
+                    creatorModeSwitch.checked = savedMode;
+                    if (savedMode && creatorSection) {
+                        creatorSection.style.display = 'block';
+                    } else if (creatorSection) {
+                        creatorSection.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                console.warn('Error checking creator status:', e);
+            }
+        }
+    }
+    
+    // Toggle creator mode
+    creatorModeSwitch.addEventListener('change', (e) => {
+        const isEnabled = e.target.checked;
+        localStorage.setItem('creator_mode', isEnabled);
+        if (creatorSection) {
+            creatorSection.style.display = isEnabled ? 'block' : 'none';
+        }
+        if (window.showToast) {
+            window.showToast(isEnabled ? 'Creator mode enabled' : 'Creator mode disabled', 'info');
+        }
+    });
+    
+    // Check on auth changes
+    await checkCreatorStatus();
+    document.addEventListener('authReady', checkCreatorStatus);
+    
+    // Also check when profile updates
+    if (window.supabaseClient) {
+        window.supabaseClient.auth.onAuthStateChange(() => {
+            setTimeout(checkCreatorStatus, 500);
+        });
+    }
+}
+
+// ============================================ */
 // BACK TO TOP BUTTON */
 // ============================================ */
 function setupBackToTop() {
@@ -2012,6 +2077,7 @@ function setupAuthListener() {
             if (event === 'SIGNED_IN') {
                 showToast('Welcome back!', 'success');
                 await loadCompleteNotifications();
+                await initCreatorMode(); // Re-check creator mode on sign in
             } else if (event === 'SIGNED_OUT') {
                 showToast('Signed out', 'info');
             }
@@ -2024,6 +2090,7 @@ function setupAuthListener() {
         await updateSidebarProfile();
         await updateProfileDropdown();
         await loadCompleteNotifications();
+        await initCreatorMode(); // Re-check creator mode when auth is ready
     });
 }
 
@@ -2083,6 +2150,9 @@ async function initSharedComponents() {
         window.uiScaleController.init();
     }
     
+    // NEW: Initialize creator mode
+    await initCreatorMode();
+    
     // Make functions globally available
     window.showToast = showToast;
     window.getCurrentUser = getCurrentUser;
@@ -2093,9 +2163,10 @@ async function initSharedComponents() {
     window.createNewProfile = createNewProfile;
     window.markNotificationAsRead = markNotificationAsRead;
     window.applyThemeToDocument = applyThemeToDocument;
+    window.initCreatorMode = initCreatorMode;
     
     window.platformComponents.initialized = true;
-    console.log('✅ Shared components initialized successfully with all features');
+    console.log('✅ Shared components initialized successfully with creator mode');
 }
 
 // ============================================ */
@@ -2120,6 +2191,7 @@ if (typeof module !== 'undefined' && module.exports) {
         createNewProfile,
         markNotificationAsRead,
         UIScaleController,
-        applyThemeToDocument
+        applyThemeToDocument,
+        initCreatorMode
     };
 }
