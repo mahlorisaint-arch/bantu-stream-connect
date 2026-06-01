@@ -2291,3 +2291,88 @@ canvas#analytics-chart {
     user-select: none;
   }
 }
+
+/* ============================================ */
+/* ADDITIONAL ENHANCEMENTS FROM COMPLETE VERSION */
+/* ============================================ */
+
+/* Enhanced Header Styles from Complete Version */
+.logo:hover .logo-icon {
+  border-color: var(--warm-gold);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.logo:hover .logo-icon img {
+  transform: scale(1.1);
+}
+
+.logo:hover .logo-text {
+  background: linear-gradient(135deg, var(--warm-gold) 0%, var(--bantu-blue) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.menu-toggle:hover {
+  border-color: var(--warm-gold);
+}
+
+.icon-btn:hover {
+  border-color: var(--warm-gold);
+}
+
+.nav-icon:hover {
+  border-color: var(--warm-gold);
+}
+
+.rsa-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Enhanced Sidebar Styles from Complete Version */
+.sidebar-logo:hover {
+  transform: scale(1.02);
+}
+
+.sidebar-close:hover {
+  transform: rotate(90deg);
+}
+
+.sidebar-profile:hover {
+  transform: translateX(0.25rem);
+}
+
+.sidebar-nav-item:hover {
+  transform: translateX(0.25rem);
+}
+
+.sidebar-nav-item.active {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.2), rgba(245, 158, 11, 0.1));
+  border-left: 3px solid var(--warm-gold);
+}
+
+.sidebar-nav-item.active i {
+  color: var(--warm-gold);
+}
+
+.sidebar-theme-toggle:hover {
+  transform: translateX(0.25rem);
+}
+
+.scale-btn:hover {
+  background: var(--warm-gold);
+  transform: scale(1.05);
+}
+
+/* Additional Font Sizes from Complete Version */
+:root {
+  --font-2xl: 1.5rem;
+  --font-3xl: 1.875rem;
+  --spacing-xl: 2rem;
+}
+
+/* Additional Animation from Complete Version */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
