@@ -1,14 +1,22 @@
 // js/content-detail/continue-watching.js
-// Extracted from content-detail.js - Continue Watching Section Management
-
-console.log('▶️ Continue Watching module loading...');
-
 // ============================================
-// LOAD CONTINUE WATCHING
+// CONTINUE WATCHING MODULE - COMPLETE BRAIN
+// Contains UI rendering for continue watching section
+// AND its specific database logic (fetch from watch_progress table)
 // ============================================
+console.log('🎬 Continue Watching Module Loading...');
+
+/**
+ * Load continue watching items from database for a specific user
+ * @param {string} userId - The user ID to load watch progress for
+ * @param {number} limit - Maximum number of items to load (default: 8)
+ */
 async function loadContinueWatching(userId, limit = 8) {
     const section = document.getElementById('continueWatchingSection');
-    if (!section) return;
+    if (!section) {
+        console.warn('Continue watching section not found in DOM');
+        return;
+    }
     
     if (!userId || !window.supabaseClient) {
         section.style.display = 'none';
@@ -55,18 +63,28 @@ async function loadContinueWatching(userId, limit = 8) {
         renderContinueWatching(data);
         section.style.display = 'block';
         
+        console.log(`✅ Loaded ${data.length} continue watching items`);
+        return data;
+        
     } catch (error) {
         console.error('❌ Failed to load continue watching:', error);
         section.style.display = 'none';
+        return [];
     }
 }
 
-// ============================================
-// RENDER CONTINUE WATCHING
-// ============================================
+/**
+ * Render continue watching items into the grid
+ * @param {Array} items - Array of watch_progress items with nested Content
+ */
 function renderContinueWatching(items) {
     const container = document.getElementById('continueGrid');
     if (!container) return;
+    
+    if (!items || items.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
     
     container.innerHTML = items.map(item => {
         const content = item.Content;
@@ -76,8 +94,8 @@ function renderContinueWatching(items) {
             ? Math.min(100, Math.round((item.last_position / content.duration) * 100))
             : 0;
         
-        const timeWatched = formatDuration(item.last_position);
-        const totalTime = formatDuration(content.duration);
+        const timeWatched = window.formatDuration(item.last_position);
+        const totalTime = window.formatDuration(content.duration);
         
         const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url)
             || content.thumbnail_url
@@ -91,7 +109,7 @@ function renderContinueWatching(items) {
             <a href="content-detail.html?id=${content.id}" class="content-card continue-card" data-content-id="${content.id}">
                 <div class="card-thumbnail">
                     <img src="${thumbnailUrl}" 
-                         alt="${escapeHtml(content.title)}" 
+                         alt="${window.escapeHtml(content.title)}" 
                          loading="lazy"
                          onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                     <div class="progress-bar-overlay">
@@ -102,20 +120,20 @@ function renderContinueWatching(items) {
                     </div>
                 </div>
                 <div class="card-content">
-                    <h3 class="card-title">${truncateText(content.title, 45)}</h3>
+                    <h3 class="card-title">${window.truncateText(content.title, 45)}</h3>
                     <div class="related-meta">
                         <span>${timeWatched} / ${totalTime}</span>
                     </div>
                     <div class="creator-chip">
                         <i class="fas fa-user"></i>
-                        ${truncateText(creatorName, 20)}
+                        ${window.truncateText(creatorName, 20)}
                     </div>
                 </div>
             </a>
         `;
     }).join('');
     
-    // Add click tracking
+    // Attach click tracking to continue cards
     container.querySelectorAll('.continue-card').forEach(card => {
         card.addEventListener('click', function(e) {
             if (window.track?.continueWatchingClick) {
@@ -124,97 +142,55 @@ function renderContinueWatching(items) {
             }
         });
     });
+    
+    console.log('✅ Continue watching grid rendered');
 }
 
-// ============================================
-// REFRESH CONTINUE WATCHING SECTION
-// ============================================
-async function refreshContinueWatching() {
-    if (!window.currentUserId) {
+/**
+ * Refresh continue watching section (reload from database)
+ * @param {string} userId - The user ID (optional, uses currentUserId if not provided)
+ */
+async function refreshContinueWatching(userId = null) {
+    const targetUserId = userId || window.currentUserId;
+    
+    if (!targetUserId) {
+        console.log('No user ID provided for continue watching refresh');
         const section = document.getElementById('continueWatchingSection');
         if (section) section.style.display = 'none';
         return;
     }
     
-    await loadContinueWatching(window.currentUserId);
+    await loadContinueWatching(targetUserId);
 }
 
-// ============================================
-// SETUP CONTINUE WATCHING REFRESH BUTTON
-// ============================================
+/**
+ * Setup continue watching refresh trigger (called after auth changes or content completion)
+ */
 function setupContinueWatchingRefresh() {
-    const refreshBtn = document.getElementById('refreshContinueBtn');
-    if (!refreshBtn) return;
-    
-    const newRefreshBtn = refreshBtn.cloneNode(true);
-    refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
-    
-    newRefreshBtn.addEventListener('click', async function() {
-        if (typeof showToast === 'function') {
-            showToast('Refreshing continue watching...', 'info');
-        }
-        await refreshContinueWatching();
-        if (typeof showToast === 'function') {
-            showToast('Continue watching refreshed!', 'success');
+    // Listen for watch progress updates
+    window.addEventListener('watch-progress-updated', () => {
+        if (window.currentUserId) {
+            refreshContinueWatching(window.currentUserId);
         }
     });
+    
+    // Listen for content completion events
+    window.addEventListener('content-completed', () => {
+        if (window.currentUserId) {
+            setTimeout(() => refreshContinueWatching(window.currentUserId), 500);
+        }
+    });
+    
+    // Also refresh after auth state changes (handled by auth listener in orchestrator)
+    console.log('✅ Continue watching refresh trigger setup');
 }
 
 // ============================================
-// HIDE CONTINUE WATCHING SECTION
-// ============================================
-function hideContinueWatchingSection() {
-    const section = document.getElementById('continueWatchingSection');
-    if (section) {
-        section.style.display = 'none';
-    }
-}
-
-// ============================================
-// SHOW CONTINUE WATCHING SECTION
-// ============================================
-function showContinueWatchingSection() {
-    const section = document.getElementById('continueWatchingSection');
-    if (section && window.currentUserId) {
-        section.style.display = 'block';
-    }
-}
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-function formatDuration(seconds) {
-    if (!seconds || seconds === 0) return '0:00';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-function truncateText(text, maxLength) {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// ============================================
-// EXPORTS FOR GLOBAL ACCESS
+// GLOBAL EXPORTS
 // ============================================
 window.loadContinueWatching = loadContinueWatching;
 window.renderContinueWatching = renderContinueWatching;
 window.refreshContinueWatching = refreshContinueWatching;
 window.setupContinueWatchingRefresh = setupContinueWatchingRefresh;
-window.hideContinueWatchingSection = hideContinueWatchingSection;
-window.showContinueWatchingSection = showContinueWatchingSection;
 
-console.log('✅ Continue Watching module loaded');
+console.log('✅ Continue Watching Module loaded (with full brain)');
