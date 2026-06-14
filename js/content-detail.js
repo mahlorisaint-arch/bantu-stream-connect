@@ -1,253 +1,45 @@
-// js/content-detail.js - MAIN ORCHESTRATOR
-// FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
-// FIXED: Theme selector conflict resolved, navigation icons properly aligned
-// PHASE 1 UPDATE: Watch Session Lifecycle Integration with syntax-safe WatchSession
-// PHASE 2 UPDATE: Watch Later & Playlist System Integration
-// PHASE 3 UPDATE: Complete Recommendation Engine Integration
-// PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration - COMPLETE
-// FIXED: Added video load confirmation events
-// PHASE 1-3 POLISH: Keyboard Shortcuts, Playlist Modal, Loading States
-// FIXED: Playlist duplicate key constraint error handling
-// PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
-// FIXED: Quality selector initialization and rendering issue
-// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now BEFORE hero section for prominent display
-// 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
-// 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
-// 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
-// 🎯 REDESIGN: Removed close button, full-width player, compact settings menu
-// 🎵 AUDIO SUPPORT: Added MP3, WAV, OGG playback with thumbnail as poster
-// 🎨 CREATOR AVATAR FIX: Show actual creator profile picture from user_profiles
-// 🔄 PLATFORM CONSISTENCY: Integrated home feed sidebar, header, navigation, and utilities
-// ✅ FIXED: checkConnectionStatus now returns a Promise to prevent ".then is not a function" error
-// ✅ FIXED: Added missing initThemeSelector function to prevent ReferenceError
-// ✅ FIXED: Sidebar profile now shows logged-in user correctly
-// ✅ FIXED: Header profile icon sizing matches home feed
-// ✅ FIXED: Sidebar UI resize section button overlapping
-// ✅ FIXED: Navigation menu button opens sidebar instead of redirecting to dashboard
-// ✅ FIXED: Comments "sign in to comment" bug when already authenticated
-// ✅ FIXED: LIKE BUTTON - Proper WHERE clauses for RLS compliance
-// 🎯 MOBILE FIX: Navigation button properly centered, no overflow, no horizontal scrolling
-// 🎯 MOBILE FIX: Header profile picture hidden on mobile phones
-// 🎯 MOBILE FIX: RSA badge stays inside header, no overflow
-// 🔧 CRITICAL FIX: Added session_id to view recording system (YouTube-style validation)
-// 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
-// 🔧 CRITICAL FIX: ADDED profile_id to content_views inserts (required column)
-// 🚀 PERFORMANCE: YouTube-style skeleton loading, critical data parallelization, lazy heavy features
-// 🔐 AUTH FIX: Ensured AuthHelper is fully initialized before UI updates
-// 🔐 AUTH FIX: Added waitForAuthHelper() to prevent timing issues
-// 🚀 PHASE 1D: COLLECTION-AWARE CONTENT DETAIL ENGINE
-// ✅ PHASE 1D: Integrated Queue Manager and Content Collections Engine
-// ✅ PHASE 1D: Next/Previous playback, queue sidebar, autoplay, active item highlighting
-// ✅ PHASE 1D: Queue survives refresh via localStorage
-// 🎯 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture
-// 🔧 PHASE 1D FIX: Added showLoading/hideLoading functions
-// 🔧 PHASE 1D FIX: Hard block fallback during playlist mode
-// 🔧 PHASE 1D FIX: Proper playlist UI rendering and queue events
-// 🎵 BROWSER AUTOPLAY UNLOCK: User interaction tracker + play overlay
-// ✅ CRITICAL FIX #1: markContentAsViewed array crash fixed (prevents player death)
-// ✅ CRITICAL FIX #2: Album dropdown toggle button with proper event listener - FIXED: persistent expanded state
-// ✅ CRITICAL FIX #3: Media type detection (audio vs video) fixed
-// ✅ CRITICAL FIX #4: Album expanded state preservation - NO auto-collapse after playback
-// ✅ CRITICAL FIX #5: Like button persistence - survives rerenders and playlist track switching
-// 🔧 BUG FIX #1: REMOVED all auto-collapse forces in playback lifecycle
-// 🔧 BUG FIX #2: REAL album tracklist rendering into dedicated external container
-// 🔧 BUG FIX #3: Like button uses global likedContentCache Set for persistence
-// 🔧 BUG FIX #4: View recording properly called in WatchSession start()
-// 🔧 VIEWS FIX #1: Removed premature early exit in view recording
-// 🔧 VIEWS FIX #2: Added proper DB confirmation handling with viewPersisted flag
-// 🔧 VIEWS FIX #3: Added frontend optimistic update for views
-// 🔧 VIEWS FIX #4: Added incrementContentViews RPC call for content.views_count
-// 🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic
-// 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
-// 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
-// 🔧 VIEW SYNC FIX #1: Added global event for view count synchronization across components
-// 🔧 ALBUM ARCHITECTURE FIX: Removed duplicate album systems; only one active system now
-// 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST, not ContentCollectionsEngine
-// 🔧 VIEW RECORDING FIX: Reset viewPersisted flag when content changes
+// js/content-detail.js
 // ============================================
-// 🚀 PHASE 5 & 6: DATABASE MIGRATION INTEGRATION
-// - Updated playlist loading to use new junction table (playlist_contents)
-// - Updated content profile fetching to use content_engagement_stats
-// - Updated recommendation engine to use content_public_metrics view
-// - Updated view recording to use playback_sessions and playback_heartbeats
-// - Updated like button to use RPC atomic counters
+// THE LIGHTWEIGHT ORCHESTRATOR - FULLY UPDATED
+// Contains global state, bootstrapping, core DB logic, and event binding.
+// Delegates UI rendering to module files.
 // ============================================
-// 🔧 EMERGENCY PATCH (2026-05-19):
-// - Fixed fatal syntax error in EnhancedVideoPlayer assignments (removed optional chaining)
-// - Re-engineered playlist data fetches to use verified schema (status)
-// - Fixed .single() crashes by switching to .maybeSingle()
-// - Corrected standalone vs. album mode detection
-// - REMOVED duplicate UIScaleController class (was causing "already declared" error)
-// ============================================
-// 🚨 CRITICAL FIX (2026-05-20): Playlist query uses explicit relation loading without fragile syntax
-// - Replaced Content:content_id!inner with Content!playlist_contents_content_id_fkey
-// - Added explicit .order('sort_index')
-// - Fixed empty check for playlistItems
-// - Added correct content mapping paths (item.Content.title)
-// - Added result normalization to handle array vs object responses
-// - Added two-query fallback as enterprise-safe pattern
-// ============================================
-// 🎯 YOUTUBE-STYLE PLAYLIST ARCHITECTURE (2026-05-21):
-// - Persistent DOM sidebar (never recreated) - ADDED
-// - CSS class-based toggle (max-height, opacity, NOT display:none) - ADDED
-// - Single render of tracklist (albumTracksRendered flag) - ADDED
-// - Global playlist state (window.currentPlaylistItems, window.currentPlaylistIndex) - ADDED
-// - Centralized playNextPlaylistItem function - ADDED
-// - Player only fires ended event; content-detail handles navigation - ADDED
-// ============================================
-// 🚨 CRITICAL AUTOPLAY SYNC FIX (2026-05-22):
-// - Added syncPlaylistUI() for centralized UI updates
-// - Added completion guard to prevent duplicate playlist completions
-// - Enhanced playNextPlaylistItem with UI sync before navigation
-// - Added playlistCompleting flag to prevent loops
-// - Fixed contentId desync during autoplay
-// ============================================
-// 🎯 DIRECT USER GESTURE PLAYBACK FIX (2026-05-22):
-// - Added startPlaybackFromUserGesture for immediate unmuted playback
-// - loadContentIntoPlayer now reuses existing player instance
-// - Added loadSource method for non-destructive source changes
-// - Fixed autoplay blocking with user interaction tracking
-// ============================================
-// 🚨 ENGAGEMENT SYSTEM FIX (2026-05-22) - INTEGRATED FROM ChatGPT/Gemini:
-// - Fixed view recording to use content_views table (NOT views_count column)
-// - Added proper engagement state persistence (likes, favorites, watch later)
-// - Added recordView() function that inserts into content_views correctly
-// - Fixed toggleLike/toggleFavorite/toggleWatchLater with proper table references
-// - Added loadAllEngagementStates() to restore UI after refresh
-// - Added shareContent() with content_shares and content_events persistence
-// ============================================
-// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23) - FULL PRODUCTION STABILITY:
-// - FIX #1: RPC view recording (recordContentViewRPC) - atomic SQL operations
-// - FIX #2: Global contentId synchronization across ALL components (updateGlobalContentId)
-// - FIX #3: No 409 conflicts - toggle functions check existence before insert
-// - FIX #4: Race condition protection - request token pattern in loadAllEngagementStates
-// - FIX #5: Optimistic UI updates with server reconciliation
-// - FIX #6: Live counts from canonical tables (loadLiveEngagementCounts)
-// - FIX #7: Realtime subscriptions for instant updates
-// - FIX #8: Watch session threshold recording (15 sec or 30% duration)
-// ============================================
-// 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24): YouTube-style playlist control separation
-// - REMOVED all playlist advancement from video-player.js (BIGGEST FIX)
-// - ADDED transition lock (isTrackTransitioning) to prevent race conditions
-// - ADDED duplicate contentId guard in updateGlobalContentId
-// - ADDED singleton pattern for StreamingManager
-// - FIXED player ended listener to ONLY emit events, NOT control playlists
-// ============================================
-// 🚨 PHASE 7: CONTENT_ENGAGEMENT_STATS CANONICAL SOURCE (2026-05-24)
-// - Fixed loadLiveEngagementCounts to read from content_engagement_stats first
-// - Fixed setupRealtimeSubscriptions to listen to content_engagement_stats updates
-// - Fixed handleLikeButtonClick to reconcile with canonical stats table
-// - Eliminated "drops to 0" bug when realtime updates race with UI
-// ============================================
-// 🔥 SURGICAL FIXES (2026-05-24) - Applied from emergency patch:
-// - Fix #1: setupRealtimeSubscriptions - Supabase v2 compatible channel cleanup
-// - Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates with _forceUpdateEngagementUI
-// - Fix #3: playNextPlaylistItem - Narrow-scope transition lock
-// - Fix #4: REMOVED token abort logic from loadAllEngagementStates (was killing valid requests)
-// - Fix #5: setCurrentContent - Ensures count loads AFTER DOM update with setTimeout
-// ============================================
-// 🔥 SINGLE MODE FIX (2026-05-25) - Applied from ChatGPT + Gemini:
-// - Fix #1: startPlaybackFromUserGesture - Ensures player container is visible FIRST
-// - Fix #2: Added !window.isPlaylistMode guard to prevent playlist mode interference
-// - Fix #3: DOMContentLoaded initialization for single mode with setTimeout guard
-// ============================================
-// 🧩 MODULAR ARCHITECTURE (2026-06-14):
-// - Extracted all section code into separate module files
-// - This file now acts as the main orchestrator
-// - Modules loaded in dependency order
-// ============================================
-
-console.log('🎬 Content Detail Main Orchestrator Initializing...');
+console.log('🎬 Content Detail Orchestrator Loading...');
 
 // ============================================
-// LOAD ALL MODULE DEPENDENCIES
-// The order matters for function availability
+// GLOBAL STATE
 // ============================================
-
-// First, load utility modules that don't depend on others
-// (These are loaded dynamically - they will attach to window)
-
-// Helper function to dynamically load scripts
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-}
-
-// Load all section modules in correct dependency order
-async function loadAllModules() {
-    console.log('📦 Loading section modules...');
-    
-    // Core UI modules (no dependencies)
-    await loadScript('js/content-detail/hero-section.js');
-    await loadScript('js/content-detail/creator-section.js');
-    await loadScript('js/content-detail/stats-grid.js');
-    await loadScript('js/content-detail/description-section.js');
-    
-    // Interactive modules
-    await loadScript('js/content-detail/comments-section.js');
-    await loadScript('js/content-detail/continue-watching.js');
-    
-    // Recommendation modules
-    await loadScript('js/content-detail/because-you-watched.js');
-    await loadScript('js/content-detail/more-from-this-creator.js');
-    await loadScript('js/content-detail/related-content.js');
-    
-    // Playlist modules
-    await loadScript('js/content-detail/playlist-queue.js');
-    await loadScript('js/content-detail/legacy-playlist.js');
-    await loadScript('js/content-detail/playlist-sidebar.js');
-    
-    // Video player (loads last due to complexity)
-    await loadScript('js/content-detail/video-player.js');
-    
-    console.log('✅ All section modules loaded');
-}
-
-// Start loading modules immediately
-loadAllModules().catch(console.warn);
-
-// ============================================
-// GLOBAL VARIABLES (Maintained from original)
-// ============================================
-
 window.currentPlaylistItems = [];
 window.currentPlaylistIndex = 0;
 window.currentPlaylist = null;
 window.currentContentId = null;
+window.currentContent = null;
+window.currentUserId = null;
 window.playlistCompleting = false;
 window.engagementLoadToken = null;
 window.isPlaylistMode = false;
-window.currentUserId = null;
-window.currentContent = null;
+window.isTrackTransitioning = false;
 
-// Session tracking
-let currentSessionId = null;
+// Engagement state caches
+let likedContentCache = new Set();
+let favoritedContentCache = new Set();
+let watchLaterContentCache = new Set();
+
+// View recording state
 let viewRecordedForCurrentContent = false;
-let isTrackTransitioning = false;
+let currentSessionId = null;
 
-// Managers
+// Component instances
+let enhancedVideoPlayer = null;
 let watchSession = null;
 let playlistManager = null;
 let recommendationEngine = null;
 let streamingManager = null;
 let keyboardShortcuts = null;
 let playlistModal = null;
-let enhancedVideoPlayer = null;
-let isInitialized = false;
-let _heavyVideoLoaded = false;
-
-// Engagement caches
-let likedContentCache = new Set();
-let favoritedContentCache = new Set();
-let watchLaterContentCache = new Set();
 
 // ============================================
-// 🚨 ENGAGEMENT SYSTEM FUNCTIONS (Core)
+// CORE ENGAGEMENT DB FUNCTIONS
 // ============================================
 
 /**
@@ -277,10 +69,8 @@ async function recordContentViewRPC(contentId, userId, sessionId, deviceType = '
         
         console.log(`✅ View recorded via RPC for content ${contentId}, total views: ${data?.views || 0}`);
         
-        if (data?.views !== undefined) {
-            if (typeof updateViewsUI === 'function') {
-                updateViewsUI(data.views);
-            }
+        if (data?.views !== undefined && typeof updateViewsUI === 'function') {
+            updateViewsUI(data.views);
         }
         
         window.dispatchEvent(new CustomEvent('content-views-updated', {
@@ -303,6 +93,7 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
             .eq('session_id', sessionId)
             .maybeSingle();
         
+        if (checkError) console.warn('Check for existing view failed:', checkError);
         if (existing) {
             console.log('⏭️ View already recorded for this session, skipping');
             return { success: true, views: null };
@@ -340,9 +131,21 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
     }
 }
 
-/**
- * Load LIVE counts from canonical tables
- */
+function _forceUpdateEngagementUI(counts) {
+    if (typeof updateViewsUI === 'function') updateViewsUI(counts.views);
+    
+    const likesEl = document.getElementById('likesCount');
+    if (likesEl && counts.likes !== undefined) {
+        const formatted = window.formatNumber(counts.likes);
+        if (likesEl.textContent !== formatted) likesEl.textContent = formatted;
+    }
+    
+    if (window.currentContent) {
+        window.currentContent.views_count = counts.views;
+        window.currentContent.likes_count = counts.likes;
+    }
+}
+
 async function loadLiveEngagementCounts(contentId) {
     if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
     
@@ -360,13 +163,13 @@ async function loadLiveEngagementCounts(contentId) {
                 comments: stats.total_comments || 0,
                 shares: 0
             };
-            if (typeof _forceUpdateEngagementUI === 'function') {
-                _forceUpdateEngagementUI(result);
-            }
+            _forceUpdateEngagementUI(result);
             console.log('✅ Counts from stats table:', result);
             return result;
         }
 
+        console.log('⚠️ Stats row missing, using direct count fallback');
+        
         const [viewsRes, likesRes] = await Promise.all([
             window.supabaseClient.from('content_views')
                 .select('*', { count: 'exact', head: true })
@@ -384,12 +187,7 @@ async function loadLiveEngagementCounts(contentId) {
             shares: 0
         };
         
-        setTimeout(() => {
-            if (typeof _forceUpdateEngagementUI === 'function') {
-                _forceUpdateEngagementUI(result);
-            }
-        }, 50);
-        
+        setTimeout(() => _forceUpdateEngagementUI(result), 50);
         return result;
     } catch (error) {
         console.error('❌ Failed to load live counts:', error);
@@ -397,9 +195,6 @@ async function loadLiveEngagementCounts(contentId) {
     }
 }
 
-/**
- * Load all engagement states with race condition protection
- */
 async function loadAllEngagementStates(contentId, userId) {
     if (!userId || !contentId) {
         return { liked: false, favorited: false, watchLater: false };
@@ -437,92 +232,9 @@ async function loadAllEngagementStates(contentId, userId) {
     }
 }
 
-/**
- * Update global contentId across all components
- */
-function updateGlobalContentId(contentId) {
-    if (window.currentContentId === contentId) {
-        console.log('⏭️ Skipping duplicate contentId update');
-        return;
-    }
-    
-    console.log(`🔄 Updating global contentId from ${window.currentContentId} to ${contentId}`);
-    window.currentContentId = contentId;
-    
-    if (enhancedVideoPlayer) {
-        enhancedVideoPlayer.contentId = contentId;
-    }
-    if (streamingManager) {
-        streamingManager.contentId = contentId;
-    }
-    if (watchSession) {
-        watchSession.contentId = contentId;
-        watchSession.viewRecorded = false;
-        watchSession.viewThresholdReached = false;
-    }
-    if (recommendationEngine) {
-        recommendationEngine.currentContentId = contentId;
-    }
-    
-    viewRecordedForCurrentContent = false;
-    
-    window.dispatchEvent(new CustomEvent('contentIdChanged', {
-        detail: { contentId: contentId }
-    }));
-}
-
-/**
- * Set current content
- */
-async function setCurrentContent(content, index = null) {
-    if (!content) return;
-    
-    updateGlobalContentId(content.id);
-    
-    if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-    }
-    
-    window.currentContent = content;
-    
-    if (index !== undefined && index !== null) {
-        window.currentPlaylistIndex = index;
-    }
-    
-    if (typeof updateContentUI === 'function') {
-        updateContentUI(content);
-    }
-    
-    if (window.currentUserId && content.id) {
-        try {
-            const states = await loadAllEngagementStates(content.id, window.currentUserId);
-            if (typeof updateEngagementUI === 'function') {
-                updateEngagementUI(states);
-            }
-        } catch (e) {
-            console.warn('⚠️ Engagement states load failed:', e);
-        }
-    }
-    
-    setTimeout(async () => {
-        try {
-            const liveCounts = await loadLiveEngagementCounts(content.id);
-            if (window.currentContent?.id === content.id && typeof _forceUpdateEngagementUI === 'function') {
-                _forceUpdateEngagementUI(liveCounts);
-            }
-        } catch (error) {
-            console.error('❌ Count load failed:', error);
-        }
-    }, 100);
-}
-
-/**
- * Toggle like with no 409 conflicts
- */
 async function toggleLike(contentId, userId, isCurrentlyLiked) {
     if (!userId) {
-        if (typeof showToast === 'function') showToast('Sign in to like content', 'warning');
+        window.showToast('Sign in to like content', 'warning');
         return false;
     }
     
@@ -563,14 +275,107 @@ async function toggleLike(contentId, userId, isCurrentlyLiked) {
         }
     } catch (error) {
         console.error('❌ Like toggle failed:', error);
-        if (typeof showToast === 'function') showToast('Failed to update like', 'error');
+        window.showToast('Failed to update like', 'error');
         return isCurrentlyLiked;
     }
 }
 
-/**
- * Share content
- */
+async function toggleFavorite(contentId, userId, isCurrentlyFavorited) {
+    if (!userId) {
+        window.showToast('Sign in to favorite content', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlyFavorited) {
+            const { error } = await window.supabaseClient
+                .from('favorites')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId));
+            if (error) throw error;
+            favoritedContentCache.delete(contentId);
+            return false;
+        } else {
+            const { data: existing } = await window.supabaseClient
+                .from('favorites')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId))
+                .maybeSingle();
+            
+            if (existing) {
+                const { error } = await window.supabaseClient
+                    .from('favorites')
+                    .delete()
+                    .eq('id', existing.id);
+                if (error) throw error;
+                favoritedContentCache.delete(contentId);
+                return false;
+            }
+            
+            const { error } = await window.supabaseClient
+                .from('favorites')
+                .insert({ user_id: userId, content_id: parseInt(contentId) });
+            if (error) throw error;
+            favoritedContentCache.add(contentId);
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Favorite toggle failed:', error);
+        window.showToast('Failed to update favorite', 'error');
+        return isCurrentlyFavorited;
+    }
+}
+
+async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
+    if (!userId) {
+        window.showToast('Sign in to use Watch Later', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlySaved) {
+            const { error } = await window.supabaseClient
+                .from('watch_later')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId));
+            if (error) throw error;
+            watchLaterContentCache.delete(contentId);
+            return false;
+        } else {
+            const { data: existing } = await window.supabaseClient
+                .from('watch_later')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId))
+                .maybeSingle();
+            
+            if (existing) {
+                const { error } = await window.supabaseClient
+                    .from('watch_later')
+                    .delete()
+                    .eq('id', existing.id);
+                if (error) throw error;
+                watchLaterContentCache.delete(contentId);
+                return false;
+            }
+            
+            const { error } = await window.supabaseClient
+                .from('watch_later')
+                .insert({ user_id: userId, content_id: parseInt(contentId) });
+            if (error) throw error;
+            watchLaterContentCache.add(contentId);
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Watch Later toggle failed:', error);
+        window.showToast('Failed to update Watch Later', 'error');
+        return isCurrentlySaved;
+    }
+}
+
 async function shareContent(contentId, userId) {
     if (!contentId) return;
     
@@ -586,7 +391,7 @@ async function shareContent(contentId, userId) {
             });
         } else {
             await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-            if (typeof showToast === 'function') showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
+            window.showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
         }
         
         if (userId) {
@@ -608,137 +413,236 @@ async function shareContent(contentId, userId) {
                 });
         }
         
-        if (typeof updateShareCountUI === 'function') {
-            updateShareCountUI(1);
-        }
+        if (typeof updateShareCountUI === 'function') updateShareCountUI(1);
     } catch (err) {
         if (err.name !== 'AbortError') {
             console.error('Share failed:', err);
-            if (typeof showToast === 'function') showToast('Failed to share. Try copying link manually.', 'error');
+            window.showToast('Failed to share. Try copying link manually.', 'error');
         }
     }
 }
 
-// ============================================
-// WATCH SESSION MANAGER CLASS
-// ============================================
-class WatchSessionManager {
-    constructor(contentId, userId) {
-        this.contentId = contentId;
-        this.userId = userId || null;
-        this.playbackSessionId = this._generateUUID();
-        this.sequenceNumber = 0;
-        this.totalWatchTimeMs = 0;
-        this.maxProgressSeconds = 0;
-        this.heartbeatInterval = null;
-        this.lastHeartbeatTime = Date.now();
-        this.isActive = false;
-        this.viewRecorded = false;
-        this.viewThresholdReached = false;
+function updateEngagementUI(states) {
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        if (states.liked) {
+            likeBtn.classList.add('active');
+            likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+        } else {
+            likeBtn.classList.remove('active');
+            likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+        }
     }
     
-    _generateUUID() {
-        return crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+        if (states.favorited) {
+            favoriteBtn.classList.add('active');
+            favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+        } else {
+            favoriteBtn.classList.remove('active');
+            favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+        }
     }
     
-    async initializeSession(platform = 'Web', deviceType = 'Desktop') {
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+        if (states.watchLater) {
+            watchLaterBtn.classList.add('active');
+            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+        } else {
+            watchLaterBtn.classList.remove('active');
+            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+        }
+    }
+}
+
+async function handleLikeButtonClick() {
+    if (!window.currentContent?.id) return;
+    if (!window.currentUserId) {
+        window.showToast('Sign in to like content', 'warning');
+        return;
+    }
+    
+    const likeBtn = document.getElementById('likeBtn');
+    const likesCountEl = document.getElementById('likesCount');
+    const isCurrentlyLiked = likeBtn?.classList.contains('active') || false;
+    let currentCount = parseInt(likesCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    const newCount = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
+    
+    if (likeBtn) {
+        likeBtn.classList.toggle('active', !isCurrentlyLiked);
+        likeBtn.innerHTML = !isCurrentlyLiked ? '<i class="fas fa-heart"></i><span>Liked</span>' : '<i class="far fa-heart"></i><span>Like</span>';
+    }
+    if (likesCountEl) likesCountEl.textContent = window.formatNumber(newCount);
+    
+    const newState = await toggleLike(window.currentContent.id, window.currentUserId, isCurrentlyLiked);
+    
+    if (newState === isCurrentlyLiked) {
+        if (likeBtn) {
+            likeBtn.classList.toggle('active', isCurrentlyLiked);
+            likeBtn.innerHTML = isCurrentlyLiked ? '<i class="fas fa-heart"></i><span>Liked</span>' : '<i class="far fa-heart"></i><span>Like</span>';
+        }
+        if (likesCountEl) likesCountEl.textContent = window.formatNumber(currentCount);
+    } else {
+        const liveCounts = await loadLiveEngagementCounts(window.currentContent.id);
+        if (likesCountEl) likesCountEl.textContent = window.formatNumber(liveCounts.likes);
+        if (typeof updateViewsUI === 'function') updateViewsUI(liveCounts.views);
+        if (window.currentContent) {
+            window.currentContent.likes_count = liveCounts.likes;
+            window.currentContent.views_count = liveCounts.views;
+        }
+    }
+}
+
+async function handleFavoriteButtonClick() {
+    if (!window.currentContent?.id) return;
+    if (!window.currentUserId) {
+        window.showToast('Sign in to favorite content', 'warning');
+        return;
+    }
+    
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const favCountEl = document.getElementById('favoritesCount');
+    const isCurrentlyFavorited = favoriteBtn?.classList.contains('active') || false;
+    let currentCount = parseInt(favCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    const newCount = isCurrentlyFavorited ? currentCount - 1 : currentCount + 1;
+    
+    if (favoriteBtn) {
+        favoriteBtn.classList.toggle('active', !isCurrentlyFavorited);
+        favoriteBtn.innerHTML = !isCurrentlyFavorited ? '<i class="fas fa-star"></i><span>Favorited</span>' : '<i class="far fa-star"></i><span>Favorite</span>';
+    }
+    if (favCountEl) favCountEl.textContent = window.formatNumber(newCount);
+    
+    const newState = await toggleFavorite(window.currentContent.id, window.currentUserId, isCurrentlyFavorited);
+    
+    if (newState === isCurrentlyFavorited) {
+        if (favoriteBtn) {
+            favoriteBtn.classList.toggle('active', isCurrentlyFavorited);
+            favoriteBtn.innerHTML = isCurrentlyFavorited ? '<i class="fas fa-star"></i><span>Favorited</span>' : '<i class="far fa-star"></i><span>Favorite</span>';
+        }
+        if (favCountEl) favCountEl.textContent = window.formatNumber(currentCount);
+    }
+}
+
+async function handleWatchLaterButtonClick() {
+    if (!window.currentContent?.id) return;
+    if (!window.currentUserId) {
+        window.showToast('Sign in to use Watch Later', 'warning');
+        return;
+    }
+    
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    const isCurrentlySaved = watchLaterBtn?.classList.contains('active') || false;
+    
+    if (watchLaterBtn) {
+        watchLaterBtn.classList.toggle('active', !isCurrentlySaved);
+        watchLaterBtn.innerHTML = !isCurrentlySaved ? '<i class="fas fa-clock"></i><span>Watch Later</span>' : '<i class="far fa-clock"></i><span>Watch Later</span>';
+    }
+    
+    const newState = await toggleWatchLater(window.currentContent.id, window.currentUserId, isCurrentlySaved);
+    
+    if (newState === isCurrentlySaved && watchLaterBtn) {
+        watchLaterBtn.classList.toggle('active', isCurrentlySaved);
+        watchLaterBtn.innerHTML = isCurrentlySaved ? '<i class="fas fa-clock"></i><span>Watch Later</span>' : '<i class="far fa-clock"></i><span>Watch Later</span>';
+    }
+}
+
+function setupRealtimeSubscriptions() {
+    if (!window.supabaseClient || !window.currentContent?.id) return;
+    
+    const channels = ['stats-channel', 'likes-channel', 'views-channel'];
+    channels.forEach(name => {
+        const ch = window.supabaseClient.channel(name);
+        if (ch?.status !== 'CLOSED') window.supabaseClient.removeChannel(ch);
+    });
+    
+    const statsChannel = window.supabaseClient
+        .channel('stats-channel')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'content_engagement_stats',
+            filter: `content_id=eq.${window.currentContent.id}`
+        }, (payload) => {
+            if (payload.new && window.currentContent?.id === payload.new.content_id) {
+                if (typeof updateViewsUI === 'function') updateViewsUI(payload.new.total_views || 0);
+                const likesEl = document.getElementById('likesCount');
+                if (likesEl) likesEl.textContent = window.formatNumber(payload.new.total_likes || 0);
+                if (window.currentContent) {
+                    window.currentContent.views_count = payload.new.total_views || 0;
+                    window.currentContent.likes_count = payload.new.total_likes || 0;
+                }
+            }
+        })
+        .subscribe();
+}
+
+// ============================================
+// GLOBAL SYNC FUNCTIONS
+// ============================================
+
+function updateGlobalContentId(contentId) {
+    if (window.currentContentId === contentId) {
+        console.log('⏭️ Skipping duplicate contentId update');
+        return;
+    }
+    
+    console.log(`🔄 Updating global contentId from ${window.currentContentId} to ${contentId}`);
+    window.currentContentId = contentId;
+    
+    if (enhancedVideoPlayer) enhancedVideoPlayer.contentId = contentId;
+    if (streamingManager) streamingManager.contentId = contentId;
+    if (watchSession) {
+        watchSession.contentId = contentId;
+        watchSession.viewRecorded = false;
+        watchSession.viewThresholdReached = false;
+    }
+    if (recommendationEngine) recommendationEngine.currentContentId = contentId;
+    
+    viewRecordedForCurrentContent = false;
+    window.dispatchEvent(new CustomEvent('contentIdChanged', { detail: { contentId: contentId } }));
+}
+
+async function setCurrentContent(content, index = null) {
+    if (!content) return;
+    
+    updateGlobalContentId(content.id);
+    
+    if (watchSession) {
+        watchSession.stop();
+        watchSession = null;
+    }
+    
+    window.currentContent = content;
+    if (index !== undefined && index !== null) window.currentPlaylistIndex = index;
+    
+    if (typeof updateContentUI === 'function') updateContentUI(content);
+    
+    if (window.currentUserId) {
         try {
-            const { error } = await window.supabaseClient
-                .from('playback_sessions')
-                .insert({
-                    playback_session_id: this.playbackSessionId,
-                    content_id: parseInt(this.contentId),
-                    user_id: this.userId,
-                    session_id: currentSessionId || this._generateUUID(),
-                    platform: platform,
-                    device_type: deviceType,
-                    started_at: new Date().toISOString()
-                });
-            if (error) throw error;
-            this.isActive = true;
-            return true;
-        } catch (error) {
-            console.error('Session init error:', error);
-            return false;
-        }
+            const states = await loadAllEngagementStates(content.id, window.currentUserId);
+            updateEngagementUI(states);
+        } catch (e) {}
     }
     
-    startHeartbeatLoop(videoElement) {
-        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-        this.heartbeatInterval = setInterval(async () => {
-            if (!this.isActive) return;
-            if (!videoElement || videoElement.paused) return;
-            
-            const currentTime = Math.floor(videoElement.currentTime);
-            const now = Date.now();
-            const deltaWatchTimeMs = now - this.lastHeartbeatTime;
-            this.sequenceNumber++;
-            this.totalWatchTimeMs += deltaWatchTimeMs;
-            if (currentTime > this.maxProgressSeconds) {
-                this.maxProgressSeconds = currentTime;
-            }
-            this.lastHeartbeatTime = now;
-            
-            await window.supabaseClient
-                .from('playback_heartbeats')
-                .insert({
-                    playback_session_id: this.playbackSessionId,
-                    content_id: parseInt(this.contentId),
-                    user_id: this.userId,
-                    sequence_number: this.sequenceNumber,
-                    progress_seconds: currentTime,
-                    cumulative_watch_time_ms: this.totalWatchTimeMs,
-                    playback_state: 'PLAYING'
-                });
-            
-            await window.supabaseClient
-                .from('playback_sessions')
-                .update({
-                    total_watch_time_ms: this.totalWatchTimeMs,
-                    max_progress_seconds: this.maxProgressSeconds,
-                    heartbeat_count: this.sequenceNumber,
-                    last_heartbeat_at: new Date().toISOString()
-                })
-                .eq('playback_session_id', this.playbackSessionId);
-            
-            const duration = videoElement.duration || 0;
-            const thirtyPercentDuration = duration * 0.3;
-            const thresholdSeconds = Math.min(15, thirtyPercentDuration);
-            
-            if (!this.viewRecorded && this.totalWatchTimeMs >= thresholdSeconds * 1000) {
-                this.viewRecorded = true;
-                this.viewThresholdReached = true;
-                await recordContentViewRPC(this.contentId, this.userId, this.playbackSessionId);
-            }
-        }, 10000);
-    }
+    setTimeout(async () => {
+        try {
+            const liveCounts = await loadLiveEngagementCounts(content.id);
+            if (window.currentContent?.id === content.id) _forceUpdateEngagementUI(liveCounts);
+        } catch (error) {}
+    }, 100);
     
-    start(videoElement) {
-        if (!videoElement) return;
-        this.startHeartbeatLoop(videoElement);
-    }
-    
-    stop() {
-        this.isActive = false;
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
-        window.supabaseClient
-            .from('playback_sessions')
-            .update({ completed: true, exited_at: new Date().toISOString() })
-            .eq('playback_session_id', this.playbackSessionId)
-            .then(({ error }) => {
-                if (error) console.error('Session close error:', error);
-            });
+    const favCountEl = document.getElementById('favoritesCount');
+    if (favCountEl && content.favorites_count !== undefined) {
+        favCountEl.textContent = window.formatNumber(content.favorites_count);
     }
 }
 
-window.WatchSessionManager = WatchSessionManager;
+// ============================================
+// PLAYLIST CONTROL DB FUNCTIONS
+// ============================================
 
-// ============================================
-// PLAYLIST LOADING FUNCTIONS
-// ============================================
 async function loadPlaylistMode(playlistId, playlistType) {
     try {
         if (typeof showLoading === 'function') showLoading('Loading playlist...');
@@ -755,74 +659,34 @@ async function loadPlaylistMode(playlistId, playlistType) {
                 season_number,
                 display_title_override,
                 Content!playlist_contents_content_id_fkey(
-                    id,
-                    title,
-                    description,
-                    thumbnail_url,
-                    file_url,
-                    duration,
-                    media_type,
-                    status,
-                    user_id,
-                    content_type,
-                    content_format,
-                    content_metadata,
-                    favorites_count,
-                    comments_count,
-                    shares_count,
-                    live_views,
-                    creator_display_name
+                    id, title, description, thumbnail_url, file_url, duration,
+                    media_type, status, user_id, content_type, content_format,
+                    content_metadata, favorites_count, comments_count, shares_count,
+                    live_views, creator_display_name
                 )
             `)
             .eq('playlist_id', playlistId)
             .eq('Content.status', 'published')
             .order('sort_index', { ascending: true });
         
-        if (error) throw error;
+        if (error || !playlistItems?.length) throw error || new Error('No items');
         
-        if (!playlistItems || playlistItems.length === 0) {
-            throw new Error('Playlist contains no published items');
-        }
+        const normalizedItems = playlistItems.map(item => {
+            let contentData = item.Content;
+            if (Array.isArray(contentData) && contentData.length > 0) contentData = contentData[0];
+            if (!contentData || contentData.status !== 'published') return null;
+            return { ...contentData, playlist_relation: { sort_index: item.sort_index, item_type: item.item_type, track_number: item.track_number, disc_number: item.disc_number, season_number: item.season_number } };
+        }).filter(Boolean);
         
-        const normalizedItems = playlistItems
-            .map(item => {
-                let contentData = item.Content;
-                if (Array.isArray(contentData) && contentData.length > 0) {
-                    contentData = contentData[0];
-                }
-                if (!contentData) return null;
-                if (contentData.status !== 'published') return null;
-                return {
-                    ...contentData,
-                    playlist_relation: {
-                        sort_index: item.sort_index,
-                        item_type: item.item_type,
-                        track_number: item.track_number,
-                        disc_number: item.disc_number,
-                        season_number: item.season_number
-                    }
-                };
-            })
-            .filter(Boolean);
-        
-        if (normalizedItems.length === 0) {
-            throw new Error('No valid published content items in playlist');
-        }
+        if (!normalizedItems.length) throw new Error('No valid published content items');
         
         window.currentPlaylistItems = normalizedItems;
         window.currentPlaylistIndex = 0;
-        if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
+        resetPlaylistCompletionLock();
         
         const { data: playlistMeta, error: metaError } = await window.supabaseClient
             .from('creator_playlists')
-            .select(`
-                *,
-                user_profiles!creator_id (
-                    username,
-                    full_name,
-                    avatar_url
-                )
-            `)
+            .select(`*, user_profiles!creator_id (username, full_name, avatar_url)`)
             .eq('id', playlistId)
             .maybeSingle();
         
@@ -835,21 +699,14 @@ async function loadPlaylistMode(playlistId, playlistType) {
             };
         }
         
-        if (typeof renderAlbumTracks === 'function') {
-            renderAlbumTracks(window.currentPlaylistItems);
-        }
-        
+        if (typeof renderAlbumTracks === 'function') renderAlbumTracks(window.currentPlaylistItems);
         if (window.currentPlaylistItems.length > 0) {
             await setCurrentContent(window.currentPlaylistItems[0], 0);
-            if (typeof loadContentIntoPlayer === 'function') {
-                await loadContentIntoPlayer(window.currentPlaylistItems[0]);
-            }
+            if (typeof loadContentIntoPlayer === 'function') await loadContentIntoPlayer(window.currentPlaylistItems[0]);
         }
-        
         if (typeof hideLoading === 'function') hideLoading();
-        
     } catch (error) {
-        console.error('❌ Playlist mode failed:', error);
+        console.error('Playlist mode failed:', error);
         await loadPlaylistModeTwoQueryFallback(playlistId, playlistType);
     }
 }
@@ -857,77 +714,46 @@ async function loadPlaylistMode(playlistId, playlistType) {
 async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     const { data: playlistRows, error: playlistError } = await window.supabaseClient
         .from('playlist_contents')
-        .select('playlist_id, content_id, sort_index, item_type, track_number, disc_number, season_number, display_title_override')
+        .select(`playlist_id, content_id, sort_index, item_type, track_number, disc_number, season_number, display_title_override`)
         .eq('playlist_id', playlistId)
         .order('sort_index', { ascending: true });
     
-    if (playlistError || !playlistRows || playlistRows.length === 0) {
-        throw new Error('Playlist has no content');
-    }
+    if (playlistError || !playlistRows?.length) throw playlistError || new Error('No content');
     
     const contentIds = playlistRows.map(row => row.content_id).filter(Boolean);
-    
     const { data: contentRows, error: contentError } = await window.supabaseClient
         .from('Content')
-        .select('*')
+        .select(`id, title, description, thumbnail_url, file_url, duration, media_type, status, user_id, content_type, content_format, content_metadata, favorites_count, comments_count, shares_count, live_views, creator_display_name, user_profiles!user_id (id, full_name, username, avatar_url)`)
         .in('id', contentIds)
         .eq('status', 'published');
     
     if (contentError) throw contentError;
     
     const contentMap = new Map();
-    contentRows?.forEach(content => {
-        contentMap.set(String(content.id), content);
-    });
+    contentRows?.forEach(content => contentMap.set(String(content.id), content));
     
-    const normalizedItems = playlistRows
-        .map(row => {
-            const content = contentMap.get(String(row.content_id));
-            if (!content) return null;
-            return {
-                ...content,
-                playlist_relation: {
-                    sort_index: row.sort_index,
-                    item_type: row.item_type,
-                    track_number: row.track_number,
-                    disc_number: row.disc_number,
-                    season_number: row.season_number
-                }
-            };
-        })
-        .filter(Boolean);
+    const normalizedItems = playlistRows.map(row => {
+        const content = contentMap.get(String(row.content_id));
+        if (!content) return null;
+        return { ...content, playlist_relation: { sort_index: row.sort_index, item_type: row.item_type, track_number: row.track_number, disc_number: row.disc_number, season_number: row.season_number } };
+    }).filter(Boolean);
+    
+    if (!normalizedItems.length) throw new Error('No valid published content items');
     
     window.currentPlaylistItems = normalizedItems;
     window.currentPlaylistIndex = 0;
-    if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
+    resetPlaylistCompletionLock();
     
-    if (typeof renderAlbumTracks === 'function') {
-        renderAlbumTracks(window.currentPlaylistItems);
-    }
-    
+    if (typeof renderAlbumTracks === 'function') renderAlbumTracks(window.currentPlaylistItems);
     if (window.currentPlaylistItems.length > 0) {
         await setCurrentContent(window.currentPlaylistItems[0], 0);
-        if (typeof loadContentIntoPlayer === 'function') {
-            await loadContentIntoPlayer(window.currentPlaylistItems[0]);
-        }
+        if (typeof loadContentIntoPlayer === 'function') await loadContentIntoPlayer(window.currentPlaylistItems[0]);
     }
-    
     if (typeof hideLoading === 'function') hideLoading();
 }
 
-// ============================================
-// CENTRALIZED NEXT TRACK FUNCTION
-// ============================================
 window.playNextPlaylistItem = async function() {
-    if (window._isNavigatingToNext) {
-        console.log('⏭️ Already navigating to next, skipping');
-        return;
-    }
-    
-    if (window.playlistCompleting) {
-        console.log('🚫 Playlist completion in progress, skipping');
-        return;
-    }
+    if (window._isNavigatingToNext || window.playlistCompleting) return;
     
     const items = window.currentPlaylistItems || [];
     let index = window.currentPlaylistIndex ?? 0;
@@ -942,56 +768,37 @@ window.playNextPlaylistItem = async function() {
     }
     
     window._isNavigatingToNext = true;
-    
     try {
         window.currentPlaylistIndex = nextIndex;
         const nextItem = items[nextIndex];
         await setCurrentContent(nextItem, nextIndex);
-        if (typeof loadContentIntoPlayer === 'function') {
-            await loadContentIntoPlayer(nextItem, nextIndex);
-        }
-        if (typeof syncPlaylistUI === 'function') {
-            syncPlaylistUI();
-        }
+        if (typeof loadContentIntoPlayer === 'function') await loadContentIntoPlayer(nextItem, nextIndex);
+        if (typeof syncPlaylistUI === 'function') syncPlaylistUI();
     } catch (error) {
-        console.error('❌ Playlist advance error:', error);
+        console.error('Playlist advance error:', error);
     } finally {
         setTimeout(() => { window._isNavigatingToNext = false; }, 300);
     }
 };
 
-window.playPlaylistItemByIndex = async function(index) {
-    if (window._isNavigatingToNext) {
-        console.warn('🚫 Track transition already in progress');
-        return;
-    }
-    
+async function playPlaylistItemByIndex(index) {
+    if (window._isNavigatingToNext) return;
     if (!window.currentPlaylistItems?.[index]) return;
-    
-    const nextTrackId = window.currentPlaylistItems[index]?.id;
-    if (window.currentContentId === nextTrackId) {
-        console.log('⏭️ Track matches current active content. Skipping reload.');
-        return;
-    }
+    if (window.currentContentId === window.currentPlaylistItems[index]?.id) return;
     
     window._isNavigatingToNext = true;
-    
     try {
         const item = window.currentPlaylistItems[index];
         window.currentPlaylistIndex = index;
         await setCurrentContent(item, index);
-        if (typeof loadContentIntoPlayer === 'function') {
-            await loadContentIntoPlayer(item);
-        }
-        if (typeof syncPlaylistUI === 'function') {
-            syncPlaylistUI();
-        }
+        if (typeof loadContentIntoPlayer === 'function') await loadContentIntoPlayer(item);
+        if (typeof syncPlaylistUI === 'function') syncPlaylistUI();
     } catch (error) {
-        console.error('❌ Error playing playlist item:', error);
+        console.error('Error playing playlist item:', error);
     } finally {
         setTimeout(() => { window._isNavigatingToNext = false; }, 500);
     }
-};
+}
 
 function resetPlaylistCompletionLock() {
     window.playlistCompleting = false;
@@ -999,88 +806,9 @@ function resetPlaylistCompletionLock() {
 }
 
 // ============================================
-// DIRECT USER GESTURE PLAYBACK
+// LOADING UI FUNCTIONS
 // ============================================
-const startPlaybackFromUserGesture = async () => {
-    try {
-        const player = document.getElementById('inlinePlayer');
-        const placeholder = document.getElementById('videoPlaceholder');
-        const heroPoster = document.getElementById('heroPoster');
-        
-        if (player) {
-            player.style.display = 'block';
-            player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        if (placeholder) placeholder.style.display = 'none';
-        if (heroPoster) heroPoster.style.opacity = '0.3';
-        
-        const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
-        if (!playerInstance || !playerInstance.video) {
-            console.error('❌ Player instance not found.');
-            return;
-        }
-        
-        const video = playerInstance.video;
-        
-        if (!video.src && !window.isPlaylistMode && window.currentContent?.file_url) {
-            const fileUrl = getPlayableMediaUrl(window.currentContent);
-            if (fileUrl) {
-                video.src = fileUrl;
-                video.load();
-            }
-        }
-        
-        video.muted = false;
-        video.volume = 1.0;
-        window.userHasInteractedWithMedia = true;
-        document.body.classList.add('user-interacted');
-        
-        await video.play().catch(async (err) => {
-            console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
-            video.muted = true;
-            await video.play();
-        });
-        
-        const overlay = document.getElementById('initialPlayOverlay');
-        if (overlay) overlay.classList.add('hidden');
-        
-        if (window.currentContent?.id && !watchSession) {
-            initializeWatchSessionOnPlay();
-        }
-        
-    } catch (error) {
-        console.warn('⚠️ Direct playback failed:', error.message);
-        if (typeof showToast === 'function') {
-            showToast('Unable to start playback. Please try again.', 'error');
-        }
-    }
-};
 
-function initializeWatchSessionOnPlay() {
-    if (!window.currentContent || !window.currentUserId) return;
-    
-    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-    if (!player?.video) return;
-    
-    if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-    }
-    
-    try {
-        currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
-        watchSession.initializeSession('Web', 'Desktop');
-        watchSession.start(player.video);
-        window._watchSession = watchSession;
-    } catch (error) {
-        console.error('❌ Failed to initialize watch session:', error);
-    }
-}
-
-// ============================================
-// LOADING FUNCTIONS
-// ============================================
 function showLoading(message = 'Loading...') {
     const loadingScreen = document.getElementById('loading');
     if (loadingScreen) {
@@ -1096,8 +824,459 @@ function hideLoading() {
 }
 
 // ============================================
-// FETCH CONTENT PROFILE DETAILS
+// DELEGATED FUNCTIONS (Call module functions)
 // ============================================
+
+/**
+ * Load comments - delegates to comments module
+ */
+async function loadComments(contentId) {
+    if (typeof window.loadComments === 'function') {
+        return await window.loadComments(contentId);
+    }
+    console.warn('⚠️ loadComments not available in comments module');
+    return [];
+}
+
+/**
+ * Refresh content in background for cache
+ */
+function refreshContentInBackground(contentId) {
+    try {
+        setTimeout(async () => {
+            const liveCounts = await loadLiveEngagementCounts(contentId);
+            if (window.currentContent && window.currentContent.id == contentId) {
+                window.currentContent.views_count = liveCounts.views;
+                window.currentContent.likes_count = liveCounts.likes;
+                if (typeof updateCountsUI === 'function') updateCountsUI(window.currentContent);
+                window.currentContent._cachedAt = Date.now();
+                localStorage.setItem(`content_${contentId}`, JSON.stringify(window.currentContent));
+            }
+        }, 100);
+    } catch(e) { console.warn('Background refresh failed:', e); }
+}
+
+/**
+ * Setup connect buttons - delegates to creator module
+ */
+function setupConnectButtons() {
+    if (typeof window.setupConnectButtons === 'function') {
+        window.setupConnectButtons();
+    } else {
+        console.warn('⚠️ setupConnectButtons not available in creator module');
+    }
+}
+
+/**
+ * Setup initial play overlay button - delegates to video-player module
+ */
+function setupInitialPlayButton() {
+    if (typeof window.setupInitialPlayButton === 'function') {
+        window.setupInitialPlayButton();
+    }
+}
+
+/**
+ * Setup view sync listener - delegates to stats-grid module
+ */
+function setupViewSyncListener() {
+    if (typeof window.setupViewSyncListener === 'function') {
+        window.setupViewSyncListener();
+    }
+}
+
+/**
+ * Update watch later button state - delegates to features
+ */
+async function updateWatchLaterButtonState() {
+    if (typeof window.updateWatchLaterButtonState === 'function') {
+        await window.updateWatchLaterButtonState();
+    }
+}
+
+/**
+ * Load secondary content data (comments, related, continue watching)
+ */
+async function loadSecondaryContentData(contentId) {
+    if (!contentId) return;
+    
+    try {
+        await loadComments(contentId);
+        
+        if (typeof window.loadRelatedContent === 'function') {
+            await window.loadRelatedContent(contentId);
+        }
+        
+        if (window.currentUserId && typeof window.loadContinueWatching === 'function') {
+            await window.loadContinueWatching(window.currentUserId);
+        }
+        
+        if (window.currentUserId && window.PlaylistManager && !playlistManager) {
+            await initializePlaylistManager();
+        }
+    } catch (err) {
+        console.warn('⚠️ Secondary data load failed:', err);
+    }
+}
+
+/**
+ * Load secondary content data for playlist mode
+ */
+async function loadSecondaryContentDataForPlaylist() {
+    if (!window.currentPlaylistItems || !window.currentPlaylistItems.length) return;
+    const firstItemId = window.currentPlaylistItems[0]?.id;
+    if (firstItemId) {
+        await loadSecondaryContentData(firstItemId);
+    }
+}
+
+/**
+ * Add resume button - delegates to hero module
+ */
+function addResumeButton(progressSeconds) {
+    if (typeof window.addResumeButton === 'function') {
+        window.addResumeButton(progressSeconds);
+    }
+}
+
+/**
+ * Remove resume button - delegates to hero module
+ */
+function removeResumeButton() {
+    if (typeof window.removeResumeButton === 'function') {
+        window.removeResumeButton();
+    }
+}
+
+/**
+ * Update content UI - delegates to hero module
+ */
+function updateContentUI(content) {
+    if (typeof window.updateContentUI === 'function') {
+        window.updateContentUI(content);
+    } else {
+        // Fallback basic implementation
+        if (!content) return;
+        window.safeSetText('contentTitle', content.title);
+        const creatorName = content.creator || (window.currentPlaylist?.creator_name || 'Creator');
+        window.safeSetText('creatorName', creatorName);
+        window.safeSetText('viewsCount', window.formatNumber(content.views_count) + ' views');
+        window.safeSetText('likesCount', window.formatNumber(content.likes_count));
+        window.safeSetText('commentsCount', `(${window.formatNumber(content.comments_count)})`);
+        window.safeSetText('durationText', window.formatDuration(content.duration || 3600));
+        window.safeSetText('uploadDate', window.formatDate(content.created_at));
+        window.safeSetText('contentDescriptionShort', window.truncateText(content.description, 150));
+        window.safeSetText('contentDescriptionFull', content.description);
+    }
+}
+
+/**
+ * Update content details (alias)
+ */
+function updateContentDetails(content) {
+    updateContentUI(content);
+}
+
+/**
+ * Load related content - delegates to related-content module
+ */
+async function loadRelatedContent(contentId) {
+    if (typeof window.loadRelatedContent === 'function') {
+        return await window.loadRelatedContent(contentId);
+    }
+    console.warn('⚠️ loadRelatedContent not available');
+    return [];
+}
+
+/**
+ * Load continue watching - delegates to continue-watching module
+ */
+async function loadContinueWatching(userId, limit = 8) {
+    if (typeof window.loadContinueWatching === 'function') {
+        return await window.loadContinueWatching(userId, limit);
+    }
+    console.warn('⚠️ loadContinueWatching not available');
+    return [];
+}
+
+/**
+ * Initialize recommendation engine for playlist
+ */
+async function initializeRecommendationEngineForPlaylist(contentId) {
+    if (!window.RecommendationEngine || !contentId) return;
+    try {
+        recommendationEngine = new window.RecommendationEngine({
+            supabase: window.supabaseClient,
+            userId: window.currentUserId,
+            currentContentId: contentId,
+            limit: 8,
+            minWatchThreshold: 0.5,
+            cacheDuration: 60000
+        });
+        if (typeof window.loadRecommendationRails === 'function') {
+            await window.loadRecommendationRails();
+        }
+        console.log('✅ RecommendationEngine initialized for playlist');
+    } catch (error) {
+        console.error('❌ Failed to initialize RecommendationEngine:', error);
+    }
+}
+
+/**
+ * Load recommendation rails - delegates to features
+ */
+async function loadRecommendationRails() {
+    if (typeof window.loadRecommendationRails === 'function') {
+        await window.loadRecommendationRails();
+    }
+}
+
+/**
+ * Update counts UI
+ */
+function updateCountsUI(content) {
+    if (!content) return;
+    const viewsEl = document.getElementById('viewsCount');
+    const viewsFullEl = document.getElementById('viewsCountFull');
+    const likesEl = document.getElementById('likesCount');
+    const commentsEl = document.getElementById('commentsCount');
+    
+    if (viewsEl) viewsEl.textContent = window.formatNumber(content.views_count) + ' views';
+    if (viewsFullEl) viewsFullEl.textContent = window.formatNumber(content.views_count);
+    if (likesEl) likesEl.textContent = window.formatNumber(content.likes_count);
+    if (commentsEl && content.comments_count !== undefined) {
+        commentsEl.textContent = `(${window.formatNumber(content.comments_count)})`;
+    }
+}
+
+/**
+ * Update views UI
+ */
+function updateViewsUI(viewsCount) {
+    const viewsEl = document.getElementById('viewsCount');
+    const viewsFullEl = document.getElementById('viewsCountFull');
+    
+    if (viewsEl) {
+        viewsEl.textContent = window.formatNumber(viewsCount) + ' views';
+    }
+    if (viewsFullEl) {
+        viewsFullEl.textContent = window.formatNumber(viewsCount);
+    }
+    
+    if (window.currentContent) {
+        window.currentContent.views_count = viewsCount;
+    }
+}
+
+/**
+ * Update share count UI
+ */
+function updateShareCountUI(delta) {
+    const shareCountEl = document.getElementById('sharesCount');
+    if (shareCountEl) {
+        let current = parseInt(shareCountEl.textContent?.replace(/\D/g, '') || '0');
+        let newCount = current + delta;
+        shareCountEl.textContent = window.formatNumber(newCount);
+    }
+}
+
+/**
+ * Initialize enhanced video player - delegates to video-player module
+ */
+function initializeEnhancedVideoPlayer() {
+    if (typeof window.initializeEnhancedVideoPlayer === 'function') {
+        window.initializeEnhancedVideoPlayer();
+    }
+}
+
+/**
+ * Initialize streaming manager - delegates to video-player module
+ */
+function initializeStreamingManager() {
+    if (typeof window.initializeStreamingManager === 'function') {
+        window.initializeStreamingManager();
+    } else if (typeof window.StreamingManager !== 'undefined') {
+        const videoElement = document.getElementById('inlineVideoPlayer');
+        if (!videoElement) return;
+        
+        if (streamingManager) {
+            streamingManager.updateContent(window.currentContent?.id);
+            return;
+        }
+        
+        try {
+            streamingManager = new window.StreamingManager({
+                videoElement: videoElement,
+                supabaseClient: window.supabaseClient,
+                contentId: window.currentContent?.id,
+                userId: window.currentUserId,
+                onQualityChange: function(data) {
+                    if (typeof updateQualityIndicator === 'function') updateQualityIndicator(data.quality);
+                },
+                onDataSaverToggle: function(data) {
+                    if (typeof updateQualityIndicator === 'function') updateQualityIndicator(streamingManager?.getCurrentQuality());
+                },
+                onError: function(err) { console.error('Streaming error:', err); }
+            });
+            streamingManager.initialize();
+        } catch (error) { console.error('Failed to initialize StreamingManager:', error); }
+    }
+}
+
+/**
+ * Initialize playlist manager
+ */
+async function initializePlaylistManager() {
+    if (typeof window.initializePlaylistManager === 'function') {
+        await window.initializePlaylistManager();
+    } else if (typeof window.PlaylistManager !== 'undefined' && window.currentUserId) {
+        try {
+            playlistManager = new window.PlaylistManager({
+                supabase: window.supabaseClient,
+                userId: window.currentUserId,
+                watchLaterName: 'Watch Later',
+                onPlaylistUpdated: function() { updateWatchLaterButtonState(); },
+                onError: function(err) { window.showToast('Playlist error: ' + (err.error || err.message), 'error'); }
+            });
+            await updateWatchLaterButtonState();
+        } catch (error) { console.error('Failed to initialize PlaylistManager:', error); }
+    }
+}
+
+/**
+ * Initialize playlist modal
+ */
+function initializePlaylistModal() {
+    if (typeof window.initializePlaylistModal === 'function') {
+        window.initializePlaylistModal();
+    } else if (typeof window.PlaylistModal !== 'undefined' && window.currentUserId) {
+        const contentIdForModal = window.currentContent?.id || 
+            (window.currentPlaylistItems && window.currentPlaylistItems[0]?.id);
+        if (!contentIdForModal) return;
+        try {
+            playlistModal = new window.PlaylistModal({
+                supabase: window.supabaseClient,
+                userId: window.currentUserId,
+                contentId: contentIdForModal
+            });
+            window.playlistModal = playlistModal;
+        } catch (error) { console.error('Failed to initialize playlist modal:', error); }
+    }
+}
+
+/**
+ * Sync playlist UI - delegates to playlist-sidebar module
+ */
+function syncPlaylistUI() {
+    if (typeof window.syncPlaylistUI === 'function') {
+        window.syncPlaylistUI();
+    }
+}
+
+/**
+ * Render album tracks - delegates to playlist-sidebar module
+ */
+function renderAlbumTracks(tracks) {
+    if (typeof window.renderAlbumTracks === 'function') {
+        window.renderAlbumTracks(tracks);
+    }
+}
+
+/**
+ * Setup album toggle - delegates to playlist-sidebar module
+ */
+function setupAlbumToggle() {
+    if (typeof window.setupAlbumToggle === 'function') {
+        window.setupAlbumToggle();
+    }
+}
+
+// ============================================
+// LOAD CRITICAL CONTENT DATA
+// ============================================
+
+async function loadCriticalContentData(contentId) {
+    const cached = localStorage.getItem(`content_${contentId}`);
+    if (cached) {
+        try {
+            const parsed = JSON.parse(cached);
+            if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
+                await setCurrentContent(parsed);
+                refreshContentInBackground(contentId);
+                return;
+            }
+        } catch(e) { console.warn('Cache parse error:', e); }
+    }
+    
+    const profileData = await fetchContentProfileDetails(contentId);
+    if (!profileData) {
+        console.warn('Profile fetch failed, falling back to legacy method');
+        await loadContentFromURLLegacy();
+        return;
+    }
+    
+    let watchProgress = null;
+    if (window.currentUserId) {
+        const { data: progressData } = await window.supabaseClient
+            .from('watch_progress')
+            .select('last_position, is_completed')
+            .eq('user_id', window.currentUserId)
+            .eq('content_id', contentId)
+            .maybeSingle();
+        watchProgress = progressData;
+    }
+    
+    const { data: streamingData } = await window.supabaseClient
+        .from('Content')
+        .select('quality_profiles, hls_manifest_url, data_saver_url')
+        .eq('id', contentId)
+        .maybeSingle();
+    
+    const { data: seriesData } = await window.supabaseClient
+        .from('Content')
+        .select('series_id, episode_number')
+        .eq('id', contentId)
+        .maybeSingle();
+    
+    const contentObj = {
+        id: profileData.id,
+        title: profileData.title || 'Untitled',
+        description: profileData.description || '',
+        thumbnail_url: profileData.thumbnail_url,
+        file_url: profileData.file_url,
+        media_type: profileData.media_type || 'video',
+        genre: profileData.genre || 'General',
+        created_at: profileData.created_at,
+        duration: profileData.duration || 3600,
+        language: profileData.language || 'English',
+        views_count: profileData.views_count,
+        likes_count: profileData.likes_count,
+        valid_views_count: profileData.valid_views_count,
+        favorites_count: profileData.favorites_count || 0,
+        comments_count: profileData.comments_count,
+        creator: profileData.creator,
+        creator_display_name: profileData.creator_display_name,
+        creator_id: profileData.creator_id,
+        user_id: profileData.user_id,
+        user_profiles: profileData.user_profiles,
+        watch_progress: watchProgress?.last_position || 0,
+        is_completed: watchProgress?.is_completed || false,
+        quality_profiles: streamingData?.quality_profiles || [],
+        hls_manifest_url: streamingData?.hls_manifest_url || null,
+        data_saver_url: streamingData?.data_saver_url || null,
+        series_id: seriesData?.series_id || null,
+        episode_number: seriesData?.episode_number || null,
+        _cachedAt: Date.now()
+    };
+    
+    await setCurrentContent(contentObj);
+    localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
+    
+    if (contentObj.watch_progress > 10 && !contentObj.is_completed) {
+        addResumeButton(contentObj.watch_progress);
+    }
+}
+
 async function fetchContentProfileDetails(contentId) {
     try {
         const { data: mediaAsset, error: fetchError } = await window.supabaseClient
@@ -1132,113 +1311,39 @@ async function fetchContentProfileDetails(contentId) {
         if (fetchError) throw fetchError;
         if (!mediaAsset) return null;
         
-        return {
+        const clientPayload = {
             ...mediaAsset,
             views_count: mediaAsset.content_engagement_stats?.total_views || 0,
             likes_count: mediaAsset.content_engagement_stats?.total_likes || 0,
             valid_views_count: mediaAsset.content_engagement_stats?.total_valid_views || 0,
             comments_count: mediaAsset.content_engagement_stats?.total_comments || 0,
-            creator: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || 'Creator',
-            creator_display_name: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || 'Creator',
+            creator: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || (window.isPlaylistMode && window.currentPlaylist ? window.currentPlaylist.creator_name : 'Creator'),
+            creator_display_name: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || (window.isPlaylistMode && window.currentPlaylist ? window.currentPlaylist.creator_name : 'Creator'),
             creator_id: mediaAsset.user_id
         };
+        
+        return clientPayload;
     } catch (error) {
         console.error("Critical Profile Fetch Interruption:", error.message);
         return null;
     }
 }
 
-// ============================================
-// CRITICAL CONTENT LOADING
-// ============================================
-async function loadCriticalContentData(contentId) {
-    const cached = localStorage.getItem(`content_${contentId}`);
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
-                await setCurrentContent(parsed);
-                refreshContentInBackground(contentId);
-                return;
-            }
-        } catch(e) { console.warn('Cache parse error:', e); }
-    }
-    
-    const profileData = await fetchContentProfileDetails(contentId);
-    if (!profileData) {
-        await loadContentFromURLLegacy();
-        return;
-    }
-    
-    let watchProgress = null;
-    if (window.currentUserId) {
-        const { data: progressData } = await window.supabaseClient
-            .from('watch_progress')
-            .select('last_position, is_completed')
-            .eq('user_id', window.currentUserId)
-            .eq('content_id', contentId)
-            .maybeSingle();
-        watchProgress = progressData;
-    }
-    
-    const { data: streamingData } = await window.supabaseClient
-        .from('Content')
-        .select('quality_profiles, hls_manifest_url, data_saver_url')
-        .eq('id', contentId)
-        .maybeSingle();
-    
-    const contentObj = {
-        id: profileData.id,
-        title: profileData.title || 'Untitled',
-        description: profileData.description || '',
-        thumbnail_url: profileData.thumbnail_url,
-        file_url: profileData.file_url,
-        media_type: profileData.media_type || 'video',
-        genre: profileData.genre || 'General',
-        created_at: profileData.created_at,
-        duration: profileData.duration || 3600,
-        language: profileData.language || 'English',
-        views_count: profileData.views_count,
-        likes_count: profileData.likes_count,
-        valid_views_count: profileData.valid_views_count,
-        favorites_count: profileData.favorites_count || 0,
-        comments_count: profileData.comments_count,
-        creator: profileData.creator,
-        creator_display_name: profileData.creator_display_name,
-        creator_id: profileData.creator_id,
-        user_id: profileData.user_id,
-        user_profiles: profileData.user_profiles,
-        watch_progress: watchProgress?.last_position || 0,
-        is_completed: watchProgress?.is_completed || false,
-        quality_profiles: streamingData?.quality_profiles || [],
-        hls_manifest_url: streamingData?.hls_manifest_url || null,
-        data_saver_url: streamingData?.data_saver_url || null,
-        _cachedAt: Date.now()
-    };
-    
-    await setCurrentContent(contentObj);
-    localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
-    
-    if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed) {
-        if (typeof addResumeButton === 'function') {
-            addResumeButton(window.currentContent.watch_progress);
-        }
-    }
-    
-    if (window.currentUserId && typeof initializeLikeButton === 'function') {
-        await initializeLikeButton(contentId, window.currentUserId);
-        await initializeFavoriteButton(contentId, window.currentUserId);
-    }
-}
-
 async function loadContentFromURLLegacy() {
     const urlParams = new URLSearchParams(window.location.search);
     const contentId = urlParams.get('id') || '68';
-    
     try {
         const { data: contentData, error: contentError } = await window.supabaseClient
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select(`
+                *,
+                user_profiles!user_id (
+                    id,
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
             .eq('id', contentId)
             .maybeSingle();
         
@@ -1257,6 +1362,18 @@ async function loadContentFromURLLegacy() {
             watchProgress = progressData;
         }
         
+        const { data: streamingData } = await window.supabaseClient
+            .from('Content')
+            .select('quality_profiles, hls_manifest_url, data_saver_url')
+            .eq('id', contentId)
+            .maybeSingle();
+        
+        const { data: seriesData } = await window.supabaseClient
+            .from('Content')
+            .select('series_id, episode_number')
+            .eq('id', contentId)
+            .maybeSingle();
+        
         const contentObj = {
             id: contentData.id,
             title: contentData.title || 'Untitled',
@@ -1266,7 +1383,7 @@ async function loadContentFromURLLegacy() {
             media_type: contentData.media_type || 'video',
             genre: contentData.genre || 'General',
             created_at: contentData.created_at,
-            duration: contentData.duration || 3600,
+            duration: contentData.duration || contentData.duration_seconds || 3600,
             language: contentData.language || 'English',
             views_count: liveCounts.views,
             likes_count: liveCounts.likes,
@@ -1278,108 +1395,30 @@ async function loadContentFromURLLegacy() {
             user_id: contentData.user_id,
             user_profiles: contentData.user_profiles,
             watch_progress: watchProgress?.last_position || 0,
-            is_completed: watchProgress?.is_completed || false
+            is_completed: watchProgress?.is_completed || false,
+            quality_profiles: streamingData?.quality_profiles || [],
+            hls_manifest_url: streamingData?.hls_manifest_url || null,
+            data_saver_url: streamingData?.data_saver_url || null,
+            series_id: seriesData?.series_id || null,
+            episode_number: seriesData?.episode_number || null
         };
         
         await setCurrentContent(contentObj);
         
-        if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed && typeof addResumeButton === 'function') {
-            addResumeButton(window.currentContent.watch_progress);
+        if (contentObj.watch_progress > 10 && !contentObj.is_completed) {
+            addResumeButton(contentObj.watch_progress);
         }
-        
-        if (typeof loadComments === 'function') await loadComments(contentId);
-        if (typeof loadRelatedContent === 'function') await loadRelatedContent(contentId);
-        
     } catch (error) {
         console.error('❌ Content load failed:', error);
-        if (typeof showToast === 'function') showToast('Content not available. Please try again.', 'error');
+        window.showToast('Content not available. Please try again.', 'error');
         document.getElementById('contentTitle').textContent = 'Content Unavailable';
     }
 }
 
-function refreshContentInBackground(contentId) {
-    setTimeout(async () => {
-        const liveCounts = await loadLiveEngagementCounts(contentId);
-        if (window.currentContent && window.currentContent.id == contentId) {
-            window.currentContent.views_count = liveCounts.views;
-            window.currentContent.likes_count = liveCounts.likes;
-            if (typeof updateCountsUI === 'function') updateCountsUI(window.currentContent);
-            window.currentContent._cachedAt = Date.now();
-            localStorage.setItem(`content_${contentId}`, JSON.stringify(window.currentContent));
-        }
-    }, 100);
-}
+// ============================================
+// BOOTSTRAPPING & AUTH
+// ============================================
 
-// ============================================
-// SECONDARY DATA LOADING
-// ============================================
-async function loadSecondaryContentData(contentId) {
-    if (!contentId) return;
-    Promise.all([
-        typeof loadComments === 'function' ? loadComments(contentId) : Promise.resolve(),
-        typeof loadRelatedContent === 'function' ? loadRelatedContent(contentId) : Promise.resolve(),
-        window.currentUserId && typeof loadContinueWatching === 'function' ? loadContinueWatching(window.currentUserId) : Promise.resolve(),
-        window.currentUserId && window.PlaylistManager && !playlistManager && typeof initializePlaylistManager === 'function' ? initializePlaylistManager() : Promise.resolve()
-    ]).catch(err => console.warn('⚠️ Secondary data load failed:', err));
-}
-
-async function loadSecondaryContentDataForPlaylist() {
-    if (!window.currentPlaylistItems || !window.currentPlaylistItems.length) return;
-    const firstItemId = window.currentPlaylistItems[0]?.id;
-    if (firstItemId) {
-        Promise.all([
-            typeof loadComments === 'function' ? loadComments(firstItemId) : Promise.resolve(),
-            window.currentUserId && typeof loadContinueWatching === 'function' ? loadContinueWatching(window.currentUserId) : Promise.resolve(),
-            window.currentUserId && window.PlaylistManager && !playlistManager && typeof initializePlaylistManager === 'function' ? initializePlaylistManager() : Promise.resolve()
-        ]).catch(err => console.warn('⚠️ Playlist secondary data load failed:', err));
-    }
-}
-
-// ============================================
-// STREAMING MANAGER INITIALIZATION
-// ============================================
-async function initializeStreamingManager() {
-    if (!window.StreamingManager) {
-        console.warn('⚠️ StreamingManager not loaded');
-        return;
-    }
-    
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    if (!videoElement) return;
-    
-    if (streamingManager) {
-        streamingManager.updateContent(window.currentContent?.id);
-        return;
-    }
-    
-    try {
-        streamingManager = new window.StreamingManager({
-            videoElement: videoElement,
-            supabaseClient: window.supabaseClient,
-            contentId: window.currentContent?.id,
-            userId: window.currentUserId,
-            onQualityChange: function(data) {
-                if (typeof updateQualityIndicator === 'function') updateQualityIndicator(data.quality);
-                if (typeof showToast === 'function') showToast('Quality: ' + data.quality, 'info');
-            },
-            onDataSaverToggle: function(data) {
-                if (typeof updateQualityIndicator === 'function') updateQualityIndicator(streamingManager.getCurrentQuality());
-                if (typeof showToast === 'function') showToast('Data Saver: ' + (data.enabled ? 'ON' : 'OFF'), 'info');
-            },
-            onError: function(err) {
-                console.error('❌ Streaming error:', err);
-            }
-        });
-        await streamingManager.initialize();
-        console.log('✅ StreamingManager initialized');
-    } catch (error) {
-        console.error('❌ Failed to initialize StreamingManager:', error);
-    }
-}
-
-// ============================================
-// AUTHENTICATION & PROFILE FUNCTIONS
-// ============================================
 async function waitForAuthHelper() {
     return new Promise((resolve) => {
         const check = setInterval(() => {
@@ -1390,28 +1429,9 @@ async function waitForAuthHelper() {
         }, 50);
         setTimeout(() => {
             clearInterval(check);
-            console.warn('⚠️ AuthHelper not loaded within timeout, continuing anyway');
             resolve();
         }, 2000);
     });
-}
-
-async function updateSidebarProfile() {
-    if (typeof window.updateSidebarProfile === 'function') {
-        await window.updateSidebarProfile();
-    }
-}
-
-async function updateHeaderProfile() {
-    if (typeof window.updateHeaderProfile === 'function') {
-        await window.updateHeaderProfile();
-    }
-}
-
-function updateProfileSwitcher() {
-    if (typeof window.updateProfileSwitcher === 'function') {
-        window.updateProfileSwitcher();
-    }
 }
 
 function setupAuthListeners() {
@@ -1419,96 +1439,133 @@ function setupAuthListeners() {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             await window.AuthHelper.initialize();
             window.currentUserId = window.AuthHelper.getUserProfile()?.id || null;
-            await updateSidebarProfile();
-            await updateHeaderProfile();
-            updateProfileSwitcher();
-            if (typeof showToast === 'function') showToast('Welcome back!', 'success');
+            if (typeof updateSidebarProfile === 'function') await updateSidebarProfile();
+            if (typeof updateHeaderProfile === 'function') await updateHeaderProfile();
+            if (typeof updateProfileSwitcher === 'function') updateProfileSwitcher();
+            if (typeof updateCommentInputState === 'function') setTimeout(updateCommentInputState, 300);
+            window.showToast('Welcome back!', 'success');
+            
             if (window.currentUserId && typeof loadContinueWatching === 'function') {
                 await loadContinueWatching(window.currentUserId);
             }
-            if (window.currentContent?.id && typeof loadAllEngagementStates === 'function') {
+            if (window.currentContent?.id) {
                 const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
-                if (typeof updateEngagementUI === 'function') updateEngagementUI(states);
+                updateEngagementUI(states);
             }
-            if (typeof updateCommentInputState === 'function') updateCommentInputState();
+            if (typeof initializePlaylistManager === 'function') await initializePlaylistManager();
+            if (recommendationEngine) {
+                recommendationEngine.userId = window.currentUserId;
+                if (typeof loadRecommendationRails === 'function') await loadRecommendationRails();
+            }
+            if (streamingManager) streamingManager.userId = window.currentUserId;
+            if (typeof initializePlaylistModal === 'function') setTimeout(initializePlaylistModal, 500);
         } else if (event === 'SIGNED_OUT') {
             window.currentUserId = null;
-            await updateSidebarProfile();
-            await updateHeaderProfile();
-            updateProfileSwitcher();
-            if (typeof showToast === 'function') showToast('Signed out successfully', 'info');
-            if (typeof updateCommentInputState === 'function') updateCommentInputState();
+            playlistManager = null;
+            playlistModal = null;
+            window.showToast('Signed out successfully', 'info');
+            
+            if (watchSession) { watchSession.stop(); watchSession = null; }
+            if (recommendationEngine) {
+                recommendationEngine.userId = null;
+                if (typeof loadRecommendationRails === 'function') await loadRecommendationRails();
+            }
+            if (streamingManager) streamingManager.userId = null;
+            if (typeof updateSidebarProfile === 'function') await updateSidebarProfile();
+            if (typeof updateHeaderProfile === 'function') await updateHeaderProfile();
+            if (typeof updateCommentInputState === 'function') setTimeout(updateCommentInputState, 300);
         }
     });
-    
-    if (window.AuthHelper?.isAuthenticated?.()) {
-        window.currentUserId = window.AuthHelper.getUserProfile()?.id || null;
-    }
-    
-    if (typeof updateCommentInputState === 'function') updateCommentInputState();
 }
 
 // ============================================
-// EVENT LISTENERS SETUP
+// EVENT BINDING
 // ============================================
+
 function setupEventListeners() {
+    console.log('🔧 Setting up event listeners...');
+    
     const playBtn = document.getElementById('playBtn');
     if (playBtn) {
         const newPlayBtn = playBtn.cloneNode(true);
         playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
-        newPlayBtn.addEventListener('click', startPlaybackFromUserGesture);
+        newPlayBtn.addEventListener('click', () => {
+            if (typeof startPlaybackFromUserGesture === 'function') startPlaybackFromUserGesture();
+        });
+    }
+    
+    const playAlbumBtn = document.getElementById('playAlbumBtn');
+    if (playAlbumBtn) {
+        const newPlayAlbumBtn = playAlbumBtn.cloneNode(true);
+        playAlbumBtn.parentNode.replaceChild(newPlayAlbumBtn, playAlbumBtn);
+        newPlayAlbumBtn.addEventListener('click', () => {
+            if (typeof startPlaybackFromUserGesture === 'function') startPlaybackFromUserGesture();
+        });
     }
     
     const poster = document.getElementById('heroPoster');
     if (poster) {
         const newPoster = poster.cloneNode(true);
         poster.parentNode.replaceChild(newPoster, poster);
-        newPoster.addEventListener('click', startPlaybackFromUserGesture);
+        newPoster.addEventListener('click', () => {
+            if (typeof startPlaybackFromUserGesture === 'function') startPlaybackFromUserGesture();
+        });
     }
     
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) {
-        closeFromHero.addEventListener('click', function() {
+        closeFromHero.addEventListener('click', () => {
             if (typeof closeVideoPlayer === 'function') closeVideoPlayer();
         });
     }
     
-    if (typeof setupConnectButtons === 'function') {
-        setupConnectButtons();
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        const newLikeBtn = likeBtn.cloneNode(true);
+        likeBtn.parentNode.replaceChild(newLikeBtn, likeBtn);
+        newLikeBtn.addEventListener('click', handleLikeButtonClick);
     }
     
-    if (typeof setupCommentEventListeners === 'function') {
-        setupCommentEventListeners();
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+        const newFavoriteBtn = favoriteBtn.cloneNode(true);
+        favoriteBtn.parentNode.replaceChild(newFavoriteBtn, favoriteBtn);
+        newFavoriteBtn.addEventListener('click', handleFavoriteButtonClick);
     }
     
-    if (typeof setupContinueWatchingRefresh === 'function') {
-        setupContinueWatchingRefresh();
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+        const newWatchLaterBtn = watchLaterBtn.cloneNode(true);
+        watchLaterBtn.parentNode.replaceChild(newWatchLaterBtn, watchLaterBtn);
+        newWatchLaterBtn.addEventListener('click', handleWatchLaterButtonClick);
     }
     
-    const backToTopBtn = document.getElementById('backToTopBtn');
-    if (backToTopBtn) {
-        backToTopBtn.addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        window.addEventListener('scroll', function() {
-            backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        const newShareBtn = shareBtn.cloneNode(true);
+        shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+        newShareBtn.addEventListener('click', async () => {
+            if (window.currentContent?.id) await shareContent(window.currentContent.id, window.currentUserId);
         });
     }
     
     setupPlayerEndedListener();
+    setupRealtimeSubscriptions();
+    setupConnectButtons();
+    setupInitialPlayButton();
+    setupViewSyncListener();
+    if (typeof setupAlbumToggle === 'function') requestAnimationFrame(() => setupAlbumToggle());
+    
+    console.log('✅ Event listeners setup complete');
 }
 
 function setupPlayerEndedListener() {
     const videoElement = document.getElementById('inlineVideoPlayer');
-    if (!videoElement) {
-        setTimeout(setupPlayerEndedListener, 500);
-        return;
-    }
+    if (!videoElement) { setTimeout(setupPlayerEndedListener, 500); return; }
     
     const handleEnded = () => {
-        if (typeof window.playNextPlaylistItem === 'function') {
-            window.playNextPlaylistItem();
-        }
+        console.log('Media track completed. Checking for playlist progression...');
+        if (typeof window.playNextPlaylistItem === 'function') window.playNextPlaylistItem();
     };
     
     videoElement.removeEventListener('ended', handleEnded);
@@ -1516,19 +1573,236 @@ function setupPlayerEndedListener() {
 }
 
 // ============================================
-// INITIALIZATION
+// WATCH SESSION MANAGER CLASS
 // ============================================
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🎬 Content Detail: Starting optimized load sequence...');
+
+class WatchSessionManager {
+    constructor(contentId, userId) {
+        this.contentId = contentId;
+        this.userId = userId || null;
+        this.playbackSessionId = this._generateUUID();
+        this.sequenceNumber = 0;
+        this.totalWatchTimeMs = 0;
+        this.maxProgressSeconds = 0;
+        this.heartbeatInterval = null;
+        this.lastHeartbeatTime = Date.now();
+        this.isActive = false;
+        this.viewRecorded = false;
+        this.viewThresholdReached = false;
+    }
     
+    _generateUUID() {
+        return crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    async initializeSession(platform = 'Web', deviceType = 'Desktop') {
+        try {
+            const { error } = await window.supabaseClient
+                .from('playback_sessions')
+                .insert({
+                    playback_session_id: this.playbackSessionId,
+                    content_id: parseInt(this.contentId),
+                    user_id: this.userId,
+                    session_id: currentSessionId || this._generateUUID(),
+                    platform: platform,
+                    device_type: deviceType,
+                    started_at: new Date().toISOString()
+                });
+            if (error) return false;
+            this.isActive = true;
+            return true;
+        } catch (error) { return false; }
+    }
+    
+    startHeartbeatLoop(videoElement) {
+        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = setInterval(async () => {
+            if (!this.isActive || !videoElement || videoElement.paused) return;
+            const currentTime = Math.floor(videoElement.currentTime);
+            const now = Date.now();
+            const deltaWatchTimeMs = now - this.lastHeartbeatTime;
+            this.sequenceNumber++;
+            this.totalWatchTimeMs += deltaWatchTimeMs;
+            if (currentTime > this.maxProgressSeconds) this.maxProgressSeconds = currentTime;
+            this.lastHeartbeatTime = now;
+            
+            await window.supabaseClient.from('playback_heartbeats').insert({
+                playback_session_id: this.playbackSessionId,
+                content_id: parseInt(this.contentId),
+                user_id: this.userId,
+                sequence_number: this.sequenceNumber,
+                progress_seconds: currentTime,
+                cumulative_watch_time_ms: this.totalWatchTimeMs,
+                playback_state: 'PLAYING'
+            });
+            
+            await window.supabaseClient.from('playback_sessions').update({
+                total_watch_time_ms: this.totalWatchTimeMs,
+                max_progress_seconds: this.maxProgressSeconds,
+                heartbeat_count: this.sequenceNumber,
+                last_heartbeat_at: new Date().toISOString()
+            }).eq('playback_session_id', this.playbackSessionId);
+            
+            const duration = videoElement.duration || 0;
+            const thresholdSeconds = Math.min(15, duration * 0.3);
+            if (!this.viewRecorded && this.totalWatchTimeMs >= thresholdSeconds * 1000) {
+                this.viewRecorded = true;
+                this.viewThresholdReached = true;
+                await recordContentViewRPC(this.contentId, this.userId, this.playbackSessionId);
+            }
+        }, 10000);
+    }
+    
+    start(videoElement) { if (videoElement) this.startHeartbeatLoop(videoElement); }
+    
+    stop() {
+        this.isActive = false;
+        if (this.heartbeatInterval) { clearInterval(this.heartbeatInterval); this.heartbeatInterval = null; }
+        window.supabaseClient.from('playback_sessions').update({ completed: true, exited_at: new Date().toISOString() }).eq('playback_session_id', this.playbackSessionId);
+    }
+}
+
+function initializeWatchSessionOnPlay() {
+    if (!window.currentContent || !window.currentUserId) return;
+    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+    if (!player?.video) return;
+    if (watchSession) { watchSession.stop(); watchSession = null; }
+    
+    try {
+        currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
+        watchSession.initializeSession('Web', 'Desktop');
+        watchSession.start(player.video);
+        window._watchSession = watchSession;
+    } catch (error) { console.error('Failed to initialize watch session:', error); }
+}
+
+// ============================================
+// GLOBAL EXPORTS
+// ============================================
+
+window.recordContentViewRPC = recordContentViewRPC;
+window.loadLiveEngagementCounts = loadLiveEngagementCounts;
+window.loadAllEngagementStates = loadAllEngagementStates;
+window.updateEngagementUI = updateEngagementUI;
+window.toggleLike = toggleLike;
+window.toggleFavorite = toggleFavorite;
+window.toggleWatchLater = toggleWatchLater;
+window.shareContent = shareContent;
+window.updateGlobalContentId = updateGlobalContentId;
+window.setCurrentContent = setCurrentContent;
+window.playNextPlaylistItem = window.playNextPlaylistItem;
+window.playPlaylistItemByIndex = playPlaylistItemByIndex;
+window.resetPlaylistCompletionLock = resetPlaylistCompletionLock;
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
+window.setupEventListeners = setupEventListeners;
+window.initializeStreamingManager = initializeStreamingManager;
+window.initializePlaylistManager = initializePlaylistManager;
+window.initializeRecommendationEngineForPlaylist = initializeRecommendationEngineForPlaylist;
+window.initializePlaylistModal = initializePlaylistModal;
+window.initAnalyticsModal = initAnalyticsModal;
+window.initSearchModal = initSearchModal;
+window.initNotificationsPanel = initNotificationsPanel;
+window.WatchSessionManager = WatchSessionManager;
+window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
+
+// These functions are exported for module delegation
+window.loadComments = loadComments;
+window.refreshContentInBackground = refreshContentInBackground;
+window.setupConnectButtons = setupConnectButtons;
+window.setupInitialPlayButton = setupInitialPlayButton;
+window.setupViewSyncListener = setupViewSyncListener;
+window.updateWatchLaterButtonState = updateWatchLaterButtonState;
+window.loadSecondaryContentData = loadSecondaryContentData;
+window.loadSecondaryContentDataForPlaylist = loadSecondaryContentDataForPlaylist;
+window.addResumeButton = addResumeButton;
+window.removeResumeButton = removeResumeButton;
+window.updateContentUI = updateContentUI;
+window.updateContentDetails = updateContentDetails;
+window.loadRelatedContent = loadRelatedContent;
+window.loadContinueWatching = loadContinueWatching;
+window.loadRecommendationRails = loadRecommendationRails;
+window.updateCountsUI = updateCountsUI;
+window.updateViewsUI = updateViewsUI;
+window.updateShareCountUI = updateShareCountUI;
+window.initializeEnhancedVideoPlayer = initializeEnhancedVideoPlayer;
+window.syncPlaylistUI = syncPlaylistUI;
+window.renderAlbumTracks = renderAlbumTracks;
+window.setupAlbumToggle = setupAlbumToggle;
+
+// ============================================
+// MODAL & PANEL STUBS (delegated to features)
+// ============================================
+
+function initAnalyticsModal() {
+    if (typeof window.initAnalyticsModal === 'function') {
+        window.initAnalyticsModal();
+    }
+}
+
+function initSearchModal() {
+    if (typeof window.initSearchModal === 'function') {
+        window.initSearchModal();
+    }
+}
+
+function initNotificationsPanel() {
+    if (typeof window.initNotificationsPanel === 'function') {
+        window.initNotificationsPanel();
+    }
+}
+
+// ============================================
+// DOMContentLoaded BOOTSTRAPPER
+// ============================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🎬 Orchestrator: Starting content detail with modular architecture...');
+    
+    // Inject YouTube-style CSS for persistent sidebar
+    if (!document.getElementById('youtube-sidebar-styles')) {
+        const style = document.createElement('style');
+        style.id = 'youtube-sidebar-styles';
+        style.textContent = `
+            .album-sidebar { width: 100%; max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.35s ease, opacity 0.25s ease; display: flex; flex-direction: column; }
+            .album-sidebar.expanded { max-height: 1200px; opacity: 1; }
+            .album-track-list { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+            .album-track-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--card-bg, rgba(255,255,255,0.05)); border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; width: 100%; text-align: left; }
+            .album-track-item:hover { background: var(--hover-bg, rgba(255,255,255,0.1)); }
+            .album-track-item.active, .album-track-item.playing { background: rgba(245, 158, 11, 0.2); border-left: 3px solid #F59E0B; }
+            .track-num { color: var(--text-secondary, #aaa); font-size: 14px; min-width: 32px; }
+            .track-title { flex: 1; color: var(--text-primary, white); font-size: 14px; }
+            .track-duration { color: var(--text-secondary, #aaa); font-size: 12px; }
+            .playlist-playing #playAlbumBtn { display: none !important; }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Create persistent sidebar if missing
+    let albumSidebar = document.getElementById('album-sidebar');
+    if (!albumSidebar) {
+        const targetContainer = document.querySelector('.content-detail-container') || document.querySelector('.main-content');
+        if (targetContainer) {
+            albumSidebar = document.createElement('div');
+            albumSidebar.id = 'album-sidebar';
+            albumSidebar.className = 'album-sidebar collapsed';
+            albumSidebar.innerHTML = '<div id="album-track-list" class="album-track-list"></div>';
+            const playerContainer = document.getElementById('inlinePlayer');
+            if (playerContainer?.parentNode) playerContainer.parentNode.insertBefore(albumSidebar, playerContainer.nextSibling);
+            else targetContainer.appendChild(albumSidebar);
+        }
+    }
+    
+    // Show skeleton
     const skeleton = document.getElementById('content-skeleton');
     const loadingScreen = document.getElementById('loading');
     const app = document.getElementById('app');
-    
     if (loadingScreen) loadingScreen.style.display = 'none';
     if (app) app.style.display = 'block';
     if (skeleton) skeleton.style.display = 'block';
     
+    // Initialize Supabase client if needed
     if (!window.supabaseClient) {
         window.supabaseClient = supabase.createClient(
             'https://ydnxqnbjoshvxteevemc.supabase.co',
@@ -1548,71 +1822,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     await waitForAuthHelper();
-    if (window.AuthHelper && !window.AuthHelper.isInitialized) {
-        await window.AuthHelper.initialize();
-    }
+    if (window.AuthHelper && !window.AuthHelper.isInitialized) await window.AuthHelper.initialize();
     window.currentUserId = window.AuthHelper?.getUserProfile?.()?.id || null;
     
+    // Initialize lightweight UI systems
     if (typeof initThemeSelector === 'function') initThemeSelector();
-    if (typeof initGlobalNavigation === 'function') initGlobalNavigation();
     if (typeof setupCompleteSidebar === 'function') setupCompleteSidebar();
     if (typeof setupNavigationButtons === 'function') setupNavigationButtons();
     if (typeof setupNavButtonScrollAnimation === 'function') setupNavButtonScrollAnimation();
+    if (typeof setupAuthListeners === 'function') setupAuthListeners();
+    if (typeof updateSidebarProfile === 'function') await updateSidebarProfile();
+    if (typeof updateHeaderProfile === 'function') await updateHeaderProfile();
+    if (typeof updateProfileSwitcher === 'function') updateProfileSwitcher();
     
-    if (typeof UIScaleController !== 'undefined') {
-        window.uiScaleController = new UIScaleController();
-        window.uiScaleController.init();
-    }
-    
-    setupAuthListeners();
-    await updateSidebarProfile();
-    await updateHeaderProfile();
-    updateProfileSwitcher();
-    
-    if (typeof setupAlbumToggle === 'function') setupAlbumToggle();
-    
+    // Load critical content
     try {
         if (playlistId) {
             window.isPlaylistMode = true;
             await loadPlaylistMode(playlistId, playlistType);
             if (typeof syncPlaylistUI === 'function') syncPlaylistUI();
         } else if (contentId) {
-            await loadCriticalContentData(contentId);
+            if (typeof loadCriticalContentData === 'function') await loadCriticalContentData(contentId);
             window.isPlaylistMode = false;
-        } else {
-            throw new Error('No content ID or playlist ID provided');
-        }
-        
-        await Promise.all([
-            updateSidebarProfile(),
-            updateHeaderProfile()
-        ]);
+        } else throw new Error('No content ID or playlist ID provided');
         
         if (skeleton) skeleton.style.display = 'none';
-        if (typeof updateCommentInputState === 'function') updateCommentInputState();
+        if (typeof updateCommentInputState === 'function') setTimeout(updateCommentInputState, 300);
         
         if (typeof initAnalyticsModal === 'function') initAnalyticsModal();
         if (typeof initSearchModal === 'function') initSearchModal();
         if (typeof initNotificationsPanel === 'function') initNotificationsPanel();
         
-        if (window.PlaylistManager && window.currentUserId && typeof initializePlaylistManager === 'function') {
-            await initializePlaylistManager();
+        if (typeof initializePlaylistManager === 'function') await initializePlaylistManager();
+        if (!window.isPlaylistMode && window.currentContent?.id) {
+            if (typeof initializeRecommendationEngine === 'function') {
+                await initializeRecommendationEngine();
+            }
+        } else if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
+            await initializeRecommendationEngineForPlaylist(window.currentPlaylistItems[0]?.id);
         }
         
-        if (typeof initializeRecommendationEngine === 'function') {
-            if (!window.isPlaylistMode && window.currentContent?.id) {
-                await initializeRecommendationEngine();
-            } else if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
-                await initializeRecommendationEngineForPlaylist(window.currentPlaylistItems[0]?.id);
-            }
+        if (window.currentUserId && (window.currentContent?.id || window.currentPlaylistItems?.length > 0)) {
+            setTimeout(() => initializePlaylistModal(), 500);
         }
         
         if (typeof applyMobileHeaderStyles === 'function') applyMobileHeaderStyles();
         
-        if (!window.isPlaylistMode && window.currentContent && window.ContentCollectionsEngine) {
-            await window.ContentCollectionsEngine.initialize(window.currentContent);
-        }
-        
+        // Single mode fix: ensure player is ready
         if (!window.isPlaylistMode && window.currentContent?.id) {
             setTimeout(() => {
                 const player = document.getElementById('inlinePlayer');
@@ -1624,25 +1880,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
     } catch (err) {
-        console.error('❌ Critical load failed:', err);
-        if (typeof showToast === 'function') showToast('Failed to load content. Retrying...', 'error');
+        console.error('Critical load failed:', err);
+        window.showToast('Failed to load content. Retrying...', 'error');
         if (skeleton) skeleton.style.display = 'none';
-        try {
-            await loadContentFromURLLegacy();
-        } catch (fallbackErr) {
-            console.error('Fallback also failed:', fallbackErr);
-            document.getElementById('contentTitle').textContent = 'Content Unavailable';
-        }
+        if (typeof loadContentFromURLLegacy === 'function') await loadContentFromURLLegacy();
     }
     
+    // Lazy load secondary features
     requestIdleCallback(() => {
-        setupEventListeners();
-        if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0) {
+        if (typeof setupEventListeners === 'function') setupEventListeners();
+        if (typeof initializeVideoPlayerSkeleton === 'function') initializeVideoPlayerSkeleton();
+        if (window.isPlaylistMode && window.currentPlaylistItems?.length > 0 && typeof loadSecondaryContentDataForPlaylist === 'function') {
             loadSecondaryContentDataForPlaylist();
-        } else if (window.currentContent?.id) {
+        } else if (window.currentContent?.id && typeof loadSecondaryContentData === 'function') {
             loadSecondaryContentData(window.currentContent.id);
         }
-        if (typeof initializeVideoPlayerSkeleton === 'function') initializeVideoPlayerSkeleton();
     }, { timeout: 2000 });
     
     setTimeout(() => {
@@ -1655,162 +1907,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 5000);
     
-    console.log('✅ Content Detail initialization complete with modular architecture');
+    console.log('✅ Orchestrator initialization complete');
 });
 
-// ============================================
-// PLACEHOLDER FUNCTIONS FOR MODULES TO OVERRIDE
-// ============================================
-async function initializeRecommendationEngine() {
-    if (window.RecommendationEngine && window.currentContent?.id) {
-        try {
-            recommendationEngine = new window.RecommendationEngine({
-                supabase: window.supabaseClient,
-                userId: window.currentUserId,
-                currentContentId: window.currentContent.id,
-                limit: 8,
-                minWatchThreshold: 0.5,
-                cacheDuration: 60000
-            });
-            if (typeof loadRecommendationRails === 'function') await loadRecommendationRails();
-        } catch (error) {
-            console.error('Failed to initialize RecommendationEngine:', error);
-        }
-    }
-}
-
-async function initializeRecommendationEngineForPlaylist(contentId) {
-    if (window.RecommendationEngine && contentId) {
-        try {
-            recommendationEngine = new window.RecommendationEngine({
-                supabase: window.supabaseClient,
-                userId: window.currentUserId,
-                currentContentId: contentId,
-                limit: 8,
-                minWatchThreshold: 0.5,
-                cacheDuration: 60000
-            });
-            if (typeof loadRecommendationRails === 'function') await loadRecommendationRails();
-        } catch (error) {
-            console.error('Failed to initialize RecommendationEngine:', error);
-        }
-    }
-}
-
-async function initializePlaylistManager() {
-    if (typeof window.PlaylistManager === 'function' && window.currentUserId) {
-        try {
-            playlistManager = new window.PlaylistManager({
-                supabase: window.supabaseClient,
-                userId: window.currentUserId,
-                watchLaterName: 'Watch Later'
-            });
-            if (typeof updateWatchLaterButtonState === 'function') await updateWatchLaterButtonState();
-        } catch (error) {
-            console.error('Failed to initialize PlaylistManager:', error);
-        }
-    }
-}
-
-function initializePlaylistModal() {
-    if (window.PlaylistModal && window.currentUserId && window.currentContent?.id) {
-        try {
-            playlistModal = new window.PlaylistModal({
-                supabase: window.supabaseClient,
-                userId: window.currentUserId,
-                contentId: window.currentContent.id
-            });
-            window.playlistModal = playlistModal;
-        } catch (error) {
-            console.error('Failed to initialize PlaylistModal:', error);
-        }
-    }
-}
-
-function initializeKeyboardShortcuts() {
-    if (window.KeyboardShortcuts && (window.enhancedVideoPlayer || enhancedVideoPlayer)) {
-        const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-        if (player?.video) {
-            try {
-                keyboardShortcuts = new window.KeyboardShortcuts({
-                    videoElement: player.video,
-                    supabaseClient: window.supabaseClient,
-                    contentId: window.currentContent?.id
-                });
-                window.keyboardShortcuts = keyboardShortcuts;
-            } catch (error) {
-                console.error('Failed to initialize KeyboardShortcuts:', error);
-            }
-        }
-    }
-}
-
-function initAnalyticsModal() {
-    const analyticsBtn = document.getElementById('analytics-btn');
-    const analyticsModal = document.getElementById('analytics-modal');
-    const closeAnalytics = document.getElementById('close-analytics');
-    if (analyticsBtn && analyticsModal) {
-        analyticsBtn.addEventListener('click', () => analyticsModal.classList.add('active'));
-        if (closeAnalytics) closeAnalytics.addEventListener('click', () => analyticsModal.classList.remove('active'));
-    }
-}
-
-function initSearchModal() {
-    const searchBtn = document.getElementById('search-btn');
-    const searchModal = document.getElementById('search-modal');
-    const closeSearchBtn = document.getElementById('close-search-btn');
-    if (searchBtn && searchModal) {
-        searchBtn.addEventListener('click', () => searchModal.classList.add('active'));
-        if (closeSearchBtn) closeSearchBtn.addEventListener('click', () => searchModal.classList.remove('active'));
-    }
-}
-
-function initNotificationsPanel() {
-    const notificationsBtn = document.getElementById('notifications-btn');
-    const notificationsPanel = document.getElementById('notifications-panel');
-    const closeNotifications = document.getElementById('close-notifications');
-    if (notificationsBtn && notificationsPanel) {
-        notificationsBtn.addEventListener('click', () => notificationsPanel.classList.add('active'));
-        if (closeNotifications) closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
-    }
-}
-
-function applyMobileHeaderStyles() {
-    if (typeof window.applyMobileHeaderStyles === 'function') {
-        window.applyMobileHeaderStyles();
-    }
-}
-
-function initGlobalNavigation() {
-    if (typeof window.initGlobalNavigation === 'function') {
-        window.initGlobalNavigation();
-    }
-}
-
-function initThemeSelector() {
-    if (typeof window.initThemeSelector === 'function') {
-        window.initThemeSelector();
-    }
-}
-
-// ============================================
-// GLOBAL EXPORTS
-// ============================================
-window.recordView = recordContentViewRPC;
-window.loadAllEngagementStates = loadAllEngagementStates;
-window.toggleLike = toggleLike;
-window.shareContent = shareContent;
-window.updateGlobalContentId = updateGlobalContentId;
-window.setCurrentContent = setCurrentContent;
-window.loadLiveEngagementCounts = loadLiveEngagementCounts;
-window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
-window.showLoading = showLoading;
-window.hideLoading = hideLoading;
-window.resetPlaylistCompletionLock = resetPlaylistCompletionLock;
-window.streamingManager = streamingManager;
-window.enhancedVideoPlayer = enhancedVideoPlayer;
-window.keyboardShortcuts = keyboardShortcuts;
-window.playlistModal = playlistModal;
-window.watchSession = watchSession;
-
-console.log('✅ Content Detail Main Orchestrator ready');
+console.log('✅ content-detail.js (Orchestrator) loaded');
