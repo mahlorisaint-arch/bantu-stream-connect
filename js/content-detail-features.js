@@ -1,161 +1,141 @@
 // js/content-detail-features.js
-// ============================================
-// THE SHARED UTILITY BELT
-// Contains ONLY shared utilities and global UI chrome.
-// NO core content-detail business logic.
-// ============================================
-console.log('🎬 Content Detail Features Loading (Utility Belt)...');
+// Extracted features from content-detail.js to reduce main file size.
+// These modules handle UI Utilities, Theme, Sidebar, Header, Navigation, and Recommendations.
+// Load this file BEFORE content-detail.js in your HTML.
+// 
+// 🚀 PHASE 1-6 COMPATIBLE: Fully integrated with decoupled database architecture
+// - All view recording delegated to WatchSessionManager (Phase 3)
+// - All like operations use atomic RPC counters (Phase 4)
+// - All playlist data uses playlist_contents junction table (Phase 1)
+// - All metrics come from content_engagement_stats (Phase 2)
+// - All recommendations use content_public_metrics view (Phase 5)
+// - UI state uses playlist_relation.sort_index for sorting (Phase 6)
+//
+// 🧩 MODULAR ARCHITECTURE (2026-06-14):
+// - All feature functions remain in this file
+// - Used by content-detail.js as the main feature library
+// - No extraction needed - these are the shared utilities
+//
+// 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system (now ONLY in content-detail.js)
+
+console.log('🎬 Content Detail Features Loading (PHASE 1-6 compatible)...');
 
 // ============================================
-// UTILITY FUNCTIONS
+// CLIENT-SIDE VIEW STATUS HELPERS (UI only - NO recording here)
+// Recording is handled by WatchSessionManager in content-detail.js (Phase 3)
 // ============================================
-function safeSetText(elementId, text) {
-    const el = document.getElementById(elementId);
-    if (el) el.textContent = text || '';
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function truncateText(text, maxLength) {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-}
-
-function formatDuration(seconds) {
-    if (!seconds || seconds === 0) return '0:00';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-function formatNumber(num) {
-    if (num === undefined || num === null) return '0';
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-}
-
-function formatTimeAgo(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-}
-
-function formatDate(dateString) {
-    if (!dateString) return '-';
+function hasViewedContentRecently(contentId) {
     try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    } catch (e) {
-        return '-';
+        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+        const viewTime = viewedContent[contentId];
+        if (!viewTime) return false;
+        const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
+        return hoursSinceView < 24;
+    } catch (error) {
+        console.error('Error checking view history:', error);
+        return false;
     }
 }
 
-function formatCommentTime(timestamp) {
-    if (!timestamp) return 'Just now';
+function markContentAsViewed(contentId) {
     try {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return diffMins + ' min ago';
-        if (diffHours < 60) return diffHours + ' hour' + (diffHours !== 1 ? 's' : '') + ' ago';
-        if (diffDays < 7) return diffDays + ' day' + (diffDays !== 1 ? 's' : '') + ' ago';
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
+        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+        viewedContent[contentId] = Date.now();
+
+        // Clean up old entries (older than 7 days)
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        Object.keys(viewedContent).forEach(id => {
+            if (viewedContent[id] < sevenDaysAgo) {
+                delete viewedContent[id];
+            }
         });
-    } catch (e) {
-        return 'Recently';
+        localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+        return true;
+    } catch (error) {
+        console.error('Error marking content as viewed:', error);
+        return false;
     }
 }
 
-function getInitials(name) {
-    if (!name) return '?';
-    return name
-        .split(' ')
-        .map(part => part[0])
-        .join('')
-        .toUpperCase()
-        .substring(0, 2);
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) {
-        // Create container if not exists
-        const newContainer = document.createElement('div');
-        newContainer.id = 'toast-container';
-        newContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000;';
-        document.body.appendChild(newContainer);
+function clearViewCache() {
+    localStorage.removeItem('bantu_viewed_content');
+    console.log('🧹 View cache cleared');
+    if (typeof showToast === 'function') {
+        showToast('View cache cleared!', 'success');
     }
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' :
-            type === 'error' ? 'fa-exclamation-circle' :
-                type === 'warning' ? 'fa-exclamation-triangle' :
-                    'fa-info-circle'}"></i>
-        <span>${escapeHtml(message)}</span>
-    `;
-    toast.style.cssText = `
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 20px;
-        background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : '#3b82f6'};
-        color: white;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    `;
-    toastContainer.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
 }
 
 // ============================================
-// UI CHROME: UIScaleController
+// 🚀 PHASE 2 & 4: Refresh counts from content_engagement_stats
+// Uses the decoupled engagement stats table, NOT legacy Content columns
 // ============================================
+async function refreshCountsFromSource() {
+    if (!window.currentContent) return;
+    
+    try {
+        // 🚀 PHASE 2: Get counts from content_engagement_stats
+        const { data: stats, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('total_views, total_valid_views, total_likes, total_comments')
+            .eq('content_id', window.currentContent.id)
+            .maybeSingle();
+
+        if (!statsError && stats) {
+            // Update local content object with decoupled metrics
+            if (window.currentContent) {
+                window.currentContent.views_count = stats.total_views || 0;
+                window.currentContent.valid_views_count = stats.total_valid_views || 0;
+                window.currentContent.likes_count = stats.total_likes || 0;
+                window.currentContent.comments_count = stats.total_comments || 0;
+            }
+
+            if (typeof safeSetText === 'function') {
+                safeSetText('viewsCount', formatNumber(stats.total_views || 0) + ' views');
+                safeSetText('viewsCountFull', formatNumber(stats.total_views || 0));
+                safeSetText('likesCount', formatNumber(stats.total_likes || 0));
+                safeSetText('commentsCount', `(${formatNumber(stats.total_comments || 0)})`);
+            }
+
+            console.log('✅ Counts refreshed from content_engagement_stats:', {
+                views: stats.total_views,
+                valid_views: stats.total_valid_views,
+                likes: stats.total_likes,
+                comments: stats.total_comments
+            });
+        } else {
+            // Fallback to legacy method if stats table not available
+            const { count: newViews } = await window.supabaseClient
+                .from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', window.currentContent.id)
+                .eq('counted_as_view', true);
+
+            const { count: newLikes } = await window.supabaseClient
+                .from('content_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', window.currentContent.id);
+
+            if (window.currentContent) {
+                window.currentContent.views_count = newViews || 0;
+                window.currentContent.likes_count = newLikes || 0;
+            }
+
+            if (typeof safeSetText === 'function') {
+                safeSetText('viewsCount', formatNumber(newViews) + ' views');
+                safeSetText('viewsCountFull', formatNumber(newViews));
+                safeSetText('likesCount', formatNumber(newLikes));
+            }
+        }
+    } catch (error) {
+        console.error('❌ Failed to refresh counts from source:', error);
+    }
+}
+
+// ============================================
+// HOME FEED UI INTEGRATION - SIDEBAR, HEADER, NAVIGATION, UTILITIES
+// ============================================
+
+// UI Scale Controller (from home feed)
 class UIScaleController {
     constructor() {
         this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
@@ -214,8 +194,87 @@ class UIScaleController {
     }
 }
 
+// Toast Notification System (from home feed)
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' :
+            type === 'error' ? 'fa-exclamation-circle' :
+                type === 'warning' ? 'fa-exclamation-triangle' :
+                    'fa-info-circle'}"></i>
+        <span>${escapeHtml(message)}</span>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Formatting Functions (from home feed)
+function formatDuration(seconds) {
+    if (!seconds || isNaN(seconds) || seconds <= 0) return "0:00";
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function formatNumber(num) {
+    if (!num && num !== 0) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
+
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    return name
+        .split(' ')
+        .map(part => part[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // ============================================
-// UI CHROME: Theme Selector
+// THEME SELECTOR - HOME FEED INTEGRATION
 // ============================================
 function initThemeSelector() {
     console.log('🎨 Initializing theme selector...');
@@ -310,7 +369,7 @@ function applyTheme(theme) {
 }
 
 // ============================================
-// UI CHROME: Sidebar Setup
+// SIDEBAR SETUP & FUNCTIONS (from home feed)
 // ============================================
 function setupCompleteSidebar() {
     setupMobileSidebar();
@@ -412,15 +471,93 @@ function setupSidebarScaleControls() {
     document.addEventListener('scaleChanged', updateDisplay);
 }
 
-function optimizeMobileSidebar() {
-    const sidebarMenu = document.getElementById('sidebar-menu');
-    if (!sidebarMenu) return;
+function setupSidebarNavigation() {
+    document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        if (!window.currentUser) {
+            if (typeof showToast === 'function') showToast('Please sign in to view analytics', 'warning');
+            return;
+        }
+        const analyticsModal = document.getElementById('analytics-modal');
+        if (analyticsModal) {
+            analyticsModal.classList.add('active');
+            loadPersonalAnalytics();
+        }
+    });
 
-    if (window.innerWidth <= 768) {
-        sidebarMenu.style.width = '16rem';
-    } else {
-        sidebarMenu.style.width = '18rem';
-    }
+    document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        const notificationsPanel = document.getElementById('notifications-panel');
+        if (notificationsPanel) {
+            notificationsPanel.classList.add('active');
+            renderNotifications();
+        }
+    });
+
+    document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        if (!window.currentUser) {
+            if (typeof showToast === 'function') showToast('Please sign in to view badges', 'warning');
+            return;
+        }
+        const badgesModal = document.getElementById('badges-modal');
+        if (badgesModal) {
+            badgesModal.classList.add('active');
+            loadUserBadges();
+        }
+    });
+
+    document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        if (!window.currentUser) {
+            if (typeof showToast === 'function') showToast('Please sign in to start a watch party', 'warning');
+            return;
+        }
+        const watchPartyModal = document.getElementById('watch-party-modal');
+        if (watchPartyModal) {
+            watchPartyModal.classList.add('active');
+            loadWatchPartyContent();
+        }
+    });
+
+    document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        const { data } = await window.supabaseClient.auth.getSession();
+        if (!data?.session) {
+            if (typeof showToast === 'function') showToast('Please sign in to upload content', 'warning');
+            window.location.href = `login.html?redirect=creator-upload.html`;
+        } else {
+            window.location.href = 'creator-upload.html';
+        }
+    });
+
+    document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        const { data } = await window.supabaseClient.auth.getSession();
+        if (!data?.session) {
+            if (typeof showToast === 'function') showToast('Please sign in to access dashboard', 'warning');
+            window.location.href = `login.html?redirect=creator-dashboard.html`;
+        } else {
+            window.location.href = 'creator-dashboard.html';
+        }
+    });
+
+    document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        if (!window.currentUser) {
+            if (typeof showToast === 'function') showToast('Please sign in to view watch history', 'warning');
+            window.location.href = `login.html?redirect=watch-history.html`;
+            return;
+        }
+        window.location.href = 'watch-history.html';
+    });
 }
 
 async function updateSidebarProfile() {
@@ -517,8 +654,19 @@ function renderSidebarFallback(avatar, name, email, user) {
     if (email) email.textContent = user?.email || 'Sign in to continue';
 }
 
+function optimizeMobileSidebar() {
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    if (!sidebarMenu) return;
+
+    if (window.innerWidth <= 768) {
+        sidebarMenu.style.width = '16rem';
+    } else {
+        sidebarMenu.style.width = '18rem';
+    }
+}
+
 // ============================================
-// UI CHROME: Header Profile
+// HEADER FUNCTIONS (from home feed)
 // ============================================
 async function updateHeaderProfile() {
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -672,9 +820,9 @@ function updateProfileSwitcher() {
                 window.currentProfile = profile;
                 localStorage.setItem('currentProfileId', profileId);
                 updateProfileSwitcher();
-                if (typeof loadContinueWatchingSection === 'function') await loadContinueWatchingSection();
-                if (typeof loadForYouSection === 'function') await loadForYouSection();
-                showToast(`Switched to ${profile.name}`, 'success');
+                await loadContinueWatchingSection();
+                await loadForYouSection();
+                if (typeof showToast === 'function') showToast(`Switched to ${profile.name}`, 'success');
             }
         });
     });
@@ -696,8 +844,12 @@ function updateProfileSwitcher() {
     applyMobileHeaderStyles();
 }
 
+window.addEventListener('resize', () => {
+    applyMobileHeaderStyles();
+});
+
 // ============================================
-// UI CHROME: Navigation Buttons
+// BOTTOM NAVIGATION BUTTON FUNCTIONS
 // ============================================
 function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
@@ -719,7 +871,7 @@ function setupNavigationButtons() {
             if (data?.session) {
                 window.location.href = 'creator-upload.html';
             } else {
-                showToast('Please sign in to create content', 'warning');
+                if (typeof showToast === 'function') showToast('Please sign in to create content', 'warning');
                 window.location.href = `login.html?redirect=creator-upload.html`;
             }
         });
@@ -729,7 +881,7 @@ function setupNavigationButtons() {
         navHistoryBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (!window.currentUser) {
-                showToast('Please sign in to view watch history', 'warning');
+                if (typeof showToast === 'function') showToast('Please sign in to view watch history', 'warning');
                 window.location.href = `login.html?redirect=watch-history.html`;
                 return;
             }
@@ -774,7 +926,63 @@ function setupNavButtonScrollAnimation() {
 }
 
 // ============================================
-// SHARED COMPONENTS: Quality & Network Indicators
+// COMMENT INPUT STATE UPDATE
+// ============================================
+async function updateCommentInputState() {
+    const commentInput = document.getElementById('commentInput');
+    const sendCommentBtn = document.getElementById('sendCommentBtn');
+    const commentAvatar = document.getElementById('userCommentAvatar');
+    if (!commentInput || !sendCommentBtn) return;
+
+    let isAuthenticated = false;
+    let userProfile = null;
+    if (window.AuthHelper?.isAuthenticated?.()) {
+        isAuthenticated = true;
+        userProfile = window.AuthHelper.getUserProfile?.();
+    } else if (window.currentUser?.id) {
+        isAuthenticated = true;
+        userProfile = window.currentUser;
+    } else {
+        try {
+            const { data } = await window.supabaseClient?.auth?.getSession?.();
+            isAuthenticated = !!data?.session;
+            if (isAuthenticated && window.AuthHelper?.getUserProfile) {
+                userProfile = window.AuthHelper.getUserProfile();
+            }
+        } catch (e) {
+            console.warn('Auth check fallback:', e);
+        }
+    }
+
+    if (isAuthenticated && userProfile) {
+        commentInput.disabled = false;
+        commentInput.placeholder = 'Write a comment...';
+        sendCommentBtn.disabled = false;
+
+        const displayName = userProfile?.full_name || userProfile?.username || userProfile?.email?.split('@')[0] || 'User';
+        const avatarUrl = userProfile?.avatar_url || window.AuthHelper?.getAvatarUrl?.();
+
+        if (commentAvatar) {
+            if (avatarUrl && avatarUrl !== 'null') {
+                const fixedUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+                commentAvatar.innerHTML = `<img src="${fixedUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                const initial = displayName.charAt(0).toUpperCase();
+                commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${initial}</div>`;
+            }
+        }
+    } else {
+        commentInput.disabled = true;
+        commentInput.placeholder = 'Sign in to add a comment...';
+        sendCommentBtn.disabled = true;
+        if (commentAvatar) {
+            commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
+        }
+    }
+}
+
+// ============================================
+// 🚀 PHASE 4: QUALITY INDICATOR UPDATE FUNCTION
 // ============================================
 function updateQualityIndicator(quality) {
     const indicator = document.getElementById('qualityBadge');
@@ -804,6 +1012,9 @@ function updateQualityIndicator(quality) {
     }, 5000);
 }
 
+// ============================================
+// 🚀 PHASE 4: NETWORK SPEED INDICATOR UPDATE
+// ============================================
 function updateNetworkSpeedIndicator(speedMbps) {
     const indicator = document.getElementById('networkSpeedIndicator');
     const valueSpan = document.getElementById('networkSpeedValue');
@@ -827,7 +1038,7 @@ function updateNetworkSpeedIndicator(speedMbps) {
 }
 
 // ============================================
-// SHARED COMPONENTS: Recommendation Rails (UI only)
+// 🚀 PHASE 5: LOAD RECOMMENDATION RAILS using content_public_metrics
 // ============================================
 async function loadRecommendationRails() {
     if (!window.recommendationEngine) return;
@@ -978,7 +1189,7 @@ function renderRecommendationRail(containerId, title, items) {
 }
 
 // ============================================
-// SHARED COMPONENTS: Watch Later Button State & Toggle
+// 🚀 PHASE 4: WATCH LATER FUNCTIONALITY
 // ============================================
 async function updateWatchLaterButtonState() {
     const btn = document.getElementById('watchLaterBtn');
@@ -1012,11 +1223,11 @@ async function updateWatchLaterButtonState() {
 async function handleWatchLaterToggle() {
     const btn = document.getElementById('watchLaterBtn');
     if (!window.currentContent?.id) {
-        showToast('No content selected', 'error');
+        if (typeof showToast === 'function') showToast('No content selected', 'error');
         return;
     }
     if (!window.currentUserId) {
-        showToast('Sign in to save to Watch Later', 'warning');
+        if (typeof showToast === 'function') showToast('Sign in to save to Watch Later', 'warning');
         const redirect = encodeURIComponent(window.location.href);
         window.location.href = `login.html?redirect=${redirect}`;
         return;
@@ -1029,7 +1240,7 @@ async function handleWatchLaterToggle() {
     }
 
     if (!window.playlistManager) {
-        showToast('Playlist system loading...', 'info');
+        if (typeof showToast === 'function') showToast('Playlist system loading...', 'info');
         return;
     }
     if (!btn) {
@@ -1046,19 +1257,19 @@ async function handleWatchLaterToggle() {
         const result = await window.playlistManager.toggleWatchLater(window.currentContent.id);
         if (result.success) {
             if (result.action === 'added') {
-                showToast('✅ Added to Watch Later', 'success');
+                if (typeof showToast === 'function') showToast('✅ Added to Watch Later', 'success');
             } else if (result.action === 'removed') {
-                showToast('🗑️ Removed from Watch Later', 'info');
+                if (typeof showToast === 'function') showToast('🗑️ Removed from Watch Later', 'info');
             } else if (result.action === 'already_exists') {
-                showToast('Already in Watch Later', 'info');
+                if (typeof showToast === 'function') showToast('Already in Watch Later', 'info');
             }
         } else {
-            showToast('❌ ' + (result.error || 'Failed to update'), 'error');
+            if (typeof showToast === 'function') showToast('❌ ' + (result.error || 'Failed to update'), 'error');
             await updateWatchLaterButtonState();
         }
     } catch (error) {
         console.error('❌ Watch Later toggle failed:', error);
-        showToast('Failed to update Watch Later', 'error');
+        if (typeof showToast === 'function') showToast('Failed to update Watch Later', 'error');
         await updateWatchLaterButtonState();
     } finally {
         btn.disabled = originalDisabled;
@@ -1082,54 +1293,57 @@ function setupWatchLaterButton() {
 }
 
 // ============================================
-// GLOBAL EXPORTS
+// Utility functions
 // ============================================
-window.safeSetText = safeSetText;
-window.escapeHtml = escapeHtml;
-window.truncateText = truncateText;
-window.formatDuration = formatDuration;
-window.formatNumber = formatNumber;
-window.formatTimeAgo = formatTimeAgo;
-window.formatDate = formatDate;
-window.formatCommentTime = formatCommentTime;
-window.getInitials = getInitials;
-window.debounce = debounce;
-window.showToast = showToast;
-
-window.UIScaleController = UIScaleController;
-window.initThemeSelector = initThemeSelector;
-window.applyTheme = applyTheme;
-window.setupCompleteSidebar = setupCompleteSidebar;
-window.setupMobileSidebar = setupMobileSidebar;
-window.updateSidebarProfile = updateSidebarProfile;
-window.updateHeaderProfile = updateHeaderProfile;
-window.applyMobileHeaderStyles = applyMobileHeaderStyles;
-window.updateProfileSwitcher = updateProfileSwitcher;
-window.setupNavigationButtons = setupNavigationButtons;
-window.setupNavButtonScrollAnimation = setupNavButtonScrollAnimation;
-
-window.updateQualityIndicator = updateQualityIndicator;
-window.updateNetworkSpeedIndicator = updateNetworkSpeedIndicator;
-window.loadRecommendationRails = loadRecommendationRails;
-window.showRailSkeleton = showRailSkeleton;
-window.showRailEmpty = showRailEmpty;
-window.renderRecommendationRail = renderRecommendationRail;
-window.updateWatchLaterButtonState = updateWatchLaterButtonState;
-window.handleWatchLaterToggle = handleWatchLaterToggle;
-window.setupWatchLaterButton = setupWatchLaterButton;
-
-// Initialize UI Controller if document is ready
-function initContentDetailFeatures() {
-    console.log('🎬 Initializing Content Detail Features (Utility Belt)...');
-    if (!window.uiScaleController) {
-        window.uiScaleController = new UIScaleController();
-        window.uiScaleController.init();
+function safeSetText(id, text) {
+    var el = document.getElementById(id);
+    if (el) {
+        el.textContent = text || '';
     }
+}
+
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Stub functions for dependencies that may not exist yet
+async function loadContinueWatchingSection() { console.log('loadContinueWatchingSection stub'); }
+async function loadForYouSection() { console.log('loadForYouSection stub'); }
+function loadPersonalAnalytics() { console.log('loadPersonalAnalytics stub'); }
+function renderNotifications() { console.log('renderNotifications stub'); }
+function loadUserBadges() { console.log('loadUserBadges stub'); }
+function loadWatchPartyContent() { console.log('loadWatchPartyContent stub'); }
+
+// ============================================
+// 🔧 ALBUM FIX: REMOVED duplicate album toggle system
+// 🔧 ALBUM ARCHITECTURE FIX: Album UI now handled EXCLUSIVELY by content-detail.js
+// ============================================
+
+// ============================================
+// Initialize all features
+// ============================================
+function initContentDetailFeatures() {
+    console.log('🎬 Initializing Content Detail Features (PHASE 1-6 compatible)...');
+    
+    window.uiScaleController = new UIScaleController();
+    window.uiScaleController.init();
+    
     setupCompleteSidebar();
+    setupSidebarNavigation();
     setupNavigationButtons();
     setupNavButtonScrollAnimation();
     initThemeSelector();
     setupWatchLaterButton();
+    
     console.log('✅ Content Detail Features initialized');
 }
 
@@ -1139,4 +1353,48 @@ if (document.readyState === 'loading') {
     initContentDetailFeatures();
 }
 
-console.log('✅ content-detail-features.js loaded');
+// ============================================
+// GLOBAL EXPORTS
+// ============================================
+window.hasViewedContentRecently = hasViewedContentRecently;
+window.markContentAsViewed = markContentAsViewed;
+window.clearViewCache = clearViewCache;
+window.refreshCountsFromSource = refreshCountsFromSource;
+window.UIScaleController = UIScaleController;
+window.showToast = showToast;
+window.formatDuration = formatDuration;
+window.formatNumber = formatNumber;
+window.formatTimeAgo = formatTimeAgo;
+window.getInitials = getInitials;
+window.debounce = debounce;
+window.initThemeSelector = initThemeSelector;
+window.applyTheme = applyTheme;
+window.setupCompleteSidebar = setupCompleteSidebar;
+window.setupSidebarNavigation = setupSidebarNavigation;
+window.updateSidebarProfile = updateSidebarProfile;
+window.updateHeaderProfile = updateHeaderProfile;
+window.updateProfileSwitcher = updateProfileSwitcher;
+window.applyMobileHeaderStyles = applyMobileHeaderStyles;
+window.setupNavigationButtons = setupNavigationButtons;
+window.setupNavButtonScrollAnimation = setupNavButtonScrollAnimation;
+window.updateCommentInputState = updateCommentInputState;
+window.updateQualityIndicator = updateQualityIndicator;
+window.updateNetworkSpeedIndicator = updateNetworkSpeedIndicator;
+window.loadRecommendationRails = loadRecommendationRails;
+window.showRailSkeleton = showRailSkeleton;
+window.showRailEmpty = showRailEmpty;
+window.renderRecommendationRail = renderRecommendationRail;
+window.updateWatchLaterButtonState = updateWatchLaterButtonState;
+window.handleWatchLaterToggle = handleWatchLaterToggle;
+window.setupWatchLaterButton = setupWatchLaterButton;
+window.safeSetText = safeSetText;
+window.truncateText = truncateText;
+window.escapeHtml = escapeHtml;
+
+console.log('✅ Content Detail Features loaded - PHASE 1-6 compatible');
+console.log('   🚀 Phase 1: Decoupled playlist structure ready');
+console.log('   🚀 Phase 2: content_engagement_stats metrics ready');
+console.log('   🚀 Phase 3: View recording delegated to WatchSessionManager');
+console.log('   🚀 Phase 4: Atomic likes and quality indicators ready');
+console.log('   🚀 Phase 5: content_public_metrics recommendations ready');
+console.log('   🚀 Phase 6: UI state using playlist_relation.sort_index');
