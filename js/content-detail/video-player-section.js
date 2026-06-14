@@ -1,544 +1,238 @@
 // js/content-detail/video-player-section.js
-// Extracted from content-detail.js - Video Player Initialization and Management
-
-console.log('🎬 Video Player module loading...');
+// ============================================
+// VIDEO PLAYER SECTION MODULE - COMPLETE BRAIN
+// Contains EnhancedVideoPlayer class, player controls, media loading,
+// playback gestures, and video player UI management
+// ============================================
+console.log('🎬 Video Player Section Module Loading...');
 
 // ============================================
-// ENHANCED VIDEO PLAYER CLASS
+// HELPER FUNCTIONS
 // ============================================
-class EnhancedVideoPlayer {
-    constructor(options = {}) {
-        this.options = {
-            autoplay: options.autoplay || false,
-            defaultSpeed: options.defaultSpeed || 1.0,
-            defaultQuality: options.defaultQuality || 'auto',
-            defaultVolume: options.defaultVolume !== undefined ? options.defaultVolume : 1.0,
-            muted: options.muted || false,
-            contentId: options.contentId || null,
-            supabaseClient: options.supabaseClient || null,
-            userId: options.userId || null
-        };
-        
-        this.video = null;
-        this.container = null;
-        this.controls = null;
-        this.isPlaying = false;
-        this.isFullscreen = false;
-        this.currentSpeed = this.options.defaultSpeed;
-        this.currentQuality = this.options.defaultQuality;
-        this.volume = this.options.defaultVolume;
-        this.muted = this.options.muted;
-        this.progressBar = null;
-        this.currentTimeDisplay = null;
-        this.durationDisplay = null;
-        this.playPauseBtn = null;
-        this.volumeBtn = null;
-        this.volumeSlider = null;
-        this.fullscreenBtn = null;
-        this.settingsBtn = null;
-        this.settingsMenu = null;
-        this.progressContainer = null;
-        this.events = {};
-        
-        this._setupEventListeners();
+
+/**
+ * Get playable media URL from content object
+ * Supports file_url, audio_url, video_url, media_url
+ * @param {Object} content - Content object
+ * @returns {string|null} - Playable URL or null
+ */
+function getPlayableMediaUrl(content) {
+    if (!content) return null;
+    
+    return (
+        content.file_url ||
+        content.audio_url ||
+        content.video_url ||
+        content.media_url ||
+        null
+    );
+}
+
+/**
+ * Detect media type (audio vs video) from content
+ * @param {Object} content - Content object
+ * @returns {string} - 'audio' or 'video'
+ */
+function detectMediaType(content) {
+    if (!content) return 'video';
+    
+    if (content.media_type) {
+        if (content.media_type.toLowerCase() === 'audio') return 'audio';
+        if (content.media_type.toLowerCase() === 'video') return 'video';
     }
     
-    _setupEventListeners() {
-        this.on = (event, callback) => {
-            if (!this.events[event]) this.events[event] = [];
-            this.events[event].push(callback);
-        };
+    const format = (content.content_format || '').toLowerCase();
+    if (format.includes('audio') || format.includes('podcast') || format.includes('music')) {
+        return 'audio';
+    }
+    
+    const url = getPlayableMediaUrl(content);
+    if (url) {
+        const ext = url.split('.').pop()?.toLowerCase();
+        if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a') {
+            return 'audio';
+        }
+    }
+    
+    return 'video';
+}
+
+/**
+ * Initialize video player skeleton (preload=none for performance)
+ */
+function initializeVideoPlayerSkeleton() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    if (videoElement) {
+        videoElement.preload = 'none';
+        videoElement.controls = false;
+        console.log('🎥 Video skeleton ready (preload=none)');
+    }
+}
+
+/**
+ * Close video player and reset UI
+ */
+function closeVideoPlayer() {
+    const player = document.getElementById('inlinePlayer');
+    const video = document.getElementById('inlineVideoPlayer');
+    const placeholder = document.getElementById('videoPlaceholder');
+    const heroPoster = document.getElementById('heroPoster');
+    const closeFromHero = document.getElementById('closePlayerFromHero');
+    
+    if (player) player.style.display = 'none';
+    if (video) {
+        video.pause();
+        video.currentTime = 0;
+    }
+    
+    // Stop watch session
+    if (window.watchSession) {
+        window.watchSession.stop();
+        window.watchSession = null;
+    }
+    
+    // Clean up player instance
+    const playerInstance = window.enhancedVideoPlayer;
+    if (playerInstance) {
+        if (playerInstance.video) {
+            playerInstance.video.pause();
+            playerInstance.video.currentTime = 0;
+        }
+    }
+    
+    // Clean up streaming manager
+    if (window.streamingManager) {
+        window.streamingManager.destroy();
+        window.streamingManager = null;
+    }
+    
+    // Show placeholder and reset poster
+    if (placeholder) placeholder.style.display = 'flex';
+    if (heroPoster) heroPoster.style.opacity = '1';
+    if (closeFromHero) closeFromHero.style.display = 'none';
+    
+    // Scroll back to hero
+    const hero = document.querySelector('.content-hero');
+    if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Show initial play overlay (for autoplay blocked state)
+ */
+function showInitialPlayOverlay() {
+    const overlay = document.getElementById('initialPlayOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+}
+
+/**
+ * Hide initial play overlay
+ */
+function hideInitialPlayOverlay() {
+    const overlay = document.getElementById('initialPlayOverlay');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+/**
+ * Setup initial play button click handler
+ */
+function setupInitialPlayButton() {
+    const playButton = document.getElementById('initialPlayButton');
+    if (!playButton) return;
+    
+    const newPlayButton = playButton.cloneNode(true);
+    playButton.parentNode.replaceChild(newPlayButton, playButton);
+    newPlayButton.addEventListener('click', startPlaybackFromUserGesture);
+    console.log('✅ Initial play overlay button bound to direct user gesture');
+}
+
+// ============================================
+// DIRECT USER GESTURE PLAYBACK
+// ============================================
+
+/**
+ * Start playback from user gesture (bypasses autoplay restrictions)
+ * Shows player container, ensures visibility, then plays
+ */
+const startPlaybackFromUserGesture = async () => {
+    try {
+        // Ensure player container is visible FIRST
+        const player = document.getElementById('inlinePlayer');
+        const placeholder = document.getElementById('videoPlaceholder');
+        const heroPoster = document.getElementById('heroPoster');
         
-        this.emit = (event, data) => {
-            if (this.events[event]) {
-                this.events[event].forEach(callback => callback(data));
+        if (player) {
+            player.style.display = 'block';
+            player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (placeholder) placeholder.style.display = 'none';
+        if (heroPoster) heroPoster.style.opacity = '0.3';
+        
+        // Get player instance
+        const playerInstance = window.enhancedVideoPlayer;
+        if (!playerInstance || !playerInstance.video) {
+            console.error('❌ Player instance or native video element not found.');
+            // Try to initialize player if not ready
+            if (typeof initializeEnhancedVideoPlayer === 'function') {
+                initializeEnhancedVideoPlayer();
+                setTimeout(startPlaybackFromUserGesture, 500);
             }
-        };
-    }
-    
-    attach(videoElement, container) {
-        this.video = videoElement;
-        this.container = container;
-        
-        if (!this.video || !this.container) {
-            console.error('❌ Cannot attach player: missing video or container');
             return;
         }
         
-        this._setupDOMReferences();
-        this._bindEvents();
-        this._initializeControls();
+        const video = playerInstance.video;
         
-        if (this.options.autoplay) {
-            this.play();
+        // Fallback: load media if source is missing and we're not in playlist mode
+        if (!video.src && !window.isPlaylistMode && window.currentContent?.file_url) {
+            const fileUrl = getPlayableMediaUrl(window.currentContent);
+            if (fileUrl) {
+                console.log('🎬 Single Mode Fallback: Loading media source directly.');
+                video.src = fileUrl;
+                video.load();
+            }
         }
         
-        console.log('✅ EnhancedVideoPlayer attached');
-        this.emit('ready', { player: this });
-    }
-    
-    _setupDOMReferences() {
-        this.controls = this.container.querySelector('.enhanced-video-controls');
-        this.progressBar = this.container.querySelector('.progress-bar');
-        this.currentTimeDisplay = this.container.querySelector('.current-time');
-        this.durationDisplay = this.container.querySelector('.duration');
-        this.playPauseBtn = this.container.querySelector('.play-pause');
-        this.volumeBtn = this.container.querySelector('.volume-btn');
-        this.volumeSlider = this.container.querySelector('.volume-bar');
-        this.fullscreenBtn = this.container.querySelector('.fullscreen-btn');
-        this.settingsBtn = this.container.querySelector('.settings-btn');
-        this.settingsMenu = this.container.querySelector('.settings-menu');
-        this.progressContainer = this.container.querySelector('.progress-container');
-    }
-    
-    _bindEvents() {
-        // Video events
-        this.video.addEventListener('play', () => {
-            this.isPlaying = true;
-            this._updatePlayPauseIcon();
-            this.emit('play', { player: this });
-        });
+        // Unlock autoplay
+        video.muted = false;
+        video.volume = 1.0;
+        window.userHasInteractedWithMedia = true;
+        document.body.classList.add('user-interacted');
         
-        this.video.addEventListener('pause', () => {
-            this.isPlaying = false;
-            this._updatePlayPauseIcon();
-            this.emit('pause', { player: this });
-        });
-        
-        this.video.addEventListener('timeupdate', () => {
-            this._updateProgress();
-            this.emit('timeupdate', { currentTime: this.video.currentTime });
-        });
-        
-        this.video.addEventListener('loadedmetadata', () => {
-            this._updateDuration();
-            this.emit('loadedmetadata', { duration: this.video.duration });
-        });
-        
-        this.video.addEventListener('ended', () => {
-            this.emit('ended', { player: this });
-        });
-        
-        this.video.addEventListener('error', (e) => {
-            console.error('Video error:', e);
-            this.emit('error', { error: e, player: this });
-        });
-        
-        this.video.addEventListener('volumechange', () => {
-            this.volume = this.video.volume;
-            this.muted = this.video.muted;
-            this._updateVolumeIcon();
-            this.emit('volumechange', { volume: this.volume, muted: this.muted });
-        });
-        
-        // Control buttons
-        if (this.playPauseBtn) {
-            this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
-        }
-        
-        if (this.progressBar) {
-            this.progressBar.addEventListener('input', (e) => {
-                const seekTime = (e.target.value / 100) * this.video.duration;
-                this.video.currentTime = seekTime;
-                this.emit('seek', { currentTime: seekTime });
-            });
-        }
-        
-        if (this.volumeBtn) {
-            this.volumeBtn.addEventListener('click', () => this.toggleMute());
-        }
-        
-        if (this.volumeSlider) {
-            this.volumeSlider.addEventListener('input', (e) => {
-                const value = parseFloat(e.target.value);
-                this.setVolume(value / 100);
-            });
-        }
-        
-        if (this.fullscreenBtn) {
-            this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-        }
-        
-        if (this.settingsBtn && this.settingsMenu) {
-            this.settingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.settingsMenu.classList.toggle('active');
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (this.settingsMenu && this.settingsMenu.classList.contains('active') &&
-                    !this.settingsMenu.contains(e.target) &&
-                    !this.settingsBtn.contains(e.target)) {
-                    this.settingsMenu.classList.remove('active');
-                }
-            });
-        }
-        
-        // Quality options
-        const qualityOptions = this.container.querySelectorAll('.quality-option');
-        qualityOptions.forEach(option => {
-            option.addEventListener('click', async () => {
-                const quality = option.dataset.quality;
-                await this.setQuality(quality);
+        // Play with fallback
+        await video.play().catch(async (err) => {
+            console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
+            video.muted = true;
+            await video.play().catch(fallbackErr => {
+                console.error('❌ Fallback play failed:', fallbackErr);
+                window.showToast('Playback blocked. Please interact with the page and try again.', 'warning');
             });
         });
         
-        // Speed options
-        const speedOptions = this.container.querySelectorAll('.speed-option');
-        speedOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                const speed = parseFloat(option.dataset.speed);
-                this.setPlaybackSpeed(speed);
-            });
-        });
+        console.log('🔊 Core playback successfully initiated via direct user gesture.');
         
-        // Data saver toggle
-        const dataSaverToggle = this.container.querySelector('#dataSaverToggle');
-        if (dataSaverToggle) {
-            dataSaverToggle.addEventListener('change', (e) => {
-                this.emit('dataSaverToggled', { enabled: e.target.checked });
-            });
+        // Hide overlay
+        hideInitialPlayOverlay();
+        
+        // Initialize watch session if not already done
+        if (window.currentContent?.id && !window.watchSession && typeof window.initializeWatchSessionOnPlay === 'function') {
+            window.initializeWatchSessionOnPlay();
         }
-    }
-    
-    _initializeControls() {
-        this.setVolume(this.volume * 100);
-        this.video.muted = this.muted;
-        this.setPlaybackSpeed(this.currentSpeed);
-        this._updateVolumeIcon();
-        this._updatePlayPauseIcon();
-    }
-    
-    _updateProgress() {
-        if (!this.progressBar || !this.currentTimeDisplay) return;
-        
-        const percent = (this.video.currentTime / this.video.duration) * 100;
-        this.progressBar.value = percent;
-        this.currentTimeDisplay.textContent = this._formatTime(this.video.currentTime);
-    }
-    
-    _updateDuration() {
-        if (!this.durationDisplay) return;
-        this.durationDisplay.textContent = this._formatTime(this.video.duration);
-    }
-    
-    _updatePlayPauseIcon() {
-        if (!this.playPauseBtn) return;
-        const icon = this.playPauseBtn.querySelector('i');
-        if (icon) {
-            if (this.isPlaying) {
-                icon.className = 'fas fa-pause';
-            } else {
-                icon.className = 'fas fa-play';
-            }
-        }
-    }
-    
-    _updateVolumeIcon() {
-        if (!this.volumeBtn) return;
-        const icon = this.volumeBtn.querySelector('i');
-        if (icon) {
-            if (this.muted || this.volume === 0) {
-                icon.className = 'fas fa-volume-mute';
-            } else if (this.volume < 0.5) {
-                icon.className = 'fas fa-volume-down';
-            } else {
-                icon.className = 'fas fa-volume-up';
-            }
-        }
-    }
-    
-    _formatTime(seconds) {
-        if (isNaN(seconds)) return '0:00';
-        const hrs = Math.floor(seconds / 3600);
-        const mins = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-        
-        if (hrs > 0) {
-            return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-    
-    togglePlayPause() {
-        if (this.isPlaying) {
-            this.pause();
-        } else {
-            this.play();
-        }
-    }
-    
-    play() {
-        if (this.video) {
-            this.video.play().catch(err => {
-                console.warn('Playback prevented:', err);
-                this.emit('playblocked', { error: err });
-            });
-        }
-    }
-    
-    pause() {
-        if (this.video) {
-            this.video.pause();
-        }
-    }
-    
-    setVolume(value) {
-        let volumeValue = Math.min(100, Math.max(0, value));
-        this.video.volume = volumeValue / 100;
-        this.volume = this.video.volume;
-        this.muted = false;
-        this.video.muted = false;
-        if (this.volumeSlider) {
-            this.volumeSlider.value = volumeValue;
-        }
-        this._updateVolumeIcon();
-        this.emit('volumechange', { volume: this.volume, muted: false });
-    }
-    
-    toggleMute() {
-        this.video.muted = !this.video.muted;
-        this.muted = this.video.muted;
-        if (!this.muted && this.volumeSlider) {
-            this.volumeSlider.value = this.volume * 100;
-        }
-        this._updateVolumeIcon();
-        this.emit('volumechange', { volume: this.volume, muted: this.muted });
-    }
-    
-    toggleFullscreen() {
-        if (!this.container) return;
-        
-        if (!this.isFullscreen) {
-            if (this.container.requestFullscreen) {
-                this.container.requestFullscreen();
-            } else if (this.container.webkitRequestFullscreen) {
-                this.container.webkitRequestFullscreen();
-            } else if (this.container.msRequestFullscreen) {
-                this.container.msRequestFullscreen();
-            }
-            this.isFullscreen = true;
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            }
-            this.isFullscreen = false;
-        }
-        
-        if (this.fullscreenBtn) {
-            const icon = this.fullscreenBtn.querySelector('i');
-            if (icon) {
-                if (this.isFullscreen) {
-                    icon.className = 'fas fa-compress';
-                } else {
-                    icon.className = 'fas fa-expand';
-                }
-            }
-        }
-    }
-    
-    setPlaybackSpeed(speed) {
-        this.currentSpeed = speed;
-        this.video.playbackRate = speed;
-        
-        const speedOptions = this.container.querySelectorAll('.speed-option');
-        speedOptions.forEach(option => {
-            const optionSpeed = parseFloat(option.dataset.speed);
-            if (optionSpeed === speed) {
-                option.classList.add('active');
-            } else {
-                option.classList.remove('active');
-            }
-        });
-        
-        this.emit('speedchange', { speed: speed });
-    }
-    
-    async setQuality(quality) {
-        this.currentQuality = quality;
-        
-        const qualityOptions = this.container.querySelectorAll('.quality-option');
-        qualityOptions.forEach(option => {
-            if (option.dataset.quality === quality) {
-                option.classList.add('active');
-            } else {
-                option.classList.remove('active');
-            }
-        });
-        
-        this.emit('qualitychange', { quality: quality });
-    }
-    
-    async loadSource(sourceConfig) {
-        if (!this.video) return;
-        
-        const wasPlaying = this.isPlaying;
-        this.pause();
-        
-        this.video.src = sourceConfig.url;
-        this.video.load();
-        
-        if (wasPlaying && document.body.classList.contains('user-interacted')) {
-            try {
-                await this.video.play();
-            } catch(e) {
-                console.warn('Auto-play after source change blocked:', e);
-            }
-        }
-        
-        console.log('🔄 Source changed without destroying player:', sourceConfig.url);
-    }
-    
-    setCurrentTime(time) {
-        if (this.video && typeof time !== 'undefined') {
-            this.video.currentTime = time;
-        }
-    }
-    
-    destroy() {
-        this.pause();
-        this.video.src = '';
-        this.video.load();
-        
-        Object.keys(this.events).forEach(event => {
-            delete this.events[event];
-        });
-        
-        console.log('✅ EnhancedVideoPlayer destroyed');
-    }
-}
-
-// ============================================
-// INITIALIZE ENHANCED VIDEO PLAYER
-// ============================================
-function initializeEnhancedVideoPlayer() {
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    const videoContainer = document.querySelector('.video-container');
-    if (!videoElement || !videoContainer) {
-        console.warn('⚠️ Video elements not found');
-        return;
-    }
-    
-    try {
-        const preferences = window.state ? window.state.getPreferences() : {
-            autoplay: false,
-            playbackSpeed: 1.0,
-            quality: 'auto'
-        };
-        
-        console.log('🎬 Creating EnhancedVideoPlayer with safe assignments...');
-        
-        const player = new EnhancedVideoPlayer({
-            autoplay: preferences.autoplay,
-            defaultSpeed: preferences.playbackSpeed,
-            defaultQuality: preferences.quality,
-            defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
-            muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
-            contentId: window.currentContentId || null,
-            supabaseClient: window.supabaseClient,
-            userId: window.currentUserId
-        });
-        
-        window.enhancedVideoPlayer = player;
-        player.attach(videoElement, videoContainer);
-        
-        // Add convenience methods
-        player.setCurrentTime = function(time) {
-            if (this.video && typeof time !== 'undefined') {
-                this.video.currentTime = time;
-            }
-        };
-        
-        player.setVolume = function(value) {
-            if (this.video) {
-                this.video.volume = value;
-            }
-        };
-        
-        player.setMuted = function(isMuted) {
-            if (this.video) {
-                this.video.muted = isMuted;
-            }
-        };
-        
-        player.loadSource = async function(sourceConfig) {
-            if (!player.video) return;
-            player.video.pause();
-            player.video.src = sourceConfig.url;
-            player.video.load();
-            if (document.body.classList.contains('user-interacted')) {
-                try {
-                    await player.video.play();
-                } catch(e) {
-                    console.warn('Auto-play after source change blocked:', e);
-                }
-            }
-            console.log('🔄 Source changed without destroying player:', sourceConfig.url);
-        };
-        
-        player.on('play', () => {
-            console.log('▶️ Video playing...');
-            if (window.stateManager) {
-                window.stateManager.setState('session.playing', true);
-            }
-            if (typeof initializeWatchSessionOnPlay === 'function') {
-                initializeWatchSessionOnPlay();
-            }
-        });
-        
-        player.on('pause', () => {
-            if (window.stateManager) {
-                window.stateManager.setState('session.playing', false);
-            }
-        });
-        
-        player.on('volumechange', (volume) => {
-            if (window.stateManager) {
-                window.stateManager.setState('session.volume', volume);
-            }
-        });
-        
-        player.on('error', (event) => {
-            const media = player?.video;
-            if (media && media.error === null && media.networkState !== 3) {
-                return;
-            }
-            console.error('🔴 Video player error:', event);
-            if (typeof showToast === 'function') {
-                showToast('Playback error occurred', 'error');
-            }
-        });
-        
-        player.on('loadeddata', () => {
-            console.log('✅ Video metadata loaded, ready to play');
-            const placeholder = document.getElementById('videoPlaceholder');
-            if (placeholder) placeholder.style.display = 'none';
-        });
-        
-        player.on('canplay', () => {
-            console.log('✅ Video can start playing');
-        });
-        
-        console.log('✅ Enhanced video player initialized with contentId:', window.currentContentId);
-        return player;
         
     } catch (error) {
-        console.error('❌ Failed to initialize enhanced video player:', error);
-        if (typeof showToast === 'function') {
-            showToast('Video player failed to load. Using basic player.', 'warning');
-        }
-        videoElement.controls = true;
-        return null;
+        console.warn('⚠️ Direct playback failed:', error.message);
+        window.showToast('Unable to start playback. Please try again.', 'error');
     }
-}
+};
 
 // ============================================
-// LOAD CONTENT INTO PLAYER (NON-DESTRUCTIVE)
+// LOAD CONTENT INTO PLAYER
 // ============================================
+
+/**
+ * Load content into video player (non-destructive)
+ * Reuses existing player instance when possible
+ * @param {Object} content - Content object to play
+ * @param {number} index - Optional playlist index
+ */
 async function loadContentIntoPlayer(content, index = null) {
     if (!content) return;
     
@@ -551,13 +245,11 @@ async function loadContentIntoPlayer(content, index = null) {
         return;
     }
     
-    if (index !== null) {
-        window.currentPlaylistIndex = index;
-    }
+    if (index !== null) window.currentPlaylistIndex = index;
     
     // Ensure contentId is synced before loading
-    if (typeof updateGlobalContentId === 'function') {
-        updateGlobalContentId(content.id);
+    if (typeof window.updateGlobalContentId === 'function') {
+        window.updateGlobalContentId(content.id);
     }
     
     player.style.display = 'block';
@@ -569,6 +261,7 @@ async function loadContentIntoPlayer(content, index = null) {
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) closeFromHero.style.display = 'flex';
     
+    // Get media URL
     let fileUrl = getPlayableMediaUrl(content);
     console.log('📥 Loading media URL:', fileUrl);
     
@@ -584,6 +277,7 @@ async function loadContentIntoPlayer(content, index = null) {
         }
     }
     
+    // Handle audio mode with poster
     const isAudio = detectMediaType(content) === 'audio';
     if (isAudio && content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
@@ -594,6 +288,7 @@ async function loadContentIntoPlayer(content, index = null) {
         videoElement.classList.remove('audio-mode');
     }
     
+    // Get MIME type
     function getMediaMimeType(url = '') {
         const lower = url.toLowerCase();
         if (lower.endsWith('.mp4')) return 'video/mp4';
@@ -606,6 +301,7 @@ async function loadContentIntoPlayer(content, index = null) {
         return 'video/mp4';
     }
     
+    // Load source - prefer loadSource method for reuse
     if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
         console.log('♻️ Reusing existing player instance with loadSource');
         await window.enhancedVideoPlayer.loadSource({
@@ -613,19 +309,15 @@ async function loadContentIntoPlayer(content, index = null) {
             type: getMediaMimeType(fileUrl),
             title: content.title
         });
-    } else if (typeof enhancedVideoPlayer !== 'undefined' && enhancedVideoPlayer && typeof enhancedVideoPlayer.loadSource === 'function') {
-        console.log('♻️ Reusing existing player instance (fallback) with loadSource');
-        await enhancedVideoPlayer.loadSource({
-            url: fileUrl,
-            type: getMediaMimeType(fileUrl),
-            title: content.title
-        });
     } else {
         console.log('⚠️ loadSource not available, updating video source directly');
+        
         if (window.watchSession) {
             window.watchSession.stop();
             window.watchSession = null;
         }
+        
+        // Clear and set new source
         while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
         videoElement.removeAttribute('src');
         const source = document.createElement('source');
@@ -635,179 +327,458 @@ async function loadContentIntoPlayer(content, index = null) {
         videoElement.load();
     }
     
+    // Initialize streaming manager after source change
     setTimeout(() => {
         if (window.streamingManager) {
             window.streamingManager.destroy();
             window.streamingManager = null;
         }
-        if (typeof initializeStreamingManager === 'function') {
-            initializeStreamingManager();
+        if (typeof window.initializeStreamingManager === 'function') {
+            window.initializeStreamingManager();
         }
     }, 100);
     
+    // Initialize watch session
     setTimeout(() => {
-        if (typeof initializeWatchSessionOnPlay === 'function') {
-            initializeWatchSessionOnPlay();
+        if (typeof window.initializeWatchSessionOnPlay === 'function') {
+            window.initializeWatchSessionOnPlay();
         }
     }, 100);
     
+    // Attempt autoplay if user has interacted
     setTimeout(async () => {
         try {
             const canAutoplay = document.body.classList.contains('user-interacted');
             if (!canAutoplay) {
                 console.log('⛔ Autoplay blocked until user interaction');
-                if (typeof showInitialPlayOverlay === 'function') {
-                    showInitialPlayOverlay();
-                }
+                showInitialPlayOverlay();
                 return;
             }
-            const playerInstance = window.enhancedVideoPlayer || (typeof enhancedVideoPlayer !== 'undefined' ? enhancedVideoPlayer : null);
+            const playerInstance = window.enhancedVideoPlayer;
             if (playerInstance && typeof playerInstance.play === 'function') {
                 await playerInstance.play();
             } else {
                 await videoElement.play();
             }
             console.log('▶️ Playback started successfully');
-            const overlay = document.getElementById('initialPlayOverlay');
-            if (overlay) overlay.classList.add('hidden');
+            hideInitialPlayOverlay();
         } catch (error) {
             console.warn('⚠️ Playback blocked:', error);
-            if (typeof showInitialPlayOverlay === 'function') {
-                showInitialPlayOverlay();
-            }
+            showInitialPlayOverlay();
         }
     }, 300);
     
+    // Scroll to player
     setTimeout(() => {
         player.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
 
 // ============================================
-// GET PLAYABLE MEDIA URL
+// ENHANCED VIDEO PLAYER CLASS
 // ============================================
-function getPlayableMediaUrl(content) {
-    if (!content) return null;
-    return (
-        content.file_url ||
-        content.audio_url ||
-        content.video_url ||
-        content.media_url ||
-        null
-    );
-}
 
-// ============================================
-// DETECT MEDIA TYPE
-// ============================================
-function detectMediaType(content) {
-    if (!content) return 'video';
-    if (content.media_type) {
-        if (content.media_type.toLowerCase() === 'audio') return 'audio';
-        if (content.media_type.toLowerCase() === 'video') return 'video';
+class EnhancedVideoPlayer {
+    constructor(options = {}) {
+        this.video = null;
+        this.container = null;
+        this.options = {
+            autoplay: options.autoplay || false,
+            defaultSpeed: options.defaultSpeed || 1.0,
+            defaultQuality: options.defaultQuality || 'auto',
+            defaultVolume: options.defaultVolume !== undefined ? options.defaultVolume : 1.0,
+            muted: options.muted || false,
+            contentId: options.contentId || null,
+            supabaseClient: options.supabaseClient || null,
+            userId: options.userId || null
+        };
+        
+        this.currentSpeed = this.options.defaultSpeed;
+        this.currentQuality = this.options.defaultQuality;
+        this.volume = this.options.defaultVolume;
+        this.isMuted = this.options.muted;
+        this.fullscreen = false;
+        this.eventListeners = {};
     }
-    const format = (content.content_format || '').toLowerCase();
-    if (format.includes('audio') || format.includes('podcast') || format.includes('music')) {
-        return 'audio';
+    
+    attach(videoElement, containerElement) {
+        this.video = videoElement;
+        this.container = containerElement;
+        
+        if (!this.video || !this.container) {
+            console.error('Failed to attach video player: missing elements');
+            return;
+        }
+        
+        this.setupVideoEvents();
+        this.applyInitialSettings();
+        console.log('✅ EnhancedVideoPlayer attached');
     }
-    const url = getPlayableMediaUrl(content);
-    if (url) {
-        const ext = url.split('.').pop()?.toLowerCase();
-        if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a') {
-            return 'audio';
+    
+    setupVideoEvents() {
+        // Volume change
+        this.video.addEventListener('volumechange', () => {
+            this.volume = this.video.volume;
+            this.isMuted = this.video.muted;
+            this.emit('volumechange', { volume: this.volume, muted: this.isMuted });
+        });
+        
+        // Play
+        this.video.addEventListener('play', () => {
+            this.emit('play', { currentTime: this.video.currentTime });
+        });
+        
+        // Pause
+        this.video.addEventListener('pause', () => {
+            this.emit('pause', { currentTime: this.video.currentTime });
+        });
+        
+        // Time update
+        this.video.addEventListener('timeupdate', () => {
+            this.emit('timeupdate', { currentTime: this.video.currentTime, duration: this.video.duration });
+        });
+        
+        // Ended
+        this.video.addEventListener('ended', () => {
+            this.emit('ended', { currentTime: this.video.currentTime });
+        });
+        
+        // Error
+        this.video.addEventListener('error', (e) => {
+            console.error('Video error:', e);
+            this.emit('error', { error: e, message: this.video.error?.message });
+        });
+        
+        // Loaded metadata
+        this.video.addEventListener('loadedmetadata', () => {
+            console.log('Video metadata loaded');
+            this.emit('loadedmetadata', { duration: this.video.duration, width: this.video.videoWidth, height: this.video.videoHeight });
+        });
+        
+        // Can play
+        this.video.addEventListener('canplay', () => {
+            console.log('Video can play');
+            this.emit('canplay', {});
+        });
+        
+        // Fullscreen change
+        document.addEventListener('fullscreenchange', () => {
+            this.fullscreen = !!document.fullscreenElement;
+            this.emit('fullscreenchange', { fullscreen: this.fullscreen });
+        });
+    }
+    
+    applyInitialSettings() {
+        this.video.volume = this.volume;
+        this.video.muted = this.isMuted;
+        this.setPlaybackSpeed(this.currentSpeed);
+        
+        if (this.options.autoplay) {
+            this.video.play().catch(e => console.log('Autoplay prevented:', e));
         }
     }
-    return 'video';
+    
+    play() {
+        if (this.video) return this.video.play();
+        return Promise.reject(new Error('Video element not attached'));
+    }
+    
+    pause() {
+        if (this.video) this.video.pause();
+    }
+    
+    setPlaybackSpeed(speed) {
+        if (this.video) {
+            this.video.playbackRate = speed;
+            this.currentSpeed = speed;
+            this.emit('speedchange', { speed: speed });
+        }
+    }
+    
+    setVolume(volume) {
+        if (this.video && volume >= 0 && volume <= 1) {
+            this.video.volume = volume;
+            this.volume = volume;
+        }
+    }
+    
+    setMuted(muted) {
+        if (this.video) {
+            this.video.muted = muted;
+            this.isMuted = muted;
+        }
+    }
+    
+    toggleMute() {
+        this.setMuted(!this.isMuted);
+    }
+    
+    toggleFullscreen() {
+        if (!this.container) return;
+        
+        if (!this.fullscreen) {
+            this.container.requestFullscreen?.().catch(e => console.log('Fullscreen error:', e));
+        } else {
+            document.exitFullscreen?.();
+        }
+    }
+    
+    seekTo(time) {
+        if (this.video && time >= 0 && time <= this.video.duration) {
+            this.video.currentTime = time;
+        }
+    }
+    
+    async loadSource(sourceConfig) {
+        if (!this.video) return;
+        
+        this.pause();
+        this.video.src = sourceConfig.url;
+        this.video.load();
+        
+        if (document.body.classList.contains('user-interacted')) {
+            try {
+                await this.video.play();
+            } catch(e) {
+                console.warn('Auto-play after source change blocked:', e);
+            }
+        }
+        
+        console.log('🔄 Source changed without destroying player:', sourceConfig.url);
+    }
+    
+    on(event, callback) {
+        if (!this.eventListeners[event]) this.eventListeners[event] = [];
+        this.eventListeners[event].push(callback);
+    }
+    
+    off(event, callback) {
+        if (!this.eventListeners[event]) return;
+        if (callback) {
+            this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
+        } else {
+            delete this.eventListeners[event];
+        }
+    }
+    
+    emit(event, data) {
+        if (this.eventListeners[event]) {
+            this.eventListeners[event].forEach(callback => callback(data));
+        }
+    }
+    
+    destroy() {
+        if (this.video) {
+            this.pause();
+            this.video.src = '';
+            this.video.load();
+        }
+        this.eventListeners = {};
+        console.log('EnhancedVideoPlayer destroyed');
+    }
 }
 
-// ============================================
-// INITIALIZE VIDEO PLAYER SKELETON
-// ============================================
-function initializeVideoPlayerSkeleton() {
+/**
+ * Initialize enhanced video player with error handling
+ */
+function initializeEnhancedVideoPlayer() {
     const videoElement = document.getElementById('inlineVideoPlayer');
-    if (videoElement) {
-        videoElement.preload = 'none';
-        videoElement.controls = false;
-        console.log('🎥 Video skeleton ready (preload=none)');
-    }
-}
-
-// ============================================
-// CLOSE VIDEO PLAYER
-// ============================================
-function closeVideoPlayer() {
-    const player = document.getElementById('inlinePlayer');
-    const video = document.getElementById('inlineVideoPlayer');
+    const videoContainer = document.querySelector('.video-container');
     
-    if (player) {
-        player.style.display = 'none';
-    }
-    if (video) {
-        video.pause();
-        video.currentTime = 0;
-    }
-    if (window.watchSession) {
-        window.watchSession.stop();
-        window.watchSession = null;
+    if (!videoElement || !videoContainer) {
+        console.warn('⚠️ Video elements not found');
+        return;
     }
     
-    const playerInstance = window.enhancedVideoPlayer || (typeof enhancedVideoPlayer !== 'undefined' ? enhancedVideoPlayer : null);
-    if (playerInstance) {
-        if (playerInstance.video) {
-            playerInstance.video.pause();
-            playerInstance.video.currentTime = 0;
+    try {
+        const preferences = window.state ? window.state.getPreferences() : {
+            autoplay: false,
+            playbackSpeed: 1.0,
+            quality: 'auto'
+        };
+        
+        console.log('🎬 Creating EnhancedVideoPlayer...');
+        
+        const player = new EnhancedVideoPlayer({
+            autoplay: preferences.autoplay,
+            defaultSpeed: preferences.playbackSpeed,
+            defaultQuality: preferences.quality,
+            defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
+            muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
+            contentId: window.currentContentId || window.currentContent?.id || null,
+            supabaseClient: window.supabaseClient,
+            userId: window.currentUserId
+        });
+        
+        window.enhancedVideoPlayer = player;
+        player.attach(videoElement, videoContainer);
+        
+        // Add loadSource method if missing
+        if (!player.loadSource) {
+            player.loadSource = async function(sourceConfig) {
+                if (!player.video) return;
+                player.pause();
+                player.video.src = sourceConfig.url;
+                player.video.load();
+                if (document.body.classList.contains('user-interacted')) {
+                    try { await player.video.play(); } catch(e) {}
+                }
+            };
         }
-    }
-    
-    if (window.streamingManager) {
-        window.streamingManager.destroy();
-        window.streamingManager = null;
-    }
-    
-    if (window.viewValidationTimer) {
-        clearTimeout(window.viewValidationTimer);
-        window.viewValidationTimer = null;
-    }
-    
-    if (window._currentPlayingContentId) {
-        if (window.cleanupContentSession) {
-            window.cleanupContentSession(window._currentPlayingContentId);
-        }
-        window._currentPlayingContentId = null;
-    }
-    
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) {
-        placeholder.style.display = 'flex';
-    }
-    
-    const heroPoster = document.getElementById('heroPoster');
-    if (heroPoster) {
-        heroPoster.style.opacity = '1';
-    }
-    
-    const closeFromHero = document.getElementById('closePlayerFromHero');
-    if (closeFromHero) {
-        closeFromHero.style.display = 'none';
-    }
-    
-    const hero = document.querySelector('.content-hero');
-    if (hero) {
-        hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Set up event handlers
+        player.on('play', () => {
+            console.log('▶️ Video playing...');
+            if (window.stateManager) window.stateManager.setState('session.playing', true);
+            if (typeof window.initializeWatchSessionOnPlay === 'function') window.initializeWatchSessionOnPlay();
+        });
+        
+        player.on('pause', () => {
+            if (window.stateManager) window.stateManager.setState('session.playing', false);
+        });
+        
+        player.on('volumechange', (data) => {
+            if (window.stateManager) window.stateManager.setState('session.volume', data.volume);
+        });
+        
+        player.on('error', (event) => {
+            const media = player?.video;
+            if (media && media.error === null && media.networkState !== 3) return;
+            console.error('🔴 Video player error:', event);
+            window.showToast('Playback error occurred', 'error');
+        });
+        
+        player.on('loadedmetadata', () => {
+            console.log('✅ Video metadata loaded, ready to play');
+            const placeholder = document.getElementById('videoPlaceholder');
+            if (placeholder) placeholder.style.display = 'none';
+        });
+        
+        console.log('✅ Enhanced video player initialized');
+        
+    } catch (error) {
+        console.error('❌ Failed to initialize enhanced video player:', error);
+        window.showToast('Video player failed to load. Using basic player.', 'warning');
+        const videoElement = document.getElementById('inlineVideoPlayer');
+        if (videoElement) videoElement.controls = true;
     }
 }
 
 // ============================================
-// SHOW INITIAL PLAY OVERLAY
+// WATCH SESSION MANAGER (for view recording)
 // ============================================
-function showInitialPlayOverlay() {
-    const overlay = document.getElementById('initialPlayOverlay');
-    if (!overlay) return;
-    overlay.classList.remove('hidden');
+
+class WatchSessionManager {
+    constructor(contentId, userId) {
+        this.contentId = contentId;
+        this.userId = userId || null;
+        this.playbackSessionId = this._generateUUID();
+        this.sequenceNumber = 0;
+        this.totalWatchTimeMs = 0;
+        this.maxProgressSeconds = 0;
+        this.heartbeatInterval = null;
+        this.lastHeartbeatTime = Date.now();
+        this.isActive = false;
+        this.viewRecorded = false;
+        this.viewThresholdReached = false;
+    }
+    
+    _generateUUID() {
+        return crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    async initializeSession(platform = 'Web', deviceType = 'Desktop') {
+        try {
+            const { error } = await window.supabaseClient
+                .from('playback_sessions')
+                .insert({
+                    playback_session_id: this.playbackSessionId,
+                    content_id: parseInt(this.contentId),
+                    user_id: this.userId,
+                    session_id: window.currentSessionId || this._generateUUID(),
+                    platform: platform,
+                    device_type: deviceType,
+                    started_at: new Date().toISOString()
+                });
+            if (error) return false;
+            this.isActive = true;
+            console.log(`🎬 Watch session initialized: ${this.playbackSessionId}`);
+            return true;
+        } catch (error) { return false; }
+    }
+    
+    startHeartbeatLoop(videoElement) {
+        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = setInterval(async () => {
+            if (!this.isActive || !videoElement || videoElement.paused) return;
+            
+            const currentTime = Math.floor(videoElement.currentTime);
+            const now = Date.now();
+            const deltaWatchTimeMs = now - this.lastHeartbeatTime;
+            this.sequenceNumber++;
+            this.totalWatchTimeMs += deltaWatchTimeMs;
+            if (currentTime > this.maxProgressSeconds) this.maxProgressSeconds = currentTime;
+            this.lastHeartbeatTime = now;
+            
+            await window.supabaseClient.from('playback_heartbeats').insert({
+                playback_session_id: this.playbackSessionId,
+                content_id: parseInt(this.contentId),
+                user_id: this.userId,
+                sequence_number: this.sequenceNumber,
+                progress_seconds: currentTime,
+                cumulative_watch_time_ms: this.totalWatchTimeMs,
+                playback_state: 'PLAYING'
+            }).catch(e => console.error('Heartbeat failed:', e));
+            
+            await window.supabaseClient.from('playback_sessions').update({
+                total_watch_time_ms: this.totalWatchTimeMs,
+                max_progress_seconds: this.maxProgressSeconds,
+                heartbeat_count: this.sequenceNumber,
+                last_heartbeat_at: new Date().toISOString()
+            }).eq('playback_session_id', this.playbackSessionId);
+            
+            // Record view at threshold (15 seconds or 30% duration)
+            const duration = videoElement.duration || 0;
+            const thresholdSeconds = Math.min(15, duration * 0.3);
+            
+            if (!this.viewRecorded && this.totalWatchTimeMs >= thresholdSeconds * 1000) {
+                this.viewRecorded = true;
+                this.viewThresholdReached = true;
+                
+                if (typeof window.recordContentViewRPC === 'function') {
+                    await window.recordContentViewRPC(this.contentId, this.userId, this.playbackSessionId);
+                }
+            }
+        }, 10000);
+    }
+    
+    start(videoElement) { if (videoElement) this.startHeartbeatLoop(videoElement); }
+    
+    stop() {
+        this.isActive = false;
+        if (this.heartbeatInterval) { clearInterval(this.heartbeatInterval); this.heartbeatInterval = null; }
+        window.supabaseClient.from('playback_sessions').update({ completed: true, exited_at: new Date().toISOString() }).eq('playback_session_id', this.playbackSessionId);
+    }
+}
+
+function initializeWatchSessionOnPlay() {
+    if (!window.currentContent || !window.currentUserId) return;
+    const player = window.enhancedVideoPlayer;
+    if (!player?.video) return;
+    
+    if (window.watchSession) { window.watchSession.stop(); window.watchSession = null; }
+    
+    try {
+        window.currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        window.watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
+        window.watchSession.initializeSession('Web', 'Desktop');
+        window.watchSession.start(player.video);
+        console.log('✅ Watch session started');
+    } catch (error) { console.error('Failed to initialize watch session:', error); }
 }
 
 // ============================================
-// EXPORTS FOR GLOBAL ACCESS
+// GLOBAL EXPORTS
 // ============================================
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
 window.initializeEnhancedVideoPlayer = initializeEnhancedVideoPlayer;
@@ -817,5 +788,10 @@ window.detectMediaType = detectMediaType;
 window.initializeVideoPlayerSkeleton = initializeVideoPlayerSkeleton;
 window.closeVideoPlayer = closeVideoPlayer;
 window.showInitialPlayOverlay = showInitialPlayOverlay;
+window.hideInitialPlayOverlay = hideInitialPlayOverlay;
+window.setupInitialPlayButton = setupInitialPlayButton;
+window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
+window.WatchSessionManager = WatchSessionManager;
+window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
 
-console.log('✅ Video Player module loaded');
+console.log('✅ Video Player Section Module loaded (with full brain)');
