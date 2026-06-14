@@ -11,6 +11,11 @@
 // - All recommendations use content_public_metrics view (Phase 5)
 // - UI state uses playlist_relation.sort_index for sorting (Phase 6)
 //
+// 🧩 MODULAR ARCHITECTURE (2026-06-14):
+// - All feature functions remain in this file
+// - Used by content-detail.js as the main feature library
+// - No extraction needed - these are the shared utilities
+//
 // 🔧 ALBUM ARCHITECTURE FIX: REMOVED duplicate album toggle system (now ONLY in content-detail.js)
 
 console.log('🎬 Content Detail Features Loading (PHASE 1-6 compatible)...');
@@ -55,7 +60,9 @@ function markContentAsViewed(contentId) {
 function clearViewCache() {
     localStorage.removeItem('bantu_viewed_content');
     console.log('🧹 View cache cleared');
-    showToast('View cache cleared!', 'success');
+    if (typeof showToast === 'function') {
+        showToast('View cache cleared!', 'success');
+    }
 }
 
 // ============================================
@@ -64,6 +71,7 @@ function clearViewCache() {
 // ============================================
 async function refreshCountsFromSource() {
     if (!window.currentContent) return;
+    
     try {
         // 🚀 PHASE 2: Get counts from content_engagement_stats
         const { data: stats, error: statsError } = await window.supabaseClient
@@ -81,10 +89,12 @@ async function refreshCountsFromSource() {
                 window.currentContent.comments_count = stats.total_comments || 0;
             }
 
-            safeSetText('viewsCount', formatNumber(stats.total_views || 0) + ' views');
-            safeSetText('viewsCountFull', formatNumber(stats.total_views || 0));
-            safeSetText('likesCount', formatNumber(stats.total_likes || 0));
-            safeSetText('commentsCount', `(${formatNumber(stats.total_comments || 0)})`);
+            if (typeof safeSetText === 'function') {
+                safeSetText('viewsCount', formatNumber(stats.total_views || 0) + ' views');
+                safeSetText('viewsCountFull', formatNumber(stats.total_views || 0));
+                safeSetText('likesCount', formatNumber(stats.total_likes || 0));
+                safeSetText('commentsCount', `(${formatNumber(stats.total_comments || 0)})`);
+            }
 
             console.log('✅ Counts refreshed from content_engagement_stats:', {
                 views: stats.total_views,
@@ -110,9 +120,11 @@ async function refreshCountsFromSource() {
                 window.currentContent.likes_count = newLikes || 0;
             }
 
-            safeSetText('viewsCount', formatNumber(newViews) + ' views');
-            safeSetText('viewsCountFull', formatNumber(newViews));
-            safeSetText('likesCount', formatNumber(newLikes));
+            if (typeof safeSetText === 'function') {
+                safeSetText('viewsCount', formatNumber(newViews) + ' views');
+                safeSetText('viewsCountFull', formatNumber(newViews));
+                safeSetText('likesCount', formatNumber(newLikes));
+            }
         }
     } catch (error) {
         console.error('❌ Failed to refresh counts from source:', error);
@@ -464,7 +476,7 @@ function setupSidebarNavigation() {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         if (!window.currentUser) {
-            showToast('Please sign in to view analytics', 'warning');
+            if (typeof showToast === 'function') showToast('Please sign in to view analytics', 'warning');
             return;
         }
         const analyticsModal = document.getElementById('analytics-modal');
@@ -488,7 +500,7 @@ function setupSidebarNavigation() {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         if (!window.currentUser) {
-            showToast('Please sign in to view badges', 'warning');
+            if (typeof showToast === 'function') showToast('Please sign in to view badges', 'warning');
             return;
         }
         const badgesModal = document.getElementById('badges-modal');
@@ -502,7 +514,7 @@ function setupSidebarNavigation() {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         if (!window.currentUser) {
-            showToast('Please sign in to start a watch party', 'warning');
+            if (typeof showToast === 'function') showToast('Please sign in to start a watch party', 'warning');
             return;
         }
         const watchPartyModal = document.getElementById('watch-party-modal');
@@ -517,7 +529,7 @@ function setupSidebarNavigation() {
         document.getElementById('sidebar-close')?.click();
         const { data } = await window.supabaseClient.auth.getSession();
         if (!data?.session) {
-            showToast('Please sign in to upload content', 'warning');
+            if (typeof showToast === 'function') showToast('Please sign in to upload content', 'warning');
             window.location.href = `login.html?redirect=creator-upload.html`;
         } else {
             window.location.href = 'creator-upload.html';
@@ -529,7 +541,7 @@ function setupSidebarNavigation() {
         document.getElementById('sidebar-close')?.click();
         const { data } = await window.supabaseClient.auth.getSession();
         if (!data?.session) {
-            showToast('Please sign in to access dashboard', 'warning');
+            if (typeof showToast === 'function') showToast('Please sign in to access dashboard', 'warning');
             window.location.href = `login.html?redirect=creator-dashboard.html`;
         } else {
             window.location.href = 'creator-dashboard.html';
@@ -540,7 +552,7 @@ function setupSidebarNavigation() {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
         if (!window.currentUser) {
-            showToast('Please sign in to view watch history', 'warning');
+            if (typeof showToast === 'function') showToast('Please sign in to view watch history', 'warning');
             window.location.href = `login.html?redirect=watch-history.html`;
             return;
         }
@@ -810,7 +822,7 @@ function updateProfileSwitcher() {
                 updateProfileSwitcher();
                 await loadContinueWatchingSection();
                 await loadForYouSection();
-                showToast(`Switched to ${profile.name}`, 'success');
+                if (typeof showToast === 'function') showToast(`Switched to ${profile.name}`, 'success');
             }
         });
     });
@@ -859,7 +871,7 @@ function setupNavigationButtons() {
             if (data?.session) {
                 window.location.href = 'creator-upload.html';
             } else {
-                showToast('Please sign in to create content', 'warning');
+                if (typeof showToast === 'function') showToast('Please sign in to create content', 'warning');
                 window.location.href = `login.html?redirect=creator-upload.html`;
             }
         });
@@ -869,7 +881,7 @@ function setupNavigationButtons() {
         navHistoryBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (!window.currentUser) {
-                showToast('Please sign in to view watch history', 'warning');
+                if (typeof showToast === 'function') showToast('Please sign in to view watch history', 'warning');
                 window.location.href = `login.html?redirect=watch-history.html`;
                 return;
             }
@@ -1136,7 +1148,6 @@ function renderRecommendationRail(containerId, title, items) {
     if (!grid) return;
 
     grid.innerHTML = items.map(item => {
-        // 🚀 PHASE 5: Use total_views from content_public_metrics
         const viewsCount = item.total_views || item.real_views_count || item.views_count || 0;
         const progress = item.watch_progress ?
             Math.min(100, Math.round((item.watch_progress.last_position / (item.duration || 3600)) * 100))
@@ -1212,11 +1223,11 @@ async function updateWatchLaterButtonState() {
 async function handleWatchLaterToggle() {
     const btn = document.getElementById('watchLaterBtn');
     if (!window.currentContent?.id) {
-        showToast('No content selected', 'error');
+        if (typeof showToast === 'function') showToast('No content selected', 'error');
         return;
     }
     if (!window.currentUserId) {
-        showToast('Sign in to save to Watch Later', 'warning');
+        if (typeof showToast === 'function') showToast('Sign in to save to Watch Later', 'warning');
         const redirect = encodeURIComponent(window.location.href);
         window.location.href = `login.html?redirect=${redirect}`;
         return;
@@ -1229,7 +1240,7 @@ async function handleWatchLaterToggle() {
     }
 
     if (!window.playlistManager) {
-        showToast('Playlist system loading...', 'info');
+        if (typeof showToast === 'function') showToast('Playlist system loading...', 'info');
         return;
     }
     if (!btn) {
@@ -1246,19 +1257,19 @@ async function handleWatchLaterToggle() {
         const result = await window.playlistManager.toggleWatchLater(window.currentContent.id);
         if (result.success) {
             if (result.action === 'added') {
-                showToast('✅ Added to Watch Later', 'success');
+                if (typeof showToast === 'function') showToast('✅ Added to Watch Later', 'success');
             } else if (result.action === 'removed') {
-                showToast('🗑️ Removed from Watch Later', 'info');
+                if (typeof showToast === 'function') showToast('🗑️ Removed from Watch Later', 'info');
             } else if (result.action === 'already_exists') {
-                showToast('Already in Watch Later', 'info');
+                if (typeof showToast === 'function') showToast('Already in Watch Later', 'info');
             }
         } else {
-            showToast('❌ ' + (result.error || 'Failed to update'), 'error');
+            if (typeof showToast === 'function') showToast('❌ ' + (result.error || 'Failed to update'), 'error');
             await updateWatchLaterButtonState();
         }
     } catch (error) {
         console.error('❌ Watch Later toggle failed:', error);
-        showToast('Failed to update Watch Later', 'error');
+        if (typeof showToast === 'function') showToast('Failed to update Watch Later', 'error');
         await updateWatchLaterButtonState();
     } finally {
         btn.disabled = originalDisabled;
@@ -1341,6 +1352,44 @@ if (document.readyState === 'loading') {
 } else {
     initContentDetailFeatures();
 }
+
+// ============================================
+// GLOBAL EXPORTS
+// ============================================
+window.hasViewedContentRecently = hasViewedContentRecently;
+window.markContentAsViewed = markContentAsViewed;
+window.clearViewCache = clearViewCache;
+window.refreshCountsFromSource = refreshCountsFromSource;
+window.UIScaleController = UIScaleController;
+window.showToast = showToast;
+window.formatDuration = formatDuration;
+window.formatNumber = formatNumber;
+window.formatTimeAgo = formatTimeAgo;
+window.getInitials = getInitials;
+window.debounce = debounce;
+window.initThemeSelector = initThemeSelector;
+window.applyTheme = applyTheme;
+window.setupCompleteSidebar = setupCompleteSidebar;
+window.setupSidebarNavigation = setupSidebarNavigation;
+window.updateSidebarProfile = updateSidebarProfile;
+window.updateHeaderProfile = updateHeaderProfile;
+window.updateProfileSwitcher = updateProfileSwitcher;
+window.applyMobileHeaderStyles = applyMobileHeaderStyles;
+window.setupNavigationButtons = setupNavigationButtons;
+window.setupNavButtonScrollAnimation = setupNavButtonScrollAnimation;
+window.updateCommentInputState = updateCommentInputState;
+window.updateQualityIndicator = updateQualityIndicator;
+window.updateNetworkSpeedIndicator = updateNetworkSpeedIndicator;
+window.loadRecommendationRails = loadRecommendationRails;
+window.showRailSkeleton = showRailSkeleton;
+window.showRailEmpty = showRailEmpty;
+window.renderRecommendationRail = renderRecommendationRail;
+window.updateWatchLaterButtonState = updateWatchLaterButtonState;
+window.handleWatchLaterToggle = handleWatchLaterToggle;
+window.setupWatchLaterButton = setupWatchLaterButton;
+window.safeSetText = safeSetText;
+window.truncateText = truncateText;
+window.escapeHtml = escapeHtml;
 
 console.log('✅ Content Detail Features loaded - PHASE 1-6 compatible');
 console.log('   🚀 Phase 1: Decoupled playlist structure ready');
