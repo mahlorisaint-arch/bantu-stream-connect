@@ -1,0 +1,699 @@
+/* ============================================ */
+/* BECAUSE YOU WATCHED SECTION MODULE */
+/* Personalized recommendation rail based on watch history */
+/* ============================================ */
+
+/* ============================================ */
+/* BECAUSE YOU WATCHED RAIL - MAIN CONTAINER */
+/* ============================================ */
+.because-you-watched-rail {
+  margin-bottom: 40px;
+  padding-top: 20px;
+  position: relative;
+}
+
+/* Section header with refresh button */
+.because-you-watched-rail .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.because-you-watched-rail .section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.because-you-watched-rail .section-title i {
+  color: var(--bantu-blue);
+  font-size: 20px;
+}
+
+/* Title tooltip/info icon */
+.title-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.title-info i {
+  font-size: 14px;
+  color: var(--slate-grey);
+  transition: color 0.2s ease;
+}
+
+.title-info:hover i {
+  color: var(--bantu-blue);
+}
+
+.title-info .tooltip-text {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--deep-navy);
+  color: var(--soft-white);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+  font-family: 'Inter', sans-serif;
+  font-weight: normal;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.title-info:hover .tooltip-text {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-8px);
+}
+
+/* Refresh recommendations button */
+.refresh-rail-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border);
+  border-radius: 40px;
+  padding: 8px 16px;
+  color: var(--soft-white);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.refresh-rail-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--bantu-blue);
+  transform: rotate(15deg);
+}
+
+.refresh-rail-btn:active {
+  transform: rotate(0deg);
+}
+
+.refresh-rail-btn i {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.refresh-rail-btn:hover i {
+  transform: rotate(180deg);
+}
+
+/* ============================================ */
+/* RECOMMENDATION GRID */
+/* ============================================ */
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* Recommendation card */
+.recommendation-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* ============================================ */
+/* CARD THUMBNAIL */
+/* ============================================ */
+.recommendation-card .card-thumbnail {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.recommendation-card .card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.recommendation-card:hover .card-thumbnail img {
+  transform: scale(1.08);
+}
+
+/* Thumbnail overlay gradient */
+.thumbnail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.recommendation-card:hover .thumbnail-overlay {
+  opacity: 1;
+}
+
+/* Duration badge */
+.duration-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 2;
+  font-family: monospace;
+}
+
+/* ============================================ */
+/* CARD CONTENT */
+/* ============================================ */
+.recommendation-card .card-content {
+  padding: 12px;
+}
+
+.recommendation-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 38px;
+  color: var(--soft-white);
+  line-height: 1.4;
+  transition: color 0.2s ease;
+}
+
+.recommendation-card:hover .card-title {
+  color: var(--bantu-blue);
+}
+
+/* Views and metadata */
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.views-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--slate-grey);
+}
+
+.views-count i {
+  font-size: 11px;
+  color: var(--bantu-blue);
+}
+
+/* Like count badge */
+.like-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.like-badge i {
+  font-size: 10px;
+}
+
+/* Creator chip */
+.creator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--slate-grey);
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.recommendation-card:hover .creator-chip {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--soft-white);
+}
+
+.creator-chip i {
+  font-size: 10px;
+  color: var(--bantu-blue);
+}
+
+/* Genre tag */
+.genre-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--warm-gold);
+  margin-top: 6px;
+}
+
+/* ============================================ */
+/* REASON BADGE (why this was recommended) */
+/* ============================================ */
+.reason-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--warm-gold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.recommendation-card:hover .reason-badge {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reason-badge i {
+  font-size: 9px;
+}
+
+/* ============================================ */
+/* EMPTY STATE */
+/* ============================================ */
+.because-you-watched-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.because-you-watched-empty i {
+  font-size: 56px;
+  color: var(--slate-grey);
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+
+.because-you-watched-empty h3 {
+  font-size: 18px;
+  color: var(--soft-white);
+  margin-bottom: 8px;
+}
+
+.because-you-watched-empty p {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin-bottom: 20px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Engagement CTA buttons */
+.engagement-cta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border);
+  border-radius: 40px;
+  color: var(--soft-white);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.cta-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--bantu-blue);
+  transform: translateY(-2px);
+}
+
+.cta-btn.like-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.cta-btn.watch-btn:hover {
+  background: rgba(29, 78, 216, 0.2);
+  border-color: var(--bantu-blue);
+  color: var(--bantu-blue);
+}
+
+/* ============================================ */
+/* SKELETON LOADING */
+/* ============================================ */
+.recommendation-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-title {
+  height: 16px;
+  width: 80%;
+  margin: 12px 12px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  height: 12px;
+  width: 60%;
+  margin: 0 12px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.skeleton-creator {
+  height: 10px;
+  width: 50%;
+  margin: 0 12px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================ */
+/* REFRESH ANIMATION */
+/* ============================================ */
+.refreshing .recommendation-grid {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.refreshing .refresh-rail-btn i {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* RESPONSIVE ADJUSTMENTS */
+/* ============================================ */
+@media (max-width: 768px) {
+  .because-you-watched-rail .section-title {
+    font-size: 18px;
+  }
+  
+  .recommendation-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  .recommendation-skeleton-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  .reason-badge {
+    opacity: 1;
+    transform: translateX(0);
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .reason-badge span {
+    display: none;
+  }
+  
+  .recommendation-card .card-title {
+    font-size: 13px;
+    min-height: 34px;
+  }
+  
+  .card-meta {
+    font-size: 11px;
+  }
+  
+  .views-count {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 550px) {
+  .because-you-watched-rail .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .refresh-rail-btn {
+    align-self: flex-start;
+  }
+  
+  .recommendation-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .recommendation-skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .duration-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  
+  .like-badge span {
+    display: none;
+  }
+  
+  .like-badge {
+    padding: 2px 4px;
+  }
+  
+  .creator-chip span {
+    font-size: 10px;
+  }
+  
+  .engagement-cta {
+    gap: 10px;
+  }
+  
+  .cta-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+  
+  .cta-btn span {
+    display: none;
+  }
+  
+  .cta-btn i {
+    margin: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .recommendation-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .recommendation-card .card-title {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+  
+  .views-count {
+    font-size: 10px;
+  }
+  
+  .creator-chip {
+    display: none;
+  }
+}
+
+/* ============================================ */
+/* TOOLTIP FOR RECOMMENDATION REASON */
+/* ============================================ */
+.recommendation-tooltip {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--deep-navy);
+  border: 1px solid var(--bantu-blue);
+  border-radius: 40px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--soft-white);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.recommendation-tooltip.show {
+  opacity: 1;
+}
+
+.recommendation-tooltip i {
+  color: var(--warm-gold);
+}
+
+/* ============================================ */
+/* THEME SUPPORT */
+/* ============================================ */
+.theme-light .because-you-watched-rail .section-title {
+  color: var(--deep-navy);
+}
+
+.theme-light .recommendation-card {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .recommendation-card .card-title {
+  color: var(--deep-navy);
+}
+
+.theme-light .recommendation-card:hover .card-title {
+  color: var(--bantu-blue);
+}
+
+.theme-light .views-count {
+  color: var(--slate-grey);
+}
+
+.theme-light .creator-chip {
+  color: var(--slate-grey);
+}
+
+.theme-light .because-you-watched-empty {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .because-you-watched-empty h3 {
+  color: var(--deep-navy);
+}
+
+/* High contrast mode */
+.theme-high-contrast .recommendation-card {
+  border: 2px solid white;
+  background: black;
+}
+
+.theme-high-contrast .recommendation-card .card-title {
+  color: white;
+}
+
+.theme-high-contrast .recommendation-card:hover {
+  border-color: #00FF00;
+}
+
+.theme-high-contrast .refresh-rail-btn {
+  border: 2px solid white;
+  background: black;
+  color: white;
+}
+
+.theme-high-contrast .refresh-rail-btn:hover {
+  background: white;
+  color: black;
+}
+
+/* ============================================ */
+/* END OF BECAUSE YOU WATCHED MODULE */
+/* ============================================ */
