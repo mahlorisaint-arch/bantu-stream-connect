@@ -810,6 +810,12 @@ async function loadPlaylistMode(playlistId, playlistType) {
         }
         
         window.currentPlaylistItems = normalizedItems;
+        
+        // 🎯 Dispatch playlistLoaded event for other components to listen to
+        window.dispatchEvent(new CustomEvent('playlistLoaded', {
+            detail: { playlistId: playlistId, itemCount: window.currentPlaylistItems.length }
+        }));
+        
         window.currentPlaylistIndex = 0;
         if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
         
@@ -898,6 +904,12 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
         .filter(Boolean);
     
     window.currentPlaylistItems = normalizedItems;
+    
+    // 🎯 Dispatch playlistLoaded event for other components to listen to
+    window.dispatchEvent(new CustomEvent('playlistLoaded', {
+        detail: { playlistId: playlistId, itemCount: window.currentPlaylistItems.length }
+    }));
+    
     window.currentPlaylistIndex = 0;
     if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
     
