@@ -262,61 +262,28 @@
   margin-top: 8px;
 }
 
-/* Primary action buttons */
-.action-btn {
-  padding: 10px 20px;
+/* ============================================ */
+/* PLAY NOW BUTTON (#playBtn) */
+/* ============================================ */
+#playBtn {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: white;
+  border: none;
+  padding: 12px 24px;
   border-radius: 40px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--soft-white);
-}
-
-.action-btn i {
-  font-size: 14px;
-  transition: transform 0.2s ease;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.action-btn:hover i {
-  transform: scale(1.1);
-}
-
-.action-btn:active {
-  transform: translateY(0);
-}
-
-/* Play button - primary CTA */
-.play-btn {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  color: white;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);
-}
-
-.play-btn:hover {
-  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.5);
-  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
-}
-
-/* Resume button - special styling */
-.resume-btn {
-  background: linear-gradient(135deg, #F59E0B, #1D4ED8) !important;
-  animation: resumePulse 2s infinite;
   position: relative;
   overflow: hidden;
 }
 
-.resume-btn::before {
+#playBtn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -327,8 +294,78 @@
   transition: left 0.5s ease;
 }
 
+#playBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(29, 78, 216, 0.5);
+  gap: 14px;
+}
+
+#playBtn:hover::before {
+  left: 100%;
+}
+
+#playBtn:active {
+  transform: translateY(0);
+}
+
+#playBtn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#playBtn:hover i {
+  transform: scale(1.1);
+}
+
+/* ============================================ */
+/* RESUME BUTTON (dynamically added) */
+/* ============================================ */
+.resume-btn {
+  background: linear-gradient(135deg, #F59E0B, #1D4ED8) !important;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 40px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: resumePulse 2s infinite;
+}
+
+.resume-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left 0.5s ease;
+}
+
+.resume-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+  gap: 14px;
+}
+
 .resume-btn:hover::before {
   left: 100%;
+}
+
+.resume-btn:active {
+  transform: translateY(0);
+}
+
+.resume-btn i {
+  font-size: 14px;
 }
 
 @keyframes resumePulse {
@@ -343,73 +380,279 @@
   }
 }
 
-/* Engagement buttons (Like, Favorite, Watch Later, Share) */
-.engagement-btn {
+/* ============================================ */
+/* LIKE BUTTON (#likeBtn) */
+/* ============================================ */
+#likeBtn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 10px 16px;
+  color: var(--soft-white);
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
 }
 
-.engagement-btn.active {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.3), rgba(245, 158, 11, 0.3));
-  border-color: var(--bantu-blue);
-  color: var(--bantu-blue);
+#likeBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  gap: 10px;
 }
 
-.engagement-btn.active i {
-  color: var(--bantu-blue);
+#likeBtn:active {
+  transform: translateY(0);
 }
 
-.engagement-btn.liked {
-  background: rgba(239, 68, 68, 0.2);
+#likeBtn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#likeBtn:hover i {
+  transform: scale(1.1);
+}
+
+/* Like button active/liked state */
+#likeBtn.active {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
   border-color: #ef4444;
   color: #ef4444;
 }
 
-.engagement-btn.liked i {
+#likeBtn.active i {
   color: #ef4444;
 }
 
-.engagement-btn.favorited {
-  background: rgba(245, 158, 11, 0.2);
+#likeBtn.active:hover {
+  background: rgba(239, 68, 68, 0.25);
+  transform: translateY(-2px);
+}
+
+/* ============================================ */
+/* FAVORITE BUTTON (#favoriteBtn) */
+/* ============================================ */
+#favoriteBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--soft-white);
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+#favoriteBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  gap: 10px;
+}
+
+#favoriteBtn:active {
+  transform: translateY(0);
+}
+
+#favoriteBtn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#favoriteBtn:hover i {
+  transform: scale(1.1);
+}
+
+/* Favorite button active/favorited state */
+#favoriteBtn.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
   border-color: var(--warm-gold);
   color: var(--warm-gold);
 }
 
-.engagement-btn.favorited i {
+#favoriteBtn.active i {
   color: var(--warm-gold);
 }
 
-/* Watch Later button */
-.watch-later-btn {
+#favoriteBtn.active:hover {
+  background: rgba(245, 158, 11, 0.25);
+  transform: translateY(-2px);
+}
+
+/* ============================================ */
+/* WATCH LATER BUTTON (#watchLaterBtn) */
+/* ============================================ */
+#watchLaterBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--soft-white);
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
   position: relative;
 }
 
-.watch-later-btn.saved {
-  background: rgba(16, 185, 129, 0.2);
+#watchLaterBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  gap: 10px;
+}
+
+#watchLaterBtn:active {
+  transform: translateY(0);
+}
+
+#watchLaterBtn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#watchLaterBtn:hover i {
+  transform: scale(1.1);
+}
+
+/* Watch Later button saved/active state */
+#watchLaterBtn.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
   border-color: var(--success-color);
   color: var(--success-color);
 }
 
-.watch-later-btn.saved i {
+#watchLaterBtn.active i {
   color: var(--success-color);
 }
 
-/* Share button */
-.share-btn {
-  position: relative;
+#watchLaterBtn.active:hover {
+  background: rgba(16, 185, 129, 0.25);
+  transform: translateY(-2px);
 }
 
-/* Close player button */
-.close-player-btn {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
+/* ============================================ */
+/* SHARE BUTTON (#shareBtn) */
+/* ============================================ */
+#shareBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--soft-white);
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+#shareBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  gap: 10px;
+}
+
+#shareBtn:active {
+  transform: translateY(0);
+}
+
+#shareBtn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#shareBtn:hover i {
+  transform: scale(1.1);
+}
+
+/* Share button active/shared state (temporary) */
+#shareBtn.shared {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+#shareBtn.shared i {
+  color: #8b5cf6;
+}
+
+/* Share button loading state */
+#shareBtn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+#shareBtn.loading i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* CLOSE PLAYER BUTTON (#closePlayerFromHero) */
+/* ============================================ */
+#closePlayerFromHero {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   color: #ef4444;
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
 }
 
-.close-player-btn:hover {
+#closePlayerFromHero:hover {
   background: #ef4444;
   color: white;
+  transform: translateY(-2px);
+  gap: 10px;
+}
+
+#closePlayerFromHero:active {
+  transform: translateY(0);
+}
+
+#closePlayerFromHero i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#closePlayerFromHero:hover i {
+  transform: scale(1.1);
+}
+
+/* ============================================ */
+/* DISABLED STATE FOR ALL BUTTONS */
+/* ============================================ */
+#playBtn:disabled,
+#likeBtn:disabled,
+#favoriteBtn:disabled,
+#watchLaterBtn:disabled,
+#shareBtn:disabled,
+.resume-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
 }
 
 /* ============================================ */
@@ -435,14 +678,47 @@
 /* PLAYER CONTROLS BUTTON OVERRIDES */
 /* Ensure player buttons don't conflict with hero buttons */
 /* ============================================ */
-.video-container .action-btn,
-.video-container .engagement-btn {
+.video-container #playBtn,
+.video-container #likeBtn,
+.video-container #favoriteBtn,
+.video-container #watchLaterBtn,
+.video-container #shareBtn {
   background: rgba(255, 255, 255, 0.15);
 }
 
-.video-container .action-btn:hover,
-.video-container .engagement-btn:hover {
+.video-container #playBtn:hover,
+.video-container #likeBtn:hover,
+.video-container #favoriteBtn:hover,
+.video-container #watchLaterBtn:hover,
+.video-container #shareBtn:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================ */
+/* BUTTON LOADING STATES */
+/* ============================================ */
+.btn-loading {
+  pointer-events: none;
+  opacity: 0.7;
+  position: relative;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: buttonSpin 0.8s linear infinite;
+}
+
+@keyframes buttonSpin {
+  to { transform: translateY(-50%) rotate(360deg); }
 }
 
 /* ============================================ */
@@ -467,7 +743,13 @@
     -webkit-line-clamp: 2;
   }
   
-  .action-btn {
+  #playBtn,
+  #likeBtn,
+  #favoriteBtn,
+  #watchLaterBtn,
+  #shareBtn,
+  .resume-btn,
+  #closePlayerFromHero {
     padding: 8px 16px;
     font-size: 13px;
   }
@@ -487,6 +769,23 @@
   }
 }
 
+@media (max-width: 550px) {
+  .hero-actions {
+    gap: 8px;
+  }
+  
+  #playBtn,
+  #likeBtn,
+  #favoriteBtn,
+  #watchLaterBtn,
+  #shareBtn,
+  .resume-btn,
+  #closePlayerFromHero {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
 @media (max-width: 480px) {
   .hero-info h1 {
     font-size: 18px;
@@ -501,26 +800,37 @@
     padding: 2px 6px;
   }
   
-  .action-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-  
-  .action-btn span {
+  /* Icon-only mode for very small screens */
+  #likeBtn span,
+  #favoriteBtn span,
+  #watchLaterBtn span,
+  #shareBtn span {
     display: none;
   }
   
-  .action-btn i {
+  #likeBtn,
+  #favoriteBtn,
+  #watchLaterBtn,
+  #shareBtn {
+    padding: 8px 12px;
+  }
+  
+  #likeBtn i,
+  #favoriteBtn i,
+  #watchLaterBtn i,
+  #shareBtn i {
     font-size: 14px;
     margin: 0;
   }
   
-  .engagement-btn span {
-    display: none;
+  #playBtn span,
+  .resume-btn span {
+    display: inline;
   }
   
-  .engagement-btn {
-    padding: 8px 12px;
+  #playBtn,
+  .resume-btn {
+    padding: 8px 16px;
   }
   
   .play-icon-large {
@@ -540,9 +850,75 @@
     opacity: 0.5;
   }
   
-  .action-btn:active {
-    transform: scale(0.95);
+  #playBtn:active,
+  #likeBtn:active,
+  #favoriteBtn:active,
+  #watchLaterBtn:active,
+  #shareBtn:active,
+  .resume-btn:active,
+  #closePlayerFromHero:active {
+    transform: scale(0.96);
   }
+}
+
+/* ============================================ */
+/* THEME SUPPORT FOR BUTTONS */
+/* ============================================ */
+.theme-light #playBtn {
+  box-shadow: 0 4px 15px rgba(29, 78, 216, 0.2);
+}
+
+.theme-light #likeBtn,
+.theme-light #favoriteBtn,
+.theme-light #watchLaterBtn,
+.theme-light #shareBtn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--deep-navy);
+}
+
+.theme-light #likeBtn:hover,
+.theme-light #favoriteBtn:hover,
+.theme-light #watchLaterBtn:hover,
+.theme-light #shareBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.theme-light #likeBtn.active {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.theme-light #favoriteBtn.active {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.theme-light #watchLaterBtn.active {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* High contrast mode */
+.theme-high-contrast #playBtn,
+.theme-high-contrast .resume-btn {
+  border: 2px solid white;
+  background: #00FF00;
+  color: black;
+}
+
+.theme-high-contrast #likeBtn.active,
+.theme-high-contrast #favoriteBtn.active,
+.theme-high-contrast #watchLaterBtn.active {
+  border: 2px solid white;
+  background: #00FF00;
+  color: black;
+}
+
+.theme-high-contrast #likeBtn,
+.theme-high-contrast #favoriteBtn,
+.theme-high-contrast #watchLaterBtn,
+.theme-high-contrast #shareBtn {
+  border: 2px solid white;
+  background: black;
+  color: white;
 }
 
 /* ============================================ */
