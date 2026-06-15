@@ -1,0 +1,961 @@
+/* ============================================ */
+/* CONTENT DETAIL - PAGE LAYOUT & SKELETONS */
+/* Grid, container, hero structure, content cards */
+/* YOUTUBE-STYLE SKELETON LOADING INCLUDED */
+/* ============================================ */
+
+/* ============================================ */
+/* SKELETON LOADING UI - YOUTUBE-STYLE (MUST LOAD FIRST) */
+/* These create the instant perceived performance */
+/* ============================================ */
+
+/* Main skeleton container */
+.content-skeleton {
+  animation: fadeIn 0.2s ease;
+  padding: 20px;
+  width: 100%;
+}
+
+/* Hero section skeleton */
+.skeleton-hero {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.skeleton-poster {
+  height: 220px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-title {
+  height: 28px;
+  width: 70%;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  animation: pulse 1.5s infinite 0.2s;
+}
+
+.skeleton-meta {
+  height: 16px;
+  width: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite 0.4s;
+}
+
+.skeleton-description {
+  height: 14px;
+  width: 90%;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite 0.6s;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.skeleton-btn {
+  height: 36px;
+  width: 100px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  animation: pulse 1.5s infinite 0.8s;
+}
+
+/* Grid skeletons - for recommendation rails */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+/* Individual skeleton card - YouTube-style */
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.skeleton-title-line {
+  height: 20px;
+  width: 80%;
+  margin: 15px 10px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-creator-line {
+  height: 16px;
+  width: 60%;
+  margin: 0 10px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-stats-line {
+  height: 14px;
+  width: 90%;
+  margin: 0 10px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Compact skeleton for mobile grid */
+.skeleton-card-compact {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail-compact {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.skeleton-title-compact {
+  height: 16px;
+  width: 85%;
+  margin: 10px 8px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-creator-compact {
+  height: 12px;
+  width: 70%;
+  margin: 0 8px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Skeleton animations */
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes skeleton-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================ */
+/* LOADING SCREEN (Full page initial load) */
+/* ============================================ */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--deep-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-screen .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(245, 158, 11, 0.2);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loading-screen #loading-text {
+  color: var(--slate-grey);
+  font-size: 14px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* CONTENT HERO SECTION - MAIN LAYOUT */
+/* ============================================ */
+.content-hero {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 20px 0;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+/* Video active state - full width player */
+.content-hero.video-active {
+  grid-template-columns: 1fr !important;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.content-hero.video-active .hero-poster {
+  display: none;
+}
+
+.content-hero.video-active .hero-info {
+  order: 2;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+/* Hero gradient border effect */
+.content-hero::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0.08;
+}
+
+/* ============================================ */
+/* HERO POSTER */
+/* ============================================ */
+.hero-poster {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(245, 158, 11, 0.2);
+  height: 220px;
+  background: linear-gradient(45deg, #0A1128, #002855);
+  position: relative;
+  cursor: pointer;
+}
+
+.hero-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.poster-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bantu-blue);
+  font-size: 2.5rem;
+  background: var(--card-bg);
+}
+
+/* Play overlay on poster hover */
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hero-poster:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-icon-large {
+  width: 70px;
+  height: 70px;
+  background: rgba(245, 158, 11, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--deep-black);
+  font-size: 2rem;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+}
+
+.hero-poster:hover .play-icon-large {
+  transform: scale(1);
+}
+
+/* ============================================ */
+/* HERO INFO */
+/* ============================================ */
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hero-info h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.meta-item i {
+  color: var(--bantu-blue);
+  font-size: 14px;
+}
+
+.hero-description {
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Resume button animation */
+.resume-btn {
+  background: linear-gradient(135deg, #F59E0B, #1D4ED8) !important;
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+}
+
+/* ============================================ */
+/* CONTENT GRID - PREVENTS CLUTTERED CARDS */
+/* ============================================ */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+/* Responsive grid adjustments - prevents thumbnails from taking over */
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  
+  /* Mobile skeleton adjustments */
+  .skeleton-hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .skeleton-poster {
+    height: 180px;
+  }
+  
+  .skeleton-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  /* Compact skeleton for mobile */
+  .skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .skeleton-poster {
+    height: 160px;
+  }
+  
+  .skeleton-title {
+    height: 24px;
+  }
+  
+  .skeleton-btn {
+    height: 32px;
+    width: 80px;
+  }
+}
+
+/* ============================================ */
+/* CONTENT CARDS - PROPER SIZING */
+/* ============================================ */
+.content-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  backdrop-filter: blur(10px);
+  display: block;
+}
+
+.content-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Card thumbnail - FIXED ASPECT RATIO (prevents distortion) */
+.card-thumbnail {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.content-card:hover .card-thumbnail img {
+  transform: scale(1.05);
+}
+
+/* Thumbnail overlay for better text contrast */
+.thumbnail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+  pointer-events: none;
+}
+
+/* Duration badge on thumbnails */
+.duration-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* Progress bar overlay for continue watching */
+.progress-bar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  transition: width 0.3s ease;
+}
+
+/* Resume badge on thumbnails */
+.resume-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(29, 78, 216, 0.95);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+/* Card content */
+.card-content {
+  padding: 12px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 36px;
+  color: var(--soft-white);
+  line-height: 1.3;
+}
+
+/* Related content meta */
+.related-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.related-meta i {
+  color: var(--bantu-blue);
+  font-size: 11px;
+}
+
+/* Creator chip on cards */
+.creator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 6px;
+}
+
+.creator-chip i {
+  font-size: 10px;
+  color: var(--bantu-blue);
+}
+
+/* Genre tag on cards */
+.genre-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--warm-gold);
+  margin-top: 6px;
+}
+
+/* Upload date */
+.upload-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--slate-grey);
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+/* ============================================ */
+/* STATS GRID - ENGAGEMENT CARDS */
+/* ============================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--warm-gold);
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(29, 78, 216, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bantu-blue);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.stat-content h4 {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.stat-content p {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--soft-white);
+}
+
+/* ============================================ */
+/* SECTION HEADERS (Consistent across all rails) */
+/* ============================================ */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+}
+
+/* View all link */
+.view-all-link {
+  color: var(--bantu-blue);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.view-all-link:hover {
+  color: var(--warm-gold);
+  gap: 10px;
+}
+
+/* Refresh button */
+.refresh-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--bantu-blue);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--bantu-blue);
+}
+
+/* ============================================ */
+/* RECOMMENDATION RAILS (Consistent spacing) */
+/* ============================================ */
+.related-section,
+.continue-watching-section,
+.recommendation-rail {
+  margin-bottom: 40px;
+  padding-top: 20px;
+}
+
+/* ============================================ */
+/* EMPTY STATE */
+/* ============================================ */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--slate-grey);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  grid-column: 1 / -1;
+}
+
+.empty-state .empty-icon {
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  color: var(--soft-white);
+  font-size: 18px;
+  margin: 15px 0 10px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================ */
+/* RELATED PLACEHOLDER */
+/* ============================================ */
+.related-placeholder {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.5);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.related-placeholder i {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================ */
+/* INLINE VIDEO PLAYER CONTAINER */
+/* ============================================ */
+.inline-player {
+  background: var(--deep-navy);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 20px 0;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  animation: slideDown 0.3s ease;
+  display: none;
+  position: relative;
+  z-index: 10;
+  width: 100%;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.video-container {
+  border-radius: 0;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  aspect-ratio: 16/9;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+/* Hide native browser controls */
+#inlineVideoPlayer,
+.video-container video {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+#inlineVideoPlayer::-webkit-media-controls,
+#inlineVideoPlayer::-webkit-media-control-panel,
+#inlineVideoPlayer::-webkit-media-control-play-button,
+#inlineVideoPlayer::-webkit-media-controls-fullscreen-button {
+  display: none !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ============================================ */
+/* BANTU PLAYER PLACEHOLDER */
+/* ============================================ */
+.bantu-player-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0A1128 0%, #0F172A 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.bantu-logo-spinner {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.bantu-logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+  animation: spin 2s linear infinite;
+}
+
+.bantu-logo i {
+  font-size: 2.5rem;
+  color: white;
+}
+
+.bantu-brand-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(to right, var(--soft-white), var(--warm-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.loading-text {
+  color: var(--slate-grey);
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* ============================================ */
+/* INITIAL PLAY OVERLAY (Autoplay policy fix) */
+/* ============================================ */
+.initial-play-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+}
+
+.initial-play-overlay.hidden {
+  display: none;
+}
+
+#initialPlayButton {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border: none;
+  color: white;
+  padding: 18px 32px;
+  border-radius: 60px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+#initialPlayButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 28px rgba(29, 78, 216, 0.5);
+}
+
+/* ============================================ */
+/* END OF LAYOUT MODULE (Includes all skeletons) */
+/* ============================================ */
