@@ -1,10 +1,17 @@
 // js/content-detail/stats-grid.js
 // ============================================
-// STATS GRID MODULE
+// STATS GRID MODULE - FIXED ENGAGEMENT BUTTONS
 // Contains UI rendering for engagement stats (views, likes, shares)
 // AND its specific data-fetching logic for count synchronization
 // ============================================
 console.log('🎬 Stats Grid Module Loading...');
+
+// Cache for engagement states
+let engagementStateCache = {
+    liked: false,
+    favorited: false,
+    watchLater: false
+};
 
 /**
  * Update the entire stats grid with content data
@@ -15,7 +22,7 @@ function updateStatsGrid(content) {
     updateViewsUI(content.views_count);
     updateLikesUI(content.likes_count);
     if (typeof updateShareCountUI === 'function') {
-        updateShareCountUI(0); // Just to initialize, actual shares count from elsewhere
+        updateShareCountUI(0);
     }
     updateCountsUI(content);
 }
@@ -54,7 +61,7 @@ function updateLikesUI(likesCount) {
 }
 
 /**
- * Update share count UI with delta (increment by 1 for new shares)
+ * Update share count UI with delta
  */
 function updateShareCountUI(delta) {
     const shareCountEl = document.getElementById('sharesCount');
@@ -89,8 +96,59 @@ function updateCountsUI(content) {
 }
 
 /**
- * Force update engagement UI with counts (bypasses state checks)
- * Used by loadLiveEngagementCounts for bulletproof sync
+ * Update engagement button UI based on states
+ */
+function updateEngagementButtonsUI(states) {
+    console.log('🎨 Updating engagement buttons UI:', states);
+    
+    // Like button
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        if (states.liked) {
+            likeBtn.classList.add('active');
+            likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+            likeBtn.setAttribute('data-liked', 'true');
+        } else {
+            likeBtn.classList.remove('active');
+            likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+            likeBtn.setAttribute('data-liked', 'false');
+        }
+    }
+    
+    // Favorite button
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+        if (states.favorited) {
+            favoriteBtn.classList.add('active');
+            favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+            favoriteBtn.setAttribute('data-favorited', 'true');
+        } else {
+            favoriteBtn.classList.remove('active');
+            favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+            favoriteBtn.setAttribute('data-favorited', 'false');
+        }
+    }
+    
+    // Watch Later button
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+        if (states.watchLater) {
+            watchLaterBtn.classList.add('active');
+            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+            watchLaterBtn.setAttribute('data-watchlater', 'true');
+        } else {
+            watchLaterBtn.classList.remove('active');
+            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+            watchLaterBtn.setAttribute('data-watchlater', 'false');
+        }
+    }
+    
+    // Update cache
+    engagementStateCache = { ...states };
+}
+
+/**
+ * Force update engagement UI with counts
  */
 function _forceUpdateEngagementUI(counts) {
     updateViewsUI(counts.views);
@@ -112,7 +170,6 @@ function _forceUpdateEngagementUI(counts) {
 
 /**
  * Increment frontend view count optimistically
- * Used for immediate UI feedback before DB confirmation
  */
 function incrementFrontendViewCount() {
     const selectors = [
@@ -132,7 +189,6 @@ function incrementFrontendViewCount() {
             } else {
                 el.textContent = window.formatNumber(newViews);
             }
-            console.log(`📊 Updated view count for ${selector}: ${newViews}`);
         });
     });
     
@@ -142,16 +198,14 @@ function incrementFrontendViewCount() {
 }
 
 /**
- * Refresh counts from source (database) - calls loadLiveEngagementCounts
+ * Refresh counts from source
  */
 async function refreshCountsFromSource() {
-    const contentIdForRefresh = window.currentContent?.id || 
-        (window.currentPlaylistItems && window.currentPlaylistItems.length > 0 && window.currentPlaylistItems[0]?.id);
-    
-    if (!contentIdForRefresh) return;
+    const contentId = window.currentContent?.id;
+    if (!contentId) return;
     
     try {
-        const liveCounts = await window.loadLiveEngagementCounts(contentIdForRefresh);
+        const liveCounts = await window.loadLiveEngagementCounts(contentId);
         
         if (window.currentContent && liveCounts.views !== undefined) {
             window.currentContent.views_count = liveCounts.views;
@@ -171,7 +225,7 @@ async function refreshCountsFromSource() {
 }
 
 /**
- * Setup view sync listener for cross-component view count updates
+ * Setup view sync listener
  */
 function setupViewSyncListener() {
     window.addEventListener('content-views-updated', async (event) => {
@@ -188,7 +242,6 @@ function setupViewSyncListener() {
             if (window.currentContent) {
                 window.currentContent.views_count = liveCounts.views;
                 updateViewsUI(liveCounts.views);
-                console.log('👁️ Frontend views synced via fetch:', liveCounts.views);
             }
         }
         
@@ -197,8 +250,7 @@ function setupViewSyncListener() {
 }
 
 /**
- * Record view increment via RPC (called from content-detail orchestration)
- * This is a convenience wrapper
+ * Record view increment via RPC
  */
 async function incrementContentViews(contentId) {
     if (!contentId) return false;
@@ -238,6 +290,7 @@ window.updateViewsUI = updateViewsUI;
 window.updateLikesUI = updateLikesUI;
 window.updateShareCountUI = updateShareCountUI;
 window.updateCountsUI = updateCountsUI;
+window.updateEngagementButtonsUI = updateEngagementButtonsUI;
 window._forceUpdateEngagementUI = _forceUpdateEngagementUI;
 window.incrementFrontendViewCount = incrementFrontendViewCount;
 window.refreshCountsFromSource = refreshCountsFromSource;
