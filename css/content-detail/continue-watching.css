@@ -1,0 +1,601 @@
+/* ============================================ */
+/* CONTINUE WATCHING SECTION MODULE */
+/* Resume badges, progress bars, and watch history cards */
+/* ============================================ */
+
+/* ============================================ */
+/* CONTINUE WATCHING SECTION - MAIN CONTAINER */
+/* ============================================ */
+.continue-watching-section {
+  margin-bottom: 40px;
+  padding-top: 20px;
+  position: relative;
+}
+
+/* Section header with "Continue Watching" title */
+.continue-watching-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.continue-watching-section .section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.continue-watching-section .section-title i {
+  color: var(--bantu-blue);
+  font-size: 20px;
+}
+
+/* View all link */
+.view-all-link {
+  color: var(--bantu-blue);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.view-all-link:hover {
+  color: var(--warm-gold);
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================ */
+/* CONTINUE WATCHING GRID */
+/* ============================================ */
+.continue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* Continue card - specific styling for watch history */
+.continue-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.continue-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* ============================================ */
+/* CARD THUMBNAIL WITH PROGRESS BAR */
+/* ============================================ */
+.continue-card .card-thumbnail {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.continue-card .card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.continue-card:hover .card-thumbnail img {
+  transform: scale(1.05);
+}
+
+/* Progress bar overlay - shows watch progress */
+.progress-bar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  transition: width 0.3s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Resume badge - appears on hover or always visible on mobile */
+.resume-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(29, 78, 216, 0.95);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.continue-card:hover .resume-badge {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.resume-badge i {
+  font-size: 10px;
+}
+
+/* Watch time indicator (time watched / total time) */
+.watch-time-indicator {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 3;
+  font-family: monospace;
+}
+
+.watch-time-indicator i {
+  font-size: 10px;
+  color: var(--warm-gold);
+}
+
+/* ============================================ */
+/* CARD CONTENT */
+/* ============================================ */
+.continue-card .card-content {
+  padding: 12px;
+}
+
+.continue-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 38px;
+  color: var(--soft-white);
+  line-height: 1.4;
+}
+
+/* Progress text (minutes watched) */
+.progress-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--slate-grey);
+}
+
+.progress-text i {
+  color: var(--bantu-blue);
+  font-size: 11px;
+}
+
+.progress-text span {
+  font-family: monospace;
+}
+
+/* Percentage badge */
+.percentage-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warm-gold);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Creator info on card */
+.continue-card .creator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--slate-grey);
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+.continue-card:hover .creator-chip {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--soft-white);
+}
+
+.creator-chip i {
+  font-size: 10px;
+  color: var(--bantu-blue);
+}
+
+/* ============================================ */
+/* CONTINUE WATCHING EMPTY STATE */
+/* ============================================ */
+.continue-watching-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.continue-watching-empty i {
+  font-size: 48px;
+  color: var(--slate-grey);
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+
+.continue-watching-empty h3 {
+  font-size: 18px;
+  color: var(--soft-white);
+  margin-bottom: 8px;
+}
+
+.continue-watching-empty p {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin-bottom: 20px;
+}
+
+.browse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border: none;
+  border-radius: 40px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.browse-btn:hover {
+  transform: translateY(-2px);
+  gap: 12px;
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+}
+
+/* ============================================ */
+/* SKELETON LOADING FOR CONTINUE WATCHING */
+/* ============================================ */
+.continue-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.continue-skeleton-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-title {
+  height: 16px;
+  width: 80%;
+  margin: 12px 12px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.skeleton-progress {
+  height: 12px;
+  width: 60%;
+  margin: 0 12px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.skeleton-creator {
+  height: 10px;
+  width: 50%;
+  margin: 0 12px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================ */
+/* PROGRESS UPDATE NOTIFICATION */
+/* ============================================ */
+.progress-update-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card-bg);
+  border: 1px solid var(--bantu-blue);
+  border-radius: 40px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+  color: var(--soft-white);
+  font-size: 13px;
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.progress-update-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.progress-update-toast i {
+  color: var(--success-color);
+  font-size: 14px;
+}
+
+/* ============================================ */
+/* RESPONSIVE ADJUSTMENTS */
+/* ============================================ */
+@media (max-width: 768px) {
+  .continue-watching-section .section-title {
+    font-size: 18px;
+  }
+  
+  .continue-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  .continue-skeleton-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  
+  .resume-badge {
+    opacity: 1;
+    transform: translateX(0);
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+  
+  .watch-time-indicator {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .continue-card .card-title {
+    font-size: 13px;
+    min-height: 34px;
+  }
+  
+  .progress-text {
+    font-size: 10px;
+  }
+  
+  .percentage-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+}
+
+@media (max-width: 550px) {
+  .continue-watching-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .view-all-link {
+    align-self: flex-start;
+  }
+  
+  .continue-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .continue-skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .resume-badge span {
+    display: none;
+  }
+  
+  .resume-badge {
+    padding: 6px 8px;
+  }
+  
+  .resume-badge i {
+    font-size: 12px;
+    margin: 0;
+  }
+  
+  .watch-time-indicator span {
+    display: none;
+  }
+  
+  .watch-time-indicator {
+    padding: 4px 6px;
+  }
+  
+  .watch-time-indicator i {
+    margin: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .continue-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .continue-card .card-title {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+  
+  .progress-text {
+    display: none;
+  }
+  
+  .percentage-badge {
+    display: inline-block;
+    margin-top: 4px;
+  }
+}
+
+/* ============================================ */
+/* HOVER EFFECTS FOR TOUCH DEVICES */
+/* ============================================ */
+@media (hover: none) and (pointer: coarse) {
+  .continue-card:active {
+    transform: scale(0.98);
+  }
+  
+  .resume-badge {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================ */
+/* THEME SUPPORT */
+/* ============================================ */
+.theme-light .continue-watching-section .section-title {
+  color: var(--deep-navy);
+}
+
+.theme-light .continue-card {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .continue-card .card-title {
+  color: var(--deep-navy);
+}
+
+.theme-light .progress-text {
+  color: var(--slate-grey);
+}
+
+.theme-light .creator-chip {
+  color: var(--slate-grey);
+}
+
+.theme-light .continue-watching-empty {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .continue-watching-empty h3 {
+  color: var(--deep-navy);
+}
+
+/* High contrast mode */
+.theme-high-contrast .continue-card {
+  border: 2px solid white;
+  background: black;
+}
+
+.theme-high-contrast .continue-card .card-title {
+  color: white;
+}
+
+.theme-high-contrast .progress-fill {
+  background: #00FF00;
+}
+
+.theme-high-contrast .resume-badge {
+  border: 1px solid white;
+  background: black;
+  color: white;
+}
+
+.theme-high-contrast .resume-badge i {
+  color: #00FF00;
+}
+
+/* ============================================ */
+/* CONTINUE WATCHING NOTIFICATION DOT */
+/* ============================================ */
+.new-progress-dot {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  background: var(--warm-gold);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+  z-index: 3;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* ============================================ */
+/* END OF CONTINUE WATCHING MODULE */
+/* ============================================ */
