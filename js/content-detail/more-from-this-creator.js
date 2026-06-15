@@ -1,31 +1,29 @@
 // js/content-detail/more-from-this-creator.js
 // ============================================
-// MORE FROM THIS CREATOR MODULE - COMPLETE BRAIN
-// Contains UI rendering for "More From This Creator" recommendation rail
-// AND its specific database logic (fetch by creator_id from Content table)
+// MORE FROM THIS CREATOR MODULE - UPDATED FOR NEW SCHEMA
+// Uses content_engagement_stats for ALL metrics
 // ============================================
 console.log('🎬 More From This Creator Module Loading...');
 
 /**
  * Load "More From This Creator" content from database
  * Fetches other published content by the same creator
- * @param {Object} options - Configuration options
- * @param {string|number} options.creatorId - Creator's user ID (required)
- * @param {string|number} options.excludeContentId - Content ID to exclude (current content)
- * @param {number} options.limit - Maximum number of items to load (default: 6)
  */
 async function loadMoreFromCreatorRecommendations(options = {}) {
     const { creatorId, excludeContentId, limit = 6 } = options;
-    const containerId = 'moreFromCreatorRail';
-    const section = document.getElementById(containerId);
+    const section = document.getElementById('moreFromCreatorRail');
     
     if (!section) {
         console.warn('More From This Creator rail container not found');
         return;
     }
     
-    // Check if we have a creator to load from
-    const targetCreatorId = creatorId || window.currentContent?.creator_id || window.currentContent?.user_id;
+    // Get creator ID from various sources
+    const targetCreatorId = creatorId || 
+                           window.currentContent?.creator_id || 
+                           window.currentContent?.user_id ||
+                           window.currentPlaylist?.creator_id ||
+                           (window.currentPlaylistItems && window.currentPlaylistItems[0]?.user_id);
     
     if (!targetCreatorId) {
         console.log('No creator ID available, hiding More From This Creator rail');
@@ -33,13 +31,10 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         return;
     }
     
-    // Show skeleton loader immediately
     showMoreFromCreatorSkeleton();
     
     try {
-        let creatorContent = [];
-        
-        // Build the query
+        // Query Content table WITHOUT views_count/likes_count
         let query = window.supabaseClient
             .from('Content')
             .select(`
@@ -51,20 +46,12 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
                 duration,
                 media_type,
                 created_at,
-                views_count,
-                likes_count,
-                comments_count,
                 user_id,
                 user_profiles!user_id (
                     id,
                     full_name,
                     username,
                     avatar_url
-                ),
-                content_engagement_stats (
-                    total_views,
-                    total_likes,
-                    total_comments
                 )
             `)
             .eq('user_id', targetCreatorId)
@@ -72,7 +59,6 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
             .order('created_at', { ascending: false })
             .limit(limit);
         
-        // Exclude current content if specified
         if (excludeContentId) {
             query = query.neq('id', excludeContentId);
         } else if (window.currentContent?.id) {
@@ -88,12 +74,33 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
             return;
         }
         
-        // Enrich with engagement stats
+        // Get engagement stats separately
+        const contentIds = data.map(item => item.id);
+        const { data: statsData, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('content_id, total_views, total_likes, total_comments')
+            .in('content_id', contentIds);
+        
+        if (statsError) throw statsError;
+        
+        // Create stats map
+        const statsMap = new Map();
+        statsData?.forEach(stat => {
+            statsMap.set(stat.content_id, {
+                total_views: stat.total_views || 0,
+                total_likes: stat.total_likes || 0,
+                total_comments: stat.total_comments || 0
+            });
+        });
+        
+        // Enrich data with stats
         const enrichedData = data.map(item => ({
             ...item,
-            total_views: item.content_engagement_stats?.total_views || item.views_count || 0,
-            total_likes: item.content_engagement_stats?.total_likes || item.likes_count || 0,
-            total_comments: item.content_engagement_stats?.total_comments || item.comments_count || 0
+            total_views: statsMap.get(item.id)?.total_views || 0,
+            total_likes: statsMap.get(item.id)?.total_likes || 0,
+            total_comments: statsMap.get(item.id)?.total_comments || 0,
+            views_count: statsMap.get(item.id)?.total_views || 0,
+            likes_count: statsMap.get(item.id)?.total_likes || 0
         }));
         
         renderMoreFromCreatorRail(enrichedData, targetCreatorId);
@@ -106,17 +113,18 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
 }
 
 /**
- * Render the "More From This Creator" rail with content cards
- * @param {Array} items - Array of content items to display
- * @param {string|number} creatorId - Creator ID for the "View All" link
+ * Render the "More From This Creator" rail
  */
 function renderMoreFromCreatorRail(items, creatorId) {
     const section = document.getElementById('moreFromCreatorRail');
     if (!section) return;
     
-    // Get creator name for display
+    // Get creator name
     let creatorName = window.currentContent?.creator_display_name || 
                      window.currentContent?.creator || 
+                     window.currentContent?.user_profiles?.full_name ||
+                     window.currentContent?.user_profiles?.username ||
+                     (window.currentPlaylist?.creator_name) ||
                      'This Creator';
     
     if (items[0]?.user_profiles?.full_name) {
@@ -125,7 +133,6 @@ function renderMoreFromCreatorRail(items, creatorId) {
         creatorName = items[0].user_profiles.username;
     }
     
-    // Ensure section has proper structure
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
@@ -135,7 +142,6 @@ function renderMoreFromCreatorRail(items, creatorId) {
             <div class="content-grid" id="moreFromCreatorGrid"></div>
         `;
     } else {
-        // Update title if creator name changed
         const titleEl = section.querySelector('.section-title');
         if (titleEl) {
             titleEl.textContent = `More From ${window.escapeHtml(creatorName)}`;
@@ -151,11 +157,10 @@ function renderMoreFromCreatorRail(items, creatorId) {
     }
     
     grid.innerHTML = items.map(item => {
-        const viewsCount = item.total_views || item.views_count || 0;
+        const viewsCount = item.total_views || 0;
         const thumbnail = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || 
                          item.thumbnail_url || 
                          'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-        
         const duration = item.duration ? window.formatDuration(item.duration) : '';
         
         return `
@@ -188,7 +193,7 @@ function renderMoreFromCreatorRail(items, creatorId) {
 }
 
 /**
- * Show skeleton loader for "More From This Creator" rail
+ * Show skeleton loader
  */
 function showMoreFromCreatorSkeleton() {
     const section = document.getElementById('moreFromCreatorRail');
@@ -228,7 +233,7 @@ function showMoreFromCreatorSkeleton() {
 }
 
 /**
- * Show empty state for "More From This Creator" rail
+ * Show empty state
  */
 function showMoreFromCreatorEmpty() {
     const section = document.getElementById('moreFromCreatorRail');
@@ -258,10 +263,12 @@ function showMoreFromCreatorEmpty() {
 }
 
 /**
- * Refresh "More From This Creator" rail (reload from database)
+ * Refresh the rail
  */
 async function refreshMoreFromCreator() {
-    const creatorId = window.currentContent?.creator_id || window.currentContent?.user_id;
+    const creatorId = window.currentContent?.creator_id || 
+                     window.currentContent?.user_id ||
+                     window.currentPlaylist?.creator_id;
     const excludeId = window.currentContent?.id;
     
     if (creatorId) {
@@ -276,26 +283,27 @@ async function refreshMoreFromCreator() {
     }
 }
 
-// ============================================
-// Initialize module - listen for content changes
-// ============================================
+// Initialize module
 function initMoreFromCreator() {
-    // Listen for content changes to refresh recommendations
     window.addEventListener('contentIdChanged', () => {
         setTimeout(() => {
             refreshMoreFromCreator();
         }, 500);
     });
     
-    // Initial load if content exists
-    if (window.currentContent?.creator_id || window.currentContent?.user_id) {
-        setTimeout(() => refreshMoreFromCreator(), 300);
-    }
+    window.addEventListener('playlistLoaded', () => {
+        setTimeout(() => {
+            refreshMoreFromCreator();
+        }, 500);
+    });
     
-    console.log('✅ More From This Creator module initialized');
+    setTimeout(() => {
+        if (window.currentContent?.creator_id || window.currentContent?.user_id) {
+            refreshMoreFromCreator();
+        }
+    }, 500);
 }
 
-// Auto-initialize if DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initMoreFromCreator);
 } else {
@@ -311,4 +319,4 @@ window.showMoreFromCreatorSkeleton = showMoreFromCreatorSkeleton;
 window.showMoreFromCreatorEmpty = showMoreFromCreatorEmpty;
 window.refreshMoreFromCreator = refreshMoreFromCreator;
 
-console.log('✅ More From This Creator Module loaded (with full brain)');
+console.log('✅ More From This Creator Module loaded (Updated for new schema)');
