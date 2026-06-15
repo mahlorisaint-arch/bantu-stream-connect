@@ -430,6 +430,11 @@ async function loadAllEngagementStates(contentId, userId) {
         if (states.watchLater) watchLaterContentCache.add(contentId);
         else watchLaterContentCache.delete(contentId);
         
+        // Update engagement buttons UI
+        if (typeof updateEngagementButtonsUI === 'function') {
+            updateEngagementButtonsUI(states);
+        }
+        
         return states;
     } catch (error) {
         console.error('❌ Failed to load engagement states:', error);
@@ -495,14 +500,9 @@ async function setCurrentContent(content, index = null) {
     }
     
     if (window.currentUserId && content.id) {
-        try {
-            const states = await loadAllEngagementStates(content.id, window.currentUserId);
-            if (typeof updateEngagementUI === 'function') {
-                updateEngagementUI(states);
-            }
-        } catch (e) {
-            console.warn('⚠️ Engagement states load failed:', e);
-        }
+        setTimeout(async () => {
+            await loadAndUpdateEngagementStates();
+        }, 100);
     }
     
     setTimeout(async () => {
@@ -565,6 +565,108 @@ async function toggleLike(contentId, userId, isCurrentlyLiked) {
         console.error('❌ Like toggle failed:', error);
         if (typeof showToast === 'function') showToast('Failed to update like', 'error');
         return isCurrentlyLiked;
+    }
+}
+
+/**
+ * Toggle favorite
+ */
+async function toggleFavorite(contentId, userId, isCurrentlyFavorited) {
+    if (!userId) {
+        if (typeof showToast === 'function') showToast('Sign in to favorite content', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlyFavorited) {
+            const { error } = await window.supabaseClient
+                .from('favorites')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId));
+            if (error) throw error;
+            favoritedContentCache.delete(contentId);
+            return false;
+        } else {
+            const { data: existing } = await window.supabaseClient
+                .from('favorites')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId))
+                .maybeSingle();
+            
+            if (existing) {
+                const { error } = await window.supabaseClient
+                    .from('favorites')
+                    .delete()
+                    .eq('id', existing.id);
+                if (error) throw error;
+                favoritedContentCache.delete(contentId);
+                return false;
+            }
+            
+            const { error } = await window.supabaseClient
+                .from('favorites')
+                .insert({ user_id: userId, content_id: parseInt(contentId) });
+            if (error) throw error;
+            favoritedContentCache.add(contentId);
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Favorite toggle failed:', error);
+        if (typeof showToast === 'function') showToast('Failed to update favorite', 'error');
+        return isCurrentlyFavorited;
+    }
+}
+
+/**
+ * Toggle watch later
+ */
+async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
+    if (!userId) {
+        if (typeof showToast === 'function') showToast('Sign in to use Watch Later', 'warning');
+        return false;
+    }
+    
+    try {
+        if (isCurrentlySaved) {
+            const { error } = await window.supabaseClient
+                .from('watch_later')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId));
+            if (error) throw error;
+            watchLaterContentCache.delete(contentId);
+            return false;
+        } else {
+            const { data: existing } = await window.supabaseClient
+                .from('watch_later')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId))
+                .maybeSingle();
+            
+            if (existing) {
+                const { error } = await window.supabaseClient
+                    .from('watch_later')
+                    .delete()
+                    .eq('id', existing.id);
+                if (error) throw error;
+                watchLaterContentCache.delete(contentId);
+                return false;
+            }
+            
+            const { error } = await window.supabaseClient
+                .from('watch_later')
+                .insert({ user_id: userId, content_id: parseInt(contentId) });
+            if (error) throw error;
+            watchLaterContentCache.add(contentId);
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Watch Later toggle failed:', error);
+        if (typeof showToast === 'function') showToast('Failed to update Watch Later', 'error');
+        return isCurrentlySaved;
     }
 }
 
@@ -1461,13 +1563,369 @@ function setupAuthListeners() {
 }
 
 // ============================================
+// ENGAGEMENT BUTTON HANDLERS - FIXED
+// ============================================
+
+/**
+ * Handle Like button click
+ */
+async function handleLikeButtonClick() {
+    console.log('❤️ Like button clicked');
+    
+    if (!window.currentContent?.id) {
+        console.warn('No current content for like action');
+        if (typeof window.showToast === 'function') {
+            window.showToast('No content selected', 'error');
+        }
+        return;
+    }
+    
+    if (!window.currentUserId) {
+        if (typeof window.showToast === 'function') {
+            window.showToast('Sign in to like content', 'warning');
+        }
+        // Redirect to login after a moment
+        setTimeout(() => {
+            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }, 1500);
+        return;
+    }
+    
+    const likeBtn = document.getElementById('likeBtn');
+    const likesCountEl = document.getElementById('likesCount');
+    const isCurrentlyLiked = likeBtn?.classList.contains('active') || false;
+    
+    // Get current count for optimistic update
+    let currentCount = parseInt(likesCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    const newCount = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
+    
+    // Optimistic UI update
+    if (likeBtn) {
+        likeBtn.classList.toggle('active', !isCurrentlyLiked);
+        likeBtn.innerHTML = !isCurrentlyLiked 
+            ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+            : '<i class="far fa-heart"></i><span>Like</span>';
+        likeBtn.disabled = true;
+    }
+    if (likesCountEl) {
+        likesCountEl.textContent = window.formatNumber ? window.formatNumber(newCount) : newCount;
+    }
+    
+    try {
+        const newState = await toggleLike(window.currentContent.id, window.currentUserId, isCurrentlyLiked);
+        
+        if (newState === isCurrentlyLiked) {
+            // Revert on failure
+            if (likeBtn) {
+                likeBtn.classList.toggle('active', isCurrentlyLiked);
+                likeBtn.innerHTML = isCurrentlyLiked 
+                    ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+                    : '<i class="far fa-heart"></i><span>Like</span>';
+            }
+            if (likesCountEl) {
+                likesCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+            }
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to update like', 'error');
+            }
+        } else {
+            // Success - refresh counts from server
+            const liveCounts = await loadLiveEngagementCounts(window.currentContent.id);
+            if (likesCountEl) {
+                likesCountEl.textContent = window.formatNumber ? window.formatNumber(liveCounts.likes) : liveCounts.likes;
+            }
+            if (typeof updateViewsUI === 'function') {
+                updateViewsUI(liveCounts.views);
+            }
+            if (window.currentContent) {
+                window.currentContent.likes_count = liveCounts.likes;
+                window.currentContent.views_count = liveCounts.views;
+            }
+            
+            // Update engagement cache
+            if (typeof updateEngagementButtonsUI === 'function') {
+                const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
+                updateEngagementButtonsUI(states);
+            }
+            
+            if (typeof window.showToast === 'function') {
+                window.showToast(newState ? 'Liked!' : 'Unliked', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Like button error:', error);
+        if (likeBtn) {
+            likeBtn.classList.toggle('active', isCurrentlyLiked);
+            likeBtn.innerHTML = isCurrentlyLiked 
+                ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+                : '<i class="far fa-heart"></i><span>Like</span>';
+        }
+        if (likesCountEl) {
+            likesCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+        }
+        if (typeof window.showToast === 'function') {
+            window.showToast('Failed to update like', 'error');
+        }
+    } finally {
+        if (likeBtn) {
+            likeBtn.disabled = false;
+        }
+    }
+}
+
+/**
+ * Handle Favorite button click
+ */
+async function handleFavoriteButtonClick() {
+    console.log('⭐ Favorite button clicked');
+    
+    if (!window.currentContent?.id) {
+        console.warn('No current content for favorite action');
+        return;
+    }
+    
+    if (!window.currentUserId) {
+        if (typeof window.showToast === 'function') {
+            window.showToast('Sign in to favorite content', 'warning');
+        }
+        setTimeout(() => {
+            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }, 1500);
+        return;
+    }
+    
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const favCountEl = document.getElementById('favoritesCount');
+    const isCurrentlyFavorited = favoriteBtn?.classList.contains('active') || false;
+    
+    let currentCount = parseInt(favCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    const newCount = isCurrentlyFavorited ? currentCount - 1 : currentCount + 1;
+    
+    // Optimistic UI
+    if (favoriteBtn) {
+        favoriteBtn.classList.toggle('active', !isCurrentlyFavorited);
+        favoriteBtn.innerHTML = !isCurrentlyFavorited 
+            ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+            : '<i class="far fa-star"></i><span>Favorite</span>';
+        favoriteBtn.disabled = true;
+    }
+    if (favCountEl) {
+        favCountEl.textContent = window.formatNumber ? window.formatNumber(newCount) : newCount;
+    }
+    
+    try {
+        const newState = await toggleFavorite(window.currentContent.id, window.currentUserId, isCurrentlyFavorited);
+        
+        if (newState === isCurrentlyFavorited) {
+            if (favoriteBtn) {
+                favoriteBtn.classList.toggle('active', isCurrentlyFavorited);
+                favoriteBtn.innerHTML = isCurrentlyFavorited 
+                    ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+                    : '<i class="far fa-star"></i><span>Favorite</span>';
+            }
+            if (favCountEl) {
+                favCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+            }
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to update favorite', 'error');
+            }
+        } else {
+            if (typeof window.showToast === 'function') {
+                window.showToast(newState ? 'Added to Favorites!' : 'Removed from Favorites', 'success');
+            }
+            // Update engagement cache
+            if (typeof updateEngagementButtonsUI === 'function') {
+                const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
+                updateEngagementButtonsUI(states);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Favorite button error:', error);
+        if (favoriteBtn) {
+            favoriteBtn.classList.toggle('active', isCurrentlyFavorited);
+            favoriteBtn.innerHTML = isCurrentlyFavorited 
+                ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+                : '<i class="far fa-star"></i><span>Favorite</span>';
+        }
+        if (favCountEl) {
+            favCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+        }
+    } finally {
+        if (favoriteBtn) {
+            favoriteBtn.disabled = false;
+        }
+    }
+}
+
+/**
+ * Handle Watch Later button click
+ */
+async function handleWatchLaterButtonClick() {
+    console.log('⏰ Watch Later button clicked');
+    
+    if (!window.currentContent?.id) {
+        console.warn('No current content for watch later action');
+        return;
+    }
+    
+    if (!window.currentUserId) {
+        if (typeof window.showToast === 'function') {
+            window.showToast('Sign in to use Watch Later', 'warning');
+        }
+        setTimeout(() => {
+            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }, 1500);
+        return;
+    }
+    
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    const isCurrentlySaved = watchLaterBtn?.classList.contains('active') || false;
+    
+    // Optimistic UI
+    if (watchLaterBtn) {
+        watchLaterBtn.classList.toggle('active', !isCurrentlySaved);
+        watchLaterBtn.innerHTML = !isCurrentlySaved 
+            ? '<i class="fas fa-clock"></i><span>Watch Later</span>' 
+            : '<i class="far fa-clock"></i><span>Watch Later</span>';
+        watchLaterBtn.disabled = true;
+    }
+    
+    try {
+        const newState = await toggleWatchLater(window.currentContent.id, window.currentUserId, isCurrentlySaved);
+        
+        if (newState === isCurrentlySaved) {
+            if (watchLaterBtn) {
+                watchLaterBtn.classList.toggle('active', isCurrentlySaved);
+                watchLaterBtn.innerHTML = isCurrentlySaved 
+                    ? '<i class="fas fa-clock"></i><span>Watch Later</span>' 
+                    : '<i class="far fa-clock"></i><span>Watch Later</span>';
+            }
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to update Watch Later', 'error');
+            }
+        } else {
+            if (typeof window.showToast === 'function') {
+                window.showToast(newState ? 'Added to Watch Later!' : 'Removed from Watch Later', 'success');
+            }
+            // Update engagement cache
+            if (typeof updateEngagementButtonsUI === 'function') {
+                const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
+                updateEngagementButtonsUI(states);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Watch Later button error:', error);
+        if (watchLaterBtn) {
+            watchLaterBtn.classList.toggle('active', isCurrentlySaved);
+            watchLaterBtn.innerHTML = isCurrentlySaved 
+                ? '<i class="fas fa-clock"></i><span>Watch Later</span>' 
+                : '<i class="far fa-clock"></i><span>Watch Later</span>';
+        }
+    } finally {
+        if (watchLaterBtn) {
+            watchLaterBtn.disabled = false;
+        }
+    }
+}
+
+/**
+ * Handle Share button click
+ */
+async function handleShareButtonClick() {
+    console.log('📤 Share button clicked');
+    
+    if (!window.currentContent?.id) {
+        console.warn('No current content for share action');
+        return;
+    }
+    
+    const shareBtn = document.getElementById('shareBtn');
+    const originalHTML = shareBtn?.innerHTML;
+    
+    if (shareBtn) {
+        shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Sharing...</span>';
+        shareBtn.disabled = true;
+    }
+    
+    try {
+        await shareContent(window.currentContent.id, window.currentUserId);
+    } catch (error) {
+        console.error('Share error:', error);
+        if (typeof window.showToast === 'function') {
+            window.showToast('Failed to share', 'error');
+        }
+    } finally {
+        if (shareBtn) {
+            shareBtn.innerHTML = originalHTML;
+            shareBtn.disabled = false;
+        }
+    }
+}
+
+/**
+ * Load all engagement states and update UI
+ */
+async function loadAndUpdateEngagementStates() {
+    if (!window.currentContent?.id || !window.currentUserId) return;
+    
+    try {
+        const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
+        if (typeof updateEngagementButtonsUI === 'function') {
+            updateEngagementButtonsUI(states);
+        }
+        console.log('✅ Engagement states loaded and UI updated:', states);
+    } catch (error) {
+        console.error('Failed to load engagement states:', error);
+    }
+}
+
+// ============================================
 // EVENT LISTENERS SETUP
 // ============================================
 function setupEventListeners() {
+    console.log('🔧 Setting up event listeners for engagement buttons...');
+    
+    // Like button
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn) {
+        const newLikeBtn = likeBtn.cloneNode(true);
+        likeBtn.parentNode?.replaceChild(newLikeBtn, likeBtn);
+        newLikeBtn.addEventListener('click', handleLikeButtonClick);
+        console.log('✅ Like button listener attached');
+    }
+    
+    // Favorite button
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    if (favoriteBtn) {
+        const newFavoriteBtn = favoriteBtn.cloneNode(true);
+        favoriteBtn.parentNode?.replaceChild(newFavoriteBtn, favoriteBtn);
+        newFavoriteBtn.addEventListener('click', handleFavoriteButtonClick);
+        console.log('✅ Favorite button listener attached');
+    }
+    
+    // Watch Later button
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+        const newWatchLaterBtn = watchLaterBtn.cloneNode(true);
+        watchLaterBtn.parentNode?.replaceChild(newWatchLaterBtn, watchLaterBtn);
+        newWatchLaterBtn.addEventListener('click', handleWatchLaterButtonClick);
+        console.log('✅ Watch Later button listener attached');
+    }
+    
+    // Share button
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        const newShareBtn = shareBtn.cloneNode(true);
+        shareBtn.parentNode?.replaceChild(newShareBtn, shareBtn);
+        newShareBtn.addEventListener('click', handleShareButtonClick);
+        console.log('✅ Share button listener attached');
+    }
+    
+    // Play button
     const playBtn = document.getElementById('playBtn');
     if (playBtn) {
         const newPlayBtn = playBtn.cloneNode(true);
-        playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
+        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
         newPlayBtn.addEventListener('click', startPlaybackFromUserGesture);
     }
     
@@ -1478,6 +1936,7 @@ function setupEventListeners() {
         newPoster.addEventListener('click', startPlaybackFromUserGesture);
     }
     
+    // Close player button
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) {
         closeFromHero.addEventListener('click', function() {
@@ -1507,7 +1966,10 @@ function setupEventListeners() {
         });
     }
     
+    // Setup player ended listener
     setupPlayerEndedListener();
+    
+    console.log('✅ All event listeners setup complete');
 }
 
 function setupPlayerEndedListener() {
@@ -1811,6 +2273,8 @@ function initThemeSelector() {
 window.recordView = recordContentViewRPC;
 window.loadAllEngagementStates = loadAllEngagementStates;
 window.toggleLike = toggleLike;
+window.toggleFavorite = toggleFavorite;
+window.toggleWatchLater = toggleWatchLater;
 window.shareContent = shareContent;
 window.updateGlobalContentId = updateGlobalContentId;
 window.setCurrentContent = setCurrentContent;
@@ -1824,5 +2288,10 @@ window.enhancedVideoPlayer = enhancedVideoPlayer;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
 window.watchSession = watchSession;
+window.handleLikeButtonClick = handleLikeButtonClick;
+window.handleFavoriteButtonClick = handleFavoriteButtonClick;
+window.handleWatchLaterButtonClick = handleWatchLaterButtonClick;
+window.handleShareButtonClick = handleShareButtonClick;
+window.loadAndUpdateEngagementStates = loadAndUpdateEngagementStates;
 
 console.log('✅ Content Detail Main Orchestrator ready');
