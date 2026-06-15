@@ -1,6 +1,6 @@
 // js/content-detail/creator-section.js
 // ============================================
-// CREATOR SECTION MODULE - FULLY FIXED
+// CREATOR SECTION MODULE - FIXED FOR BOTH SINGLE AND PLAYLIST MODES
 // Contains UI rendering for creator avatar/name navigation
 // AND its specific database logic for connection status (connectors table)
 // ============================================
@@ -10,14 +10,112 @@ console.log('🎬 Creator Section Module Loading...');
 let creatorConnectionCache = new Map();
 
 /**
- * Update creator avatar in UI
+ * Get current creator data from either single mode or playlist mode
+ * @returns {Object|null} Creator data with id, name, avatar_url
  */
-function updateCreatorAvatar(content) {
-    const creatorAvatar = document.getElementById('creatorAvatar');
-    if (!creatorAvatar || !content?.user_profiles) return;
+function getCurrentCreatorData() {
+    // Try single mode first (window.currentContent)
+    if (window.currentContent) {
+        // Check different possible locations of creator data
+        const creatorId = window.currentContent.creator_id || 
+                         window.currentContent.user_id || 
+                         window.currentContent.user_profiles?.id;
+        
+        const creatorName = window.currentContent.creator_display_name ||
+                           window.currentContent.creator ||
+                           window.currentContent.user_profiles?.full_name ||
+                           window.currentContent.user_profiles?.username ||
+                           (window.currentPlaylist?.creator_name) ||
+                           'Creator';
+        
+        const creatorAvatar = window.currentContent.user_profiles?.avatar_url ||
+                             window.currentPlaylist?.creator_avatar ||
+                             null;
+        
+        if (creatorId) {
+            return {
+                id: creatorId,
+                name: creatorName,
+                avatar_url: creatorAvatar,
+                user_profiles: window.currentContent.user_profiles
+            };
+        }
+    }
     
-    const avatarUrl = content.user_profiles.avatar_url;
-    const displayName = content.user_profiles.full_name || content.user_profiles.username || (window.currentPlaylist?.creator_name || 'Creator');
+    // Try playlist mode (window.currentPlaylist)
+    if (window.currentPlaylist) {
+        const creatorId = window.currentPlaylist.creator_id ||
+                         window.currentPlaylist.user_id;
+        
+        const creatorName = window.currentPlaylist.creator_name ||
+                           window.currentPlaylist.user_profiles?.full_name ||
+                           window.currentPlaylist.user_profiles?.username ||
+                           'Creator';
+        
+        const creatorAvatar = window.currentPlaylist.creator_avatar ||
+                             window.currentPlaylist.user_profiles?.avatar_url ||
+                             null;
+        
+        if (creatorId) {
+            return {
+                id: creatorId,
+                name: creatorName,
+                avatar_url: creatorAvatar,
+                user_profiles: window.currentPlaylist.user_profiles
+            };
+        }
+    }
+    
+    // Try playlist items (first item might have creator info)
+    if (window.currentPlaylistItems && window.currentPlaylistItems.length > 0) {
+        const firstItem = window.currentPlaylistItems[0];
+        const creatorId = firstItem.creator_id || 
+                         firstItem.user_id || 
+                         firstItem.user_profiles?.id;
+        
+        const creatorName = firstItem.creator_display_name ||
+                           firstItem.creator ||
+                           firstItem.user_profiles?.full_name ||
+                           firstItem.user_profiles?.username ||
+                           (window.currentPlaylist?.creator_name) ||
+                           'Creator';
+        
+        const creatorAvatar = firstItem.user_profiles?.avatar_url ||
+                             window.currentPlaylist?.creator_avatar ||
+                             null;
+        
+        if (creatorId) {
+            return {
+                id: creatorId,
+                name: creatorName,
+                avatar_url: creatorAvatar,
+                user_profiles: firstItem.user_profiles
+            };
+        }
+    }
+    
+    console.warn('⚠️ Could not find creator data in single or playlist mode');
+    return null;
+}
+
+/**
+ * Update creator avatar in UI (works for both modes)
+ */
+function updateCreatorAvatar() {
+    const creatorAvatar = document.getElementById('creatorAvatar');
+    if (!creatorAvatar) {
+        console.warn('⚠️ creatorAvatar element not found');
+        return;
+    }
+    
+    const creatorData = getCurrentCreatorData();
+    if (!creatorData) {
+        console.warn('⚠️ No creator data available for avatar');
+        return;
+    }
+    
+    const avatarUrl = creatorData.avatar_url;
+    const displayName = creatorData.name;
     const initial = displayName.charAt(0).toUpperCase();
     
     // Clear existing content
@@ -45,90 +143,109 @@ function updateCreatorAvatar(content) {
         creatorAvatar.appendChild(fallbackDiv);
     }
     
-    console.log('✅ Creator avatar updated for:', displayName);
+    console.log('✅ Creator avatar updated for:', displayName, '(Mode: ' + (window.isPlaylistMode ? 'Playlist' : 'Single') + ')');
 }
 
 /**
- * Update creator display name in UI
+ * Update creator display name in UI (works for both modes)
  */
-function updateCreatorDisplayName(displayName) {
-    if (displayName) {
-        window.safeSetText('creatorName', displayName);
-        window.safeSetText('creatorDisplayName', displayName);
+function updateCreatorDisplayName() {
+    const creatorData = getCurrentCreatorData();
+    if (!creatorData) {
+        console.warn('⚠️ No creator data available for display name');
+        return;
     }
+    
+    const displayName = creatorData.name;
+    
+    // Update all possible creator name elements
+    const creatorNameEl = document.getElementById('creatorName');
+    const creatorDisplayNameEl = document.getElementById('creatorDisplayName');
+    
+    if (creatorNameEl) {
+        creatorNameEl.textContent = displayName;
+    }
+    if (creatorDisplayNameEl) {
+        creatorDisplayNameEl.textContent = displayName;
+    }
+    
+    // Also update any other elements that might show creator name
+    const creatorLabels = document.querySelectorAll('.creator-name, .creator-display-name');
+    creatorLabels.forEach(el => {
+        if (el.id !== 'creatorName' && el.id !== 'creatorDisplayName') {
+            el.textContent = displayName;
+        }
+    });
+    
+    console.log('✅ Creator display name updated:', displayName);
 }
 
 /**
- * Setup creator click navigation - FIXED to work properly
+ * Setup creator click navigation - FIXED for both modes
  * Makes the entire creator section clickable to navigate to creator channel
  */
 function setupCreatorClickNavigation() {
-    const creatorSection = document.querySelector('.creator-section');
-    const creatorInfo = document.querySelector('.creator-info');
-    
-    // Also try to get the creator name element if the above don't exist
-    const creatorNameEl = document.getElementById('creatorName');
-    const creatorAvatar = document.getElementById('creatorAvatar');
-    
-    if (!window.currentContent?.creator_id) {
+    const creatorData = getCurrentCreatorData();
+    if (!creatorData?.id) {
         console.log('⚠️ No creator_id available, skipping click navigation setup');
         return;
     }
     
-    // Find the clickable container - try multiple selectors
-    let clickableContainer = creatorSection || creatorInfo || creatorNameEl?.parentElement || creatorAvatar?.parentElement;
+    // Find clickable containers - try multiple selectors
+    const possibleContainers = [
+        document.querySelector('.creator-section'),
+        document.querySelector('.creator-info'),
+        document.getElementById('creatorName')?.parentElement,
+        document.getElementById('creatorAvatar')?.parentElement,
+        document.querySelector('.creator-details'),
+        document.querySelector('.creator-card')
+    ];
     
-    if (!clickableContainer) {
-        console.warn('⚠️ Creator clickable container not found, creating one');
-        // Create a wrapper if none exists
-        const heroActions = document.querySelector('.hero-actions');
-        if (heroActions && heroActions.previousElementSibling) {
-            clickableContainer = heroActions.previousElementSibling;
+    let clickableContainer = null;
+    for (const container of possibleContainers) {
+        if (container) {
+            clickableContainer = container;
+            break;
         }
     }
     
-    if (clickableContainer) {
-        clickableContainer.style.cursor = 'pointer';
-        clickableContainer.style.transition = 'opacity 0.2s ease';
-        
-        // Remove any existing listeners to prevent duplicates
-        const newContainer = clickableContainer.cloneNode(true);
-        clickableContainer.parentNode?.replaceChild(newContainer, clickableContainer);
-        
-        newContainer.addEventListener('click', function(e) {
-            // Don't navigate if clicking on the connect button or its children
-            if (e.target.closest('.connect-btn')) {
-                console.log('🚫 Connect button clicked, not navigating to creator channel');
-                return;
-            }
-            
-            const creatorId = window.currentContent?.creator_id;
-            const creatorName = window.currentContent?.creator_display_name || 
-                               window.currentContent?.creator || 
-                               window.currentContent?.user_profiles?.full_name ||
-                               window.currentContent?.user_profiles?.username ||
-                               'Creator';
-            
-            if (creatorId) {
-                console.log('🔗 Navigating to creator channel:', creatorId, creatorName);
-                window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
-            } else {
-                console.warn('⚠️ No creator_id available for navigation');
-            }
-        });
-        
-        // Add hover effect
-        newContainer.addEventListener('mouseenter', function() {
-            this.style.opacity = '0.8';
-        });
-        newContainer.addEventListener('mouseleave', function() {
-            this.style.opacity = '1';
-        });
-        
-        console.log('✅ Creator click navigation setup complete');
-    } else {
-        console.warn('⚠️ Could not find clickable container for creator navigation');
+    if (!clickableContainer) {
+        console.warn('⚠️ Creator clickable container not found');
+        return;
     }
+    
+    // Remove any existing listeners (clone and replace)
+    const newContainer = clickableContainer.cloneNode(true);
+    clickableContainer.parentNode?.replaceChild(newContainer, clickableContainer);
+    
+    newContainer.style.cursor = 'pointer';
+    newContainer.style.transition = 'opacity 0.2s ease';
+    
+    newContainer.addEventListener('click', function(e) {
+        // Don't navigate if clicking on the connect button or its children
+        if (e.target.closest('.connect-btn')) {
+            console.log('🚫 Connect button clicked, not navigating to creator channel');
+            return;
+        }
+        
+        const creatorId = creatorData.id;
+        const creatorName = encodeURIComponent(creatorData.name);
+        
+        if (creatorId) {
+            console.log('🔗 Navigating to creator channel:', creatorId, creatorData.name);
+            window.location.href = `creator-channel.html?id=${creatorId}&name=${creatorName}`;
+        }
+    });
+    
+    // Add hover effect
+    newContainer.addEventListener('mouseenter', function() {
+        this.style.opacity = '0.8';
+    });
+    newContainer.addEventListener('mouseleave', function() {
+        this.style.opacity = '1';
+    });
+    
+    console.log('✅ Creator click navigation setup complete (Mode: ' + (window.isPlaylistMode ? 'Playlist' : 'Single') + ')');
 }
 
 // ============================================
@@ -137,14 +254,16 @@ function setupCreatorClickNavigation() {
 
 /**
  * Check connection status between current user and creator
- * @param {string|number} creatorId - The creator's user ID
  * @returns {Promise<boolean>} True if connected, false otherwise
  */
-async function checkConnectionStatus(creatorId) {
-    if (!creatorId) {
-        console.log('⚠️ checkConnectionStatus: No creatorId provided');
+async function checkConnectionStatus() {
+    const creatorData = getCurrentCreatorData();
+    if (!creatorData?.id) {
+        console.log('⚠️ checkConnectionStatus: No creatorId available');
         return false;
     }
+    
+    const creatorId = creatorData.id;
     
     // Check cache first
     if (creatorConnectionCache.has(creatorId)) {
@@ -190,24 +309,32 @@ async function checkConnectionStatus(creatorId) {
 
 /**
  * Setup connect buttons with database insert/delete logic
- * Handles both #connectBtn and #connectCreatorBtn
+ * Handles both #connectBtn and #connectCreatorBtn - FIXED for both modes
  */
 async function setupConnectButtons() {
     const connectBtn = document.getElementById('connectBtn');
     const connectCreatorBtn = document.getElementById('connectCreatorBtn');
-    const creatorId = window.currentContent?.creator_id || window.currentContent?.user_id;
+    const creatorData = getCurrentCreatorData();
     
-    if (!creatorId) {
+    if (!creatorData?.id) {
         console.log('⚠️ No creator_id available, skipping connect buttons setup');
+        // Hide connect buttons if no creator
+        if (connectBtn) connectBtn.style.display = 'none';
+        if (connectCreatorBtn) connectCreatorBtn.style.display = 'none';
         return;
     }
     
-    console.log('🔧 Setting up connect buttons for creator:', creatorId);
+    const creatorId = creatorData.id;
+    console.log('🔧 Setting up connect buttons for creator:', creatorId, '(Mode: ' + (window.isPlaylistMode ? 'Playlist' : 'Single') + ')');
+    
+    // Show connect buttons
+    if (connectBtn) connectBtn.style.display = '';
+    if (connectCreatorBtn) connectCreatorBtn.style.display = '';
     
     // Helper to update button UI
     const updateButtonUI = async (button) => {
         if (!button) return;
-        const isConnected = await checkConnectionStatus(creatorId);
+        const isConnected = await checkConnectionStatus();
         if (isConnected) {
             button.classList.add('connected');
             button.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
@@ -224,6 +351,16 @@ async function setupConnectButtons() {
     // Helper to handle connection toggle
     const handleConnectionClick = async (button) => {
         if (!button) return;
+        
+        const currentCreatorData = getCurrentCreatorData();
+        if (!currentCreatorData?.id) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('Creator information not available', 'error');
+            }
+            return;
+        }
+        
+        const currentCreatorId = currentCreatorData.id;
         
         // Check authentication
         if (!window.AuthHelper?.isAuthenticated?.()) {
@@ -256,12 +393,12 @@ async function setupConnectButtons() {
                     .from('connectors')
                     .delete()
                     .eq('connector_id', userProfile.id)
-                    .eq('connected_id', creatorId);
+                    .eq('connected_id', currentCreatorId);
                 
                 if (error) throw error;
                 
                 // Invalidate cache
-                creatorConnectionCache.delete(creatorId);
+                creatorConnectionCache.delete(currentCreatorId);
                 
                 button.classList.remove('connected');
                 button.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
@@ -270,14 +407,14 @@ async function setupConnectButtons() {
                 if (typeof window.showToast === 'function') {
                     window.showToast('Disconnected from creator', 'info');
                 }
-                console.log(`✅ Connection removed between ${userProfile.id} and ${creatorId}`);
+                console.log(`✅ Connection removed between ${userProfile.id} and ${currentCreatorId}`);
             } else {
                 // Check for existing connection first (prevent 409)
                 const { data: existing } = await window.supabaseClient
                     .from('connectors')
                     .select('id')
                     .eq('connector_id', userProfile.id)
-                    .eq('connected_id', creatorId)
+                    .eq('connected_id', currentCreatorId)
                     .maybeSingle();
                 
                 if (existing) {
@@ -287,7 +424,7 @@ async function setupConnectButtons() {
                         .delete()
                         .eq('id', existing.id);
                     if (error) throw error;
-                    creatorConnectionCache.delete(creatorId);
+                    creatorConnectionCache.delete(currentCreatorId);
                     button.classList.remove('connected');
                     button.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
                     if (typeof window.showToast === 'function') {
@@ -301,7 +438,7 @@ async function setupConnectButtons() {
                     .from('connectors')
                     .insert({
                         connector_id: userProfile.id,
-                        connected_id: creatorId,
+                        connected_id: currentCreatorId,
                         connection_type: 'creator',
                         created_at: new Date().toISOString()
                     });
@@ -309,7 +446,7 @@ async function setupConnectButtons() {
                 if (error) throw error;
                 
                 // Invalidate cache
-                creatorConnectionCache.delete(creatorId);
+                creatorConnectionCache.delete(currentCreatorId);
                 
                 button.classList.add('connected');
                 button.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
@@ -318,11 +455,11 @@ async function setupConnectButtons() {
                 if (typeof window.showToast === 'function') {
                     window.showToast('Connected successfully!', 'success');
                 }
-                console.log(`✅ Connection added between ${userProfile.id} and ${creatorId}`);
+                console.log(`✅ Connection added between ${userProfile.id} and ${currentCreatorId}`);
                 
                 // Track event if analytics available
                 if (window.track?.userConnect) {
-                    window.track.userConnect(creatorId);
+                    window.track.userConnect(currentCreatorId);
                 }
             }
         } catch (error) {
@@ -379,21 +516,28 @@ async function setupConnectButtons() {
  * Refresh connection button states (call after auth change or content change)
  */
 async function refreshConnectionButtons() {
-    const creatorId = window.currentContent?.creator_id || window.currentContent?.user_id;
-    if (!creatorId) {
+    const creatorData = getCurrentCreatorData();
+    if (!creatorData?.id) {
         console.log('⚠️ No creator_id available for refresh');
+        const connectBtn = document.getElementById('connectBtn');
+        const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+        if (connectBtn) connectBtn.style.display = 'none';
+        if (connectCreatorBtn) connectCreatorBtn.style.display = 'none';
         return;
     }
     
-    // Invalidate cache
-    creatorConnectionCache.delete(creatorId);
-    
+    // Show buttons
     const connectBtn = document.getElementById('connectBtn');
     const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+    if (connectBtn) connectBtn.style.display = '';
+    if (connectCreatorBtn) connectCreatorBtn.style.display = '';
+    
+    // Invalidate cache
+    creatorConnectionCache.delete(creatorData.id);
     
     const updateButton = async (button) => {
         if (!button) return;
-        const isConnected = await checkConnectionStatus(creatorId);
+        const isConnected = await checkConnectionStatus();
         if (isConnected) {
             button.classList.add('connected');
             button.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
@@ -411,24 +555,27 @@ async function refreshConnectionButtons() {
 
 /**
  * Initialize entire creator section
- * Call this after content is loaded
+ * Call this after content is loaded (works for both single and playlist modes)
  */
 async function initCreatorSection() {
-    console.log('🎬 Initializing creator section...');
+    console.log('🎬 Initializing creator section... (Mode: ' + (window.isPlaylistMode ? 'Playlist' : 'Single') + ')');
     
-    const content = window.currentContent;
-    if (!content) {
-        console.warn('⚠️ No content available for creator section');
+    const creatorData = getCurrentCreatorData();
+    if (!creatorData) {
+        console.warn('⚠️ No creator data available for creator section');
+        // Hide creator section if no creator
+        const creatorSection = document.querySelector('.creator-section');
+        if (creatorSection) creatorSection.style.display = 'none';
         return;
     }
     
-    // Update creator avatar and name
-    updateCreatorAvatar(content);
+    // Show creator section
+    const creatorSection = document.querySelector('.creator-section');
+    if (creatorSection) creatorSection.style.display = '';
     
-    const creatorName = content.creator_display_name || content.creator || 
-                       content.user_profiles?.full_name || content.user_profiles?.username || 
-                       (window.currentPlaylist?.creator_name || 'Creator');
-    updateCreatorDisplayName(creatorName);
+    // Update creator avatar and name
+    updateCreatorAvatar();
+    updateCreatorDisplayName();
     
     // Setup click navigation
     setupCreatorClickNavigation();
@@ -436,7 +583,7 @@ async function initCreatorSection() {
     // Setup connect buttons
     await setupConnectButtons();
     
-    console.log('✅ Creator section initialized');
+    console.log('✅ Creator section initialized for creator:', creatorData.name);
 }
 
 // ============================================
@@ -449,32 +596,55 @@ window.checkConnectionStatus = checkConnectionStatus;
 window.refreshConnectionButtons = refreshConnectionButtons;
 window.updateCreatorDisplayName = updateCreatorDisplayName;
 window.initCreatorSection = initCreatorSection;
+window.getCurrentCreatorData = getCurrentCreatorData;
 
 // Auto-initialize when content is ready
+function attemptAutoInit() {
+    if (window.currentContent || window.currentPlaylist || (window.currentPlaylistItems && window.currentPlaylistItems.length > 0)) {
+        console.log('🎬 Auto-initializing creator section');
+        initCreatorSection();
+        return true;
+    }
+    return false;
+}
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Wait a bit for currentContent to be set
+        // Wait a bit for currentContent/playlist to be set
         setTimeout(() => {
-            if (window.currentContent) {
-                initCreatorSection();
+            if (!attemptAutoInit()) {
+                // Try again after a longer delay
+                setTimeout(attemptAutoInit, 1000);
             }
         }, 500);
     });
 } else {
     setTimeout(() => {
-        if (window.currentContent) {
-            initCreatorSection();
+        if (!attemptAutoInit()) {
+            setTimeout(attemptAutoInit, 1000);
         }
     }, 500);
 }
 
-// Also listen for content changes
+// Listen for content changes (single mode)
 window.addEventListener('contentIdChanged', () => {
-    setTimeout(() => {
-        if (window.currentContent) {
-            initCreatorSection();
-        }
-    }, 300);
+    console.log('🔄 Content changed, re-initializing creator section');
+    setTimeout(() => initCreatorSection(), 300);
 });
 
-console.log('✅ Creator Section Module loaded (fully fixed)');
+// Listen for playlist changes
+window.addEventListener('playlistLoaded', () => {
+    console.log('🔄 Playlist loaded, re-initializing creator section');
+    setTimeout(() => initCreatorSection(), 300);
+});
+
+// Also listen for when playlist mode is set
+const originalSetCurrentContent = window.setCurrentContent;
+if (originalSetCurrentContent) {
+    window.setCurrentContent = async function(content, index) {
+        await originalSetCurrentContent(content, index);
+        setTimeout(() => initCreatorSection(), 200);
+    };
+}
+
+console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes)');
