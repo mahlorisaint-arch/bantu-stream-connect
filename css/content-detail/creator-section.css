@@ -1,0 +1,635 @@
+/* ============================================ */
+/* CONTENT DETAIL - CREATOR SECTION MODULE */
+/* Creator avatar, info, connect button, and navigation */
+/* ============================================ */
+
+/* ============================================ */
+/* CREATOR SECTION - MAIN CONTAINER */
+/* ============================================ */
+.creator-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated gradient border on hover */
+.creator-section::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold), var(--bantu-blue));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.creator-section:hover::before {
+  opacity: 0.15;
+}
+
+.creator-section:hover {
+  transform: translateY(-2px);
+  border-color: rgba(29, 78, 216, 0.3);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================ */
+/* CREATOR INFO - CLICKABLE AREA */
+/* ============================================ */
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.creator-info:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
+/* ============================================ */
+/* CREATOR AVATAR */
+/* ============================================ */
+.creator-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: white;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid rgba(245, 158, 11, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Avatar glow effect on hover */
+.creator-avatar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.4);
+  transition: box-shadow 0.3s ease;
+  pointer-events: none;
+}
+
+.creator-info:hover .creator-avatar {
+  transform: scale(1.05);
+  border-color: var(--bantu-blue);
+}
+
+.creator-info:hover .creator-avatar::after {
+  box-shadow: 0 0 0 6px rgba(29, 78, 216, 0.2);
+}
+
+.creator-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Avatar badge (verified, etc.) */
+.creator-avatar .verified-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--bantu-blue);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  border: 2px solid var(--card-bg);
+}
+
+/* ============================================ */
+/* CREATOR DETAILS */
+/* ============================================ */
+.creator-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.creator-label {
+  font-size: 12px;
+  color: var(--slate-grey);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.creator-label i {
+  font-size: 10px;
+  color: var(--bantu-blue);
+}
+
+.creator-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin-bottom: 4px;
+  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.creator-info:hover .creator-name {
+  color: var(--bantu-blue);
+}
+
+/* Creator username/handle */
+.creator-handle {
+  font-size: 13px;
+  color: var(--slate-grey);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.creator-handle i {
+  font-size: 11px;
+  color: var(--bantu-blue);
+}
+
+/* Creator stats (followers, videos count) */
+.creator-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--slate-grey);
+}
+
+.creator-stats span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.creator-stats i {
+  font-size: 11px;
+  color: var(--bantu-blue);
+}
+
+.creator-stats strong {
+  color: var(--soft-white);
+  font-weight: 600;
+}
+
+/* ============================================ */
+/* CONNECT BUTTON */
+/* ============================================ */
+.connect-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: var(--soft-white);
+  border: none;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Button shine effect */
+.connect-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.connect-btn:hover::before {
+  left: 100%;
+}
+
+.connect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.4);
+  gap: 12px;
+}
+
+.connect-btn:active {
+  transform: translateY(0);
+}
+
+/* Connected state */
+.connect-btn.connected {
+  background: linear-gradient(135deg, var(--success-color), #2b8a3e);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.connect-btn.connected:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+}
+
+.connect-btn.connected:hover span {
+  content: attr(data-disconnect-text);
+}
+
+.connect-btn.connected i {
+  transition: transform 0.2s ease;
+}
+
+.connect-btn.connected:hover i {
+  transform: scale(1.1);
+}
+
+/* Loading state for connect button */
+.connect-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.connect-btn.loading i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* CREATOR BIO / DESCRIPTION */
+/* ============================================ */
+.creator-bio {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+.creator-bio p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.creator-bio p.expanded {
+  -webkit-line-clamp: unset;
+  display: block;
+}
+
+.bio-toggle {
+  background: none;
+  border: none;
+  color: var(--bantu-blue);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.bio-toggle:hover {
+  color: var(--warm-gold);
+}
+
+.bio-toggle i {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.bio-toggle.expanded i {
+  transform: rotate(180deg);
+}
+
+/* ============================================ */
+/* CREATOR SOCIAL LINKS */
+/* ============================================ */
+.creator-social {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  color: var(--slate-grey);
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.social-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--soft-white);
+  transform: translateY(-2px);
+}
+
+.social-link i {
+  font-size: 12px;
+}
+
+.social-link.instagram:hover i { color: #E4405F; }
+.social-link.twitter:hover i { color: #1DA1F2; }
+.social-link.youtube:hover i { color: #FF0000; }
+.social-link.tiktok:hover i { color: #000000; }
+.social-link.facebook:hover i { color: #1877F2; }
+
+/* ============================================ */
+/* CREATOR SECTION WITH VIDEO ACTIVE */
+/* ============================================ */
+.content-hero.video-active .creator-section {
+  margin-top: 20px;
+  border-top: 1px solid var(--card-border);
+}
+
+/* ============================================ */
+/* COMPACT MODE (for mobile/sidebar) */
+/* ============================================ */
+.creator-section.compact {
+  padding: 12px;
+}
+
+.creator-section.compact .creator-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.2rem;
+}
+
+.creator-section.compact .creator-name {
+  font-size: 14px;
+}
+
+.creator-section.compact .creator-handle {
+  font-size: 11px;
+}
+
+.creator-section.compact .connect-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+.creator-section.compact .creator-stats {
+  font-size: 10px;
+  gap: 10px;
+}
+
+/* ============================================ */
+/* RESPONSIVE ADJUSTMENTS */
+/* ============================================ */
+@media (max-width: 768px) {
+  .creator-section {
+    padding: 16px;
+  }
+  
+  .creator-info {
+    gap: 12px;
+  }
+  
+  .creator-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 1.4rem;
+  }
+  
+  .creator-name {
+    font-size: 16px;
+  }
+  
+  .creator-handle {
+    font-size: 12px;
+  }
+  
+  .connect-btn {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+  
+  .creator-stats {
+    font-size: 11px;
+    gap: 12px;
+  }
+  
+  .creator-bio {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 550px) {
+  .creator-info {
+    flex-wrap: wrap;
+  }
+  
+  .creator-details {
+    flex: 1 1 100%;
+    order: 2;
+  }
+  
+  .connect-btn {
+    order: 1;
+    margin-left: auto;
+  }
+  
+  .creator-avatar {
+    order: 1;
+  }
+  
+  .creator-stats {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .creator-section {
+    padding: 14px;
+  }
+  
+  .creator-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+  
+  .creator-name {
+    font-size: 15px;
+  }
+  
+  .creator-handle {
+    font-size: 11px;
+  }
+  
+  .connect-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+  
+  .connect-btn span {
+    display: inline;
+  }
+  
+  .creator-stats {
+    font-size: 10px;
+  }
+  
+  .creator-bio {
+    font-size: 11px;
+  }
+  
+  .social-link span {
+    display: none;
+  }
+  
+  .social-link {
+    padding: 6px 10px;
+  }
+  
+  .social-link i {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .creator-info:hover {
+    background: none;
+    transform: none;
+  }
+  
+  .creator-info:active {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.99);
+  }
+  
+  .connect-btn:active {
+    transform: scale(0.96);
+  }
+  
+  .connect-btn:active::before {
+    left: 100%;
+  }
+}
+
+/* ============================================ */
+/* DARK MODE SPECIFIC ADJUSTMENTS */
+/* ============================================ */
+.theme-light .creator-section {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .creator-name {
+  color: var(--deep-navy);
+}
+
+.theme-light .creator-info:hover .creator-name {
+  color: var(--bantu-blue);
+}
+
+.theme-light .creator-bio {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+/* High contrast mode */
+.theme-high-contrast .creator-section {
+  border: 2px solid white;
+  background: black;
+}
+
+.theme-high-contrast .connect-btn {
+  border: 2px solid white;
+}
+
+.theme-high-contrast .connect-btn.connected {
+  background: #00FF00;
+  color: black;
+}
+
+/* ============================================ */
+/* ANIMATIONS */
+/* ============================================ */
+@keyframes avatarPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(29, 78, 216, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(29, 78, 216, 0);
+  }
+}
+
+.creator-avatar.pulse {
+  animation: avatarPulse 1.5s ease;
+}
+
+/* Connection success animation */
+@keyframes connectionSuccess {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.connect-btn.connection-success {
+  animation: connectionSuccess 0.5s ease;
+}
+
+/* ============================================ */
+/* END OF CREATOR SECTION MODULE */
+/* ============================================ */
