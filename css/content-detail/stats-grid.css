@@ -1,0 +1,576 @@
+/* ============================================ */
+/* CONTENT DETAIL - STATS GRID MODULE */
+/* Engagement statistics cards (views, likes, shares, comments) */
+/* ============================================ */
+
+/* ============================================ */
+/* STATS GRID - MAIN CONTAINER */
+/* ============================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* ============================================ */
+/* STAT CARD - INDIVIDUAL STATISTIC CARD */
+/* ============================================ */
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated gradient border on hover */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold), var(--bantu-blue));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card:hover::before {
+  opacity: 0.15;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(29, 78, 216, 0.3);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Active click effect */
+.stat-card:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
+}
+
+/* ============================================ */
+/* STAT ICON */
+/* ============================================ */
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(29, 78, 216, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bantu-blue);
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-icon {
+  background: rgba(29, 78, 216, 0.25);
+  transform: scale(1.05);
+}
+
+/* Individual icon colors for each stat type */
+.stat-card.views .stat-icon {
+  color: var(--bantu-blue);
+  background: rgba(29, 78, 216, 0.15);
+}
+
+.stat-card.likes .stat-icon {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.stat-card.favorites .stat-icon {
+  color: var(--warm-gold);
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.stat-card.comments .stat-icon {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.stat-card.shares .stat-icon {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.stat-card.views:hover .stat-icon {
+  background: rgba(29, 78, 216, 0.25);
+}
+
+.stat-card.likes:hover .stat-icon {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.stat-card.favorites:hover .stat-icon {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.stat-card.comments:hover .stat-icon {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+.stat-card.shares:hover .stat-icon {
+  background: rgba(139, 92, 246, 0.25);
+}
+
+/* ============================================ */
+/* STAT CONTENT */
+/* ============================================ */
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  color: var(--slate-grey);
+  font-size: 12px;
+  margin-bottom: 6px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--soft-white);
+  line-height: 1.2;
+  margin-bottom: 4px;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trend indicator (up/down arrow with percentage) */
+.stat-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.stat-trend.up {
+  color: #10b981;
+}
+
+.stat-trend.down {
+  color: #ef4444;
+}
+
+.stat-trend i {
+  font-size: 10px;
+}
+
+/* ============================================ */
+/* STAT CARD WITH COUNTER ANIMATION */
+/* ============================================ */
+.stat-card.counter-animation .stat-value {
+  animation: countUp 0.5s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================ */
+/* COMPACT STATS GRID (for sidebar or mobile) */
+/* ============================================ */
+.stats-grid.compact {
+  gap: 10px;
+}
+
+.stats-grid.compact .stat-card {
+  padding: 10px 12px;
+}
+
+.stats-grid.compact .stat-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+}
+
+.stats-grid.compact .stat-value {
+  font-size: 16px;
+}
+
+.stats-grid.compact .stat-label {
+  font-size: 10px;
+}
+
+/* ============================================ */
+/* STATS GRID WITH LOADING SKELETON */
+/* ============================================ */
+.stat-card.skeleton {
+  pointer-events: none;
+}
+
+.stat-card.skeleton .stat-icon {
+  background: rgba(255, 255, 255, 0.05);
+  animation: pulse 1.5s infinite;
+}
+
+.stat-card.skeleton .stat-value {
+  width: 60px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite 0.2s;
+}
+
+.stat-card.skeleton .stat-label {
+  width: 40px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================ */
+/* ENGAGEMENT BUTTONS (outside stats grid) */
+/* ============================================ */
+.engagement-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.engagement-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 40px;
+  color: var(--soft-white);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.engagement-btn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.engagement-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--warm-gold);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.engagement-btn:hover i {
+  transform: scale(1.1);
+}
+
+.engagement-btn:active {
+  transform: translateY(0);
+}
+
+/* Active/Liked state */
+.engagement-btn.active,
+.engagement-btn.liked {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.engagement-btn.active i,
+.engagement-btn.liked i {
+  color: #ef4444;
+}
+
+/* Favorited state */
+.engagement-btn.favorited {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+  border-color: var(--warm-gold);
+  color: var(--warm-gold);
+}
+
+.engagement-btn.favorited i {
+  color: var(--warm-gold);
+}
+
+/* Watch Later saved state */
+.engagement-btn.saved {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.engagement-btn.saved i {
+  color: #10b981;
+}
+
+/* Share button specific */
+.engagement-btn.share-btn {
+  position: relative;
+}
+
+.engagement-btn.share-btn.shared {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+/* Loading state for engagement buttons */
+.engagement-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.engagement-btn.loading i {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================ */
+/* STATS TOOLTIP (for additional info) */
+/* ============================================ */
+.stat-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(5px);
+  background: var(--deep-navy);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--soft-white);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.stat-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--deep-navy) transparent transparent transparent;
+}
+
+.stat-card:hover .stat-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================ */
+/* RESPONSIVE ADJUSTMENTS */
+/* ============================================ */
+@media (max-width: 768px) {
+  .stats-grid {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+  
+  .stat-value {
+    font-size: 18px;
+  }
+  
+  .stat-label {
+    font-size: 11px;
+  }
+  
+  .engagement-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .engagement-btn span {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 550px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .stat-card {
+    padding: 10px;
+  }
+  
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+  
+  .engagement-buttons {
+    gap: 8px;
+  }
+  
+  .engagement-btn {
+    padding: 8px 12px;
+  }
+  
+  .engagement-btn span {
+    font-size: 12px;
+  }
+  
+  .engagement-btn i {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 400px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .engagement-btn span {
+    display: none;
+  }
+  
+  .engagement-btn {
+    padding: 10px 12px;
+  }
+  
+  .engagement-btn i {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+/* ============================================ */
+/* THEME SUPPORT */
+/* ============================================ */
+.theme-light .stat-card {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .stat-value {
+  color: var(--deep-navy);
+}
+
+.theme-light .engagement-btn {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .engagement-btn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+/* High contrast mode */
+.theme-high-contrast .stat-card {
+  border: 2px solid white;
+  background: black;
+}
+
+.theme-high-contrast .stat-value {
+  color: white;
+}
+
+.theme-high-contrast .engagement-btn {
+  border: 2px solid white;
+  background: black;
+  color: white;
+}
+
+.theme-high-contrast .engagement-btn.active,
+.theme-high-contrast .engagement-btn.liked {
+  background: red;
+  color: white;
+  border-color: red;
+}
+
+.theme-high-contrast .engagement-btn.favorited {
+  background: orange;
+  color: black;
+  border-color: orange;
+}
+
+/* ============================================ */
+/* STATS UPDATE NOTIFICATION */
+/* ============================================ */
+.stat-update-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--success-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  pointer-events: none;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================ */
+/* END OF STATS GRID MODULE */
+/* ============================================ */
