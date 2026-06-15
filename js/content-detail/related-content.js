@@ -1,16 +1,12 @@
 // js/content-detail/related-content.js
 // ============================================
-// RELATED CONTENT MODULE - COMPLETE BRAIN
-// Contains UI rendering for general related content grid
-// AND its specific database logic (fetch from Content table by genre/tags)
+// RELATED CONTENT MODULE - UPDATED FOR NEW SCHEMA
+// Shows correct view counts from content_engagement_stats
 // ============================================
 console.log('🎬 Related Content Module Loading...');
 
 /**
- * Load related content from database for a specific content
- * Uses genre matching and excludes current content
- * @param {string|number} contentId - The content ID to find related content for
- * @param {number} limit - Maximum number of items to load (default: 6)
+ * Load related content from database
  */
 async function loadRelatedContent(contentId, limit = 6) {
     if (!contentId) {
@@ -19,7 +15,7 @@ async function loadRelatedContent(contentId, limit = 6) {
     }
     
     try {
-        // First, get the current content's genre and other metadata
+        // First get current content's genre
         const { data: currentContent, error: currentError } = await window.supabaseClient
             .from('Content')
             .select('genre, content_type, user_id')
@@ -30,7 +26,7 @@ async function loadRelatedContent(contentId, limit = 6) {
             console.warn('Could not fetch current content genre:', currentError);
         }
         
-        // Build query for related content
+        // Build query for related content (without views_count/likes_count)
         let query = window.supabaseClient
             .from('Content')
             .select(`
@@ -48,18 +44,13 @@ async function loadRelatedContent(contentId, limit = 6) {
                     full_name,
                     username,
                     avatar_url
-                ),
-                content_engagement_stats (
-                    total_views,
-                    total_likes,
-                    total_comments
                 )
             `)
             .eq('status', 'published')
             .neq('id', parseInt(contentId))
             .limit(limit);
         
-        // Prioritize by genre match if available
+        // Prioritize by genre match
         if (currentContent?.genre && currentContent.genre !== 'General') {
             query = query.eq('genre', currentContent.genre);
         }
@@ -69,7 +60,7 @@ async function loadRelatedContent(contentId, limit = 6) {
         if (error) throw error;
         
         if (!data || data.length === 0) {
-            // Fallback: Get any popular content excluding current
+            // Fallback: Get any recent content
             const { data: fallbackData, error: fallbackError } = await window.supabaseClient
                 .from('Content')
                 .select(`
@@ -87,11 +78,6 @@ async function loadRelatedContent(contentId, limit = 6) {
                         full_name,
                         username,
                         avatar_url
-                    ),
-                    content_engagement_stats (
-                        total_views,
-                        total_likes,
-                        total_comments
                     )
                 `)
                 .eq('status', 'published')
@@ -106,14 +92,14 @@ async function loadRelatedContent(contentId, limit = 6) {
                 return [];
             }
             
-            // Enrich fallback data with view counts
-            const enrichedFallback = await enrichContentWithViews(fallbackData);
-            renderRelatedContent(enrichedFallback);
-            return enrichedFallback;
+            // Get stats for fallback data
+            const enrichedData = await enrichContentWithStats(fallbackData);
+            renderRelatedContent(enrichedData);
+            return enrichedData;
         }
         
-        // Enrich data with real view counts from content_views table
-        const enrichedData = await enrichContentWithViews(data);
+        // Enrich data with real stats from content_engagement_stats
+        const enrichedData = await enrichContentWithStats(data);
         renderRelatedContent(enrichedData);
         
         console.log(`✅ Loaded ${enrichedData.length} related content items`);
@@ -127,48 +113,55 @@ async function loadRelatedContent(contentId, limit = 6) {
 }
 
 /**
- * Enrich content items with real view counts from content_views table
- * @param {Array} items - Array of content items
- * @returns {Promise<Array>} - Enriched items with real_views_count
+ * Enrich content items with stats from content_engagement_stats
  */
-async function enrichContentWithViews(items) {
+async function enrichContentWithStats(items) {
     if (!items || items.length === 0) return [];
     
-    const enrichedItems = await Promise.all(
-        items.map(async (item) => {
-            // Get real view count from content_views
-            const { count: realViews, error: viewsError } = await window.supabaseClient
-                .from('content_views')
-                .select('*', { count: 'exact', head: true })
-                .eq('content_id', item.id)
-                .eq('counted_as_view', true);
-            
-            if (viewsError) {
-                console.warn(`Failed to get view count for content ${item.id}:`, viewsError);
-            }
-            
-            // Get engagement stats
-            const totalViews = item.content_engagement_stats?.total_views || realViews || 0;
-            const totalLikes = item.content_engagement_stats?.total_likes || 0;
-            const totalComments = item.content_engagement_stats?.total_comments || 0;
-            
-            return {
-                ...item,
-                real_views_count: realViews || 0,
-                total_views: totalViews,
-                total_likes: totalLikes,
-                total_comments: totalComments,
-                views_count: totalViews
-            };
-        })
-    );
+    // Get all content IDs
+    const contentIds = items.map(item => item.id);
     
-    return enrichedItems;
+    // Fetch stats from content_engagement_stats
+    const { data: statsData, error: statsError } = await window.supabaseClient
+        .from('content_engagement_stats')
+        .select('content_id, total_views, total_likes, total_comments')
+        .in('content_id', contentIds);
+    
+    if (statsError) {
+        console.warn('Failed to fetch engagement stats:', statsError);
+        // Return items with zero views if stats fetch fails
+        return items.map(item => ({
+            ...item,
+            total_views: 0,
+            total_likes: 0,
+            total_comments: 0,
+            views_count: 0
+        }));
+    }
+    
+    // Create stats map
+    const statsMap = new Map();
+    statsData?.forEach(stat => {
+        statsMap.set(stat.content_id, {
+            total_views: stat.total_views || 0,
+            total_likes: stat.total_likes || 0,
+            total_comments: stat.total_comments || 0
+        });
+    });
+    
+    // Enrich items
+    return items.map(item => ({
+        ...item,
+        total_views: statsMap.get(item.id)?.total_views || 0,
+        total_likes: statsMap.get(item.id)?.total_likes || 0,
+        total_comments: statsMap.get(item.id)?.total_comments || 0,
+        views_count: statsMap.get(item.id)?.total_views || 0,
+        likes_count: statsMap.get(item.id)?.total_likes || 0
+    }));
 }
 
 /**
  * Render related content into the grid
- * @param {Array} items - Array of content items to display
  */
 function renderRelatedContent(items) {
     const container = document.getElementById('relatedGrid');
@@ -196,8 +189,10 @@ function renderRelatedContent(items) {
                          'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
         
         const title = item.title || 'Untitled';
-        const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
-        const creatorName = item.user_profiles?.full_name || item.user_profiles?.username || 'Creator';
+        const viewsCount = item.total_views || 0;  // From content_engagement_stats
+        const creatorName = item.user_profiles?.full_name || 
+                           item.user_profiles?.username || 
+                           'Creator';
         const duration = item.duration ? window.formatDuration(item.duration) : '';
         
         return `
@@ -241,12 +236,11 @@ function renderRelatedContent(items) {
         });
     });
     
-    console.log('✅ Related content grid rendered');
+    console.log('✅ Related content grid rendered with correct view counts');
 }
 
 /**
- * Refresh related content (reload from database)
- * @param {string|number} contentId - Optional content ID, uses currentContent if not provided
+ * Refresh related content
  */
 async function refreshRelatedContent(contentId = null) {
     const targetId = contentId || window.currentContent?.id;
@@ -260,7 +254,7 @@ async function refreshRelatedContent(contentId = null) {
 }
 
 /**
- * Show skeleton loader for related content grid
+ * Show skeleton loader
  */
 function showRelatedContentSkeleton() {
     const container = document.getElementById('relatedGrid');
@@ -276,11 +270,8 @@ function showRelatedContentSkeleton() {
     `).join('');
 }
 
-// ============================================
-// Initialize module - listen for content changes
-// ============================================
+// Initialize module
 function initRelatedContent() {
-    // Listen for content changes to refresh related content
     window.addEventListener('contentIdChanged', (event) => {
         const { contentId } = event.detail;
         if (contentId) {
@@ -291,16 +282,21 @@ function initRelatedContent() {
         }
     });
     
-    // Initial load if content exists
+    window.addEventListener('playlistLoaded', () => {
+        if (window.currentContent?.id) {
+            showRelatedContentSkeleton();
+            setTimeout(() => {
+                refreshRelatedContent(window.currentContent.id);
+            }, 200);
+        }
+    });
+    
     if (window.currentContent?.id) {
         showRelatedContentSkeleton();
         setTimeout(() => refreshRelatedContent(window.currentContent.id), 200);
     }
-    
-    console.log('✅ Related Content module initialized');
 }
 
-// Auto-initialize if DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initRelatedContent);
 } else {
@@ -314,5 +310,6 @@ window.loadRelatedContent = loadRelatedContent;
 window.renderRelatedContent = renderRelatedContent;
 window.refreshRelatedContent = refreshRelatedContent;
 window.showRelatedContentSkeleton = showRelatedContentSkeleton;
+window.enrichContentWithStats = enrichContentWithStats;
 
-console.log('✅ Related Content Module loaded (with full brain)');
+console.log('✅ Related Content Module loaded (Updated for new schema with correct view counts)');
