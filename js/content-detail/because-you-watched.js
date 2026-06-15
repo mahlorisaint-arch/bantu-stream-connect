@@ -1,8 +1,7 @@
 // js/content-detail/because-you-watched.js
 // ============================================
-// BECAUSE YOU WATCHED MODULE - COMPLETE BRAIN WITH PROPER RECOMMENDATIONS
-// Contains UI rendering for "Because You Watched" recommendation rail
-// AND its specific database logic (fetch from RecommendationEngine + fallback)
+// BECAUSE YOU WATCHED MODULE - UPDATED FOR NEW SCHEMA
+// Uses content_engagement_stats for ALL metrics (no views_count/likes_count in Content table)
 // ============================================
 console.log('🎬 Because You Watched Module Loading...');
 
@@ -14,12 +13,10 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Load "Because You Watched" recommendations
- * Uses RecommendationEngine if available, otherwise falls back to smart queries
  */
 async function loadBecauseYouWatchedRecommendations(options = {}) {
     const { limit = 8, forceRefresh = false } = options;
-    const containerId = 'becauseYouWatchedRail';
-    const section = document.getElementById(containerId);
+    const section = document.getElementById('becauseYouWatchedRail');
     
     if (!section) {
         console.warn('⚠️ Because You Watched rail container not found');
@@ -34,7 +31,6 @@ async function loadBecauseYouWatchedRecommendations(options = {}) {
         return;
     }
     
-    // Prevent multiple simultaneous loads
     if (isLoading) {
         console.log('⏳ Recommendations already loading, skipping');
         return;
@@ -50,41 +46,37 @@ async function loadBecauseYouWatchedRecommendations(options = {}) {
         // STRATEGY 1: Use RecommendationEngine if available
         if (window.recommendationEngine && typeof window.recommendationEngine.getRecommendations === 'function') {
             console.log('🎯 Getting recommendations from RecommendationEngine...');
-            
             try {
                 const allRecs = await window.recommendationEngine.getRecommendations({
                     type: 'because_you_watched',
-                    limit: limit + 2, // Get extras in case we need to exclude current
+                    limit: limit + 2,
                     userId: window.currentUserId
                 });
-                
-                // Filter out current content and limit
                 recommendations = allRecs.filter(rec => rec.id !== excludeContentId);
                 recommendations = recommendations.slice(0, limit);
-                
                 if (recommendations.length > 0) {
                     console.log('✅ Got', recommendations.length, 'recommendations from RecommendationEngine');
                 }
             } catch (engineError) {
-                console.warn('⚠️ RecommendationEngine failed, using fallback:', engineError);
+                console.warn('⚠️ RecommendationEngine failed:', engineError);
             }
         }
         
-        // STRATEGY 2: Fallback - Smart query based on user's watch history and likes
+        // STRATEGY 2: Smart recommendations based on user's watch history
         if (recommendations.length === 0 && window.currentUserId) {
-            console.log('🔄 Using smart fallback recommendations based on user history...');
+            console.log('🔄 Getting smart recommendations from user history...');
             recommendations = await getSmartRecommendations(limit, excludeContentId);
         }
         
-        // STRATEGY 3: Final fallback - Popular content in same genre
+        // STRATEGY 3: Genre-based recommendations
         if (recommendations.length === 0) {
-            console.log('🔄 Using genre-based popular recommendations...');
+            console.log('🔄 Getting genre-based recommendations...');
             recommendations = await getGenreBasedRecommendations(limit, excludeContentId);
         }
         
-        // STRATEGY 4: Last resort - Recent popular content
+        // STRATEGY 4: Recent popular content
         if (recommendations.length === 0) {
-            console.log('🔄 Using recent popular content...');
+            console.log('🔄 Getting recent popular content...');
             recommendations = await getRecentPopularRecommendations(limit, excludeContentId);
         }
         
@@ -93,15 +85,13 @@ async function loadBecauseYouWatchedRecommendations(options = {}) {
             return;
         }
         
-        // Cache results
         currentRecommendations = recommendations;
         lastRefreshTime = now;
-        
         renderBecauseYouWatchedRail(recommendations);
-        console.log(`✅ Loaded ${recommendations.length} "Because You Watched" recommendations`);
+        console.log(`✅ Loaded ${recommendations.length} recommendations`);
         
     } catch (error) {
-        console.error('❌ Failed to load Because You Watched recommendations:', error);
+        console.error('❌ Failed to load recommendations:', error);
         showBecauseYouWatchedEmpty();
     } finally {
         isLoading = false;
@@ -109,19 +99,18 @@ async function loadBecauseYouWatchedRecommendations(options = {}) {
 }
 
 /**
- * Get smart recommendations based on user's watch history and likes
+ * Get smart recommendations based on user's watch history
  */
 async function getSmartRecommendations(limit, excludeContentId) {
     if (!window.currentUserId) return [];
     
     try {
-        // Get user's watch history (completed content)
+        // Get user's completed watch history
         const { data: watchHistory, error: watchError } = await window.supabaseClient
             .from('watch_progress')
             .select(`
                 content_id,
                 is_completed,
-                last_position,
                 Content!inner (
                     id,
                     genre,
@@ -134,15 +123,6 @@ async function getSmartRecommendations(limit, excludeContentId) {
             .limit(20);
         
         if (watchError) throw watchError;
-        
-        // Get user's liked content
-        const { data: likedContent, error: likeError } = await window.supabaseClient
-            .from('content_likes')
-            .select('content_id')
-            .eq('user_id', window.currentUserId)
-            .limit(20);
-        
-        if (likeError) throw likeError;
         
         // Collect genres from user's history
         const watchedGenres = new Map();
@@ -158,11 +138,6 @@ async function getSmartRecommendations(limit, excludeContentId) {
             }
         });
         
-        likedContent?.forEach(item => {
-            // Also get genres from liked content if we have it
-        });
-        
-        // Find top genres
         const topGenres = Array.from(watchedGenres.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3)
@@ -172,7 +147,7 @@ async function getSmartRecommendations(limit, excludeContentId) {
             return [];
         }
         
-        // Build query for recommendations based on top genres
+        // Query Content table (without views_count/likes_count)
         let query = window.supabaseClient
             .from('Content')
             .select(`
@@ -183,17 +158,11 @@ async function getSmartRecommendations(limit, excludeContentId) {
                 user_id,
                 genre,
                 created_at,
-                views_count,
-                likes_count,
                 user_profiles!user_id (
                     id,
                     full_name,
                     username,
                     avatar_url
-                ),
-                content_engagement_stats (
-                    total_views,
-                    total_likes
                 )
             `)
             .eq('status', 'published')
@@ -205,15 +174,36 @@ async function getSmartRecommendations(limit, excludeContentId) {
         const { data, error } = await query;
         
         if (error) throw error;
+        if (!data || data.length === 0) return [];
         
-        if (!data || data.length === 0) {
-            return [];
-        }
+        // Get engagement stats separately
+        const contentIds = data.map(item => item.id);
+        const { data: statsData, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('content_id, total_views, total_likes')
+            .in('content_id', contentIds);
         
-        // Enrich with real view counts
-        const enrichedData = await enrichContentWithEngagement(data);
+        if (statsError) throw statsError;
         
-        // Sort by engagement score (likes + views)
+        // Create stats map
+        const statsMap = new Map();
+        statsData?.forEach(stat => {
+            statsMap.set(stat.content_id, {
+                total_views: stat.total_views || 0,
+                total_likes: stat.total_likes || 0
+            });
+        });
+        
+        // Enrich items with stats
+        const enrichedData = data.map(item => ({
+            ...item,
+            total_views: statsMap.get(item.id)?.total_views || 0,
+            total_likes: statsMap.get(item.id)?.total_likes || 0,
+            views_count: statsMap.get(item.id)?.total_views || 0,
+            likes_count: statsMap.get(item.id)?.total_likes || 0
+        }));
+        
+        // Sort by engagement score
         const sorted = enrichedData.sort((a, b) => {
             const scoreA = (a.total_likes || 0) + (a.total_views || 0);
             const scoreB = (b.total_likes || 0) + (b.total_views || 0);
@@ -229,7 +219,7 @@ async function getSmartRecommendations(limit, excludeContentId) {
 }
 
 /**
- * Get genre-based recommendations (fallback when no user history)
+ * Get genre-based recommendations
  */
 async function getGenreBasedRecommendations(limit, excludeContentId) {
     try {
@@ -245,40 +235,50 @@ async function getGenreBasedRecommendations(limit, excludeContentId) {
                 user_id,
                 genre,
                 created_at,
-                views_count,
-                likes_count,
                 user_profiles!user_id (
                     id,
                     full_name,
                     username,
                     avatar_url
-                ),
-                content_engagement_stats (
-                    total_views,
-                    total_likes
                 )
             `)
             .eq('status', 'published')
             .neq('id', excludeContentId || 0)
             .limit(limit);
         
-        // If genre is not General, filter by it
         if (currentGenre !== 'General') {
             query = query.eq('genre', currentGenre);
         }
         
-        // Order by popularity
-        query = query.order('views_count', { ascending: false });
-        
         const { data, error } = await query;
         
         if (error) throw error;
+        if (!data || data.length === 0) return [];
         
-        if (!data || data.length === 0) {
-            return [];
-        }
+        // Get engagement stats
+        const contentIds = data.map(item => item.id);
+        const { data: statsData, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('content_id, total_views, total_likes')
+            .in('content_id', contentIds);
         
-        return await enrichContentWithEngagement(data);
+        if (statsError) throw statsError;
+        
+        const statsMap = new Map();
+        statsData?.forEach(stat => {
+            statsMap.set(stat.content_id, {
+                total_views: stat.total_views || 0,
+                total_likes: stat.total_likes || 0
+            });
+        });
+        
+        return data.map(item => ({
+            ...item,
+            total_views: statsMap.get(item.id)?.total_views || 0,
+            total_likes: statsMap.get(item.id)?.total_likes || 0,
+            views_count: statsMap.get(item.id)?.total_views || 0,
+            likes_count: statsMap.get(item.id)?.total_likes || 0
+        }));
         
     } catch (error) {
         console.error('Genre-based recommendations failed:', error);
@@ -287,11 +287,12 @@ async function getGenreBasedRecommendations(limit, excludeContentId) {
 }
 
 /**
- * Get recent popular content (last resort)
+ * Get recent popular content
  */
 async function getRecentPopularRecommendations(limit, excludeContentId) {
     try {
-        const { data, error } = await window.supabaseClient
+        // First get recent content IDs
+        const { data: contentData, error: contentError } = await window.supabaseClient
             .from('Content')
             .select(`
                 id,
@@ -301,31 +302,50 @@ async function getRecentPopularRecommendations(limit, excludeContentId) {
                 user_id,
                 genre,
                 created_at,
-                views_count,
-                likes_count,
                 user_profiles!user_id (
                     id,
                     full_name,
                     username,
                     avatar_url
-                ),
-                content_engagement_stats (
-                    total_views,
-                    total_likes
                 )
             `)
             .eq('status', 'published')
             .neq('id', excludeContentId || 0)
             .order('created_at', { ascending: false })
-            .limit(limit);
+            .limit(limit * 2);
         
-        if (error) throw error;
+        if (contentError) throw contentError;
+        if (!contentData || contentData.length === 0) return [];
         
-        if (!data || data.length === 0) {
-            return [];
-        }
+        // Get engagement stats for sorting
+        const contentIds = contentData.map(item => item.id);
+        const { data: statsData, error: statsError } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('content_id, total_views, total_likes')
+            .in('content_id', contentIds);
         
-        return await enrichContentWithEngagement(data);
+        if (statsError) throw statsError;
+        
+        const statsMap = new Map();
+        statsData?.forEach(stat => {
+            statsMap.set(stat.content_id, {
+                total_views: stat.total_views || 0,
+                total_likes: stat.total_likes || 0
+            });
+        });
+        
+        const enrichedData = contentData.map(item => ({
+            ...item,
+            total_views: statsMap.get(item.id)?.total_views || 0,
+            total_likes: statsMap.get(item.id)?.total_likes || 0,
+            views_count: statsMap.get(item.id)?.total_views || 0,
+            likes_count: statsMap.get(item.id)?.total_likes || 0
+        }));
+        
+        // Sort by total views (most popular first)
+        const sorted = enrichedData.sort((a, b) => (b.total_views || 0) - (a.total_views || 0));
+        
+        return sorted.slice(0, limit);
         
     } catch (error) {
         console.error('Recent popular recommendations failed:', error);
@@ -334,45 +354,12 @@ async function getRecentPopularRecommendations(limit, excludeContentId) {
 }
 
 /**
- * Enrich content items with engagement stats
- */
-async function enrichContentWithEngagement(items) {
-    if (!items || items.length === 0) return [];
-    
-    const enrichedItems = await Promise.all(
-        items.map(async (item) => {
-            // Get engagement stats
-            const totalViews = item.content_engagement_stats?.total_views || item.views_count || 0;
-            const totalLikes = item.content_engagement_stats?.total_likes || item.likes_count || 0;
-            
-            // Get creator name
-            const creatorName = item.user_profiles?.full_name || 
-                               item.user_profiles?.username || 
-                               'Creator';
-            
-            return {
-                ...item,
-                total_views: totalViews,
-                total_likes: totalLikes,
-                views_count: totalViews,
-                likes_count: totalLikes,
-                creator_name: creatorName,
-                user_profiles: item.user_profiles
-            };
-        })
-    );
-    
-    return enrichedItems;
-}
-
-/**
- * Render the "Because You Watched" rail with content cards
+ * Render the "Because You Watched" rail
  */
 function renderBecauseYouWatchedRail(items) {
     const section = document.getElementById('becauseYouWatchedRail');
     if (!section) return;
     
-    // Ensure section has proper structure
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
@@ -384,7 +371,6 @@ function renderBecauseYouWatchedRail(items) {
             <div class="content-grid" id="becauseYouWatchedGrid"></div>
         `;
         
-        // Attach refresh button handler
         const refreshBtn = section.querySelector('.refresh-rail-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
@@ -405,15 +391,13 @@ function renderBecauseYouWatchedRail(items) {
     }
     
     grid.innerHTML = items.map(item => {
-        const viewsCount = item.total_views || item.views_count || 0;
-        const creatorName = item.creator_name || 
-                           item.user_profiles?.full_name || 
+        const viewsCount = item.total_views || 0;
+        const creatorName = item.user_profiles?.full_name || 
                            item.user_profiles?.username || 
                            'Creator';
         const thumbnail = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || 
                          item.thumbnail_url || 
                          'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-        
         const duration = item.duration ? window.formatDuration(item.duration) : '';
         
         return `
@@ -436,23 +420,16 @@ function renderBecauseYouWatchedRail(items) {
                         <i class="fas fa-user"></i>
                         ${window.truncateText(creatorName, 20)}
                     </div>
-                    ${item.genre && item.genre !== 'General' ? `
-                        <div class="genre-tag">
-                            <i class="fas fa-tag"></i>
-                            <span>${window.escapeHtml(item.genre)}</span>
-                        </div>
-                    ` : ''}
                 </div>
             </a>
         `;
     }).join('');
     
     section.style.display = 'block';
-    console.log('✅ Because You Watched rail rendered with', items.length, 'items');
 }
 
 /**
- * Show skeleton loader for "Because You Watched" rail
+ * Show skeleton loader
  */
 function showBecauseYouWatchedSkeleton() {
     const section = document.getElementById('becauseYouWatchedRail');
@@ -464,8 +441,8 @@ function showBecauseYouWatchedSkeleton() {
         section.innerHTML = `
             <div class="section-header">
                 <h2 class="section-title">Because You Watched</h2>
-                <button class="refresh-rail-btn" aria-label="Refresh recommendations" style="opacity:0.5; pointer-events:none;">
-                    <i class="fas fa-sync-alt"></i> Loading...
+                <button class="refresh-rail-btn" style="opacity:0.5; pointer-events:none;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
                 </button>
             </div>
             <div class="content-grid" id="becauseYouWatchedGrid">
@@ -491,17 +468,11 @@ function showBecauseYouWatchedSkeleton() {
                 </div>
             `).join('');
         }
-        const refreshBtn = section.querySelector('.refresh-rail-btn');
-        if (refreshBtn) {
-            refreshBtn.style.opacity = '0.5';
-            refreshBtn.style.pointerEvents = 'none';
-            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        }
     }
 }
 
 /**
- * Show empty state for "Because You Watched" rail
+ * Show empty state
  */
 function showBecauseYouWatchedEmpty() {
     const section = document.getElementById('becauseYouWatchedRail');
@@ -536,23 +507,15 @@ function showBecauseYouWatchedEmpty() {
                 <h3 style="margin: 15px 0 10px; color: var(--soft-white);">No recommendations yet</h3>
                 <p style="color: var(--slate-grey);">Watch and like more content to get personalized recommendations</p>
                 <button class="btn btn-secondary" onclick="document.getElementById('relatedGrid')?.scrollIntoView({behavior:'smooth'})" style="margin-top: 15px;">
-                    Browse Related Content
+                    Browse More Content
                 </button>
             </div>
         `;
     }
-    
-    // Restore refresh button
-    const refreshBtn = section.querySelector('.refresh-rail-btn');
-    if (refreshBtn) {
-        refreshBtn.style.opacity = '';
-        refreshBtn.style.pointerEvents = '';
-        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
-    }
 }
 
 /**
- * Refresh "Because You Watched" rail (reload from database)
+ * Refresh recommendations
  */
 async function refreshBecauseYouWatched() {
     console.log('🔄 Refreshing Because You Watched recommendations...');
@@ -562,12 +525,11 @@ async function refreshBecauseYouWatched() {
 }
 
 /**
- * Initialize the module - listen for content and auth changes
+ * Initialize module
  */
 function initBecauseYouWatched() {
     console.log('🎬 Initializing Because You Watched module...');
     
-    // Listen for content changes to refresh recommendations
     window.addEventListener('contentIdChanged', () => {
         console.log('🔄 Content changed, refreshing Because You Watched');
         setTimeout(() => {
@@ -576,7 +538,6 @@ function initBecauseYouWatched() {
         }, 500);
     });
     
-    // Listen for auth changes (user logged in/out)
     window.addEventListener('authReady', () => {
         console.log('🔄 Auth state changed, refreshing Because You Watched');
         setTimeout(() => {
@@ -585,42 +546,27 @@ function initBecauseYouWatched() {
         }, 500);
     });
     
-    // Also listen for like events (user liked content - can affect recommendations)
-    window.addEventListener('contentLiked', () => {
-        console.log('🔄 Content liked, recommendations may update');
+    window.addEventListener('playlistLoaded', () => {
+        console.log('🔄 Playlist loaded, refreshing Because You Watched');
         setTimeout(() => {
-            if (Date.now() - lastRefreshTime > 60000) { // Only refresh if older than 1 minute
-                currentRecommendations = [];
-                loadBecauseYouWatchedRecommendations();
-            }
-        }, 1000);
+            currentRecommendations = [];
+            loadBecauseYouWatchedRecommendations();
+        }, 500);
     });
     
-    // Initial load if content exists
     setTimeout(() => {
         if (window.currentContent?.id) {
             loadBecauseYouWatchedRecommendations();
         }
     }, 500);
-    
-    console.log('✅ Because You Watched module initialized');
 }
 
-// Auto-initialize if DOM is ready
+// Initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initBecauseYouWatched);
 } else {
     initBecauseYouWatched();
 }
-
-// Also listen for playlist mode (reload recommendations when playlist loads)
-window.addEventListener('playlistLoaded', () => {
-    console.log('🔄 Playlist loaded, refreshing Because You Watched');
-    setTimeout(() => {
-        currentRecommendations = [];
-        loadBecauseYouWatchedRecommendations();
-    }, 500);
-});
 
 // ============================================
 // GLOBAL EXPORTS
@@ -630,7 +576,5 @@ window.renderBecauseYouWatchedRail = renderBecauseYouWatchedRail;
 window.showBecauseYouWatchedSkeleton = showBecauseYouWatchedSkeleton;
 window.showBecauseYouWatchedEmpty = showBecauseYouWatchedEmpty;
 window.refreshBecauseYouWatched = refreshBecauseYouWatched;
-window.getSmartRecommendations = getSmartRecommendations;
-window.getGenreBasedRecommendations = getGenreBasedRecommendations;
 
-console.log('✅ Because You Watched Module loaded (with smart personalization)');
+console.log('✅ Because You Watched Module loaded (Updated for new schema)');
