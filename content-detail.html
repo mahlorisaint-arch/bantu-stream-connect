@@ -16,14 +16,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- PHASE 4: HLS.js Library for Adaptive Streaming -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
-<!-- FIXED: Theme CSS - MUST be loaded before content-detail.css -->
-<link rel="stylesheet" href="css/home-feed-themes.css">
-<!-- Base Styles -->
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/components.css">
+
+<!-- ============================================ -->
+<!-- SHARED COMPONENTS CSS - GLOBAL STYLES -->
+<!-- Must be loaded first for theme consistency -->
+<!-- ============================================ -->
+<link rel="stylesheet" href="css/shared-components.css">
+
+<!-- ============================================ -->
+<!-- CONTENT DETAIL CSS MODULES -->
+<!-- ============================================ -->
+<!-- Main orchestrator - imports all modules -->
 <link rel="stylesheet" href="css/content-detail.css">
-<!-- PHASE 1 FIX: New Video Player CSS -->
-<link rel="stylesheet" href="css/video-player.css">
 
 <style>
 /* ============================================ */
@@ -116,7 +120,7 @@
 }
 
 /* ============================================ */
-/* 🎯 YOUTUBE-STYLE PERSISTENT SIDEBAR (ADDED 2026-05-21) */
+/* 🎯 YOUTUBE-STYLE PERSISTENT SIDEBAR */
 /* ============================================ */
 
 /* Main album sidebar - YouTube-style persistent container */
@@ -257,7 +261,7 @@
     transform: scale(1.1);
 }
 
-/* PHASE 2 POLISH: Playlist Modal Styles */
+/* Playlist Modal Styles */
 .playlist-modal {
     animation: modalFadeIn 0.3s ease;
 }
@@ -291,7 +295,7 @@
     display: none;
 }
 #initialPlayButton {
-    background: #00a8ff;
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
     border: none;
     color: white;
     padding: 18px 28px;
@@ -304,7 +308,7 @@
 }
 #initialPlayButton:hover {
     transform: scale(1.05);
-    background: #0090dd;
+    box-shadow: 0 8px 20px rgba(29,78,216,0.4);
 }
 .video-container {
     position: relative;
@@ -892,7 +896,6 @@
                         <i class="far fa-star"></i>
                         <span>Favorite</span>
                     </button>
-                    <!-- ✅ PHASE 2: WATCH LATER BUTTON ADDED HERE -->
                     <button class="btn btn-secondary" id="watchLaterBtn" type="button">
                         <i class="far fa-clock"></i>
                         <span>Watch Later</span>
@@ -901,12 +904,10 @@
                         <i class="fas fa-share"></i>
                         <span>Share</span>
                     </button>
-                    <!-- ✅ NEW: Close player button (only visible when player is active) -->
                     <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;" type="button">
                         <i class="fas fa-times"></i>
                         <span>Close Player</span>
                     </button>
-                    <!-- 🎯 YOUTUBE-STYLE ALBUM TOGGLE BUTTON -->
                     <button id="albumToggleBtn" class="album-toggle-btn" type="button">
                         <i class="fas fa-list"></i>
                         <span>Show Tracklist</span>
@@ -920,7 +921,6 @@
         <!-- ============================================ -->
         <section class="creator-section">
             <div class="creator-info">
-                <!-- ✅ Avatar container - will be populated by JS -->
                 <div class="creator-avatar" id="creatorAvatar">
                     <i class="fas fa-user"></i>
                 </div>
@@ -1249,6 +1249,12 @@
     </div>
 </div> <!-- Closing div for #app -->
 
+<!-- ============================================ -->
+<!-- SHARED COMPONENTS JS - GLOBAL FUNCTIONS -->
+<!-- Must be loaded first for other scripts -->
+<!-- ============================================ -->
+<script src="js/shared-components.js"></script>
+
 <!-- Initialize Supabase Client -->
 <script>
     // PHASE 1 FIX: Store in window for global access
@@ -1328,10 +1334,12 @@
 <!-- ✅ FEATURES FILE LOADED BEFORE MAIN SCRIPT -->
 <script src="js/content-detail-features.js"></script>
 
-<!-- Main Content Detail Script - FIXED: Theme selector and navigation -->
+<!-- Main Content Detail Script -->
 <script type="module" src="js/content-detail.js"></script>
 
+<!-- ============================================ -->
 <!-- PHASE 4: Quality Options Update Function -->
+<!-- ============================================ -->
 <script>
 // PHASE 4: Function to update quality options dynamically
 window.updateQualityOptions = function() {
