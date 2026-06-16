@@ -1,21 +1,20 @@
 // js/content-detail/description-section.js
 // ============================================
-// DESCRIPTION SECTION MODULE
-// Contains UI rendering for content description (full/short)
-// AND its specific DOM interaction logic for expand/collapse
+// DESCRIPTION SECTION MODULE - COMPLETE FIX
 // ============================================
 console.log('🎬 Description Section Module Loading...');
 
 /**
  * Update description UI elements in the DOM
- * Sets both short (truncated) and full description text
  */
 function updateDescriptionUI(content) {
     if (!content) return;
     
-    const shortDescEl = document.getElementById('contentDescriptionShort');
-    const fullDescEl = document.getElementById('contentDescriptionFull');
+    const shortDescEl = document.getElementById('descShort');
+    const fullDescEl = document.getElementById('descFull');
     const description = content.description || '';
+    
+    console.log('📝 Updating description UI, length:', description.length);
     
     if (shortDescEl) {
         shortDescEl.textContent = window.truncateText ? window.truncateText(description, 150) : description.substring(0, 150) + '...';
@@ -25,23 +24,22 @@ function updateDescriptionUI(content) {
         fullDescEl.textContent = description;
     }
     
-    // Setup expand/collapse after updating content
+    // Force setup expand/collapse after a delay
     setTimeout(function() {
         setupDescriptionExpandCollapse();
-    }, 100);
+    }, 200);
     
     console.log('✅ Description UI updated');
 }
 
 /**
  * Render full description (expanded view)
- * Called when user clicks "Show more"
  */
 function renderFullDescription(description) {
-    const container = document.getElementById('contentDescriptionFull');
-    const shortContainer = document.getElementById('contentDescriptionShort');
-    const expandBtn = document.getElementById('expandDescriptionBtn');
-    const collapseBtn = document.getElementById('collapseDescriptionBtn');
+    const container = document.getElementById('descFull');
+    const shortContainer = document.getElementById('descShort');
+    const expandBtn = document.getElementById('expandDescBtn');
+    const collapseBtn = document.getElementById('collapseDescBtn');
     const contentWrapper = document.querySelector('.description-content');
     
     if (container) {
@@ -70,13 +68,12 @@ function renderFullDescription(description) {
 
 /**
  * Render short description (collapsed view)
- * Called when user clicks "Show less"
  */
 function renderShortDescription(description) {
-    const container = document.getElementById('contentDescriptionShort');
-    const fullContainer = document.getElementById('contentDescriptionFull');
-    const expandBtn = document.getElementById('expandDescriptionBtn');
-    const collapseBtn = document.getElementById('collapseDescriptionBtn');
+    const container = document.getElementById('descShort');
+    const fullContainer = document.getElementById('descFull');
+    const expandBtn = document.getElementById('expandDescBtn');
+    const collapseBtn = document.getElementById('collapseDescBtn');
     const contentWrapper = document.querySelector('.description-content');
     
     if (container) {
@@ -105,9 +102,7 @@ function renderShortDescription(description) {
 }
 
 /**
- * Setup description expand/collapse functionality
- * Toggles between short (150 char) and full description views
- * FORCES creation of buttons if they don't exist
+ * Setup description expand/collapse functionality - FORCED
  */
 function setupDescriptionExpandCollapse() {
     console.log('🔧 Setting up description expand/collapse...');
@@ -128,12 +123,10 @@ function setupDescriptionExpandCollapse() {
         actionsContainer = document.createElement('div');
         actionsContainer.className = 'description-actions';
         
-        // Find where to insert it
         const descriptionContent = document.querySelector('.description-content');
         if (descriptionContent) {
             descriptionContent.appendChild(actionsContainer);
         } else {
-            // Fallback: insert after the description section
             const descSection = document.querySelector('.description-section');
             if (descSection) {
                 const container = document.createElement('div');
@@ -145,44 +138,44 @@ function setupDescriptionExpandCollapse() {
     }
     
     // Check if buttons exist, if not create them
-    let expandBtn = document.getElementById('expandDescriptionBtn');
-    let collapseBtn = document.getElementById('collapseDescriptionBtn');
+    let expandBtn = document.getElementById('expandDescBtn');
+    let collapseBtn = document.getElementById('collapseDescBtn');
     
     if (!expandBtn) {
-        console.log('⚠️ #expandDescriptionBtn not found, creating it...');
+        console.log('⚠️ #expandDescBtn not found, creating it...');
         expandBtn = document.createElement('button');
-        expandBtn.id = 'expandDescriptionBtn';
+        expandBtn.id = 'expandDescBtn';
         expandBtn.className = 'expand-btn';
         expandBtn.innerHTML = '<i class="fas fa-chevron-down"></i><span>Show More</span>';
         expandBtn.style.display = 'none';
-        actionsContainer.appendChild(expandBtn);
+        if (actionsContainer) actionsContainer.appendChild(expandBtn);
     }
     
     if (!collapseBtn) {
-        console.log('⚠️ #collapseDescriptionBtn not found, creating it...');
+        console.log('⚠️ #collapseDescBtn not found, creating it...');
         collapseBtn = document.createElement('button');
-        collapseBtn.id = 'collapseDescriptionBtn';
+        collapseBtn.id = 'collapseDescBtn';
         collapseBtn.className = 'collapse-btn';
         collapseBtn.innerHTML = '<i class="fas fa-chevron-up"></i><span>Show Less</span>';
         collapseBtn.style.display = 'none';
-        actionsContainer.appendChild(collapseBtn);
+        if (actionsContainer) actionsContainer.appendChild(collapseBtn);
     }
     
     // Get fresh references
-    expandBtn = document.getElementById('expandDescriptionBtn');
-    collapseBtn = document.getElementById('collapseDescriptionBtn');
+    expandBtn = document.getElementById('expandDescBtn');
+    collapseBtn = document.getElementById('collapseDescBtn');
     
     if (!expandBtn || !collapseBtn) {
         console.error('❌ Failed to create expand/collapse buttons');
         return;
     }
     
-    // If description is short, hide buttons and show full description
+    // If description is short, hide buttons
     if (!needsTruncation) {
         expandBtn.style.display = 'none';
         collapseBtn.style.display = 'none';
-        const shortDesc = document.getElementById('contentDescriptionShort');
-        const fullDesc = document.getElementById('contentDescriptionFull');
+        const shortDesc = document.getElementById('descShort');
+        const fullDesc = document.getElementById('descFull');
         if (shortDesc) shortDesc.style.display = 'none';
         if (fullDesc) {
             fullDesc.textContent = description;
@@ -230,12 +223,10 @@ function setupDescriptionExpandCollapse() {
 }
 
 /**
- * Toggle description visibility programmatically
- * @param {boolean} expand - True to expand, false to collapse
+ * Toggle description visibility
  */
 function toggleDescription(expand) {
     const description = window.currentContent?.description || '';
-    
     if (expand) {
         renderFullDescription(description);
     } else {
@@ -244,7 +235,7 @@ function toggleDescription(expand) {
 }
 
 /**
- * Update description when content changes
+ * Refresh description
  */
 function refreshDescription() {
     console.log('🔄 Refreshing description...');
@@ -264,15 +255,14 @@ window.toggleDescription = toggleDescription;
 window.refreshDescription = refreshDescription;
 
 // ============================================
-// AUTO-INITIALIZATION
+// FORCED AUTO-INITIALIZATION - INDEPENDENT
 // ============================================
-// Try to initialize when content is ready
-function attemptInit() {
+function forceInit() {
+    console.log('🎬 Forcing description section init...');
     if (window.currentContent) {
-        console.log('🎬 Auto-initializing description section...');
         setTimeout(function() {
             updateDescriptionUI(window.currentContent);
-        }, 200);
+        }, 300);
         return true;
     }
     return false;
@@ -281,34 +271,37 @@ function attemptInit() {
 // Listen for content changes
 document.addEventListener('contentIdChanged', function() {
     console.log('🔄 Content changed, refreshing description...');
-    setTimeout(function() {
-        refreshDescription();
-    }, 300);
+    setTimeout(refreshDescription, 400);
 });
 
-// Listen for playlist loaded
 document.addEventListener('playlistLoaded', function() {
     console.log('🔄 Playlist loaded, refreshing description...');
-    setTimeout(function() {
-        refreshDescription();
-    }, 300);
+    setTimeout(refreshDescription, 400);
 });
 
-// Initial attempt
+// Listen for auth changes (user signs in/out)
+document.addEventListener('authStateChanged', function() {
+    console.log('🔄 Auth state changed, refreshing description...');
+    setTimeout(refreshDescription, 500);
+});
+
+// Initial attempt - multiple attempts to ensure it works
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
-            if (!attemptInit()) {
-                setTimeout(attemptInit, 1000);
+            if (!forceInit()) {
+                setTimeout(forceInit, 1000);
+                setTimeout(forceInit, 2000);
             }
         }, 500);
     });
 } else {
     setTimeout(function() {
-        if (!attemptInit()) {
-            setTimeout(attemptInit, 1000);
+        if (!forceInit()) {
+            setTimeout(forceInit, 1000);
+            setTimeout(forceInit, 2000);
         }
     }, 500);
 }
 
-console.log('✅ Description Section Module loaded');
+console.log('✅ Description Section Module loaded (with forced init)');
