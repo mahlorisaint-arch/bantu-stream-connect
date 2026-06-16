@@ -42,7 +42,7 @@
 }
 
 /* ============================================ */
-/* SECTION HEADER */
+/* DESCRIPTION HEADER */
 /* ============================================ */
 .description-header {
   display: flex;
@@ -70,7 +70,7 @@
 }
 
 /* ============================================ */
-/* DESCRIPTION CONTENT AREA - FIXED VISIBILITY */
+/* DESCRIPTION CONTENT AREA */
 /* ============================================ */
 .description-content {
   position: relative;
@@ -80,21 +80,23 @@
   animation: slideDown 0.3s ease;
 }
 
-/* SHORT DESCRIPTION - hidden by default (only shown for preview) */
+/* Short description */
 #contentDescriptionShort {
-  display: none !important;
+  display: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-/* FULL DESCRIPTION - ALWAYS VISIBLE BY DEFAULT */
+/* Full description */
 #contentDescriptionFull {
-  display: block !important;
+  display: block;
   white-space: pre-wrap;
   word-wrap: break-word;
   margin: 0;
   padding: 0;
 }
 
-/* When short description is active (collapsed state) */
+/* When collapsed */
 .description-content.collapsed #contentDescriptionShort {
   display: block !important;
 }
@@ -190,6 +192,12 @@
 }
 
 #collapseDescriptionBtn {
+  display: none;
+}
+
+/* When description needs truncation, show the buttons */
+.description-content.has-truncation #expandDescriptionBtn,
+.description-content.has-truncation #collapseDescriptionBtn {
   display: inline-flex;
 }
 
@@ -435,10 +443,10 @@
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS - REDUCED FOR MOBILE & TABLETS */
+/* RESPONSIVE ADJUSTMENTS - MOBILE & TABLETS */
 /* ============================================ */
 
-/* Tablets and large phones */
+/* Tablets and large phones (992px and below) */
 @media (max-width: 992px) {
   .description-section {
     padding: 14px 16px !important;
@@ -447,8 +455,8 @@
   }
   
   .description-header {
-    margin-bottom: 12px !important;
-    padding-bottom: 10px !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
   }
   
   .description-header h2 {
@@ -466,8 +474,8 @@
   }
   
   .description-actions {
-    margin-top: 12px !important;
-    padding-top: 10px !important;
+    margin-top: 10px !important;
+    padding-top: 8px !important;
     gap: 8px !important;
   }
   
@@ -555,7 +563,7 @@
   }
 }
 
-/* Tablets - medium */
+/* Tablets - medium (768px and below) */
 @media (max-width: 768px) {
   .description-section {
     padding: 12px 14px !important;
@@ -564,8 +572,8 @@
   }
   
   .description-header {
-    margin-bottom: 10px !important;
-    padding-bottom: 8px !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 6px !important;
   }
   
   .description-header h2 {
@@ -583,8 +591,8 @@
   }
   
   .description-actions {
-    margin-top: 10px !important;
-    padding-top: 8px !important;
+    margin-top: 8px !important;
+    padding-top: 6px !important;
     gap: 6px !important;
   }
   
@@ -672,7 +680,7 @@
   }
 }
 
-/* Phones */
+/* Phones (480px and below) */
 @media (max-width: 480px) {
   .description-section {
     padding: 10px 12px !important;
@@ -681,8 +689,8 @@
   }
   
   .description-header {
-    margin-bottom: 8px !important;
-    padding-bottom: 6px !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
   }
   
   .description-header h2 {
@@ -700,8 +708,8 @@
   }
   
   .description-actions {
-    margin-top: 8px !important;
-    padding-top: 6px !important;
+    margin-top: 6px !important;
+    padding-top: 4px !important;
     gap: 5px !important;
   }
   
