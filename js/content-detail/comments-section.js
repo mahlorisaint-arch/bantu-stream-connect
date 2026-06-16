@@ -40,16 +40,7 @@ async function loadUserLikes(contentId) {
     }
     
     try {
-        const { data: likes, error } = await window.supabaseClient
-            .from('comment_likes')
-            .select('comment_id')
-            .eq('user_id', userId)
-            .in('comment_id', function() {
-                // This will be handled by the outer query
-            });
-        
-        // Instead, get all likes for this content's comments
-        // First get all comment IDs for this content
+        // Get all comment IDs for this content
         const { data: comments, error: commentsError } = await window.supabaseClient
             .from('comments')
             .select('id')
