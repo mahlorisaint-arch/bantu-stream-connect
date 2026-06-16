@@ -1,9 +1,83 @@
 // js/content-detail/comments-section.js
 // ============================================
-// COMMENTS SECTION MODULE - COMPLETE WITH ALL FEATURES
-// Like, Reply, Edit, Delete - Full CRUD
+// COMMENTS SECTION MODULE - COMPLETE WITH PERSISTENT LIKES
+// Like, Reply, Edit, Delete - Full CRUD with like persistence
 // ============================================
 console.log('🎬 Comments Section Module Loading...');
+
+// Cache for user's liked comments
+let userLikedComments = new Set();
+let currentUserId = null;
+
+/**
+ * Get current user ID
+ */
+function getCurrentUserId() {
+    if (currentUserId) return currentUserId;
+    
+    const userProfile = window.AuthHelper?.getUserProfile?.();
+    if (userProfile?.id) {
+        currentUserId = userProfile.id;
+        return currentUserId;
+    }
+    
+    if (window.currentUser?.id) {
+        currentUserId = window.currentUser.id;
+        return currentUserId;
+    }
+    
+    return null;
+}
+
+/**
+ * Load user's liked comments for the current content
+ */
+async function loadUserLikes(contentId) {
+    const userId = getCurrentUserId();
+    if (!userId || !contentId) {
+        userLikedComments = new Set();
+        return;
+    }
+    
+    try {
+        const { data: likes, error } = await window.supabaseClient
+            .from('comment_likes')
+            .select('comment_id')
+            .eq('user_id', userId)
+            .in('comment_id', function() {
+                // This will be handled by the outer query
+            });
+        
+        // Instead, get all likes for this content's comments
+        // First get all comment IDs for this content
+        const { data: comments, error: commentsError } = await window.supabaseClient
+            .from('comments')
+            .select('id')
+            .eq('content_id', parseInt(contentId));
+        
+        if (commentsError) throw commentsError;
+        
+        const commentIds = comments.map(c => c.id);
+        if (commentIds.length === 0) {
+            userLikedComments = new Set();
+            return;
+        }
+        
+        const { data: likes, error: likesError } = await window.supabaseClient
+            .from('comment_likes')
+            .select('comment_id')
+            .eq('user_id', userId)
+            .in('comment_id', commentIds);
+        
+        if (likesError) throw likesError;
+        
+        userLikedComments = new Set(likes.map(l => l.comment_id));
+        console.log(`✅ Loaded ${userLikedComments.size} liked comments for user`);
+    } catch (error) {
+        console.error('❌ Failed to load user likes:', error);
+        userLikedComments = new Set();
+    }
+}
 
 /**
  * Load comments from database for a specific content
@@ -16,6 +90,9 @@ async function loadComments(contentId) {
     
     try {
         console.log('💬 Loading comments for content:', contentId);
+        
+        // Load user's liked comments first
+        await loadUserLikes(contentId);
         
         const { data: comments, error } = await window.supabaseClient
             .from('comments')
@@ -94,8 +171,11 @@ function createCommentElement(comment) {
     const initial = authorName.charAt(0).toUpperCase();
     
     // Check if current user is the author
-    const currentUserId = window.AuthHelper?.getUserProfile?.()?.id || window.currentUser?.id;
-    const isAuthor = currentUserId && comment.user_id === currentUserId;
+    const userId = getCurrentUserId();
+    const isAuthor = userId && comment.user_id === userId;
+    
+    // Check if this comment is liked by the current user
+    const isLiked = userLikedComments.has(comment.id);
     
     div.innerHTML = `
         <div class="comment-header">
@@ -122,8 +202,8 @@ function createCommentElement(comment) {
             ${window.escapeHtml(commentText)}
         </div>
         <div class="comment-footer">
-            <button class="comment-action like-btn" data-comment-id="${comment.id}">
-                <i class="far fa-heart"></i> <span>Like</span>
+            <button class="comment-action like-btn ${isLiked ? 'liked' : ''}" data-comment-id="${comment.id}">
+                <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> <span>${isLiked ? 'Liked' : 'Like'}</span>
             </button>
             <button class="comment-action reply-btn" data-comment-id="${comment.id}">
                 <i class="far fa-comment"></i> <span>Reply</span>
@@ -325,8 +405,8 @@ function createReplyElement(reply) {
     const replyText = reply.reply_text || '';
     const initial = authorName.charAt(0).toUpperCase();
     
-    const currentUserId = window.AuthHelper?.getUserProfile?.()?.id || window.currentUser?.id;
-    const isAuthor = currentUserId && reply.user_id === currentUserId;
+    const userId = getCurrentUserId();
+    const isAuthor = userId && reply.user_id === userId;
     
     div.innerHTML = `
         <div class="comment-header">
@@ -435,7 +515,7 @@ function toggleReplyInput(commentId) {
 }
 
 /**
- * Like a comment
+ * Like a comment with persistence
  */
 async function likeComment(commentId) {
     if (!window.AuthHelper?.isAuthenticated?.()) {
@@ -449,28 +529,25 @@ async function likeComment(commentId) {
         return;
     }
     
+    const userId = userProfile.id;
+    const likeBtn = document.querySelector(`.like-btn[data-comment-id="${commentId}"]`);
+    const isCurrentlyLiked = likeBtn?.classList.contains('liked') || false;
+    
     try {
-        // Check if already liked
-        const { data: existing, error: checkError } = await window.supabaseClient
-            .from('comment_likes')
-            .select('id')
-            .eq('comment_id', commentId)
-            .eq('user_id', userProfile.id)
-            .maybeSingle();
-        
-        if (checkError) throw checkError;
-        
-        if (existing) {
+        if (isCurrentlyLiked) {
             // Unlike
             const { error: deleteError } = await window.supabaseClient
                 .from('comment_likes')
                 .delete()
-                .eq('id', existing.id);
+                .eq('comment_id', commentId)
+                .eq('user_id', userId);
             
             if (deleteError) throw deleteError;
             
+            // Update cache
+            userLikedComments.delete(commentId);
+            
             // Update UI
-            const likeBtn = document.querySelector(`.like-btn[data-comment-id="${commentId}"]`);
             if (likeBtn) {
                 likeBtn.classList.remove('liked');
                 likeBtn.innerHTML = '<i class="far fa-heart"></i> <span>Like</span>';
@@ -482,13 +559,15 @@ async function likeComment(commentId) {
                 .from('comment_likes')
                 .insert({
                     comment_id: commentId,
-                    user_id: userProfile.id
+                    user_id: userId
                 });
             
             if (insertError) throw insertError;
             
+            // Update cache
+            userLikedComments.add(commentId);
+            
             // Update UI
-            const likeBtn = document.querySelector(`.like-btn[data-comment-id="${commentId}"]`);
             if (likeBtn) {
                 likeBtn.classList.add('liked');
                 likeBtn.innerHTML = '<i class="fas fa-heart"></i> <span>Liked</span>';
@@ -498,6 +577,16 @@ async function likeComment(commentId) {
     } catch (error) {
         console.error('❌ Like toggle failed:', error);
         window.showToast('Failed to update like', 'error');
+        // Revert UI on error
+        if (likeBtn) {
+            if (isCurrentlyLiked) {
+                likeBtn.classList.add('liked');
+                likeBtn.innerHTML = '<i class="fas fa-heart"></i> <span>Liked</span>';
+            } else {
+                likeBtn.classList.remove('liked');
+                likeBtn.innerHTML = '<i class="far fa-heart"></i> <span>Like</span>';
+            }
+        }
     }
 }
 
@@ -586,7 +675,6 @@ function editComment(commentId) {
             contentEl.textContent = newText;
             window.showToast('Comment updated!', 'success');
             
-            // Refresh comments to update count
             const contentId = window.currentContent?.id;
             if (contentId) await loadComments(contentId);
         } catch (error) {
@@ -677,6 +765,14 @@ async function updateCommentInputState() {
         } catch (e) {
             console.warn('Auth check fallback:', e);
         }
+    }
+    
+    // Update current user ID
+    if (isAuthenticated && userProfile?.id) {
+        currentUserId = userProfile.id;
+    } else {
+        currentUserId = null;
+        userLikedComments = new Set();
     }
     
     if (isAuthenticated && userProfile) {
@@ -889,5 +985,7 @@ window.setupCommentEventListeners = setupCommentEventListeners;
 window.refreshComments = refreshComments;
 window.updateCharCounter = updateCharCounter;
 window.loadCommentsWithSort = loadCommentsWithSort;
+window.loadUserLikes = loadUserLikes;
+window.userLikedComments = userLikedComments;
 
-console.log('✅ Comments Section Module loaded (with all features)');
+console.log('✅ Comments Section Module loaded (with persistent likes)');
