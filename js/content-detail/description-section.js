@@ -15,14 +15,18 @@ function updateDescriptionUI(content) {
     
     const shortDescEl = document.getElementById('contentDescriptionShort');
     const fullDescEl = document.getElementById('contentDescriptionFull');
+    const description = content.description || '';
     
     if (shortDescEl) {
-        shortDescEl.textContent = window.truncateText(content.description, 150);
+        shortDescEl.textContent = window.truncateText ? window.truncateText(description, 150) : description.substring(0, 150) + '...';
     }
     
     if (fullDescEl) {
-        fullDescEl.textContent = content.description || '';
+        fullDescEl.textContent = description;
     }
+    
+    // Setup expand/collapse after updating content
+    setTimeout(setupDescriptionExpandCollapse, 50);
     
     console.log('✅ Description UI updated');
 }
@@ -33,16 +37,35 @@ function updateDescriptionUI(content) {
  */
 function renderFullDescription(description) {
     const container = document.getElementById('contentDescriptionFull');
+    const shortContainer = document.getElementById('contentDescriptionShort');
     const expandBtn = document.getElementById('expandDescriptionBtn');
     const collapseBtn = document.getElementById('collapseDescriptionBtn');
+    const contentWrapper = document.querySelector('.description-content');
     
     if (container) {
         container.textContent = description || '';
         container.style.display = 'block';
     }
     
-    if (expandBtn) expandBtn.style.display = 'none';
-    if (collapseBtn) collapseBtn.style.display = 'inline-flex';
+    if (shortContainer) {
+        shortContainer.style.display = 'none';
+    }
+    
+    if (expandBtn) {
+        expandBtn.style.display = 'none';
+    }
+    
+    if (collapseBtn) {
+        collapseBtn.style.display = 'inline-flex';
+    }
+    
+    if (contentWrapper) {
+        contentWrapper.classList.remove('collapsed');
+    }
+    
+    // Update aria-expanded
+    if (expandBtn) expandBtn.setAttribute('aria-expanded', 'true');
+    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', 'true');
 }
 
 /**
@@ -51,19 +74,36 @@ function renderFullDescription(description) {
  */
 function renderShortDescription(description) {
     const container = document.getElementById('contentDescriptionShort');
+    const fullContainer = document.getElementById('contentDescriptionFull');
     const expandBtn = document.getElementById('expandDescriptionBtn');
     const collapseBtn = document.getElementById('collapseDescriptionBtn');
+    const contentWrapper = document.querySelector('.description-content');
     
     if (container) {
-        container.textContent = window.truncateText(description, 150);
+        const truncated = window.truncateText ? window.truncateText(description, 150) : description.substring(0, 150) + '...';
+        container.textContent = truncated;
         container.style.display = 'block';
     }
     
-    const fullContainer = document.getElementById('contentDescriptionFull');
-    if (fullContainer) fullContainer.style.display = 'none';
+    if (fullContainer) {
+        fullContainer.style.display = 'none';
+    }
     
-    if (expandBtn) expandBtn.style.display = 'inline-flex';
-    if (collapseBtn) collapseBtn.style.display = 'none';
+    if (expandBtn) {
+        expandBtn.style.display = 'inline-flex';
+    }
+    
+    if (collapseBtn) {
+        collapseBtn.style.display = 'none';
+    }
+    
+    if (contentWrapper) {
+        contentWrapper.classList.add('collapsed');
+    }
+    
+    // Update aria-expanded
+    if (expandBtn) expandBtn.setAttribute('aria-expanded', 'false');
+    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', 'false');
 }
 
 /**
@@ -77,20 +117,46 @@ function setupDescriptionExpandCollapse() {
     const shortDesc = document.getElementById('contentDescriptionShort');
     const fullDesc = document.getElementById('contentDescriptionFull');
     
-    if (!expandBtn || !collapseBtn) {
-        console.warn('Description expand/collapse buttons not found');
+    // Get the description from current content
+    const description = window.currentContent?.description || '';
+    const needsTruncation = description.length > 150;
+    
+    // If buttons don't exist, create them
+    const actionsContainer = document.querySelector('.description-actions');
+    if (actionsContainer) {
+        // Check if buttons exist, if not create them
+        if (!document.getElementById('expandDescriptionBtn')) {
+            const newExpandBtn = document.createElement('button');
+            newExpandBtn.id = 'expandDescriptionBtn';
+            newExpandBtn.className = 'expand-btn';
+            newExpandBtn.innerHTML = '<i class="fas fa-chevron-down"></i><span>Show More</span>';
+            newExpandBtn.setAttribute('aria-expanded', 'false');
+            actionsContainer.appendChild(newExpandBtn);
+        }
+        
+        if (!document.getElementById('collapseDescriptionBtn')) {
+            const newCollapseBtn = document.createElement('button');
+            newCollapseBtn.id = 'collapseDescriptionBtn';
+            newCollapseBtn.className = 'collapse-btn';
+            newCollapseBtn.innerHTML = '<i class="fas fa-chevron-up"></i><span>Show Less</span>';
+            newCollapseBtn.setAttribute('aria-expanded', 'true');
+            actionsContainer.appendChild(newCollapseBtn);
+        }
+    }
+    
+    // Get fresh references after potential creation
+    const expandBtnRef = document.getElementById('expandDescriptionBtn');
+    const collapseBtnRef = document.getElementById('collapseDescriptionBtn');
+    
+    if (!expandBtnRef || !collapseBtnRef) {
+        console.warn('Description expand/collapse buttons not found and could not be created');
         return;
     }
     
-    // Get the description from current content
-    const description = window.currentContent?.description || '';
-    
-    // Determine if description is long enough to need truncation
-    const needsTruncation = description.length > 150;
-    
+    // If description is short, hide expand button and show full description
     if (!needsTruncation) {
-        // If description is short, hide expand button and show full description
-        expandBtn.style.display = 'none';
+        expandBtnRef.style.display = 'none';
+        collapseBtnRef.style.display = 'none';
         if (shortDesc) shortDesc.style.display = 'none';
         if (fullDesc) {
             fullDesc.textContent = description;
@@ -99,56 +165,58 @@ function setupDescriptionExpandCollapse() {
         return;
     }
     
-    // Setup expand button
-    const newExpandBtn = expandBtn.cloneNode(true);
-    expandBtn.parentNode.replaceChild(newExpandBtn, expandBtn);
+    // Remove existing listeners by cloning
+    const newExpandBtn = expandBtnRef.cloneNode(true);
+    expandBtnRef.parentNode.replaceChild(newExpandBtn, expandBtnRef);
     
-    newExpandBtn.addEventListener('click', (e) => {
+    const newCollapseBtn = collapseBtnRef.cloneNode(true);
+    collapseBtnRef.parentNode.replaceChild(newCollapseBtn, collapseBtnRef);
+    
+    // Setup expand button
+    newExpandBtn.addEventListener('click', function(e) {
         e.preventDefault();
         renderFullDescription(description);
         
         // Announce to screen readers
-        const liveRegion = document.getElementById('a11y-live-region');
+        const liveRegion = document.getElementById('a11y-live-region') || document.querySelector('.a11y-live-region');
         if (liveRegion) {
             liveRegion.textContent = 'Description expanded, showing full content';
         }
     });
     
     // Setup collapse button
-    const newCollapseBtn = collapseBtn.cloneNode(true);
-    collapseBtn.parentNode.replaceChild(newCollapseBtn, collapseBtn);
-    
-    newCollapseBtn.addEventListener('click', (e) => {
+    newCollapseBtn.addEventListener('click', function(e) {
         e.preventDefault();
         renderShortDescription(description);
         
         // Announce to screen readers
-        const liveRegion = document.getElementById('a11y-live-region');
+        const liveRegion = document.getElementById('a11y-live-region') || document.querySelector('.a11y-live-region');
         if (liveRegion) {
             liveRegion.textContent = 'Description collapsed';
         }
     });
     
-    // Initialize with collapsed state
-    renderShortDescription(description);
-    
     // Setup keyboard accessibility
-    newExpandBtn.setAttribute('aria-expanded', 'false');
-    newCollapseBtn.setAttribute('aria-expanded', 'true');
-    
-    newExpandBtn.addEventListener('keydown', (e) => {
+    newExpandBtn.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            newExpandBtn.click();
+            this.click();
         }
     });
     
-    newCollapseBtn.addEventListener('keydown', (e) => {
+    newCollapseBtn.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            newCollapseBtn.click();
+            this.click();
         }
     });
+    
+    // Initialize with collapsed state if description is long
+    if (needsTruncation) {
+        renderShortDescription(description);
+    } else {
+        renderFullDescription(description);
+    }
     
     console.log('✅ Description expand/collapse initialized');
 }
