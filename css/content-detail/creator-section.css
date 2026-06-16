@@ -129,82 +129,40 @@
 }
 
 /* ============================================ */
-/* CREATOR DETAILS */
+/* CREATOR DETAILS - TARGETING ACTUAL HTML */
 /* ============================================ */
 .creator-details {
   flex: 1;
   min-width: 0;
 }
 
-.creator-label {
-  font-size: 12px;
-  color: var(--slate-grey);
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.creator-label i {
-  font-size: 10px;
-  color: var(--bantu-blue);
-}
-
-.creator-name {
+.creator-details h3,
+#creatorDisplayName {
   font-size: 18px;
   font-weight: 700;
   color: var(--soft-white);
-  margin-bottom: 4px;
+  margin: 0 0 2px 0;
   transition: color 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
-.creator-info:hover .creator-name {
+.creator-info:hover .creator-details h3,
+.creator-info:hover #creatorDisplayName {
   color: var(--bantu-blue);
 }
 
-/* Creator username/handle */
-.creator-handle {
+/* The paragraph with "Verified Creator • Joined 2024" */
+.creator-details p {
   font-size: 13px;
   color: var(--slate-grey);
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.creator-handle i {
+.creator-details p i {
   font-size: 11px;
   color: var(--bantu-blue);
-}
-
-/* Creator stats (followers, videos count) */
-.creator-stats {
-  display: flex;
-  gap: 16px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--slate-grey);
-}
-
-.creator-stats span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.creator-stats i {
-  font-size: 11px;
-  color: var(--bantu-blue);
-}
-
-.creator-stats strong {
-  color: var(--soft-white);
-  font-weight: 600;
 }
 
 /* ============================================ */
@@ -405,22 +363,18 @@
   font-size: 1.2rem;
 }
 
-.creator-section.compact .creator-name {
+.creator-section.compact .creator-details h3,
+.creator-section.compact #creatorDisplayName {
   font-size: 14px;
 }
 
-.creator-section.compact .creator-handle {
+.creator-section.compact .creator-details p {
   font-size: 11px;
 }
 
 .creator-section.compact .connect-btn {
   padding: 6px 16px;
   font-size: 12px;
-}
-
-.creator-section.compact .creator-stats {
-  font-size: 10px;
-  gap: 10px;
 }
 
 /* ============================================ */
@@ -453,39 +407,18 @@
     border-width: 1.5px !important;
   }
   
-  .creator-label {
-    font-size: 9px !important;
-    gap: 4px !important;
-    margin-bottom: 2px !important;
-    letter-spacing: 0.3px !important;
-  }
-  
-  .creator-label i {
-    font-size: 7px !important;
-  }
-  
-  .creator-name {
+  .creator-details h3,
+  #creatorDisplayName {
     font-size: 14px !important;
-    gap: 5px !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 1px !important;
   }
   
-  .creator-handle {
+  .creator-details p {
     font-size: 10px !important;
     gap: 4px !important;
   }
   
-  .creator-handle i {
-    font-size: 8px !important;
-  }
-  
-  .creator-stats {
-    gap: 12px !important;
-    margin-top: 4px !important;
-    font-size: 10px !important;
-  }
-  
-  .creator-stats i {
+  .creator-details p i {
     font-size: 8px !important;
   }
   
@@ -555,38 +488,18 @@
     border-width: 1px !important;
   }
   
-  .creator-label {
-    font-size: 8px !important;
-    gap: 3px !important;
-    margin-bottom: 1px !important;
-  }
-  
-  .creator-label i {
-    font-size: 6px !important;
-  }
-  
-  .creator-name {
+  .creator-details h3,
+  #creatorDisplayName {
     font-size: 12px !important;
-    gap: 4px !important;
-    margin-bottom: 1px !important;
+    margin-bottom: 0 !important;
   }
   
-  .creator-handle {
+  .creator-details p {
     font-size: 8px !important;
     gap: 3px !important;
   }
   
-  .creator-handle i {
-    font-size: 7px !important;
-  }
-  
-  .creator-stats {
-    gap: 10px !important;
-    margin-top: 2px !important;
-    font-size: 8px !important;
-  }
-  
-  .creator-stats i {
+  .creator-details p i {
     font-size: 7px !important;
   }
   
@@ -650,11 +563,6 @@
     order: 1 !important;
   }
   
-  .creator-stats {
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-  }
-  
   .creator-section {
     padding: 10px 12px !important;
     border-radius: 8px !important;
@@ -667,21 +575,18 @@
     font-size: 1rem !important;
   }
   
-  .creator-name {
+  .creator-details h3,
+  #creatorDisplayName {
     font-size: 11px !important;
+  }
+  
+  .creator-details p {
+    font-size: 7px !important;
   }
   
   .connect-btn {
     padding: 5px 12px !important;
     font-size: 9px !important;
-  }
-  
-  .creator-stats {
-    font-size: 7px !important;
-  }
-  
-  .creator-bio {
-    font-size: 8px !important;
   }
 }
 
@@ -712,39 +617,18 @@
     border-width: 1px !important;
   }
   
-  .creator-label {
-    font-size: 6px !important;
-    gap: 2px !important;
-    margin-bottom: 1px !important;
-    letter-spacing: 0.2px !important;
-  }
-  
-  .creator-label i {
-    font-size: 5px !important;
-  }
-  
-  .creator-name {
+  .creator-details h3,
+  #creatorDisplayName {
     font-size: 9px !important;
-    gap: 3px !important;
-    margin-bottom: 1px !important;
+    margin-bottom: 0 !important;
   }
   
-  .creator-handle {
+  .creator-details p {
     font-size: 6px !important;
     gap: 2px !important;
   }
   
-  .creator-handle i {
-    font-size: 5px !important;
-  }
-  
-  .creator-stats {
-    gap: 6px !important;
-    margin-top: 1px !important;
-    font-size: 6px !important;
-  }
-  
-  .creator-stats i {
+  .creator-details p i {
     font-size: 5px !important;
   }
   
@@ -845,11 +729,13 @@
   background: rgba(255, 255, 255, 0.8);
 }
 
-.theme-light .creator-name {
+.theme-light .creator-details h3,
+.theme-light #creatorDisplayName {
   color: var(--deep-navy);
 }
 
-.theme-light .creator-info:hover .creator-name {
+.theme-light .creator-info:hover .creator-details h3,
+.theme-light .creator-info:hover #creatorDisplayName {
   color: var(--bantu-blue);
 }
 
