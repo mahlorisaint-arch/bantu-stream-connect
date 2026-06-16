@@ -142,8 +142,8 @@
   border-top: 1px solid var(--card-border);
 }
 
-.expand-btn,
-.collapse-btn {
+#expandDescriptionBtn,
+#collapseDescriptionBtn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--card-border);
   border-radius: 40px;
@@ -158,47 +158,47 @@
   transition: all 0.3s ease;
 }
 
-.expand-btn:hover,
-.collapse-btn:hover {
+#expandDescriptionBtn:hover,
+#collapseDescriptionBtn:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: var(--bantu-blue);
   transform: translateY(-2px);
 }
 
-.expand-btn:active,
-.collapse-btn:active {
+#expandDescriptionBtn:active,
+#collapseDescriptionBtn:active {
   transform: translateY(0);
 }
 
-.expand-btn i,
-.collapse-btn i {
+#expandDescriptionBtn i,
+#collapseDescriptionBtn i {
   font-size: 12px;
   transition: transform 0.2s ease;
 }
 
-.expand-btn:hover i {
+#expandDescriptionBtn:hover i {
   transform: translateY(2px);
 }
 
-.collapse-btn:hover i {
+#collapseDescriptionBtn:hover i {
   transform: translateY(-2px);
 }
 
 /* Show collapse button, hide expand button by default */
-.expand-btn {
+#expandDescriptionBtn {
   display: none;
 }
 
-.collapse-btn {
+#collapseDescriptionBtn {
   display: inline-flex;
 }
 
 /* When collapsed, show expand, hide collapse */
-.description-content.collapsed .expand-btn {
+.description-content.collapsed #expandDescriptionBtn {
   display: inline-flex;
 }
 
-.description-content.collapsed .collapse-btn {
+.description-content.collapsed #collapseDescriptionBtn {
   display: none;
 }
 
@@ -471,16 +471,16 @@
     gap: 8px !important;
   }
   
-  .expand-btn,
-  .collapse-btn {
+  #expandDescriptionBtn,
+  #collapseDescriptionBtn {
     padding: 6px 16px !important;
     font-size: 11px !important;
     border-radius: 30px !important;
     gap: 6px !important;
   }
   
-  .expand-btn i,
-  .collapse-btn i {
+  #expandDescriptionBtn i,
+  #collapseDescriptionBtn i {
     font-size: 10px !important;
   }
   
@@ -588,16 +588,16 @@
     gap: 6px !important;
   }
   
-  .expand-btn,
-  .collapse-btn {
+  #expandDescriptionBtn,
+  #collapseDescriptionBtn {
     padding: 5px 14px !important;
     font-size: 10px !important;
     border-radius: 24px !important;
     gap: 5px !important;
   }
   
-  .expand-btn i,
-  .collapse-btn i {
+  #expandDescriptionBtn i,
+  #collapseDescriptionBtn i {
     font-size: 9px !important;
   }
   
@@ -705,16 +705,16 @@
     gap: 5px !important;
   }
   
-  .expand-btn,
-  .collapse-btn {
+  #expandDescriptionBtn,
+  #collapseDescriptionBtn {
     padding: 4px 12px !important;
     font-size: 9px !important;
     border-radius: 20px !important;
     gap: 4px !important;
   }
   
-  .expand-btn i,
-  .collapse-btn i {
+  #expandDescriptionBtn i,
+  #collapseDescriptionBtn i {
     font-size: 8px !important;
   }
   
@@ -799,8 +799,8 @@
 /* ============================================ */
 /* ACCESSIBILITY & FOCUS STATES */
 /* ============================================ */
-.expand-btn:focus-visible,
-.collapse-btn:focus-visible,
+#expandDescriptionBtn:focus-visible,
+#collapseDescriptionBtn:focus-visible,
 .tag-chip:focus-visible,
 .chapter-item:focus-visible {
   outline: 2px solid var(--bantu-blue);
@@ -821,7 +821,7 @@
 }
 
 /* Live region for announcements */
-.a11y-live-region {
+#a11y-live-region {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -846,8 +846,8 @@
   color: var(--deep-navy);
 }
 
-.theme-light .expand-btn,
-.theme-light .collapse-btn {
+.theme-light #expandDescriptionBtn,
+.theme-light #collapseDescriptionBtn {
   background: rgba(0, 0, 0, 0.05);
   color: var(--deep-navy);
 }
@@ -874,15 +874,15 @@
   color: white;
 }
 
-.theme-high-contrast .expand-btn,
-.theme-high-contrast .collapse-btn {
+.theme-high-contrast #expandDescriptionBtn,
+.theme-high-contrast #collapseDescriptionBtn {
   border: 2px solid white;
   background: black;
   color: white;
 }
 
-.theme-high-contrast .expand-btn:hover,
-.theme-high-contrast .collapse-btn:hover {
+.theme-high-contrast #expandDescriptionBtn:hover,
+.theme-high-contrast #collapseDescriptionBtn:hover {
   background: white;
   color: black;
 }
