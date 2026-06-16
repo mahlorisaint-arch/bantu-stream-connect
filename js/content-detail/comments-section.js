@@ -68,8 +68,12 @@ function renderComments(comments) {
     const container = document.getElementById('commentsList');
     const noComments = document.getElementById('noComments');
     const countEl = document.getElementById('commentsCount');
+    const loadingEl = document.getElementById('commentsLoading');
     
     if (!container) return;
+    
+    // Hide loading
+    if (loadingEl) loadingEl.style.display = 'none';
     
     container.innerHTML = '';
     
@@ -133,13 +137,25 @@ function createCommentElement(comment) {
                     </div>`
                 }
             </div>
-            <div class="comment-user">
-                <strong>${window.escapeHtml(authorName)}</strong>
-                <div class="comment-time">${time}</div>
+            <div class="comment-user-info">
+                <div class="comment-user-name">
+                    <strong>${window.escapeHtml(authorName)}</strong>
+                </div>
+                <div class="comment-time">
+                    <i class="fas fa-clock"></i> ${time}
+                </div>
             </div>
         </div>
         <div class="comment-content">
             ${window.escapeHtml(commentText)}
+        </div>
+        <div class="comment-footer">
+            <button class="comment-action like-btn" data-comment-id="${comment.id}">
+                <i class="far fa-heart"></i> <span>Like</span>
+            </button>
+            <button class="comment-action reply-btn" data-comment-id="${comment.id}">
+                <i class="far fa-comment"></i> <span>Reply</span>
+            </button>
         </div>
     `;
     
@@ -218,6 +234,9 @@ async function submitComment(text) {
         const commentInput = document.getElementById('commentInput');
         if (commentInput) commentInput.value = '';
         
+        // Update character counter
+        updateCharCounter();
+        
         window.showToast('Comment added!', 'success');
         
         // Track event if analytics available
@@ -241,6 +260,30 @@ async function submitComment(text) {
 }
 
 /**
+ * Update character counter
+ */
+function updateCharCounter() {
+    const input = document.getElementById('commentInput');
+    const counter = document.getElementById('charCounter');
+    if (!input || !counter) return;
+    
+    const maxLength = 500;
+    const currentLength = input.value.length;
+    const remaining = maxLength - currentLength;
+    
+    counter.textContent = `${currentLength}/${maxLength}`;
+    
+    // Update color based on remaining characters
+    counter.classList.remove('warning', 'limit');
+    if (remaining < 20) {
+        counter.classList.add('warning');
+    }
+    if (remaining < 0) {
+        counter.classList.add('limit');
+    }
+}
+
+/**
  * Update comment input state based on authentication status
  * Enables/disables comment input and updates avatar
  */
@@ -249,6 +292,7 @@ async function updateCommentInputState() {
     const sendCommentBtn = document.getElementById('sendCommentBtn');
     const commentAvatar = document.getElementById('userCommentAvatar');
     const commentAuthMessage = document.getElementById('commentAuthMessage');
+    const charCounter = document.getElementById('charCounter');
     
     if (!commentInput) return;
     
@@ -278,6 +322,7 @@ async function updateCommentInputState() {
         commentInput.placeholder = 'Add a comment...';
         if (sendCommentBtn) sendCommentBtn.disabled = false;
         if (commentAuthMessage) commentAuthMessage.style.display = 'none';
+        if (charCounter) charCounter.style.display = 'block';
         
         const displayName = userProfile?.full_name || userProfile?.username || userProfile?.email?.split('@')[0] || 'User';
         const avatarUrl = userProfile?.avatar_url || window.AuthHelper?.getAvatarUrl?.();
@@ -288,37 +333,42 @@ async function updateCommentInputState() {
                 commentAvatar.innerHTML = `<img src="${fixedUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
             } else {
                 const initial = displayName.charAt(0).toUpperCase();
-                commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${initial}</div>`;
+                commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1.2rem;">${initial}</div>`;
             }
         }
+        
+        // Update character counter on input
+        commentInput.addEventListener('input', updateCharCounter);
+        
+        console.log('✅ Comment input enabled for user:', displayName);
+        
     } else {
         commentInput.disabled = true;
         commentInput.placeholder = 'Sign in to comment';
         if (sendCommentBtn) sendCommentBtn.disabled = true;
         if (commentAuthMessage) commentAuthMessage.style.display = 'block';
+        if (charCounter) charCounter.style.display = 'none';
         if (commentAvatar) commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
+        
+        console.log('🔒 Comment input disabled (not signed in)');
     }
     
-    // Setup login link redirect
-    setupCommentLoginLink();
-}
-
-/**
- * Setup comment login link with redirect
- */
-function setupCommentLoginLink() {
-    const loginLink = document.getElementById('commentLoginLink');
-    if (loginLink) {
-        // Remove any existing listeners to avoid duplicates
-        const newLoginLink = loginLink.cloneNode(true);
-        loginLink.parentNode.replaceChild(newLoginLink, loginLink);
-        
-        newLoginLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            const currentUrl = encodeURIComponent(window.location.href);
-            window.location.href = `login.html?redirect=${currentUrl}`;
-        });
-    }
+    // ============================================
+    // CRITICAL FIX: Ensure description section stays intact
+    // This prevents comments from interfering with description
+    // ============================================
+    // Small delay to let auth changes settle, then ensure description works
+    setTimeout(function() {
+        if (typeof window.refreshDescription === 'function') {
+            // Don't call it here - just verify it exists
+            console.log('✅ Description section function is available');
+        }
+        // Re-initialize description section to ensure buttons show
+        if (typeof window.setupDescriptionExpandCollapse === 'function') {
+            console.log('🔄 Re-initializing description section after auth change...');
+            window.setupDescriptionExpandCollapse();
+        }
+    }, 300);
 }
 
 /**
@@ -329,6 +379,7 @@ function setupCommentEventListeners() {
     const sendBtn = document.getElementById('sendCommentBtn');
     const commentInput = document.getElementById('commentInput');
     const refreshBtn = document.getElementById('refreshCommentsBtn');
+    const sortSelect = document.getElementById('commentSortSelect');
     
     if (!sendBtn || !commentInput) {
         setTimeout(setupCommentEventListeners, 500);
@@ -358,7 +409,10 @@ function setupCommentEventListeners() {
     
     // Refresh button handler
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', async function() {
+        const newRefreshBtn = refreshBtn.cloneNode(true);
+        refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
+        
+        newRefreshBtn.addEventListener('click', async function() {
             const contentIdForComments = window.currentContent?.id || 
                 (window.currentPlaylistItems && window.currentPlaylistItems.length > 0 && window.currentPlaylistItems[0]?.id);
             
@@ -370,7 +424,68 @@ function setupCommentEventListeners() {
         });
     }
     
+    // Sort select handler
+    if (sortSelect) {
+        const newSortSelect = sortSelect.cloneNode(true);
+        sortSelect.parentNode.replaceChild(newSortSelect, sortSelect);
+        
+        newSortSelect.addEventListener('change', function() {
+            const contentIdForComments = window.currentContent?.id || 
+                (window.currentPlaylistItems && window.currentPlaylistItems.length > 0 && window.currentPlaylistItems[0]?.id);
+            
+            if (contentIdForComments) {
+                const sortValue = this.value;
+                console.log('🔄 Sorting comments by:', sortValue);
+                loadCommentsWithSort(contentIdForComments, sortValue);
+            }
+        });
+    }
+    
     console.log('✅ Comment event listeners attached');
+}
+
+/**
+ * Load comments with sorting
+ */
+async function loadCommentsWithSort(contentId, sortBy) {
+    if (!contentId) return;
+    
+    try {
+        let orderColumn = 'created_at';
+        let ascending = false;
+        
+        switch(sortBy) {
+            case 'newest':
+                orderColumn = 'created_at';
+                ascending = false;
+                break;
+            case 'oldest':
+                orderColumn = 'created_at';
+                ascending = true;
+                break;
+            case 'popular':
+                orderColumn = 'likes_count';
+                ascending = false;
+                break;
+            default:
+                orderColumn = 'created_at';
+                ascending = false;
+        }
+        
+        const { data: comments, error } = await window.supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('content_id', parseInt(contentId))
+            .order(orderColumn, { ascending: ascending });
+        
+        if (error) throw error;
+        
+        renderComments(comments || []);
+        console.log(`✅ Loaded ${comments?.length || 0} comments sorted by ${sortBy}`);
+    } catch (error) {
+        console.error('❌ Failed to load sorted comments:', error);
+        window.showToast('Failed to load comments', 'error');
+    }
 }
 
 /**
@@ -393,6 +508,7 @@ window.submitComment = submitComment;
 window.updateCommentInputState = updateCommentInputState;
 window.setupCommentEventListeners = setupCommentEventListeners;
 window.refreshComments = refreshComments;
-window.setupCommentLoginLink = setupCommentLoginLink;
+window.updateCharCounter = updateCharCounter;
+window.loadCommentsWithSort = loadCommentsWithSort;
 
 console.log('✅ Comments Section Module loaded (with full brain)');
