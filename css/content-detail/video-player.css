@@ -123,58 +123,70 @@
   transform: translateY(0);
 }
 
-/* Controls bar */
+/* Controls bar - Glassmorphism */
 .enhanced-video-controls .controls-bar {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: rgba(15, 15, 15, 0.8) !important;
+  background: rgba(15, 15, 15, 0.6) !important;
   backdrop-filter: blur(25px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
   border-radius: 40px;
   margin: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Control buttons */
+/* Control buttons - Glassmorphism */
 .enhanced-video-controls .control-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   color: var(--soft-white);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   font-size: 14px;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
 .enhanced-video-controls .control-btn:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
-  border-color: var(--warm-gold) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.6) !important;
   transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 .enhanced-video-controls .control-btn:active {
   transform: scale(0.95);
 }
 
-/* Play/Pause button specific */
+/* Play/Pause button - Glassmorphism with gradient glow */
 .enhanced-video-controls .play-pause-btn {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)) !important;
-  border-color: transparent !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), 0 0 40px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s ease !important;
 }
 
 .enhanced-video-controls .play-pause-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.7) !important;
   transform: scale(1.15);
+  box-shadow: 0 8px 40px rgba(29, 78, 216, 0.4), 0 0 60px rgba(245, 158, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
 /* Time display */
@@ -185,65 +197,85 @@
   min-width: 100px;
   text-align: center;
   letter-spacing: 0.5px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 4px 8px;
   border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Progress container */
+/* Progress container - Glassmorphism with proper alignment */
 .enhanced-video-controls .progress-container {
   flex: 1;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border-radius: 4px;
   position: relative;
   cursor: pointer;
   transition: height 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  margin: 0 !important;
+  align-self: center !important;
 }
 
 .enhanced-video-controls .progress-container:hover {
   height: 6px;
 }
 
+/* Progress fill - Glassmorphism with gradient */
 .enhanced-video-controls .progress-container .progress-fill {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
-  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(29, 78, 216, 0.8), rgba(245, 158, 11, 0.9)) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border-radius: 4px;
   width: var(--progress, 0%);
   pointer-events: none;
+  box-shadow: 0 0 15px rgba(29, 78, 216, 0.3), 0 0 30px rgba(245, 158, 11, 0.15) !important;
+  transition: width 0.1s linear;
 }
 
+/* Buffer fill - Glassmorphism */
 .enhanced-video-controls .progress-container .buffer-fill {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border-radius: 4px;
   width: var(--buffer, 0%);
   pointer-events: none;
 }
 
-/* Progress hover preview */
+/* Progress hover preview - Glassmorphism */
 .progress-preview {
   position: absolute;
   bottom: 20px;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 12px;
   font-family: monospace;
   pointer-events: none;
   z-index: 101;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Volume control */
+/* Volume control - Glassmorphism */
 .enhanced-video-controls .volume-control {
   display: flex;
   align-items: center;
@@ -254,10 +286,14 @@
   width: 80px;
   height: 4px;
   -webkit-appearance: none;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border-radius: 4px;
   cursor: pointer;
   transition: width 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 .enhanced-video-controls .volume-bar::-webkit-slider-thumb {
@@ -265,40 +301,45 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--warm-gold);
+  background: rgba(245, 158, 11, 0.9) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   cursor: pointer;
   transition: transform 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
 }
 
 .enhanced-video-controls .volume-bar::-webkit-slider-thumb:hover {
   transform: scale(1.3);
 }
 
-/* Settings menu button */
+/* Settings menu button - Glassmorphism */
 .settings-btn {
   position: relative;
 }
 
 .settings-btn.active {
-  background: rgba(245, 158, 11, 0.3) !important;
+  background: rgba(245, 158, 11, 0.2) !important;
   border-color: var(--warm-gold) !important;
 }
 
 /* ============================================ */
-/* SETTINGS MENU */
+/* SETTINGS MENU - Glassmorphism */
 /* ============================================ */
 .settings-menu {
   position: absolute;
   bottom: 50px;
   right: 10px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(29, 78, 216, 0.3);
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px;
   padding: 12px;
   min-width: 220px;
   max-width: 280px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
   z-index: 1000;
   display: none;
   animation: fadeInUp 0.2s ease;
@@ -321,7 +362,7 @@
 
 .settings-section {
   margin-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 10px;
 }
 
@@ -341,7 +382,7 @@
   letter-spacing: 0.5px;
 }
 
-/* Quality options */
+/* Quality options - Glassmorphism */
 .quality-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -351,8 +392,10 @@
 
 .quality-option {
   padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 6px;
   color: var(--soft-white);
   font-size: 11px;
@@ -363,20 +406,22 @@
 }
 
 .quality-option:hover {
-  background: rgba(29, 78, 216, 0.3);
-  border-color: var(--bantu-blue);
+  background: rgba(29, 78, 216, 0.25) !important;
+  border-color: rgba(29, 78, 216, 0.4) !important;
   transform: translateY(-1px);
 }
 
 .quality-option.active {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  border-color: transparent;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.4), rgba(245, 158, 11, 0.4)) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 2px 12px rgba(29, 78, 216, 0.2) !important;
 }
 
-/* Speed options */
+/* Speed options - Glassmorphism */
 .speed-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -385,8 +430,10 @@
 
 .speed-option {
   padding: 5px 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 6px;
   color: var(--soft-white);
   font-size: 11px;
@@ -397,19 +444,21 @@
 }
 
 .speed-option:hover {
-  background: rgba(29, 78, 216, 0.3);
-  border-color: var(--bantu-blue);
+  background: rgba(29, 78, 216, 0.25) !important;
+  border-color: rgba(29, 78, 216, 0.4) !important;
   transform: translateY(-1px);
 }
 
 .speed-option.active {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  border-color: transparent;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.4), rgba(245, 158, 11, 0.4)) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
   color: white;
   font-weight: 600;
 }
 
-/* Toggle switch */
+/* Toggle switch - Glassmorphism */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -431,10 +480,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   transition: 0.3s;
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .toggle-slider:before {
@@ -444,20 +495,22 @@
   width: 18px;
   left: 2px;
   bottom: 2px;
-  background-color: white;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   transition: 0.3s;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 input:checked + .toggle-slider {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  border-color: transparent;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.5), rgba(245, 158, 11, 0.5)) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
 }
 
 input:checked + .toggle-slider:before {
   transform: translateX(22px);
-  background-color: white;
+  background: white !important;
 }
 
 .toggle-description {
@@ -469,13 +522,15 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* QUALITY & NETWORK INDICATORS */
+/* QUALITY & NETWORK INDICATORS - Glassmorphism */
 /* ============================================ */
 .quality-indicator {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   color: white;
   padding: 4px 10px;
   border-radius: 20px;
@@ -485,8 +540,7 @@ input:checked + .toggle-slider:before {
   display: flex;
   align-items: center;
   gap: 5px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -516,12 +570,14 @@ input:checked + .toggle-slider:before {
   color: var(--warm-gold);
 }
 
-/* HLS badge */
+/* HLS badge - Glassmorphism */
 .hls-badge {
   position: absolute;
   top: 12px;
   right: 70px;
-  background: rgba(29, 78, 216, 0.9);
+  background: rgba(29, 78, 216, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   color: white;
   padding: 4px 10px;
   border-radius: 20px;
@@ -531,17 +587,18 @@ input:checked + .toggle-slider:before {
   display: flex;
   align-items: center;
   gap: 5px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   pointer-events: none;
 }
 
-/* Data saver badge */
+/* Data saver badge - Glassmorphism */
 .data-saver-badge {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: rgba(16, 185, 129, 0.9);
+  background: rgba(16, 185, 129, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   color: white;
   padding: 4px 10px;
   border-radius: 20px;
@@ -551,8 +608,7 @@ input:checked + .toggle-slider:before {
   display: flex;
   align-items: center;
   gap: 5px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -563,12 +619,14 @@ input:checked + .toggle-slider:before {
   animation: fadeOut 3s ease forwards;
 }
 
-/* Network speed indicator */
+/* Network speed indicator - Glassmorphism */
 .network-speed-indicator {
   position: absolute;
   bottom: 70px;
   left: 12px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
@@ -577,8 +635,7 @@ input:checked + .toggle-slider:before {
   display: flex;
   align-items: center;
   gap: 8px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -606,22 +663,23 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* BUFFERING INDICATOR */
+/* BUFFERING INDICATOR - Glassmorphism */
 /* ============================================ */
 .buffering-indicator {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
   border-radius: 40px;
   padding: 15px 25px;
   display: none;
   align-items: center;
   gap: 15px;
   z-index: 100;
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .buffering-indicator.active {
@@ -631,7 +689,7 @@ input:checked + .toggle-slider:before {
 .buffering-indicator .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.2);
   border-top-color: var(--warm-gold);
   border-radius: 50%;
   animation: spin 1s linear infinite;
