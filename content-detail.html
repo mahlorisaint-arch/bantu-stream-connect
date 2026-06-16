@@ -514,7 +514,7 @@
 </section>
         
         <!-- ============================================ -->
-<!-- COMMENTS SECTION - COMPLETE FIXED STRUCTURE -->
+<!-- COMMENTS SECTION - COMPLETE & WORKING -->
 <!-- ============================================ -->
 <section class="comments-section">
     <!-- Header with title, sort, and refresh -->
@@ -536,11 +536,11 @@
         </div>
     </div>
 
-    <!-- Auth message (hidden when logged in) -->
+    <!-- Auth message (hidden when logged in) - FIXED: No PHP breaking code -->
     <div class="comment-auth-message" id="commentAuthMessage" style="display: none;">
         <i class="fas fa-info-circle"></i>
         Sign in to join the conversation.
-        <a href="login.html?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>">Sign In</a>
+        <a href="login.html" id="commentLoginLink">Sign In</a>
     </div>
 
     <!-- Add comment form -->
