@@ -513,11 +513,67 @@
     </div>
 </section>
         
-        <section class="comments-section">
-            <div class="section-header"><h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2><button id="refreshCommentsBtn" class="refresh-btn" type="button"><i class="fas fa-redo"></i> Refresh</button></div>
-            <div class="add-comment"><div class="comment-avatar" id="userCommentAvatar"><i class="fas fa-user"></i></div><div class="comment-input-container"><textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea><button id="sendCommentBtn" class="send-comment-btn" type="button"><i class="fas fa-paper-plane"></i></button></div></div>
-            <div class="comments-list" id="commentsList"><div class="no-comments" id="noComments"><i class="fas fa-comment-slash"></i><p>No comments yet. Be the first to comment!</p></div></div>
-        </section>
+        <!-- ============================================ -->
+<!-- COMMENTS SECTION - FIXED STRUCTURE -->
+<!-- ============================================ -->
+<section class="comments-section">
+    <!-- Header with title, sort, and refresh -->
+    <div class="comments-header">
+        <h2 class="comments-title">
+            <i class="fas fa-comments"></i>
+            Comments <span class="comments-count" id="commentsCount">(0)</span>
+        </h2>
+        <div class="comments-sort">
+            <span class="sort-label"><i class="fas fa-sort"></i> Sort:</span>
+            <select class="sort-select" id="commentSortSelect">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="popular">Most Liked</option>
+            </select>
+            <button class="refresh-comments-btn" id="refreshCommentsBtn" type="button">
+                <i class="fas fa-redo"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Auth message (hidden when logged in) -->
+    <div class="comment-auth-message" id="commentAuthMessage" style="display: none;">
+        <i class="fas fa-info-circle"></i>
+        Sign in to join the conversation.
+        <a href="login.html?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>">Sign In</a>
+    </div>
+
+    <!-- Add comment form - FIXED: Proper structure -->
+    <div class="add-comment">
+        <div class="comment-avatar" id="userCommentAvatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="comment-input-row">
+            <div class="comment-input-wrapper">
+                <textarea id="commentInput" class="comment-input" placeholder="Sign in to add a comment..." disabled></textarea>
+                <span class="char-counter" id="charCounter">0/500</span>
+            </div>
+            <button id="sendCommentBtn" class="send-comment-btn" type="button" disabled>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Comments list -->
+    <div class="comments-list" id="commentsList">
+        <!-- Loading skeleton will be shown here initially -->
+        <div class="comments-loading" id="commentsLoading">
+            <div class="spinner"></div>
+            <p>Loading comments...</p>
+        </div>
+        <!-- No comments state (hidden by default, shown when no comments) -->
+        <div class="no-comments" id="noComments" style="display: none;">
+            <i class="fas fa-comment-slash"></i>
+            <p>No comments yet. Be the first to comment!</p>
+            <span class="comment-cta">Start the conversation</span>
+        </div>
+    </div>
+</section>
 
         <section class="continue-watching-section" id="continueWatchingSection" style="display:none;"><div class="section-header"><h2 class="section-title">Continue Watching</h2><button class="refresh-btn" id="refreshContinueBtn" type="button"><i class="fas fa-redo"></i></button></div><div class="content-grid" id="continueGrid"></div></section>
 
