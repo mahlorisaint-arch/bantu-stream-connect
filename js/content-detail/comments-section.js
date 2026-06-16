@@ -115,7 +115,7 @@ function createCommentElement(comment) {
                     `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}" 
                           alt="${window.escapeHtml(authorName)}" 
                           style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);"
-                          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\\'width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;\\\'>${initial}</div>';">` :
+                          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;\\'>${initial}</div>';">` :
                     `<div style="
                         width: 32px;
                         height: 32px;
@@ -298,6 +298,27 @@ async function updateCommentInputState() {
         if (commentAuthMessage) commentAuthMessage.style.display = 'block';
         if (commentAvatar) commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
     }
+    
+    // Setup login link redirect
+    setupCommentLoginLink();
+}
+
+/**
+ * Setup comment login link with redirect
+ */
+function setupCommentLoginLink() {
+    const loginLink = document.getElementById('commentLoginLink');
+    if (loginLink) {
+        // Remove any existing listeners to avoid duplicates
+        const newLoginLink = loginLink.cloneNode(true);
+        loginLink.parentNode.replaceChild(newLoginLink, loginLink);
+        
+        newLoginLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `login.html?redirect=${currentUrl}`;
+        });
+    }
 }
 
 /**
@@ -372,5 +393,6 @@ window.submitComment = submitComment;
 window.updateCommentInputState = updateCommentInputState;
 window.setupCommentEventListeners = setupCommentEventListeners;
 window.refreshComments = refreshComments;
+window.setupCommentLoginLink = setupCommentLoginLink;
 
 console.log('✅ Comments Section Module loaded (with full brain)');
