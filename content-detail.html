@@ -488,18 +488,25 @@
         </section>
 
        <!-- ============================================ -->
-<!-- DESCRIPTION SECTION - COMPLETE & WORKING -->
+<!-- DESCRIPTION SECTION - COMPLETE FINAL -->
 <!-- ============================================ -->
 <section class="description-section">
     <div class="description-header">
         <h2><i class="fas fa-align-left"></i> Description</h2>
     </div>
     <div class="description-content">
-        <!-- Short description (shown when collapsed) -->
-        <div id="descShort" style="display: none;"></div>
-        <!-- Full description (shown when expanded) -->
-        <div id="descFull">Loading description...</div>
-        <!-- The buttons will be created by JavaScript if they don't exist -->
+        <div id="contentDescriptionShort" style="display: none;"></div>
+        <div id="contentDescriptionFull">Loading description...</div>
+        <div class="description-actions">
+            <button id="expandDescriptionBtn" class="expand-btn" style="display: none;">
+                <i class="fas fa-chevron-down"></i>
+                <span>Show More</span>
+            </button>
+            <button id="collapseDescriptionBtn" class="collapse-btn" style="display: none;">
+                <i class="fas fa-chevron-up"></i>
+                <span>Show Less</span>
+            </button>
+        </div>
     </div>
 </section>
         
