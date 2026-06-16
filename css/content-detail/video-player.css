@@ -827,350 +827,259 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* 35% SCALE MODE FOR MOBILE - ALL CONTROLS REDUCED TO 35% */
-/* ============================================ */
-.enhanced-video-controls.scale-35-percent {
-  padding: 7px 7px 4px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .controls-bar {
-  padding: 3px 6px !important;
-  gap: 4px !important;
-  border-radius: 14px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .control-btn {
-  width: 13px !important;
-  height: 13px !important;
-  font-size: 5px !important;
-  border-width: 0.35px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .play-pause-btn {
-  width: 14px !important;
-  height: 14px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .time-display {
-  font-size: 5px !important;
-  min-width: 35px !important;
-  padding: 1.5px 3px !important;
-  border-radius: 10px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .progress-container {
-  height: 1.5px !important;
-  border-radius: 1px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .progress-container:hover {
-  height: 2px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .volume-bar {
-  width: 28px !important;
-  height: 1.5px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .volume-bar::-webkit-slider-thumb {
-  width: 4px !important;
-  height: 4px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .volume-control {
-  gap: 3px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .settings-menu {
-  min-width: 77px !important;
-  max-width: 98px !important;
-  padding: 4px !important;
-  bottom: 18px !important;
-  right: 4px !important;
-  border-radius: 4px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .settings-section {
-  margin-bottom: 4px !important;
-  padding-bottom: 3.5px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .settings-section h4 {
-  font-size: 4px !important;
-  margin-bottom: 3px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .quality-options {
-  gap: 2px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .quality-option {
-  padding: 2px 3px !important;
-  font-size: 4px !important;
-  border-radius: 2px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .speed-options {
-  gap: 2px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .speed-option {
-  padding: 2px 2px !important;
-  font-size: 4px !important;
-  border-radius: 2px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .toggle-switch {
-  width: 15px !important;
-  height: 8px !important;
-  margin: 2px 0 1.5px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .toggle-slider {
-  border-radius: 8px !important;
-}
-
-.enhanced-video-controls.scale-35-percent .toggle-slider:before {
-  height: 6px !important;
-  width: 6px !important;
-  left: 1px !important;
-  bottom: 1px !important;
-}
-
-.enhanced-video-controls.scale-35-percent input:checked + .toggle-slider:before {
-  transform: translateX(7px) !important;
-}
-
-.enhanced-video-controls.scale-35-percent .toggle-description {
-  font-size: 3.5px !important;
-  max-width: 63px !important;
-}
-
-/* ============================================ */
-/* RESPONSIVE ADJUSTMENTS */
+/* RESPONSIVE ADJUSTMENTS - 10% SCALE FOR MOBILE */
 /* ============================================ */
 @media (max-width: 768px) {
   .enhanced-video-controls {
-    padding: 15px 12px 8px;
+    padding: 2px 2px 1px !important;
   }
   
   .enhanced-video-controls .controls-bar {
-    padding: 6px 12px;
-    gap: 8px;
-    border-radius: 30px;
+    padding: 1px 2px !important;
+    gap: 1.5px !important;
+    border-radius: 6px !important;
+    border-width: 0.5px !important;
   }
   
   .enhanced-video-controls .control-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
+    width: 4px !important;
+    height: 4px !important;
+    font-size: 1.5px !important;
+    border-width: 0.5px !important;
+    border-radius: 50% !important;
+    min-width: 4px !important;
+    min-height: 4px !important;
   }
   
   .enhanced-video-controls .play-pause-btn {
-    width: 36px;
-    height: 36px;
+    width: 5px !important;
+    height: 5px !important;
+    min-width: 5px !important;
+    min-height: 5px !important;
   }
   
   .enhanced-video-controls .time-display {
-    font-size: 11px;
-    min-width: 80px;
+    font-size: 1.5px !important;
+    min-width: 12px !important;
+    padding: 0.5px 1px !important;
+    border-radius: 4px !important;
+    letter-spacing: 0.1px !important;
+  }
+  
+  .enhanced-video-controls .progress-container {
+    height: 0.5px !important;
+    border-radius: 0.5px !important;
+    min-height: 4px !important;
+  }
+  
+  .enhanced-video-controls .progress-container:hover {
+    height: 0.8px !important;
+  }
+  
+  .enhanced-video-controls .volume-control {
+    gap: 1px !important;
   }
   
   .enhanced-video-controls .volume-bar {
-    width: 50px;
+    width: 10px !important;
+    height: 0.5px !important;
+    min-height: 4px !important;
   }
   
-  .settings-menu {
-    min-width: 180px;
-    bottom: 45px;
+  .enhanced-video-controls .volume-bar::-webkit-slider-thumb {
+    width: 2px !important;
+    height: 2px !important;
+    min-width: 6px !important;
+    min-height: 6px !important;
   }
   
-  .quality-options,
-  .speed-options {
-    grid-template-columns: repeat(2, 1fr);
+  .enhanced-video-controls .settings-menu {
+    min-width: 25px !important;
+    max-width: 35px !important;
+    padding: 1.5px !important;
+    bottom: 6px !important;
+    right: 1.5px !important;
+    border-radius: 2px !important;
+  }
+  
+  .enhanced-video-controls .settings-section {
+    margin-bottom: 1.5px !important;
+    padding-bottom: 1px !important;
+  }
+  
+  .enhanced-video-controls .settings-section h4 {
+    font-size: 1.5px !important;
+    margin-bottom: 1px !important;
+    letter-spacing: 0.1px !important;
+  }
+  
+  .enhanced-video-controls .quality-options {
+    gap: 0.5px !important;
+  }
+  
+  .enhanced-video-controls .quality-option {
+    padding: 0.5px 1px !important;
+    font-size: 1.5px !important;
+    border-radius: 1px !important;
+    border-width: 0.5px !important;
+  }
+  
+  .enhanced-video-controls .speed-options {
+    gap: 0.5px !important;
+  }
+  
+  .enhanced-video-controls .speed-option {
+    padding: 0.5px 0.5px !important;
+    font-size: 1.5px !important;
+    border-radius: 1px !important;
+    border-width: 0.5px !important;
+  }
+  
+  .enhanced-video-controls .toggle-switch {
+    width: 5px !important;
+    height: 3px !important;
+    margin: 0.5px 0 0.5px !important;
+  }
+  
+  .enhanced-video-controls .toggle-slider {
+    border-radius: 3px !important;
+    border-width: 0.5px !important;
+  }
+  
+  .enhanced-video-controls .toggle-slider:before {
+    height: 2px !important;
+    width: 2px !important;
+    left: 0.5px !important;
+    bottom: 0.5px !important;
+  }
+  
+  .enhanced-video-controls input:checked + .toggle-slider:before {
+    transform: translateX(2px) !important;
+  }
+  
+  .enhanced-video-controls .toggle-description {
+    font-size: 1px !important;
+    max-width: 20px !important;
   }
   
   .quality-indicator,
   .hls-badge,
   .data-saver-badge {
-    font-size: 9px;
-    padding: 3px 8px;
+    font-size: 3px !important;
+    padding: 1px 3px !important;
+    border-radius: 6px !important;
+    top: 4px !important;
+  }
+  
+  .quality-indicator {
+    right: 4px !important;
+  }
+  
+  .hls-badge {
+    right: 22px !important;
+  }
+  
+  .data-saver-badge {
+    left: 4px !important;
   }
   
   .network-speed-indicator {
-    font-size: 9px;
-    padding: 4px 8px;
-    bottom: 60px;
+    font-size: 3px !important;
+    padding: 1px 3px !important;
+    bottom: 20px !important;
+    left: 4px !important;
+    border-radius: 6px !important;
+  }
+  
+  .network-speed-indicator i {
+    font-size: 3px !important;
   }
   
   #initialPlayButton {
-    padding: 14px 24px;
-    font-size: 1rem;
-  }
-  
-  /* Apply 35% scale to mobile controls */
-  .enhanced-video-controls {
-    padding: 7px 7px 4px !important;
-  }
-  
-  .enhanced-video-controls .controls-bar {
-    padding: 3px 6px !important;
+    padding: 5px 9px !important;
+    font-size: 0.4rem !important;
+    border-radius: 20px !important;
     gap: 4px !important;
+  }
+  
+  #initialPlayButton i {
+    font-size: 0.5rem !important;
+  }
+  
+  .buffering-indicator {
+    padding: 5px 9px !important;
     border-radius: 14px !important;
+    gap: 5px !important;
   }
   
-  .enhanced-video-controls .control-btn {
-    width: 13px !important;
-    height: 13px !important;
-    font-size: 5px !important;
-    border-width: 0.35px !important;
-  }
-  
-  .enhanced-video-controls .play-pause-btn {
-    width: 14px !important;
-    height: 14px !important;
-  }
-  
-  .enhanced-video-controls .time-display {
-    font-size: 5px !important;
-    min-width: 35px !important;
-    padding: 1.5px 3px !important;
-    border-radius: 10px !important;
-  }
-  
-  .enhanced-video-controls .progress-container {
-    height: 1.5px !important;
-    border-radius: 1px !important;
-  }
-  
-  .enhanced-video-controls .progress-container:hover {
-    height: 2px !important;
-  }
-  
-  .enhanced-video-controls .volume-bar {
-    width: 28px !important;
-    height: 1.5px !important;
-  }
-  
-  .enhanced-video-controls .volume-bar::-webkit-slider-thumb {
-    width: 4px !important;
-    height: 4px !important;
-  }
-  
-  .enhanced-video-controls .volume-control {
-    gap: 3px !important;
-  }
-  
-  .enhanced-video-controls .settings-menu {
-    min-width: 77px !important;
-    max-width: 98px !important;
-    padding: 4px !important;
-    bottom: 18px !important;
-    right: 4px !important;
-    border-radius: 4px !important;
-  }
-  
-  .enhanced-video-controls .settings-section {
-    margin-bottom: 4px !important;
-    padding-bottom: 3.5px !important;
-  }
-  
-  .enhanced-video-controls .settings-section h4 {
-    font-size: 4px !important;
-    margin-bottom: 3px !important;
-  }
-  
-  .enhanced-video-controls .quality-options {
-    gap: 2px !important;
-  }
-  
-  .enhanced-video-controls .quality-option {
-    padding: 2px 3px !important;
-    font-size: 4px !important;
-    border-radius: 2px !important;
-  }
-  
-  .enhanced-video-controls .speed-options {
-    gap: 2px !important;
-  }
-  
-  .enhanced-video-controls .speed-option {
-    padding: 2px 2px !important;
-    font-size: 4px !important;
-    border-radius: 2px !important;
-  }
-  
-  .enhanced-video-controls .toggle-switch {
-    width: 15px !important;
+  .buffering-indicator .spinner {
+    width: 8px !important;
     height: 8px !important;
-    margin: 2px 0 1.5px !important;
+    border-width: 1px !important;
   }
   
-  .enhanced-video-controls .toggle-slider {
-    border-radius: 8px !important;
-  }
-  
-  .enhanced-video-controls .toggle-slider:before {
-    height: 6px !important;
-    width: 6px !important;
-    left: 1px !important;
-    bottom: 1px !important;
-  }
-  
-  .enhanced-video-controls input:checked + .toggle-slider:before {
-    transform: translateX(7px) !important;
-  }
-  
-  .enhanced-video-controls .toggle-description {
-    font-size: 3.5px !important;
-    max-width: 63px !important;
+  .buffering-indicator p {
+    font-size: 5px !important;
   }
 }
 
 @media (max-width: 480px) {
+  .enhanced-video-controls {
+    padding: 2px 2px 1px !important;
+  }
+  
   .enhanced-video-controls .controls-bar {
-    gap: 6px;
-    padding: 4px 10px;
+    padding: 1px 2px !important;
+    gap: 1.5px !important;
+    border-radius: 6px !important;
   }
   
   .enhanced-video-controls .control-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 10px;
+    width: 4px !important;
+    height: 4px !important;
+    font-size: 1.5px !important;
+    min-width: 4px !important;
+    min-height: 4px !important;
   }
   
   .enhanced-video-controls .play-pause-btn {
-    width: 32px;
-    height: 32px;
+    width: 5px !important;
+    height: 5px !important;
+    min-width: 5px !important;
+    min-height: 5px !important;
   }
   
   .enhanced-video-controls .time-display {
-    font-size: 9px;
-    min-width: 60px;
+    font-size: 1.5px !important;
+    min-width: 12px !important;
+    padding: 0.5px 1px !important;
+    border-radius: 4px !important;
   }
   
   .enhanced-video-controls .volume-bar {
-    width: 40px;
+    width: 10px !important;
+    height: 0.5px !important;
   }
   
   .settings-menu {
-    min-width: 160px;
-    right: 5px;
-    bottom: 55px;
+    min-width: 25px !important;
+    max-width: 35px !important;
+    right: 2px !important;
+    bottom: 6px !important;
   }
   
   .quality-option,
   .speed-option {
-    font-size: 9px;
-    padding: 4px 4px;
+    font-size: 1.5px !important;
+    padding: 0.5px 0.5px !important;
   }
   
   .settings-section h4 {
-    font-size: 10px;
+    font-size: 1.5px !important;
   }
 }
 
-/* Touch device optimizations */
+/* Touch device optimizations - keep touch targets accessible */
 @media (hover: none) and (pointer: coarse) {
   .enhanced-video-controls {
     opacity: 1;
@@ -1178,17 +1087,23 @@ input:checked + .toggle-slider:before {
     background: linear-gradient(to top, rgba(15, 15, 15, 0.95), rgba(15, 15, 15, 0.7));
   }
   
-  .control-btn {
-    min-width: 44px !important;
-    min-height: 44px !important;
+  /* Keep touch targets at least 20px for usability */
+  .enhanced-video-controls .control-btn {
+    min-width: 8px !important;
+    min-height: 8px !important;
   }
   
-  .progress-container {
-    min-height: 20px !important;
+  .enhanced-video-controls .play-pause-btn {
+    min-width: 10px !important;
+    min-height: 10px !important;
   }
   
-  .volume-bar {
-    min-height: 20px !important;
+  .enhanced-video-controls .progress-container {
+    min-height: 8px !important;
+  }
+  
+  .enhanced-video-controls .volume-bar {
+    min-height: 8px !important;
   }
 }
 
