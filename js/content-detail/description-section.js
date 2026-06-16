@@ -26,7 +26,7 @@ function updateDescriptionUI(content) {
     }
     
     // Setup expand/collapse after updating content
-    setTimeout(setupDescriptionExpandCollapse, 50);
+    setTimeout(setupDescriptionExpandCollapse, 100);
     
     console.log('✅ Description UI updated');
 }
@@ -62,10 +62,6 @@ function renderFullDescription(description) {
     if (contentWrapper) {
         contentWrapper.classList.remove('collapsed');
     }
-    
-    // Update aria-expanded
-    if (expandBtn) expandBtn.setAttribute('aria-expanded', 'true');
-    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', 'true');
 }
 
 /**
@@ -100,123 +96,70 @@ function renderShortDescription(description) {
     if (contentWrapper) {
         contentWrapper.classList.add('collapsed');
     }
-    
-    // Update aria-expanded
-    if (expandBtn) expandBtn.setAttribute('aria-expanded', 'false');
-    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', 'false');
 }
 
 /**
  * Setup description expand/collapse functionality
  * Toggles between short (150 char) and full description views
- * Also handles keyboard accessibility
  */
 function setupDescriptionExpandCollapse() {
     const expandBtn = document.getElementById('expandDescriptionBtn');
     const collapseBtn = document.getElementById('collapseDescriptionBtn');
     const shortDesc = document.getElementById('contentDescriptionShort');
     const fullDesc = document.getElementById('contentDescriptionFull');
+    const contentWrapper = document.querySelector('.description-content');
     
     // Get the description from current content
     const description = window.currentContent?.description || '';
     const needsTruncation = description.length > 150;
     
-    // If buttons don't exist, create them
-    const actionsContainer = document.querySelector('.description-actions');
-    if (actionsContainer) {
-        // Check if buttons exist, if not create them
-        if (!document.getElementById('expandDescriptionBtn')) {
-            const newExpandBtn = document.createElement('button');
-            newExpandBtn.id = 'expandDescriptionBtn';
-            newExpandBtn.className = 'expand-btn';
-            newExpandBtn.innerHTML = '<i class="fas fa-chevron-down"></i><span>Show More</span>';
-            newExpandBtn.setAttribute('aria-expanded', 'false');
-            actionsContainer.appendChild(newExpandBtn);
-        }
-        
-        if (!document.getElementById('collapseDescriptionBtn')) {
-            const newCollapseBtn = document.createElement('button');
-            newCollapseBtn.id = 'collapseDescriptionBtn';
-            newCollapseBtn.className = 'collapse-btn';
-            newCollapseBtn.innerHTML = '<i class="fas fa-chevron-up"></i><span>Show Less</span>';
-            newCollapseBtn.setAttribute('aria-expanded', 'true');
-            actionsContainer.appendChild(newCollapseBtn);
-        }
-    }
-    
-    // Get fresh references after potential creation
-    const expandBtnRef = document.getElementById('expandDescriptionBtn');
-    const collapseBtnRef = document.getElementById('collapseDescriptionBtn');
-    
-    if (!expandBtnRef || !collapseBtnRef) {
-        console.warn('Description expand/collapse buttons not found and could not be created');
+    // If buttons don't exist, return
+    if (!expandBtn || !collapseBtn) {
+        console.warn('Description expand/collapse buttons not found in DOM');
         return;
     }
     
-    // If description is short, hide expand button and show full description
+    // If description is short, hide buttons and show full description
     if (!needsTruncation) {
-        expandBtnRef.style.display = 'none';
-        collapseBtnRef.style.display = 'none';
+        expandBtn.style.display = 'none';
+        collapseBtn.style.display = 'none';
         if (shortDesc) shortDesc.style.display = 'none';
         if (fullDesc) {
             fullDesc.textContent = description;
             fullDesc.style.display = 'block';
         }
+        if (contentWrapper) {
+            contentWrapper.classList.remove('has-truncation');
+        }
         return;
     }
     
-    // Remove existing listeners by cloning
-    const newExpandBtn = expandBtnRef.cloneNode(true);
-    expandBtnRef.parentNode.replaceChild(newExpandBtn, expandBtnRef);
+    // Add truncation class
+    if (contentWrapper) {
+        contentWrapper.classList.add('has-truncation');
+    }
     
-    const newCollapseBtn = collapseBtnRef.cloneNode(true);
-    collapseBtnRef.parentNode.replaceChild(newCollapseBtn, collapseBtnRef);
+    // Remove existing listeners by cloning
+    const newExpandBtn = expandBtn.cloneNode(true);
+    expandBtn.parentNode.replaceChild(newExpandBtn, expandBtn);
+    
+    const newCollapseBtn = collapseBtn.cloneNode(true);
+    collapseBtn.parentNode.replaceChild(newCollapseBtn, collapseBtn);
     
     // Setup expand button
     newExpandBtn.addEventListener('click', function(e) {
         e.preventDefault();
         renderFullDescription(description);
-        
-        // Announce to screen readers
-        const liveRegion = document.getElementById('a11y-live-region') || document.querySelector('.a11y-live-region');
-        if (liveRegion) {
-            liveRegion.textContent = 'Description expanded, showing full content';
-        }
     });
     
     // Setup collapse button
     newCollapseBtn.addEventListener('click', function(e) {
         e.preventDefault();
         renderShortDescription(description);
-        
-        // Announce to screen readers
-        const liveRegion = document.getElementById('a11y-live-region') || document.querySelector('.a11y-live-region');
-        if (liveRegion) {
-            liveRegion.textContent = 'Description collapsed';
-        }
     });
     
-    // Setup keyboard accessibility
-    newExpandBtn.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            this.click();
-        }
-    });
-    
-    newCollapseBtn.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            this.click();
-        }
-    });
-    
-    // Initialize with collapsed state if description is long
-    if (needsTruncation) {
-        renderShortDescription(description);
-    } else {
-        renderFullDescription(description);
-    }
+    // Initialize with collapsed state
+    renderShortDescription(description);
     
     console.log('✅ Description expand/collapse initialized');
 }
@@ -237,7 +180,6 @@ function toggleDescription(expand) {
 
 /**
  * Update description when content changes
- * Called from setCurrentContent or playlist changes
  */
 function refreshDescription() {
     if (window.currentContent) {
