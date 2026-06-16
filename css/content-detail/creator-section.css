@@ -10,12 +10,13 @@
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  min-height: auto;
 }
 
 /* Animated gradient border on hover */
@@ -49,11 +50,11 @@
 .creator-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
   border-radius: 12px;
-  padding: 4px;
+  padding: 2px 4px;
 }
 
 .creator-info:hover {
@@ -62,17 +63,17 @@
 }
 
 /* ============================================ */
-/* CREATOR AVATAR */
+/* CREATOR AVATAR - KEEP CURRENT SIZE */
 /* ============================================ */
 .creator-avatar {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   color: white;
   overflow: hidden;
   flex-shrink: 0;
@@ -116,89 +117,92 @@
   position: absolute;
   bottom: 2px;
   right: 2px;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   background: var(--bantu-blue);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 8px;
   color: white;
   border: 2px solid var(--card-bg);
 }
 
 /* ============================================ */
-/* CREATOR DETAILS */
+/* CREATOR DETAILS - REDUCED TEXT SIZES */
 /* ============================================ */
 .creator-details {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .creator-label {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--slate-grey);
-  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  letter-spacing: 0.5px;
+  gap: 4px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
+  font-weight: 500;
 }
 
 .creator-label i {
-  font-size: 10px;
+  font-size: 8px;
   color: var(--bantu-blue);
 }
 
 .creator-name {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--soft-white);
-  margin-bottom: 4px;
   transition: color 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  line-height: 1.2;
 }
 
 .creator-info:hover .creator-name {
   color: var(--bantu-blue);
 }
 
-/* Creator username/handle */
+/* Creator username/handle - REDUCED */
 .creator-handle {
-  font-size: 13px;
+  font-size: 10px;
   color: var(--slate-grey);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .creator-handle i {
-  font-size: 11px;
+  font-size: 8px;
   color: var(--bantu-blue);
 }
 
-/* Creator stats (followers, videos count) */
+/* Creator stats (followers, videos count) - REDUCED */
 .creator-stats {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
-  font-size: 12px;
+  gap: 12px;
+  margin-top: 2px;
+  font-size: 10px;
   color: var(--slate-grey);
 }
 
 .creator-stats span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .creator-stats i {
-  font-size: 11px;
+  font-size: 8px;
   color: var(--bantu-blue);
 }
 
@@ -208,10 +212,10 @@
 }
 
 /* ============================================ */
-/* CONNECT BUTTON */
+/* CONNECT BUTTON - KEEP CURRENT SIZE */
 /* ============================================ */
 .connect-btn {
-  padding: 10px 24px;
+  padding: 8px 20px;
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
   color: var(--soft-white);
   border: none;
@@ -220,13 +224,14 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 14px;
+  font-size: 12px;
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 /* Button shine effect */
@@ -248,7 +253,7 @@
 .connect-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(29, 78, 216, 0.4);
-  gap: 12px;
+  gap: 8px;
 }
 
 .connect-btn:active {
@@ -293,15 +298,15 @@
 }
 
 /* ============================================ */
-/* CREATOR BIO / DESCRIPTION */
+/* CREATOR BIO / DESCRIPTION - REDUCED */
 /* ============================================ */
 .creator-bio {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--card-border);
-  font-size: 13px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .creator-bio p {
@@ -310,6 +315,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: all 0.3s ease;
+  margin: 0;
 }
 
 .creator-bio p.expanded {
@@ -321,14 +327,14 @@
   background: none;
   border: none;
   color: var(--bantu-blue);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   cursor: pointer;
-  padding: 4px 0;
-  margin-top: 8px;
+  padding: 2px 0;
+  margin-top: 4px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   transition: color 0.2s ease;
 }
 
@@ -337,7 +343,7 @@
 }
 
 .bio-toggle i {
-  font-size: 10px;
+  font-size: 8px;
   transition: transform 0.2s ease;
 }
 
@@ -346,24 +352,24 @@
 }
 
 /* ============================================ */
-/* CREATOR SOCIAL LINKS */
+/* CREATOR SOCIAL LINKS - REDUCED */
 /* ============================================ */
 .creator-social {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 10px;
   flex-wrap: wrap;
 }
 
 .social-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 10px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
+  border-radius: 16px;
   color: var(--slate-grey);
-  font-size: 12px;
+  font-size: 10px;
   text-decoration: none;
   transition: all 0.2s ease;
 }
@@ -375,7 +381,7 @@
 }
 
 .social-link i {
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .social-link.instagram:hover i { color: #E4405F; }
@@ -388,7 +394,7 @@
 /* CREATOR SECTION WITH VIDEO ACTIVE */
 /* ============================================ */
 .content-hero.video-active .creator-section {
-  margin-top: 20px;
+  margin-top: 16px;
   border-top: 1px solid var(--card-border);
 }
 
@@ -396,73 +402,68 @@
 /* COMPACT MODE (for mobile/sidebar) */
 /* ============================================ */
 .creator-section.compact {
-  padding: 12px;
+  padding: 10px 14px;
 }
 
 .creator-section.compact .creator-avatar {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   font-size: 1.2rem;
 }
 
 .creator-section.compact .creator-name {
-  font-size: 14px;
-}
-
-.creator-section.compact .creator-handle {
-  font-size: 11px;
-}
-
-.creator-section.compact .connect-btn {
-  padding: 6px 16px;
   font-size: 12px;
 }
 
-.creator-section.compact .creator-stats {
+.creator-section.compact .creator-handle {
+  font-size: 9px;
+}
+
+.creator-section.compact .connect-btn {
+  padding: 6px 14px;
   font-size: 10px;
-  gap: 10px;
+}
+
+.creator-section.compact .creator-stats {
+  font-size: 9px;
+  gap: 8px;
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS - 65% SCALE */
+/* RESPONSIVE ADJUSTMENTS - TEXT GREATLY REDUCED */
 /* ============================================ */
 
 /* Tablets and large phones */
 @media (max-width: 992px) {
   .creator-section {
-    padding: 13px !important;
+    padding: 12px 16px !important;
     border-radius: 10px !important;
-    margin-bottom: 16px !important;
-  }
-  
-  .creator-section::before {
-    border-radius: 12px !important;
+    margin-bottom: 12px !important;
   }
   
   .creator-info {
     gap: 10px !important;
-    padding: 2px !important;
-    border-radius: 8px !important;
   }
   
+  /* Avatar - keep similar size */
   .creator-avatar {
-    width: 42px !important;
-    height: 42px !important;
+    width: 48px !important;
+    height: 48px !important;
     font-size: 1.2rem !important;
     border-width: 2px !important;
   }
   
   .creator-avatar .verified-badge {
-    width: 12px !important;
-    height: 12px !important;
-    font-size: 6px !important;
-    border-width: 1px !important;
+    width: 14px !important;
+    height: 14px !important;
+    font-size: 7px !important;
   }
   
+  /* Text - significantly reduced */
   .creator-label {
     font-size: 8px !important;
-    gap: 4px !important;
-    margin-bottom: 2px !important;
+    gap: 3px !important;
+    letter-spacing: 0.2px !important;
   }
   
   .creator-label i {
@@ -471,13 +472,13 @@
   
   .creator-name {
     font-size: 12px !important;
-    gap: 5px !important;
-    margin-bottom: 2px !important;
+    gap: 4px !important;
+    line-height: 1.1 !important;
   }
   
   .creator-handle {
     font-size: 8px !important;
-    gap: 4px !important;
+    gap: 3px !important;
   }
   
   .creator-handle i {
@@ -485,8 +486,8 @@
   }
   
   .creator-stats {
-    gap: 10px !important;
-    margin-top: 5px !important;
+    gap: 8px !important;
+    margin-top: 1px !important;
     font-size: 8px !important;
   }
   
@@ -494,28 +495,23 @@
     font-size: 7px !important;
   }
   
+  /* Connect button - keep similar size */
   .connect-btn {
     padding: 6px 16px !important;
-    font-size: 9px !important;
-    border-radius: 26px !important;
-    gap: 5px !important;
-  }
-  
-  .connect-btn::before {
-    display: none !important;
+    font-size: 10px !important;
+    border-radius: 30px !important;
+    gap: 4px !important;
   }
   
   .creator-bio {
-    margin-top: 10px !important;
-    padding-top: 10px !important;
-    font-size: 8px !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+    font-size: 9px !important;
   }
   
   .bio-toggle {
     font-size: 8px !important;
-    padding: 2px 0 !important;
-    margin-top: 5px !important;
-    gap: 2px !important;
+    margin-top: 3px !important;
   }
   
   .bio-toggle i {
@@ -523,15 +519,15 @@
   }
   
   .creator-social {
-    gap: 8px !important;
-    margin-top: 10px !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
   }
   
   .social-link {
-    padding: 4px 8px !important;
+    padding: 3px 8px !important;
     font-size: 8px !important;
-    border-radius: 13px !important;
-    gap: 4px !important;
+    border-radius: 12px !important;
+    gap: 3px !important;
   }
   
   .social-link i {
@@ -542,39 +538,30 @@
 /* Tablets - medium */
 @media (max-width: 768px) {
   .creator-section {
-    padding: 10px !important;
+    padding: 10px 14px !important;
     border-radius: 8px !important;
-    margin-bottom: 12px !important;
-  }
-  
-  .creator-section::before {
-    border-radius: 10px !important;
+    margin-bottom: 10px !important;
   }
   
   .creator-info {
     gap: 8px !important;
-    padding: 2px !important;
   }
   
   .creator-avatar {
-    width: 34px !important;
-    height: 34px !important;
+    width: 42px !important;
+    height: 42px !important;
     font-size: 1rem !important;
-    border-width: 1.5px !important;
+    border-width: 2px !important;
   }
   
   .creator-avatar .verified-badge {
-    width: 10px !important;
-    height: 10px !important;
-    font-size: 5px !important;
-    border-width: 1px !important;
-    bottom: 1px !important;
-    right: 1px !important;
+    width: 12px !important;
+    height: 12px !important;
+    font-size: 6px !important;
   }
   
   .creator-label {
-    font-size: 6.5px !important;
-    margin-bottom: 1px !important;
+    font-size: 7px !important;
   }
   
   .creator-label i {
@@ -583,12 +570,11 @@
   
   .creator-name {
     font-size: 10px !important;
-    gap: 4px !important;
-    margin-bottom: 1px !important;
+    gap: 3px !important;
   }
   
   .creator-handle {
-    font-size: 6.5px !important;
+    font-size: 7px !important;
   }
   
   .creator-handle i {
@@ -596,9 +582,8 @@
   }
   
   .creator-stats {
-    gap: 8px !important;
-    margin-top: 4px !important;
-    font-size: 6.5px !important;
+    gap: 6px !important;
+    font-size: 7px !important;
   }
   
   .creator-stats i {
@@ -606,42 +591,34 @@
   }
   
   .connect-btn {
-    padding: 4px 12px !important;
-    font-size: 7px !important;
-    border-radius: 20px !important;
-    gap: 4px !important;
+    padding: 5px 14px !important;
+    font-size: 9px !important;
+    border-radius: 24px !important;
   }
   
   .creator-bio {
-    margin-top: 8px !important;
-    padding-top: 8px !important;
-    font-size: 6.5px !important;
+    font-size: 8px !important;
+    margin-top: 6px !important;
+    padding-top: 6px !important;
   }
   
   .bio-toggle {
-    font-size: 6.5px !important;
-    padding: 1px 0 !important;
-    margin-top: 4px !important;
-  }
-  
-  .bio-toggle i {
-    font-size: 6px !important;
+    font-size: 7px !important;
   }
   
   .creator-social {
-    gap: 6px !important;
-    margin-top: 8px !important;
+    gap: 5px !important;
+    margin-top: 6px !important;
   }
   
   .social-link {
-    padding: 3px 6px !important;
-    font-size: 6.5px !important;
+    padding: 2px 6px !important;
+    font-size: 7px !important;
     border-radius: 10px !important;
-    gap: 3px !important;
   }
   
   .social-link i {
-    font-size: 6.5px !important;
+    font-size: 7px !important;
   }
 }
 
@@ -667,116 +644,109 @@
   
   .creator-stats {
     flex-wrap: wrap !important;
-    gap: 6px !important;
+    gap: 4px !important;
   }
   
   .creator-section {
-    padding: 8px !important;
+    padding: 8px 12px !important;
     border-radius: 6px !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 8px !important;
   }
   
   .creator-avatar {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 0.8rem !important;
-    border-width: 1px !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 0.9rem !important;
   }
   
   .creator-name {
-    font-size: 8px !important;
+    font-size: 9px !important;
   }
   
   .connect-btn {
-    padding: 3px 10px !important;
-    font-size: 6px !important;
-    border-radius: 16px !important;
+    padding: 4px 12px !important;
+    font-size: 8px !important;
   }
   
   .creator-stats {
-    font-size: 5.5px !important;
+    font-size: 6px !important;
   }
   
   .creator-bio {
-    font-size: 5.5px !important;
+    font-size: 7px !important;
   }
 }
 
 /* Phones */
 @media (max-width: 480px) {
   .creator-section {
-    padding: 6px !important;
+    padding: 6px 10px !important;
     border-radius: 5px !important;
-    margin-bottom: 8px !important;
-  }
-  
-  .creator-section::before {
-    border-radius: 7px !important;
+    margin-bottom: 6px !important;
   }
   
   .creator-info {
     gap: 6px !important;
-    padding: 1px !important;
+    padding: 1px 2px !important;
   }
   
   .creator-avatar {
-    width: 22px !important;
-    height: 22px !important;
-    font-size: 0.6rem !important;
-    border-width: 1px !important;
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 0.8rem !important;
+    border-width: 1.5px !important;
   }
   
   .creator-avatar .verified-badge {
-    width: 8px !important;
-    height: 8px !important;
-    font-size: 4px !important;
+    width: 10px !important;
+    height: 10px !important;
+    font-size: 5px !important;
     border-width: 1px !important;
   }
   
   .creator-label {
-    font-size: 5px !important;
+    font-size: 6px !important;
     gap: 2px !important;
-    margin-bottom: 1px !important;
   }
   
   .creator-label i {
-    font-size: 4.5px !important;
+    font-size: 5px !important;
   }
   
   .creator-name {
-    font-size: 7px !important;
-    gap: 3px !important;
-    margin-bottom: 1px !important;
+    font-size: 8px !important;
+    gap: 2px !important;
+    line-height: 1 !important;
   }
   
   .creator-handle {
-    font-size: 5px !important;
-    gap: 3px !important;
+    font-size: 6px !important;
+    gap: 2px !important;
   }
   
   .creator-handle i {
-    font-size: 4.5px !important;
+    font-size: 5px !important;
   }
   
   .creator-stats {
-    gap: 5px !important;
-    margin-top: 3px !important;
-    font-size: 5px !important;
+    gap: 4px !important;
+    font-size: 6px !important;
+    margin-top: 0 !important;
   }
   
   .creator-stats i {
-    font-size: 4.5px !important;
+    font-size: 5px !important;
   }
   
   .connect-btn {
-    padding: 2px 8px !important;
-    font-size: 5px !important;
-    border-radius: 14px !important;
+    padding: 3px 10px !important;
+    font-size: 7px !important;
+    border-radius: 20px !important;
     gap: 3px !important;
   }
   
   .connect-btn i {
-    font-size: 5px !important;
+    font-size: 7px !important;
   }
   
   .connect-btn span {
@@ -784,35 +754,35 @@
   }
   
   .creator-bio {
-    margin-top: 6px !important;
-    padding-top: 6px !important;
-    font-size: 5px !important;
+    margin-top: 5px !important;
+    padding-top: 5px !important;
+    font-size: 6px !important;
   }
   
   .bio-toggle {
-    font-size: 5px !important;
+    font-size: 6px !important;
     padding: 1px 0 !important;
-    margin-top: 3px !important;
+    margin-top: 2px !important;
   }
   
   .bio-toggle i {
-    font-size: 4.5px !important;
+    font-size: 5px !important;
   }
   
   .creator-social {
     gap: 4px !important;
-    margin-top: 6px !important;
+    margin-top: 5px !important;
   }
   
   .social-link {
     padding: 2px 5px !important;
-    font-size: 5px !important;
+    font-size: 6px !important;
     border-radius: 8px !important;
     gap: 2px !important;
   }
   
   .social-link i {
-    font-size: 5px !important;
+    font-size: 6px !important;
   }
   
   .social-link span {
@@ -820,11 +790,11 @@
   }
   
   .social-link {
-    padding: 3px 6px !important;
+    padding: 2px 5px !important;
   }
   
   .social-link i {
-    font-size: 7px !important;
+    font-size: 8px !important;
     margin: 0 !important;
   }
 }
@@ -849,7 +819,6 @@
     left: 100% !important;
   }
   
-  /* Larger touch targets on mobile */
   .creator-section {
     touch-action: manipulation !important;
   }
