@@ -827,6 +827,126 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
+/* 35% SCALE MODE FOR MOBILE - ALL CONTROLS REDUCED TO 35% */
+/* ============================================ */
+.enhanced-video-controls.scale-35-percent {
+  padding: 7px 7px 4px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .controls-bar {
+  padding: 3px 6px !important;
+  gap: 4px !important;
+  border-radius: 14px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .control-btn {
+  width: 13px !important;
+  height: 13px !important;
+  font-size: 5px !important;
+  border-width: 0.35px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .play-pause-btn {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .time-display {
+  font-size: 5px !important;
+  min-width: 35px !important;
+  padding: 1.5px 3px !important;
+  border-radius: 10px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .progress-container {
+  height: 1.5px !important;
+  border-radius: 1px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .progress-container:hover {
+  height: 2px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .volume-bar {
+  width: 28px !important;
+  height: 1.5px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .volume-bar::-webkit-slider-thumb {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .volume-control {
+  gap: 3px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .settings-menu {
+  min-width: 77px !important;
+  max-width: 98px !important;
+  padding: 4px !important;
+  bottom: 18px !important;
+  right: 4px !important;
+  border-radius: 4px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .settings-section {
+  margin-bottom: 4px !important;
+  padding-bottom: 3.5px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .settings-section h4 {
+  font-size: 4px !important;
+  margin-bottom: 3px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .quality-options {
+  gap: 2px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .quality-option {
+  padding: 2px 3px !important;
+  font-size: 4px !important;
+  border-radius: 2px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .speed-options {
+  gap: 2px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .speed-option {
+  padding: 2px 2px !important;
+  font-size: 4px !important;
+  border-radius: 2px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .toggle-switch {
+  width: 15px !important;
+  height: 8px !important;
+  margin: 2px 0 1.5px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .toggle-slider {
+  border-radius: 8px !important;
+}
+
+.enhanced-video-controls.scale-35-percent .toggle-slider:before {
+  height: 6px !important;
+  width: 6px !important;
+  left: 1px !important;
+  bottom: 1px !important;
+}
+
+.enhanced-video-controls.scale-35-percent input:checked + .toggle-slider:before {
+  transform: translateX(7px) !important;
+}
+
+.enhanced-video-controls.scale-35-percent .toggle-description {
+  font-size: 3.5px !important;
+  max-width: 63px !important;
+}
+
+/* ============================================ */
 /* RESPONSIVE ADJUSTMENTS */
 /* ============================================ */
 @media (max-width: 768px) {
@@ -886,6 +1006,124 @@ input:checked + .toggle-slider:before {
   #initialPlayButton {
     padding: 14px 24px;
     font-size: 1rem;
+  }
+  
+  /* Apply 35% scale to mobile controls */
+  .enhanced-video-controls {
+    padding: 7px 7px 4px !important;
+  }
+  
+  .enhanced-video-controls .controls-bar {
+    padding: 3px 6px !important;
+    gap: 4px !important;
+    border-radius: 14px !important;
+  }
+  
+  .enhanced-video-controls .control-btn {
+    width: 13px !important;
+    height: 13px !important;
+    font-size: 5px !important;
+    border-width: 0.35px !important;
+  }
+  
+  .enhanced-video-controls .play-pause-btn {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  .enhanced-video-controls .time-display {
+    font-size: 5px !important;
+    min-width: 35px !important;
+    padding: 1.5px 3px !important;
+    border-radius: 10px !important;
+  }
+  
+  .enhanced-video-controls .progress-container {
+    height: 1.5px !important;
+    border-radius: 1px !important;
+  }
+  
+  .enhanced-video-controls .progress-container:hover {
+    height: 2px !important;
+  }
+  
+  .enhanced-video-controls .volume-bar {
+    width: 28px !important;
+    height: 1.5px !important;
+  }
+  
+  .enhanced-video-controls .volume-bar::-webkit-slider-thumb {
+    width: 4px !important;
+    height: 4px !important;
+  }
+  
+  .enhanced-video-controls .volume-control {
+    gap: 3px !important;
+  }
+  
+  .enhanced-video-controls .settings-menu {
+    min-width: 77px !important;
+    max-width: 98px !important;
+    padding: 4px !important;
+    bottom: 18px !important;
+    right: 4px !important;
+    border-radius: 4px !important;
+  }
+  
+  .enhanced-video-controls .settings-section {
+    margin-bottom: 4px !important;
+    padding-bottom: 3.5px !important;
+  }
+  
+  .enhanced-video-controls .settings-section h4 {
+    font-size: 4px !important;
+    margin-bottom: 3px !important;
+  }
+  
+  .enhanced-video-controls .quality-options {
+    gap: 2px !important;
+  }
+  
+  .enhanced-video-controls .quality-option {
+    padding: 2px 3px !important;
+    font-size: 4px !important;
+    border-radius: 2px !important;
+  }
+  
+  .enhanced-video-controls .speed-options {
+    gap: 2px !important;
+  }
+  
+  .enhanced-video-controls .speed-option {
+    padding: 2px 2px !important;
+    font-size: 4px !important;
+    border-radius: 2px !important;
+  }
+  
+  .enhanced-video-controls .toggle-switch {
+    width: 15px !important;
+    height: 8px !important;
+    margin: 2px 0 1.5px !important;
+  }
+  
+  .enhanced-video-controls .toggle-slider {
+    border-radius: 8px !important;
+  }
+  
+  .enhanced-video-controls .toggle-slider:before {
+    height: 6px !important;
+    width: 6px !important;
+    left: 1px !important;
+    bottom: 1px !important;
+  }
+  
+  .enhanced-video-controls input:checked + .toggle-slider:before {
+    transform: translateX(7px) !important;
+  }
+  
+  .enhanced-video-controls .toggle-description {
+    font-size: 3.5px !important;
+    max-width: 63px !important;
   }
 }
 
