@@ -514,7 +514,7 @@
 </section>
         
         <!-- ============================================ -->
-<!-- COMMENTS SECTION - FIXED STRUCTURE -->
+<!-- COMMENTS SECTION - COMPLETE FIXED STRUCTURE -->
 <!-- ============================================ -->
 <section class="comments-section">
     <!-- Header with title, sort, and refresh -->
@@ -543,7 +543,7 @@
         <a href="login.html?redirect=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>">Sign In</a>
     </div>
 
-    <!-- Add comment form - FIXED: Proper structure -->
+    <!-- Add comment form -->
     <div class="add-comment">
         <div class="comment-avatar" id="userCommentAvatar">
             <i class="fas fa-user"></i>
@@ -561,12 +561,12 @@
 
     <!-- Comments list -->
     <div class="comments-list" id="commentsList">
-        <!-- Loading skeleton will be shown here initially -->
+        <!-- Loading skeleton -->
         <div class="comments-loading" id="commentsLoading">
             <div class="spinner"></div>
             <p>Loading comments...</p>
         </div>
-        <!-- No comments state (hidden by default, shown when no comments) -->
+        <!-- No comments state -->
         <div class="no-comments" id="noComments" style="display: none;">
             <i class="fas fa-comment-slash"></i>
             <p>No comments yet. Be the first to comment!</p>
