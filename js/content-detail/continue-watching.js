@@ -13,6 +13,10 @@ console.log('🎬 Continue Watching Module Loading...');
  */
 async function loadContinueWatching(userId, limit = 8) {
     const section = document.getElementById('continueWatchingSection');
+    const skeleton = document.getElementById('continueSkeleton');
+    const grid = document.getElementById('continueGrid');
+    const empty = document.getElementById('continueEmpty');
+    
     if (!section) {
         console.warn('Continue watching section not found in DOM');
         return;
@@ -22,6 +26,11 @@ async function loadContinueWatching(userId, limit = 8) {
         section.style.display = 'none';
         return;
     }
+    
+    // Show skeleton
+    if (skeleton) skeleton.style.display = 'grid';
+    if (grid) grid.style.display = 'none';
+    if (empty) empty.style.display = 'none';
     
     try {
         const { data, error } = await window.supabaseClient
@@ -38,6 +47,7 @@ async function loadContinueWatching(userId, limit = 8) {
                     genre,
                     duration,
                     status,
+                    user_id,
                     user_profiles!user_id (
                         id,
                         full_name,
@@ -55,19 +65,27 @@ async function loadContinueWatching(userId, limit = 8) {
         
         if (error) throw error;
         
+        // Hide skeleton
+        if (skeleton) skeleton.style.display = 'none';
+        
         if (!data || data.length === 0) {
-            section.style.display = 'none';
+            section.style.display = 'block';
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = 'block';
             return;
         }
         
         renderContinueWatching(data);
         section.style.display = 'block';
+        if (grid) grid.style.display = 'grid';
+        if (empty) empty.style.display = 'none';
         
         console.log(`✅ Loaded ${data.length} continue watching items`);
         return data;
         
     } catch (error) {
         console.error('❌ Failed to load continue watching:', error);
+        if (skeleton) skeleton.style.display = 'none';
         section.style.display = 'none';
         return [];
     }
@@ -118,11 +136,17 @@ function renderContinueWatching(items) {
                     <div class="resume-badge">
                         <i class="fas fa-play"></i> Resume
                     </div>
+                    <div class="watch-time-indicator">
+                        <i class="fas fa-clock"></i>
+                        <span>${timeWatched} / ${totalTime}</span>
+                    </div>
                 </div>
                 <div class="card-content">
                     <h3 class="card-title">${window.truncateText(content.title, 45)}</h3>
-                    <div class="related-meta">
+                    <div class="progress-text">
+                        <i class="fas fa-play-circle"></i>
                         <span>${timeWatched} / ${totalTime}</span>
+                        <span class="percentage-badge">${progress}%</span>
                     </div>
                     <div class="creator-chip">
                         <i class="fas fa-user"></i>
@@ -170,7 +194,7 @@ function setupContinueWatchingRefresh() {
     // Listen for watch progress updates
     window.addEventListener('watch-progress-updated', () => {
         if (window.currentUserId) {
-            refreshContinueWatching(window.currentUserId);
+            setTimeout(() => refreshContinueWatching(window.currentUserId), 300);
         }
     });
     
@@ -181,7 +205,13 @@ function setupContinueWatchingRefresh() {
         }
     });
     
-    // Also refresh after auth state changes (handled by auth listener in orchestrator)
+    // Listen for auth changes
+    document.addEventListener('authStateChanged', () => {
+        if (window.currentUserId) {
+            setTimeout(() => refreshContinueWatching(window.currentUserId), 400);
+        }
+    });
+    
     console.log('✅ Continue watching refresh trigger setup');
 }
 
