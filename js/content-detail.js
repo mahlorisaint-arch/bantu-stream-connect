@@ -1,7 +1,6 @@
 // js/content-detail.js - MAIN ORCHESTRATOR
 // CLOUDFLARE STREAM & R2 INTEGRATION
-// FIXED: Correct module loading paths
-// FIXED: player.loadContent() called correctly
+// FIXED: Proper player initialization sequence
 // ============================================
 
 console.log('🎬 Content Detail Main Orchestrator Initializing... (Cloudflare Edition)');
@@ -91,6 +90,7 @@ window.currentContent = null;
 window.cloudflareStreamSDKLoaded = false;
 window.cloudflareStreamSDKLoading = false;
 window._modulesLoaded = false;
+window._playerInitialized = false;
 
 // Session tracking
 let currentSessionId = null;
@@ -1106,9 +1106,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
         if (window.currentPlaylistItems.length > 0) {
             await setCurrentContent(window.currentPlaylistItems[0], 0);
             // Load content into player via video-player-section
-            if (typeof window.loadContentIntoPlayer === 'function') {
-                await window.loadContentIntoPlayer(window.currentPlaylistItems[0]);
-            }
+            await loadContentIntoPlayer(window.currentPlaylistItems[0]);
         }
         
         if (typeof hideLoading === 'function') hideLoading();
@@ -1177,9 +1175,7 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     
     if (window.currentPlaylistItems.length > 0) {
         await setCurrentContent(window.currentPlaylistItems[0], 0);
-        if (typeof window.loadContentIntoPlayer === 'function') {
-            await window.loadContentIntoPlayer(window.currentPlaylistItems[0]);
-        }
+        await loadContentIntoPlayer(window.currentPlaylistItems[0]);
     }
     
     if (typeof hideLoading === 'function') hideLoading();
@@ -1218,9 +1214,7 @@ window.playNextPlaylistItem = async function() {
         window.currentPlaylistIndex = nextIndex;
         const nextItem = items[nextIndex];
         await setCurrentContent(nextItem, nextIndex);
-        if (typeof window.loadContentIntoPlayer === 'function') {
-            await window.loadContentIntoPlayer(nextItem);
-        }
+        await loadContentIntoPlayer(nextItem);
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
         }
@@ -1251,9 +1245,7 @@ window.playPlaylistItemByIndex = async function(index) {
         const item = window.currentPlaylistItems[index];
         window.currentPlaylistIndex = index;
         await setCurrentContent(item, index);
-        if (typeof window.loadContentIntoPlayer === 'function') {
-            await window.loadContentIntoPlayer(item);
-        }
+        await loadContentIntoPlayer(item);
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
         }
@@ -1267,6 +1259,38 @@ window.playPlaylistItemByIndex = async function(index) {
 function resetPlaylistCompletionLock() {
     window.playlistCompleting = false;
     window._isNavigatingToNext = false;
+}
+
+// ============================================
+// LOAD CONTENT INTO PLAYER - MAIN ENTRY POINT
+// ============================================
+
+async function loadContentIntoPlayer(content) {
+    console.log('📦 loadContentIntoPlayer called for content:', content?.id);
+    
+    if (!content) {
+        console.error('❌ No content provided');
+        return false;
+    }
+    
+    // Try to use video-player-section's method first
+    if (typeof window.loadContentIntoPlayer === 'function') {
+        console.log('🔄 Using video-player-section loadContentIntoPlayer');
+        return await window.loadContentIntoPlayer(content);
+    }
+    
+    // Fallback: try using enhancedVideoPlayer directly
+    if (window.enhancedVideoPlayer) {
+        const player = window.enhancedVideoPlayer;
+        if (typeof player.loadContent === 'function') {
+            console.log('🔄 Loading content directly into EnhancedVideoPlayer');
+            await player.loadContent(content);
+            return true;
+        }
+    }
+    
+    console.error('❌ No method available to load content into player');
+    return false;
 }
 
 // ============================================
@@ -1286,7 +1310,7 @@ const startPlaybackFromUserGesture = async () => {
         if (placeholder) placeholder.style.display = 'none';
         if (heroPoster) heroPoster.style.opacity = '0.3';
         
-        // Check if video-player-section has a method to handle playback
+        // Try using video-player-section's method first
         if (typeof window.startPlayback === 'function') {
             await window.startPlayback();
             return;
@@ -1295,6 +1319,13 @@ const startPlaybackFromUserGesture = async () => {
         // Fallback: try using enhancedVideoPlayer directly
         const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
         if (playerInstance) {
+            // If player doesn't have content loaded, load it
+            if (!playerInstance.content && window.currentContent) {
+                if (typeof playerInstance.loadContent === 'function') {
+                    await playerInstance.loadContent(window.currentContent);
+                }
+            }
+            
             if (typeof playerInstance.play === 'function') {
                 await playerInstance.play();
                 const overlay = document.getElementById('initialPlayOverlay');
@@ -1435,6 +1466,9 @@ async function loadCriticalContentData(contentId) {
             if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
                 await setCurrentContent(parsed);
                 refreshContentInBackground(contentId);
+                
+                // Load content into player
+                await loadContentIntoPlayer(parsed);
                 return;
             }
         } catch(e) { console.warn('Cache parse error:', e); }
@@ -1497,27 +1531,8 @@ async function loadCriticalContentData(contentId) {
     await setCurrentContent(contentObj);
     localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
     
-    // Initialize player with content via video-player-section
-    if (typeof window.initializeVideoPlayerSection === 'function') {
-        await window.initializeVideoPlayerSection();
-    } else {
-        // If not loaded yet, wait for it
-        console.log('⏳ Waiting for video-player-section to load...');
-        await new Promise((resolve) => {
-            const check = () => {
-                if (typeof window.initializeVideoPlayerSection === 'function') {
-                    resolve();
-                } else {
-                    setTimeout(check, 100);
-                }
-            };
-            check();
-            setTimeout(resolve, 5000);
-        });
-        if (typeof window.initializeVideoPlayerSection === 'function') {
-            await window.initializeVideoPlayerSection();
-        }
-    }
+    // Load content into player
+    await loadContentIntoPlayer(contentObj);
     
     if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed) {
         if (typeof addResumeButton === 'function') {
@@ -1584,10 +1599,7 @@ async function loadContentFromURLLegacy() {
         };
         
         await setCurrentContent(contentObj);
-        
-        if (typeof window.initializeVideoPlayerSection === 'function') {
-            await window.initializeVideoPlayerSection();
-        }
+        await loadContentIntoPlayer(contentObj);
         
         if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed && typeof addResumeButton === 'function') {
             addResumeButton(window.currentContent.watch_progress);
@@ -2510,6 +2522,7 @@ window.isCloudflareStreamContent = isCloudflareStreamContent;
 window.isCloudflareR2Content = isCloudflareR2Content;
 window.loadCloudflareStreamSDK = loadCloudflareStreamSDK;
 window.CloudflareStreamBridge = CloudflareStreamBridge;
+window.loadContentIntoPlayer = loadContentIntoPlayer;
 window._modulesLoaded = true;
 
 console.log('✅ Content Detail Main Orchestrator ready with Cloudflare integration');
