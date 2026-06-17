@@ -1,14 +1,7 @@
 // js/content-detail.js - MAIN ORCHESTRATOR
 // CLOUDFLARE STREAM & R2 INTEGRATION
-// FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS
-// FIXED: Theme selector conflict resolved, navigation icons properly aligned
-// PHASE 1 UPDATE: Watch Session Lifecycle Integration
-// PHASE 2 UPDATE: Watch Later & Playlist System Integration
-// PHASE 3 UPDATE: Complete Recommendation Engine Integration
-// PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration - COMPLETE
-// CLOUDFLARE UPDATE: Added streaming_provider and provider_video_id support
-// CLOUDFLARE UPDATE: Cloudflare Stream SDK dynamic loading
-// CLOUDFLARE UPDATE: R2 audio direct playback
+// FIXED: Correct module loading paths
+// FIXED: player.loadContent() called correctly
 // ============================================
 
 console.log('🎬 Content Detail Main Orchestrator Initializing... (Cloudflare Edition)');
@@ -19,10 +12,21 @@ console.log('🎬 Content Detail Main Orchestrator Initializing... (Cloudflare E
 
 function loadScript(src) {
     return new Promise((resolve, reject) => {
+        // Skip if script already loaded
+        const existingScript = document.querySelector(`script[src="${src}"]`);
+        if (existingScript) {
+            console.log(`⏭️ Script already loaded: ${src}`);
+            resolve();
+            return;
+        }
+        
         const script = document.createElement('script');
         script.src = src;
         script.onload = resolve;
-        script.onerror = reject;
+        script.onerror = () => {
+            console.error(`❌ Failed to load: ${src}`);
+            reject(new Error(`Failed to load: ${src}`));
+        };
         document.head.appendChild(script);
     });
 }
@@ -30,23 +34,45 @@ function loadScript(src) {
 async function loadAllModules() {
     console.log('📦 Loading section modules...');
     
-    await loadScript('js/content-detail/hero-section.js');
-    await loadScript('js/content-detail/creator-section.js');
-    await loadScript('js/content-detail/stats-grid.js');
-    await loadScript('js/content-detail/description-section.js');
-    await loadScript('js/content-detail/comments-section.js');
-    await loadScript('js/content-detail/continue-watching.js');
-    await loadScript('js/content-detail/because-you-watched.js');
-    await loadScript('js/content-detail/more-from-this-creator.js');
-    await loadScript('js/content-detail/related-content.js');
-    await loadScript('js/content-detail/playlist-queue.js');
-    await loadScript('js/content-detail/legacy-playlist.js');
-    await loadScript('js/content-detail/playlist-sidebar.js');
-    await loadScript('js/content-detail/video-player.js');
+    // Load all section modules (these are the UI components)
+    const modules = [
+        'js/content-detail/hero-section.js',
+        'js/content-detail/creator-section.js',
+        'js/content-detail/stats-grid.js',
+        'js/content-detail/description-section.js',
+        'js/content-detail/comments-section.js',
+        'js/content-detail/continue-watching.js',
+        'js/content-detail/because-you-watched.js',
+        'js/content-detail/more-from-this-creator.js',
+        'js/content-detail/related-content.js',
+        'js/content-detail/playlist-queue.js',
+        'js/content-detail/legacy-playlist.js',
+        'js/content-detail/playlist-sidebar.js',
+        'js/content-detail/video-player-section.js'  // ← This loads the section that uses the main player
+    ];
     
-    console.log('✅ All section modules loaded');
+    // Load each module with error handling
+    for (const module of modules) {
+        try {
+            await loadScript(module);
+        } catch (e) {
+            console.warn(`⚠️ Could not load ${module}:`, e.message);
+        }
+    }
+    
+    // Load the main video player engine LAST
+    try {
+        await loadScript('js/video-player.js');
+        console.log('✅ Video player engine loaded successfully');
+    } catch (e) {
+        console.error('❌ Failed to load video player engine:', e);
+    }
+    
+    console.log('✅ All modules loaded');
+    window._modulesLoaded = true;
 }
 
+// Start loading modules immediately
 loadAllModules().catch(console.warn);
 
 // ============================================
@@ -64,6 +90,7 @@ window.currentUserId = null;
 window.currentContent = null;
 window.cloudflareStreamSDKLoaded = false;
 window.cloudflareStreamSDKLoading = false;
+window._modulesLoaded = false;
 
 // Session tracking
 let currentSessionId = null;
@@ -99,7 +126,6 @@ function loadCloudflareStreamSDK() {
         }
         
         if (window.cloudflareStreamSDKLoading) {
-            // Wait for existing load
             const checkInterval = setInterval(() => {
                 if (window.Stream) {
                     clearInterval(checkInterval);
@@ -155,7 +181,6 @@ class CloudflareStreamBridge {
         try {
             await loadCloudflareStreamSDK();
             
-            // Create iframe wrapper
             const wrapper = document.createElement('div');
             wrapper.className = 'cloudflare-stream-wrapper';
             wrapper.style.cssText = 'position:relative;padding-top:56.25%;width:100%;height:0;';
@@ -170,14 +195,11 @@ class CloudflareStreamBridge {
             
             wrapper.appendChild(iframe);
             
-            // Replace video element with wrapper
             this.videoElement.parentNode.replaceChild(wrapper, this.videoElement);
             
-            // Initialize Stream SDK
             this.player = Stream(iframe);
             this.isInitialized = true;
             
-            // Setup event listeners
             this._setupEventListeners();
             
             console.log('✅ Cloudflare Stream player initialized for:', this.content.provider_video_id);
@@ -192,12 +214,10 @@ class CloudflareStreamBridge {
     _setupEventListeners() {
         if (!this.player) return;
         
-        // Time update - forward to our engagement system
         this.player.addEventListener('timeupdate', (e) => {
             const currentTime = this.player.currentTime;
             const duration = this.player.duration || 0;
             
-            // Emit custom event for our watch session
             window.dispatchEvent(new CustomEvent('cloudflare:timeupdate', {
                 detail: {
                     currentTime: currentTime,
@@ -208,11 +228,9 @@ class CloudflareStreamBridge {
             }));
         });
         
-        // Ended - trigger our playlist progression
         this.player.addEventListener('ended', () => {
             console.log('🏁 Cloudflare Stream ended - triggering playlist progression');
             
-            // Emit ended event for our system
             window.dispatchEvent(new CustomEvent('cloudflare:ended', {
                 detail: {
                     contentId: this.content.id,
@@ -220,27 +238,23 @@ class CloudflareStreamBridge {
                 }
             }));
             
-            // Direct call to playlist progression
             if (typeof window.playNextPlaylistItem === 'function') {
                 window.playNextPlaylistItem();
             }
         });
         
-        // Play event
         this.player.addEventListener('play', () => {
             window.dispatchEvent(new CustomEvent('cloudflare:play', {
                 detail: { contentId: this.content.id }
             }));
         });
         
-        // Pause event
         this.player.addEventListener('pause', () => {
             window.dispatchEvent(new CustomEvent('cloudflare:pause', {
                 detail: { contentId: this.content.id }
             }));
         });
         
-        // Progress event
         this.player.addEventListener('progress', () => {
             const buffered = this.player.buffered;
             if (buffered && buffered.length > 0) {
@@ -253,7 +267,6 @@ class CloudflareStreamBridge {
             }
         });
         
-        // Error event
         this.player.addEventListener('error', (e) => {
             console.error('❌ Cloudflare Stream error:', e);
             window.dispatchEvent(new CustomEvent('cloudflare:error', {
@@ -320,7 +333,7 @@ class CloudflareStreamBridge {
 }
 
 // ============================================
-// ENGAGEMENT SYSTEM FUNCTIONS (Core)
+// ENGAGEMENT SYSTEM FUNCTIONS
 // ============================================
 
 async function recordContentViewRPC(contentId, userId, sessionId, deviceType = 'web') {
@@ -413,17 +426,14 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
 function getPlayableMediaUrl(content) {
     if (!content) return null;
     
-    // Cloudflare Stream - video
     if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
         return `https://iframe.videodelivery.net/${content.provider_video_id}`;
     }
     
-    // Cloudflare R2 - audio
     if (content.streaming_provider === 'cloudflare_r2' && content.file_url) {
         return content.file_url;
     }
     
-    // Fallback - direct file URL
     if (content.file_url) {
         return content.file_url;
     }
@@ -604,7 +614,6 @@ async function setCurrentContent(content, index = null) {
         updateContentUI(content);
     }
     
-    // Update Cloudflare provider badge
     updateProviderBadge(content);
     
     if (window.currentUserId && content.id) {
@@ -623,6 +632,11 @@ async function setCurrentContent(content, index = null) {
             console.error('❌ Count load failed:', error);
         }
     }, 100);
+    
+    // Dispatch event for video-player-section to pick up
+    window.dispatchEvent(new CustomEvent('contentChanged', {
+        detail: { content: content }
+    }));
 }
 
 function updateProviderBadge(content) {
@@ -892,7 +906,6 @@ class WatchSessionManager {
             
             let currentTime = 0;
             
-            // Check if this is Cloudflare Stream player
             if (this._playerInstance && typeof this._playerInstance.getCurrentTime === 'function') {
                 currentTime = this._playerInstance.getCurrentTime();
             } else if (videoElement) {
@@ -1092,8 +1105,9 @@ async function loadPlaylistMode(playlistId, playlistType) {
         
         if (window.currentPlaylistItems.length > 0) {
             await setCurrentContent(window.currentPlaylistItems[0], 0);
-            if (typeof loadContentIntoPlayer === 'function') {
-                await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+            // Load content into player via video-player-section
+            if (typeof window.loadContentIntoPlayer === 'function') {
+                await window.loadContentIntoPlayer(window.currentPlaylistItems[0]);
             }
         }
         
@@ -1163,8 +1177,8 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     
     if (window.currentPlaylistItems.length > 0) {
         await setCurrentContent(window.currentPlaylistItems[0], 0);
-        if (typeof loadContentIntoPlayer === 'function') {
-            await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+        if (typeof window.loadContentIntoPlayer === 'function') {
+            await window.loadContentIntoPlayer(window.currentPlaylistItems[0]);
         }
     }
     
@@ -1204,8 +1218,8 @@ window.playNextPlaylistItem = async function() {
         window.currentPlaylistIndex = nextIndex;
         const nextItem = items[nextIndex];
         await setCurrentContent(nextItem, nextIndex);
-        if (typeof loadContentIntoPlayer === 'function') {
-            await loadContentIntoPlayer(nextItem, nextIndex);
+        if (typeof window.loadContentIntoPlayer === 'function') {
+            await window.loadContentIntoPlayer(nextItem);
         }
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
@@ -1237,8 +1251,8 @@ window.playPlaylistItemByIndex = async function(index) {
         const item = window.currentPlaylistItems[index];
         window.currentPlaylistIndex = index;
         await setCurrentContent(item, index);
-        if (typeof loadContentIntoPlayer === 'function') {
-            await loadContentIntoPlayer(item);
+        if (typeof window.loadContentIntoPlayer === 'function') {
+            await window.loadContentIntoPlayer(item);
         }
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
@@ -1272,54 +1286,29 @@ const startPlaybackFromUserGesture = async () => {
         if (placeholder) placeholder.style.display = 'none';
         if (heroPoster) heroPoster.style.opacity = '0.3';
         
-        const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
-        if (!playerInstance) {
-            console.error('❌ Player instance not found.');
+        // Check if video-player-section has a method to handle playback
+        if (typeof window.startPlayback === 'function') {
+            await window.startPlayback();
             return;
         }
         
-        // Check if this is Cloudflare Stream content
-        if (isCloudflareStreamContent(window.currentContent)) {
-            if (playerInstance.isCloudflareStream && typeof playerInstance.play === 'function') {
+        // Fallback: try using enhancedVideoPlayer directly
+        const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
+        if (playerInstance) {
+            if (typeof playerInstance.play === 'function') {
                 await playerInstance.play();
-            } else {
-                // Re-initialize with Cloudflare Stream
-                await playerInstance.loadContent(window.currentContent);
-                await playerInstance.play();
-            }
-        } else {
-            // Standard video/audio
-            const video = playerInstance.video;
-            if (!video) {
-                console.error('❌ Video element not found.');
+                const overlay = document.getElementById('initialPlayOverlay');
+                if (overlay) overlay.classList.add('hidden');
+                if (window.currentContent?.id && !watchSession) {
+                    initializeWatchSessionOnPlay();
+                }
                 return;
             }
-            
-            if (!video.src && !window.isPlaylistMode && window.currentContent?.file_url) {
-                const fileUrl = getPlayableMediaUrl(window.currentContent);
-                if (fileUrl) {
-                    video.src = fileUrl;
-                    video.load();
-                }
-            }
-            
-            video.muted = false;
-            video.volume = 1.0;
-            window.userHasInteractedWithMedia = true;
-            document.body.classList.add('user-interacted');
-            
-            await video.play().catch(async (err) => {
-                console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
-                video.muted = true;
-                await video.play();
-            });
         }
         
-        const overlay = document.getElementById('initialPlayOverlay');
-        if (overlay) overlay.classList.add('hidden');
-        
-        if (window.currentContent?.id && !watchSession) {
-            initializeWatchSessionOnPlay();
+        console.error('❌ No playback method available');
+        if (typeof showToast === 'function') {
+            showToast('Unable to start playback. Please try again.', 'error');
         }
         
     } catch (error) {
@@ -1346,7 +1335,6 @@ function initializeWatchSessionOnPlay() {
         watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
         watchSession.initializeSession('Web', 'Desktop');
         
-        // Check if using Cloudflare Stream
         if (player.isCloudflareStream) {
             watchSession.start(null, player);
         } else if (player.video) {
@@ -1509,9 +1497,26 @@ async function loadCriticalContentData(contentId) {
     await setCurrentContent(contentObj);
     localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
     
-    // Initialize player with content
-    if (typeof initializeCloudflarePlayer === 'function') {
-        await initializeCloudflarePlayer(contentObj);
+    // Initialize player with content via video-player-section
+    if (typeof window.initializeVideoPlayerSection === 'function') {
+        await window.initializeVideoPlayerSection();
+    } else {
+        // If not loaded yet, wait for it
+        console.log('⏳ Waiting for video-player-section to load...');
+        await new Promise((resolve) => {
+            const check = () => {
+                if (typeof window.initializeVideoPlayerSection === 'function') {
+                    resolve();
+                } else {
+                    setTimeout(check, 100);
+                }
+            };
+            check();
+            setTimeout(resolve, 5000);
+        });
+        if (typeof window.initializeVideoPlayerSection === 'function') {
+            await window.initializeVideoPlayerSection();
+        }
     }
     
     if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed) {
@@ -1580,9 +1585,8 @@ async function loadContentFromURLLegacy() {
         
         await setCurrentContent(contentObj);
         
-        // Initialize player with content
-        if (typeof initializeCloudflarePlayer === 'function') {
-            await initializeCloudflarePlayer(contentObj);
+        if (typeof window.initializeVideoPlayerSection === 'function') {
+            await window.initializeVideoPlayerSection();
         }
         
         if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed && typeof addResumeButton === 'function') {
@@ -1635,56 +1639,6 @@ async function loadSecondaryContentDataForPlaylist() {
             window.currentUserId && typeof loadContinueWatching === 'function' ? loadContinueWatching(window.currentUserId) : Promise.resolve(),
             window.currentUserId && window.PlaylistManager && !playlistManager && typeof initializePlaylistManager === 'function' ? initializePlaylistManager() : Promise.resolve()
         ]).catch(err => console.warn('⚠️ Playlist secondary data load failed:', err));
-    }
-}
-
-// ============================================
-// CLOUDFLARE PLAYER INITIALIZATION
-// ============================================
-
-async function initializeCloudflarePlayer(content) {
-    if (!content) return;
-    
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    if (!videoElement) {
-        console.warn('Video element not found, retrying...');
-        setTimeout(() => initializeCloudflarePlayer(content), 300);
-        return;
-    }
-    
-    // Check if we already have a player instance
-    if (enhancedVideoPlayer) {
-        // Update content and reload
-        await enhancedVideoPlayer.loadContent(content);
-        return;
-    }
-    
-    // Initialize new player
-    if (window.EnhancedVideoPlayer) {
-        try {
-            const playerConfig = {
-                contentId: content.id,
-                content: content,
-                userId: window.currentUserId,
-                autoplay: false,
-                muted: true
-            };
-            
-            enhancedVideoPlayer = new window.EnhancedVideoPlayer(playerConfig);
-            await enhancedVideoPlayer.attach(videoElement, videoElement.parentElement, {
-                contentId: content.id,
-                content: content
-            });
-            
-            window.enhancedVideoPlayer = enhancedVideoPlayer;
-            
-            console.log('✅ Cloudflare player initialized for:', content.id);
-        } catch (error) {
-            console.error('❌ Failed to initialize Cloudflare player:', error);
-        }
-    } else {
-        console.warn('EnhancedVideoPlayer not loaded, waiting...');
-        setTimeout(() => initializeCloudflarePlayer(content), 500);
     }
 }
 
@@ -2179,10 +2133,7 @@ function setupEventListeners() {
         });
     }
     
-    // Setup player ended listener
     setupPlayerEndedListener();
-    
-    // Setup Cloudflare Stream event listeners
     setupCloudflareStreamListeners();
     
     console.log('✅ All event listeners setup complete');
@@ -2206,28 +2157,15 @@ function setupPlayerEndedListener() {
 }
 
 function setupCloudflareStreamListeners() {
-    // Listen for Cloudflare Stream events and bridge them to our system
-    
-    // Timeupdate -> Watch session heartbeat
     document.addEventListener('cloudflare:timeupdate', (event) => {
         const { currentTime, duration, contentId, progressPercent } = event.detail;
         
-        // Update video element proxy for compatibility
-        const videoProxy = {
-            currentTime: currentTime,
-            duration: duration
-        };
-        
-        // Trigger watch session heartbeat if active
         if (watchSession && watchSession.isActive) {
-            // The watch session handles its own heartbeat interval
-            // We just need to make sure the current time is available
             if (watchSession._playerInstance) {
                 watchSession._playerInstance._lastKnownTime = currentTime;
             }
         }
         
-        // Check view threshold for recording
         if (!watchSession?.viewRecorded && duration > 0) {
             const thirtyPercentDuration = duration * 0.3;
             const thresholdSeconds = Math.min(15, thirtyPercentDuration);
@@ -2239,11 +2177,9 @@ function setupCloudflareStreamListeners() {
         }
     });
     
-    // Ended -> Playlist progression
     document.addEventListener('cloudflare:ended', (event) => {
         console.log('🏁 Cloudflare Stream ended event received');
         if (typeof window.playNextPlaylistItem === 'function') {
-            // Small delay to ensure any cleanup happens
             setTimeout(() => {
                 window.playNextPlaylistItem();
             }, 100);
@@ -2259,6 +2195,19 @@ function setupCloudflareStreamListeners() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🎬 Content Detail: Starting optimized load sequence... (Cloudflare Edition)');
+    
+    // Wait for modules to load
+    await new Promise((resolve) => {
+        const check = () => {
+            if (window._modulesLoaded) {
+                resolve();
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
+        setTimeout(resolve, 8000);
+    });
     
     const skeleton = document.getElementById('content-skeleton');
     const loadingScreen = document.getElementById('loading');
@@ -2352,16 +2301,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.ContentCollectionsEngine.initialize(window.currentContent);
         }
         
-        if (!window.isPlaylistMode && window.currentContent?.id) {
-            setTimeout(() => {
-                const player = document.getElementById('inlinePlayer');
-                const video = document.getElementById('inlineVideoPlayer');
-                if (player && video && !window.enhancedVideoPlayer && typeof initializeEnhancedVideoPlayer === 'function') {
-                    initializeEnhancedVideoPlayer();
-                }
-            }, 300);
-        }
-        
         // Initialize Cloudflare Stream SDK preload
         if (window.currentContent?.streaming_provider === 'cloudflare_stream') {
             loadCloudflareStreamSDK().catch(() => {
@@ -2388,7 +2327,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (window.currentContent?.id) {
             loadSecondaryContentData(window.currentContent.id);
         }
-        if (typeof initializeVideoPlayerSkeleton === 'function') initializeVideoPlayerSkeleton();
     }, { timeout: 2000 });
     
     setTimeout(() => {
@@ -2572,6 +2510,6 @@ window.isCloudflareStreamContent = isCloudflareStreamContent;
 window.isCloudflareR2Content = isCloudflareR2Content;
 window.loadCloudflareStreamSDK = loadCloudflareStreamSDK;
 window.CloudflareStreamBridge = CloudflareStreamBridge;
-window.initializeCloudflarePlayer = initializeCloudflarePlayer;
+window._modulesLoaded = true;
 
 console.log('✅ Content Detail Main Orchestrator ready with Cloudflare integration');
