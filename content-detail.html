@@ -572,7 +572,58 @@
     </div>
 </section>
 
-        <section class="continue-watching-section" id="continueWatchingSection" style="display:none;"><div class="section-header"><h2 class="section-title">Continue Watching</h2><button class="refresh-btn" id="refreshContinueBtn" type="button"><i class="fas fa-redo"></i></button></div><div class="content-grid" id="continueGrid"></div></section>
+       <!-- ============================================ -->
+<!-- CONTINUE WATCHING SECTION - COMPLETE -->
+<!-- ============================================ -->
+<section class="continue-watching-section" id="continueWatchingSection" style="display: none;">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-history"></i>
+            Continue Watching
+        </h2>
+        <a href="watch-history.html" class="view-all-link">
+            View All <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    <!-- Continue watching grid -->
+    <div class="continue-grid" id="continueGrid"></div>
+    <!-- Empty state (hidden by default) -->
+    <div class="continue-watching-empty" id="continueEmpty" style="display: none;">
+        <i class="fas fa-play-circle"></i>
+        <h3>Nothing to Continue</h3>
+        <p>Start watching something and it will appear here.</p>
+        <a href="index.html" class="browse-btn">
+            <i class="fas fa-compass"></i> Browse Content
+        </a>
+    </div>
+    <!-- Skeleton loading state -->
+    <div class="continue-skeleton-grid" id="continueSkeleton" style="display: none;">
+        <div class="continue-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-progress"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="continue-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-progress"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="continue-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-progress"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="continue-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-progress"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+    </div>
+</section>
 
         <section class="related-section" id="becauseYouWatchedRail" style="display:none;"></section>
         <section class="related-section" id="moreFromCreatorRail" style="display:none;"></section>
