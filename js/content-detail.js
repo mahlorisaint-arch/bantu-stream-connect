@@ -160,6 +160,11 @@
 // - Added streaming_provider and provider_video_id to content fetching
 // - Supports Cloudflare Stream (HLS) and Cloudflare R2 (audio)
 // ============================================
+// 🔧 MODULE LOADING FIX (2026-06-18):
+// - Removed non-existent video-player.js loading
+// - Added module loading guard to prevent duplicate declarations
+// - Video player already loaded via js/video-player.js and js/content-detail/video-player-section.js
+// ============================================
 
 console.log('🎬 Content Detail Main Orchestrator Initializing...');
 
@@ -168,16 +173,41 @@ console.log('🎬 Content Detail Main Orchestrator Initializing...');
 // The order matters for function availability
 // ============================================
 
-// First, load utility modules that don't depend on others
-// (These are loaded dynamically - they will attach to window)
+// Track loaded modules to prevent duplicate loading
+const _loadedModules = new Set();
 
-// Helper function to dynamically load scripts
+// Helper function to dynamically load scripts with duplicate prevention
 function loadScript(src) {
+    // Check if this module is already loading or loaded
+    if (_loadedModules.has(src)) {
+        console.log(`⏭️ Module already loaded: ${src}`);
+        return Promise.resolve();
+    }
+    
+    // Mark as loading to prevent duplicates
+    _loadedModules.add(src);
+    
     return new Promise((resolve, reject) => {
+        // Check if script already exists in DOM
+        const existingScript = document.querySelector(`script[src="${src}"]`);
+        if (existingScript) {
+            console.log(`⏭️ Script already in DOM: ${src}`);
+            resolve();
+            return;
+        }
+        
         const script = document.createElement('script');
         script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
+        script.onload = () => {
+            console.log(`✅ Loaded: ${src}`);
+            resolve();
+        };
+        script.onerror = () => {
+            console.error(`❌ Failed to load: ${src}`);
+            // Remove from loaded set so we can retry if needed
+            _loadedModules.delete(src);
+            reject(new Error(`Failed to load script: ${src}`));
+        };
         document.head.appendChild(script);
     });
 }
@@ -206,14 +236,19 @@ async function loadAllModules() {
     await loadScript('js/content-detail/legacy-playlist.js');
     await loadScript('js/content-detail/playlist-sidebar.js');
     
-    // Video player (loads last due to complexity)
-    await loadScript('js/content-detail/video-player.js');
+    // 🎯 VIDEO PLAYER - Already loaded globally via js/video-player.js
+    // The section module below contains the player implementation
+    // DO NOT load js/content-detail/video-player.js - it doesn't exist
+    console.log('📺 Video player already loaded globally, loading section module...');
+    await loadScript('js/content-detail/video-player-section.js');
     
     console.log('✅ All section modules loaded');
 }
 
-// Start loading modules immediately
-loadAllModules().catch(console.warn);
+// Start loading modules immediately, but catch errors gracefully
+loadAllModules().catch(err => {
+    console.warn('⚠️ Module loading warning (non-critical):', err.message);
+});
 
 // ============================================
 // GLOBAL VARIABLES (Maintained from original)
@@ -1146,7 +1181,7 @@ const startPlaybackFromUserGesture = async () => {
         
         const video = playerInstance.video;
         
-        if (!video.src && !window.isPlaylistMode && window.currentContent?.file_url) {
+        if (!video.src && !window.isPlaylistMode && window.currentContent) {
             const fileUrl = getPlayableMediaUrl(window.currentContent);
             if (fileUrl) {
                 video.src = fileUrl;
