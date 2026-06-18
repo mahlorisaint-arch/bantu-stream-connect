@@ -7,6 +7,11 @@
  * - connector_id: the user who is following
  * - connected_id: the user being followed (creator)
  * - connection_type = 'creator' for creator follows
+ * 
+ * UPDATED: Cloudflare Stream/R2 video support
+ * UPDATED: View recording for hero content
+ * UPDATED: Proper audio control with volume persistence
+ * UPDATED: Video source detection using getPlayableMediaUrl pattern
  */
 
 (function() {
@@ -23,7 +28,10 @@
             rotationHours: 3,
             rotationMs: 3 * 60 * 60 * 1000,
             videoFormats: ['video', 'movie', 'film', 'series_episode', 'short', 'music_video', 'documentary', 'long_form'],
-            videoExtensions: ['.mp4', '.webm', '.mov', '.avi', '.m4v', '.mkv']
+            videoExtensions: ['.mp4', '.webm', '.mov', '.avi', '.m4v', '.mkv', '.m3u8'],
+            // View recording threshold (15 seconds or 30% of duration)
+            viewThresholdSeconds: 15,
+            viewPercentage: 0.3
         },
         
         // State
@@ -31,7 +39,14 @@
             initialized: false,
             isLoading: false,
             currentContent: null,
-            rotationInterval: null
+            rotationInterval: null,
+            viewRecorded: false,
+            viewTimer: null,
+            playbackSessionId: null,
+            sessionId: null,
+            isMuted: true,
+            isPlaying: false,
+            hasUserInteracted: false
         },
         
         // DOM Elements
@@ -113,6 +128,42 @@
                 });
             }
             
+            // Click on hero to play/pause
+            if (this.elements.heroSection) {
+                this.elements.heroSection.addEventListener('click', (e) => {
+                    // Don't trigger if clicking on controls or buttons
+                    if (e.target.closest('.hero-audio-control') || 
+                        e.target.closest('.hero-explore-btn') || 
+                        e.target.closest('.hero-watch-btn') ||
+                        e.target.closest('.hero-video-play-btn')) {
+                        return;
+                    }
+                    this.togglePlayback();
+                });
+            }
+            
+            // Video events for view tracking
+            if (this.elements.heroVideo) {
+                this.elements.heroVideo.addEventListener('timeupdate', () => {
+                    this.checkAndRecordView();
+                });
+                
+                this.elements.heroVideo.addEventListener('play', () => {
+                    this.state.isPlaying = true;
+                    this.startViewTimer();
+                });
+                
+                this.elements.heroVideo.addEventListener('pause', () => {
+                    this.state.isPlaying = false;
+                    this.clearViewTimer();
+                });
+                
+                this.elements.heroVideo.addEventListener('ended', () => {
+                    this.state.isPlaying = false;
+                    this.clearViewTimer();
+                });
+            }
+            
             this.setupAudioControl();
         },
         
@@ -136,7 +187,7 @@
                 
                 console.log('✅ [HERO-LOAD] supabaseAuth is available');
                 
-                // Fetch published content with video files
+                // Fetch published content with video files including Cloudflare fields
                 const { data: allContent, error } = await window.supabaseAuth
                     .from('Content')
                     .select(`
@@ -152,7 +203,9 @@
                         content_format,
                         content_type,
                         duration,
-                        user_id, 
+                        user_id,
+                        streaming_provider,
+                        provider_video_id,
                         user_profiles!user_id(id, full_name, username, avatar_url)
                     `)
                     .eq('status', 'published')
@@ -173,8 +226,17 @@
                 
                 console.log(`📊 [HERO-LOAD] Fetched ${allContent.length} total content items`);
                 
-                // Filter for video content
+                // Filter for video content (including Cloudflare Stream)
                 const videoContent = allContent.filter(item => {
+                    // Cloudflare Stream is always video
+                    if (item.streaming_provider === 'cloudflare_stream') {
+                        return true;
+                    }
+                    // Cloudflare R2 is audio, skip for hero (we want video)
+                    if (item.streaming_provider === 'cloudflare_r2') {
+                        return false;
+                    }
+                    // Check content_format
                     if (item.content_format && this.config.videoFormats.includes(item.content_format.toLowerCase())) {
                         return true;
                     }
@@ -226,6 +288,9 @@
                     console.log(`🎬 [HERO-LOAD] Selected NEW random video: "${selectedVideo.title}" (index: ${randomIndex} of ${availableVideos.length})`);
                 }
                 
+                // Generate session ID
+                this.state.sessionId = 'hero_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+                
                 // Fetch engagement stats and connectors count
                 await this.fetchEngagementData(selectedVideo);
                 
@@ -246,6 +311,36 @@
             }
         },
         
+        /**
+         * Get playable media URL for hero video
+         * Supports Cloudflare Stream (HLS) and legacy file_url
+         */
+        getPlayableMediaUrl(content) {
+            if (!content) return null;
+            
+            // Cloudflare Stream Video - Return HLS manifest URL
+            if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
+                const videoId = content.provider_video_id;
+                return `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+            }
+            
+            // Cloudflare R2 Audio - Skip for hero (we want video)
+            if (content.streaming_provider === 'cloudflare_r2') {
+                return null;
+            }
+            
+            // Legacy fallback: file_url
+            if (content.file_url) {
+                let url = content.file_url;
+                if (!url.startsWith('http')) {
+                    url = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${url.replace(/^\/+/, '')}`;
+                }
+                return url;
+            }
+            
+            return null;
+        },
+        
         async fetchEngagementData(content) {
             if (!content || !window.supabaseAuth) return;
             
@@ -263,7 +358,17 @@
                     content.total_shares = data.total_shares || 0;
                     console.log(`📊 [HERO-STATS] Stats: ${content.total_views} views, ${content.total_likes} likes`);
                 } else {
-                    content.total_views = 0;
+                    // Fallback to content_views count
+                    try {
+                        const { count } = await window.supabaseAuth
+                            .from('content_views')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('content_id', content.id)
+                            .eq('counted_as_view', true);
+                        content.total_views = count || 0;
+                    } catch {
+                        content.total_views = 0;
+                    }
                     content.total_likes = 0;
                     content.total_shares = 0;
                 }
@@ -274,11 +379,7 @@
                 content.total_shares = 0;
             }
             
-            // FIXED: Fetch connectors count for the creator
-            // In connectors table:
-            // - connector_id: the user who is FOLLOWING
-            // - connected_id: the user being FOLLOWED (the creator)
-            // - connection_type = 'creator'
+            // Fetch connectors count for the creator
             if (content.user_id) {
                 try {
                     const { count, error: connError } = await window.supabaseAuth
@@ -313,6 +414,8 @@
             }
             
             this.state.currentContent = content;
+            this.state.viewRecorded = false;
+            this.state.playbackSessionId = null;
             
             // Update text
             this.updateText(content);
@@ -382,7 +485,6 @@
         updateMetrics(content) {
             const views = this.formatNumber(content.total_views || 0);
             const favorites = this.formatNumber(content.favorites_count || 0);
-            // FIXED: Use the connector_count we fetched
             const connectors = this.formatNumber(content.connector_count || 0);
             const shares = this.formatNumber(content.total_shares || 0);
             
@@ -421,7 +523,8 @@
                 return;
             }
             
-            let videoUrl = content.file_url;
+            // Use the getPlayableMediaUrl method
+            let videoUrl = this.getPlayableMediaUrl(content);
             
             if (!videoUrl) {
                 console.warn(`⚠️ [HERO-VIDEO] No video URL for content: ${content.title}`);
@@ -436,26 +539,63 @@
                 return;
             }
             
-            // Fix URL
-            if (!videoUrl.startsWith('http')) {
-                videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl.replace(/^\/+/, '')}`;
-            }
+            const isCloudflareStream = content.streaming_provider === 'cloudflare_stream';
             
             console.log(`🎬 [HERO-VIDEO] Loading video: ${videoUrl.substring(0, 80)}...`);
+            console.log(`🎬 [HERO-VIDEO] Cloudflare Stream: ${isCloudflareStream}`);
             
             // Reset video
             this.elements.heroVideo.pause();
+            this.state.isPlaying = false;
+            
+            // For Cloudflare Stream, set the video source to the HLS manifest
+            // HTML5 video can handle HLS natively in Safari, but needs hls.js for others
             this.elements.videoSource.src = videoUrl;
+            
+            // Set appropriate type for HLS
+            if (isCloudflareStream || videoUrl.endsWith('.m3u8')) {
+                this.elements.videoSource.type = 'application/vnd.apple.mpegurl';
+                console.log('📺 [HERO-VIDEO] HLS manifest detected, type set to application/vnd.apple.mpegurl');
+            } else {
+                // Determine MIME type from extension
+                const ext = videoUrl.split('.').pop()?.toLowerCase();
+                const mimeTypes = {
+                    'mp4': 'video/mp4',
+                    'webm': 'video/webm',
+                    'mov': 'video/quicktime',
+                    'avi': 'video/x-msvideo',
+                    'mkv': 'video/x-matroska'
+                };
+                this.elements.videoSource.type = mimeTypes[ext] || 'video/mp4';
+            }
+            
             this.elements.heroVideo.load();
+            
+            // Apply muted state from localStorage
+            const savedMuted = localStorage.getItem('hero_audio_muted');
+            if (savedMuted !== null) {
+                this.state.isMuted = savedMuted === 'true';
+            } else {
+                this.state.isMuted = true; // Default muted for autoplay
+            }
+            this.elements.heroVideo.muted = this.state.isMuted;
+            
+            // Update audio control button
+            if (this.elements.heroAudioControl) {
+                this.elements.heroAudioControl.innerHTML = this.state.isMuted ? 
+                    '<i class="fas fa-volume-mute"></i>' : 
+                    '<i class="fas fa-volume-up"></i>';
+            }
             
             // Try to play
             const playPromise = this.elements.heroVideo.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
                     console.log('✅ [HERO-VIDEO] Video playing successfully');
-                    if (this.elements.heroAudioControl) {
-                        this.elements.heroAudioControl.innerHTML = '<i class="fas fa-volume-mute"></i>';
-                    }
+                    this.state.isPlaying = true;
+                    this.startViewTimer();
+                    // Initialize playback session
+                    this.initializePlaybackSession(content);
                 }).catch(error => {
                     console.log('⚠️ [HERO-VIDEO] Autoplay prevented:', error.message);
                     this.showPlayButton();
@@ -464,7 +604,10 @@
             
             // Handle errors
             this.elements.heroVideo.onerror = (e) => {
-                console.error('❌ [HERO-VIDEO] Video failed to load');
+                const video = e.target;
+                console.error('❌ [HERO-VIDEO] Video failed to load:', video.error?.message || 'Unknown error');
+                
+                // Try fallback with thumbnail
                 if (content.thumbnail_url) {
                     let thumbUrl = content.thumbnail_url;
                     if (!thumbUrl.startsWith('http')) {
@@ -476,25 +619,93 @@
             };
         },
         
+        /**
+         * Initialize playback session for view tracking
+         */
+        initializePlaybackSession(content) {
+            if (!content || !window.supabaseAuth) return;
+            
+            // Generate session ID if not exists
+            if (!this.state.playbackSessionId) {
+                this.state.playbackSessionId = 'hero_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            const userId = this.getCurrentUserId();
+            
+            // Try to create playback session record
+            window.supabaseAuth
+                .from('playback_sessions')
+                .insert({
+                    playback_session_id: this.state.playbackSessionId,
+                    content_id: parseInt(content.id, 10),
+                    user_id: userId || null,
+                    session_id: this.state.sessionId,
+                    platform: 'Web',
+                    device_type: this.getDeviceType(),
+                    started_at: new Date().toISOString(),
+                    media_type: 'video'
+                })
+                .then(({ error }) => {
+                    if (error) {
+                        console.warn('⚠️ [HERO-SESSION] Playback session creation failed:', error.message);
+                    } else {
+                        console.log('🎬 [HERO-SESSION] Playback session initialized:', this.state.playbackSessionId);
+                    }
+                });
+        },
+        
         showPlayButton() {
             if (!this.elements.heroSection) return;
-            if (this.elements.heroSection.querySelector('.hero-video-play-btn')) return;
+            
+            // Remove existing play button
+            const existingBtn = this.elements.heroSection.querySelector('.hero-video-play-btn');
+            if (existingBtn) existingBtn.remove();
             
             const playBtn = document.createElement('button');
             playBtn.className = 'hero-video-play-btn';
             playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            playBtn.onclick = () => {
-                if (this.elements.heroVideo) {
-                    this.elements.heroVideo.play().catch(console.log);
-                    playBtn.remove();
-                }
+            playBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.togglePlayback();
+                playBtn.remove();
             };
             
             this.elements.heroSection.appendChild(playBtn);
             
+            // Auto-hide after 5 seconds if still not playing
             setTimeout(() => {
-                if (playBtn.parentNode) playBtn.remove();
+                if (playBtn.parentNode && !this.state.isPlaying) {
+                    playBtn.remove();
+                }
             }, 5000);
+        },
+        
+        togglePlayback() {
+            if (!this.elements.heroVideo) return;
+            
+            this.state.hasUserInteracted = true;
+            
+            if (this.state.isPlaying) {
+                this.elements.heroVideo.pause();
+                this.state.isPlaying = false;
+                this.clearViewTimer();
+            } else {
+                const playPromise = this.elements.heroVideo.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        this.state.isPlaying = true;
+                        this.startViewTimer();
+                        // Initialize playback session if not already done
+                        if (!this.state.playbackSessionId && this.state.currentContent) {
+                            this.initializePlaybackSession(this.state.currentContent);
+                        }
+                    }).catch(error => {
+                        console.warn('⚠️ [HERO-VIDEO] Play failed:', error.message);
+                        // Show play button on failure
+                        this.showPlayButton();
+                    });
+                }
+            }
         },
         
         setupAudioControl() {
@@ -506,23 +717,234 @@
             }
             this.elements.heroAudioControl = newControl;
             
-            let isMuted = true;
-            this.elements.heroVideo.muted = true;
-            this.elements.heroAudioControl.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            // Set initial state from localStorage
+            const savedMuted = localStorage.getItem('hero_audio_muted');
+            this.state.isMuted = savedMuted !== null ? savedMuted === 'true' : true;
+            this.elements.heroVideo.muted = this.state.isMuted;
+            this.elements.heroAudioControl.innerHTML = this.state.isMuted ? 
+                '<i class="fas fa-volume-mute"></i>' : 
+                '<i class="fas fa-volume-up"></i>';
             
             this.elements.heroAudioControl.addEventListener('click', (e) => {
+                e.stopPropagation();
                 e.preventDefault();
-                isMuted = !isMuted;
-                this.elements.heroVideo.muted = isMuted;
-                this.elements.heroAudioControl.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-                if (!isMuted && this.elements.heroVideo.paused) {
-                    this.elements.heroVideo.play().catch(console.log);
+                
+                this.state.isMuted = !this.state.isMuted;
+                this.elements.heroVideo.muted = this.state.isMuted;
+                
+                // Save preference
+                localStorage.setItem('hero_audio_muted', String(this.state.isMuted));
+                
+                // Update icon
+                this.elements.heroAudioControl.innerHTML = this.state.isMuted ? 
+                    '<i class="fas fa-volume-mute"></i>' : 
+                    '<i class="fas fa-volume-up"></i>';
+                
+                // If unmuting and video is paused, try to play
+                if (!this.state.isMuted && this.elements.heroVideo.paused) {
+                    this.togglePlayback();
                 }
             });
         },
         
+        /**
+         * Start view timer for recording views
+         */
+        startViewTimer() {
+            this.clearViewTimer();
+            if (!this.state.currentContent) return;
+            if (this.state.viewRecorded) return;
+            
+            console.log('⏱️ [HERO-VIEW] View timer started for content:', this.state.currentContent.id);
+            this.state.viewTimer = setTimeout(() => {
+                this.recordView();
+            }, this.config.viewThresholdSeconds * 1000);
+        },
+        
+        clearViewTimer() {
+            if (this.state.viewTimer) {
+                clearTimeout(this.state.viewTimer);
+                this.state.viewTimer = null;
+            }
+        },
+        
+        /**
+         * Check and record view based on time progress
+         */
+        checkAndRecordView() {
+            if (!this.state.currentContent) return;
+            if (this.state.viewRecorded) return;
+            
+            const video = this.elements.heroVideo;
+            if (!video) return;
+            
+            const currentTime = video.currentTime || 0;
+            const duration = video.duration || 0;
+            
+            // Check if we've reached 15 seconds or 30% of duration
+            const threshold = Math.min(this.config.viewThresholdSeconds, duration * this.config.viewPercentage);
+            
+            if (currentTime >= threshold) {
+                console.log(`🎯 [HERO-VIEW] View threshold reached (${threshold}s), recording view for content:`, this.state.currentContent.id);
+                this.recordView();
+            }
+        },
+        
+        /**
+         * Get current user ID
+         */
+        getCurrentUserId() {
+            if (window.currentUserId) return window.currentUserId;
+            if (localStorage.getItem('userId')) return localStorage.getItem('userId');
+            if (window.AuthHelper?.getCurrentUser) {
+                const user = window.AuthHelper.getCurrentUser();
+                if (user?.id) return user.id;
+            }
+            if (window.AuthHelper?.getUserProfile) {
+                const profile = window.AuthHelper.getUserProfile();
+                if (profile?.id) return profile.id;
+            }
+            return null;
+        },
+        
+        /**
+         * Get device type
+         */
+        getDeviceType() {
+            return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+        },
+        
+        /**
+         * Record view using RPC (matches other modules)
+         */
+        async recordView() {
+            if (this.state.viewRecorded) return;
+            if (!this.state.currentContent) return;
+            
+            // Ensure supabase is available
+            if (!window.supabaseAuth) {
+                console.warn('⚠️ [HERO-VIEW] Supabase not available');
+                return;
+            }
+            
+            this.state.viewRecorded = true;
+            this.clearViewTimer();
+            
+            const contentId = this.state.currentContent.id;
+            const userId = this.getCurrentUserId();
+            const sessionId = this.state.sessionId;
+            const deviceType = this.getDeviceType();
+            const currentTime = Math.floor(this.elements.heroVideo?.currentTime || 0);
+            
+            console.log('📝 [HERO-VIEW] Recording view for content:', contentId);
+            
+            try {
+                // Use RPC for view recording
+                const { data, error } = await window.supabaseAuth.rpc('record_content_view', {
+                    p_content_id: parseInt(contentId, 10),
+                    p_user_id: userId || null,
+                    p_session_id: sessionId || this.state.sessionId,
+                    p_device_type: deviceType
+                });
+                
+                if (error) {
+                    console.error('❌ [HERO-VIEW] RPC view recording failed:', error);
+                    // Fallback to direct insert
+                    await this.recordViewFallback(contentId, userId, sessionId, deviceType);
+                    return;
+                }
+                
+                console.log(`✅ [HERO-VIEW] View recorded for content ${contentId}, total views: ${data?.views || 0}`);
+                
+                // Update UI with new view count
+                if (data?.views !== undefined) {
+                    const views = this.formatNumber(data.views);
+                    if (this.elements.heroViews) {
+                        this.elements.heroViews.textContent = views;
+                    }
+                    // Update state
+                    if (this.state.currentContent) {
+                        this.state.currentContent.total_views = data.views;
+                    }
+                }
+                
+                // Dispatch global event
+                window.dispatchEvent(new CustomEvent('content-views-updated', {
+                    detail: { contentId: contentId, viewsCount: data?.views || 0 }
+                }));
+                
+            } catch (err) {
+                console.error('❌ [HERO-VIEW] View recording error:', err);
+            }
+        },
+        
+        /**
+         * Fallback view recording if RPC fails
+         */
+        async recordViewFallback(contentId, userId, sessionId, deviceType) {
+            try {
+                const contentIdNum = parseInt(contentId, 10);
+                if (isNaN(contentIdNum)) return;
+                
+                const finalSessionId = sessionId || this.state.sessionId || 'hero_' + Date.now();
+                const finalDeviceType = deviceType || this.getDeviceType();
+                
+                // Check if view already exists
+                const { data: existing, error: checkError } = await window.supabaseAuth
+                    .from('content_views')
+                    .select('id')
+                    .eq('content_id', contentIdNum)
+                    .eq('session_id', finalSessionId)
+                    .maybeSingle();
+                
+                if (existing) {
+                    console.log('⏭️ [HERO-VIEW] View already recorded, skipping');
+                    return;
+                }
+                
+                const viewRecord = {
+                    content_id: contentIdNum,
+                    user_id: userId || null,
+                    session_id: finalSessionId,
+                    counted_as_view: true,
+                    view_duration: Math.floor(this.elements.heroVideo?.currentTime || 15),
+                    device_type: finalDeviceType,
+                    viewed_at: new Date().toISOString()
+                };
+                
+                const { error: insertError } = await window.supabaseAuth
+                    .from('content_views')
+                    .insert([viewRecord]);
+                
+                if (insertError) throw insertError;
+                
+                console.log(`✅ [HERO-VIEW] View recorded via fallback for content ${contentId}`);
+                
+                // Get updated count
+                const { count, error: countError } = await window.supabaseAuth
+                    .from('content_views')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', contentIdNum)
+                    .eq('counted_as_view', true);
+                
+                if (!countError && count !== null) {
+                    const views = this.formatNumber(count);
+                    if (this.elements.heroViews) {
+                        this.elements.heroViews.textContent = views;
+                    }
+                }
+                
+            } catch (err) {
+                console.error('❌ [HERO-VIEW] Fallback view recording error:', err);
+            }
+        },
+        
         async rotateContent() {
             console.log('🔄 [HERO-ROTATE] Rotating hero content...');
+            // Clean up current view state
+            this.state.viewRecorded = false;
+            this.clearViewTimer();
+            this.state.playbackSessionId = null;
             this.state.initialized = false;
             await this.loadContent();
             this.state.initialized = true;
@@ -575,11 +997,14 @@
                 clearInterval(this.state.rotationInterval);
                 this.state.rotationInterval = null;
             }
+            this.clearViewTimer();
             if (this.elements.heroVideo) {
                 this.elements.heroVideo.pause();
                 this.elements.heroVideo.src = '';
+                this.state.isPlaying = false;
             }
             this.state.initialized = false;
+            this.state.viewRecorded = false;
             console.log('🎬 [HERO] Module destroyed');
         }
     };
