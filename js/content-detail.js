@@ -1,6 +1,6 @@
 // js/content-detail.js - MAIN ORCHESTRATOR
 // CLOUDFLARE STREAM & R2 INTEGRATION
-// FIXED: Proper player initialization sequence
+// FIXED: Infinite recursion in loadContentIntoPlayer
 // ============================================
 
 console.log('🎬 Content Detail Main Orchestrator Initializing... (Cloudflare Edition)');
@@ -47,7 +47,7 @@ async function loadAllModules() {
         'js/content-detail/playlist-queue.js',
         'js/content-detail/legacy-playlist.js',
         'js/content-detail/playlist-sidebar.js',
-        'js/content-detail/video-player-section.js'  // ← This loads the section that uses the main player
+        'js/content-detail/video-player-section.js'
     ];
     
     // Load each module with error handling
@@ -90,7 +90,6 @@ window.currentContent = null;
 window.cloudflareStreamSDKLoaded = false;
 window.cloudflareStreamSDKLoading = false;
 window._modulesLoaded = false;
-window._playerInitialized = false;
 
 // Session tracking
 let currentSessionId = null;
@@ -112,6 +111,9 @@ let _heavyVideoLoaded = false;
 let likedContentCache = new Set();
 let favoritedContentCache = new Set();
 let watchLaterContentCache = new Set();
+
+// Flag to prevent infinite recursion
+let _loadingContent = false;
 
 // ============================================
 // CLOUDFLARE STREAM SDK LOADER
@@ -1077,8 +1079,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
         window.currentPlaylistIndex = 0;
         if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
         
-        const { data: playlistMeta, error: metaError } = await window.supabaseClient
-            .from('creator_playlists')
+        const { data: playlistMeta, error: metaError } = await window.supabaseClient            .from('creator_playlists')
             .select(`
                 *,
                 user_profiles!creator_id (
@@ -1105,8 +1106,8 @@ async function loadPlaylistMode(playlistId, playlistType) {
         
         if (window.currentPlaylistItems.length > 0) {
             await setCurrentContent(window.currentPlaylistItems[0], 0);
-            // Load content into player via video-player-section
-            await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+            // Load content into player via direct call
+            await _loadContentIntoPlayerDirect(window.currentPlaylistItems[0]);
         }
         
         if (typeof hideLoading === 'function') hideLoading();
@@ -1175,7 +1176,7 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     
     if (window.currentPlaylistItems.length > 0) {
         await setCurrentContent(window.currentPlaylistItems[0], 0);
-        await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+        await _loadContentIntoPlayerDirect(window.currentPlaylistItems[0]);
     }
     
     if (typeof hideLoading === 'function') hideLoading();
@@ -1214,7 +1215,7 @@ window.playNextPlaylistItem = async function() {
         window.currentPlaylistIndex = nextIndex;
         const nextItem = items[nextIndex];
         await setCurrentContent(nextItem, nextIndex);
-        await loadContentIntoPlayer(nextItem);
+        await _loadContentIntoPlayerDirect(nextItem);
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
         }
@@ -1245,7 +1246,7 @@ window.playPlaylistItemByIndex = async function(index) {
         const item = window.currentPlaylistItems[index];
         window.currentPlaylistIndex = index;
         await setCurrentContent(item, index);
-        await loadContentIntoPlayer(item);
+        await _loadContentIntoPlayerDirect(item);
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
         }
@@ -1262,35 +1263,53 @@ function resetPlaylistCompletionLock() {
 }
 
 // ============================================
-// LOAD CONTENT INTO PLAYER - MAIN ENTRY POINT
+// LOAD CONTENT INTO PLAYER - DIRECT (NO RECURSION)
 // ============================================
 
-async function loadContentIntoPlayer(content) {
-    console.log('📦 loadContentIntoPlayer called for content:', content?.id);
+async function _loadContentIntoPlayerDirect(content) {
+    if (_loadingContent) {
+        console.log('⏭️ Already loading content into player, skipping duplicate');
+        return;
+    }
     
     if (!content) {
         console.error('❌ No content provided');
-        return false;
+        return;
     }
     
-    // Try to use video-player-section's method first
-    if (typeof window.loadContentIntoPlayer === 'function') {
-        console.log('🔄 Using video-player-section loadContentIntoPlayer');
-        return await window.loadContentIntoPlayer(content);
-    }
+    _loadingContent = true;
     
-    // Fallback: try using enhancedVideoPlayer directly
-    if (window.enhancedVideoPlayer) {
-        const player = window.enhancedVideoPlayer;
-        if (typeof player.loadContent === 'function') {
-            console.log('🔄 Loading content directly into EnhancedVideoPlayer');
-            await player.loadContent(content);
-            return true;
+    try {
+        console.log('📦 Loading content into player:', content.id);
+        
+        // First, check if video-player-section has a function
+        if (typeof window.loadContentIntoPlayer === 'function' && window.loadContentIntoPlayer !== _loadContentIntoPlayerDirect) {
+            console.log('🔄 Using video-player-section loadContentIntoPlayer');
+            await window.loadContentIntoPlayer(content);
+            return;
         }
+        
+        // Fallback: try using enhancedVideoPlayer directly
+        const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
+        if (player) {
+            if (typeof player.loadContent === 'function') {
+                console.log('🔄 Loading content directly into EnhancedVideoPlayer');
+                await player.loadContent(content);
+                return;
+            }
+        }
+        
+        console.warn('⚠️ No method available to load content into player');
+    } catch (error) {
+        console.error('❌ Failed to load content into player:', error);
+    } finally {
+        _loadingContent = false;
     }
-    
-    console.error('❌ No method available to load content into player');
-    return false;
+}
+
+// Public wrapper that calls the internal function
+async function loadContentIntoPlayer(content) {
+    return _loadContentIntoPlayerDirect(content);
 }
 
 // ============================================
@@ -1468,7 +1487,7 @@ async function loadCriticalContentData(contentId) {
                 refreshContentInBackground(contentId);
                 
                 // Load content into player
-                await loadContentIntoPlayer(parsed);
+                await _loadContentIntoPlayerDirect(parsed);
                 return;
             }
         } catch(e) { console.warn('Cache parse error:', e); }
@@ -1532,7 +1551,7 @@ async function loadCriticalContentData(contentId) {
     localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
     
     // Load content into player
-    await loadContentIntoPlayer(contentObj);
+    await _loadContentIntoPlayerDirect(contentObj);
     
     if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed) {
         if (typeof addResumeButton === 'function') {
@@ -1599,7 +1618,7 @@ async function loadContentFromURLLegacy() {
         };
         
         await setCurrentContent(contentObj);
-        await loadContentIntoPlayer(contentObj);
+        await _loadContentIntoPlayerDirect(contentObj);
         
         if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed && typeof addResumeButton === 'function') {
             addResumeButton(window.currentContent.watch_progress);
