@@ -1,5 +1,8 @@
 // ============================================
 // SHORTS DETAIL JAVASCRIPT - BANTU STREAM CONNECT
+// UPDATED: Cloudflare Stream/R2 support
+// UPDATED: View recording with RPC
+// UPDATED: Proper video URL handling
 // ============================================
 
 // ============================================
@@ -24,6 +27,8 @@ let swiperInstance = null;
 let initTimeout = null;
 let authCheckComplete = false;
 let hasRecordedView = false; // Track if view has been recorded for current video
+let viewThresholdReached = false;
+let playbackSessionId = null;
 
 // Loading progress tracking
 let loadingProgress = 0;
@@ -144,7 +149,7 @@ async function checkAuth() {
     if (currentUser) {
       updateLoadingProgress('Loading profile...', 45);
       await loadUserProfilePicture(currentUser);
-      await loadUserNotifications(); // Load notifications for logged-in user
+      await loadUserNotifications();
       await fetchUserConnections();
     }
     
@@ -160,7 +165,35 @@ async function checkAuth() {
   }
 }
 
+// ============================================
+// 🚨 CRITICAL: Get Playable Media URL for Shorts
+// Supports Cloudflare Stream, Cloudflare R2, and legacy
+// ============================================
+function getPlayableMediaUrl(content) {
+  if (!content) return '';
+  
+  // 🎬 Cloudflare Stream Video - Return HLS manifest URL
+  if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
+    const videoId = content.provider_video_id;
+    return `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+  }
+  
+  // 🎵 Cloudflare R2 Audio - Return file_url (but shorts should be video)
+  if (content.streaming_provider === 'cloudflare_r2' && content.file_url) {
+    return fixMediaUrl(content.file_url);
+  }
+  
+  // 🔄 Legacy fallback: file_url
+  if (content.file_url) {
+    return fixMediaUrl(content.file_url);
+  }
+  
+  return '';
+}
+
+// ============================================
 // Load shorts from Supabase
+// ============================================
 async function loadShorts() {
   updateLoadingProgress('Loading shorts...', 50);
   
@@ -325,11 +358,15 @@ function renderShorts() {
   
   wrapper.innerHTML = shortsData.map((short, index) => {
     const creator = short.user_profiles || {};
-    const videoUrl = fixMediaUrl(short.file_url);
+    const videoUrl = getPlayableMediaUrl(short);
+    const isCloudflareStream = short.streaming_provider === 'cloudflare_stream';
     const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
     const creatorName = creator.full_name || creator.username || 'Creator';
     const initials = getInitials(creatorName);
     const isConnected = currentUser && userConnections.has(creator.id);
+    
+    // Determine video type for HLS
+    const videoType = isCloudflareStream ? 'application/vnd.apple.mpegurl' : 'video/mp4';
     
     return `
       <div class="swiper-slide" data-short-id="${short.id}" data-index="${index}">
@@ -342,6 +379,8 @@ function renderShorts() {
             playsinline 
             preload="metadata"
             data-short-id="${short.id}"
+            data-provider="${short.streaming_provider || 'legacy'}"
+            ${isCloudflareStream ? `type="${videoType}"` : ''}
           ></video>
           <div class="video-overlay"></div>
           
@@ -445,7 +484,9 @@ function initSwiper() {
       },
       slideChange: function() {
         pauseAllVideos();
-        hasRecordedView = false; // Reset view tracking for new video
+        hasRecordedView = false;
+        viewThresholdReached = false;
+        playbackSessionId = null;
         setTimeout(() => playCurrentShort(), 100);
         updateActiveShort();
         closeMoreMenu();
@@ -615,9 +656,7 @@ function renderSearchResults(results) {
     card.addEventListener('click', () => {
       const id = card.dataset.contentId;
       if (id) {
-        // Close search modal
         document.getElementById('search-modal')?.classList.remove('active');
-        // Navigate to the content
         window.location.href = `shorts-detail.html?id=${id}`;
       }
     });
@@ -646,7 +685,6 @@ function initNotificationsPanel() {
     notificationsPanel.classList.add('active');
     if (currentUser) {
       await loadUserNotifications();
-      // Auto-mark as read when opened
       setTimeout(() => markAllNotificationsAsRead(), 1000);
     } else {
       document.getElementById('notifications-list').innerHTML = `
@@ -725,14 +763,12 @@ async function loadUserNotifications() {
       </div>
     `).join('');
     
-    // Add click handlers
     notificationsList.querySelectorAll('.notification-item').forEach(item => {
       item.addEventListener('click', async () => {
         const id = item.dataset.id;
         await markNotificationAsRead(id);
         const notification = data.find(n => n.id === id);
         if (notification?.content_id) {
-          // Close panel and navigate
           notificationsPanel.classList.remove('active');
           window.location.href = `shorts-detail.html?id=${notification.content_id}`;
         }
@@ -781,7 +817,6 @@ async function markNotificationAsRead(notificationId) {
       if (dot) dot.remove();
     }
     
-    // Update badge
     const unreadCount = document.querySelectorAll('.notification-item.unread').length;
     updateNotificationBadge(unreadCount);
     
@@ -843,6 +878,152 @@ function formatNotificationTime(timestamp) {
 }
 
 // ============================================
+// 🚨 VIEW RECORDING FUNCTIONS (UPDATED)
+// ============================================
+
+/**
+ * Generate a unique session ID
+ */
+function generateSessionId() {
+  return 'shorts_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+}
+
+/**
+ * Get current user ID
+ */
+function getCurrentUserId() {
+  if (currentUser?.id) return currentUser.id;
+  if (window.currentUserId) return window.currentUserId;
+  if (localStorage.getItem('userId')) return localStorage.getItem('userId');
+  if (window.AuthHelper?.getCurrentUser) {
+    const user = window.AuthHelper.getCurrentUser();
+    if (user?.id) return user.id;
+  }
+  return null;
+}
+
+/**
+ * Get device type
+ */
+function getDeviceType() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+}
+
+/**
+ * Record view using RPC (matches video player pattern)
+ */
+async function recordViewViaRPC(contentId, userId, sessionId, deviceType) {
+  if (!contentId) {
+    console.error('❌ Cannot record view: missing contentId');
+    return { success: false, views: 0 };
+  }
+  
+  try {
+    const finalDeviceType = deviceType || getDeviceType();
+    const finalSessionId = sessionId || generateSessionId();
+    
+    const { data, error } = await supabaseClient.rpc('record_content_view', {
+      p_content_id: parseInt(contentId),
+      p_user_id: userId || null,
+      p_session_id: finalSessionId,
+      p_device_type: finalDeviceType
+    });
+    
+    if (error) {
+      console.error('❌ RPC view recording failed:', error);
+      return await recordViewFallback(contentId, userId, finalSessionId, finalDeviceType);
+    }
+    
+    console.log(`✅ View recorded via RPC for shorts ${contentId}, total views: ${data?.views || 0}`);
+    
+    // Update UI with new view count
+    if (data?.views !== undefined) {
+      const views = formatNumber(data.views);
+      const viewsElement = document.querySelector(`.swiper-slide-active .shorts-meta span:last-child`);
+      if (viewsElement) {
+        viewsElement.innerHTML = `<i class="fas fa-eye"></i> ${views}`;
+      }
+    }
+    
+    // Dispatch global event
+    window.dispatchEvent(new CustomEvent('content-views-updated', {
+      detail: { contentId: contentId, viewsCount: data?.views || 0 }
+    }));
+    
+    return { success: true, views: data?.views || 0 };
+  } catch (error) {
+    console.error('❌ RPC view recording error:', error);
+    return await recordViewFallback(contentId, userId, sessionId, deviceType);
+  }
+}
+
+/**
+ * Fallback view recording if RPC fails
+ */
+async function recordViewFallback(contentId, userId, sessionId, deviceType) {
+  try {
+    const finalSessionId = sessionId || generateSessionId();
+    const finalDeviceType = deviceType || getDeviceType();
+    const contentIdNum = parseInt(contentId, 10);
+    
+    if (isNaN(contentIdNum)) {
+      console.error('❌ Invalid content_id:', contentId);
+      return { success: false, views: 0 };
+    }
+    
+    // Check if view already exists for this session
+    const { data: existing, error: checkError } = await supabaseClient
+      .from('content_views')
+      .select('id')
+      .eq('content_id', contentIdNum)
+      .eq('session_id', finalSessionId)
+      .maybeSingle();
+    
+    if (existing) {
+      console.log('⏭️ View already recorded for this session, skipping');
+      return { success: true, views: null };
+    }
+    
+    const viewRecord = {
+      content_id: contentIdNum,
+      user_id: userId || null,
+      session_id: finalSessionId,
+      counted_as_view: true,
+      view_duration: Math.floor(currentVideo?.currentTime || 3),
+      device_type: finalDeviceType,
+      viewed_at: new Date().toISOString()
+    };
+    
+    const { error: insertError } = await supabaseClient
+      .from('content_views')
+      .insert([viewRecord]);
+    
+    if (insertError) throw insertError;
+    
+    // Get updated count
+    const { count, error: countError } = await supabaseClient
+      .from('content_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', contentIdNum)
+      .eq('counted_as_view', true);
+    
+    if (!countError && count !== null) {
+      const views = formatNumber(count);
+      const viewsElement = document.querySelector(`.swiper-slide-active .shorts-meta span:last-child`);
+      if (viewsElement) {
+        viewsElement.innerHTML = `<i class="fas fa-eye"></i> ${views}`;
+      }
+    }
+    
+    console.log(`✅ View recorded via fallback for shorts ${contentId}`);
+    return { success: true, views: count || 0 };
+  } catch (error) {
+    console.error('❌ Fallback view recording failed:', error);
+    return { success: false, views: 0 };
+  }
+}
+
+// ============================================
 // VIDEO CONTROL FUNCTIONS
 // ============================================
 function pauseAllVideos() {
@@ -864,6 +1045,12 @@ function playCurrentShort() {
   
   if (currentShort) {
     updateShareLink();
+    hasRecordedView = false;
+    viewThresholdReached = false;
+    playbackSessionId = null;
+    
+    // Initialize playback session for view tracking
+    initializePlaybackSession(currentShort);
     
     if (document.getElementById('comments-modal').classList.contains('active')) {
       loadComments(currentShort.id);
@@ -871,7 +1058,6 @@ function playCurrentShort() {
   }
   
   video.currentTime = 0;
-  hasRecordedView = false; // Reset view tracking
   
   // Try to play with user interaction fallback
   const playPromise = video.play();
@@ -909,7 +1095,7 @@ function handleTimeUpdate(e) {
     progressBar.style.width = `${progress}%`;
   }
   
-  // Record view after 3 seconds
+  // 🚨 Record view after threshold (3 seconds or 30% of duration)
   if (!hasRecordedView && video.currentTime >= 3) {
     hasRecordedView = true;
     recordView(shortId, Math.floor(video.currentTime));
@@ -938,6 +1124,18 @@ function handleEnded(e) {
 
 function handleVideoError(e) {
   console.error('Video error:', e);
+  const video = e.target;
+  // Try to fallback to thumbnail if video fails
+  const slide = video.closest('.swiper-slide');
+  if (slide) {
+    const shortId = slide.dataset.shortId;
+    const short = shortsData.find(s => s.id == shortId);
+    if (short?.thumbnail_url) {
+      video.style.backgroundImage = `url(${fixMediaUrl(short.thumbnail_url)})`;
+      video.style.backgroundSize = 'cover';
+      video.style.backgroundPosition = 'center';
+    }
+  }
   showToast('Failed to load video', 'error');
 }
 
@@ -1005,29 +1203,67 @@ function seekVideo(container, event) {
 }
 
 // ============================================
-// SUPABASE FUNCTIONS
+// 🚨 UPDATED: RECORD VIEW FUNCTION
 // ============================================
-
-// ✅ 1️⃣ RECORD VIEW (Short Watch)
 async function recordView(contentId, watchDuration = 3) {
-  if (!currentUser) return; // Only record views for logged-in users
+  if (hasRecordedView) return;
+  if (!contentId) return;
+  
+  const userId = getCurrentUserId();
+  const sessionId = generateSessionId();
+  const deviceType = getDeviceType();
+  
+  console.log('📝 Recording view for shorts content:', contentId);
   
   try {
-    await supabaseClient
-      .from('content_views')
-      .insert({
-        content_id: contentId,
-        viewer_id: currentUser.id, // Note: viewer_id, not user_id
-        view_duration: watchDuration,
-        device_type: 'web'
-      });
-    console.log('✅ View recorded for content:', contentId);
+    const result = await recordViewViaRPC(contentId, userId, sessionId, deviceType);
+    if (result.success) {
+      console.log('✅ View recorded for shorts:', contentId);
+    }
   } catch (error) {
-    console.error('Error recording view:', error);
+    console.error('❌ View recording error:', error);
   }
 }
 
-// ✅ 2️⃣ LOAD COMMENTS
+/**
+ * Initialize playback session for shorts
+ */
+function initializePlaybackSession(content) {
+  if (!content || !supabaseClient) return;
+  
+  if (!playbackSessionId) {
+    playbackSessionId = 'shorts_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  const userId = getCurrentUserId();
+  
+  // Try to create playback session record
+  supabaseClient
+    .from('playback_sessions')
+    .insert({
+      playback_session_id: playbackSessionId,
+      content_id: parseInt(content.id, 10),
+      user_id: userId || null,
+      session_id: generateSessionId(),
+      platform: 'Web',
+      device_type: getDeviceType(),
+      started_at: new Date().toISOString(),
+      media_type: 'short'
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.warn('⚠️ Playback session creation failed:', error.message);
+      } else {
+        console.log('🎬 Playback session initialized for shorts:', playbackSessionId);
+      }
+    });
+}
+
+// ============================================
+// SUPABASE FUNCTIONS
+// ============================================
+
+// ✅ 1️⃣ LOAD COMMENTS
 async function loadComments(contentId) {
   const list = document.getElementById('comments-list');
   list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-grey)"><i class="fas fa-spinner fa-spin"></i> Loading comments...</div>';
@@ -1113,7 +1349,7 @@ async function loadComments(contentId) {
   }
 }
 
-// ✅ 3️⃣ POST COMMENT
+// ✅ 2️⃣ POST COMMENT
 async function postComment() {
   const input = document.getElementById('comment-input');
   const text = input.value.trim();
@@ -1123,7 +1359,6 @@ async function postComment() {
     return;
   }
   
-  // Get user profile for author info
   try {
     const { data: profile, error: profileError } = await supabaseClient
       .from('user_profiles')
@@ -1148,7 +1383,6 @@ async function postComment() {
     input.value = '';
     document.getElementById('post-comment-btn').disabled = true;
     
-    // Update comment count in UI
     const commentBtn = document.querySelector(`.swiper-slide-active .comment-btn .action-count`);
     if (commentBtn) {
       const currentCount = parseInt(commentBtn.textContent) || 0;
@@ -1164,7 +1398,7 @@ async function postComment() {
   }
 }
 
-// ✅ 4️⃣ LIKE COMMENT
+// ✅ 3️⃣ LIKE COMMENT
 async function likeComment(commentId, btn) {
   if (!currentUser) {
     showToast('Sign in to like comments', 'info');
@@ -1175,7 +1409,6 @@ async function likeComment(commentId, btn) {
   const countSpan = btn.querySelector('span') || btn;
   const currentCount = parseInt(countSpan.textContent.replace(/[^0-9]/g, '')) || 0;
   
-  // Optimistic update
   if (liked) {
     btn.classList.remove('liked');
     btn.querySelector('i').className = 'far fa-heart';
@@ -1202,7 +1435,6 @@ async function likeComment(commentId, btn) {
         });
     }
   } catch (error) {
-    // Revert on error
     if (liked) {
       btn.classList.add('liked');
       btn.querySelector('i').className = 'fas fa-heart';
@@ -1217,7 +1449,7 @@ async function likeComment(commentId, btn) {
   }
 }
 
-// ✅ 5️⃣ REPORT COMMENT
+// ✅ 4️⃣ REPORT COMMENT
 async function reportComment(commentId) {
   if (!currentUser) {
     showToast('Sign in to report comments', 'info');
@@ -1245,7 +1477,7 @@ async function reportComment(commentId) {
   }
 }
 
-// ✅ 6️⃣ DELETE COMMENT
+// ✅ 5️⃣ DELETE COMMENT
 async function deleteComment(commentId) {
   if (!currentUser) return;
   
@@ -1260,11 +1492,9 @@ async function deleteComment(commentId) {
     
     if (error) throw error;
     
-    // Remove comment from UI
     const commentEl = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
     if (commentEl) commentEl.remove();
     
-    // Update comment count in UI
     const commentBtn = document.querySelector(`.swiper-slide-active .comment-btn .action-count`);
     if (commentBtn) {
       const currentCount = parseInt(commentBtn.textContent) || 0;
@@ -1279,7 +1509,6 @@ async function deleteComment(commentId) {
 }
 
 function attachCommentActionListeners() {
-  // Like comment buttons
   document.querySelectorAll('.like-comment-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1288,7 +1517,6 @@ function attachCommentActionListeners() {
     });
   });
   
-  // Report comment buttons
   document.querySelectorAll('.report-comment-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1297,7 +1525,6 @@ function attachCommentActionListeners() {
     });
   });
   
-  // Delete comment buttons
   document.querySelectorAll('.delete-comment-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1320,7 +1547,6 @@ async function handleLike(shortId, btn) {
   const countEl = btn.querySelector('.action-count');
   let currentCount = parseInt(countEl.textContent.replace(/[^0-9]/g, '')) || 0;
   
-  // Optimistic update
   if (liked) {
     btn.classList.remove('liked');
     btn.querySelector('i').className = 'far fa-heart';
@@ -1349,7 +1575,6 @@ async function handleLike(shortId, btn) {
       showDoubleTapIndicator();
     }
   } catch (error) {
-    // Revert on error
     if (liked) {
       btn.classList.add('liked');
       btn.querySelector('i').className = 'fas fa-heart';
@@ -1399,7 +1624,6 @@ async function handleSave(shortId, btn) {
       showToast('Saved!', 'success');
     }
   } catch (error) {
-    // Revert
     if (saved) {
       btn.classList.add('saved');
       btn.querySelector('i').className = 'fas fa-bookmark';
@@ -1450,7 +1674,6 @@ async function handleConnect(creatorId, btn) {
       showToast('Connected!', 'success');
     }
   } catch (error) {
-    // Revert
     if (connected) {
       btn.textContent = 'Connected';
       btn.classList.add('connected');
@@ -1475,7 +1698,6 @@ function toggleMoreMenu(shortId, button) {
     return;
   }
   
-  // Position menu relative to button
   const rect = button.getBoundingClientRect();
   menu.style.bottom = `${window.innerHeight - rect.top + 10}px`;
   menu.style.right = `${window.innerWidth - rect.right + 10}px`;
@@ -1492,7 +1714,6 @@ function closeMoreMenu() {
 }
 
 function handleReport() {
-  const shortId = document.getElementById('more-menu').dataset.shortId;
   showToast('Report submitted', 'success');
   closeMoreMenu();
 }
@@ -1696,7 +1917,6 @@ function updateLikeButton(shortId) {
   const btn = document.querySelector(`.swiper-slide-active .like-btn[data-short-id="${shortId}"]`);
   if (!btn) return;
   
-  // Check if user has liked this content
   supabaseClient
     .from('content_likes')
     .select('id')
@@ -1717,7 +1937,6 @@ function updateSaveButton(shortId) {
   const btn = document.querySelector(`.swiper-slide-active .save-btn[data-short-id="${shortId}"]`);
   if (!btn) return;
   
-  // Check if user has saved this content
   supabaseClient
     .from('saved_shorts')
     .select('id')
@@ -1841,7 +2060,6 @@ async function loadMoreShorts() {
     if (data && data.length > 0) {
       shortsData = [...shortsData, ...data];
       
-      // Load like counts for new shorts
       await loadLikeCountsForNewShorts(data);
       
       data.forEach(short => {
@@ -1882,18 +2100,20 @@ async function loadLikeCountsForNewShorts(newShorts) {
 
 function createShortSlide(short) {
   const creator = short.user_profiles || {};
-  const videoUrl = fixMediaUrl(short.file_url);
+  const videoUrl = getPlayableMediaUrl(short);
+  const isCloudflareStream = short.streaming_provider === 'cloudflare_stream';
   const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
   const creatorName = creator.full_name || creator.username || 'Creator';
   const initials = getInitials(creatorName);
   const isConnected = currentUser && userConnections.has(creator.id);
+  const videoType = isCloudflareStream ? 'application/vnd.apple.mpegurl' : 'video/mp4';
   
   const slide = document.createElement('div');
   slide.className = 'swiper-slide';
   slide.dataset.shortId = short.id;
   slide.innerHTML = `
     <div class="short-video-wrapper">
-      <video class="short-video" src="${videoUrl}" poster="${thumbnailUrl}" loop playsinline preload="metadata" data-short-id="${short.id}"></video>
+      <video class="short-video" src="${videoUrl}" poster="${thumbnailUrl}" loop playsinline preload="metadata" data-short-id="${short.id}" data-provider="${short.streaming_provider || 'legacy'}" ${isCloudflareStream ? `type="${videoType}"` : ''}></video>
       <div class="video-overlay"></div>
       <div class="shorts-actions">
         <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}">
@@ -1928,6 +2148,7 @@ function createShortSlide(short) {
         <div class="shorts-meta">
           <span><i class="fas fa-music"></i> ${escapeHtml(short.genre || 'Original Audio')}</span>
           <span><i class="fas fa-clock"></i> ${formatTime(short.duration || 0)}</span>
+          <span><i class="fas fa-eye"></i> ${formatNumber(short.views_count || 0)}</span>
         </div>
       </div>
       <div class="video-controls">
@@ -1948,15 +2169,6 @@ function createShortSlide(short) {
 // EVENT LISTENERS
 // ============================================
 function setupEventListeners() {
-  // Header buttons
-  document.getElementById('search-btn')?.addEventListener('click', () => {
-    // Already handled in initSearchModal
-  });
-  
-  document.getElementById('notifications-btn')?.addEventListener('click', () => {
-    // Already handled in initNotificationsPanel
-  });
-  
   document.getElementById('profile-btn')?.addEventListener('click', () => {
     if (currentUser) {
       window.location.href = 'profile.html';
@@ -1965,7 +2177,6 @@ function setupEventListeners() {
     }
   });
   
-  // Action buttons
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.action-btn');
     if (!btn) return;
@@ -1980,7 +2191,6 @@ function setupEventListeners() {
     else if (action === 'save') handleSave(shortId, btn);
   });
   
-  // Connect button
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.connect-btn');
     if (btn) {
@@ -1989,7 +2199,6 @@ function setupEventListeners() {
     }
   });
   
-  // More button
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.more-btn');
     if (btn) {
@@ -1998,7 +2207,6 @@ function setupEventListeners() {
     }
   });
   
-  // Caption toggle
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
     const toggle = e.target.closest('.caption-toggle');
     if (toggle) {
@@ -2012,7 +2220,6 @@ function setupEventListeners() {
     }
   });
   
-  // Creator info click
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
     const creatorInfo = e.target.closest('.creator-info');
     if (creatorInfo && !e.target.closest('.connect-btn')) {
@@ -2023,7 +2230,6 @@ function setupEventListeners() {
     }
   });
   
-  // Video controls
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
     const muteBtn = e.target.closest('.mute-btn');
     if (muteBtn) {
@@ -2048,34 +2254,28 @@ function setupEventListeners() {
     }
   });
   
-  // More menu actions
   document.getElementById('more-report')?.addEventListener('click', handleReport);
   document.getElementById('more-mute')?.addEventListener('click', handleMuteCreator);
   document.getElementById('more-not-interested')?.addEventListener('click', handleNotInterested);
   document.getElementById('more-block')?.addEventListener('click', handleBlockCreator);
   
-  // Close more menu when clicking outside
   document.addEventListener('click', (e) => {
     if (moreMenuOpen && !e.target.closest('.more-menu') && !e.target.closest('.more-btn')) {
       closeMoreMenu();
     }
   });
   
-  // Double-tap
   document.getElementById('shorts-player')?.addEventListener('touchend', handleDoubleTap);
   
-  // Modal close buttons
   document.getElementById('close-comments')?.addEventListener('click', closeComments);
   document.getElementById('close-share')?.addEventListener('click', closeShare);
   
-  // Modal backdrop click
   document.querySelectorAll('.modal-overlay').forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.classList.remove('active');
     });
   });
   
-  // Comment composer
   const commentInput = document.getElementById('comment-input');
   const postCommentBtn = document.getElementById('post-comment-btn');
   
@@ -2092,14 +2292,12 @@ function setupEventListeners() {
   
   postCommentBtn?.addEventListener('click', postComment);
   
-  // Share options
   document.getElementById('share-whatsapp')?.addEventListener('click', shareToWhatsApp);
   document.getElementById('share-twitter')?.addEventListener('click', shareToTwitter);
   document.getElementById('share-instagram')?.addEventListener('click', shareToInstagram);
   document.getElementById('share-copy')?.addEventListener('click', copyShareLink);
   document.getElementById('copy-link-btn')?.addEventListener('click', copyShareLink);
   
-  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, textarea')) return;
     
@@ -2144,7 +2342,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Orientation change
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
     if (swiperInstance) swiperInstance.update();
