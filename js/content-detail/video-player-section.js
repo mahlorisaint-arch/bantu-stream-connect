@@ -216,9 +216,15 @@ const startPlaybackFromUserGesture = async () => {
         if (!video.src && !window.isPlaylistMode && window.currentContent) {
             const fileUrl = getPlayableMediaUrl(window.currentContent);
             if (fileUrl) {
-                console.log('🎬 Single Mode Fallback: Loading media source directly.');
+                console.log('🎬 Single Mode Fallback: Loading media source directly.', fileUrl);
                 video.src = fileUrl;
                 video.load();
+            } else {
+                console.warn('⚠️ No playable URL found for content:', window.currentContent.id);
+                if (typeof window.showToast === 'function') {
+                    window.showToast('No playable media found for this content', 'error');
+                }
+                return;
             }
         }
         
@@ -234,7 +240,9 @@ const startPlaybackFromUserGesture = async () => {
             video.muted = true;
             await video.play().catch(fallbackErr => {
                 console.error('❌ Fallback play failed:', fallbackErr);
-                window.showToast('Playback blocked. Please interact with the page and try again.', 'warning');
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Playback blocked. Please interact with the page and try again.', 'warning');
+                }
             });
         });
         
@@ -250,7 +258,9 @@ const startPlaybackFromUserGesture = async () => {
         
     } catch (error) {
         console.warn('⚠️ Direct playback failed:', error.message);
-        window.showToast('Unable to start playback. Please try again.', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Unable to start playback. Please try again.', 'error');
+        }
     }
 };
 
@@ -265,14 +275,19 @@ const startPlaybackFromUserGesture = async () => {
  * @param {number} index - Optional playlist index
  */
 async function loadContentIntoPlayer(content, index = null) {
-    if (!content) return;
+    if (!content) {
+        console.warn('⚠️ loadContentIntoPlayer called with no content');
+        return;
+    }
     
     const player = document.getElementById('inlinePlayer');
     const videoElement = document.getElementById('inlineVideoPlayer');
     const placeholder = document.getElementById('videoPlaceholder');
     
     if (!player || !videoElement) {
-        console.warn('Player elements not ready');
+        console.warn('⚠️ Player elements not ready, retrying...');
+        // Retry after a short delay
+        setTimeout(() => loadContentIntoPlayer(content, index), 300);
         return;
     }
     
@@ -301,18 +316,48 @@ async function loadContentIntoPlayer(content, index = null) {
         provider: content.streaming_provider, 
         url: fileUrl,
         isCloudflareStream,
-        isCloudflareR2
+        isCloudflareR2,
+        media_type: content.media_type,
+        content_format: content.content_format
     });
+    
+    // 🔥 CRITICAL FIX: If no URL found, try to use file_url directly as fallback
+    if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
+        console.warn('⚠️ No playable URL from getPlayableMediaUrl, trying file_url fallback...');
+        if (content.file_url) {
+            fileUrl = content.file_url;
+            console.log('✅ Using file_url fallback:', fileUrl);
+        } else if (content.audio_url) {
+            fileUrl = content.audio_url;
+            console.log('✅ Using audio_url fallback:', fileUrl);
+        } else if (content.video_url) {
+            fileUrl = content.video_url;
+            console.log('✅ Using video_url fallback:', fileUrl);
+        } else {
+            console.error('❌ No playable URL found for content:', content.id);
+            if (typeof window.showToast === 'function') {
+                window.showToast('No playable media found for this content', 'error');
+            }
+            return;
+        }
+    }
     
     // Handle audio mode with poster
     const isAudio = detectMediaType(content) === 'audio';
+    console.log('🎵 Is audio mode:', isAudio);
+    
     if (isAudio && content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
         videoElement.setAttribute('poster', imgUrl);
         videoElement.classList.add('audio-mode');
+        // For audio, we want to show the poster and hide the video
+        videoElement.style.objectFit = 'contain';
+        videoElement.style.background = 'var(--bg-secondary)';
     } else {
         videoElement.removeAttribute('poster');
         videoElement.classList.remove('audio-mode');
+        videoElement.style.objectFit = '';
+        videoElement.style.background = '';
     }
     
     // Get MIME type - handle HLS manifests
@@ -330,22 +375,41 @@ async function loadContentIntoPlayer(content, index = null) {
         if (lower.endsWith('.wav')) return 'audio/wav';
         if (lower.endsWith('.ogg')) return 'audio/ogg';
         if (lower.endsWith('.m4a')) return 'audio/mp4';
+        if (lower.endsWith('.flac')) return 'audio/flac';
         return 'video/mp4';
     }
     
     const mimeType = getMediaMimeType(fileUrl);
     const isHLS = mimeType === 'application/vnd.apple.mpegurl' || fileUrl?.includes('videodelivery.net');
     
+    console.log('📄 MIME type detected:', mimeType, 'isHLS:', isHLS);
+    
     // 🚨 Load source - prefer loadSource method for reuse
     if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
         console.log('♻️ Reusing existing player instance with loadSource');
-        await window.enhancedVideoPlayer.loadSource({
-            url: fileUrl,
-            type: mimeType,
-            title: content.title,
-            isHLS: isHLS,
-            streamingProvider: content.streaming_provider
-        });
+        try {
+            await window.enhancedVideoPlayer.loadSource({
+                url: fileUrl,
+                type: mimeType,
+                title: content.title,
+                isHLS: isHLS,
+                streamingProvider: content.streaming_provider
+            });
+        } catch (loadError) {
+            console.error('❌ loadSource failed, falling back to direct source:', loadError);
+            // Fallback to direct source setting
+            if (window.watchSession) {
+                window.watchSession.stop();
+                window.watchSession = null;
+            }
+            while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
+            videoElement.removeAttribute('src');
+            const source = document.createElement('source');
+            source.src = fileUrl;
+            source.type = mimeType;
+            videoElement.appendChild(source);
+            videoElement.load();
+        }
     } else {
         console.log('⚠️ loadSource not available, updating video source directly');
         
@@ -846,7 +910,9 @@ function initializeEnhancedVideoPlayer() {
             const media = player?.video;
             if (media && media.error === null && media.networkState !== 3) return;
             console.error('🔴 Video player error:', event);
-            window.showToast('Playback error occurred', 'error');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Playback error occurred', 'error');
+            }
         });
         
         player.on('loadedmetadata', () => {
@@ -868,7 +934,9 @@ function initializeEnhancedVideoPlayer() {
         
     } catch (error) {
         console.error('❌ Failed to initialize enhanced video player:', error);
-        window.showToast('Video player failed to load. Using basic player.', 'warning');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Video player failed to load. Using basic player.', 'warning');
+        }
         const videoElement = document.getElementById('inlineVideoPlayer');
         if (videoElement) videoElement.controls = true;
     }
@@ -1004,4 +1072,4 @@ window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
 window.WatchSessionManager = WatchSessionManager;
 window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
 
-console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support)');
+console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes)');
