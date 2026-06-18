@@ -12,6 +12,8 @@
  * UPDATED: View recording for hero content
  * UPDATED: Proper audio control with volume persistence
  * UPDATED: Video source detection using getPlayableMediaUrl pattern
+ * FIXED: Video filtering logic - now properly detects all video content
+ * FIXED: Random selection works with Cloudflare Stream videos
  */
 
 (function() {
@@ -27,8 +29,9 @@
             sectionId: 'cinematic-hero',
             rotationHours: 3,
             rotationMs: 3 * 60 * 60 * 1000,
-            videoFormats: ['video', 'movie', 'film', 'series_episode', 'short', 'music_video', 'documentary', 'long_form'],
-            videoExtensions: ['.mp4', '.webm', '.mov', '.avi', '.m4v', '.mkv', '.m3u8'],
+            // All video types - expanded to catch everything
+            videoTypes: ['video', 'movie', 'film', 'series_episode', 'short', 'music_video', 'documentary', 'long_form', 'episode', 'trailer', 'clip'],
+            videoExtensions: ['.mp4', '.webm', '.mov', '.avi', '.m4v', '.mkv', '.m3u8', '.mpg', '.mpeg'],
             // View recording threshold (15 seconds or 30% of duration)
             viewThresholdSeconds: 15,
             viewPercentage: 0.3
@@ -187,7 +190,7 @@
                 
                 console.log('✅ [HERO-LOAD] supabaseAuth is available');
                 
-                // Fetch published content with video files including Cloudflare fields
+                // Fetch ALL published content with video files including Cloudflare fields
                 const { data: allContent, error } = await window.supabaseAuth
                     .from('Content')
                     .select(`
@@ -209,8 +212,7 @@
                         user_profiles!user_id(id, full_name, username, avatar_url)
                     `)
                     .eq('status', 'published')
-                    .not('file_url', 'is', null)
-                    .limit(100);
+                    .limit(200);
                 
                 if (error) {
                     console.error('❌ [HERO-LOAD] Supabase error:', error);
@@ -226,81 +228,99 @@
                 
                 console.log(`📊 [HERO-LOAD] Fetched ${allContent.length} total content items`);
                 
-                // Filter for video content (including Cloudflare Stream)
+                // ============================================
+                // 🔥 FIXED: LESS STRICT VIDEO FILTERING
+                // ============================================
+                // Filter for video content - more permissive
                 const videoContent = allContent.filter(item => {
-                    // Cloudflare Stream is always video
+                    // 1. Cloudflare Stream is ALWAYS video
                     if (item.streaming_provider === 'cloudflare_stream') {
+                        console.log(`🎬 [HERO-FILTER] Cloudflare Stream video: "${item.title}" (ID: ${item.id})`);
                         return true;
                     }
-                    // Cloudflare R2 is audio, skip for hero (we want video)
+                    
+                    // 2. Skip Cloudflare R2 (audio only)
                     if (item.streaming_provider === 'cloudflare_r2') {
                         return false;
                     }
-                    // Check content_format
-                    if (item.content_format && this.config.videoFormats.includes(item.content_format.toLowerCase())) {
-                        return true;
-                    }
-                    if (item.content_type && this.config.videoFormats.includes(item.content_type.toLowerCase())) {
-                        return true;
-                    }
-                    const fileUrl = (item.file_url || '').toLowerCase();
-                    for (const ext of this.config.videoExtensions) {
-                        if (fileUrl.endsWith(ext)) {
-                            return true;
+                    
+                    // 3. Check content_format (case insensitive)
+                    if (item.content_format) {
+                        const format = item.content_format.toLowerCase();
+                        // Check if it matches any video type
+                        for (const type of this.config.videoTypes) {
+                            if (format.includes(type) || type.includes(format)) {
+                                console.log(`🎬 [HERO-FILTER] Video by format: "${item.title}" (${format})`);
+                                return true;
+                            }
                         }
                     }
+                    
+                    // 4. Check content_type
+                    if (item.content_type) {
+                        const type = item.content_type.toLowerCase();
+                        for (const videoType of this.config.videoTypes) {
+                            if (type.includes(videoType) || videoType.includes(type)) {
+                                console.log(`🎬 [HERO-FILTER] Video by type: "${item.title}" (${type})`);
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    // 5. Check file extension
+                    if (item.file_url) {
+                        const fileUrl = item.file_url.toLowerCase();
+                        for (const ext of this.config.videoExtensions) {
+                            if (fileUrl.endsWith(ext)) {
+                                console.log(`🎬 [HERO-FILTER] Video by extension: "${item.title}" (${ext})`);
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    // 6. If media_type is 'video' (legacy field)
+                    if (item.media_type && item.media_type.toLowerCase() === 'video') {
+                        console.log(`🎬 [HERO-FILTER] Video by media_type: "${item.title}"`);
+                        return true;
+                    }
+                    
                     return false;
                 });
                 
                 console.log(`📹 [HERO-LOAD] Filtered to ${videoContent.length} video items`);
                 
+                // If no video content found, try to use ALL content as fallback
                 if (videoContent.length === 0) {
-                    console.warn('⚠️ [HERO-LOAD] No video content found!');
+                    console.warn('⚠️ [HERO-LOAD] No video content found with strict filtering!');
+                    console.log('🔄 [HERO-LOAD] Attempting fallback: using all content...');
+                    
+                    // Fallback: include any content that has a file_url or streaming_provider
+                    const fallbackContent = allContent.filter(item => {
+                        // Include if it has a file_url or streaming_provider
+                        if (item.file_url || item.streaming_provider) {
+                            // But still exclude Cloudflare R2 (audio only)
+                            if (item.streaming_provider === 'cloudflare_r2') {
+                                return false;
+                            }
+                            console.log(`🔄 [HERO-FALLBACK] Including: "${item.title}" (ID: ${item.id})`);
+                            return true;
+                        }
+                        return false;
+                    });
+                    
+                    if (fallbackContent.length > 0) {
+                        console.log(`📹 [HERO-FALLBACK] Using ${fallbackContent.length} items as fallback`);
+                        // Use fallback content
+                        return this.selectAndRenderContent(fallbackContent);
+                    }
+                    
+                    console.warn('⚠️ [HERO-LOAD] No video content found even with fallback!');
                     this.showPlaceholder('No video content available');
                     return;
                 }
                 
-                // Get stored selection or select random
-                const lastVideoId = localStorage.getItem('hero_last_content_id');
-                const lastVideoTime = localStorage.getItem('hero_last_update_time');
-                const now = Date.now();
-                
-                let selectedVideo = null;
-                
-                if (lastVideoId && lastVideoTime && (now - parseInt(lastVideoTime)) < this.config.rotationMs) {
-                    selectedVideo = videoContent.find(v => v.id.toString() === lastVideoId);
-                    if (selectedVideo) {
-                        console.log(`🎬 [HERO-LOAD] Using existing video (within ${this.config.rotationHours} hours): "${selectedVideo.title}"`);
-                    }
-                }
-                
-                if (!selectedVideo) {
-                    let availableVideos = videoContent;
-                    if (lastVideoId && videoContent.length > 1) {
-                        availableVideos = videoContent.filter(v => v.id.toString() !== lastVideoId);
-                    }
-                    const randomIndex = Math.floor(Math.random() * availableVideos.length);
-                    selectedVideo = availableVideos[randomIndex];
-                    
-                    localStorage.setItem('hero_last_content_id', selectedVideo.id.toString());
-                    localStorage.setItem('hero_last_update_time', now.toString());
-                    
-                    console.log(`🎬 [HERO-LOAD] Selected NEW random video: "${selectedVideo.title}" (index: ${randomIndex} of ${availableVideos.length})`);
-                }
-                
-                // Generate session ID
-                this.state.sessionId = 'hero_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-                
-                // Fetch engagement stats and connectors count
-                await this.fetchEngagementData(selectedVideo);
-                
-                // Render the video
-                await this.renderContent(selectedVideo);
-                
-                // Set up rotation interval
-                if (this.state.rotationInterval) clearInterval(this.state.rotationInterval);
-                this.state.rotationInterval = setInterval(() => this.rotateContent(), this.config.rotationMs);
-                console.log(`⏰ [HERO-LOAD] Rotation set for ${this.config.rotationHours} hours`);
+                // Select and render content from filtered list
+                await this.selectAndRenderContent(videoContent);
                 
             } catch (error) {
                 console.error('❌ [HERO-LOAD] Fatal error:', error);
@@ -309,6 +329,75 @@
                 this.state.isLoading = false;
                 this.hideLoading();
             }
+        },
+        
+        /**
+         * Select random content and render it
+         */
+        async selectAndRenderContent(contentList) {
+            if (!contentList || contentList.length === 0) {
+                console.warn('⚠️ [HERO-SELECT] No content to select from');
+                this.showPlaceholder('No content available');
+                return;
+            }
+            
+            console.log(`🎯 [HERO-SELECT] Selecting from ${contentList.length} items`);
+            
+            // Get stored selection or select random
+            const lastVideoId = localStorage.getItem('hero_last_content_id');
+            const lastVideoTime = localStorage.getItem('hero_last_update_time');
+            const now = Date.now();
+            
+            let selectedVideo = null;
+            
+            // Check if we should use existing selection (within rotation window)
+            if (lastVideoId && lastVideoTime && (now - parseInt(lastVideoTime)) < this.config.rotationMs) {
+                selectedVideo = contentList.find(v => v.id.toString() === lastVideoId);
+                if (selectedVideo) {
+                    console.log(`🎬 [HERO-SELECT] Using existing video (within ${this.config.rotationHours} hours): "${selectedVideo.title}" (ID: ${selectedVideo.id})`);
+                } else {
+                    console.log(`🔄 [HERO-SELECT] Previous video no longer available, selecting new...`);
+                }
+            }
+            
+            // If no existing selection or expired, pick random
+            if (!selectedVideo) {
+                // Exclude last video if possible
+                let availableVideos = contentList;
+                if (lastVideoId && contentList.length > 1) {
+                    availableVideos = contentList.filter(v => v.id.toString() !== lastVideoId);
+                }
+                
+                // If all videos were excluded (shouldn't happen), use the full list
+                if (availableVideos.length === 0) {
+                    availableVideos = contentList;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * availableVideos.length);
+                selectedVideo = availableVideos[randomIndex];
+                
+                // Store the selection
+                localStorage.setItem('hero_last_content_id', selectedVideo.id.toString());
+                localStorage.setItem('hero_last_update_time', now.toString());
+                
+                console.log(`🎬 [HERO-SELECT] Selected NEW random video: "${selectedVideo.title}" (ID: ${selectedVideo.id}) - ${randomIndex + 1} of ${availableVideos.length}`);
+            }
+            
+            // Generate session ID
+            this.state.sessionId = 'hero_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+            
+            // Fetch engagement stats and connectors count
+            await this.fetchEngagementData(selectedVideo);
+            
+            // Render the video
+            await this.renderContent(selectedVideo);
+            
+            // Set up rotation interval
+            if (this.state.rotationInterval) {
+                clearInterval(this.state.rotationInterval);
+            }
+            this.state.rotationInterval = setInterval(() => this.rotateContent(), this.config.rotationMs);
+            console.log(`⏰ [HERO-SELECT] Rotation set for ${this.config.rotationHours} hours`);
         },
         
         /**
@@ -405,7 +494,7 @@
         },
         
         async renderContent(content) {
-            console.log(`🎬 [HERO-RENDER] Rendering content: "${content.title}"`);
+            console.log(`🎬 [HERO-RENDER] Rendering content: "${content.title}" (ID: ${content.id})`);
             
             if (!content) {
                 console.error('❌ [HERO-RENDER] No content to render');
@@ -528,6 +617,7 @@
             
             if (!videoUrl) {
                 console.warn(`⚠️ [HERO-VIDEO] No video URL for content: ${content.title}`);
+                // Try to use thumbnail as fallback
                 if (content.thumbnail_url) {
                     let thumbUrl = content.thumbnail_url;
                     if (!thumbUrl.startsWith('http')) {
@@ -548,8 +638,7 @@
             this.elements.heroVideo.pause();
             this.state.isPlaying = false;
             
-            // For Cloudflare Stream, set the video source to the HLS manifest
-            // HTML5 video can handle HLS natively in Safari, but needs hls.js for others
+            // Set video source
             this.elements.videoSource.src = videoUrl;
             
             // Set appropriate type for HLS
@@ -564,7 +653,9 @@
                     'webm': 'video/webm',
                     'mov': 'video/quicktime',
                     'avi': 'video/x-msvideo',
-                    'mkv': 'video/x-matroska'
+                    'mkv': 'video/x-matroska',
+                    'mpg': 'video/mpeg',
+                    'mpeg': 'video/mpeg'
                 };
                 this.elements.videoSource.type = mimeTypes[ext] || 'video/mp4';
             }
