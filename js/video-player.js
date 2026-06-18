@@ -50,11 +50,15 @@
 // - Updated updateContentId() to sync provider info with streaming manager
 // - Updated _handleEnded() to pass streamingProvider context in events
 // ============================================
+// 🎵 AUDIO SUPPORT (2026-06-18):
+// - loadSource() now detects audio and loads directly to HTML5 media element
+// - Detaches HLS for audio tracks to prevent fatal crashes
+// - Uses safePlay() pattern for audio playback
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v3.0.0 - YouTube-Style Architecture Cleanup + Cloudflare Support)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.0.0 - YouTube-Style Architecture Cleanup + Cloudflare Support + Audio Fix)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -182,6 +186,10 @@
    * ☁️ CLOUDFLARE STREAM SUPPORT (2026-06-18):
    * - Tracks streaming provider for HLS manifests
    * - Passes provider context through events
+   * 
+   * 🎵 AUDIO SUPPORT (2026-06-18):
+   * - loadSource() detects audio and loads directly to HTML5 media element
+   * - Detaches HLS for audio tracks to prevent fatal crashes
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -258,6 +266,7 @@
       // ☁️ Cloudflare Stream tracking
       this._currentStreamingProvider = null;
       this._isHLSStream = false;
+      this._isAudioMode = false;
       
       // Audio restoration tracking (simplified - no fake restore system)
       this._audioRestoreListenerAttached = false;
@@ -442,8 +451,29 @@
       return audioExtensions.some(ext => url.toLowerCase().endsWith(ext));
     }
     
+    /**
+     * Check if current content is audio based on streaming provider
+     */
+    _isContentAudio() {
+      // Check if we have content metadata with streaming provider
+      if (this.contentMetadata && this.contentMetadata.streaming_provider === 'cloudflare_r2') {
+        return true;
+      }
+      // Check if we have a preserved source URL that's audio
+      if (this._sourcePreserved && this._sourcePreserved.url) {
+        return this.isAudioSource(this._sourcePreserved.url);
+      }
+      // Check video element source
+      if (this.video) {
+        const src = this.video.src || this.video.querySelector('source')?.src;
+        if (src) return this.isAudioSource(src);
+      }
+      return false;
+    }
+    
     detectMediaType(url, metadata = {}) {
       if (metadata.media_type) return metadata.media_type;
+      if (metadata.streaming_provider === 'cloudflare_r2') return 'audio';
       if (this.isAudioSource(url)) return 'audio';
       return 'video';
     }
@@ -1072,7 +1102,8 @@
         playlistIndex: window.currentPlaylistIndex,
         currentTime: this.video ? this.video.currentTime : 0,
         duration: this.video ? this.video.duration : 0,
-        streamingProvider: this._currentStreamingProvider || null
+        streamingProvider: this._currentStreamingProvider || null,
+        isAudio: this._isAudioMode
       });
       
       // For backward compatibility, also call window.playNextPlaylistItem if it exists
@@ -1088,7 +1119,8 @@
         totalWatchTime: this.stats.totalWatchTime,
         duration: this.video ? this.video.duration : 0,
         contentId: this.contentId,
-        streamingProvider: this._currentStreamingProvider || null
+        streamingProvider: this._currentStreamingProvider || null,
+        isAudio: this._isAudioMode
       });
     }
     
@@ -1737,7 +1769,8 @@
         contentMetadata = null,
         collectionContext = null,
         streamingProvider = null,
-        isHLS = false
+        isHLS = false,
+        isAudio = false
       } = options;
       
       if (contentId) this.contentId = contentId;
@@ -1751,12 +1784,13 @@
         this._currentStreamingProvider = streamingProvider;
         this._isHLSStream = isHLS;
       }
+      this._isAudioMode = isAudio;
       
       this._audioRendererRecoveryAttempted = false;
       this.viewRecorded = false;
       this._viewThresholdReached = false;
       
-      if (this.isAudioSource(url)) {
+      if (this.isAudioSource(url) || isAudio) {
         if (this.video) this.video.classList.add('audio-mode');
       } else {
         if (this.video) this.video.classList.remove('audio-mode');
@@ -1785,8 +1819,8 @@
       
       this._sourcePreserved = { url, type, method: 'setSource' };
       
-      console.log('✅ Source changed:', { url, contentId, streamingProvider, isHLS });
-      this._emit('source:changed', { url, contentId, type, streamingProvider, isHLS });
+      console.log('✅ Source changed:', { url, contentId, streamingProvider, isHLS, isAudio });
+      this._emit('source:changed', { url, contentId, type, streamingProvider, isHLS, isAudio });
       
       return Promise.resolve();
     }
@@ -2244,6 +2278,7 @@
      * Used for playlist track changes to preserve player state
      * This is the preferred method for non-destructive source changes
      * ☁️ Updated to handle streamingProvider and isHLS params
+     * 🎵 UPDATED: Audio detection - loads directly to HTML5 media element
      */
     loadSource(sourceConfig) {
       if (!this.video) return Promise.reject('Player not attached');
@@ -2254,12 +2289,14 @@
       const contentId = sourceConfig.contentId || this.contentId;
       const streamingProvider = sourceConfig.streamingProvider || null;
       const isHLS = sourceConfig.isHLS || false;
+      const isAudio = sourceConfig.isAudio || false;
       
       console.log('🔄 Loading new source without destroying player:', { 
         url, 
         contentId, 
         streamingProvider,
-        isHLS 
+        isHLS,
+        isAudio
       });
       
       // Update contentId
@@ -2272,6 +2309,72 @@
         this._currentStreamingProvider = streamingProvider;
         this._isHLSStream = isHLS;
       }
+      
+      // 🎵 Check if this is audio (Cloudflare R2 or audio file extension)
+      const isAudioContent = isAudio || 
+                             streamingProvider === 'cloudflare_r2' || 
+                             this.isAudioSource(url) ||
+                             (this.contentMetadata && this.contentMetadata.streaming_provider === 'cloudflare_r2');
+      
+      if (isAudioContent) {
+        console.log('🎵 Audio content detected - Loading directly to HTML5 media element');
+        this._isAudioMode = true;
+        
+        // Detach HLS if it was left over from a video
+        if (window.streamingManager) {
+          console.log('🎵 Destroying streaming manager for audio playback');
+          window.streamingManager.destroy();
+          window.streamingManager = null;
+        }
+        
+        // Reset view recording flags for new source
+        this.viewRecorded = false;
+        this._viewThresholdReached = false;
+        
+        // Pause current playback
+        this.video.pause();
+        
+        // Clear existing source
+        while (this.video.firstChild) {
+          this.video.removeChild(this.video.firstChild);
+        }
+        this.video.removeAttribute('src');
+        
+        // Set direct source link on the native HTML5 media element
+        this.video.src = url;
+        this.video.load();
+        
+        // Play the audio track using our established safePlay pattern
+        if (document.body.classList.contains('user-interacted')) {
+          this.safePlay().catch(err => {
+            console.warn('Auto-play after audio source change blocked:', err);
+            this._showPlayOverlay();
+          });
+        } else {
+          this._showPlayOverlay();
+        }
+        
+        // Update preserved source with provider info
+        this._sourcePreserved = { 
+          url, 
+          type, 
+          method: 'loadSource',
+          streamingProvider: streamingProvider,
+          isHLS: isHLS,
+          isAudio: true
+        };
+        
+        this._emit('source:loaded', { url, contentId, type, streamingProvider, isHLS, isAudio: true });
+        this._emit('audio:loaded', { url, contentId });
+        
+        return Promise.resolve();
+      }
+      
+      // ============================================
+      // VIDEO PATH - Keep existing logic
+      // ============================================
+      console.log('📺 Video content detected - Using HLS/video pipeline');
+      this._isAudioMode = false;
       
       // Reset view recording flags for new source
       this.viewRecorded = false;
@@ -2322,10 +2425,11 @@
         type, 
         method: 'loadSource',
         streamingProvider: streamingProvider,
-        isHLS: isHLS
+        isHLS: isHLS,
+        isAudio: false
       };
       
-      this._emit('source:loaded', { url, contentId, type, streamingProvider, isHLS });
+      this._emit('source:loaded', { url, contentId, type, streamingProvider, isHLS, isAudio: false });
       
       return Promise.resolve();
     }
@@ -2491,7 +2595,8 @@
         viewValidated: this.viewValidated,
         viewThreshold: this._getDynamicViewThreshold(),
         streamingProvider: this._currentStreamingProvider,
-        isHLSStream: this._isHLSStream
+        isHLSStream: this._isHLSStream,
+        isAudioMode: this._isAudioMode
       };
     }
     
@@ -2510,7 +2615,8 @@
           end: this.video.buffered.end(this.video.buffered.length - 1)
         } : null,
         streamingProvider: this._currentStreamingProvider,
-        isHLSStream: this._isHLSStream
+        isHLSStream: this._isHLSStream,
+        isAudioMode: this._isAudioMode
       };
     }
     
@@ -2530,6 +2636,13 @@
      */
     isHLSStream() {
       return this._isHLSStream;
+    }
+    
+    /**
+     * 🎵 Check if current content is audio mode
+     */
+    isAudioMode() {
+      return this._isAudioMode;
     }
   }
   
@@ -2609,7 +2722,7 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.1.0 - YouTube-Style + Cloudflare Support)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.2.0 - YouTube-Style + Cloudflare + Audio Fix)');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
@@ -2622,6 +2735,9 @@
   console.log('   ☁️ Cloudflare Stream: _currentStreamingProvider tracking');
   console.log('   ☁️ Cloudflare Stream: streamingProvider context in events');
   console.log('   ☁️ Cloudflare Stream: HLS detection in loadSource');
+  console.log('   🎵 AUDIO: loadSource() detects Cloudflare R2 and loads directly to HTML5');
+  console.log('   🎵 AUDIO: Detaches HLS for audio tracks to prevent fatal crashes');
+  console.log('   🎵 AUDIO: Uses safePlay() pattern for audio playback');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
