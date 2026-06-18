@@ -1,7 +1,5 @@
-// js/video-player.js — Enhanced Video Player with Cloudflare Stream & R2 Integration
+// js/video-player.js — Enhanced Video Player
 // Bantu Stream Connect — Phase 3 Telemetry + Phase 1D Collection Intelligence
-// ✅ CLOUDFLARE STREAM INTEGRATION: Native Cloudflare Stream SDK support with iframe
-// ✅ CLOUDFLARE R2 SUPPORT: Direct audio playback from custom domain
 // ✅ Phase 3: WatchSessionManager integration for telemetry streaming
 // ✅ Phase 3: playback_sessions UUID propagation for view validation
 // ✅ Phase 1D: Collection/series context awareness for smart navigation
@@ -44,56 +42,19 @@
 // - Added loadSource method for non-destructive source changes
 // - Removed all engagement buttons from player overlay (now outside only)
 // ============================================
-// ☁️ CLOUDFLARE STREAM INTEGRATION (2026-06-17):
-// - Cloudflare Stream iframe rendering with SDK
-// - Event bridging: timeupdate → watch session, ended → playlist progression
-// - Dynamic SDK loading with retry logic
-// - Provider-based branching (cloudflare_stream, cloudflare_r2, fallback)
-// - R2 audio direct playback with full HTML5 audio controls
-// - LoadContent() method as main entry point for Cloudflare content
-// - Full preservation of all UI controls and keyboard shortcuts
+// 🔧 VERSION: v3.0.0 - YouTube-Style Architecture Cleanup
 // ============================================
-// 🔧 VERSION: v4.0.0 - Cloudflare Stream & R2 Integration
+// ☁️ CLOUDFLARE STREAM SUPPORT (2026-06-18):
+// - Added _currentStreamingProvider tracking in constructor
+// - Updated loadSource() to handle streamingProvider and isHLS params
+// - Updated updateContentId() to sync provider info with streaming manager
+// - Updated _handleEnded() to pass streamingProvider context in events
 // ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v4.0.0 - Cloudflare Stream & R2)');
-
-  // ============================================
-  // CLOUDFLARE STREAM SDK LOADER
-  // ============================================
-
-  function loadCloudflareStreamSDK() {
-    return new Promise((resolve, reject) => {
-      if (window.Stream) {
-        console.log('✅ Cloudflare Stream SDK already loaded');
-        resolve(window.Stream);
-        return;
-      }
-      
-      const script = document.createElement('script');
-      script.src = 'https://embed.cloudflarestream.com/embed/sdk.latest.js';
-      script.async = true;
-      script.onload = () => {
-        console.log('✅ Cloudflare Stream SDK loaded successfully');
-        resolve(window.Stream);
-      };
-      script.onerror = () => {
-        console.error('❌ Cloudflare Stream SDK load failed');
-        reject(new Error('Cloudflare Stream SDK load failed'));
-      };
-      document.head.appendChild(script);
-      
-      // Timeout fallback
-      setTimeout(() => {
-        if (!window.Stream) {
-          reject(new Error('Cloudflare Stream SDK load timeout'));
-        }
-      }, 15000);
-    });
-  }
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.0.0 - YouTube-Style Architecture Cleanup + Cloudflare Support)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -116,6 +77,7 @@
 
   /**
    * 🚨 FIX #1 & #8: Record view using RPC with dynamic threshold
+   * This function delegates to the centralized RPC system
    */
   async function recordViewViaRPC(contentId, userId, sessionId, progressSeconds, deviceType) {
     if (!contentId) {
@@ -200,13 +162,6 @@
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
    * collection awareness, and robust media handling
    * 
-   * ☁️ CLOUDFLARE SUPPORT:
-   * - Cloudflare Stream via iframe + SDK
-   * - Cloudflare R2 audio via HTML5 audio
-   * - Fallback HTML5 video for legacy content
-   * - Provider-based branching
-   * - Event bridging to existing engagement systems
-   * 
    * 🎯 YOUTUBE-STYLE ARCHITECTURE:
    * - Player ONLY handles playback
    * - On 'ended', calls window.playNextPlaylistItem() if available
@@ -223,10 +178,14 @@
    * - SINGLE ended handler (NO duplicate playlist progression)
    * - Player NEVER controls playlist directly
    * - loadSource method for non-destructive source changes
+   * 
+   * ☁️ CLOUDFLARE STREAM SUPPORT (2026-06-18):
+   * - Tracks streaming provider for HLS manifests
+   * - Passes provider context through events
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
-      // Configuration with Phase 3/1D defaults + Cloudflare
+      // Configuration with Phase 3/1D defaults
       this.config = {
         // Playback
         autoplay: options.autoplay ?? false,
@@ -274,14 +233,6 @@
       this.socialPanel = null;
       this.settingsMenu = null;
       
-      // ☁️ Cloudflare Stream specific
-      this.isCloudflareStream = false;
-      this.cloudflareBridge = null;
-      this.cloudflareIframe = null;
-      this.cloudflarePlayer = null;
-      this._cloudflareSDKLoaded = false;
-      this._cloudflareInitialized = false;
-      
       // Player state
       this.isFullscreen = false;
       this.isPiP = false;
@@ -304,6 +255,10 @@
       this.viewValidated = false;
       this._viewThresholdReached = false;
       
+      // ☁️ Cloudflare Stream tracking
+      this._currentStreamingProvider = null;
+      this._isHLSStream = false;
+      
       // Audio restoration tracking (simplified - no fake restore system)
       this._audioRestoreListenerAttached = false;
       this._pendingAudioRestore = false;
@@ -317,12 +272,8 @@
         itemType: null
       };
       
-      // Content metadata with Cloudflare fields
+      // Content metadata
       this.contentId = options.contentId || null;
-      this.content = options.content || null;
-      this.streamingProvider = options.content?.streaming_provider || null;
-      this.providerVideoId = options.content?.provider_video_id || null;
-      this.fileUrl = options.content?.file_url || null;
       this.contentMetadata = options.contentMetadata || null;
       
       // Supabase integration
@@ -372,10 +323,8 @@
       // 🚨 Setup contentId change listener
       this._setupContentIdListener();
       
-      console.log('✅ EnhancedVideoPlayer instantiated (Cloudflare Edition)', {
+      console.log('✅ EnhancedVideoPlayer instantiated', {
         contentId: this.contentId,
-        streamingProvider: this.streamingProvider,
-        providerVideoId: this.providerVideoId,
         userId: this.userId,
         telemetry: this.config.enableTelemetry,
         collectionNav: this.config.enableCollectionNav,
@@ -427,11 +376,7 @@
           e.preventDefault();
           e.stopPropagation();
           console.log('🔊 Delegated: Volume button clicked');
-          if (this.isCloudflareStream && this.cloudflarePlayer) {
-            if (this.cloudflarePlayer.muted !== undefined) {
-              this.cloudflarePlayer.muted = !this.cloudflarePlayer.muted;
-            }
-          } else if (this.video) {
+          if (this.video) {
             this.video.muted = !this.video.muted;
             this._updateVolumeUI();
             this._emit('playback:mute', { muted: this.video.muted });
@@ -458,401 +403,6 @@
     }
     
     // =====================================================
-    // ☁️ CLOUDFLARE STREAM HELPERS
-    // =====================================================
-    
-    _isCloudflareStreamContent() {
-      return this.streamingProvider === 'cloudflare_stream' && this.providerVideoId;
-    }
-    
-    _isCloudflareR2Content() {
-      return this.streamingProvider === 'cloudflare_r2' && this.fileUrl;
-    }
-    
-    _isAudioContent() {
-      if (this.content?.media_type === 'audio') return true;
-      if (this.fileUrl && this.isAudioSource(this.fileUrl)) return true;
-      return false;
-    }
-    
-    // =====================================================
-    // ☁️ LOAD CONTENT (Main entry point for Cloudflare content)
-    // =====================================================
-    
-    async loadContent(content) {
-      if (!content) {
-        console.error('❌ loadContent: No content provided');
-        return;
-      }
-      
-      console.log('📦 Loading content:', {
-        id: content.id,
-        title: content.title,
-        streamingProvider: content.streaming_provider,
-        providerVideoId: content.provider_video_id,
-        fileUrl: content.file_url ? 'present' : 'null'
-      });
-      
-      // Update content references
-      this.content = content;
-      this.contentId = content.id;
-      this.streamingProvider = content.streaming_provider || null;
-      this.providerVideoId = content.provider_video_id || null;
-      this.fileUrl = content.file_url || null;
-      
-      // Reset view recording flags
-      this.viewRecorded = false;
-      this._viewThresholdReached = false;
-      
-      // Branch based on streaming provider
-      if (this._isCloudflareStreamContent()) {
-        await this._loadCloudflareStream(content);
-      } else if (this._isCloudflareR2Content()) {
-        await this._loadCloudflareR2(content);
-      } else if (this.fileUrl) {
-        await this._loadFallback(content);
-      } else {
-        console.error('❌ No playable media source found for content');
-        this._emit('error', { message: 'No playable media source' });
-      }
-    }
-    
-    // =====================================================
-    // ☁️ CLOUDFLARE STREAM LOADER (Branch A)
-    // =====================================================
-    
-    async _loadCloudflareStream(content) {
-      console.log('☁️ Loading Cloudflare Stream content:', content.provider_video_id);
-      
-      // Ensure container exists
-      if (!this.container) {
-        console.warn('⚠️ No container for Cloudflare Stream, creating one');
-        this._createContainer();
-      }
-      
-      try {
-        // Load Cloudflare Stream SDK
-        if (!window.Stream) {
-          await loadCloudflareStreamSDK();
-        }
-        
-        // Clean up any existing Cloudflare player
-        if (this.cloudflarePlayer) {
-          try {
-            this.cloudflarePlayer.destroy();
-          } catch (e) {
-            console.warn('Cloudflare player destroy error:', e);
-          }
-          this.cloudflarePlayer = null;
-        }
-        
-        // Remove existing video element if present
-        if (this.video && this.video.parentNode) {
-          this.video.style.display = 'none';
-        }
-        
-        // Create Cloudflare iframe wrapper
-        const wrapper = document.createElement('div');
-        wrapper.className = 'cloudflare-stream-wrapper';
-        wrapper.style.cssText = 'position:relative;padding-top:56.25%;width:100%;height:0;background:#000;';
-        wrapper.id = `cloudflare-wrapper-${content.id}`;
-        
-        const iframe = document.createElement('iframe');
-        iframe.id = `cloudflare-player-${content.id}`;
-        iframe.src = `https://iframe.videodelivery.net/${content.provider_video_id}?preload=true&autoplay=true`;
-        iframe.style.cssText = 'border:none;position:absolute;top:0;left:0;width:100%;height:100%;';
-        iframe.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.setAttribute('loading', 'eager');
-        iframe.setAttribute('playsinline', 'true');
-        
-        wrapper.appendChild(iframe);
-        
-        // Replace container content with wrapper
-        this.container.innerHTML = '';
-        this.container.appendChild(wrapper);
-        this.container.style.position = 'relative';
-        this.container.style.background = '#000';
-        
-        this.cloudflareIframe = iframe;
-        
-        // Initialize Cloudflare Stream player
-        this.cloudflarePlayer = window.Stream(iframe);
-        this.isCloudflareStream = true;
-        this._cloudflareInitialized = true;
-        
-        console.log('✅ Cloudflare Stream player initialized');
-        
-        // Setup event listeners on Cloudflare player
-        this._setupCloudflareEventListeners();
-        
-        // If autoplay is enabled, attempt to play
-        if (this.config.autoplay) {
-          try {
-            await this.cloudflarePlayer.play();
-            this.isPlaying = true;
-            this._emit('play', { contentId: this.contentId });
-          } catch (e) {
-            console.warn('Cloudflare autoplay blocked:', e);
-            this._emit('autoplay:blocked', { error: e });
-          }
-        }
-        
-        this._emit('loaded', { 
-          contentId: this.contentId,
-          provider: 'cloudflare_stream',
-          providerVideoId: content.provider_video_id
-        });
-        
-      } catch (error) {
-        console.error('❌ Cloudflare Stream load failed:', error);
-        this._handleError({ type: 'cloudflare_load', error });
-        throw error;
-      }
-    }
-    
-    _setupCloudflareEventListeners() {
-      if (!this.cloudflarePlayer) return;
-      
-      // Play event
-      this.cloudflarePlayer.addEventListener('play', () => {
-        this.isPlaying = true;
-        this.playbackStartTime = Date.now();
-        this.stats.playCount++;
-        this._emit('play', { contentId: this.contentId });
-        this._scheduleControlsHide();
-        this._initializeTelemetrySession();
-      });
-      
-      // Pause event
-      this.cloudflarePlayer.addEventListener('pause', () => {
-        this.isPlaying = false;
-        if (this.playbackStartTime) {
-          this.stats.totalWatchTime += Date.now() - this.playbackStartTime;
-          this.playbackStartTime = null;
-        }
-        this._emit('pause', { contentId: this.contentId });
-        this._showControls();
-      });
-      
-      // Time update - bridge to our engagement system
-      this.cloudflarePlayer.addEventListener('timeupdate', () => {
-        const currentTime = this.cloudflarePlayer.currentTime || 0;
-        const duration = this.cloudflarePlayer.duration || 0;
-        
-        // Emit for external listeners
-        this._emit('timeupdate', { 
-          currentTime, 
-          duration, 
-          contentId: this.contentId 
-        });
-        
-        // Check view threshold
-        if (!this.viewRecorded && currentTime > 0) {
-          const threshold = this._getDynamicViewThreshold();
-          if (currentTime >= threshold && !this._viewThresholdReached) {
-            this._viewThresholdReached = true;
-            this._recordViewViaRPC(Math.floor(currentTime));
-          }
-        }
-        
-        // Update UI (using existing methods)
-        this._updateTimeDisplay();
-        this._updateProgressBar();
-      });
-      
-      // Ended - trigger playlist progression
-      this.cloudflarePlayer.addEventListener('ended', () => {
-        this.isPlaying = false;
-        console.log('🏁 Cloudflare Stream ended');
-        
-        // Emit ended event for our system
-        this._emit('ended', { 
-          contentId: this.contentId,
-          duration: this.cloudflarePlayer.duration || 0
-        });
-        
-        // Direct call to playlist progression
-        if (typeof window.playNextPlaylistItem === 'function') {
-          console.log('🎬 Invoking window.playNextPlaylistItem() from Cloudflare ended');
-          window.playNextPlaylistItem();
-        }
-        
-        this._emit('playback:ended', {
-          totalWatchTime: this.stats.totalWatchTime,
-          duration: this.cloudflarePlayer.duration || 0,
-          contentId: this.contentId
-        });
-      });
-      
-      // Error event
-      this.cloudflarePlayer.addEventListener('error', (e) => {
-        console.error('❌ Cloudflare Stream error:', e);
-        this._handleError({ type: 'cloudflare_error', error: e });
-        this._emit('error', { error: e });
-      });
-      
-      // Progress/buffering
-      this.cloudflarePlayer.addEventListener('progress', () => {
-        const buffered = this.cloudflarePlayer.buffered;
-        if (buffered && buffered.length > 0) {
-          this._emit('progress', { 
-            buffered: buffered.end(buffered.length - 1),
-            contentId: this.contentId
-          });
-        }
-      });
-      
-      console.log('✅ Cloudflare Stream event listeners setup complete');
-    }
-    
-    // =====================================================
-    // ☁️ CLOUDFLARE R2 LOADER (Branch B - Audio)
-    // =====================================================
-    
-    async _loadCloudflareR2(content) {
-      console.log('☁️ Loading Cloudflare R2 audio content:', content.file_url);
-      
-      // Ensure video element exists
-      if (!this.video) {
-        console.warn('⚠️ No video element for R2 audio, creating one');
-        this._createVideoElement();
-      }
-      
-      if (!this.video) {
-        console.error('❌ Could not create video element for R2 audio');
-        return;
-      }
-      
-      // Reset video element
-      this.video.style.display = 'block';
-      this.video.controls = false;
-      this.video.classList.add('audio-mode');
-      
-      // Set audio source
-      this.video.src = content.file_url;
-      this.video.type = this.getMediaMimeType(content.file_url);
-      this.video.load();
-      
-      this.isCloudflareStream = false;
-      this._cloudflareInitialized = false;
-      
-      // Apply audio mode
-      this._applyAudioMode();
-      
-      // Setup standard video event listeners
-      this._setupEventListeners();
-      
-      // If autoplay is enabled, attempt to play
-      if (this.config.autoplay) {
-        try {
-          await this.video.play();
-          this.isPlaying = true;
-          this._emit('play', { contentId: this.contentId });
-        } catch (e) {
-          console.warn('R2 audio autoplay blocked:', e);
-          this._emit('autoplay:blocked', { error: e });
-        }
-      }
-      
-      this._emit('loaded', { 
-        contentId: this.contentId,
-        provider: 'cloudflare_r2',
-        fileUrl: content.file_url
-      });
-      
-      console.log('✅ Cloudflare R2 audio loaded');
-    }
-    
-    // =====================================================
-    // ☁️ FALLBACK LOADER (Branch C)
-    // =====================================================
-    
-    async _loadFallback(content) {
-      console.log('📁 Loading fallback content:', content.file_url);
-      
-      if (!this.video) {
-        console.warn('⚠️ No video element for fallback, creating one');
-        this._createVideoElement();
-      }
-      
-      if (!this.video) {
-        console.error('❌ Could not create video element for fallback');
-        return;
-      }
-      
-      this.video.style.display = 'block';
-      this.video.classList.remove('audio-mode');
-      
-      // Set video source
-      this.video.src = content.file_url;
-      this.video.type = this.getMediaMimeType(content.file_url);
-      this.video.load();
-      
-      this.isCloudflareStream = false;
-      this._cloudflareInitialized = false;
-      
-      // Setup standard video event listeners
-      this._setupEventListeners();
-      
-      if (this.config.autoplay) {
-        try {
-          await this.video.play();
-          this.isPlaying = true;
-          this._emit('play', { contentId: this.contentId });
-        } catch (e) {
-          console.warn('Fallback autoplay blocked:', e);
-          this._emit('autoplay:blocked', { error: e });
-        }
-      }
-      
-      this._emit('loaded', { 
-        contentId: this.contentId,
-        provider: 'fallback',
-        fileUrl: content.file_url
-      });
-      
-      console.log('✅ Fallback content loaded');
-    }
-    
-    // =====================================================
-    // VIDEO ELEMENT CREATION HELPERS
-    // =====================================================
-    
-    _createContainer() {
-      this.container = document.createElement('div');
-      this.container.className = 'enhanced-video-container';
-      this.container.style.cssText = 'position:relative;width:100%;background:#000;';
-      
-      const target = document.getElementById('inlinePlayer');
-      if (target) {
-        target.appendChild(this.container);
-      } else {
-        document.body.appendChild(this.container);
-      }
-    }
-    
-    _createVideoElement() {
-      const video = document.createElement('video');
-      video.id = 'inlineVideoPlayer';
-      video.className = 'enhanced-video-player';
-      video.playsInline = true;
-      video.crossOrigin = 'anonymous';
-      video.preload = this.config.preload;
-      video.muted = this.config.muted;
-      
-      if (!this.container) {
-        this._createContainer();
-      }
-      
-      this.container.innerHTML = '';
-      this.container.appendChild(video);
-      this.video = video;
-      
-      return video;
-    }
-    
-    // =====================================================
     // MIME TYPE & MEDIA DETECTION
     // =====================================================
     
@@ -861,13 +411,16 @@
       
       const lower = url.toLowerCase();
       
+      // HLS manifest
+      if (lower.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
+      if (lower.includes('videodelivery.net')) return 'application/vnd.apple.mpegurl';
+      
       // Video types
       if (lower.endsWith('.mp4')) return 'video/mp4';
       if (lower.endsWith('.webm')) return 'video/webm';
       if (lower.endsWith('.mov') || lower.endsWith('.qt')) return 'video/quicktime';
       if (lower.endsWith('.mkv')) return 'video/x-matroska';
       if (lower.endsWith('.avi')) return 'video/x-msvideo';
-      if (lower.endsWith('.m3u8')) return 'application/x-mpegURL';
       if (lower.endsWith('.mpd')) return 'application/dash+xml';
       
       // Audio types
@@ -897,20 +450,19 @@
     
     /**
      * 🚨 FIX #8: Calculate dynamic threshold based on video duration
+     * Uses min(15 seconds, 30% of duration) for view recording
      */
     _getDynamicViewThreshold() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const duration = this.cloudflarePlayer.duration || 0;
-        if (duration <= 0) return this.config.minViewThresholdSeconds;
-        const thirtyPercentDuration = duration * this.config.percentageViewThreshold;
-        return Math.max(3, Math.min(this.config.minViewThresholdSeconds, thirtyPercentDuration));
-      }
-      
       if (!this.video) return this.config.minViewThresholdSeconds;
+      
       const duration = this.video.duration || 0;
       if (duration <= 0) return this.config.minViewThresholdSeconds;
+      
       const thirtyPercentDuration = duration * this.config.percentageViewThreshold;
-      return Math.max(3, Math.min(this.config.minViewThresholdSeconds, thirtyPercentDuration));
+      const thresholdSeconds = Math.min(this.config.minViewThresholdSeconds, thirtyPercentDuration);
+      
+      // Ensure at least 3 seconds for very short content
+      return Math.max(3, thresholdSeconds);
     }
     
     // =====================================================
@@ -923,8 +475,8 @@
         return Promise.reject(new Error('Player destroyed'));
       }
       
-      if (!videoElement && !container) {
-        throw new Error('Video element or container is required');
+      if (!videoElement) {
+        throw new Error('Video element is required');
       }
       
       if (this._isAttached && this.video === videoElement) {
@@ -937,48 +489,35 @@
         this._cleanupAttachment();
       }
       
-      this.video = videoElement || null;
-      this.container = container || videoElement?.parentElement || null;
+      this.video = videoElement;
+      this.container = container || videoElement.parentElement;
       
       if (options.contentId) this.contentId = options.contentId;
-      if (options.content) {
-        this.content = options.content;
-        this.streamingProvider = options.content.streaming_provider || null;
-        this.providerVideoId = options.content.provider_video_id || null;
-        this.fileUrl = options.content.file_url || null;
-      }
       if (options.contentMetadata) this.contentMetadata = options.contentMetadata;
       if (options.collectionContext) {
         this.collectionContext = { ...this.collectionContext, ...options.collectionContext };
       }
       
-      // If we have content, load it
-      if (this.content) {
-        this.loadContent(this.content);
-      } else {
-        // Fallback to legacy behavior
-        this._preserveSource();
-        this._configureVideoElement();
-        this._applyAudioMode();
-        this._createControls();
-        this._setupEventListeners();
-        this._setupControlInteractions();
-        this._initializeIntegrations();
-        this._restoreAndLoadSource();
-      }
+      this._preserveSource();
+      this._configureVideoElement();
+      this._applyAudioMode();
+      this._createControls();
+      this._setupEventListeners();
+      this._setupControlInteractions();
+      this._initializeIntegrations();
+      this._restoreAndLoadSource();
       
       this._isAttached = true;
       
       console.log('✅ EnhancedVideoPlayer attached', {
         contentId: this.contentId,
-        streamingProvider: this.streamingProvider,
-        mediaType: this.detectMediaType(this._sourcePreserved?.url)
+        mediaType: this.detectMediaType(this._sourcePreserved?.url),
+        collectionId: this.collectionContext.collectionId
       });
       
       this._emit('player:attached', {
         contentId: this.contentId,
         container: this.container,
-        streamingProvider: this.streamingProvider,
         mediaType: this.detectMediaType(this._sourcePreserved?.url)
       });
       
@@ -1040,7 +579,8 @@
     }
     
     _applyAudioMode() {
-      const isAudio = this._isAudioContent();
+      const url = this._sourcePreserved ? this._sourcePreserved.url : null;
+      const isAudio = this.isAudioSource(url);
       
       if (this.video) {
         if (isAudio) {
@@ -1093,6 +633,10 @@
     
     _getControlsHTML() {
       const isMobile = this._isMobile;
+      
+      // 🔧 FIX #6: Removed engagement buttons from player overlay
+      // Social buttons (like, favorite, share) are now ONLY outside player
+      // Only keep essential playback controls
       
       return `
         <div class="controls-bar" role="group" aria-label="Playback controls">
@@ -1363,7 +907,6 @@
     }
     
     _setupEventListeners() {
-      if (this.isCloudflareStream) return; // Cloudflare uses its own listeners
       if (!this.video || this._listenersAttached) return;
       
       const events = [
@@ -1508,19 +1051,32 @@
       });
     }
     
+    // =====================================================
+    // 🎯 CRITICAL FIX #8: SINGLE ENDED HANDLER (NO DUPLICATES)
+    // Player ONLY emits event - does NOT control playlist directly
+    // This prevents the double advancement bug
+    // ☁️ Updated to include streamingProvider context
+    // =====================================================
     _handleEnded() {
       this.isPlaying = false;
       this._updatePlayButton(false);
       
       console.log('🏁 Media playback completed. Emitting ended event for external handler.');
       
+      // 🎯 YOUTUBE-STYLE ARCHITECTURE:
+      // Player ONLY emits the mediaEnded event
+      // Content-detail.js owns ALL playlist navigation logic
+      // This prevents duplicate advancement from video-player.js
       this._emit('mediaEnded', {
         contentId: this.contentId,
         playlistIndex: window.currentPlaylistIndex,
         currentTime: this.video ? this.video.currentTime : 0,
-        duration: this.video ? this.video.duration : 0
+        duration: this.video ? this.video.duration : 0,
+        streamingProvider: this._currentStreamingProvider || null
       });
       
+      // For backward compatibility, also call window.playNextPlaylistItem if it exists
+      // This is the ONLY place where playlist advancement is triggered
       if (typeof window.playNextPlaylistItem === 'function') {
         console.log('🎬 Invoking window.playNextPlaylistItem() (delegated to content-detail.js)');
         window.playNextPlaylistItem();
@@ -1531,7 +1087,8 @@
       this._emit('playback:ended', {
         totalWatchTime: this.stats.totalWatchTime,
         duration: this.video ? this.video.duration : 0,
-        contentId: this.contentId
+        contentId: this.contentId,
+        streamingProvider: this._currentStreamingProvider || null
       });
     }
     
@@ -1539,6 +1096,7 @@
       this._updateTimeDisplay();
       this._updateProgressBar();
       
+      // 🚨 FIX #1 & #8: Record view using dynamic threshold
       if (!this.viewRecorded && this.video && this.video.currentTime > 0) {
         const dynamicThreshold = this._getDynamicViewThreshold();
         if (this.video.currentTime >= dynamicThreshold && !this._viewThresholdReached) {
@@ -1888,6 +1446,8 @@
       }
       
       if (this.config.enableCollectionNav) {
+        // Note: prev/next buttons also handled by delegated listeners
+        // but we keep these for direct access
         if (c.prevTrackBtn) {
           c.prevTrackBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2021,30 +1581,12 @@
     }
     
     _updateTimeDisplay() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const current = this._formatTime(this.cloudflarePlayer.currentTime || 0);
-        if (this._controlsCache && this._controlsCache.currentTime) {
-          this._controlsCache.currentTime.textContent = current;
-        }
-        return;
-      }
-      
       if (!this._controlsCache || !this._controlsCache.currentTime || !this.video) return;
       const current = this._formatTime(this.video.currentTime);
       this._controlsCache.currentTime.textContent = current;
     }
     
     _updateDurationDisplay() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const duration = this.cloudflarePlayer.duration || 0;
-        if (duration && isFinite(duration)) {
-          if (this._controlsCache && this._controlsCache.duration) {
-            this._controlsCache.duration.textContent = this._formatTime(duration);
-          }
-        }
-        return;
-      }
-      
       if (!this._controlsCache || !this._controlsCache.duration || !this.video) return;
       const duration = this.video.duration;
       if (duration && isFinite(duration)) {
@@ -2053,17 +1595,6 @@
     }
     
     _updateProgressBar() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const currentTime = this.cloudflarePlayer.currentTime || 0;
-        const duration = this.cloudflarePlayer.duration || 0;
-        if (this._controlsCache && this._controlsCache.progressBar && duration > 0) {
-          const percent = (currentTime / duration) * 100;
-          this._controlsCache.progressBar.value = percent;
-          this._controlsCache.progressBar.setAttribute('aria-valuenow', Math.round(percent));
-        }
-        return;
-      }
-      
       if (!this._controlsCache || !this._controlsCache.progressBar || !this.video) return;
       const { currentTime, duration } = this.video;
       if (duration && isFinite(duration)) {
@@ -2074,7 +1605,6 @@
     }
     
     _updateBufferedProgress() {
-      if (this.isCloudflareStream) return;
       if (!this._controlsCache || !this._controlsCache.progressBuffer || !this.video) return;
       const { buffered, duration } = this.video;
       if (duration && isFinite(duration) && buffered && buffered.length > 0) {
@@ -2085,7 +1615,6 @@
     }
     
     _updateVolumeUI() {
-      if (this.isCloudflareStream) return;
       if (!this._controlsCache || !this._controlsCache.volumeBtn || !this.video) return;
       const { muted, volume } = this.video;
       const icon = this._controlsCache.volumeBtn.querySelector('i');
@@ -2152,7 +1681,6 @@
     }
     
     _restoreAndLoadSource() {
-      if (this.isCloudflareStream) return;
       if (!this._sourcePreserved || !this._sourcePreserved.url || !this.video) return;
       
       const { url, type } = this._sourcePreserved;
@@ -2201,24 +1729,27 @@
     }
     
     setSource(url, options = {}) {
-      if (this.isCloudflareStream) {
-        console.warn('⚠️ setSource called on Cloudflare Stream player - use loadContent() instead');
-        return Promise.resolve();
-      }
-      
       if (!this.video || this._isDestroyed) return Promise.reject('Player destroyed');
       
       const {
         type = this.getMediaMimeType(url),
         contentId = null,
         contentMetadata = null,
-        collectionContext = null
+        collectionContext = null,
+        streamingProvider = null,
+        isHLS = false
       } = options;
       
       if (contentId) this.contentId = contentId;
       if (contentMetadata) this.contentMetadata = contentMetadata;
       if (collectionContext) {
         this.collectionContext = { ...this.collectionContext, ...collectionContext };
+      }
+      
+      // 🚨 Store streaming provider for context
+      if (streamingProvider) {
+        this._currentStreamingProvider = streamingProvider;
+        this._isHLSStream = isHLS;
       }
       
       this._audioRendererRecoveryAttempted = false;
@@ -2254,70 +1785,16 @@
       
       this._sourcePreserved = { url, type, method: 'setSource' };
       
-      console.log('✅ Source changed:', { url, contentId });
-      this._emit('source:changed', { url, contentId, type });
-      
-      return Promise.resolve();
-    }
-    
-    /**
-     * 🚨 CRITICAL: Load source without destroying player instance
-     * Used for playlist track changes to preserve player state
-     */
-    loadSource(sourceConfig) {
-      if (this.isCloudflareStream) {
-        console.warn('⚠️ loadSource called on Cloudflare Stream player - use loadContent() instead');
-        return Promise.resolve();
-      }
-      
-      if (!this.video) return Promise.reject('Player not attached');
-      if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
-      
-      const url = sourceConfig.url;
-      const type = sourceConfig.type || this.getMediaMimeType(url);
-      const contentId = sourceConfig.contentId || this.contentId;
-      
-      console.log('🔄 Loading new source without destroying player:', { url, contentId });
-      
-      if (contentId && contentId !== this.contentId) {
-        this.updateContentId(contentId);
-      }
-      
-      this.viewRecorded = false;
-      this._viewThresholdReached = false;
-      
-      this.video.pause();
-      
-      while (this.video.firstChild) {
-        this.video.removeChild(this.video.firstChild);
-      }
-      this.video.removeAttribute('src');
-      
-      const source = document.createElement('source');
-      source.src = url;
-      source.type = type;
-      this.video.appendChild(source);
-      
-      this.video.load();
-      
-      if (document.body.classList.contains('user-interacted')) {
-        this.play().catch(err => {
-          console.warn('Auto-play after source change blocked:', err);
-          this._showPlayOverlay();
-        });
-      }
-      
-      this._sourcePreserved = { url, type, method: 'loadSource' };
-      
-      this._emit('source:loaded', { url, contentId, type });
+      console.log('✅ Source changed:', { url, contentId, streamingProvider, isHLS });
+      this._emit('source:changed', { url, contentId, type, streamingProvider, isHLS });
       
       return Promise.resolve();
     }
     
     // =====================================================
-    // UPDATE CONTENT ID
+    // 🚨 FIX #2: Update contentId for playlist track changes
+    // ☁️ Updated to sync streaming provider with streaming manager
     // =====================================================
-    
     updateContentId(newContentId) {
       if (this.contentId === newContentId) {
         console.log('⚠️ Player contentId unchanged:', newContentId);
@@ -2327,19 +1804,29 @@
       console.log(`🔄 Player contentId updated: ${this.contentId} -> ${newContentId}`);
       this.contentId = newContentId;
       
+      // Reset view recording state for new content
       this.viewRecorded = false;
       this._viewThresholdReached = false;
       this.viewValidated = false;
       
+      // 🚨 Update session with new content ID
       if (this.watchSession && typeof this.watchSession.updateContentId === 'function') {
         this.watchSession.updateContentId(newContentId);
       }
       
-      this._emit('content:changed', { contentId: newContentId });
+      // 🚨 If streaming provider changed, notify streaming manager
+      if (window.streamingManager && typeof window.streamingManager.updateContentId === 'function') {
+        window.streamingManager.updateContentId(newContentId);
+      }
+      
+      this._emit('content:changed', { 
+        contentId: newContentId,
+        streamingProvider: this._currentStreamingProvider 
+      });
     }
     
     /**
-     * 🚨 Sync engagement state with UI
+     * 🚨 Sync engagement state with UI (for when external changes happen)
      */
     syncEngagementState(engagementData) {
       if (engagementData) {
@@ -2353,33 +1840,20 @@
     }
     
     // =====================================================
-    // PLAYBACK CONTROLS (Abstracted for both modes)
+    // 🔧 FIX #2 & #7: SIMPLIFIED AUDIO RESTORATION (NO FAKE SYSTEM)
+    // No fake _attachAudioRestoreListeners or _restoreAudioAfterInteraction
+    // Instead: direct user gesture handling in content-detail.js
     // =====================================================
-    
     async safePlay() {
-      if (this._isDestroyed) {
+      if (!this.video || this._isDestroyed) {
         return Promise.reject('Player destroyed');
       }
       
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        try {
-          await this.cloudflarePlayer.play();
-          this.isPlaying = true;
-          this._emit('play', { contentId: this.contentId });
-          return true;
-        } catch (error) {
-          console.warn('Cloudflare play error:', error);
-          throw error;
-        }
-      }
-      
-      if (!this.video) {
-        return Promise.reject('No video element');
-      }
-      
       try {
+        // First attempt: normal playback with unmuted audio
         await this.video.play();
         
+        // Success! Unmute if needed (but should already be unmuted)
         if (this.video.muted) {
           this.video.muted = false;
           this.config.muted = false;
@@ -2392,6 +1866,7 @@
       } catch (error) {
         console.warn('⚠️ Initial play blocked or failed:', error.message);
         
+        // Second attempt: Force mute and retry
         if (this.video) {
           this.video.muted = true;
           this.config.muted = true;
@@ -2401,7 +1876,10 @@
           if (this.video) {
             await this.video.play();
             console.log('✅ Playback recovered in muted mode');
+            
+            // Show play overlay to prompt user to unmute
             this._showPlayOverlay();
+            
             this._emit('playback:audio-muted', { 
               reason: error.message,
               willRestoreOnInteraction: true 
@@ -2412,7 +1890,10 @@
           
         } catch (retryError) {
           console.error('❌ Hard playback failure:', retryError);
+          
+          // Show play overlay to let user initiate manually
           this._showPlayOverlay();
+          
           this._emit('playback:fatal-error', { error: retryError });
           throw retryError;
         }
@@ -2420,32 +1901,19 @@
     }
     
     async play() {
+      if (!this.video || this._isDestroyed) {
+        return Promise.reject('Player destroyed');
+      }
       return this.safePlay();
     }
     
     pause() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        this.cloudflarePlayer.pause();
-        this.isPlaying = false;
-        this._emit('pause', { contentId: this.contentId });
-        return;
-      }
-      
       if (this.video && !this._isDestroyed) {
         this.video.pause();
       }
     }
     
     togglePlay() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        if (this.cloudflarePlayer.paused) {
-          this.play().catch(() => {});
-        } else {
-          this.pause();
-        }
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       if (this.video.paused) {
         this.play().catch(() => {});
@@ -2455,12 +1923,6 @@
     }
     
     seek(time) {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        this.cloudflarePlayer.currentTime = time;
-        this._emit('seeked', { time, contentId: this.contentId });
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       if (isNaN(time) || !isFinite(time)) return;
       
@@ -2475,43 +1937,17 @@
     }
     
     seekRelative(seconds) {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const current = this.cloudflarePlayer.currentTime || 0;
-        this.seek(current + seconds);
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       this.seek(this.video.currentTime + seconds);
     }
     
     seekPercent(percent) {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const duration = this.cloudflarePlayer.duration || 0;
-        this.seek((percent / 100) * duration);
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       const time = (percent / 100) * (this.video.duration || 0);
       this.seek(time);
     }
     
     setPlaybackRate(rate) {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        // Cloudflare Stream may support playbackRate, but it's not guaranteed
-        if (this.cloudflarePlayer.playbackRate !== undefined) {
-          const clamped = Math.max(0.25, Math.min(4, rate));
-          this.cloudflarePlayer.playbackRate = clamped;
-          this.playbackRate = clamped;
-          console.log(`⚡ Cloudflare playback rate: ${clamped}x`);
-          this._emit('playback:ratechange', { rate: clamped });
-        } else {
-          console.warn('⚠️ Cloudflare Stream playback rate not supported');
-        }
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0.25, Math.min(4, rate));
@@ -2525,16 +1961,6 @@
     }
     
     setVolume(volume) {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        if (this.cloudflarePlayer.volume !== undefined) {
-          const clamped = Math.max(0, Math.min(1, volume));
-          this.cloudflarePlayer.volume = clamped;
-          console.log(`🔊 Cloudflare volume: ${Math.round(clamped * 100)}%`);
-          this._emit('playback:volumechange', { volume: clamped, muted: false });
-        }
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       
       const clamped = Math.max(0, Math.min(1, volume));
@@ -2551,25 +1977,11 @@
     }
     
     adjustVolume(delta) {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        const current = this.cloudflarePlayer.volume || 0.5;
-        this.setVolume(current + delta);
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       this.setVolume(this.video.volume + delta);
     }
     
     toggleMute() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        if (this.cloudflarePlayer.muted !== undefined) {
-          this.cloudflarePlayer.muted = !this.cloudflarePlayer.muted;
-          this._emit('playback:mute', { muted: this.cloudflarePlayer.muted });
-        }
-        return;
-      }
-      
       if (!this.video || this._isDestroyed) return;
       if (this.video) {
         this.video.muted = !this.video.muted;
@@ -2581,7 +1993,7 @@
     }
     
     toggleFullscreen() {
-      const target = this.container || this.video || this.cloudflareIframe;
+      const target = this.container || this.video;
       if (!target) return;
       
       if (!this.isFullscreen) {
@@ -2637,11 +2049,6 @@
     }
     
     async togglePictureInPicture() {
-      if (this.isCloudflareStream) {
-        console.warn('⚠️ PiP not supported for Cloudflare Stream');
-        return;
-      }
-      
       if (!this.video || !document.pictureInPictureEnabled) return;
       
       try {
@@ -2660,97 +2067,9 @@
       }
     }
     
-    // =====================================================
-    // QUALITY
-    // =====================================================
-    
-    setQuality(quality) {
-      if (this.isCloudflareStream) {
-        console.log('☁️ Cloudflare Stream - quality switching handled internally');
-        this.currentQuality = quality;
-        this._emit('playback:quality-change', {
-          from: this.currentQuality,
-          to: quality,
-          provider: 'cloudflare_stream'
-        });
-        return;
-      }
-      
-      if (quality === this.currentQuality) return;
-      
-      console.log(`🎬 Quality: ${quality}`);
-      this.currentQuality = quality;
-      this.stats.qualityChanges++;
-      
-      this._emit('playback:quality-change', {
-        from: this.currentQuality,
-        to: quality
-      });
-      
-      if (window.stateManager) {
-        window.stateManager.setPreference('quality', quality);
-      }
+    _initializeIntegrations() {
+      console.log('🔌 Integrations initialized');
     }
-    
-    // =====================================================
-    // NAVIGATION
-    // =====================================================
-    
-    playPrevious() {
-      console.log('⏮️ Playing previous item...');
-      
-      if (typeof window.playPreviousPlaylistItem === 'function') {
-        window.playPreviousPlaylistItem();
-        return;
-      }
-      
-      if (window.QueueManager && window.QueueManager.playPrevious) {
-        window.QueueManager.playPrevious();
-        return;
-      }
-      
-      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getPreviousItem) {
-        const prevItem = window.ContentCollectionsEngine.getPreviousItem(this.contentId);
-        if (prevItem) {
-          window.location.href = `content-detail.html?id=${prevItem.id}`;
-          return;
-        }
-      }
-      
-      this._emit('collection:previous-requested', {
-        currentContentId: this.contentId
-      });
-    }
-    
-    playNext() {
-      console.log('⏭️ Playing next item...');
-      
-      if (typeof window.playNextPlaylistItem === 'function') {
-        window.playNextPlaylistItem();
-        return;
-      }
-      
-      if (window.QueueManager && window.QueueManager.playNext) {
-        window.QueueManager.playNext();
-        return;
-      }
-      
-      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
-        const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
-        if (nextItem) {
-          window.location.href = `content-detail.html?id=${nextItem.id}`;
-          return;
-        }
-      }
-      
-      this._emit('collection:next-requested', {
-        currentContentId: this.contentId
-      });
-    }
-    
-    // =====================================================
-    // TELEMETRY
-    // =====================================================
     
     _initializeTelemetrySession() {
       if (!this.config.enableTelemetry || !this.supabase || !this.contentId) return;
@@ -2796,12 +2115,6 @@
             }
           });
           
-          if (this.isCloudflareStream && this.cloudflarePlayer) {
-            this.watchSession.start(null, this);
-          } else if (this.video) {
-            this.watchSession.start(this.video);
-          }
-          
           console.log('🎬 WatchSession initialized for telemetry');
           
         } catch (error) {
@@ -2810,13 +2123,14 @@
       }
     }
     
-    async _recordViewViaRPC(progressSeconds) {
+    // =====================================================
+    // 🚨 FIX #1 & #8: Record view using RPC with dynamic threshold
+    // =====================================================
+    async _recordViewViaRPC() {
       if (this.viewRecorded || !this.supabase || !this.contentId) return;
       
       this.viewRecorded = true;
-      const currentProgress = progressSeconds || (this.isCloudflareStream ? 
-        Math.floor(this.cloudflarePlayer?.currentTime || 0) : 
-        Math.floor(this.video?.currentTime || 30));
+      const currentProgress = this.video ? Math.floor(this.video.currentTime) : 30;
       const dynamicThreshold = this._getDynamicViewThreshold();
       
       console.log(`👁️ View threshold reached (${dynamicThreshold}s), recording via RPC for content ${this.contentId}...`);
@@ -2850,17 +2164,171 @@
       });
     }
     
-    // =====================================================
-    // INTEGRATIONS
-    // =====================================================
-    
-    _initializeIntegrations() {
-      console.log('🔌 Integrations initialized');
+    playPrevious() {
+      console.log('⏮️ Playing previous item...');
+      
+      // Use global playlist function if available
+      if (typeof window.playPreviousPlaylistItem === 'function') {
+        window.playPreviousPlaylistItem();
+        return;
+      }
+      
+      // Fallback to QueueManager
+      if (window.QueueManager && window.QueueManager.playPrevious) {
+        window.QueueManager.playPrevious();
+        return;
+      }
+      
+      // Fallback to ContentCollectionsEngine
+      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getPreviousItem) {
+        const prevItem = window.ContentCollectionsEngine.getPreviousItem(this.contentId);
+        if (prevItem) {
+          window.location.href = `content-detail.html?id=${prevItem.id}`;
+          return;
+        }
+      }
+      
+      this._emit('collection:previous-requested', {
+        currentContentId: this.contentId
+      });
     }
     
-    // =====================================================
-    // EVENT SYSTEM
-    // =====================================================
+    playNext() {
+      console.log('⏭️ Playing next item...');
+      
+      // Use global playlist function if available
+      if (typeof window.playNextPlaylistItem === 'function') {
+        window.playNextPlaylistItem();
+        return;
+      }
+      
+      // Fallback to QueueManager
+      if (window.QueueManager && window.QueueManager.playNext) {
+        window.QueueManager.playNext();
+        return;
+      }
+      
+      // Fallback to ContentCollectionsEngine
+      if (window.ContentCollectionsEngine && window.ContentCollectionsEngine.getNextItem) {
+        const nextItem = window.ContentCollectionsEngine.getNextItem(this.contentId);
+        if (nextItem) {
+          window.location.href = `content-detail.html?id=${nextItem.id}`;
+          return;
+        }
+      }
+      
+      this._emit('collection:next-requested', {
+        currentContentId: this.contentId
+      });
+    }
+    
+    setQuality(quality) {
+      if (quality === this.currentQuality) return;
+      
+      console.log(`🎬 Quality: ${quality}`);
+      this.currentQuality = quality;
+      this.stats.qualityChanges++;
+      
+      this._emit('playback:quality-change', {
+        from: this.currentQuality,
+        to: quality
+      });
+      
+      if (window.stateManager) {
+        window.stateManager.setPreference('quality', quality);
+      }
+    }
+    
+    /**
+     * 🚨 CRITICAL: Load source without destroying player instance
+     * Used for playlist track changes to preserve player state
+     * This is the preferred method for non-destructive source changes
+     * ☁️ Updated to handle streamingProvider and isHLS params
+     */
+    loadSource(sourceConfig) {
+      if (!this.video) return Promise.reject('Player not attached');
+      if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
+      
+      const url = sourceConfig.url;
+      const type = sourceConfig.type || this.getMediaMimeType(url);
+      const contentId = sourceConfig.contentId || this.contentId;
+      const streamingProvider = sourceConfig.streamingProvider || null;
+      const isHLS = sourceConfig.isHLS || false;
+      
+      console.log('🔄 Loading new source without destroying player:', { 
+        url, 
+        contentId, 
+        streamingProvider,
+        isHLS 
+      });
+      
+      // Update contentId
+      if (contentId && contentId !== this.contentId) {
+        this.updateContentId(contentId);
+      }
+      
+      // 🚨 Store streaming provider for context
+      if (streamingProvider) {
+        this._currentStreamingProvider = streamingProvider;
+        this._isHLSStream = isHLS;
+      }
+      
+      // Reset view recording flags for new source
+      this.viewRecorded = false;
+      this._viewThresholdReached = false;
+      
+      // Pause current playback
+      this.video.pause();
+      
+      // Update source
+      while (this.video.firstChild) {
+        this.video.removeChild(this.video.firstChild);
+      }
+      this.video.removeAttribute('src');
+      
+      const source = document.createElement('source');
+      source.src = url;
+      source.type = type;
+      this.video.appendChild(source);
+      
+      // 🚨 If this is an HLS stream, notify streaming manager
+      if (isHLS || url.includes('videodelivery.net') || url.endsWith('.m3u8')) {
+        console.log('📺 HLS stream detected - ensuring streaming manager handles it');
+        if (window.streamingManager) {
+          // Give streaming manager a moment to reinitialize
+          setTimeout(() => {
+            if (window.streamingManager && typeof window.streamingManager.reinitialize === 'function') {
+              window.streamingManager.reinitialize(contentId).catch(err => {
+                console.warn('Streaming manager reinit after loadSource:', err);
+              });
+            }
+          }, 50);
+        }
+      }
+      
+      // Load and attempt to play if user has interacted
+      this.video.load();
+      
+      if (document.body.classList.contains('user-interacted')) {
+        this.play().catch(err => {
+          console.warn('Auto-play after source change blocked:', err);
+          this._showPlayOverlay();
+        });
+      }
+      
+      // Update preserved source with provider info
+      this._sourcePreserved = { 
+        url, 
+        type, 
+        method: 'loadSource',
+        streamingProvider: streamingProvider,
+        isHLS: isHLS
+      };
+      
+      this._emit('source:loaded', { url, contentId, type, streamingProvider, isHLS });
+      
+      return Promise.resolve();
+    }
     
     on(event, callback) {
       if (!this.eventListeners.has(event)) {
@@ -2911,10 +2379,6 @@
       }
     }
     
-    // =====================================================
-    // UTILITY
-    // =====================================================
-    
     _formatTime(seconds) {
       if (!seconds || isNaN(seconds)) return '0:00';
       
@@ -2934,10 +2398,6 @@
       if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
       return num.toString();
     }
-    
-    // =====================================================
-    // CLEANUP & DESTROY
-    // =====================================================
     
     _cleanupAttachment() {
       if (this._listenersAttached && this.video) {
@@ -2976,7 +2436,7 @@
       }
       
       if (this.watchSession && this.watchSession.isActive) {
-        this.watchSession.stop();
+        this.watchSession.end();
       }
       
       this.isPlaying = false;
@@ -2995,17 +2455,6 @@
       
       console.log('🗑️ Destroying EnhancedVideoPlayer...');
       this._isDestroyed = true;
-      
-      // Clean up Cloudflare Stream
-      if (this.cloudflarePlayer) {
-        try {
-          this.cloudflarePlayer.destroy();
-        } catch (e) {
-          console.warn('Cloudflare player destroy error:', e);
-        }
-        this.cloudflarePlayer = null;
-        this.cloudflareIframe = null;
-      }
       
       this._preserveSource();
       this._cleanupAttachment();
@@ -3026,7 +2475,6 @@
       this.settingsMenu = null;
       this._controlsCache = null;
       this.watchSession = null;
-      this.cloudflareBridge = null;
       
       console.log('✅ EnhancedVideoPlayer destroyed');
       this._emit('player:destroyed', { contentId: this.contentId });
@@ -3042,25 +2490,12 @@
         viewRecorded: this.viewRecorded,
         viewValidated: this.viewValidated,
         viewThreshold: this._getDynamicViewThreshold(),
-        isCloudflareStream: this.isCloudflareStream,
-        streamingProvider: this.streamingProvider
+        streamingProvider: this._currentStreamingProvider,
+        isHLSStream: this._isHLSStream
       };
     }
     
     getPlaybackState() {
-      if (this.isCloudflareStream && this.cloudflarePlayer) {
-        return {
-          currentTime: this.cloudflarePlayer.currentTime || 0,
-          duration: this.cloudflarePlayer.duration || 0,
-          paused: this.cloudflarePlayer.paused !== false,
-          volume: this.cloudflarePlayer.volume || 0.5,
-          muted: this.cloudflarePlayer.muted || false,
-          playbackRate: this.cloudflarePlayer.playbackRate || 1,
-          buffered: null,
-          isCloudflareStream: true
-        };
-      }
-      
       if (!this.video) return null;
       
       return {
@@ -3074,28 +2509,41 @@
           start: this.video.buffered.start(0),
           end: this.video.buffered.end(this.video.buffered.length - 1)
         } : null,
-        isCloudflareStream: false
+        streamingProvider: this._currentStreamingProvider,
+        isHLSStream: this._isHLSStream
       };
     }
     
     isReady() {
-      if (this.isCloudflareStream) {
-        return this._cloudflareInitialized && this.cloudflarePlayer !== null;
-      }
       return this._isAttached && !this._isDestroyed && this.video ? this.video.readyState >= 2 : false;
+    }
+    
+    /**
+     * ☁️ Get the current streaming provider
+     */
+    getStreamingProvider() {
+      return this._currentStreamingProvider;
+    }
+    
+    /**
+     * ☁️ Check if current stream is HLS
+     */
+    isHLSStream() {
+      return this._isHLSStream;
     }
   }
   
-  // ====================================================
-  // GLOBAL EXPORTS
-  // ====================================================
+  // =====================================================
+  // GLOBAL EXPORT & INITIALIZATION
+  // =====================================================
   
   window.EnhancedVideoPlayer = EnhancedVideoPlayer;
   window.BantuVideoPlayer = EnhancedVideoPlayer;
-  window._recordViewViaRPC = recordViewViaRPC;
-  window.loadCloudflareStreamSDK = loadCloudflareStreamSDK;
   
-  // 🎯 YOUTUBE-STYLE: Expose helper function for content-detail to register
+  // Expose recordView function globally for content-detail.js to use
+  window._recordViewViaRPC = recordViewViaRPC;
+  
+  // 🎯 YOUTUBE-STYLE: Expose a helper function for content-detail to register
   window._setupPlayerEndedCallback = function(callback) {
     if (typeof callback === 'function') {
       window._playerEndedCallback = callback;
@@ -3103,6 +2551,7 @@
     }
   };
   
+  // Helper for delegated prev/next functions
   window.playPreviousPlaylistItem = window.playPreviousPlaylistItem || function() {
     console.log('⏮️ Default playPreviousPlaylistItem - override in content-detail.js');
   };
@@ -3160,11 +2609,7 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v4.0.0 - Cloudflare Stream & R2)');
-  console.log('   ☁️ CLOUDFLARE STREAM: Native iframe + SDK integration');
-  console.log('   ☁️ CLOUDFLARE R2: Direct audio playback from custom domain');
-  console.log('   🔧 Event bridging: timeupdate → watch session, ended → playlist progression');
-  console.log('   🎯 Provider-based branching: cloudflare_stream, cloudflare_r2, fallback');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.1.0 - YouTube-Style + Cloudflare Support)');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
@@ -3174,11 +2619,14 @@
   console.log('   🚨 FIX #2: contentId synchronization (updateContentId method)');
   console.log('   🚨 FIX #8: Dynamic threshold (min 15 sec or 30% of duration)');
   console.log('   🚨 loadSource method for non-destructive source changes');
+  console.log('   ☁️ Cloudflare Stream: _currentStreamingProvider tracking');
+  console.log('   ☁️ Cloudflare Stream: streamingProvider context in events');
+  console.log('   ☁️ Cloudflare Stream: HLS detection in loadSource');
   console.log('   Features: Telemetry, Collection Nav, Audio/Video Support, Mobile Optimization');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
   console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
   console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with muted fallback');
-  console.log('   🚀 Ready for production deployment with Cloudflare Integration');
+  console.log('   🚀 Ready for production deployment with Engagement System Full Integration');
   
 })();
