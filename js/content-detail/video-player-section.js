@@ -1,10 +1,9 @@
 // js/content-detail/video-player-section.js
 // ============================================
-// VIDEO PLAYER SECTION MODULE - COMPLETE BRAIN
-// Contains EnhancedVideoPlayer class, player controls, media loading,
-// playback gestures, and video player UI management
+// VIDEO PLAYER SECTION MODULE - CLOUDFLARE INTEGRATION
+// Uses the main EnhancedVideoPlayer from js/video-player.js
 // ============================================
-console.log('🎬 Video Player Section Module Loading...');
+console.log('🎬 Video Player Section Module Loading... (Cloudflare Edition)');
 
 // ============================================
 // HELPER FUNCTIONS
@@ -12,13 +11,24 @@ console.log('🎬 Video Player Section Module Loading...');
 
 /**
  * Get playable media URL from content object
- * Supports file_url, audio_url, video_url, media_url
+ * Supports all Cloudflare provider types
  * @param {Object} content - Content object
  * @returns {string|null} - Playable URL or null
  */
 function getPlayableMediaUrl(content) {
     if (!content) return null;
     
+    // Cloudflare Stream (video)
+    if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
+        return `https://iframe.videodelivery.net/${content.provider_video_id}`;
+    }
+    
+    // Cloudflare R2 (audio)
+    if (content.streaming_provider === 'cloudflare_r2' && content.file_url) {
+        return content.file_url;
+    }
+    
+    // Legacy fallback
     return (
         content.file_url ||
         content.audio_url ||
@@ -29,6 +39,20 @@ function getPlayableMediaUrl(content) {
 }
 
 /**
+ * Detect if content is Cloudflare Stream
+ */
+function isCloudflareStreamContent(content) {
+    return content?.streaming_provider === 'cloudflare_stream' && content?.provider_video_id;
+}
+
+/**
+ * Detect if content is Cloudflare R2 (audio)
+ */
+function isCloudflareR2Content(content) {
+    return content?.streaming_provider === 'cloudflare_r2' && content?.file_url;
+}
+
+/**
  * Detect media type (audio vs video) from content
  * @param {Object} content - Content object
  * @returns {string} - 'audio' or 'video'
@@ -36,10 +60,15 @@ function getPlayableMediaUrl(content) {
 function detectMediaType(content) {
     if (!content) return 'video';
     
+    // Check media_type from database
     if (content.media_type) {
         if (content.media_type.toLowerCase() === 'audio') return 'audio';
         if (content.media_type.toLowerCase() === 'video') return 'video';
     }
+    
+    // Check streaming provider
+    if (isCloudflareStreamContent(content)) return 'video';
+    if (isCloudflareR2Content(content)) return 'audio';
     
     const format = (content.content_format || '').toLowerCase();
     if (format.includes('audio') || format.includes('podcast') || format.includes('music')) {
@@ -94,7 +123,9 @@ function closeVideoPlayer() {
     // Clean up player instance
     const playerInstance = window.enhancedVideoPlayer;
     if (playerInstance) {
-        if (playerInstance.video) {
+        if (typeof playerInstance.destroy === 'function') {
+            playerInstance.destroy();
+        } else if (playerInstance.video) {
             playerInstance.video.pause();
             playerInstance.video.currentTime = 0;
         }
@@ -151,7 +182,7 @@ function setupInitialPlayButton() {
 
 /**
  * Start playback from user gesture (bypasses autoplay restrictions)
- * Shows player container, ensures visibility, then plays
+ * Uses the main EnhancedVideoPlayer with Cloudflare support
  */
 const startPlaybackFromUserGesture = async () => {
     try {
@@ -167,59 +198,90 @@ const startPlaybackFromUserGesture = async () => {
         if (placeholder) placeholder.style.display = 'none';
         if (heroPoster) heroPoster.style.opacity = '0.3';
         
-        // Get player instance
-        const playerInstance = window.enhancedVideoPlayer;
-        if (!playerInstance || !playerInstance.video) {
-            console.error('❌ Player instance or native video element not found.');
-            // Try to initialize player if not ready
-            if (typeof initializeEnhancedVideoPlayer === 'function') {
-                initializeEnhancedVideoPlayer();
-                setTimeout(startPlaybackFromUserGesture, 500);
+        // Get the main player instance
+        let playerInstance = window.enhancedVideoPlayer;
+        
+        // If no player instance, create one
+        if (!playerInstance) {
+            console.log('🔄 Creating new EnhancedVideoPlayer instance...');
+            await initializeEnhancedVideoPlayer();
+            playerInstance = window.enhancedVideoPlayer;
+        }
+        
+        if (!playerInstance) {
+            console.error('❌ Player instance not found.');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Player not available. Please refresh.', 'error');
             }
             return;
         }
         
-        const video = playerInstance.video;
-        
-        // Fallback: load media if source is missing and we're not in playlist mode
-        if (!video.src && !window.isPlaylistMode && window.currentContent?.file_url) {
-            const fileUrl = getPlayableMediaUrl(window.currentContent);
-            if (fileUrl) {
-                console.log('🎬 Single Mode Fallback: Loading media source directly.');
-                video.src = fileUrl;
-                video.load();
+        // If player has loadContent method, use it (Cloudflare-aware)
+        if (typeof playerInstance.loadContent === 'function' && window.currentContent) {
+            console.log('🔄 Loading content with Cloudflare support');
+            await playerInstance.loadContent(window.currentContent);
+            
+            // Play after loading
+            if (typeof playerInstance.play === 'function') {
+                await playerInstance.play();
             }
+            
+            const overlay = document.getElementById('initialPlayOverlay');
+            if (overlay) overlay.classList.add('hidden');
+            
+            if (window.currentContent?.id && !window.watchSession) {
+                initializeWatchSessionOnPlay();
+            }
+            return;
         }
         
-        // Unlock autoplay
-        video.muted = false;
-        video.volume = 1.0;
-        window.userHasInteractedWithMedia = true;
-        document.body.classList.add('user-interacted');
+        // Fallback: try standard play
+        if (typeof playerInstance.play === 'function') {
+            await playerInstance.play();
+            const overlay = document.getElementById('initialPlayOverlay');
+            if (overlay) overlay.classList.add('hidden');
+            if (window.currentContent?.id && !window.watchSession) {
+                initializeWatchSessionOnPlay();
+            }
+            return;
+        }
         
-        // Play with fallback
-        await video.play().catch(async (err) => {
-            console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
-            video.muted = true;
-            await video.play().catch(fallbackErr => {
-                console.error('❌ Fallback play failed:', fallbackErr);
-                window.showToast('Playback blocked. Please interact with the page and try again.', 'warning');
-            });
-        });
+        // Last resort: try video element directly
+        const video = playerInstance.video;
+        if (video) {
+            if (!video.src && !window.isPlaylistMode && window.currentContent) {
+                const fileUrl = getPlayableMediaUrl(window.currentContent);
+                if (fileUrl && fileUrl.startsWith('http')) {
+                    video.src = fileUrl;
+                    video.load();
+                }
+            }
+            
+            video.muted = false;
+            video.volume = 1.0;
+            window.userHasInteractedWithMedia = true;
+            document.body.classList.add('user-interacted');
+            
+            await video.play();
+            const overlay = document.getElementById('initialPlayOverlay');
+            if (overlay) overlay.classList.add('hidden');
+            
+            if (window.currentContent?.id && !window.watchSession) {
+                initializeWatchSessionOnPlay();
+            }
+            return;
+        }
         
-        console.log('🔊 Core playback successfully initiated via direct user gesture.');
-        
-        // Hide overlay
-        hideInitialPlayOverlay();
-        
-        // Initialize watch session if not already done
-        if (window.currentContent?.id && !window.watchSession && typeof window.initializeWatchSessionOnPlay === 'function') {
-            window.initializeWatchSessionOnPlay();
+        console.error('❌ No playback method available');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Unable to start playback. Please try again.', 'error');
         }
         
     } catch (error) {
         console.warn('⚠️ Direct playback failed:', error.message);
-        window.showToast('Unable to start playback. Please try again.', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Unable to start playback. Please try again.', 'error');
+        }
     }
 };
 
@@ -228,30 +290,36 @@ const startPlaybackFromUserGesture = async () => {
 // ============================================
 
 /**
- * Load content into video player (non-destructive)
- * Reuses existing player instance when possible
+ * Load content into video player using the main EnhancedVideoPlayer
  * @param {Object} content - Content object to play
  * @param {number} index - Optional playlist index
  */
 async function loadContentIntoPlayer(content, index = null) {
-    if (!content) return;
-    
-    const player = document.getElementById('inlinePlayer');
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    const placeholder = document.getElementById('videoPlaceholder');
-    
-    if (!player || !videoElement) {
-        console.warn('Player elements not ready');
+    if (!content) {
+        console.warn('⚠️ No content provided to loadContentIntoPlayer');
         return;
     }
     
-    if (index !== null) window.currentPlaylistIndex = index;
+    console.log('📦 loadContentIntoPlayer called for content:', content.id, 'provider:', content.streaming_provider);
     
-    // Ensure contentId is synced before loading
+    const player = document.getElementById('inlinePlayer');
+    const placeholder = document.getElementById('videoPlaceholder');
+    
+    if (!player) {
+        console.warn('Player container not ready');
+        return;
+    }
+    
+    if (index !== null) {
+        window.currentPlaylistIndex = index;
+    }
+    
+    // Ensure contentId is synced
     if (typeof window.updateGlobalContentId === 'function') {
         window.updateGlobalContentId(content.id);
     }
     
+    // Make player visible
     player.style.display = 'block';
     if (placeholder) placeholder.style.display = 'none';
     
@@ -261,73 +329,42 @@ async function loadContentIntoPlayer(content, index = null) {
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) closeFromHero.style.display = 'flex';
     
-    // Get media URL
-    let fileUrl = getPlayableMediaUrl(content);
-    console.log('📥 Loading media URL:', fileUrl);
+    // Get or create player instance
+    let playerInstance = window.enhancedVideoPlayer;
     
-    if (fileUrl && !fileUrl.startsWith('http')) {
-        if (fileUrl.startsWith('/')) fileUrl = fileUrl.substring(1);
-        fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
+    if (!playerInstance) {
+        console.log('🔄 Creating new EnhancedVideoPlayer instance for content load...');
+        await initializeEnhancedVideoPlayer();
+        playerInstance = window.enhancedVideoPlayer;
     }
     
-    if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
-        if (content.thumbnail_url) {
-            const cleanPath = content.thumbnail_url.startsWith('/') ? content.thumbnail_url.substring(1) : content.thumbnail_url;
-            fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+    if (!playerInstance) {
+        console.error('❌ Failed to create player instance');
+        return;
+    }
+    
+    // Use loadContent if available (Cloudflare-aware)
+    if (typeof playerInstance.loadContent === 'function') {
+        console.log('🔄 Loading content via player.loadContent');
+        await playerInstance.loadContent(content);
+    } else if (typeof playerInstance.loadSource === 'function') {
+        // Fallback: use loadSource with file URL
+        const fileUrl = getPlayableMediaUrl(content);
+        if (fileUrl) {
+            console.log('🔄 Loading content via player.loadSource');
+            await playerInstance.loadSource({
+                url: fileUrl,
+                type: 'video/mp4',
+                contentId: content.id
+            });
+        } else {
+            console.warn('⚠️ No playable URL found for content');
         }
-    }
-    
-    // Handle audio mode with poster
-    const isAudio = detectMediaType(content) === 'audio';
-    if (isAudio && content.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-        videoElement.setAttribute('poster', imgUrl);
-        videoElement.classList.add('audio-mode');
     } else {
-        videoElement.removeAttribute('poster');
-        videoElement.classList.remove('audio-mode');
+        console.warn('⚠️ Player instance has no loadContent or loadSource method');
     }
     
-    // Get MIME type
-    function getMediaMimeType(url = '') {
-        const lower = url.toLowerCase();
-        if (lower.endsWith('.mp4')) return 'video/mp4';
-        if (lower.endsWith('.webm')) return 'video/webm';
-        if (lower.endsWith('.mov')) return 'video/quicktime';
-        if (lower.endsWith('.mp3')) return 'audio/mpeg';
-        if (lower.endsWith('.wav')) return 'audio/wav';
-        if (lower.endsWith('.ogg')) return 'audio/ogg';
-        if (lower.endsWith('.m4a')) return 'audio/mp4';
-        return 'video/mp4';
-    }
-    
-    // Load source - prefer loadSource method for reuse
-    if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
-        console.log('♻️ Reusing existing player instance with loadSource');
-        await window.enhancedVideoPlayer.loadSource({
-            url: fileUrl,
-            type: getMediaMimeType(fileUrl),
-            title: content.title
-        });
-    } else {
-        console.log('⚠️ loadSource not available, updating video source directly');
-        
-        if (window.watchSession) {
-            window.watchSession.stop();
-            window.watchSession = null;
-        }
-        
-        // Clear and set new source
-        while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
-        videoElement.removeAttribute('src');
-        const source = document.createElement('source');
-        source.src = fileUrl;
-        source.type = getMediaMimeType(fileUrl);
-        videoElement.appendChild(source);
-        videoElement.load();
-    }
-    
-    // Initialize streaming manager after source change
+    // Initialize streaming manager
     setTimeout(() => {
         if (window.streamingManager) {
             window.streamingManager.destroy();
@@ -354,11 +391,10 @@ async function loadContentIntoPlayer(content, index = null) {
                 showInitialPlayOverlay();
                 return;
             }
-            const playerInstance = window.enhancedVideoPlayer;
-            if (playerInstance && typeof playerInstance.play === 'function') {
-                await playerInstance.play();
-            } else {
-                await videoElement.play();
+            
+            const instance = window.enhancedVideoPlayer;
+            if (instance && typeof instance.play === 'function') {
+                await instance.play();
             }
             console.log('▶️ Playback started successfully');
             hideInitialPlayOverlay();
@@ -375,211 +411,12 @@ async function loadContentIntoPlayer(content, index = null) {
 }
 
 // ============================================
-// ENHANCED VIDEO PLAYER CLASS
+// INITIALIZE ENHANCED VIDEO PLAYER
 // ============================================
 
-class EnhancedVideoPlayer {
-    constructor(options = {}) {
-        this.video = null;
-        this.container = null;
-        this.options = {
-            autoplay: options.autoplay || false,
-            defaultSpeed: options.defaultSpeed || 1.0,
-            defaultQuality: options.defaultQuality || 'auto',
-            defaultVolume: options.defaultVolume !== undefined ? options.defaultVolume : 1.0,
-            muted: options.muted || false,
-            contentId: options.contentId || null,
-            supabaseClient: options.supabaseClient || null,
-            userId: options.userId || null
-        };
-        
-        this.currentSpeed = this.options.defaultSpeed;
-        this.currentQuality = this.options.defaultQuality;
-        this.volume = this.options.defaultVolume;
-        this.isMuted = this.options.muted;
-        this.fullscreen = false;
-        this.eventListeners = {};
-    }
-    
-    attach(videoElement, containerElement) {
-        this.video = videoElement;
-        this.container = containerElement;
-        
-        if (!this.video || !this.container) {
-            console.error('Failed to attach video player: missing elements');
-            return;
-        }
-        
-        this.setupVideoEvents();
-        this.applyInitialSettings();
-        console.log('✅ EnhancedVideoPlayer attached');
-    }
-    
-    setupVideoEvents() {
-        // Volume change
-        this.video.addEventListener('volumechange', () => {
-            this.volume = this.video.volume;
-            this.isMuted = this.video.muted;
-            this.emit('volumechange', { volume: this.volume, muted: this.isMuted });
-        });
-        
-        // Play
-        this.video.addEventListener('play', () => {
-            this.emit('play', { currentTime: this.video.currentTime });
-        });
-        
-        // Pause
-        this.video.addEventListener('pause', () => {
-            this.emit('pause', { currentTime: this.video.currentTime });
-        });
-        
-        // Time update
-        this.video.addEventListener('timeupdate', () => {
-            this.emit('timeupdate', { currentTime: this.video.currentTime, duration: this.video.duration });
-        });
-        
-        // Ended
-        this.video.addEventListener('ended', () => {
-            this.emit('ended', { currentTime: this.video.currentTime });
-        });
-        
-        // Error
-        this.video.addEventListener('error', (e) => {
-            console.error('Video error:', e);
-            this.emit('error', { error: e, message: this.video.error?.message });
-        });
-        
-        // Loaded metadata
-        this.video.addEventListener('loadedmetadata', () => {
-            console.log('Video metadata loaded');
-            this.emit('loadedmetadata', { duration: this.video.duration, width: this.video.videoWidth, height: this.video.videoHeight });
-        });
-        
-        // Can play
-        this.video.addEventListener('canplay', () => {
-            console.log('Video can play');
-            this.emit('canplay', {});
-        });
-        
-        // Fullscreen change
-        document.addEventListener('fullscreenchange', () => {
-            this.fullscreen = !!document.fullscreenElement;
-            this.emit('fullscreenchange', { fullscreen: this.fullscreen });
-        });
-    }
-    
-    applyInitialSettings() {
-        this.video.volume = this.volume;
-        this.video.muted = this.isMuted;
-        this.setPlaybackSpeed(this.currentSpeed);
-        
-        if (this.options.autoplay) {
-            this.video.play().catch(e => console.log('Autoplay prevented:', e));
-        }
-    }
-    
-    play() {
-        if (this.video) return this.video.play();
-        return Promise.reject(new Error('Video element not attached'));
-    }
-    
-    pause() {
-        if (this.video) this.video.pause();
-    }
-    
-    setPlaybackSpeed(speed) {
-        if (this.video) {
-            this.video.playbackRate = speed;
-            this.currentSpeed = speed;
-            this.emit('speedchange', { speed: speed });
-        }
-    }
-    
-    setVolume(volume) {
-        if (this.video && volume >= 0 && volume <= 1) {
-            this.video.volume = volume;
-            this.volume = volume;
-        }
-    }
-    
-    setMuted(muted) {
-        if (this.video) {
-            this.video.muted = muted;
-            this.isMuted = muted;
-        }
-    }
-    
-    toggleMute() {
-        this.setMuted(!this.isMuted);
-    }
-    
-    toggleFullscreen() {
-        if (!this.container) return;
-        
-        if (!this.fullscreen) {
-            this.container.requestFullscreen?.().catch(e => console.log('Fullscreen error:', e));
-        } else {
-            document.exitFullscreen?.();
-        }
-    }
-    
-    seekTo(time) {
-        if (this.video && time >= 0 && time <= this.video.duration) {
-            this.video.currentTime = time;
-        }
-    }
-    
-    async loadSource(sourceConfig) {
-        if (!this.video) return;
-        
-        this.pause();
-        this.video.src = sourceConfig.url;
-        this.video.load();
-        
-        if (document.body.classList.contains('user-interacted')) {
-            try {
-                await this.video.play();
-            } catch(e) {
-                console.warn('Auto-play after source change blocked:', e);
-            }
-        }
-        
-        console.log('🔄 Source changed without destroying player:', sourceConfig.url);
-    }
-    
-    on(event, callback) {
-        if (!this.eventListeners[event]) this.eventListeners[event] = [];
-        this.eventListeners[event].push(callback);
-    }
-    
-    off(event, callback) {
-        if (!this.eventListeners[event]) return;
-        if (callback) {
-            this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
-        } else {
-            delete this.eventListeners[event];
-        }
-    }
-    
-    emit(event, data) {
-        if (this.eventListeners[event]) {
-            this.eventListeners[event].forEach(callback => callback(data));
-        }
-    }
-    
-    destroy() {
-        if (this.video) {
-            this.pause();
-            this.video.src = '';
-            this.video.load();
-        }
-        this.eventListeners = {};
-        console.log('EnhancedVideoPlayer destroyed');
-    }
-}
-
 /**
- * Initialize enhanced video player with error handling
+ * Initialize the main EnhancedVideoPlayer from js/video-player.js
+ * This uses the Cloudflare-aware player engine
  */
 function initializeEnhancedVideoPlayer() {
     const videoElement = document.getElementById('inlineVideoPlayer');
@@ -590,77 +427,79 @@ function initializeEnhancedVideoPlayer() {
         return;
     }
     
+    // Check if main EnhancedVideoPlayer is available
+    if (typeof window.EnhancedVideoPlayer === 'undefined') {
+        console.warn('⚠️ Main EnhancedVideoPlayer not loaded yet, waiting...');
+        setTimeout(initializeEnhancedVideoPlayer, 500);
+        return;
+    }
+    
+    // Don't recreate if already exists
+    if (window.enhancedVideoPlayer && window.enhancedVideoPlayer._isAttached) {
+        console.log('ℹ️ Player already initialized');
+        return;
+    }
+    
     try {
-        const preferences = window.state ? window.state.getPreferences() : {
+        console.log('🎬 Creating EnhancedVideoPlayer with Cloudflare support...');
+        
+        const config = {
+            contentId: window.currentContentId || window.currentContent?.id || null,
+            content: window.currentContent || null,
+            userId: window.currentUserId || null,
             autoplay: false,
-            playbackSpeed: 1.0,
-            quality: 'auto'
+            muted: true,
+            enableTelemetry: true,
+            enableCollectionNav: true,
+            minViewThresholdSeconds: 15,
+            percentageViewThreshold: 0.3
         };
         
-        console.log('🎬 Creating EnhancedVideoPlayer...');
-        
-        const player = new EnhancedVideoPlayer({
-            autoplay: preferences.autoplay,
-            defaultSpeed: preferences.playbackSpeed,
-            defaultQuality: preferences.quality,
-            defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
-            muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
-            contentId: window.currentContentId || window.currentContent?.id || null,
-            supabaseClient: window.supabaseClient,
-            userId: window.currentUserId
-        });
-        
+        const player = new window.EnhancedVideoPlayer(config);
         window.enhancedVideoPlayer = player;
-        player.attach(videoElement, videoContainer);
         
-        // Add loadSource method if missing
-        if (!player.loadSource) {
-            player.loadSource = async function(sourceConfig) {
-                if (!player.video) return;
-                player.pause();
-                player.video.src = sourceConfig.url;
-                player.video.load();
-                if (document.body.classList.contains('user-interacted')) {
-                    try { await player.video.play(); } catch(e) {}
+        // Attach to DOM
+        player.attach(videoElement, videoContainer, {
+            contentId: config.contentId,
+            content: config.content
+        }).then(() => {
+            console.log('✅ EnhancedVideoPlayer attached successfully');
+            
+            // If content is available, load it
+            if (window.currentContent) {
+                player.loadContent(window.currentContent).catch(err => {
+                    console.warn('⚠️ Content load after attach failed:', err);
+                });
+            }
+            
+            // Setup ended listener for playlist progression
+            player.on('ended', function(data) {
+                console.log('🏁 Player ended - checking for playlist progression');
+                if (typeof window.playNextPlaylistItem === 'function') {
+                    window.playNextPlaylistItem();
                 }
-            };
-        }
-        
-        // Set up event handlers
-        player.on('play', () => {
-            console.log('▶️ Video playing...');
-            if (window.stateManager) window.stateManager.setState('session.playing', true);
-            if (typeof window.initializeWatchSessionOnPlay === 'function') window.initializeWatchSessionOnPlay();
+            });
+            
+            // Emit ready event
+            window.dispatchEvent(new CustomEvent('playerReady', {
+                detail: { player: player, content: window.currentContent }
+            }));
+            
+        }).catch((error) => {
+            console.error('❌ Player attach failed:', error);
         });
         
-        player.on('pause', () => {
-            if (window.stateManager) window.stateManager.setState('session.playing', false);
-        });
-        
-        player.on('volumechange', (data) => {
-            if (window.stateManager) window.stateManager.setState('session.volume', data.volume);
-        });
-        
-        player.on('error', (event) => {
-            const media = player?.video;
-            if (media && media.error === null && media.networkState !== 3) return;
-            console.error('🔴 Video player error:', event);
-            window.showToast('Playback error occurred', 'error');
-        });
-        
-        player.on('loadedmetadata', () => {
-            console.log('✅ Video metadata loaded, ready to play');
-            const placeholder = document.getElementById('videoPlaceholder');
-            if (placeholder) placeholder.style.display = 'none';
-        });
-        
-        console.log('✅ Enhanced video player initialized');
+        console.log('✅ EnhancedVideoPlayer initialization started');
         
     } catch (error) {
-        console.error('❌ Failed to initialize enhanced video player:', error);
-        window.showToast('Video player failed to load. Using basic player.', 'warning');
-        const videoElement = document.getElementById('inlineVideoPlayer');
-        if (videoElement) videoElement.controls = true;
+        console.error('❌ Failed to initialize EnhancedVideoPlayer:', error);
+        // Fallback: use basic video element
+        if (videoElement) {
+            videoElement.controls = true;
+        }
+        if (typeof window.showToast === 'function') {
+            window.showToast('Video player failed to load. Using basic player.', 'warning');
+        }
     }
 }
 
@@ -700,11 +539,17 @@ class WatchSessionManager {
                     device_type: deviceType,
                     started_at: new Date().toISOString()
                 });
-            if (error) return false;
+            if (error) {
+                console.error('Session init error:', error);
+                return false;
+            }
             this.isActive = true;
             console.log(`🎬 Watch session initialized: ${this.playbackSessionId}`);
             return true;
-        } catch (error) { return false; }
+        } catch (error) {
+            console.error('Session init error:', error);
+            return false;
+        }
     }
     
     startHeartbeatLoop(videoElement) {
@@ -712,7 +557,15 @@ class WatchSessionManager {
         this.heartbeatInterval = setInterval(async () => {
             if (!this.isActive || !videoElement || videoElement.paused) return;
             
-            const currentTime = Math.floor(videoElement.currentTime);
+            // Get current time - handle Cloudflare player if needed
+            let currentTime = Math.floor(videoElement.currentTime || 0);
+            const player = window.enhancedVideoPlayer;
+            if (player && player.isCloudflareStream && typeof player.getCurrentTime === 'function') {
+                currentTime = Math.floor(player.getCurrentTime());
+            }
+            
+            if (currentTime === 0) return;
+            
             const now = Date.now();
             const deltaWatchTimeMs = now - this.lastHeartbeatTime;
             this.sequenceNumber++;
@@ -738,7 +591,11 @@ class WatchSessionManager {
             }).eq('playback_session_id', this.playbackSessionId);
             
             // Record view at threshold (15 seconds or 30% duration)
-            const duration = videoElement.duration || 0;
+            let duration = videoElement.duration || 0;
+            if (player && player.isCloudflareStream && typeof player.getDuration === 'function') {
+                duration = player.getDuration();
+            }
+            
             const thresholdSeconds = Math.min(15, duration * 0.3);
             
             if (!this.viewRecorded && this.totalWatchTimeMs >= thresholdSeconds * 1000) {
@@ -752,35 +609,60 @@ class WatchSessionManager {
         }, 10000);
     }
     
-    start(videoElement) { if (videoElement) this.startHeartbeatLoop(videoElement); }
+    start(videoElement) { 
+        if (videoElement) this.startHeartbeatLoop(videoElement); 
+    }
     
     stop() {
         this.isActive = false;
-        if (this.heartbeatInterval) { clearInterval(this.heartbeatInterval); this.heartbeatInterval = null; }
-        window.supabaseClient.from('playback_sessions').update({ completed: true, exited_at: new Date().toISOString() }).eq('playback_session_id', this.playbackSessionId);
+        if (this.heartbeatInterval) { 
+            clearInterval(this.heartbeatInterval); 
+            this.heartbeatInterval = null; 
+        }
+        window.supabaseClient.from('playback_sessions')
+            .update({ completed: true, exited_at: new Date().toISOString() })
+            .eq('playback_session_id', this.playbackSessionId)
+            .catch(e => console.error('Session close error:', e));
     }
 }
 
 function initializeWatchSessionOnPlay() {
     if (!window.currentContent || !window.currentUserId) return;
     const player = window.enhancedVideoPlayer;
-    if (!player?.video) return;
+    const video = player?.video;
     
-    if (window.watchSession) { window.watchSession.stop(); window.watchSession = null; }
+    if (!video && !player?.isCloudflareStream) return;
+    
+    if (window.watchSession) { 
+        window.watchSession.stop(); 
+        window.watchSession = null; 
+    }
     
     try {
         window.currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         window.watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
         window.watchSession.initializeSession('Web', 'Desktop');
-        window.watchSession.start(player.video);
+        
+        // For Cloudflare Stream, pass the player instance
+        if (player && player.isCloudflareStream) {
+            // The watch session will use the player's getCurrentTime
+            window.watchSession.start(video || { currentTime: 0, duration: 0 });
+        } else if (video) {
+            window.watchSession.start(video);
+        }
         console.log('✅ Watch session started');
-    } catch (error) { console.error('Failed to initialize watch session:', error); }
+    } catch (error) { 
+        console.error('Failed to initialize watch session:', error); 
+    }
 }
 
 // ============================================
 // GLOBAL EXPORTS
 // ============================================
-window.EnhancedVideoPlayer = EnhancedVideoPlayer;
+
+// Note: We do NOT overwrite window.EnhancedVideoPlayer here
+// We use the one from js/video-player.js
+
 window.initializeEnhancedVideoPlayer = initializeEnhancedVideoPlayer;
 window.loadContentIntoPlayer = loadContentIntoPlayer;
 window.getPlayableMediaUrl = getPlayableMediaUrl;
@@ -793,5 +675,7 @@ window.setupInitialPlayButton = setupInitialPlayButton;
 window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
 window.WatchSessionManager = WatchSessionManager;
 window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
+window.isCloudflareStreamContent = isCloudflareStreamContent;
+window.isCloudflareR2Content = isCloudflareR2Content;
 
-console.log('✅ Video Player Section Module loaded (with full brain)');
+console.log('✅ Video Player Section Module loaded (Cloudflare Edition - using main player)');
