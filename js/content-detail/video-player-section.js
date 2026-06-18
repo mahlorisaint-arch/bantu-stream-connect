@@ -17,27 +17,20 @@ console.log('🎬 Video Player Section Module Loading...');
  * @returns {string|null} - Playable URL or null
  */
 function getPlayableMediaUrl(content) {
-    if (!content) return null;
+    if (!content) return '';
     
-    // ✅ Cloudflare Stream Video - Return HLS manifest URL
-    if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
-        const videoId = content.provider_video_id;
-        return `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
-    }
-    
-    // ✅ Cloudflare R2 Audio - Use file_url (custom domain)
-    if (content.streaming_provider === 'cloudflare_r2' && content.file_url) {
+    // 🎵 Audio Lane (Cloudflare R2)
+    if (content.streaming_provider === 'cloudflare_r2') {
         return content.file_url;
     }
     
-    // 🔄 Legacy fallback: file_url, audio_url, video_url, media_url
-    return (
-        content.file_url ||
-        content.audio_url ||
-        content.video_url ||
-        content.media_url ||
-        null
-    );
+    // 🎬 Video Lane (Cloudflare Stream Manifest)
+    if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
+        return `https://videodelivery.net/${content.provider_video_id}/manifest/video.m3u8`;
+    }
+    
+    // 🔄 Legacy fallback
+    return content.file_url || '';
 }
 
 /**
@@ -48,43 +41,20 @@ function getPlayableMediaUrl(content) {
 function detectMediaType(content) {
     if (!content) return 'video';
     
-    // ✅ Cloudflare Stream is always video
-    if (content.streaming_provider === 'cloudflare_stream') {
+    if (content.streaming_provider === 'cloudflare_r2' || content.media_type === 'audio') {
+        return 'audio';
+    }
+    if (content.streaming_provider === 'cloudflare_stream' || content.media_type === 'video') {
         return 'video';
     }
     
-    // ✅ Cloudflare R2 is always audio
-    if (content.streaming_provider === 'cloudflare_r2') {
+    // Fallback check for file extensions if provider isn't set
+    const url = content.file_url || '';
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac'];
+    if (audioExtensions.some(ext => url.toLowerCase().endsWith(ext))) {
         return 'audio';
     }
     
-    // 📋 Check media_type field
-    if (content.media_type) {
-        if (content.media_type.toLowerCase() === 'audio') return 'audio';
-        if (content.media_type.toLowerCase() === 'video') return 'video';
-    }
-    
-    // 📋 Check content_format
-    const format = (content.content_format || '').toLowerCase();
-    if (format.includes('audio') || format.includes('podcast') || format.includes('music')) {
-        return 'audio';
-    }
-    
-    // 📋 Fallback: check file extension
-    const url = getPlayableMediaUrl(content);
-    if (url) {
-        const ext = url.split('.').pop()?.toLowerCase();
-        // Audio extensions
-        if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a' || ext === 'flac') {
-            return 'audio';
-        }
-        // Video extensions (including m3u8 for HLS)
-        if (ext === 'mp4' || ext === 'webm' || ext === 'mov' || ext === 'mkv' || ext === 'm3u8' || ext === 'avi') {
-            return 'video';
-        }
-    }
-    
-    // Default to video
     return 'video';
 }
 
@@ -317,8 +287,7 @@ async function loadContentIntoPlayer(content, index = null) {
         url: fileUrl,
         isCloudflareStream,
         isCloudflareR2,
-        media_type: content.media_type,
-        content_format: content.content_format
+        media_type: content.media_type
     });
     
     // 🔥 CRITICAL FIX: If no URL found, try to use file_url directly as fallback
@@ -393,7 +362,8 @@ async function loadContentIntoPlayer(content, index = null) {
                 type: mimeType,
                 title: content.title,
                 isHLS: isHLS,
-                streamingProvider: content.streaming_provider
+                streamingProvider: content.streaming_provider,
+                isAudio: isAudio
             });
         } catch (loadError) {
             console.error('❌ loadSource failed, falling back to direct source:', loadError);
@@ -430,15 +400,25 @@ async function loadContentIntoPlayer(content, index = null) {
     
     // 🚨 Initialize streaming manager AFTER source change
     // This ensures HLS.js picks up Cloudflare manifests
-    setTimeout(() => {
+    // But SKIP for audio (Cloudflare R2)
+    if (!isAudio) {
+        setTimeout(() => {
+            if (window.streamingManager) {
+                window.streamingManager.destroy();
+                window.streamingManager = null;
+            }
+            if (typeof window.initializeStreamingManager === 'function') {
+                window.initializeStreamingManager();
+            }
+        }, 100);
+    } else {
+        console.log('🎵 Audio mode - skipping streaming manager initialization');
+        // Ensure any existing streaming manager is destroyed
         if (window.streamingManager) {
             window.streamingManager.destroy();
             window.streamingManager = null;
         }
-        if (typeof window.initializeStreamingManager === 'function') {
-            window.initializeStreamingManager();
-        }
-    }, 100);
+    }
     
     // Initialize watch session
     setTimeout(() => {
@@ -503,6 +483,7 @@ class EnhancedVideoPlayer {
         this.eventListeners = {};
         this._currentStreamingProvider = null;
         this._isHLSStream = false;
+        this._isAudioMode = false;
         this.viewRecorded = false;
         this._viewThresholdReached = false;
         this.contentId = this.options.contentId;
@@ -553,7 +534,8 @@ class EnhancedVideoPlayer {
                 playlistIndex: window.currentPlaylistIndex,
                 currentTime: this.video ? this.video.currentTime : 0,
                 duration: this.video ? this.video.duration : 0,
-                streamingProvider: this._currentStreamingProvider || null
+                streamingProvider: this._currentStreamingProvider || null,
+                isAudio: this._isAudioMode
             });
         });
         
@@ -644,6 +626,13 @@ class EnhancedVideoPlayer {
     }
     
     /**
+     * Check if current source is audio
+     */
+    isAudioSource() {
+        return this._isAudioMode;
+    }
+    
+    /**
      * 🚨 CRITICAL: Load source without destroying player instance
      * Used for playlist track changes to preserve player state
      * This is the preferred method for non-destructive source changes
@@ -657,12 +646,14 @@ class EnhancedVideoPlayer {
         const contentId = sourceConfig.contentId || this.contentId;
         const streamingProvider = sourceConfig.streamingProvider || null;
         const isHLS = sourceConfig.isHLS || false;
+        const isAudio = sourceConfig.isAudio || false;
         
         console.log('🔄 Loading new source without destroying player:', { 
             url, 
             contentId, 
             streamingProvider,
-            isHLS 
+            isHLS,
+            isAudio
         });
         
         // Update contentId
@@ -675,6 +666,7 @@ class EnhancedVideoPlayer {
             this._currentStreamingProvider = streamingProvider;
             this._isHLSStream = isHLS;
         }
+        this._isAudioMode = isAudio;
         
         // Reset view recording flags for new source
         this.viewRecorded = false;
@@ -696,7 +688,8 @@ class EnhancedVideoPlayer {
         this.video.appendChild(source);
         
         // 🚨 If this is an HLS stream, notify streaming manager
-        if (isHLS || url.includes('videodelivery.net') || url.endsWith('.m3u8')) {
+        // BUT skip for audio
+        if (!isAudio && (isHLS || url.includes('videodelivery.net') || url.endsWith('.m3u8'))) {
             console.log('📺 HLS stream detected - ensuring streaming manager handles it');
             if (window.streamingManager) {
                 // Give streaming manager a moment to reinitialize
@@ -707,6 +700,13 @@ class EnhancedVideoPlayer {
                         });
                     }
                 }, 50);
+            }
+        } else if (isAudio) {
+            console.log('🎵 Audio mode - bypassing HLS initialization');
+            // Ensure streaming manager is destroyed for audio
+            if (window.streamingManager) {
+                window.streamingManager.destroy();
+                window.streamingManager = null;
             }
         }
         
@@ -726,10 +726,11 @@ class EnhancedVideoPlayer {
             type, 
             method: 'loadSource',
             streamingProvider: streamingProvider,
-            isHLS: isHLS
+            isHLS: isHLS,
+            isAudio: isAudio
         };
         
-        this.emit('source:loaded', { url, contentId, type, streamingProvider, isHLS });
+        this.emit('source:loaded', { url, contentId, type, streamingProvider, isHLS, isAudio });
         
         return Promise.resolve();
     }
@@ -866,6 +867,8 @@ function initializeEnhancedVideoPlayer() {
                 if (!player.video) return;
                 const url = sourceConfig.url;
                 const type = sourceConfig.type || player.getMediaMimeType(url);
+                const isAudio = sourceConfig.isAudio || false;
+                player._isAudioMode = isAudio;
                 player.pause();
                 while (player.video.firstChild) player.video.removeChild(player.video.firstChild);
                 player.video.removeAttribute('src');
