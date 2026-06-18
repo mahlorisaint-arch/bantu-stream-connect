@@ -1,81 +1,222 @@
 // js/content-detail.js - MAIN ORCHESTRATOR
-// CLOUDFLARE STREAM & R2 INTEGRATION
-// FIXED: Infinite recursion in loadContentIntoPlayer
+// FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
+// FIXED: Theme selector conflict resolved, navigation icons properly aligned
+// PHASE 1 UPDATE: Watch Session Lifecycle Integration with syntax-safe WatchSession
+// PHASE 2 UPDATE: Watch Later & Playlist System Integration
+// PHASE 3 UPDATE: Complete Recommendation Engine Integration
+// PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration - COMPLETE
+// FIXED: Added video load confirmation events
+// PHASE 1-3 POLISH: Keyboard Shortcuts, Playlist Modal, Loading States
+// FIXED: Playlist duplicate key constraint error handling
+// PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
+// FIXED: Quality selector initialization and rendering issue
+// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now BEFORE hero section for prominent display
+// 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
+// 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
+// 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
+// 🎯 REDESIGN: Removed close button, full-width player, compact settings menu
+// 🎵 AUDIO SUPPORT: Added MP3, WAV, OGG playback with thumbnail as poster
+// 🎨 CREATOR AVATAR FIX: Show actual creator profile picture from user_profiles
+// 🔄 PLATFORM CONSISTENCY: Integrated home feed sidebar, header, navigation, and utilities
+// ✅ FIXED: checkConnectionStatus now returns a Promise to prevent ".then is not a function" error
+// ✅ FIXED: Added missing initThemeSelector function to prevent ReferenceError
+// ✅ FIXED: Sidebar profile now shows logged-in user correctly
+// ✅ FIXED: Header profile icon sizing matches home feed
+// ✅ FIXED: Sidebar UI resize section button overlapping
+// ✅ FIXED: Navigation menu button opens sidebar instead of redirecting to dashboard
+// ✅ FIXED: Comments "sign in to comment" bug when already authenticated
+// ✅ FIXED: LIKE BUTTON - Proper WHERE clauses for RLS compliance
+// 🎯 MOBILE FIX: Navigation button properly centered, no overflow, no horizontal scrolling
+// 🎯 MOBILE FIX: Header profile picture hidden on mobile phones
+// 🎯 MOBILE FIX: RSA badge stays inside header, no overflow
+// 🔧 CRITICAL FIX: Added session_id to view recording system (YouTube-style validation)
+// 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
+// 🔧 CRITICAL FIX: ADDED profile_id to content_views inserts (required column)
+// 🚀 PERFORMANCE: YouTube-style skeleton loading, critical data parallelization, lazy heavy features
+// 🔐 AUTH FIX: Ensured AuthHelper is fully initialized before UI updates
+// 🔐 AUTH FIX: Added waitForAuthHelper() to prevent timing issues
+// 🚀 PHASE 1D: COLLECTION-AWARE CONTENT DETAIL ENGINE
+// ✅ PHASE 1D: Integrated Queue Manager and Content Collections Engine
+// ✅ PHASE 1D: Next/Previous playback, queue sidebar, autoplay, active item highlighting
+// ✅ PHASE 1D: Queue survives refresh via localStorage
+// 🎯 PHASE 1D FINAL: Playlist/Album/Series mode integrated into content-detail architecture
+// 🔧 PHASE 1D FIX: Added showLoading/hideLoading functions
+// 🔧 PHASE 1D FIX: Hard block fallback during playlist mode
+// 🔧 PHASE 1D FIX: Proper playlist UI rendering and queue events
+// 🎵 BROWSER AUTOPLAY UNLOCK: User interaction tracker + play overlay
+// ✅ CRITICAL FIX #1: markContentAsViewed array crash fixed (prevents player death)
+// ✅ CRITICAL FIX #2: Album dropdown toggle button with proper event listener - FIXED: persistent expanded state
+// ✅ CRITICAL FIX #3: Media type detection (audio vs video) fixed
+// ✅ CRITICAL FIX #4: Album expanded state preservation - NO auto-collapse after playback
+// ✅ CRITICAL FIX #5: Like button persistence - survives rerenders and playlist track switching
+// 🔧 BUG FIX #1: REMOVED all auto-collapse forces in playback lifecycle
+// 🔧 BUG FIX #2: REAL album tracklist rendering into dedicated external container
+// 🔧 BUG FIX #3: Like button uses global likedContentCache Set for persistence
+// 🔧 BUG FIX #4: View recording properly called in WatchSession start()
+// 🔧 VIEWS FIX #1: Removed premature early exit in view recording
+// 🔧 VIEWS FIX #2: Added proper DB confirmation handling with viewPersisted flag
+// 🔧 VIEWS FIX #3: Added frontend optimistic update for views
+// 🔧 VIEWS FIX #4: Added incrementContentViews RPC call for content.views_count
+// 🔧 ALBUM FIX #1: Fixed DOM timing with requestAnimationFrame and retry logic
+// 🔧 ALBUM FIX #2: Fixed track source detection with multiple property fallbacks
+// 🔧 ALBUM FIX #3: Added comprehensive error logging for track rendering
+// 🔧 VIEW SYNC FIX #1: Added global event for view count synchronization across components
+// 🔧 ALBUM ARCHITECTURE FIX: Removed duplicate album systems; only one active system now
+// 🔧 CRITICAL ALBUM FIX: Check playlist items FIRST, not ContentCollectionsEngine
+// 🔧 VIEW RECORDING FIX: Reset viewPersisted flag when content changes
+// ============================================
+// 🚀 PHASE 5 & 6: DATABASE MIGRATION INTEGRATION
+// - Updated playlist loading to use new junction table (playlist_contents)
+// - Updated content profile fetching to use content_engagement_stats
+// - Updated recommendation engine to use content_public_metrics view
+// - Updated view recording to use playback_sessions and playback_heartbeats
+// - Updated like button to use RPC atomic counters
+// ============================================
+// 🔧 EMERGENCY PATCH (2026-05-19):
+// - Fixed fatal syntax error in EnhancedVideoPlayer assignments (removed optional chaining)
+// - Re-engineered playlist data fetches to use verified schema (status)
+// - Fixed .single() crashes by switching to .maybeSingle()
+// - Corrected standalone vs. album mode detection
+// - REMOVED duplicate UIScaleController class (was causing "already declared" error)
+// ============================================
+// 🚨 CRITICAL FIX (2026-05-20): Playlist query uses explicit relation loading without fragile syntax
+// - Replaced Content:content_id!inner with Content!playlist_contents_content_id_fkey
+// - Added explicit .order('sort_index')
+// - Fixed empty check for playlistItems
+// - Added correct content mapping paths (item.Content.title)
+// - Added result normalization to handle array vs object responses
+// - Added two-query fallback as enterprise-safe pattern
+// ============================================
+// 🎯 YOUTUBE-STYLE PLAYLIST ARCHITECTURE (2026-05-21):
+// - Persistent DOM sidebar (never recreated) - ADDED
+// - CSS class-based toggle (max-height, opacity, NOT display:none) - ADDED
+// - Single render of tracklist (albumTracksRendered flag) - ADDED
+// - Global playlist state (window.currentPlaylistItems, window.currentPlaylistIndex) - ADDED
+// - Centralized playNextPlaylistItem function - ADDED
+// - Player only fires ended event; content-detail handles navigation - ADDED
+// ============================================
+// 🚨 CRITICAL AUTOPLAY SYNC FIX (2026-05-22):
+// - Added syncPlaylistUI() for centralized UI updates
+// - Added completion guard to prevent duplicate playlist completions
+// - Enhanced playNextPlaylistItem with UI sync before navigation
+// - Added playlistCompleting flag to prevent loops
+// - Fixed contentId desync during autoplay
+// ============================================
+// 🎯 DIRECT USER GESTURE PLAYBACK FIX (2026-05-22):
+// - Added startPlaybackFromUserGesture for immediate unmuted playback
+// - loadContentIntoPlayer now reuses existing player instance
+// - Added loadSource method for non-destructive source changes
+// - Fixed autoplay blocking with user interaction tracking
+// ============================================
+// 🚨 ENGAGEMENT SYSTEM FIX (2026-05-22) - INTEGRATED FROM ChatGPT/Gemini:
+// - Fixed view recording to use content_views table (NOT views_count column)
+// - Added proper engagement state persistence (likes, favorites, watch later)
+// - Added recordView() function that inserts into content_views correctly
+// - Fixed toggleLike/toggleFavorite/toggleWatchLater with proper table references
+// - Added loadAllEngagementStates() to restore UI after refresh
+// - Added shareContent() with content_shares and content_events persistence
+// ============================================
+// 🚨 ENGAGEMENT SYSTEM FIXES (2026-05-23) - FULL PRODUCTION STABILITY:
+// - FIX #1: RPC view recording (recordContentViewRPC) - atomic SQL operations
+// - FIX #2: Global contentId synchronization across ALL components (updateGlobalContentId)
+// - FIX #3: No 409 conflicts - toggle functions check existence before insert
+// - FIX #4: Race condition protection - request token pattern in loadAllEngagementStates
+// - FIX #5: Optimistic UI updates with server reconciliation
+// - FIX #6: Live counts from canonical tables (loadLiveEngagementCounts)
+// - FIX #7: Realtime subscriptions for instant updates
+// - FIX #8: Watch session threshold recording (15 sec or 30% duration)
+// ============================================
+// 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24): YouTube-style playlist control separation
+// - REMOVED all playlist advancement from video-player.js (BIGGEST FIX)
+// - ADDED transition lock (isTrackTransitioning) to prevent race conditions
+// - ADDED duplicate contentId guard in updateGlobalContentId
+// - ADDED singleton pattern for StreamingManager
+// - FIXED player ended listener to ONLY emit events, NOT control playlists
+// ============================================
+// 🚨 PHASE 7: CONTENT_ENGAGEMENT_STATS CANONICAL SOURCE (2026-05-24)
+// - Fixed loadLiveEngagementCounts to read from content_engagement_stats first
+// - Fixed setupRealtimeSubscriptions to listen to content_engagement_stats updates
+// - Fixed handleLikeButtonClick to reconcile with canonical stats table
+// - Eliminated "drops to 0" bug when realtime updates race with UI
+// ============================================
+// 🔥 SURGICAL FIXES (2026-05-24) - Applied from emergency patch:
+// - Fix #1: setupRealtimeSubscriptions - Supabase v2 compatible channel cleanup
+// - Fix #2: loadLiveEngagementCounts - Reliable fallback + UI updates with _forceUpdateEngagementUI
+// - Fix #3: playNextPlaylistItem - Narrow-scope transition lock
+// - Fix #4: REMOVED token abort logic from loadAllEngagementStates (was killing valid requests)
+// - Fix #5: setCurrentContent - Ensures count loads AFTER DOM update with setTimeout
+// ============================================
+// 🔥 SINGLE MODE FIX (2026-05-25) - Applied from ChatGPT + Gemini:
+// - Fix #1: startPlaybackFromUserGesture - Ensures player container is visible FIRST
+// - Fix #2: Added !window.isPlaylistMode guard to prevent playlist mode interference
+// - Fix #3: DOMContentLoaded initialization for single mode with setTimeout guard
+// ============================================
+// 🧩 MODULAR ARCHITECTURE (2026-06-14):
+// - Extracted all section code into separate module files
+// - This file now acts as the main orchestrator
+// - Modules loaded in dependency order
+// ============================================
+// ☁️ CLOUDFLARE STREAM INTEGRATION (2026-06-18):
+// - Added streaming_provider and provider_video_id to content fetching
+// - Supports Cloudflare Stream (HLS) and Cloudflare R2 (audio)
 // ============================================
 
-console.log('🎬 Content Detail Main Orchestrator Initializing... (Cloudflare Edition)');
+console.log('🎬 Content Detail Main Orchestrator Initializing...');
 
 // ============================================
 // LOAD ALL MODULE DEPENDENCIES
+// The order matters for function availability
 // ============================================
 
+// First, load utility modules that don't depend on others
+// (These are loaded dynamically - they will attach to window)
+
+// Helper function to dynamically load scripts
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        // Skip if script already loaded
-        const existingScript = document.querySelector(`script[src="${src}"]`);
-        if (existingScript) {
-            console.log(`⏭️ Script already loaded: ${src}`);
-            resolve();
-            return;
-        }
-        
         const script = document.createElement('script');
         script.src = src;
         script.onload = resolve;
-        script.onerror = () => {
-            console.error(`❌ Failed to load: ${src}`);
-            reject(new Error(`Failed to load: ${src}`));
-        };
+        script.onerror = reject;
         document.head.appendChild(script);
     });
 }
 
+// Load all section modules in correct dependency order
 async function loadAllModules() {
     console.log('📦 Loading section modules...');
     
-    // Load all section modules (these are the UI components)
-    const modules = [
-        'js/content-detail/hero-section.js',
-        'js/content-detail/creator-section.js',
-        'js/content-detail/stats-grid.js',
-        'js/content-detail/description-section.js',
-        'js/content-detail/comments-section.js',
-        'js/content-detail/continue-watching.js',
-        'js/content-detail/because-you-watched.js',
-        'js/content-detail/more-from-this-creator.js',
-        'js/content-detail/related-content.js',
-        'js/content-detail/playlist-queue.js',
-        'js/content-detail/legacy-playlist.js',
-        'js/content-detail/playlist-sidebar.js',
-        'js/content-detail/video-player-section.js'
-    ];
+    // Core UI modules (no dependencies)
+    await loadScript('js/content-detail/hero-section.js');
+    await loadScript('js/content-detail/creator-section.js');
+    await loadScript('js/content-detail/stats-grid.js');
+    await loadScript('js/content-detail/description-section.js');
     
-    // Load each module with error handling
-    for (const module of modules) {
-        try {
-            await loadScript(module);
-        } catch (e) {
-            console.warn(`⚠️ Could not load ${module}:`, e.message);
-        }
-    }
+    // Interactive modules
+    await loadScript('js/content-detail/comments-section.js');
+    await loadScript('js/content-detail/continue-watching.js');
     
-    // Load the main video player engine LAST
-    try {
-        await loadScript('js/video-player.js');
-        console.log('✅ Video player engine loaded successfully');
-    } catch (e) {
-        console.error('❌ Failed to load video player engine:', e);
-    }
+    // Recommendation modules
+    await loadScript('js/content-detail/because-you-watched.js');
+    await loadScript('js/content-detail/more-from-this-creator.js');
+    await loadScript('js/content-detail/related-content.js');
     
-    console.log('✅ All modules loaded');
-    window._modulesLoaded = true;
+    // Playlist modules
+    await loadScript('js/content-detail/playlist-queue.js');
+    await loadScript('js/content-detail/legacy-playlist.js');
+    await loadScript('js/content-detail/playlist-sidebar.js');
+    
+    // Video player (loads last due to complexity)
+    await loadScript('js/content-detail/video-player.js');
+    
+    console.log('✅ All section modules loaded');
 }
 
 // Start loading modules immediately
 loadAllModules().catch(console.warn);
 
 // ============================================
-// GLOBAL VARIABLES
+// GLOBAL VARIABLES (Maintained from original)
 // ============================================
 
 window.currentPlaylistItems = [];
@@ -87,9 +228,6 @@ window.engagementLoadToken = null;
 window.isPlaylistMode = false;
 window.currentUserId = null;
 window.currentContent = null;
-window.cloudflareStreamSDKLoaded = false;
-window.cloudflareStreamSDKLoading = false;
-window._modulesLoaded = false;
 
 // Session tracking
 let currentSessionId = null;
@@ -112,232 +250,13 @@ let likedContentCache = new Set();
 let favoritedContentCache = new Set();
 let watchLaterContentCache = new Set();
 
-// Flag to prevent infinite recursion
-let _loadingContent = false;
-
 // ============================================
-// CLOUDFLARE STREAM SDK LOADER
+// 🚨 ENGAGEMENT SYSTEM FUNCTIONS (Core)
 // ============================================
 
-function loadCloudflareStreamSDK() {
-    return new Promise((resolve, reject) => {
-        if (window.Stream) {
-            window.cloudflareStreamSDKLoaded = true;
-            resolve(window.Stream);
-            return;
-        }
-        
-        if (window.cloudflareStreamSDKLoading) {
-            const checkInterval = setInterval(() => {
-                if (window.Stream) {
-                    clearInterval(checkInterval);
-                    window.cloudflareStreamSDKLoaded = true;
-                    resolve(window.Stream);
-                }
-            }, 100);
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                reject(new Error('Cloudflare Stream SDK load timeout'));
-            }, 10000);
-            return;
-        }
-        
-        window.cloudflareStreamSDKLoading = true;
-        
-        const script = document.createElement('script');
-        script.src = 'https://embed.cloudflarestream.com/embed/sdk.latest.js';
-        script.async = true;
-        script.onload = () => {
-            window.cloudflareStreamSDKLoaded = true;
-            window.cloudflareStreamSDKLoading = false;
-            console.log('✅ Cloudflare Stream SDK loaded successfully');
-            resolve(window.Stream);
-        };
-        script.onerror = () => {
-            window.cloudflareStreamSDKLoading = false;
-            console.error('❌ Failed to load Cloudflare Stream SDK');
-            reject(new Error('Cloudflare Stream SDK load failed'));
-        };
-        document.head.appendChild(script);
-    });
-}
-
-// ============================================
-// CLOUDFLARE STREAM PLAYER BRIDGE
-// ============================================
-
-class CloudflareStreamBridge {
-    constructor(videoElement, content) {
-        this.videoElement = videoElement;
-        this.content = content;
-        this.player = null;
-        this.isInitialized = false;
-        this.eventListeners = new Map();
-    }
-    
-    async initialize() {
-        if (!this.content || !this.content.provider_video_id) {
-            throw new Error('Missing provider_video_id for Cloudflare Stream');
-        }
-        
-        try {
-            await loadCloudflareStreamSDK();
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'cloudflare-stream-wrapper';
-            wrapper.style.cssText = 'position:relative;padding-top:56.25%;width:100%;height:0;';
-            
-            const iframe = document.createElement('iframe');
-            iframe.id = 'cloudflare-stream-player';
-            iframe.src = `https://iframe.videodelivery.net/${this.content.provider_video_id}?preload=true&autoplay=true`;
-            iframe.style.cssText = 'border:none;position:absolute;top:0;left:0;width:100%;height:100%;';
-            iframe.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
-            iframe.allowFullscreen = true;
-            iframe.setAttribute('loading', 'eager');
-            
-            wrapper.appendChild(iframe);
-            
-            this.videoElement.parentNode.replaceChild(wrapper, this.videoElement);
-            
-            this.player = Stream(iframe);
-            this.isInitialized = true;
-            
-            this._setupEventListeners();
-            
-            console.log('✅ Cloudflare Stream player initialized for:', this.content.provider_video_id);
-            return this.player;
-            
-        } catch (error) {
-            console.error('❌ Cloudflare Stream initialization failed:', error);
-            throw error;
-        }
-    }
-    
-    _setupEventListeners() {
-        if (!this.player) return;
-        
-        this.player.addEventListener('timeupdate', (e) => {
-            const currentTime = this.player.currentTime;
-            const duration = this.player.duration || 0;
-            
-            window.dispatchEvent(new CustomEvent('cloudflare:timeupdate', {
-                detail: {
-                    currentTime: currentTime,
-                    duration: duration,
-                    contentId: this.content.id,
-                    progressPercent: duration > 0 ? (currentTime / duration) * 100 : 0
-                }
-            }));
-        });
-        
-        this.player.addEventListener('ended', () => {
-            console.log('🏁 Cloudflare Stream ended - triggering playlist progression');
-            
-            window.dispatchEvent(new CustomEvent('cloudflare:ended', {
-                detail: {
-                    contentId: this.content.id,
-                    duration: this.player.duration || 0
-                }
-            }));
-            
-            if (typeof window.playNextPlaylistItem === 'function') {
-                window.playNextPlaylistItem();
-            }
-        });
-        
-        this.player.addEventListener('play', () => {
-            window.dispatchEvent(new CustomEvent('cloudflare:play', {
-                detail: { contentId: this.content.id }
-            }));
-        });
-        
-        this.player.addEventListener('pause', () => {
-            window.dispatchEvent(new CustomEvent('cloudflare:pause', {
-                detail: { contentId: this.content.id }
-            }));
-        });
-        
-        this.player.addEventListener('progress', () => {
-            const buffered = this.player.buffered;
-            if (buffered && buffered.length > 0) {
-                window.dispatchEvent(new CustomEvent('cloudflare:progress', {
-                    detail: {
-                        buffered: buffered.end(buffered.length - 1),
-                        contentId: this.content.id
-                    }
-                }));
-            }
-        });
-        
-        this.player.addEventListener('error', (e) => {
-            console.error('❌ Cloudflare Stream error:', e);
-            window.dispatchEvent(new CustomEvent('cloudflare:error', {
-                detail: {
-                    error: e,
-                    contentId: this.content.id
-                }
-            }));
-        });
-    }
-    
-    play() {
-        if (this.player && this.isInitialized) {
-            return this.player.play();
-        }
-        return Promise.reject('Cloudflare Stream not initialized');
-    }
-    
-    pause() {
-        if (this.player && this.isInitialized) {
-            this.player.pause();
-        }
-    }
-    
-    togglePlay() {
-        if (this.player && this.isInitialized) {
-            if (this.player.paused) {
-                return this.player.play();
-            } else {
-                this.player.pause();
-            }
-        }
-    }
-    
-    seek(time) {
-        if (this.player && this.isInitialized) {
-            this.player.currentTime = time;
-        }
-    }
-    
-    getCurrentTime() {
-        return this.player ? this.player.currentTime : 0;
-    }
-    
-    getDuration() {
-        return this.player ? this.player.duration : 0;
-    }
-    
-    isPaused() {
-        return this.player ? this.player.paused : true;
-    }
-    
-    destroy() {
-        if (this.player && this.isInitialized) {
-            try {
-                this.player.destroy();
-            } catch (e) {
-                console.warn('Cloudflare Stream destroy error:', e);
-            }
-            this.isInitialized = false;
-            this.player = null;
-        }
-    }
-}
-
-// ============================================
-// ENGAGEMENT SYSTEM FUNCTIONS
-// ============================================
-
+/**
+ * Record view using RPC (content_views table)
+ */
 async function recordContentViewRPC(contentId, userId, sessionId, deviceType = 'web') {
     if (!contentId) {
         console.error('❌ Cannot record view: missing contentId');
@@ -425,36 +344,9 @@ async function recordViewFallback(contentId, userId, sessionId, deviceType) {
     }
 }
 
-function getPlayableMediaUrl(content) {
-    if (!content) return null;
-    
-    if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
-        return `https://iframe.videodelivery.net/${content.provider_video_id}`;
-    }
-    
-    if (content.streaming_provider === 'cloudflare_r2' && content.file_url) {
-        return content.file_url;
-    }
-    
-    if (content.file_url) {
-        return content.file_url;
-    }
-    
-    return null;
-}
-
-function isCloudflareStreamContent(content) {
-    return content?.streaming_provider === 'cloudflare_stream' && content?.provider_video_id;
-}
-
-function isCloudflareR2Content(content) {
-    return content?.streaming_provider === 'cloudflare_r2' && content?.file_url;
-}
-
-// ============================================
-// LOAD LIVE ENGAGEMENT COUNTS
-// ============================================
-
+/**
+ * Load LIVE counts from canonical tables
+ */
 async function loadLiveEngagementCounts(contentId) {
     if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
     
@@ -509,10 +401,9 @@ async function loadLiveEngagementCounts(contentId) {
     }
 }
 
-// ============================================
-// LOAD ALL ENGAGEMENT STATES
-// ============================================
-
+/**
+ * Load all engagement states with race condition protection
+ */
 async function loadAllEngagementStates(contentId, userId) {
     if (!userId || !contentId) {
         return { liked: false, favorited: false, watchLater: false };
@@ -543,6 +434,7 @@ async function loadAllEngagementStates(contentId, userId) {
         if (states.watchLater) watchLaterContentCache.add(contentId);
         else watchLaterContentCache.delete(contentId);
         
+        // Update engagement buttons UI
         if (typeof updateEngagementButtonsUI === 'function') {
             updateEngagementButtonsUI(states);
         }
@@ -554,10 +446,9 @@ async function loadAllEngagementStates(contentId, userId) {
     }
 }
 
-// ============================================
-// UPDATE GLOBAL CONTENT ID
-// ============================================
-
+/**
+ * Update global contentId across all components
+ */
 function updateGlobalContentId(contentId) {
     if (window.currentContentId === contentId) {
         console.log('⏭️ Skipping duplicate contentId update');
@@ -569,9 +460,6 @@ function updateGlobalContentId(contentId) {
     
     if (enhancedVideoPlayer) {
         enhancedVideoPlayer.contentId = contentId;
-        if (enhancedVideoPlayer.content) {
-            enhancedVideoPlayer.content = window.currentContent;
-        }
     }
     if (streamingManager) {
         streamingManager.contentId = contentId;
@@ -592,10 +480,9 @@ function updateGlobalContentId(contentId) {
     }));
 }
 
-// ============================================
-// SET CURRENT CONTENT
-// ============================================
-
+/**
+ * Set current content
+ */
 async function setCurrentContent(content, index = null) {
     if (!content) return;
     
@@ -616,8 +503,6 @@ async function setCurrentContent(content, index = null) {
         updateContentUI(content);
     }
     
-    updateProviderBadge(content);
-    
     if (window.currentUserId && content.id) {
         setTimeout(async () => {
             await loadAndUpdateEngagementStates();
@@ -634,34 +519,11 @@ async function setCurrentContent(content, index = null) {
             console.error('❌ Count load failed:', error);
         }
     }, 100);
-    
-    // Dispatch event for video-player-section to pick up
-    window.dispatchEvent(new CustomEvent('contentChanged', {
-        detail: { content: content }
-    }));
 }
 
-function updateProviderBadge(content) {
-    const badge = document.getElementById('providerBadge');
-    if (!badge) return;
-    
-    if (content.streaming_provider === 'cloudflare_stream') {
-        badge.textContent = '📡 Cloudflare Stream';
-        badge.style.display = 'inline-flex';
-        badge.className = 'provider-badge stream';
-    } else if (content.streaming_provider === 'cloudflare_r2') {
-        badge.textContent = '☁️ Cloudflare R2';
-        badge.style.display = 'inline-flex';
-        badge.className = 'provider-badge r2';
-    } else {
-        badge.style.display = 'none';
-    }
-}
-
-// ============================================
-// TOGGLE FUNCTIONS
-// ============================================
-
+/**
+ * Toggle like with no 409 conflicts
+ */
 async function toggleLike(contentId, userId, isCurrentlyLiked) {
     if (!userId) {
         if (typeof showToast === 'function') showToast('Sign in to like content', 'warning');
@@ -710,6 +572,9 @@ async function toggleLike(contentId, userId, isCurrentlyLiked) {
     }
 }
 
+/**
+ * Toggle favorite
+ */
 async function toggleFavorite(contentId, userId, isCurrentlyFavorited) {
     if (!userId) {
         if (typeof showToast === 'function') showToast('Sign in to favorite content', 'warning');
@@ -758,6 +623,9 @@ async function toggleFavorite(contentId, userId, isCurrentlyFavorited) {
     }
 }
 
+/**
+ * Toggle watch later
+ */
 async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
     if (!userId) {
         if (typeof showToast === 'function') showToast('Sign in to use Watch Later', 'warning');
@@ -806,6 +674,9 @@ async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
     }
 }
 
+/**
+ * Share content
+ */
 async function shareContent(contentId, userId) {
     if (!contentId) return;
     
@@ -857,7 +728,6 @@ async function shareContent(contentId, userId) {
 // ============================================
 // WATCH SESSION MANAGER CLASS
 // ============================================
-
 class WatchSessionManager {
     constructor(contentId, userId) {
         this.contentId = contentId;
@@ -871,8 +741,6 @@ class WatchSessionManager {
         this.isActive = false;
         this.viewRecorded = false;
         this.viewThresholdReached = false;
-        this._isCloudflareStream = false;
-        this._playerInstance = null;
     }
     
     _generateUUID() {
@@ -905,17 +773,9 @@ class WatchSessionManager {
         if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
         this.heartbeatInterval = setInterval(async () => {
             if (!this.isActive) return;
+            if (!videoElement || videoElement.paused) return;
             
-            let currentTime = 0;
-            
-            if (this._playerInstance && typeof this._playerInstance.getCurrentTime === 'function') {
-                currentTime = this._playerInstance.getCurrentTime();
-            } else if (videoElement) {
-                currentTime = videoElement.currentTime || 0;
-            }
-            
-            if (currentTime === 0) return;
-            
+            const currentTime = Math.floor(videoElement.currentTime);
             const now = Date.now();
             const deltaWatchTimeMs = now - this.lastHeartbeatTime;
             this.sequenceNumber++;
@@ -932,7 +792,7 @@ class WatchSessionManager {
                     content_id: parseInt(this.contentId),
                     user_id: this.userId,
                     sequence_number: this.sequenceNumber,
-                    progress_seconds: Math.floor(currentTime),
+                    progress_seconds: currentTime,
                     cumulative_watch_time_ms: this.totalWatchTimeMs,
                     playback_state: 'PLAYING'
                 });
@@ -947,13 +807,7 @@ class WatchSessionManager {
                 })
                 .eq('playback_session_id', this.playbackSessionId);
             
-            let duration = 0;
-            if (this._playerInstance && typeof this._playerInstance.getDuration === 'function') {
-                duration = this._playerInstance.getDuration();
-            } else if (videoElement) {
-                duration = videoElement.duration || 0;
-            }
-            
+            const duration = videoElement.duration || 0;
             const thirtyPercentDuration = duration * 0.3;
             const thresholdSeconds = Math.min(15, thirtyPercentDuration);
             
@@ -965,14 +819,8 @@ class WatchSessionManager {
         }, 10000);
     }
     
-    start(videoElement, playerInstance = null) {
-        if (!videoElement && !playerInstance) return;
-        
-        if (playerInstance && playerInstance.isCloudflareStream) {
-            this._playerInstance = playerInstance;
-            this._isCloudflareStream = true;
-        }
-        
+    start(videoElement) {
+        if (!videoElement) return;
         this.startHeartbeatLoop(videoElement);
     }
     
@@ -997,7 +845,6 @@ window.WatchSessionManager = WatchSessionManager;
 // ============================================
 // PLAYLIST LOADING FUNCTIONS
 // ============================================
-
 async function loadPlaylistMode(playlistId, playlistType) {
     try {
         if (typeof showLoading === 'function') showLoading('Loading playlist...');
@@ -1055,6 +902,8 @@ async function loadPlaylistMode(playlistId, playlistType) {
                 if (contentData.status !== 'published') return null;
                 return {
                     ...contentData,
+                    streaming_provider: contentData.streaming_provider || null,
+                    provider_video_id: contentData.provider_video_id || null,
                     playlist_relation: {
                         sort_index: item.sort_index,
                         item_type: item.item_type,
@@ -1072,6 +921,7 @@ async function loadPlaylistMode(playlistId, playlistType) {
         
         window.currentPlaylistItems = normalizedItems;
         
+        // 🎯 Dispatch playlistLoaded event for other components to listen to
         window.dispatchEvent(new CustomEvent('playlistLoaded', {
             detail: { playlistId: playlistId, itemCount: window.currentPlaylistItems.length }
         }));
@@ -1079,7 +929,8 @@ async function loadPlaylistMode(playlistId, playlistType) {
         window.currentPlaylistIndex = 0;
         if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
         
-        const { data: playlistMeta, error: metaError } = await window.supabaseClient            .from('creator_playlists')
+        const { data: playlistMeta, error: metaError } = await window.supabaseClient
+            .from('creator_playlists')
             .select(`
                 *,
                 user_profiles!creator_id (
@@ -1106,8 +957,9 @@ async function loadPlaylistMode(playlistId, playlistType) {
         
         if (window.currentPlaylistItems.length > 0) {
             await setCurrentContent(window.currentPlaylistItems[0], 0);
-            // Load content into player via direct call
-            await _loadContentIntoPlayerDirect(window.currentPlaylistItems[0]);
+            if (typeof loadContentIntoPlayer === 'function') {
+                await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+            }
         }
         
         if (typeof hideLoading === 'function') hideLoading();
@@ -1133,7 +985,7 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     
     const { data: contentRows, error: contentError } = await window.supabaseClient
         .from('Content')
-        .select('*')
+        .select('*, streaming_provider, provider_video_id')
         .in('id', contentIds)
         .eq('status', 'published');
     
@@ -1150,6 +1002,8 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
             if (!content) return null;
             return {
                 ...content,
+                streaming_provider: content.streaming_provider || null,
+                provider_video_id: content.provider_video_id || null,
                 playlist_relation: {
                     sort_index: row.sort_index,
                     item_type: row.item_type,
@@ -1163,6 +1017,7 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     
     window.currentPlaylistItems = normalizedItems;
     
+    // 🎯 Dispatch playlistLoaded event for other components to listen to
     window.dispatchEvent(new CustomEvent('playlistLoaded', {
         detail: { playlistId: playlistId, itemCount: window.currentPlaylistItems.length }
     }));
@@ -1176,7 +1031,9 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
     
     if (window.currentPlaylistItems.length > 0) {
         await setCurrentContent(window.currentPlaylistItems[0], 0);
-        await _loadContentIntoPlayerDirect(window.currentPlaylistItems[0]);
+        if (typeof loadContentIntoPlayer === 'function') {
+            await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+        }
     }
     
     if (typeof hideLoading === 'function') hideLoading();
@@ -1185,7 +1042,6 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
 // ============================================
 // CENTRALIZED NEXT TRACK FUNCTION
 // ============================================
-
 window.playNextPlaylistItem = async function() {
     if (window._isNavigatingToNext) {
         console.log('⏭️ Already navigating to next, skipping');
@@ -1215,7 +1071,9 @@ window.playNextPlaylistItem = async function() {
         window.currentPlaylistIndex = nextIndex;
         const nextItem = items[nextIndex];
         await setCurrentContent(nextItem, nextIndex);
-        await _loadContentIntoPlayerDirect(nextItem);
+        if (typeof loadContentIntoPlayer === 'function') {
+            await loadContentIntoPlayer(nextItem, nextIndex);
+        }
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
         }
@@ -1246,7 +1104,9 @@ window.playPlaylistItemByIndex = async function(index) {
         const item = window.currentPlaylistItems[index];
         window.currentPlaylistIndex = index;
         await setCurrentContent(item, index);
-        await _loadContentIntoPlayerDirect(item);
+        if (typeof loadContentIntoPlayer === 'function') {
+            await loadContentIntoPlayer(item);
+        }
         if (typeof syncPlaylistUI === 'function') {
             syncPlaylistUI();
         }
@@ -1263,59 +1123,8 @@ function resetPlaylistCompletionLock() {
 }
 
 // ============================================
-// LOAD CONTENT INTO PLAYER - DIRECT (NO RECURSION)
-// ============================================
-
-async function _loadContentIntoPlayerDirect(content) {
-    if (_loadingContent) {
-        console.log('⏭️ Already loading content into player, skipping duplicate');
-        return;
-    }
-    
-    if (!content) {
-        console.error('❌ No content provided');
-        return;
-    }
-    
-    _loadingContent = true;
-    
-    try {
-        console.log('📦 Loading content into player:', content.id);
-        
-        // First, check if video-player-section has a function
-        if (typeof window.loadContentIntoPlayer === 'function' && window.loadContentIntoPlayer !== _loadContentIntoPlayerDirect) {
-            console.log('🔄 Using video-player-section loadContentIntoPlayer');
-            await window.loadContentIntoPlayer(content);
-            return;
-        }
-        
-        // Fallback: try using enhancedVideoPlayer directly
-        const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-        if (player) {
-            if (typeof player.loadContent === 'function') {
-                console.log('🔄 Loading content directly into EnhancedVideoPlayer');
-                await player.loadContent(content);
-                return;
-            }
-        }
-        
-        console.warn('⚠️ No method available to load content into player');
-    } catch (error) {
-        console.error('❌ Failed to load content into player:', error);
-    } finally {
-        _loadingContent = false;
-    }
-}
-
-// Public wrapper that calls the internal function
-async function loadContentIntoPlayer(content) {
-    return _loadContentIntoPlayerDirect(content);
-}
-
-// ============================================
 // DIRECT USER GESTURE PLAYBACK
 // ============================================
-
 const startPlaybackFromUserGesture = async () => {
     try {
         const player = document.getElementById('inlinePlayer');
@@ -1329,36 +1138,38 @@ const startPlaybackFromUserGesture = async () => {
         if (placeholder) placeholder.style.display = 'none';
         if (heroPoster) heroPoster.style.opacity = '0.3';
         
-        // Try using video-player-section's method first
-        if (typeof window.startPlayback === 'function') {
-            await window.startPlayback();
+        const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
+        if (!playerInstance || !playerInstance.video) {
+            console.error('❌ Player instance not found.');
             return;
         }
         
-        // Fallback: try using enhancedVideoPlayer directly
-        const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
-        if (playerInstance) {
-            // If player doesn't have content loaded, load it
-            if (!playerInstance.content && window.currentContent) {
-                if (typeof playerInstance.loadContent === 'function') {
-                    await playerInstance.loadContent(window.currentContent);
-                }
-            }
-            
-            if (typeof playerInstance.play === 'function') {
-                await playerInstance.play();
-                const overlay = document.getElementById('initialPlayOverlay');
-                if (overlay) overlay.classList.add('hidden');
-                if (window.currentContent?.id && !watchSession) {
-                    initializeWatchSessionOnPlay();
-                }
-                return;
+        const video = playerInstance.video;
+        
+        if (!video.src && !window.isPlaylistMode && window.currentContent?.file_url) {
+            const fileUrl = getPlayableMediaUrl(window.currentContent);
+            if (fileUrl) {
+                video.src = fileUrl;
+                video.load();
             }
         }
         
-        console.error('❌ No playback method available');
-        if (typeof showToast === 'function') {
-            showToast('Unable to start playback. Please try again.', 'error');
+        video.muted = false;
+        video.volume = 1.0;
+        window.userHasInteractedWithMedia = true;
+        document.body.classList.add('user-interacted');
+        
+        await video.play().catch(async (err) => {
+            console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
+            video.muted = true;
+            await video.play();
+        });
+        
+        const overlay = document.getElementById('initialPlayOverlay');
+        if (overlay) overlay.classList.add('hidden');
+        
+        if (window.currentContent?.id && !watchSession) {
+            initializeWatchSessionOnPlay();
         }
         
     } catch (error) {
@@ -1373,7 +1184,7 @@ function initializeWatchSessionOnPlay() {
     if (!window.currentContent || !window.currentUserId) return;
     
     const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-    if (!player) return;
+    if (!player?.video) return;
     
     if (watchSession) {
         watchSession.stop();
@@ -1384,13 +1195,7 @@ function initializeWatchSessionOnPlay() {
         currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
         watchSession.initializeSession('Web', 'Desktop');
-        
-        if (player.isCloudflareStream) {
-            watchSession.start(null, player);
-        } else if (player.video) {
-            watchSession.start(player.video);
-        }
-        
+        watchSession.start(player.video);
         window._watchSession = watchSession;
     } catch (error) {
         console.error('❌ Failed to initialize watch session:', error);
@@ -1400,7 +1205,6 @@ function initializeWatchSessionOnPlay() {
 // ============================================
 // LOADING FUNCTIONS
 // ============================================
-
 function showLoading(message = 'Loading...') {
     const loadingScreen = document.getElementById('loading');
     if (loadingScreen) {
@@ -1418,7 +1222,6 @@ function hideLoading() {
 // ============================================
 // FETCH CONTENT PROFILE DETAILS
 // ============================================
-
 async function fetchContentProfileDetails(contentId) {
     try {
         const { data: mediaAsset, error: fetchError } = await window.supabaseClient
@@ -1457,15 +1260,15 @@ async function fetchContentProfileDetails(contentId) {
         
         return {
             ...mediaAsset,
+            streaming_provider: mediaAsset.streaming_provider || null,
+            provider_video_id: mediaAsset.provider_video_id || null,
             views_count: mediaAsset.content_engagement_stats?.total_views || 0,
             likes_count: mediaAsset.content_engagement_stats?.total_likes || 0,
             valid_views_count: mediaAsset.content_engagement_stats?.total_valid_views || 0,
             comments_count: mediaAsset.content_engagement_stats?.total_comments || 0,
             creator: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || 'Creator',
             creator_display_name: mediaAsset.user_profiles?.full_name || mediaAsset.user_profiles?.username || 'Creator',
-            creator_id: mediaAsset.user_id,
-            streaming_provider: mediaAsset.streaming_provider || null,
-            provider_video_id: mediaAsset.provider_video_id || null
+            creator_id: mediaAsset.user_id
         };
     } catch (error) {
         console.error("Critical Profile Fetch Interruption:", error.message);
@@ -1476,7 +1279,6 @@ async function fetchContentProfileDetails(contentId) {
 // ============================================
 // CRITICAL CONTENT LOADING
 // ============================================
-
 async function loadCriticalContentData(contentId) {
     const cached = localStorage.getItem(`content_${contentId}`);
     if (cached) {
@@ -1485,9 +1287,6 @@ async function loadCriticalContentData(contentId) {
             if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
                 await setCurrentContent(parsed);
                 refreshContentInBackground(contentId);
-                
-                // Load content into player
-                await _loadContentIntoPlayerDirect(parsed);
                 return;
             }
         } catch(e) { console.warn('Cache parse error:', e); }
@@ -1523,6 +1322,8 @@ async function loadCriticalContentData(contentId) {
         thumbnail_url: profileData.thumbnail_url,
         file_url: profileData.file_url,
         media_type: profileData.media_type || 'video',
+        streaming_provider: profileData.streaming_provider || null,
+        provider_video_id: profileData.provider_video_id || null,
         genre: profileData.genre || 'General',
         created_at: profileData.created_at,
         duration: profileData.duration || 3600,
@@ -1542,16 +1343,11 @@ async function loadCriticalContentData(contentId) {
         quality_profiles: streamingData?.quality_profiles || [],
         hls_manifest_url: streamingData?.hls_manifest_url || null,
         data_saver_url: streamingData?.data_saver_url || null,
-        streaming_provider: profileData.streaming_provider || null,
-        provider_video_id: profileData.provider_video_id || null,
         _cachedAt: Date.now()
     };
     
     await setCurrentContent(contentObj);
     localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
-    
-    // Load content into player
-    await _loadContentIntoPlayerDirect(contentObj);
     
     if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed) {
         if (typeof addResumeButton === 'function') {
@@ -1572,7 +1368,7 @@ async function loadContentFromURLLegacy() {
     try {
         const { data: contentData, error: contentError } = await window.supabaseClient
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, streaming_provider, provider_video_id, user_profiles!user_id(*)')
             .eq('id', contentId)
             .maybeSingle();
         
@@ -1598,6 +1394,8 @@ async function loadContentFromURLLegacy() {
             thumbnail_url: contentData.thumbnail_url,
             file_url: contentData.file_url,
             media_type: contentData.media_type || 'video',
+            streaming_provider: contentData.streaming_provider || null,
+            provider_video_id: contentData.provider_video_id || null,
             genre: contentData.genre || 'General',
             created_at: contentData.created_at,
             duration: contentData.duration || 3600,
@@ -1612,13 +1410,10 @@ async function loadContentFromURLLegacy() {
             user_id: contentData.user_id,
             user_profiles: contentData.user_profiles,
             watch_progress: watchProgress?.last_position || 0,
-            is_completed: watchProgress?.is_completed || false,
-            streaming_provider: contentData.streaming_provider || null,
-            provider_video_id: contentData.provider_video_id || null
+            is_completed: watchProgress?.is_completed || false
         };
         
         await setCurrentContent(contentObj);
-        await _loadContentIntoPlayerDirect(contentObj);
         
         if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed && typeof addResumeButton === 'function') {
             addResumeButton(window.currentContent.watch_progress);
@@ -1650,7 +1445,6 @@ function refreshContentInBackground(contentId) {
 // ============================================
 // SECONDARY DATA LOADING
 // ============================================
-
 async function loadSecondaryContentData(contentId) {
     if (!contentId) return;
     Promise.all([
@@ -1676,7 +1470,6 @@ async function loadSecondaryContentDataForPlaylist() {
 // ============================================
 // STREAMING MANAGER INITIALIZATION
 // ============================================
-
 async function initializeStreamingManager() {
     if (!window.StreamingManager) {
         console.warn('⚠️ StreamingManager not loaded');
@@ -1697,8 +1490,6 @@ async function initializeStreamingManager() {
             supabaseClient: window.supabaseClient,
             contentId: window.currentContent?.id,
             userId: window.currentUserId,
-            streamingProvider: window.currentContent?.streaming_provider,
-            providerVideoId: window.currentContent?.provider_video_id,
             onQualityChange: function(data) {
                 if (typeof updateQualityIndicator === 'function') updateQualityIndicator(data.quality);
                 if (typeof showToast === 'function') showToast('Quality: ' + data.quality, 'info');
@@ -1721,7 +1512,6 @@ async function initializeStreamingManager() {
 // ============================================
 // AUTHENTICATION & PROFILE FUNCTIONS
 // ============================================
-
 async function waitForAuthHelper() {
     return new Promise((resolve) => {
         const check = setInterval(() => {
@@ -1791,9 +1581,12 @@ function setupAuthListeners() {
 }
 
 // ============================================
-// ENGAGEMENT BUTTON HANDLERS
+// ENGAGEMENT BUTTON HANDLERS - FIXED
 // ============================================
 
+/**
+ * Handle Like button click
+ */
 async function handleLikeButtonClick() {
     console.log('❤️ Like button clicked');
     
@@ -1809,6 +1602,7 @@ async function handleLikeButtonClick() {
         if (typeof window.showToast === 'function') {
             window.showToast('Sign in to like content', 'warning');
         }
+        // Redirect to login after a moment
         setTimeout(() => {
             window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
         }, 1500);
@@ -1819,9 +1613,11 @@ async function handleLikeButtonClick() {
     const likesCountEl = document.getElementById('likesCount');
     const isCurrentlyLiked = likeBtn?.classList.contains('active') || false;
     
+    // Get current count for optimistic update
     let currentCount = parseInt(likesCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
     const newCount = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
     
+    // Optimistic UI update
     if (likeBtn) {
         likeBtn.classList.toggle('active', !isCurrentlyLiked);
         likeBtn.innerHTML = !isCurrentlyLiked 
@@ -1837,6 +1633,7 @@ async function handleLikeButtonClick() {
         const newState = await toggleLike(window.currentContent.id, window.currentUserId, isCurrentlyLiked);
         
         if (newState === isCurrentlyLiked) {
+            // Revert on failure
             if (likeBtn) {
                 likeBtn.classList.toggle('active', isCurrentlyLiked);
                 likeBtn.innerHTML = isCurrentlyLiked 
@@ -1850,6 +1647,7 @@ async function handleLikeButtonClick() {
                 window.showToast('Failed to update like', 'error');
             }
         } else {
+            // Success - refresh counts from server
             const liveCounts = await loadLiveEngagementCounts(window.currentContent.id);
             if (likesCountEl) {
                 likesCountEl.textContent = window.formatNumber ? window.formatNumber(liveCounts.likes) : liveCounts.likes;
@@ -1862,6 +1660,7 @@ async function handleLikeButtonClick() {
                 window.currentContent.views_count = liveCounts.views;
             }
             
+            // Update engagement cache
             if (typeof updateEngagementButtonsUI === 'function') {
                 const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
                 updateEngagementButtonsUI(states);
@@ -1892,6 +1691,9 @@ async function handleLikeButtonClick() {
     }
 }
 
+/**
+ * Handle Favorite button click
+ */
 async function handleFavoriteButtonClick() {
     console.log('⭐ Favorite button clicked');
     
@@ -1917,6 +1719,7 @@ async function handleFavoriteButtonClick() {
     let currentCount = parseInt(favCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
     const newCount = isCurrentlyFavorited ? currentCount - 1 : currentCount + 1;
     
+    // Optimistic UI
     if (favoriteBtn) {
         favoriteBtn.classList.toggle('active', !isCurrentlyFavorited);
         favoriteBtn.innerHTML = !isCurrentlyFavorited 
@@ -1948,6 +1751,7 @@ async function handleFavoriteButtonClick() {
             if (typeof window.showToast === 'function') {
                 window.showToast(newState ? 'Added to Favorites!' : 'Removed from Favorites', 'success');
             }
+            // Update engagement cache
             if (typeof updateEngagementButtonsUI === 'function') {
                 const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
                 updateEngagementButtonsUI(states);
@@ -1971,6 +1775,9 @@ async function handleFavoriteButtonClick() {
     }
 }
 
+/**
+ * Handle Watch Later button click
+ */
 async function handleWatchLaterButtonClick() {
     console.log('⏰ Watch Later button clicked');
     
@@ -1992,6 +1799,7 @@ async function handleWatchLaterButtonClick() {
     const watchLaterBtn = document.getElementById('watchLaterBtn');
     const isCurrentlySaved = watchLaterBtn?.classList.contains('active') || false;
     
+    // Optimistic UI
     if (watchLaterBtn) {
         watchLaterBtn.classList.toggle('active', !isCurrentlySaved);
         watchLaterBtn.innerHTML = !isCurrentlySaved 
@@ -2017,6 +1825,7 @@ async function handleWatchLaterButtonClick() {
             if (typeof window.showToast === 'function') {
                 window.showToast(newState ? 'Added to Watch Later!' : 'Removed from Watch Later', 'success');
             }
+            // Update engagement cache
             if (typeof updateEngagementButtonsUI === 'function') {
                 const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
                 updateEngagementButtonsUI(states);
@@ -2037,6 +1846,9 @@ async function handleWatchLaterButtonClick() {
     }
 }
 
+/**
+ * Handle Share button click
+ */
 async function handleShareButtonClick() {
     console.log('📤 Share button clicked');
     
@@ -2068,6 +1880,9 @@ async function handleShareButtonClick() {
     }
 }
 
+/**
+ * Load all engagement states and update UI
+ */
 async function loadAndUpdateEngagementStates() {
     if (!window.currentContent?.id || !window.currentUserId) return;
     
@@ -2085,10 +1900,10 @@ async function loadAndUpdateEngagementStates() {
 // ============================================
 // EVENT LISTENERS SETUP
 // ============================================
-
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners for engagement buttons...');
     
+    // Like button
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
         const newLikeBtn = likeBtn.cloneNode(true);
@@ -2097,6 +1912,7 @@ function setupEventListeners() {
         console.log('✅ Like button listener attached');
     }
     
+    // Favorite button
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
         const newFavoriteBtn = favoriteBtn.cloneNode(true);
@@ -2105,6 +1921,7 @@ function setupEventListeners() {
         console.log('✅ Favorite button listener attached');
     }
     
+    // Watch Later button
     const watchLaterBtn = document.getElementById('watchLaterBtn');
     if (watchLaterBtn) {
         const newWatchLaterBtn = watchLaterBtn.cloneNode(true);
@@ -2113,6 +1930,7 @@ function setupEventListeners() {
         console.log('✅ Watch Later button listener attached');
     }
     
+    // Share button
     const shareBtn = document.getElementById('shareBtn');
     if (shareBtn) {
         const newShareBtn = shareBtn.cloneNode(true);
@@ -2121,6 +1939,7 @@ function setupEventListeners() {
         console.log('✅ Share button listener attached');
     }
     
+    // Play button
     const playBtn = document.getElementById('playBtn');
     if (playBtn) {
         const newPlayBtn = playBtn.cloneNode(true);
@@ -2135,6 +1954,7 @@ function setupEventListeners() {
         newPoster.addEventListener('click', startPlaybackFromUserGesture);
     }
     
+    // Close player button
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) {
         closeFromHero.addEventListener('click', function() {
@@ -2164,8 +1984,8 @@ function setupEventListeners() {
         });
     }
     
+    // Setup player ended listener
     setupPlayerEndedListener();
-    setupCloudflareStreamListeners();
     
     console.log('✅ All event listeners setup complete');
 }
@@ -2187,58 +2007,11 @@ function setupPlayerEndedListener() {
     videoElement.addEventListener('ended', handleEnded);
 }
 
-function setupCloudflareStreamListeners() {
-    document.addEventListener('cloudflare:timeupdate', (event) => {
-        const { currentTime, duration, contentId, progressPercent } = event.detail;
-        
-        if (watchSession && watchSession.isActive) {
-            if (watchSession._playerInstance) {
-                watchSession._playerInstance._lastKnownTime = currentTime;
-            }
-        }
-        
-        if (!watchSession?.viewRecorded && duration > 0) {
-            const thirtyPercentDuration = duration * 0.3;
-            const thresholdSeconds = Math.min(15, thirtyPercentDuration);
-            if (currentTime >= thresholdSeconds) {
-                watchSession.viewRecorded = true;
-                watchSession.viewThresholdReached = true;
-                recordContentViewRPC(contentId, window.currentUserId, watchSession?.playbackSessionId);
-            }
-        }
-    });
-    
-    document.addEventListener('cloudflare:ended', (event) => {
-        console.log('🏁 Cloudflare Stream ended event received');
-        if (typeof window.playNextPlaylistItem === 'function') {
-            setTimeout(() => {
-                window.playNextPlaylistItem();
-            }, 100);
-        }
-    });
-    
-    console.log('✅ Cloudflare Stream event listeners setup complete');
-}
-
 // ============================================
 // INITIALIZATION
 // ============================================
-
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🎬 Content Detail: Starting optimized load sequence... (Cloudflare Edition)');
-    
-    // Wait for modules to load
-    await new Promise((resolve) => {
-        const check = () => {
-            if (window._modulesLoaded) {
-                resolve();
-            } else {
-                setTimeout(check, 100);
-            }
-        };
-        check();
-        setTimeout(resolve, 8000);
-    });
+    console.log('🎬 Content Detail: Starting optimized load sequence...');
     
     const skeleton = document.getElementById('content-skeleton');
     const loadingScreen = document.getElementById('loading');
@@ -2332,11 +2105,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.ContentCollectionsEngine.initialize(window.currentContent);
         }
         
-        // Initialize Cloudflare Stream SDK preload
-        if (window.currentContent?.streaming_provider === 'cloudflare_stream') {
-            loadCloudflareStreamSDK().catch(() => {
-                console.warn('⚠️ Cloudflare Stream SDK preload failed, will retry on playback');
-            });
+        if (!window.isPlaylistMode && window.currentContent?.id) {
+            setTimeout(() => {
+                const player = document.getElementById('inlinePlayer');
+                const video = document.getElementById('inlineVideoPlayer');
+                if (player && video && !window.enhancedVideoPlayer && typeof initializeEnhancedVideoPlayer === 'function') {
+                    initializeEnhancedVideoPlayer();
+                }
+            }, 300);
         }
         
     } catch (err) {
@@ -2358,6 +2134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (window.currentContent?.id) {
             loadSecondaryContentData(window.currentContent.id);
         }
+        if (typeof initializeVideoPlayerSkeleton === 'function') initializeVideoPlayerSkeleton();
     }, { timeout: 2000 });
     
     setTimeout(() => {
@@ -2370,13 +2147,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 5000);
     
-    console.log('✅ Content Detail initialization complete with Cloudflare integration');
+    console.log('✅ Content Detail initialization complete with modular architecture');
 });
 
 // ============================================
-// PLACEHOLDER FUNCTIONS
+// PLACEHOLDER FUNCTIONS FOR MODULES TO OVERRIDE
 // ============================================
-
 async function initializeRecommendationEngine() {
     if (window.RecommendationEngine && window.currentContent?.id) {
         try {
@@ -2512,7 +2288,6 @@ function initThemeSelector() {
 // ============================================
 // GLOBAL EXPORTS
 // ============================================
-
 window.recordView = recordContentViewRPC;
 window.loadAllEngagementStates = loadAllEngagementStates;
 window.toggleLike = toggleLike;
@@ -2536,12 +2311,5 @@ window.handleFavoriteButtonClick = handleFavoriteButtonClick;
 window.handleWatchLaterButtonClick = handleWatchLaterButtonClick;
 window.handleShareButtonClick = handleShareButtonClick;
 window.loadAndUpdateEngagementStates = loadAndUpdateEngagementStates;
-window.getPlayableMediaUrl = getPlayableMediaUrl;
-window.isCloudflareStreamContent = isCloudflareStreamContent;
-window.isCloudflareR2Content = isCloudflareR2Content;
-window.loadCloudflareStreamSDK = loadCloudflareStreamSDK;
-window.CloudflareStreamBridge = CloudflareStreamBridge;
-window.loadContentIntoPlayer = loadContentIntoPlayer;
-window._modulesLoaded = true;
 
-console.log('✅ Content Detail Main Orchestrator ready with Cloudflare integration');
+console.log('✅ Content Detail Main Orchestrator ready');
