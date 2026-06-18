@@ -14,6 +14,10 @@
 // - Added Cloudflare Stream detection in initialize()
 // - Updated _initializeHLS() with Cloudflare-specific CORS handling
 // - Added _isCloudflareStreamUrl() helper method
+// 🎵 AUDIO GUARD (2026-06-18):
+// - Added strict audio guard in initialize() and reinitialize()
+// - Bypasses HLS initialization for Cloudflare R2 audio tracks
+// - Destroys HLS instances for audio to prevent fatal crashes
 
 (function() {
   'use strict';
@@ -30,6 +34,7 @@
     this.supabase = config.supabaseClient || window.supabaseClient;
     this.contentId = config.contentId || null;
     this.userId = config.userId || null;
+    this.currentContent = config.currentContent || null; // Store reference to current content
     
     // Quality levels
     this.qualityLevels = [
@@ -77,6 +82,21 @@
 
   StreamingManager.prototype.initialize = async function() {
     console.log('📡 StreamingManager.initialize() called for content:', this.contentId);
+    
+    // ============================================
+    // 🎵 STRICT AUDIO GUARD - Bypass HLS for audio
+    // ============================================
+    // Check if current content is audio (Cloudflare R2 or media_type)
+    const isAudio = this.currentContent?.streaming_provider === 'cloudflare_r2' || 
+                    this.currentContent?.media_type === 'audio';
+    
+    if (isAudio) {
+      console.log('🎵 Audio track detected. Bypassing HLS initialization.');
+      // Clean up any old HLS instances from previous videos
+      this.destroy();
+      this.contentType = 'audio';
+      return; // Stop execution completely for audio
+    }
     
     // 🚨 Skip if already initialized with same contentId
     if (this._isInitialized && this._lastInitializedContentId === this.contentId) {
@@ -136,6 +156,8 @@
       if (contentData?.streaming_provider === 'cloudflare_r2') {
         this.contentType = 'audio';
         console.log('🎵 Cloudflare R2 audio detected - skipping HLS');
+        // Clean up any old HLS instances
+        this.destroy();
         this._isInitialized = true;
         this._lastInitializedContentId = this.contentId;
         return;
@@ -147,6 +169,8 @@
       if (contentData?.media_type === 'audio') {
         this.contentType = 'audio';
         console.log('🎵 Audio content detected - skipping HLS initialization');
+        // Clean up any old HLS instances
+        this.destroy();
         this._isInitialized = true;
         this._lastInitializedContentId = this.contentId;
         return;
@@ -190,12 +214,27 @@
    * Called when playlist track changes to update contentId
    */
   StreamingManager.prototype.reinitialize = async function(newContentId) {
+    console.log(`🔄 Reinitializing StreamingManager: ${this.contentId} -> ${newContentId}`);
+    
+    // ============================================
+    // 🎵 STRICT AUDIO GUARD - Bypass HLS for audio
+    // ============================================
+    // Check if new content is audio (Cloudflare R2 or media_type)
+    const isAudio = this.currentContent?.streaming_provider === 'cloudflare_r2' || 
+                    this.currentContent?.media_type === 'audio';
+    
+    if (isAudio) {
+      console.log('🎵 Audio track detected. Bypassing HLS initialization.');
+      // Clean up any old HLS instances from previous videos
+      this.destroy();
+      this.contentType = 'audio';
+      return; // Stop execution completely for audio
+    }
+    
     if (this.contentId === newContentId && this._isInitialized) {
       console.log('⚠️ StreamingManager already using contentId:', newContentId);
       return;
     }
-    
-    console.log(`🔄 Reinitializing StreamingManager: ${this.contentId} -> ${newContentId}`);
     
     // Destroy current HLS instance
     if (this.hlsInstance) {
@@ -721,4 +760,5 @@
   console.log('  ✅ Cross-tab preference sync via storage events');
   console.log('  ✅ Reinitialization for playlist track changes');
   console.log('  ☁️ Cloudflare Stream detection and HLS support');
+  console.log('  🎵 STRICT AUDIO GUARD - Bypass HLS for Cloudflare R2 audio tracks');
 })();
