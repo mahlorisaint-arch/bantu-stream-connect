@@ -1362,6 +1362,40 @@ border: 2px solid var(--warm-gold); background: var(--deep-navy); position: rela
 width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
 color: var(--slate-grey); font-size: 14px;
 }
+
+/* ===== BANNER UPLOAD PROGRESS INDICATOR ===== */
+.banner-upload-progress {
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    display: none;
+}
+.banner-upload-progress.active {
+    display: block;
+}
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+    transition: width 0.3s ease;
+    border-radius: 3px;
+    width: 0%;
+}
+#upload-progress-text {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--slate-grey);
+    text-align: center;
+}
+
 .banner-upload-options { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
 .banner-upload-btn {
 background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); color: white;
