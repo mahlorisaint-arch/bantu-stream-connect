@@ -745,7 +745,80 @@
     </div>
 </section>
         
-        <section class="related-section"><div class="section-header"><h2 class="section-title">Related Content</h2></div><div class="content-grid" id="relatedGrid"></div></section>
+        <!-- ============================================ -->
+<!-- RELATED CONTENT SECTION - COMPLETE -->
+<!-- ============================================ -->
+<section class="related-content-section">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-layer-group"></i>
+            Related Content
+        </h2>
+        <div class="genre-filters" id="genreFilters">
+            <button class="genre-filter-pill active" data-genre="all">All</button>
+            <button class="genre-filter-pill" data-genre="music">Music</button>
+            <button class="genre-filter-pill" data-genre="stem">STEM</button>
+            <button class="genre-filter-pill" data-genre="culture">Culture</button>
+            <button class="genre-filter-pill" data-genre="news">News</button>
+        </div>
+    </div>
+    <!-- Related content grid -->
+    <div class="related-grid" id="relatedGrid"></div>
+    <!-- Load more button -->
+    <div class="load-more-container" id="loadMoreContainer" style="display: none;">
+        <button class="load-more-btn" id="loadMoreRelatedBtn">
+            <i class="fas fa-chevron-down"></i> Load More
+        </button>
+    </div>
+    <!-- Empty state (hidden by default) -->
+    <div class="related-empty" id="relatedEmpty" style="display: none;">
+        <i class="fas fa-video-slash"></i>
+        <h3>No Related Content</h3>
+        <p>We couldn't find similar content. Try browsing our library.</p>
+        <a href="explore-screen.html" class="browse-more-btn">
+            <i class="fas fa-compass"></i> Browse Library
+        </a>
+    </div>
+    <!-- Skeleton loading state -->
+    <div class="related-skeleton-grid" id="relatedSkeleton" style="display: none;">
+        <div class="related-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="related-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="related-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="related-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="related-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="related-skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+    </div>
+</section>
     </main>
 
     <footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
