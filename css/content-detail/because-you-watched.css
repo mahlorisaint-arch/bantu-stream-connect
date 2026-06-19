@@ -33,11 +33,42 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .because-you-watched-rail .section-title i {
   color: var(--bantu-blue);
   font-size: 20px;
+}
+
+/* Rail actions - View All + Refresh */
+.rail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* View all link */
+.view-all-link {
+  color: var(--bantu-blue);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.view-all-link:hover {
+  color: var(--warm-gold);
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Title tooltip/info icon */
@@ -104,11 +135,10 @@
 .refresh-rail-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: var(--bantu-blue);
-  transform: rotate(15deg);
 }
 
 .refresh-rail-btn:active {
-  transform: rotate(0deg);
+  transform: scale(0.95);
 }
 
 .refresh-rail-btn i {
@@ -202,6 +232,38 @@
   font-weight: 600;
   z-index: 2;
   font-family: monospace;
+}
+
+/* ============================================ */
+/* REASON BADGE (why this was recommended) */
+/* ============================================ */
+.reason-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--warm-gold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.recommendation-card:hover .reason-badge {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reason-badge i {
+  font-size: 9px;
 }
 
 /* ============================================ */
@@ -304,38 +366,6 @@
   font-size: 10px;
   color: var(--warm-gold);
   margin-top: 6px;
-}
-
-/* ============================================ */
-/* REASON BADGE (why this was recommended) */
-/* ============================================ */
-.reason-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 10px;
-  color: var(--warm-gold);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 2;
-  opacity: 0;
-  transform: translateX(-10px);
-  transition: all 0.3s ease;
-  pointer-events: none;
-}
-
-.recommendation-card:hover .reason-badge {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.reason-badge i {
-  font-size: 9px;
 }
 
 /* ============================================ */
@@ -491,6 +521,16 @@
     font-size: 18px;
   }
   
+  .view-all-link {
+    font-size: 13px;
+    padding: 4px 10px;
+  }
+  
+  .refresh-rail-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
   .recommendation-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
@@ -524,16 +564,36 @@
   .views-count {
     font-size: 11px;
   }
+  
+  .rail-actions {
+    gap: 8px;
+  }
 }
 
 @media (max-width: 550px) {
   .because-you-watched-rail .section-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .because-you-watched-rail .section-title {
+    font-size: 16px;
+  }
+  
+  .rail-actions {
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .view-all-link {
+    font-size: 12px;
+    padding: 4px 8px;
   }
   
   .refresh-rail-btn {
-    align-self: flex-start;
+    font-size: 11px;
+    padding: 4px 10px;
   }
   
   .recommendation-grid {
@@ -578,6 +638,11 @@
   
   .cta-btn i {
     margin: 0;
+  }
+  
+  .genre-tag {
+    font-size: 9px;
+    padding: 1px 6px;
   }
 }
 
@@ -669,6 +734,14 @@
   color: var(--deep-navy);
 }
 
+.theme-light .view-all-link {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .view-all-link:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 /* High contrast mode */
 .theme-high-contrast .recommendation-card {
   border: 2px solid white;
@@ -690,6 +763,16 @@
 }
 
 .theme-high-contrast .refresh-rail-btn:hover {
+  background: white;
+  color: black;
+}
+
+.theme-high-contrast .view-all-link {
+  border: 1px solid white;
+  color: white;
+}
+
+.theme-high-contrast .view-all-link:hover {
   background: white;
   color: black;
 }
