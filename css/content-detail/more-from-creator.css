@@ -33,11 +33,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .more-from-creator-rail .section-title i {
   color: var(--bantu-blue);
   font-size: 20px;
+}
+
+.more-from-creator-rail .section-title #moreFromCreatorName {
+  color: var(--warm-gold);
 }
 
 /* Creator avatar in title (mini) */
@@ -46,11 +51,11 @@
   height: 28px;
   border-radius: 50%;
   overflow: hidden;
-  margin-left: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  flex-shrink: 0;
 }
 
 .creator-avatar-mini img {
@@ -65,7 +70,7 @@
   color: white;
 }
 
-/* View all link - go to creator channel */
+/* View all link */
 .view-all-link {
   color: var(--bantu-blue);
   text-decoration: none;
@@ -78,6 +83,8 @@
   padding: 8px 16px;
   border-radius: 40px;
   background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .view-all-link:hover {
@@ -422,11 +429,16 @@
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS */
+/* RESPONSIVE ADJUSTMENTS - ALL ELEMENTS VISIBLE */
 /* ============================================ */
 @media (max-width: 768px) {
   .more-from-creator-rail .section-title {
     font-size: 18px;
+  }
+  
+  .view-all-link {
+    font-size: 13px;
+    padding: 4px 10px;
   }
   
   .creator-content-grid {
@@ -439,15 +451,16 @@
     gap: 12px;
   }
   
+  /* Make badge visible on tablet */
   .same-creator-badge {
-    opacity: 1;
-    transform: translateX(0);
+    opacity: 1 !important;
+    transform: translateX(0) !important;
     font-size: 9px;
     padding: 3px 8px;
   }
   
   .same-creator-badge span {
-    display: none;
+    display: inline !important;
   }
   
   .creator-content-card .card-title {
@@ -464,16 +477,30 @@
     font-size: 10px;
     padding: 2px 6px;
   }
+  
+  .like-count {
+    display: flex !important;
+  }
+  
+  .like-count span {
+    display: inline !important;
+  }
 }
 
 @media (max-width: 550px) {
   .more-from-creator-rail .section-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .more-from-creator-rail .section-title {
+    font-size: 16px;
   }
   
   .view-all-link {
-    align-self: flex-start;
+    font-size: 12px;
+    padding: 4px 8px;
+    margin-left: 0;
   }
   
   .creator-content-grid {
@@ -501,11 +528,35 @@
   }
   
   .like-count {
+    display: flex !important;
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+  
+  .like-count span {
+    display: inline !important;
     font-size: 9px;
   }
   
+  /* Make badge visible on phone */
+  .same-creator-badge {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+  
+  .same-creator-badge span {
+    display: inline !important;
+    font-size: 7px;
+  }
+  
+  .same-creator-badge i {
+    font-size: 7px;
+  }
+  
   .media-type-badge span {
-    display: none;
+    display: none !important;
   }
   
   .media-type-badge {
@@ -520,6 +571,15 @@
     font-size: 9px;
     padding: 2px 4px;
   }
+  
+  .follow-creator-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+  
+  .follow-creator-btn span {
+    display: inline !important;
+  }
 }
 
 @media (max-width: 400px) {
@@ -530,14 +590,27 @@
   .creator-content-card .card-title {
     font-size: 12px;
     -webkit-line-clamp: 2;
+    min-height: 28px;
   }
   
   .upload-date {
-    display: none;
+    display: none !important;
   }
   
   .views-count {
-    font-size: 10px;
+    font-size: 9px;
+  }
+  
+  .views-count i {
+    font-size: 8px;
+  }
+  
+  .like-count {
+    font-size: 8px;
+  }
+  
+  .like-count span {
+    font-size: 8px;
   }
 }
 
@@ -603,6 +676,14 @@
   color: var(--deep-navy);
 }
 
+.theme-light .view-all-link {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .view-all-link:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 /* High contrast mode */
 .theme-high-contrast .creator-content-card {
   border: 2px solid white;
@@ -631,6 +712,16 @@
 .theme-high-contrast .view-all-link:hover {
   background: white;
   color: black;
+}
+
+.theme-high-contrast .follow-creator-btn {
+  border: 2px solid white;
+  background: #00FF00;
+  color: black;
+}
+
+.theme-high-contrast .like-count {
+  border: 1px solid #ef4444;
 }
 
 /* ============================================ */
