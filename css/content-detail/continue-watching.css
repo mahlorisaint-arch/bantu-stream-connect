@@ -20,6 +20,8 @@
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--card-border);
+  flex-wrap: nowrap;
+  gap: 16px;
 }
 
 .continue-watching-section .section-title {
@@ -31,6 +33,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .continue-watching-section .section-title i {
@@ -38,7 +41,7 @@
   font-size: 20px;
 }
 
-/* View all link */
+/* View all link - CORRECTLY POSITIONED ON RIGHT */
 .view-all-link {
   color: var(--bantu-blue);
   text-decoration: none;
@@ -51,6 +54,8 @@
   padding: 6px 12px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .view-all-link:hover {
@@ -128,13 +133,16 @@
   border-radius: 0 2px 2px 0;
 }
 
-/* Resume badge - appears on hover or always visible on mobile */
+/* ============================================ */
+/* GLASSMORPHISM - RESUME BADGE */
+/* ============================================ */
 .resume-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(29, 78, 216, 0.95);
-  backdrop-filter: blur(4px);
+  background: rgba(29, 78, 216, 0.25) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
@@ -147,7 +155,8 @@
   opacity: 0;
   transform: translateX(10px);
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 .continue-card:hover .resume-badge {
@@ -159,13 +168,16 @@
   font-size: 10px;
 }
 
-/* Watch time indicator (time watched / total time) */
+/* ============================================ */
+/* GLASSMORPHISM - WATCH TIME INDICATOR */
+/* ============================================ */
 .watch-time-indicator {
   position: absolute;
   bottom: 10px;
   left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 11px;
@@ -176,6 +188,8 @@
   gap: 4px;
   z-index: 3;
   font-family: monospace;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
 .watch-time-indicator i {
@@ -203,7 +217,9 @@
   line-height: 1.4;
 }
 
-/* Progress text (minutes watched) */
+/* ============================================ */
+/* GLASSMORPHISM - PROGRESS TEXT */
+/* ============================================ */
 .progress-text {
   display: flex;
   align-items: center;
@@ -211,6 +227,12 @@
   margin-bottom: 8px;
   font-size: 12px;
   color: var(--slate-grey);
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 .progress-text i {
@@ -222,34 +244,46 @@
   font-family: monospace;
 }
 
-/* Percentage badge */
+/* ============================================ */
+/* GLASSMORPHISM - PERCENTAGE BADGE */
+/* ============================================ */
 .percentage-badge {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   color: var(--warm-gold);
   padding: 2px 8px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
   margin-left: auto;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Creator info on card */
+/* ============================================ */
+/* GLASSMORPHISM - CREATOR CHIP */
+/* ============================================ */
 .continue-card .creator-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 11px;
   color: var(--slate-grey);
   margin-top: 8px;
   transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 .continue-card:hover .creator-chip {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.12) !important;
   color: var(--soft-white);
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .creator-chip i {
@@ -258,15 +292,16 @@
 }
 
 /* ============================================ */
-/* CONTINUE WATCHING EMPTY STATE */
+/* GLASSMORPHISM - CONTINUE WATCHING EMPTY STATE */
 /* ============================================ */
 .continue-watching-empty {
   text-align: center;
   padding: 60px 20px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 16px;
-  backdrop-filter: blur(10px);
 }
 
 .continue-watching-empty i {
@@ -310,7 +345,7 @@
 }
 
 /* ============================================ */
-/* SKELETON LOADING FOR CONTINUE WATCHING */
+/* GLASSMORPHISM - SKELETON LOADING */
 /* ============================================ */
 .continue-skeleton-grid {
   display: grid;
@@ -319,23 +354,26 @@
 }
 
 .continue-skeleton-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   border-radius: 12px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
 .skeleton-thumbnail {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .skeleton-title {
   height: 16px;
   width: 80%;
   margin: 12px 12px 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 4px;
 }
 
@@ -343,7 +381,7 @@
   height: 12px;
   width: 60%;
   margin: 0 12px 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
 }
 
@@ -351,7 +389,7 @@
   height: 10px;
   width: 50%;
   margin: 0 12px 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
 }
 
@@ -361,21 +399,22 @@
 }
 
 /* ============================================ */
-/* PROGRESS UPDATE NOTIFICATION */
+/* GLASSMORPHISM - PROGRESS UPDATE TOAST */
 /* ============================================ */
 .progress-update-toast {
   position: fixed;
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: var(--card-bg);
-  border: 1px solid var(--bantu-blue);
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 40px;
   padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  backdrop-filter: blur(10px);
   color: var(--soft-white);
   font-size: 13px;
   z-index: 1000;
@@ -403,6 +442,11 @@
     font-size: 18px;
   }
   
+  .view-all-link {
+    font-size: 13px;
+    padding: 4px 10px;
+  }
+  
   .continue-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
@@ -418,11 +462,13 @@
     transform: translateX(0);
     padding: 4px 10px;
     font-size: 10px;
+    background: rgba(29, 78, 216, 0.3) !important;
   }
   
   .watch-time-indicator {
     font-size: 9px;
     padding: 3px 6px;
+    background: rgba(0, 0, 0, 0.4) !important;
   }
   
   .continue-card .card-title {
@@ -432,6 +478,7 @@
   
   .progress-text {
     font-size: 10px;
+    padding: 3px 8px;
   }
   
   .percentage-badge {
@@ -442,13 +489,18 @@
 
 @media (max-width: 550px) {
   .continue-watching-section .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .continue-watching-section .section-title {
+    font-size: 16px;
   }
   
   .view-all-link {
-    align-self: flex-start;
+    font-size: 12px;
+    padding: 4px 8px;
+    margin-left: 0;
   }
   
   .continue-grid {
@@ -467,6 +519,7 @@
   
   .resume-badge {
     padding: 6px 8px;
+    background: rgba(29, 78, 216, 0.35) !important;
   }
   
   .resume-badge i {
@@ -480,10 +533,21 @@
   
   .watch-time-indicator {
     padding: 4px 6px;
+    background: rgba(0, 0, 0, 0.4) !important;
   }
   
   .watch-time-indicator i {
     margin: 0;
+  }
+  
+  .progress-text {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+  
+  .percentage-badge {
+    font-size: 8px;
+    padding: 1px 4px;
   }
 }
 
@@ -518,6 +582,7 @@
   .resume-badge {
     opacity: 1;
     transform: translateX(0);
+    background: rgba(29, 78, 216, 0.3) !important;
   }
 }
 
@@ -552,6 +617,14 @@
   color: var(--deep-navy);
 }
 
+.theme-light .view-all-link {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .view-all-link:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 /* High contrast mode */
 .theme-high-contrast .continue-card {
   border: 2px solid white;
@@ -567,8 +640,8 @@
 }
 
 .theme-high-contrast .resume-badge {
-  border: 1px solid white;
-  background: black;
+  border: 2px solid white;
+  background: black !important;
   color: white;
 }
 
@@ -576,8 +649,23 @@
   color: #00FF00;
 }
 
+.theme-high-contrast .percentage-badge {
+  border: 1px solid #00FF00;
+  color: #00FF00;
+}
+
+.theme-high-contrast .view-all-link {
+  border: 1px solid white;
+  color: white;
+}
+
+.theme-high-contrast .view-all-link:hover {
+  background: white;
+  color: black;
+}
+
 /* ============================================ */
-/* CONTINUE WATCHING NOTIFICATION DOT */
+/* GLASSMORPHISM - CONTINUE WATCHING NOTIFICATION DOT */
 /* ============================================ */
 .new-progress-dot {
   position: absolute;
@@ -589,6 +677,7 @@
   border-radius: 50%;
   animation: pulse 1.5s infinite;
   z-index: 3;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5) !important;
 }
 
 @keyframes pulse {
