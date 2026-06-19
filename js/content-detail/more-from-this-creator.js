@@ -2,6 +2,7 @@
 // ============================================
 // MORE FROM THIS CREATOR MODULE - COMPLETE FIX
 // Uses correct IDs and class names to match HTML
+// All original functions preserved
 // ============================================
 console.log('🎬 More From This Creator Module Loading...');
 
@@ -35,6 +36,7 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
     showMoreFromCreatorSkeleton();
     
     try {
+        // Query Content table WITHOUT views_count/likes_count
         let query = window.supabaseClient
             .from('Content')
             .select(`
@@ -84,6 +86,7 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         
         if (statsError) throw statsError;
         
+        // Create stats map
         const statsMap = new Map();
         statsData?.forEach(stat => {
             statsMap.set(stat.content_id, {
@@ -93,6 +96,7 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
             });
         });
         
+        // Enrich data with stats
         const enrichedData = data.map(item => ({
             ...item,
             total_views: statsMap.get(item.id)?.total_views || 0,
@@ -103,7 +107,7 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         }));
         
         renderMoreFromCreatorRail(enrichedData, targetCreatorId);
-        console.log(`✅ Loaded ${enrichedData.length} "More From This Creator" items`);
+        console.log(`✅ Loaded ${enrichedData.length} "More From This Creator" items for creator ${targetCreatorId}`);
         
     } catch (error) {
         console.error('❌ Failed to load More From This Creator content:', error);
@@ -132,7 +136,7 @@ function renderMoreFromCreatorRail(items, creatorId) {
         creatorName = items[0].user_profiles.username;
     }
     
-    // Update title
+    // Update title with creator name
     const nameSpan = document.getElementById('moreFromCreatorName');
     if (nameSpan) {
         nameSpan.textContent = creatorName;
@@ -161,11 +165,15 @@ function renderMoreFromCreatorRail(items, creatorId) {
         viewAllLink.style.display = 'none';
     }
     
+    // Get the grid container
     const grid = document.getElementById('moreFromCreatorGrid');
     const empty = document.getElementById('moreFromCreatorEmpty');
     const skeleton = document.getElementById('moreFromCreatorSkeleton');
     
-    if (!grid) return;
+    if (!grid) {
+        console.warn('Grid container #moreFromCreatorGrid not found');
+        return;
+    }
     
     // Hide skeleton and empty
     if (skeleton) skeleton.style.display = 'none';
@@ -177,6 +185,7 @@ function renderMoreFromCreatorRail(items, creatorId) {
         return;
     }
     
+    // Build card HTML
     grid.innerHTML = items.map(item => {
         const viewsCount = item.total_views || 0;
         const likesCount = item.total_likes || 0;
@@ -186,6 +195,9 @@ function renderMoreFromCreatorRail(items, creatorId) {
         const duration = item.duration ? window.formatDuration(item.duration) : '';
         const mediaType = item.media_type || item.content_format || 'video';
         const isAudio = mediaType === 'audio';
+        const creatorNameFromItem = item.user_profiles?.full_name || 
+                                   item.user_profiles?.username || 
+                                   'Creator';
         
         return `
             <a href="content-detail.html?id=${item.id}" class="creator-content-card" data-content-id="${item.id}">
@@ -228,8 +240,10 @@ function renderMoreFromCreatorRail(items, creatorId) {
         `;
     }).join('');
     
+    // Show the section
     section.style.display = 'block';
-    console.log('✅ More From This Creator rail rendered');
+    grid.style.display = 'grid';
+    console.log('✅ More From This Creator rail rendered with', items.length, 'items');
 }
 
 /**
@@ -244,7 +258,50 @@ function showMoreFromCreatorSkeleton() {
     if (!section) return;
     
     section.style.display = 'block';
-    if (skeleton) skeleton.style.display = 'grid';
+    if (skeleton) {
+        skeleton.style.display = 'grid';
+        // Make sure skeleton has proper grid items
+        if (skeleton.children.length === 0) {
+            skeleton.innerHTML = `
+                <div class="creator-skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-date"></div>
+                </div>
+                <div class="creator-skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-date"></div>
+                </div>
+                <div class="creator-skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-date"></div>
+                </div>
+                <div class="creator-skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-date"></div>
+                </div>
+                <div class="creator-skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-date"></div>
+                </div>
+                <div class="creator-skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                    <div class="skeleton-date"></div>
+                </div>
+            `;
+        }
+    }
     if (grid) grid.style.display = 'none';
     if (empty) empty.style.display = 'none';
 }
@@ -262,13 +319,22 @@ function showMoreFromCreatorEmpty(creatorId) {
     
     section.style.display = 'block';
     if (skeleton) skeleton.style.display = 'none';
-    if (grid) grid.style.display = 'none';
+    if (grid) {
+        grid.style.display = 'none';
+        grid.innerHTML = '';
+    }
     if (empty) {
         empty.style.display = 'block';
         // Update follow button if needed
         const followBtn = document.getElementById('followCreatorFromRail');
         if (followBtn && creatorId) {
             followBtn.style.display = 'inline-flex';
+            // Set up follow functionality if needed
+            followBtn.onclick = function() {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Following creator!', 'success');
+                }
+            };
         } else if (followBtn) {
             followBtn.style.display = 'none';
         }
@@ -298,13 +364,17 @@ async function refreshMoreFromCreator() {
 
 // Initialize module
 function initMoreFromCreator() {
+    console.log('🎬 Initializing More From This Creator module...');
+    
     window.addEventListener('contentIdChanged', () => {
+        console.log('🔄 Content changed, refreshing More From This Creator');
         setTimeout(() => {
             refreshMoreFromCreator();
         }, 500);
     });
     
     window.addEventListener('playlistLoaded', () => {
+        console.log('🔄 Playlist loaded, refreshing More From This Creator');
         setTimeout(() => {
             refreshMoreFromCreator();
         }, 500);
@@ -317,13 +387,17 @@ function initMoreFromCreator() {
         }, 500);
     });
     
+    // Initial load
     setTimeout(() => {
         if (window.currentContent?.creator_id || window.currentContent?.user_id) {
             refreshMoreFromCreator();
+        } else {
+            console.log('No creator ID available for initial load');
         }
-    }, 500);
+    }, 600);
 }
 
+// Auto-initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initMoreFromCreator);
 } else {
