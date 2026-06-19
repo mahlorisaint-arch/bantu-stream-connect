@@ -549,18 +549,68 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 
 .back-to-top:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4); }
 
-/* Upload Progress */
+/* Enhanced Upload Progress */
 .upload-progress {
-position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-background: var(--card-bg); border: 1px solid var(--warm-gold);
-border-radius: 15px; padding: 20px 30px; text-align: center;
-z-index: 10000; backdrop-filter: blur(10px);
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    background: var(--card-bg); 
+    border: 2px solid var(--warm-gold);
+    border-radius: 16px; 
+    padding: 30px 40px; 
+    text-align: center;
+    z-index: 10000; 
+    backdrop-filter: blur(20px);
+    min-width: 320px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
 }
 
 .upload-progress .spinner-small {
-width: 30px; height: 30px; border: 2px solid rgba(255,255,255,0.2);
-border-radius: 50%; border-top-color: var(--warm-gold);
-animation: spin 1s linear infinite; margin: 10px auto;
+    width: 40px; 
+    height: 40px; 
+    border: 3px solid rgba(255,255,255,0.1);
+    border-radius: 50%; 
+    border-top-color: var(--warm-gold);
+    animation: spin 1s linear infinite; 
+    margin: 15px auto;
+}
+
+.upload-progress #upload-status {
+    font-size: 13px;
+    color: var(--slate-grey);
+    margin-top: 8px;
+}
+
+.upload-progress #upload-file-size {
+    color: var(--warm-gold);
+    font-weight: 600;
+}
+
+.upload-progress .file-name {
+    font-size: 14px;
+    color: var(--soft-white);
+    font-weight: 500;
+    margin-top: 5px;
+    word-break: break-all;
+}
+
+/* Progress bar animation */
+.upload-progress::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--warm-gold), var(--bantu-blue));
+    animation: uploadProgress 3s ease-in-out infinite;
+    border-radius: 0 0 16px 16px;
+}
+
+@keyframes uploadProgress {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
 }
 
 /* Responsive */
@@ -574,6 +624,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
 .modal-footer { flex-direction: column; }
 .delete-footer { flex-direction: column; }
 .danger-item { flex-direction: column; align-items: flex-start; }
+.upload-progress { min-width: 280px; padding: 20px; }
 }
 
 @media (max-width: 480px) {
@@ -744,7 +795,8 @@ animation: spin 1s linear infinite; margin: 10px auto;
 <button type="button" class="avatar-btn" id="upload-avatar-btn"><i class="fas fa-upload"></i> Upload Photo</button>
 <button type="button" class="avatar-btn" id="generate-avatar-btn"><i class="fas fa-magic"></i> Use Initials</button>
 </div>
-<p class="avatar-hint">Recommended: Square image, max 2MB (JPG, PNG, GIF)</p>
+<!-- ✅ UPDATED: 20MB limit -->
+<p class="avatar-hint">Recommended: Square image, max <strong>20MB</strong> (JPG, PNG, WEBP, GIF)</p>
 <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
 <input type="hidden" id="avatar-url">
 </div>
@@ -985,12 +1037,9 @@ animation: spin 1s linear infinite; margin: 10px auto;
         return name[0].toUpperCase();
     }
 
-    // ✅ SIMPLIFIED: Just return the URL as-is (database stores FULL public URL)
     function fixMediaUrl(url) {
         if (!url) return '';
-        // If it's already a full http(s) URL, return it directly
         if (url.startsWith('http')) return url;
-        // Fallback for legacy relative paths (will be cleaned up over time)
         const cleanPath = url.replace(/^\/+/, '');
         return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${cleanPath}`;
     }
@@ -1008,6 +1057,160 @@ animation: spin 1s linear infinite; margin: 10px auto;
         } catch { return ''; }
     }
 
+    // ===== IMAGE COMPRESSION UTILITY =====
+    async function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.85) {
+        return new Promise((resolve, reject) => {
+            // Skip compression for small files (under 500KB)
+            if (file.size < 500 * 1024) {
+                resolve(file);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Calculate new dimensions while maintaining aspect ratio
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    if (height > maxHeight) {
+                        width = (width * maxHeight) / height;
+                        height = maxHeight;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Determine output format
+                    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name, { 
+                                type: outputType,
+                                lastModified: Date.now()
+                            });
+                            console.log(`📦 Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Compression failed'));
+                        }
+                    }, outputType, quality);
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ===== OPTIMIZED AVATAR UPLOAD WITH 20MB LIMIT AND COMPRESSION =====
+    async function uploadAvatar(file, skipCompression = false) {
+        if (!file) return null;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showToast('Please select an image file (JPG, PNG, WEBP)', 'error');
+            return null;
+        }
+
+        // ✅ Validate file size (20MB max)
+        if (file.size > 20 * 1024 * 1024) {
+            showToast('Image must be less than 20MB', 'error');
+            return null;
+        }
+
+        // Ensure user exists
+        const user = window.currentUser;
+        if (!user?.id) {
+            showToast('User not authenticated', 'error');
+            return null;
+        }
+
+        // Show upload progress
+        const progressDiv = document.createElement('div');
+        progressDiv.className = 'upload-progress';
+        progressDiv.innerHTML = `
+            <div style="font-weight:500;color:var(--soft-white);">Uploading Profile Picture</div>
+            <div class="spinner-small"></div>
+            <div style="font-size:13px;color:var(--slate-grey);margin-top:8px;">
+                <span id="upload-file-size">${(file.size / 1024 / 1024).toFixed(1)}</span>MB / 20MB
+            </div>
+            <div style="font-size:12px;color:var(--slate-grey);margin-top:4px;" id="upload-status">Processing...</div>
+            <div class="file-name">${escapeHtml(file.name)}</div>
+        `;
+        document.body.appendChild(progressDiv);
+
+        try {
+            // Update status
+            document.getElementById('upload-status').textContent = 'Compressing image...';
+
+            // ✅ Compress image before upload (unless skipped)
+            let uploadFile = file;
+            if (!skipCompression) {
+                uploadFile = await compressImage(file, 800, 800, 0.85);
+            }
+
+            // Update file size display
+            const sizeDisplay = document.getElementById('upload-file-size');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = (uploadFile.size / 1024 / 1024).toFixed(1);
+            }
+
+            document.getElementById('upload-status').textContent = 'Uploading to storage...';
+
+            const fileExt = file.name.split('.').pop()?.toLowerCase();
+            if (!fileExt) throw new Error('Invalid file extension');
+
+            // Clean structured path
+            const filePath = `${user.id}/avatar_${Date.now()}.${fileExt}`;
+
+            console.log('📤 Uploading:', filePath, `(${(uploadFile.size / 1024 / 1024).toFixed(2)}MB)`);
+
+            // Upload
+            const { error: uploadError } = await supabase.storage
+                .from('profile-pictures')
+                .upload(filePath, uploadFile, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data } = supabase.storage
+                .from('profile-pictures')
+                .getPublicUrl(filePath);
+
+            const publicUrl = data.publicUrl;
+
+            console.log('✅ Uploaded URL:', publicUrl);
+
+            progressDiv.remove();
+            
+            const compressionMsg = skipCompression ? '' : ' (compressed)';
+            showToast(`Profile picture uploaded${compressionMsg}!`, 'success');
+
+            return publicUrl;
+
+        } catch (error) {
+            console.error('❌ Upload failed:', error);
+            progressDiv.remove();
+            showToast(error.message || 'Upload failed', 'error');
+            return null;
+        }
+    }
+
     // ===== AUTHENTICATION =====
     async function checkAuth() {
         try {
@@ -1023,79 +1226,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
             return window.currentUser;
         } catch (error) {
             console.error('Auth check error:', error);
-            return null;
-        }
-    }
-
-    // ===== AVATAR UPLOAD FUNCTION - PRODUCTION READY =====
-    async function uploadAvatar(file) {
-        if (!file) return null;
-
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showToast('Please select an image file (JPG, PNG, WEBP)', 'error');
-            return null;
-        }
-
-        // Validate file size (2MB max)
-        if (file.size > 2 * 1024 * 1024) {
-            showToast('Image must be less than 2MB', 'error');
-            return null;
-        }
-
-        // Ensure user exists
-        const user = window.currentUser;
-        if (!user?.id) {
-            showToast('User not authenticated', 'error');
-            return null;
-        }
-
-        const progressDiv = document.createElement('div');
-        progressDiv.className = 'upload-progress';
-        progressDiv.innerHTML = `
-            <div>Uploading profile picture...</div>
-            <div class="spinner-small"></div>
-        `;
-        document.body.appendChild(progressDiv);
-
-        try {
-            const fileExt = file.name.split('.').pop()?.toLowerCase();
-            if (!fileExt) throw new Error('Invalid file extension');
-
-            // 🔥 Clean structured path: {user_id}/avatar_{timestamp}.{ext}
-            const filePath = `${user.id}/avatar_${Date.now()}.${fileExt}`;
-
-            console.log('📤 Uploading:', filePath);
-
-            // Upload (overwrite allowed)
-            const { error: uploadError } = await supabase.storage
-                .from('profile-pictures')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
-
-            if (uploadError) throw uploadError;
-
-            // ✅ Get FULL public URL
-            const { data } = supabase.storage
-                .from('profile-pictures')
-                .getPublicUrl(filePath);
-
-            const publicUrl = data.publicUrl;
-
-            console.log('✅ Uploaded URL:', publicUrl);
-
-            progressDiv.remove();
-            showToast('Profile picture uploaded!', 'success');
-
-            // 🔥 RETURN FULL URL (IMPORTANT CHANGE)
-            return publicUrl;
-
-        } catch (error) {
-            console.error('❌ Upload failed:', error);
-            progressDiv.remove();
-            showToast(error.message || 'Upload failed', 'error');
             return null;
         }
     }
@@ -1148,8 +1278,13 @@ animation: spin 1s linear infinite; margin: 10px auto;
         }
 
         grid.innerHTML = window.userProfiles.map(profile => {
-            // ✅ SUPER SIMPLE: Use avatar_url directly (no helper function needed)
-            const avatarUrl = profile.avatar_url;
+            // ✅ CDN OPTIMIZATION: Add width/height parameters
+            let avatarUrl = profile.avatar_url;
+            if (avatarUrl) {
+                const separator = avatarUrl.includes('?') ? '&' : '?';
+                avatarUrl = `${avatarUrl}${separator}width=200&height=200&fit=crop`;
+            }
+            
             const initials = getInitials(profile.full_name || profile.username);
             const isDefault = profile.is_default;
 
@@ -1158,6 +1293,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
                     <div class="profile-avatar">
                         ${avatarUrl 
                             ? `<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name || profile.username)}" 
+                                 loading="lazy"
                                  onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-user\\'></i>';">`
                             : `<i class="fas fa-user"></i>`
                         }
@@ -1228,12 +1364,16 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 cb.checked = preferences.includes(cb.value);
             });
 
-            // ✅ SUPER SIMPLE: Use avatar_url directly
+            // ✅ CDN OPTIMIZATION: Use optimized URL for preview
             if (profile.avatar_url) {
                 const avatarImage = document.getElementById('avatar-image');
                 const avatarPlaceholder = document.getElementById('avatar-placeholder');
                 
-                avatarImage.src = profile.avatar_url; // Direct URL, no transformation
+                let optimizedUrl = profile.avatar_url;
+                const separator = optimizedUrl.includes('?') ? '&' : '?';
+                optimizedUrl = `${optimizedUrl}${separator}width=400&height=400&fit=crop`;
+                
+                avatarImage.src = optimizedUrl;
                 avatarImage.style.display = 'block';
                 avatarPlaceholder.style.display = 'none';
                 document.getElementById('avatar-url').value = profile.avatar_url;
@@ -1294,7 +1434,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 updated_at: new Date().toISOString()
             };
 
-            // ✅ IMPORTANT CHANGE: Only save if it's a real http URL (no base64 junk)
+            // Only save if it's a real http URL
             const avatarUrlInput = document.getElementById('avatar-url').value;
             if (avatarUrlInput && avatarUrlInput.startsWith('http')) {
                 updates.avatar_url = avatarUrlInput;
@@ -1387,6 +1527,69 @@ animation: spin 1s linear infinite; margin: 10px auto;
         }
     }
 
+    // ===== AVATAR UPLOAD SETUP WITH CDN OPTIMIZATION =====
+    function setupAvatarUpload() {
+        const uploadBtn = document.getElementById('upload-avatar-btn');
+        const fileInput = document.getElementById('avatar-file-input');
+        const avatarImage = document.getElementById('avatar-image');
+        const avatarPlaceholder = document.getElementById('avatar-placeholder');
+        const avatarUrlInput = document.getElementById('avatar-url');
+
+        uploadBtn?.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // ✅ Check file size before processing (20MB)
+            if (file.size > 20 * 1024 * 1024) {
+                showToast('File is too large! Maximum size is 20MB', 'error');
+                fileInput.value = '';
+                return;
+            }
+
+            // Show preview (using compressed version for display)
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                avatarImage.src = event.target.result;
+                avatarImage.style.display = 'block';
+                avatarPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+
+            // ✅ Upload with compression
+            const avatarUrl = await uploadAvatar(file);
+
+            if (avatarUrl) {
+                avatarUrlInput.value = avatarUrl;
+                console.log('✅ Avatar URL saved:', avatarUrl);
+                
+                // ✅ Update preview with optimized CDN URL
+                const optimizedUrl = `${avatarUrl}?width=200&height=200&fit=crop`;
+                avatarImage.src = optimizedUrl;
+                showToast('Avatar uploaded successfully (20MB limit, compressed)', 'success');
+            } else {
+                avatarImage.style.display = 'none';
+                avatarPlaceholder.style.display = 'flex';
+                avatarUrlInput.value = '';
+            }
+        });
+
+        document.getElementById('generate-avatar-btn')?.addEventListener('click', () => {
+            const name = document.getElementById('profile-name').value.trim();
+            if (!name) {
+                showToast('Enter a name first', 'warning');
+                return;
+            }
+            avatarImage.style.display = 'none';
+            avatarPlaceholder.style.display = 'flex';
+            avatarUrlInput.value = '';
+            showToast('Will use initials for profile picture', 'info');
+        });
+    }
+
     // ===== WATCH HISTORY, PLAYLISTS, FAVORITES =====
     async function loadWatchHistory() {
         try {
@@ -1440,6 +1643,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 <div class="content-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
                     <div class="content-thumbnail">
                         <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}" 
+                             loading="lazy"
                              onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                         <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(0,0,0,0.5);">
                             <div style="width:${progress}%;height:100%;background:var(--warm-gold);"></div>
@@ -1494,7 +1698,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
             return `
                 <div class="content-card" onclick="window.location.href='playlist.html?id=${playlist.id}'">
                     <div class="content-thumbnail">
-                        <img src="${thumbnail}" alt="${escapeHtml(playlist.name || '')}">
+                        <img src="${thumbnail}" alt="${escapeHtml(playlist.name || '')}" loading="lazy">
                         <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:white;padding:4px 10px;border-radius:20px;font-size:11px;">
                             <i class="fas fa-list"></i> ${playlist.video_count || 0}
                         </div>
@@ -1557,7 +1761,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
             return `
                 <div class="content-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
                     <div class="content-thumbnail">
-                        <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}"
+                        <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}" loading="lazy"
                              onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                     </div>
                     <div class="content-info">
@@ -1567,56 +1771,6 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 </div>
             `;
         }).join('');
-    }
-
-    // ===== AVATAR UPLOAD SETUP =====
-    function setupAvatarUpload() {
-        const uploadBtn = document.getElementById('upload-avatar-btn');
-        const fileInput = document.getElementById('avatar-file-input');
-        const avatarImage = document.getElementById('avatar-image');
-        const avatarPlaceholder = document.getElementById('avatar-placeholder');
-        const avatarUrlInput = document.getElementById('avatar-url');
-
-        uploadBtn?.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput?.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                avatarImage.src = event.target.result;
-                avatarImage.style.display = 'block';
-                avatarPlaceholder.style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-
-            // ✅ UPDATED: Now receives FULL URL from uploadAvatar
-            const avatarUrl = await uploadAvatar(file);
-
-            if (avatarUrl) {
-                avatarUrlInput.value = avatarUrl; // FULL URL now
-                console.log('✅ Avatar URL saved:', avatarUrl);
-            } else {
-                avatarImage.style.display = 'none';
-                avatarPlaceholder.style.display = 'flex';
-                avatarUrlInput.value = '';
-            }
-        });
-
-        document.getElementById('generate-avatar-btn')?.addEventListener('click', () => {
-            const name = document.getElementById('profile-name').value.trim();
-            if (!name) {
-                showToast('Enter a name first', 'warning');
-                return;
-            }
-            avatarImage.style.display = 'none';
-            avatarPlaceholder.style.display = 'flex';
-            avatarUrlInput.value = '';
-            showToast('Will use initials for profile picture', 'info');
-        });
     }
 
     // ===== EVENT LISTENERS =====
@@ -1795,7 +1949,7 @@ animation: spin 1s linear infinite; margin: 10px auto;
                 document.getElementById('app').style.display = 'block';
             }, 500);
 
-            console.log('✅ Manage Profiles initialized');
+            console.log('✅ Manage Profiles initialized with 20MB upload limit');
 
         } catch (error) {
             console.error('❌ Error initializing manage profiles:', error);
