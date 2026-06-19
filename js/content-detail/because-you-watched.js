@@ -200,7 +200,8 @@ async function getSmartRecommendations(limit, excludeContentId) {
             total_views: statsMap.get(item.id)?.total_views || 0,
             total_likes: statsMap.get(item.id)?.total_likes || 0,
             views_count: statsMap.get(item.id)?.total_views || 0,
-            likes_count: statsMap.get(item.id)?.total_likes || 0
+            likes_count: statsMap.get(item.id)?.total_likes || 0,
+            similarity_score: 0.8 // Default high similarity for watched content
         }));
         
         // Sort by engagement score
@@ -277,7 +278,8 @@ async function getGenreBasedRecommendations(limit, excludeContentId) {
             total_views: statsMap.get(item.id)?.total_views || 0,
             total_likes: statsMap.get(item.id)?.total_likes || 0,
             views_count: statsMap.get(item.id)?.total_views || 0,
-            likes_count: statsMap.get(item.id)?.total_likes || 0
+            likes_count: statsMap.get(item.id)?.total_likes || 0,
+            similarity_score: currentGenre !== 'General' ? 0.9 : 0.5
         }));
         
     } catch (error) {
@@ -339,7 +341,8 @@ async function getRecentPopularRecommendations(limit, excludeContentId) {
             total_views: statsMap.get(item.id)?.total_views || 0,
             total_likes: statsMap.get(item.id)?.total_likes || 0,
             views_count: statsMap.get(item.id)?.total_views || 0,
-            likes_count: statsMap.get(item.id)?.total_likes || 0
+            likes_count: statsMap.get(item.id)?.total_likes || 0,
+            similarity_score: 0.3
         }));
         
         // Sort by total views (most popular first)
@@ -360,15 +363,51 @@ function renderBecauseYouWatchedRail(items) {
     const section = document.getElementById('becauseYouWatchedRail');
     if (!section) return;
     
+    // Build header if not exists
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">Because You Watched</h2>
-                <button class="refresh-rail-btn" aria-label="Refresh recommendations">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
+                <h2 class="section-title">
+                    <i class="fas fa-magic"></i>
+                    Because You Watched
+                    <span class="title-info" title="Personalized recommendations based on your watch history">
+                        <i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Based on your watch history</span>
+                    </span>
+                </h2>
+                <div class="rail-actions">
+                    <a href="recommendations.html" class="view-all-link">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <button class="refresh-rail-btn" id="refreshBecauseBtn" aria-label="Refresh recommendations">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
             </div>
-            <div class="content-grid" id="becauseYouWatchedGrid"></div>
+            <div class="recommendation-grid" id="becauseYouWatchedGrid"></div>
+            <div class="because-you-watched-empty" id="becauseYouWatchedEmpty" style="display: none;">
+                <i class="fas fa-magic"></i>
+                <h3>No Recommendations Yet</h3>
+                <p>Watch and like more content to get personalized recommendations</p>
+                <div class="engagement-cta">
+                    <a href="index.html" class="cta-btn watch-btn">
+                        <i class="fas fa-play"></i> <span>Browse Content</span>
+                    </a>
+                    <button class="cta-btn like-btn" onclick="document.getElementById('trendingGrid')?.scrollIntoView({behavior:'smooth'})">
+                        <i class="fas fa-fire"></i> <span>Check Trending</span>
+                    </button>
+                </div>
+            </div>
+            <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;">
+                ${Array(4).fill().map(() => `
+                    <div class="skeleton-card">
+                        <div class="skeleton-thumbnail"></div>
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-meta"></div>
+                        <div class="skeleton-creator"></div>
+                    </div>
+                `).join('')}
+            </div>
         `;
         
         const refreshBtn = section.querySelector('.refresh-rail-btn');
@@ -383,15 +422,24 @@ function renderBecauseYouWatchedRail(items) {
     }
     
     const grid = document.getElementById('becauseYouWatchedGrid');
+    const empty = document.getElementById('becauseYouWatchedEmpty');
+    const skeleton = document.getElementById('becauseSkeleton');
+    
     if (!grid) return;
     
+    // Hide skeleton and empty
+    if (skeleton) skeleton.style.display = 'none';
+    if (empty) empty.style.display = 'none';
+    
     if (!items || items.length === 0) {
-        grid.innerHTML = '<div class="empty-rail">No recommendations available</div>';
+        if (empty) empty.style.display = 'block';
+        grid.innerHTML = '';
         return;
     }
     
-    grid.innerHTML = items.map(item => {
+    grid.innerHTML = items.map((item, index) => {
         const viewsCount = item.total_views || 0;
+        const likesCount = item.total_likes || 0;
         const creatorName = item.user_profiles?.full_name || 
                            item.user_profiles?.username || 
                            'Creator';
@@ -399,9 +447,24 @@ function renderBecauseYouWatchedRail(items) {
                          item.thumbnail_url || 
                          'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
         const duration = item.duration ? window.formatDuration(item.duration) : '';
+        const genre = item.genre || 'General';
+        
+        // Determine reason based on position or data
+        let reason = 'Recommended for you';
+        let reasonIcon = 'fa-star';
+        if (index === 0) {
+            reason = 'Top pick';
+            reasonIcon = 'fa-crown';
+        } else if (item.similarity_score && item.similarity_score > 0.7) {
+            reason = 'High match';
+            reasonIcon = 'fa-bolt';
+        } else if (genre === window.currentContent?.genre) {
+            reason = 'Same genre';
+            reasonIcon = 'fa-tag';
+        }
         
         return `
-            <a href="content-detail.html?id=${item.id}" class="content-card because-you-watched-card" data-content-id="${item.id}">
+            <a href="content-detail.html?id=${item.id}" class="recommendation-card" data-content-id="${item.id}">
                 <div class="card-thumbnail">
                     <img src="${thumbnail}" 
                          alt="${window.escapeHtml(item.title)}" 
@@ -409,17 +472,30 @@ function renderBecauseYouWatchedRail(items) {
                          onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                     <div class="thumbnail-overlay"></div>
                     ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
+                    <div class="reason-badge">
+                        <i class="fas ${reasonIcon}"></i>
+                        <span>${reason}</span>
+                    </div>
                 </div>
                 <div class="card-content">
                     <h3 class="card-title">${window.truncateText(item.title, 45)}</h3>
-                    <div class="related-meta">
-                        <i class="fas fa-eye"></i>
-                        <span>${window.formatNumber(viewsCount)} views</span>
+                    <div class="card-meta">
+                        <span class="views-count">
+                            <i class="fas fa-eye"></i>
+                            ${window.formatNumber(viewsCount)} views
+                        </span>
+                        ${likesCount > 0 ? `
+                            <span class="like-badge">
+                                <i class="fas fa-heart"></i>
+                                <span>${window.formatNumber(likesCount)}</span>
+                            </span>
+                        ` : ''}
                     </div>
                     <div class="creator-chip">
                         <i class="fas fa-user"></i>
                         ${window.truncateText(creatorName, 20)}
                     </div>
+                    ${genre !== 'General' ? `<span class="genre-tag"><i class="fas fa-tag"></i> ${genre}</span>` : ''}
                 </div>
             </a>
         `;
@@ -437,36 +513,62 @@ function showBecauseYouWatchedSkeleton() {
     
     section.style.display = 'block';
     
+    // Build full skeleton UI if not exists
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">Because You Watched</h2>
-                <button class="refresh-rail-btn" style="opacity:0.5; pointer-events:none;">
-                    <i class="fas fa-spinner fa-spin"></i> Loading...
-                </button>
+                <h2 class="section-title">
+                    <i class="fas fa-magic"></i>
+                    Because You Watched
+                    <span class="title-info" title="Loading recommendations...">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
+                </h2>
+                <div class="rail-actions">
+                    <span class="view-all-link" style="opacity:0.5;">View All <i class="fas fa-arrow-right"></i></span>
+                    <button class="refresh-rail-btn" style="opacity:0.5; pointer-events:none;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </button>
+                </div>
             </div>
-            <div class="content-grid" id="becauseYouWatchedGrid">
-                ${Array(6).fill().map(() => `
+            <div class="recommendation-grid" id="becauseYouWatchedGrid">
+                ${Array(4).fill().map(() => `
                     <div class="skeleton-card">
                         <div class="skeleton-thumbnail"></div>
                         <div class="skeleton-title"></div>
+                        <div class="skeleton-meta"></div>
                         <div class="skeleton-creator"></div>
-                        <div class="skeleton-stats"></div>
                     </div>
                 `).join('')}
             </div>
+            <div class="because-you-watched-empty" id="becauseYouWatchedEmpty" style="display: none;"></div>
+            <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;"></div>
         `;
     } else {
+        // Update existing header to show loading state
         const grid = document.getElementById('becauseYouWatchedGrid');
+        const empty = document.getElementById('becauseYouWatchedEmpty');
+        const skeleton = document.getElementById('becauseSkeleton');
+        
         if (grid) {
-            grid.innerHTML = Array(6).fill().map(() => `
+            grid.innerHTML = Array(4).fill().map(() => `
                 <div class="skeleton-card">
                     <div class="skeleton-thumbnail"></div>
                     <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
                     <div class="skeleton-creator"></div>
-                    <div class="skeleton-stats"></div>
                 </div>
             `).join('');
+        }
+        if (empty) empty.style.display = 'none';
+        if (skeleton) skeleton.style.display = 'none';
+        
+        // Update refresh button to loading state
+        const refreshBtn = section.querySelector('.refresh-rail-btn');
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            refreshBtn.style.opacity = '0.5';
+            refreshBtn.style.pointerEvents = 'none';
         }
     }
 }
@@ -480,38 +582,61 @@ function showBecauseYouWatchedEmpty() {
     
     section.style.display = 'block';
     
+    // Build full empty UI if not exists
     if (!section.querySelector('.section-header')) {
         section.innerHTML = `
             <div class="section-header">
-                <h2 class="section-title">Because You Watched</h2>
-                <button class="refresh-rail-btn" aria-label="Refresh recommendations">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
+                <h2 class="section-title">
+                    <i class="fas fa-magic"></i>
+                    Because You Watched
+                    <span class="title-info" title="No recommendations available yet">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
+                </h2>
+                <div class="rail-actions">
+                    <a href="recommendations.html" class="view-all-link">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <button class="refresh-rail-btn" id="refreshBecauseBtn" aria-label="Refresh recommendations">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
             </div>
-            <div class="content-grid" id="becauseYouWatchedGrid"></div>
+            <div class="recommendation-grid" id="becauseYouWatchedGrid"></div>
+            <div class="because-you-watched-empty" id="becauseYouWatchedEmpty">
+                <i class="fas fa-magic"></i>
+                <h3>No Recommendations Yet</h3>
+                <p>Watch and like more content to get personalized recommendations</p>
+                <div class="engagement-cta">
+                    <a href="index.html" class="cta-btn watch-btn">
+                        <i class="fas fa-play"></i> <span>Browse Content</span>
+                    </a>
+                    <button class="cta-btn like-btn" onclick="document.getElementById('trendingGrid')?.scrollIntoView({behavior:'smooth'})">
+                        <i class="fas fa-fire"></i> <span>Check Trending</span>
+                    </button>
+                </div>
+            </div>
+            <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;"></div>
         `;
         
         const refreshBtn = section.querySelector('.refresh-rail-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 refreshBecauseYouWatched();
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Refreshing recommendations...', 'info');
+                }
             });
         }
     }
     
     const grid = document.getElementById('becauseYouWatchedGrid');
-    if (grid) {
-        grid.innerHTML = `
-            <div class="empty-rail" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                <i class="fas fa-magic" style="font-size: 48px; color: var(--slate-grey); opacity: 0.5;"></i>
-                <h3 style="margin: 15px 0 10px; color: var(--soft-white);">No recommendations yet</h3>
-                <p style="color: var(--slate-grey);">Watch and like more content to get personalized recommendations</p>
-                <button class="btn btn-secondary" onclick="document.getElementById('relatedGrid')?.scrollIntoView({behavior:'smooth'})" style="margin-top: 15px;">
-                    Browse More Content
-                </button>
-            </div>
-        `;
-    }
+    const empty = document.getElementById('becauseYouWatchedEmpty');
+    const skeleton = document.getElementById('becauseSkeleton');
+    
+    if (grid) grid.innerHTML = '';
+    if (skeleton) skeleton.style.display = 'none';
+    if (empty) empty.style.display = 'block';
 }
 
 /**
