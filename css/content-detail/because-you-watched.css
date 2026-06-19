@@ -1,668 +1,662 @@
-// js/content-detail/because-you-watched.js
-// ============================================
-// BECAUSE YOU WATCHED MODULE - UPDATED FOR NEW SCHEMA
-// Uses content_engagement_stats for ALL metrics (no views_count/likes_count in Content table)
-// ============================================
-console.log('🎬 Because You Watched Module Loading...');
+/* ============================================ */
+/* BECAUSE YOU WATCHED SECTION MODULE */
+/* Personalized recommendation rail based on watch history */
+/* ============================================ */
 
-// Module state
-let currentRecommendations = [];
-let isLoading = false;
-let lastRefreshTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-/**
- * Load "Because You Watched" recommendations
- */
-async function loadBecauseYouWatchedRecommendations(options = {}) {
-    const { limit = 8, forceRefresh = false } = options;
-    const section = document.getElementById('becauseYouWatchedRail');
-    
-    if (!section) {
-        console.warn('⚠️ Because You Watched rail container not found');
-        return;
-    }
-    
-    // Check cache
-    const now = Date.now();
-    if (!forceRefresh && currentRecommendations.length > 0 && (now - lastRefreshTime) < CACHE_DURATION) {
-        console.log('📦 Using cached recommendations (', currentRecommendations.length, 'items)');
-        renderBecauseYouWatchedRail(currentRecommendations);
-        return;
-    }
-    
-    if (isLoading) {
-        console.log('⏳ Recommendations already loading, skipping');
-        return;
-    }
-    
-    isLoading = true;
-    showBecauseYouWatchedSkeleton();
-    
-    try {
-        let recommendations = [];
-        const excludeContentId = window.currentContent?.id;
-        
-        // STRATEGY 1: Use RecommendationEngine if available
-        if (window.recommendationEngine && typeof window.recommendationEngine.getRecommendations === 'function') {
-            console.log('🎯 Getting recommendations from RecommendationEngine...');
-            try {
-                const allRecs = await window.recommendationEngine.getRecommendations({
-                    type: 'because_you_watched',
-                    limit: limit + 2,
-                    userId: window.currentUserId
-                });
-                recommendations = allRecs.filter(rec => rec.id !== excludeContentId);
-                recommendations = recommendations.slice(0, limit);
-                if (recommendations.length > 0) {
-                    console.log('✅ Got', recommendations.length, 'recommendations from RecommendationEngine');
-                }
-            } catch (engineError) {
-                console.warn('⚠️ RecommendationEngine failed:', engineError);
-            }
-        }
-        
-        // STRATEGY 2: Smart recommendations based on user's watch history
-        if (recommendations.length === 0 && window.currentUserId) {
-            console.log('🔄 Getting smart recommendations from user history...');
-            recommendations = await getSmartRecommendations(limit, excludeContentId);
-        }
-        
-        // STRATEGY 3: Genre-based recommendations
-        if (recommendations.length === 0) {
-            console.log('🔄 Getting genre-based recommendations...');
-            recommendations = await getGenreBasedRecommendations(limit, excludeContentId);
-        }
-        
-        // STRATEGY 4: Recent popular content
-        if (recommendations.length === 0) {
-            console.log('🔄 Getting recent popular content...');
-            recommendations = await getRecentPopularRecommendations(limit, excludeContentId);
-        }
-        
-        if (recommendations.length === 0) {
-            showBecauseYouWatchedEmpty();
-            return;
-        }
-        
-        currentRecommendations = recommendations;
-        lastRefreshTime = now;
-        renderBecauseYouWatchedRail(recommendations);
-        console.log(`✅ Loaded ${recommendations.length} recommendations`);
-        
-    } catch (error) {
-        console.error('❌ Failed to load recommendations:', error);
-        showBecauseYouWatchedEmpty();
-    } finally {
-        isLoading = false;
-    }
+/* ============================================ */
+/* BECAUSE YOU WATCHED RAIL - MAIN CONTAINER */
+/* ============================================ */
+.because-you-watched-rail {
+  margin-bottom: 40px;
+  padding-top: 20px;
+  position: relative;
 }
 
-/**
- * Get smart recommendations based on user's watch history
- */
-async function getSmartRecommendations(limit, excludeContentId) {
-    if (!window.currentUserId) return [];
-    
-    try {
-        // Get user's completed watch history
-        const { data: watchHistory, error: watchError } = await window.supabaseClient
-            .from('watch_progress')
-            .select(`
-                content_id,
-                is_completed,
-                Content!inner (
-                    id,
-                    genre,
-                    user_id,
-                    content_type
-                )
-            `)
-            .eq('user_id', window.currentUserId)
-            .eq('is_completed', true)
-            .limit(20);
-        
-        if (watchError) throw watchError;
-        
-        // Collect genres from user's history
-        const watchedGenres = new Map();
-        const watchedCreators = new Set();
-        
-        watchHistory?.forEach(item => {
-            const genre = item.Content?.genre;
-            if (genre && genre !== 'General') {
-                watchedGenres.set(genre, (watchedGenres.get(genre) || 0) + 1);
-            }
-            if (item.Content?.user_id) {
-                watchedCreators.add(item.Content.user_id);
-            }
-        });
-        
-        const topGenres = Array.from(watchedGenres.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([genre]) => genre);
-        
-        if (topGenres.length === 0) {
-            return [];
-        }
-        
-        // Query Content table (without views_count/likes_count)
-        let query = window.supabaseClient
-            .from('Content')
-            .select(`
-                id,
-                title,
-                thumbnail_url,
-                duration,
-                user_id,
-                genre,
-                created_at,
-                user_profiles!user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('status', 'published')
-            .neq('id', excludeContentId || 0)
-            .in('genre', topGenres)
-            .order('created_at', { ascending: false })
-            .limit(limit * 2);
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        if (!data || data.length === 0) return [];
-        
-        // Get engagement stats separately
-        const contentIds = data.map(item => item.id);
-        const { data: statsData, error: statsError } = await window.supabaseClient
-            .from('content_engagement_stats')
-            .select('content_id, total_views, total_likes')
-            .in('content_id', contentIds);
-        
-        if (statsError) throw statsError;
-        
-        // Create stats map
-        const statsMap = new Map();
-        statsData?.forEach(stat => {
-            statsMap.set(stat.content_id, {
-                total_views: stat.total_views || 0,
-                total_likes: stat.total_likes || 0
-            });
-        });
-        
-        // Enrich items with stats
-        const enrichedData = data.map(item => ({
-            ...item,
-            total_views: statsMap.get(item.id)?.total_views || 0,
-            total_likes: statsMap.get(item.id)?.total_likes || 0,
-            views_count: statsMap.get(item.id)?.total_views || 0,
-            likes_count: statsMap.get(item.id)?.total_likes || 0,
-            similarity_score: 0.8 // Default high similarity for watched content
-        }));
-        
-        // Sort by engagement score
-        const sorted = enrichedData.sort((a, b) => {
-            const scoreA = (a.total_likes || 0) + (a.total_views || 0);
-            const scoreB = (b.total_likes || 0) + (b.total_views || 0);
-            return scoreB - scoreA;
-        });
-        
-        return sorted.slice(0, limit);
-        
-    } catch (error) {
-        console.error('Smart recommendations failed:', error);
-        return [];
-    }
+/* Section header */
+.because-you-watched-rail .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-/**
- * Get genre-based recommendations
- */
-async function getGenreBasedRecommendations(limit, excludeContentId) {
-    try {
-        const currentGenre = window.currentContent?.genre || 'General';
-        
-        let query = window.supabaseClient
-            .from('Content')
-            .select(`
-                id,
-                title,
-                thumbnail_url,
-                duration,
-                user_id,
-                genre,
-                created_at,
-                user_profiles!user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('status', 'published')
-            .neq('id', excludeContentId || 0)
-            .limit(limit);
-        
-        if (currentGenre !== 'General') {
-            query = query.eq('genre', currentGenre);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        if (!data || data.length === 0) return [];
-        
-        // Get engagement stats
-        const contentIds = data.map(item => item.id);
-        const { data: statsData, error: statsError } = await window.supabaseClient
-            .from('content_engagement_stats')
-            .select('content_id, total_views, total_likes')
-            .in('content_id', contentIds);
-        
-        if (statsError) throw statsError;
-        
-        const statsMap = new Map();
-        statsData?.forEach(stat => {
-            statsMap.set(stat.content_id, {
-                total_views: stat.total_views || 0,
-                total_likes: stat.total_likes || 0
-            });
-        });
-        
-        return data.map(item => ({
-            ...item,
-            total_views: statsMap.get(item.id)?.total_views || 0,
-            total_likes: statsMap.get(item.id)?.total_likes || 0,
-            views_count: statsMap.get(item.id)?.total_views || 0,
-            likes_count: statsMap.get(item.id)?.total_likes || 0,
-            similarity_score: currentGenre !== 'General' ? 0.9 : 0.5
-        }));
-        
-    } catch (error) {
-        console.error('Genre-based recommendations failed:', error);
-        return [];
-    }
+.because-you-watched-rail .section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-/**
- * Get recent popular content
- */
-async function getRecentPopularRecommendations(limit, excludeContentId) {
-    try {
-        // First get recent content IDs
-        const { data: contentData, error: contentError } = await window.supabaseClient
-            .from('Content')
-            .select(`
-                id,
-                title,
-                thumbnail_url,
-                duration,
-                user_id,
-                genre,
-                created_at,
-                user_profiles!user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .eq('status', 'published')
-            .neq('id', excludeContentId || 0)
-            .order('created_at', { ascending: false })
-            .limit(limit * 2);
-        
-        if (contentError) throw contentError;
-        if (!contentData || contentData.length === 0) return [];
-        
-        // Get engagement stats for sorting
-        const contentIds = contentData.map(item => item.id);
-        const { data: statsData, error: statsError } = await window.supabaseClient
-            .from('content_engagement_stats')
-            .select('content_id, total_views, total_likes')
-            .in('content_id', contentIds);
-        
-        if (statsError) throw statsError;
-        
-        const statsMap = new Map();
-        statsData?.forEach(stat => {
-            statsMap.set(stat.content_id, {
-                total_views: stat.total_views || 0,
-                total_likes: stat.total_likes || 0
-            });
-        });
-        
-        const enrichedData = contentData.map(item => ({
-            ...item,
-            total_views: statsMap.get(item.id)?.total_views || 0,
-            total_likes: statsMap.get(item.id)?.total_likes || 0,
-            views_count: statsMap.get(item.id)?.total_views || 0,
-            likes_count: statsMap.get(item.id)?.total_likes || 0,
-            similarity_score: 0.3
-        }));
-        
-        // Sort by total views (most popular first)
-        const sorted = enrichedData.sort((a, b) => (b.total_views || 0) - (a.total_views || 0));
-        
-        return sorted.slice(0, limit);
-        
-    } catch (error) {
-        console.error('Recent popular recommendations failed:', error);
-        return [];
-    }
+.because-you-watched-rail .section-title i {
+  color: var(--bantu-blue);
+  font-size: 20px;
 }
 
-/**
- * Render the "Because You Watched" rail
- */
-function renderBecauseYouWatchedRail(items) {
-    const section = document.getElementById('becauseYouWatchedRail');
-    if (!section) return;
-    
-    // Build header if not exists - WITHOUT Refresh button
-    if (!section.querySelector('.section-header')) {
-        section.innerHTML = `
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-magic"></i>
-                    Because You Watched
-                    <span class="title-info" title="Personalized recommendations based on your watch history">
-                        <i class="fas fa-info-circle"></i>
-                        <span class="tooltip-text">Based on your watch history</span>
-                    </span>
-                </h2>
-                <div class="rail-actions">
-                    <a href="recommendations.html" class="view-all-link">
-                        View All <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="recommendation-grid" id="becauseYouWatchedGrid"></div>
-            <div class="because-you-watched-empty" id="becauseYouWatchedEmpty" style="display: none;">
-                <i class="fas fa-magic"></i>
-                <h3>No Recommendations Yet</h3>
-                <p>Watch and like more content to get personalized recommendations</p>
-                <div class="engagement-cta">
-                    <a href="index.html" class="cta-btn watch-btn">
-                        <i class="fas fa-play"></i> <span>Browse Content</span>
-                    </a>
-                    <button class="cta-btn like-btn" onclick="document.getElementById('trendingGrid')?.scrollIntoView({behavior:'smooth'})">
-                        <i class="fas fa-fire"></i> <span>Check Trending</span>
-                    </button>
-                </div>
-            </div>
-            <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;">
-                ${Array(4).fill().map(() => `
-                    <div class="skeleton-card">
-                        <div class="skeleton-thumbnail"></div>
-                        <div class="skeleton-title"></div>
-                        <div class="skeleton-meta"></div>
-                        <div class="skeleton-creator"></div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
-    
-    const grid = document.getElementById('becauseYouWatchedGrid');
-    const empty = document.getElementById('becauseYouWatchedEmpty');
-    const skeleton = document.getElementById('becauseSkeleton');
-    
-    if (!grid) return;
-    
-    // Hide skeleton and empty
-    if (skeleton) skeleton.style.display = 'none';
-    if (empty) empty.style.display = 'none';
-    
-    if (!items || items.length === 0) {
-        if (empty) empty.style.display = 'block';
-        grid.innerHTML = '';
-        return;
-    }
-    
-    grid.innerHTML = items.map((item, index) => {
-        const viewsCount = item.total_views || 0;
-        const likesCount = item.total_likes || 0;
-        const creatorName = item.user_profiles?.full_name || 
-                           item.user_profiles?.username || 
-                           'Creator';
-        const thumbnail = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || 
-                         item.thumbnail_url || 
-                         'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-        const duration = item.duration ? window.formatDuration(item.duration) : '';
-        const genre = item.genre || 'General';
-        
-        // Determine reason based on position or data
-        let reason = 'Recommended for you';
-        let reasonIcon = 'fa-star';
-        if (index === 0) {
-            reason = 'Top pick';
-            reasonIcon = 'fa-crown';
-        } else if (item.similarity_score && item.similarity_score > 0.7) {
-            reason = 'High match';
-            reasonIcon = 'fa-bolt';
-        } else if (genre === window.currentContent?.genre) {
-            reason = 'Same genre';
-            reasonIcon = 'fa-tag';
-        }
-        
-        return `
-            <a href="content-detail.html?id=${item.id}" class="recommendation-card" data-content-id="${item.id}">
-                <div class="card-thumbnail">
-                    <img src="${thumbnail}" 
-                         alt="${window.escapeHtml(item.title)}" 
-                         loading="lazy"
-                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                    <div class="thumbnail-overlay"></div>
-                    ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
-                    <div class="reason-badge">
-                        <i class="fas ${reasonIcon}"></i>
-                        <span>${reason}</span>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">${window.truncateText(item.title, 45)}</h3>
-                    <div class="card-meta">
-                        <span class="views-count">
-                            <i class="fas fa-eye"></i>
-                            ${window.formatNumber(viewsCount)} views
-                        </span>
-                        ${likesCount > 0 ? `
-                            <span class="like-badge">
-                                <i class="fas fa-heart"></i>
-                                <span>${window.formatNumber(likesCount)}</span>
-                            </span>
-                        ` : ''}
-                    </div>
-                    <div class="creator-chip">
-                        <i class="fas fa-user"></i>
-                        ${window.truncateText(creatorName, 20)}
-                    </div>
-                    ${genre !== 'General' ? `<span class="genre-tag"><i class="fas fa-tag"></i> ${genre}</span>` : ''}
-                </div>
-            </a>
-        `;
-    }).join('');
-    
-    section.style.display = 'block';
+/* Rail actions - View All ONLY */
+.rail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
-/**
- * Show skeleton loader
- */
-function showBecauseYouWatchedSkeleton() {
-    const section = document.getElementById('becauseYouWatchedRail');
-    if (!section) return;
-    
-    section.style.display = 'block';
-    
-    // Build full skeleton UI if not exists - WITHOUT Refresh button
-    if (!section.querySelector('.section-header')) {
-        section.innerHTML = `
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-magic"></i>
-                    Because You Watched
-                    <span class="title-info" title="Loading recommendations...">
-                        <i class="fas fa-info-circle"></i>
-                    </span>
-                </h2>
-                <div class="rail-actions">
-                    <span class="view-all-link" style="opacity:0.5;">View All <i class="fas fa-arrow-right"></i></span>
-                </div>
-            </div>
-            <div class="recommendation-grid" id="becauseYouWatchedGrid">
-                ${Array(4).fill().map(() => `
-                    <div class="skeleton-card">
-                        <div class="skeleton-thumbnail"></div>
-                        <div class="skeleton-title"></div>
-                        <div class="skeleton-meta"></div>
-                        <div class="skeleton-creator"></div>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="because-you-watched-empty" id="becauseYouWatchedEmpty" style="display: none;"></div>
-            <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;"></div>
-        `;
-    } else {
-        // Update existing header to show loading state
-        const grid = document.getElementById('becauseYouWatchedGrid');
-        const empty = document.getElementById('becauseYouWatchedEmpty');
-        const skeleton = document.getElementById('becauseSkeleton');
-        
-        if (grid) {
-            grid.innerHTML = Array(4).fill().map(() => `
-                <div class="skeleton-card">
-                    <div class="skeleton-thumbnail"></div>
-                    <div class="skeleton-title"></div>
-                    <div class="skeleton-meta"></div>
-                    <div class="skeleton-creator"></div>
-                </div>
-            `).join('');
-        }
-        if (empty) empty.style.display = 'none';
-        if (skeleton) skeleton.style.display = 'none';
-    }
+/* View all link */
+.view-all-link {
+  color: var(--bantu-blue);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-/**
- * Show empty state
- */
-function showBecauseYouWatchedEmpty() {
-    const section = document.getElementById('becauseYouWatchedRail');
-    if (!section) return;
-    
-    section.style.display = 'block';
-    
-    // Build full empty UI if not exists - WITHOUT Refresh button
-    if (!section.querySelector('.section-header')) {
-        section.innerHTML = `
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-magic"></i>
-                    Because You Watched
-                    <span class="title-info" title="No recommendations available yet">
-                        <i class="fas fa-info-circle"></i>
-                    </span>
-                </h2>
-                <div class="rail-actions">
-                    <a href="recommendations.html" class="view-all-link">
-                        View All <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="recommendation-grid" id="becauseYouWatchedGrid"></div>
-            <div class="because-you-watched-empty" id="becauseYouWatchedEmpty">
-                <i class="fas fa-magic"></i>
-                <h3>No Recommendations Yet</h3>
-                <p>Watch and like more content to get personalized recommendations</p>
-                <div class="engagement-cta">
-                    <a href="index.html" class="cta-btn watch-btn">
-                        <i class="fas fa-play"></i> <span>Browse Content</span>
-                    </a>
-                    <button class="cta-btn like-btn" onclick="document.getElementById('trendingGrid')?.scrollIntoView({behavior:'smooth'})">
-                        <i class="fas fa-fire"></i> <span>Check Trending</span>
-                    </button>
-                </div>
-            </div>
-            <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;"></div>
-        `;
-    }
-    
-    const grid = document.getElementById('becauseYouWatchedGrid');
-    const empty = document.getElementById('becauseYouWatchedEmpty');
-    const skeleton = document.getElementById('becauseSkeleton');
-    
-    if (grid) grid.innerHTML = '';
-    if (skeleton) skeleton.style.display = 'none';
-    if (empty) empty.style.display = 'block';
+.view-all-link:hover {
+  color: var(--warm-gold);
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/**
- * Refresh recommendations
- */
-async function refreshBecauseYouWatched() {
-    console.log('🔄 Refreshing Because You Watched recommendations...');
-    currentRecommendations = [];
-    lastRefreshTime = 0;
-    await loadBecauseYouWatchedRecommendations({ forceRefresh: true });
+/* Title tooltip/info icon */
+.title-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
 }
 
-/**
- * Initialize module
- */
-function initBecauseYouWatched() {
-    console.log('🎬 Initializing Because You Watched module...');
-    
-    window.addEventListener('contentIdChanged', () => {
-        console.log('🔄 Content changed, refreshing Because You Watched');
-        setTimeout(() => {
-            currentRecommendations = [];
-            loadBecauseYouWatchedRecommendations();
-        }, 500);
-    });
-    
-    window.addEventListener('authReady', () => {
-        console.log('🔄 Auth state changed, refreshing Because You Watched');
-        setTimeout(() => {
-            currentRecommendations = [];
-            loadBecauseYouWatchedRecommendations({ forceRefresh: true });
-        }, 500);
-    });
-    
-    window.addEventListener('playlistLoaded', () => {
-        console.log('🔄 Playlist loaded, refreshing Because You Watched');
-        setTimeout(() => {
-            currentRecommendations = [];
-            loadBecauseYouWatchedRecommendations();
-        }, 500);
-    });
-    
-    setTimeout(() => {
-        if (window.currentContent?.id) {
-            loadBecauseYouWatchedRecommendations();
-        }
-    }, 500);
+.title-info i {
+  font-size: 14px;
+  color: var(--slate-grey);
+  transition: color 0.2s ease;
 }
 
-// Initialize
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initBecauseYouWatched);
-} else {
-    initBecauseYouWatched();
+.title-info:hover i {
+  color: var(--bantu-blue);
 }
 
-// ============================================
-// GLOBAL EXPORTS
-// ============================================
-window.loadBecauseYouWatchedRecommendations = loadBecauseYouWatchedRecommendations;
-window.renderBecauseYouWatchedRail = renderBecauseYouWatchedRail;
-window.showBecauseYouWatchedSkeleton = showBecauseYouWatchedSkeleton;
-window.showBecauseYouWatchedEmpty = showBecauseYouWatchedEmpty;
-window.refreshBecauseYouWatched = refreshBecauseYouWatched;
+.title-info .tooltip-text {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--deep-navy);
+  color: var(--soft-white);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+  font-family: 'Inter', sans-serif;
+  font-weight: normal;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
 
-console.log('✅ Because You Watched Module loaded (Updated for new schema)');
+.title-info:hover .tooltip-text {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-8px);
+}
+
+/* ============================================ */
+/* RECOMMENDATION GRID */
+/* ============================================ */
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* Recommendation card */
+.recommendation-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* ============================================ */
+/* CARD THUMBNAIL */
+/* ============================================ */
+.recommendation-card .card-thumbnail {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.recommendation-card .card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.recommendation-card:hover .card-thumbnail img {
+  transform: scale(1.08);
+}
+
+/* Thumbnail overlay gradient */
+.thumbnail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.recommendation-card:hover .thumbnail-overlay {
+  opacity: 1;
+}
+
+/* Duration badge */
+.duration-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 2;
+  font-family: monospace;
+}
+
+/* ============================================ */
+/* REASON BADGE (why this was recommended) */
+/* ============================================ */
+.reason-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--warm-gold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.recommendation-card:hover .reason-badge {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reason-badge i {
+  font-size: 9px;
+}
+
+/* ============================================ */
+/* CARD CONTENT */
+/* ============================================ */
+.recommendation-card .card-content {
+  padding: 12px;
+}
+
+.recommendation-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 38px;
+  color: var(--soft-white);
+  line-height: 1.4;
+  transition: color 0.2s ease;
+}
+
+.recommendation-card:hover .card-title {
+  color: var(--bantu-blue);
+}
+
+/* Views and metadata */
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.views-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--slate-grey);
+}
+
+.views-count i {
+  font-size: 11px;
+  color: var(--bantu-blue);
+}
+
+/* Like count badge */
+.like-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.like-badge i {
+  font-size: 10px;
+}
+
+/* Creator chip */
+.creator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--slate-grey);
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.recommendation-card:hover .creator-chip {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--soft-white);
+}
+
+.creator-chip i {
+  font-size: 10px;
+  color: var(--bantu-blue);
+}
+
+/* Genre tag */
+.genre-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  color: var(--warm-gold);
+  margin-top: 6px;
+}
+
+/* ============================================ */
+/* EMPTY STATE */
+/* ============================================ */
+.because-you-watched-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.because-you-watched-empty i {
+  font-size: 56px;
+  color: var(--slate-grey);
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+
+.because-you-watched-empty h3 {
+  font-size: 18px;
+  color: var(--soft-white);
+  margin-bottom: 8px;
+}
+
+.because-you-watched-empty p {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin-bottom: 20px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Engagement CTA buttons */
+.engagement-cta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border);
+  border-radius: 40px;
+  color: var(--soft-white);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.cta-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--bantu-blue);
+  transform: translateY(-2px);
+}
+
+.cta-btn.like-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.cta-btn.watch-btn:hover {
+  background: rgba(29, 78, 216, 0.2);
+  border-color: var(--bantu-blue);
+  color: var(--bantu-blue);
+}
+
+/* ============================================ */
+/* SKELETON LOADING */
+/* ============================================ */
+.recommendation-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-title {
+  height: 16px;
+  width: 80%;
+  margin: 12px 12px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.skeleton-meta {
+  height: 12px;
+  width: 60%;
+  margin: 0 12px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.skeleton-creator {
+  height: 10px;
+  width: 50%;
+  margin: 0 12px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================ */
+/* RESPONSIVE ADJUSTMENTS - ONLY MAKE VISIBLE */
+/* ============================================ */
+
+/* Tablet and mobile - make all elements visible */
+@media (max-width: 768px) {
+  /* Keep grid working */
+  .recommendation-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 16px !important;
+  }
+  
+  /* Make reason badge always visible */
+  .reason-badge {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+  
+  .reason-badge span {
+    display: inline !important;
+  }
+  
+  /* Make like badge always visible */
+  .like-badge {
+    display: flex !important;
+  }
+  
+  .like-badge span {
+    display: inline !important;
+  }
+  
+  /* Make creator chip always visible */
+  .creator-chip {
+    display: inline-flex !important;
+  }
+  
+  .creator-chip span {
+    display: inline !important;
+  }
+  
+  /* Make genre tag always visible */
+  .genre-tag {
+    display: inline-flex !important;
+  }
+  
+  /* View all link on tablet */
+  .view-all-link {
+    font-size: 13px;
+    padding: 4px 10px;
+  }
+  
+  .because-you-watched-rail .section-title {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 550px) {
+  /* Keep grid working on phones */
+  .recommendation-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  /* Force all elements visible on phones */
+  .reason-badge {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+  
+  .reason-badge span {
+    display: inline !important;
+  }
+  
+  .like-badge {
+    display: flex !important;
+  }
+  
+  .like-badge span {
+    display: inline !important;
+  }
+  
+  .creator-chip {
+    display: inline-flex !important;
+  }
+  
+  .creator-chip span {
+    display: inline !important;
+  }
+  
+  .genre-tag {
+    display: inline-flex !important;
+  }
+  
+  /* View all link on phones */
+  .view-all-link {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+  
+  .because-you-watched-rail .section-title {
+    font-size: 16px;
+  }
+  
+  .rail-actions {
+    margin-left: 0;
+  }
+  
+  .because-you-watched-rail .section-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .engagement-cta {
+    gap: 10px;
+  }
+  
+  .cta-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+}
+
+/* ============================================ */
+/* THEME SUPPORT */
+/* ============================================ */
+.theme-light .because-you-watched-rail .section-title {
+  color: var(--deep-navy);
+}
+
+.theme-light .recommendation-card {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .recommendation-card .card-title {
+  color: var(--deep-navy);
+}
+
+.theme-light .recommendation-card:hover .card-title {
+  color: var(--bantu-blue);
+}
+
+.theme-light .views-count {
+  color: var(--slate-grey);
+}
+
+.theme-light .creator-chip {
+  color: var(--slate-grey);
+}
+
+.theme-light .because-you-watched-empty {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.theme-light .because-you-watched-empty h3 {
+  color: var(--deep-navy);
+}
+
+.theme-light .view-all-link {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .view-all-link:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* High contrast mode */
+.theme-high-contrast .recommendation-card {
+  border: 2px solid white;
+  background: black;
+}
+
+.theme-high-contrast .recommendation-card .card-title {
+  color: white;
+}
+
+.theme-high-contrast .recommendation-card:hover {
+  border-color: #00FF00;
+}
+
+.theme-high-contrast .view-all-link {
+  border: 1px solid white;
+  color: white;
+}
+
+.theme-high-contrast .view-all-link:hover {
+  background: white;
+  color: black;
+}
+
+.theme-high-contrast .reason-badge {
+  border: 1px solid #00FF00;
+  color: #00FF00;
+}
+
+/* ============================================ */
+/* END OF BECAUSE YOU WATCHED MODULE */
+/* ============================================ */
