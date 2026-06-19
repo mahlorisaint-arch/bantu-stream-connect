@@ -1653,7 +1653,132 @@ async function loadUserProfile() {
   }
 }
 
-// ===== BANNER FUNCTIONS =====
+// ===== BANNER FUNCTIONS (UPDATED WITH EDGE FUNCTION + CLOUDFLARE R2) =====
+
+/**
+ * Handles banner upload using Supabase Edge Function → Cloudflare R2
+ * Validates file type and size (max 20MB), shows progress, updates database
+ */
+async function handleBannerUpload(file) {
+  // Validate file type
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+  if (!validTypes.includes(file.type)) {
+    showToast('Please upload a valid image (JPEG, PNG, or WEBP)', 'error');
+    return false;
+  }
+  
+  // Validate file size (20MB max)
+  const maxSize = 20 * 1024 * 1024; // 20MB
+  if (file.size > maxSize) {
+    showToast('Image must be less than 20MB', 'error');
+    return false;
+  }
+  
+  // Show progress indicator
+  const progressContainer = document.getElementById('banner-upload-progress');
+  const progressFill = document.getElementById('upload-progress-fill');
+  const progressText = document.getElementById('upload-progress-text');
+  
+  if (progressContainer) progressContainer.style.display = 'block';
+  if (progressText) progressText.textContent = 'Requesting upload URL...';
+  
+  try {
+    // Step 1: Get presigned upload URL from edge function
+    const { data: uploadData, error: uploadError } = await supabase.functions.invoke('get-upload-url', {
+      body: { 
+        mediaType: 'banner', 
+        fileName: file.name 
+      }
+    });
+    
+    if (uploadError) throw new Error(uploadError.message);
+    if (!uploadData?.uploadUrl) throw new Error('No upload URL received');
+    
+    // Step 2: Upload to Cloudflare R2
+    if (progressText) progressText.textContent = 'Uploading to CDN...';
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadData.uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type);
+    
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && progressFill) {
+        const percent = (e.loaded / e.total) * 100;
+        progressFill.style.width = percent + '%';
+        if (progressText) progressText.textContent = `Uploading: ${Math.round(percent)}%`;
+      }
+    };
+    
+    await new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve();
+        else reject(new Error(`Upload failed: ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.send(file);
+    });
+    
+    // Step 3: Save URL to database (channel_banner_url)
+    if (progressText) progressText.textContent = 'Updating profile...';
+    
+    const { error: dbError } = await supabase
+      .from('user_profiles')
+      .update({ channel_banner_url: uploadData.fileUrl })
+      .eq('id', window.creatorId);
+      
+    if (dbError) throw dbError;
+    
+    // Step 4: Update UI
+    setBannerImage(uploadData.fileUrl);
+    showToast('Banner updated successfully! 🎉', 'success');
+    
+    // Update local state
+    if (window.creatorProfile) {
+      window.creatorProfile.channel_banner_url = uploadData.fileUrl;
+    }
+    
+    // Hide progress
+    if (progressContainer) {
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+        if (progressFill) progressFill.style.width = '0%';
+      }, 1000);
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error('Banner upload error:', error);
+    showToast('Failed to upload banner: ' + error.message, 'error');
+    if (progressContainer) progressContainer.style.display = 'none';
+    return false;
+  }
+}
+
+/**
+ * Fallback upload method using Supabase Storage (if edge function fails)
+ */
+async function uploadBannerFallback(file) {
+  try {
+    const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await supabase.storage.from('channel-banners').upload(fileName, file);
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
+    await supabase
+      .from('user_profiles')
+      .update({ channel_banner_url: publicUrl })
+      .eq('id', window.creatorId);
+      
+    setBannerImage(publicUrl);
+    showToast('Banner uploaded (using fallback storage)', 'success');
+    return true;
+  } catch (error) {
+    console.error('Fallback upload error:', error);
+    return false;
+  }
+}
+
 async function loadBannerFromProfile() {
   if (!window.creatorProfile) return;
   const bannerUrl = window.creatorProfile.channel_banner_url || window.creatorProfile.banner_url;
@@ -1666,7 +1791,11 @@ function setBannerImage(url) {
   const banner = document.getElementById('channel-banner');
   window.bannerUrl = url;
   if (banner) {
-    banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
+    // Clean URL for background image
+    const cleanUrl = url.replace(/^["']|["']$/g, '');
+    banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${cleanUrl}')`;
+    banner.style.backgroundSize = 'cover';
+    banner.style.backgroundPosition = 'center';
   }
 }
 
@@ -1682,35 +1811,17 @@ function showBannerUploadModal() {
   const previewImg = document.getElementById('banner-preview-img');
   const placeholder = document.getElementById('banner-preview-placeholder');
   const urlInput = document.getElementById('banner-url-input');
+  const progressContainer = document.getElementById('banner-upload-progress');
   
   if (previewImg) previewImg.style.display = 'none';
   if (placeholder) placeholder.style.display = 'flex';
   if (urlInput) urlInput.value = '';
+  if (progressContainer) progressContainer.style.display = 'none';
 }
 
 function hideBannerUploadModal() {
   const modal = document.getElementById('banner-upload-modal');
   if (modal) modal.classList.remove('active');
-}
-
-async function saveBanner(url) {
-  if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
-  
-  try {
-    setBannerImage(url);
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ channel_banner_url: url, updated_at: new Date().toISOString() })
-      .eq('id', window.creatorId);
-      
-    if (error) throw error;
-    
-    showToast('Banner updated successfully!', 'success');
-    hideBannerUploadModal();
-  } catch (error) {
-    console.error('Error saving banner:', error);
-    showToast('Failed to save banner', 'error');
-  }
 }
 
 // ===== EDIT ABOUT MODAL =====
@@ -2722,22 +2833,19 @@ function setupEventListeners() {
   const bannerEditBtn = document.getElementById('banner-edit-btn');
   if (bannerEditBtn) bannerEditBtn.addEventListener('click', showBannerUploadModal);
   
+  // ===== UPDATED BANNER FILE UPLOAD HANDLER (USES EDGE FUNCTION) =====
   const bannerFileUpload = document.getElementById('banner-file-upload');
   const bannerFileInput = document.getElementById('banner-file-input');
   if (bannerFileUpload && bannerFileInput) {
-    bannerFileUpload.addEventListener('click', () => { bannerFileInput.click(); });
+    bannerFileUpload.addEventListener('click', () => { 
+      bannerFileInput.click(); 
+    });
+    
     bannerFileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        showToast('Please select an image file', 'error');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('Image must be less than 5MB', 'error');
-        return;
-      }
       
+      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (event) => {
         const previewImg = document.getElementById('banner-preview-img');
@@ -2750,28 +2858,46 @@ function setupEventListeners() {
       };
       reader.readAsDataURL(file);
       
-      try {
-        const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
-        const { error } = await supabase.storage.from('channel-banners').upload(fileName, file);
-        if (error) throw error;
-        
-        const { data: { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
-        await saveBanner(publicUrl);
-      } catch (error) {
-        console.error('Upload error:', error);
-        showToast('Failed to upload image', 'error');
-      }
+      // Upload via edge function
+      await handleBannerUpload(file);
+      
+      // Reset input
+      e.target.value = '';
     });
   }
   
+  // ===== UPDATED BANNER URL APPLY HANDLER (WITH VALIDATION) =====
   const bannerUrlApply = document.getElementById('banner-url-apply');
   if (bannerUrlApply) {
-    bannerUrlApply.addEventListener('click', () => {
+    bannerUrlApply.addEventListener('click', async () => {
       const url = document.getElementById('banner-url-input')?.value.trim();
       if (!url) {
         showToast('Please enter a URL', 'warning');
         return;
       }
+      
+      // Validate URL is an image
+      try {
+        const response = await fetch(url, { method: 'HEAD' });
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.startsWith('image/')) {
+          showToast('URL must point to an image', 'error');
+          return;
+        }
+        
+        // Check file size from Content-Length header
+        const contentLength = parseInt(response.headers.get('content-length'));
+        const maxSize = 20 * 1024 * 1024; // 20MB
+        if (contentLength > maxSize) {
+          showToast('Image must be less than 20MB', 'error');
+          return;
+        }
+      } catch (error) {
+        showToast('Could not validate image URL', 'error');
+        return;
+      }
+      
+      // Show preview
       const previewImg = document.getElementById('banner-preview-img');
       const placeholder = document.getElementById('banner-preview-placeholder');
       if (previewImg && placeholder) {
@@ -2780,16 +2906,43 @@ function setupEventListeners() {
           previewImg.style.display = 'block';
           placeholder.style.display = 'none';
         };
+        previewImg.onerror = () => {
+          showToast('Failed to load image from URL', 'error');
+        };
       }
     });
   }
   
+  // ===== UPDATED BANNER SAVE HANDLER =====
   const bannerSave = document.getElementById('banner-save');
   if (bannerSave) {
-    bannerSave.addEventListener('click', () => {
+    bannerSave.addEventListener('click', async () => {
       const previewImg = document.getElementById('banner-preview-img');
       if (previewImg && previewImg.style.display === 'block' && previewImg.src) {
-        saveBanner(previewImg.src);
+        // If it's a data URL, need to upload via edge function
+        if (previewImg.src.startsWith('data:image')) {
+          const response = await fetch(previewImg.src);
+          const blob = await response.blob();
+          const file = new File([blob], 'banner.jpg', { type: blob.type });
+          await handleBannerUpload(file);
+        } else {
+          // It's a URL, save directly to database
+          try {
+            const { error: dbError } = await supabase
+              .from('user_profiles')
+              .update({ channel_banner_url: previewImg.src })
+              .eq('id', window.creatorId);
+              
+            if (dbError) throw dbError;
+            
+            setBannerImage(previewImg.src);
+            showToast('Banner updated successfully! 🎉', 'success');
+            hideBannerUploadModal();
+          } catch (error) {
+            console.error('Error saving banner:', error);
+            showToast('Failed to save banner', 'error');
+          }
+        }
       } else {
         showToast('Please select or enter an image first', 'warning');
       }
@@ -3219,6 +3372,7 @@ async function initializeCreatorChannel() {
     console.log('   🚨 FIXED: Album track extraction with proper sorting and mapping');
     console.log('   🚨 FIXED: Replaced views_count/likes_count with live_views/favorites_count');
     console.log('   🔧 CRITICAL: String() type normalization for ID lookups in all merge functions');
+    console.log('   🎨 BANNER UPLOAD: Using Edge Function → Cloudflare R2 with 20MB limit');
     
   } catch (error) {
     console.error('❌ Error initializing:', error);
