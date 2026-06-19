@@ -1,7 +1,7 @@
 // js/content-detail/more-from-this-creator.js
 // ============================================
-// MORE FROM THIS CREATOR MODULE - UPDATED FOR NEW SCHEMA
-// Uses content_engagement_stats for ALL metrics
+// MORE FROM THIS CREATOR MODULE - COMPLETE FIX
+// Uses correct IDs and class names to match HTML
 // ============================================
 console.log('🎬 More From This Creator Module Loading...');
 
@@ -31,10 +31,10 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         return;
     }
     
+    // Show skeleton
     showMoreFromCreatorSkeleton();
     
     try {
-        // Query Content table WITHOUT views_count/likes_count
         let query = window.supabaseClient
             .from('Content')
             .select(`
@@ -45,6 +45,7 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
                 file_url,
                 duration,
                 media_type,
+                content_format,
                 created_at,
                 user_id,
                 user_profiles!user_id (
@@ -70,7 +71,7 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         if (error) throw error;
         
         if (!data || data.length === 0) {
-            showMoreFromCreatorEmpty();
+            showMoreFromCreatorEmpty(targetCreatorId);
             return;
         }
         
@@ -83,7 +84,6 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         
         if (statsError) throw statsError;
         
-        // Create stats map
         const statsMap = new Map();
         statsData?.forEach(stat => {
             statsMap.set(stat.content_id, {
@@ -93,7 +93,6 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
             });
         });
         
-        // Enrich data with stats
         const enrichedData = data.map(item => ({
             ...item,
             total_views: statsMap.get(item.id)?.total_views || 0,
@@ -104,11 +103,11 @@ async function loadMoreFromCreatorRecommendations(options = {}) {
         }));
         
         renderMoreFromCreatorRail(enrichedData, targetCreatorId);
-        console.log(`✅ Loaded ${enrichedData.length} "More From This Creator" items for creator ${targetCreatorId}`);
+        console.log(`✅ Loaded ${enrichedData.length} "More From This Creator" items`);
         
     } catch (error) {
         console.error('❌ Failed to load More From This Creator content:', error);
-        showMoreFromCreatorEmpty();
+        showMoreFromCreatorEmpty(targetCreatorId);
     }
 }
 
@@ -133,38 +132,63 @@ function renderMoreFromCreatorRail(items, creatorId) {
         creatorName = items[0].user_profiles.username;
     }
     
-    if (!section.querySelector('.section-header')) {
-        section.innerHTML = `
-            <div class="section-header">
-                <h2 class="section-title">More From ${window.escapeHtml(creatorName)}</h2>
-                ${creatorId ? `<a href="creator-channel.html?id=${creatorId}" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>` : ''}
-            </div>
-            <div class="content-grid" id="moreFromCreatorGrid"></div>
-        `;
-    } else {
-        const titleEl = section.querySelector('.section-title');
-        if (titleEl) {
-            titleEl.textContent = `More From ${window.escapeHtml(creatorName)}`;
+    // Update title
+    const nameSpan = document.getElementById('moreFromCreatorName');
+    if (nameSpan) {
+        nameSpan.textContent = creatorName;
+    }
+    
+    // Update avatar
+    const avatarContainer = document.getElementById('moreFromCreatorAvatar');
+    if (avatarContainer) {
+        const avatarUrl = items[0]?.user_profiles?.avatar_url || 
+                         window.currentContent?.user_profiles?.avatar_url ||
+                         null;
+        if (avatarUrl && avatarUrl !== 'null') {
+            const fixedUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+            avatarContainer.innerHTML = `<img src="${fixedUrl}" alt="${creatorName}" onerror="this.onerror=null; this.parentElement.innerHTML='<span>${creatorName.charAt(0).toUpperCase()}</span>';">`;
+        } else {
+            avatarContainer.innerHTML = `<span>${creatorName.charAt(0).toUpperCase()}</span>`;
         }
     }
     
+    // Update View All link
+    const viewAllLink = document.getElementById('moreFromCreatorViewAll');
+    if (viewAllLink && creatorId) {
+        viewAllLink.href = `creator-channel.html?id=${creatorId}`;
+        viewAllLink.style.display = 'flex';
+    } else if (viewAllLink) {
+        viewAllLink.style.display = 'none';
+    }
+    
     const grid = document.getElementById('moreFromCreatorGrid');
+    const empty = document.getElementById('moreFromCreatorEmpty');
+    const skeleton = document.getElementById('moreFromCreatorSkeleton');
+    
     if (!grid) return;
     
+    // Hide skeleton and empty
+    if (skeleton) skeleton.style.display = 'none';
+    if (empty) empty.style.display = 'none';
+    
     if (!items || items.length === 0) {
-        grid.innerHTML = '<div class="empty-rail">No other content from this creator</div>';
+        if (empty) empty.style.display = 'block';
+        grid.innerHTML = '';
         return;
     }
     
     grid.innerHTML = items.map(item => {
         const viewsCount = item.total_views || 0;
+        const likesCount = item.total_likes || 0;
         const thumbnail = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || 
                          item.thumbnail_url || 
                          'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
         const duration = item.duration ? window.formatDuration(item.duration) : '';
+        const mediaType = item.media_type || item.content_format || 'video';
+        const isAudio = mediaType === 'audio';
         
         return `
-            <a href="content-detail.html?id=${item.id}" class="content-card more-from-creator-card" data-content-id="${item.id}">
+            <a href="content-detail.html?id=${item.id}" class="creator-content-card" data-content-id="${item.id}">
                 <div class="card-thumbnail">
                     <img src="${thumbnail}" 
                          alt="${window.escapeHtml(item.title)}" 
@@ -172,12 +196,28 @@ function renderMoreFromCreatorRail(items, creatorId) {
                          onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                     <div class="thumbnail-overlay"></div>
                     ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
+                    <span class="media-type-badge ${isAudio ? 'audio' : 'video'}">
+                        <i class="fas ${isAudio ? 'fa-headphones' : 'fa-play'}"></i>
+                        <span>${isAudio ? 'Audio' : 'Video'}</span>
+                    </span>
+                    <span class="same-creator-badge">
+                        <i class="fas fa-user-check"></i>
+                        <span>Same Creator</span>
+                    </span>
                 </div>
                 <div class="card-content">
                     <h3 class="card-title">${window.truncateText(item.title, 45)}</h3>
-                    <div class="related-meta">
-                        <i class="fas fa-eye"></i>
-                        <span>${window.formatNumber(viewsCount)} views</span>
+                    <div class="card-meta">
+                        <span class="views-count">
+                            <i class="fas fa-eye"></i>
+                            ${window.formatNumber(viewsCount)} views
+                        </span>
+                        ${likesCount > 0 ? `
+                            <span class="like-count">
+                                <i class="fas fa-heart"></i>
+                                <span>${window.formatNumber(likesCount)}</span>
+                            </span>
+                        ` : ''}
                     </div>
                     <div class="upload-date">
                         <i class="far fa-calendar-alt"></i>
@@ -197,68 +237,41 @@ function renderMoreFromCreatorRail(items, creatorId) {
  */
 function showMoreFromCreatorSkeleton() {
     const section = document.getElementById('moreFromCreatorRail');
+    const skeleton = document.getElementById('moreFromCreatorSkeleton');
+    const grid = document.getElementById('moreFromCreatorGrid');
+    const empty = document.getElementById('moreFromCreatorEmpty');
+    
     if (!section) return;
     
     section.style.display = 'block';
-    
-    if (!section.querySelector('.section-header')) {
-        section.innerHTML = `
-            <div class="section-header">
-                <h2 class="section-title">More From This Creator</h2>
-            </div>
-            <div class="content-grid" id="moreFromCreatorGrid">
-                ${Array(6).fill().map(() => `
-                    <div class="skeleton-card">
-                        <div class="skeleton-thumbnail"></div>
-                        <div class="skeleton-title"></div>
-                        <div class="skeleton-creator"></div>
-                        <div class="skeleton-stats"></div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } else {
-        const grid = document.getElementById('moreFromCreatorGrid');
-        if (grid) {
-            grid.innerHTML = Array(6).fill().map(() => `
-                <div class="skeleton-card">
-                    <div class="skeleton-thumbnail"></div>
-                    <div class="skeleton-title"></div>
-                    <div class="skeleton-creator"></div>
-                    <div class="skeleton-stats"></div>
-                </div>
-            `).join('');
-        }
-    }
+    if (skeleton) skeleton.style.display = 'grid';
+    if (grid) grid.style.display = 'none';
+    if (empty) empty.style.display = 'none';
 }
 
 /**
  * Show empty state
  */
-function showMoreFromCreatorEmpty() {
+function showMoreFromCreatorEmpty(creatorId) {
     const section = document.getElementById('moreFromCreatorRail');
+    const empty = document.getElementById('moreFromCreatorEmpty');
+    const skeleton = document.getElementById('moreFromCreatorSkeleton');
+    const grid = document.getElementById('moreFromCreatorGrid');
+    
     if (!section) return;
     
     section.style.display = 'block';
-    
-    if (!section.querySelector('.section-header')) {
-        section.innerHTML = `
-            <div class="section-header">
-                <h2 class="section-title">More From This Creator</h2>
-            </div>
-            <div class="content-grid" id="moreFromCreatorGrid"></div>
-        `;
-    }
-    
-    const grid = document.getElementById('moreFromCreatorGrid');
-    if (grid) {
-        grid.innerHTML = `
-            <div class="empty-rail" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                <i class="fas fa-user-friends" style="font-size: 48px; color: var(--slate-grey); opacity: 0.5;"></i>
-                <h3 style="margin: 15px 0 10px;">No other content</h3>
-                <p style="color: var(--slate-grey);">This creator hasn't published other content yet</p>
-            </div>
-        `;
+    if (skeleton) skeleton.style.display = 'none';
+    if (grid) grid.style.display = 'none';
+    if (empty) {
+        empty.style.display = 'block';
+        // Update follow button if needed
+        const followBtn = document.getElementById('followCreatorFromRail');
+        if (followBtn && creatorId) {
+            followBtn.style.display = 'inline-flex';
+        } else if (followBtn) {
+            followBtn.style.display = 'none';
+        }
     }
 }
 
@@ -297,6 +310,13 @@ function initMoreFromCreator() {
         }, 500);
     });
     
+    // Listen for auth changes
+    document.addEventListener('authStateChanged', () => {
+        setTimeout(() => {
+            refreshMoreFromCreator();
+        }, 500);
+    });
+    
     setTimeout(() => {
         if (window.currentContent?.creator_id || window.currentContent?.user_id) {
             refreshMoreFromCreator();
@@ -319,4 +339,4 @@ window.showMoreFromCreatorSkeleton = showMoreFromCreatorSkeleton;
 window.showMoreFromCreatorEmpty = showMoreFromCreatorEmpty;
 window.refreshMoreFromCreator = refreshMoreFromCreator;
 
-console.log('✅ More From This Creator Module loaded (Updated for new schema)');
+console.log('✅ More From This Creator Module loaded (Complete fix)');
