@@ -625,7 +625,73 @@
     </div>
 </section>
 
-        <section class="related-section" id="becauseYouWatchedRail" style="display:none;"></section>
+        <!-- ============================================ -->
+<!-- BECAUSE YOU WATCHED SECTION - COMPLETE -->
+<!-- ============================================ -->
+<section class="because-you-watched-rail" id="becauseYouWatchedRail" style="display: none;">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fas fa-magic"></i>
+            Because You Watched
+            <span class="title-info" title="Personalized recommendations based on your watch history">
+                <i class="fas fa-info-circle"></i>
+                <span class="tooltip-text">Based on your watch history</span>
+            </span>
+        </h2>
+        <div class="rail-actions">
+            <a href="recommendations.html" class="view-all-link">
+                View All <i class="fas fa-arrow-right"></i>
+            </a>
+            <button class="refresh-rail-btn" id="refreshBecauseBtn" aria-label="Refresh recommendations">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+    <!-- Recommendation grid -->
+    <div class="recommendation-grid" id="becauseYouWatchedGrid"></div>
+    <!-- Empty state (hidden by default) -->
+    <div class="because-you-watched-empty" id="becauseYouWatchedEmpty" style="display: none;">
+        <i class="fas fa-magic"></i>
+        <h3>No Recommendations Yet</h3>
+        <p>Watch and like more content to get personalized recommendations</p>
+        <div class="engagement-cta">
+            <a href="index.html" class="cta-btn watch-btn">
+                <i class="fas fa-play"></i> <span>Browse Content</span>
+            </a>
+            <button class="cta-btn like-btn" onclick="document.getElementById('trendingGrid')?.scrollIntoView({behavior:'smooth'})">
+                <i class="fas fa-fire"></i> <span>Check Trending</span>
+            </button>
+        </div>
+    </div>
+    <!-- Skeleton loading state -->
+    <div class="recommendation-skeleton-grid" id="becauseSkeleton" style="display: none;">
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-meta"></div>
+            <div class="skeleton-creator"></div>
+        </div>
+    </div>
+</section>
+        
         <section class="related-section" id="moreFromCreatorRail" style="display:none;"></section>
         <section class="related-section"><div class="section-header"><h2 class="section-title">Related Content</h2></div><div class="content-grid" id="relatedGrid"></div></section>
     </main>
