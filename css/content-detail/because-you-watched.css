@@ -41,7 +41,7 @@
   font-size: 20px;
 }
 
-/* Rail actions - View All + Refresh */
+/* Rail actions - View All ONLY (removed Refresh button) */
 .rail-actions {
   display: flex;
   align-items: center;
@@ -114,40 +114,6 @@
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(-8px);
-}
-
-/* Refresh recommendations button */
-.refresh-rail-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--card-border);
-  border-radius: 40px;
-  padding: 8px 16px;
-  color: var(--soft-white);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-}
-
-.refresh-rail-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--bantu-blue);
-}
-
-.refresh-rail-btn:active {
-  transform: scale(0.95);
-}
-
-.refresh-rail-btn i {
-  font-size: 12px;
-  transition: transform 0.3s ease;
-}
-
-.refresh-rail-btn:hover i {
-  transform: rotate(180deg);
 }
 
 /* ============================================ */
@@ -497,24 +463,7 @@
 }
 
 /* ============================================ */
-/* REFRESH ANIMATION */
-/* ============================================ */
-.refreshing .recommendation-grid {
-  opacity: 0.6;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.refreshing .refresh-rail-btn i {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ============================================ */
-/* RESPONSIVE ADJUSTMENTS */
+/* RESPONSIVE ADJUSTMENTS - ALL ELEMENTS VISIBLE */
 /* ============================================ */
 @media (max-width: 768px) {
   .because-you-watched-rail .section-title {
@@ -524,11 +473,6 @@
   .view-all-link {
     font-size: 13px;
     padding: 4px 10px;
-  }
-  
-  .refresh-rail-btn {
-    font-size: 12px;
-    padding: 6px 12px;
   }
   
   .recommendation-grid {
@@ -541,6 +485,7 @@
     gap: 12px;
   }
   
+  /* Keep reason badge visible on tablet */
   .reason-badge {
     opacity: 1;
     transform: translateX(0);
@@ -549,7 +494,7 @@
   }
   
   .reason-badge span {
-    display: none;
+    display: inline;
   }
   
   .recommendation-card .card-title {
@@ -563,6 +508,34 @@
   
   .views-count {
     font-size: 11px;
+  }
+  
+  /* Keep all elements visible */
+  .like-badge {
+    display: flex !important;
+  }
+  
+  .like-badge span {
+    display: inline !important;
+  }
+  
+  .creator-chip {
+    display: inline-flex !important;
+  }
+  
+  .creator-chip span {
+    display: inline !important;
+    font-size: 10px;
+  }
+  
+  .genre-tag {
+    display: inline-flex !important;
+    font-size: 9px;
+  }
+  
+  .duration-badge {
+    font-size: 10px;
+    padding: 2px 6px;
   }
   
   .rail-actions {
@@ -591,11 +564,6 @@
     padding: 4px 8px;
   }
   
-  .refresh-rail-btn {
-    font-size: 11px;
-    padding: 4px 10px;
-  }
-  
   .recommendation-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -606,21 +574,86 @@
     gap: 10px;
   }
   
-  .duration-badge {
-    font-size: 10px;
-    padding: 2px 6px;
+  /* Keep ALL elements visible on mobile */
+  .reason-badge {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    font-size: 8px;
+    padding: 2px 5px;
   }
   
-  .like-badge span {
-    display: none;
+  .reason-badge span {
+    display: inline !important;
+    font-size: 7px;
+  }
+  
+  .reason-badge i {
+    font-size: 7px;
+  }
+  
+  .duration-badge {
+    font-size: 9px;
+    padding: 2px 5px;
   }
   
   .like-badge {
+    display: flex !important;
     padding: 2px 4px;
+    font-size: 9px;
+  }
+  
+  .like-badge span {
+    display: inline !important;
+    font-size: 9px;
+  }
+  
+  .like-badge i {
+    font-size: 8px;
+  }
+  
+  .creator-chip {
+    display: inline-flex !important;
+    padding: 3px 8px;
+    font-size: 9px;
+    margin-top: 6px;
   }
   
   .creator-chip span {
+    display: inline !important;
+    font-size: 9px;
+  }
+  
+  .creator-chip i {
+    font-size: 8px;
+  }
+  
+  .genre-tag {
+    display: inline-flex !important;
+    font-size: 8px;
+    padding: 1px 6px;
+    margin-top: 4px;
+  }
+  
+  .genre-tag i {
+    font-size: 7px;
+  }
+  
+  .views-count {
     font-size: 10px;
+  }
+  
+  .views-count i {
+    font-size: 9px;
+  }
+  
+  .card-meta {
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  
+  .recommendation-card .card-title {
+    font-size: 12px;
+    min-height: 30px;
   }
   
   .engagement-cta {
@@ -633,16 +666,11 @@
   }
   
   .cta-btn span {
-    display: none;
+    display: inline !important;
   }
   
   .cta-btn i {
-    margin: 0;
-  }
-  
-  .genre-tag {
-    font-size: 9px;
-    padding: 1px 6px;
+    font-size: 12px;
   }
 }
 
@@ -652,16 +680,54 @@
   }
   
   .recommendation-card .card-title {
-    font-size: 12px;
+    font-size: 11px;
     -webkit-line-clamp: 2;
+    min-height: 26px;
   }
   
   .views-count {
-    font-size: 10px;
+    font-size: 9px;
+  }
+  
+  .views-count i {
+    font-size: 8px;
+  }
+  
+  .like-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+  
+  .like-badge span {
+    font-size: 8px;
   }
   
   .creator-chip {
-    display: none;
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+  
+  .creator-chip span {
+    font-size: 8px;
+  }
+  
+  .genre-tag {
+    font-size: 7px;
+    padding: 1px 4px;
+  }
+  
+  .reason-badge {
+    font-size: 7px;
+    padding: 2px 4px;
+  }
+  
+  .reason-badge span {
+    font-size: 6px;
+  }
+  
+  .duration-badge {
+    font-size: 8px;
+    padding: 1px 4px;
   }
 }
 
@@ -756,17 +822,6 @@
   border-color: #00FF00;
 }
 
-.theme-high-contrast .refresh-rail-btn {
-  border: 2px solid white;
-  background: black;
-  color: white;
-}
-
-.theme-high-contrast .refresh-rail-btn:hover {
-  background: white;
-  color: black;
-}
-
 .theme-high-contrast .view-all-link {
   border: 1px solid white;
   color: white;
@@ -775,6 +830,20 @@
 .theme-high-contrast .view-all-link:hover {
   background: white;
   color: black;
+}
+
+.theme-high-contrast .reason-badge {
+  border: 1px solid #00FF00;
+  color: #00FF00;
+}
+
+.theme-high-contrast .like-badge {
+  border: 1px solid #ef4444;
+}
+
+.theme-high-contrast .genre-tag {
+  border: 1px solid #00FF00;
+  color: #00FF00;
 }
 
 /* ============================================ */
