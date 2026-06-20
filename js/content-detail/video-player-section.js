@@ -254,13 +254,14 @@ function applySingleMediaThumbnail(content) {
     console.log('🎬 Initializing single media thumbnail layout safely...');
     
     try {
+        // 🚨 CRITICAL: Pass 'thumbnail' context for correct R2 folder mapping
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url, 'thumbnail') || content.thumbnail_url;
+        
         // 1. Safely handle Hero Poster Backdrop
         const heroPoster = document.getElementById('heroPoster');
         const posterPlaceholder = document.getElementById('posterPlaceholder');
         
-        if (heroPoster && content.thumbnail_url) {
-            const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-            
+        if (heroPoster && imgUrl) {
             // Check if there's already an image inside heroPoster
             let existingImg = heroPoster.querySelector('img');
             if (existingImg) {
@@ -276,9 +277,12 @@ function applySingleMediaThumbnail(content) {
                 img.style.height = '100%';
                 img.style.objectFit = 'cover';
                 img.onerror = function() {
-                    console.warn('🖼️ Single Mode: Hero poster image failed to load, showing placeholder');
+                    console.warn('🖼️ Single Mode: Hero poster image failed to load');
                     this.style.display = 'none';
                     if (posterPlaceholder) posterPlaceholder.style.display = 'flex';
+                };
+                img.onload = function() {
+                    console.log('🖼️ Single Mode: Hero poster image loaded successfully');
                 };
                 // Hide placeholder
                 if (posterPlaceholder) posterPlaceholder.style.display = 'none';
@@ -302,9 +306,7 @@ function applySingleMediaThumbnail(content) {
 
         // 2. Safely handle Native Player Poster
         const videoElement = document.getElementById('inlineVideoPlayer');
-        if (videoElement && content.thumbnail_url) {
-            const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-            
+        if (videoElement && imgUrl) {
             // Set native attribute safely
             videoElement.setAttribute('poster', imgUrl);
             console.log('🖼️ Single Mode: Video element poster attribute attached.');
@@ -423,11 +425,15 @@ async function loadContentIntoPlayer(content, index = null) {
     }
     
     // ============================================
-    // 🖼️ THUMBNAIL ENGINE - Both native poster AND custom overlay
+    // 🖼️ THUMBNAIL ENGINE - R2 FOLDER REALIGNMENT
     // ============================================
     
     if (content.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+        // 🚨 CRITICAL: Pass 'thumbnail' context for correct R2 folder mapping
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url, 'thumbnail') || content.thumbnail_url;
+        
+        console.log('🖼️ Resolved thumbnail URL:', imgUrl.substring(0, 100) + (imgUrl.length > 100 ? '...' : ''));
+        console.log('🖼️ Thumbnail type:', imgUrl.startsWith('data:image') ? 'base64' : imgUrl.startsWith('http') ? 'http' : 'relative');
         
         // 1. Set native poster attribute (for browsers that support it)
         videoElement.setAttribute('poster', imgUrl);
@@ -451,7 +457,7 @@ async function loadContentIntoPlayer(content, index = null) {
             }
         }
         
-        console.log('🖼️ Thumbnail Engine Activated:', imgUrl, '| Audio mode:', isAudio);
+        console.log('🖼️ Thumbnail Engine Activated for content:', content.id, '| Audio mode:', isAudio);
     } else {
         // No thumbnail - hide overlay
         videoElement.removeAttribute('poster');
@@ -1338,3 +1344,4 @@ console.log('✅ Video Player Section Module loaded (with full brain + Cloudflar
 console.log('   🖼️ Single-Media Thumbnail: Isolated applySingleMediaThumbnail() function');
 console.log('   🖼️ Single-Media Thumbnail: initializeSingleMediaPage() entry point');
 console.log('   🔧 loadContentIntoPlayer: UNCHANGED - Playlist mode safe');
+console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
