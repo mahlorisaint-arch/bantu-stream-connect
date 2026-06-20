@@ -58,17 +58,106 @@ function detectMediaType(content) {
     return 'video';
 }
 
+// ============================================
+// VIDEO SKELETON RENDERER - FIXED FOR SINGLE MODE
+// ============================================
+
+/**
+ * Render the video skeleton with native poster sync
+ * Prevents late-initialized layout draws from overwriting the player's poster state
+ * @param {Object} contentItem - Optional content item to embed poster from
+ */
+function renderVideoSkeleton(contentItem) {
+    console.log('🎥 Initializing video skeleton configuration...');
+    
+    // 1. Resolve current content item if not explicitly passed
+    const activeContent = contentItem || window.currentContent || window.currentContentItem || window.StateManager?.getState?.('currentContent');
+    
+    let posterAttributeStr = '';
+    let resolvedThumbUrl = '';
+    
+    // 2. If active single content has a thumbnail, calculate it immediately for the raw HTML
+    if (activeContent && activeContent.thumbnail_url) {
+        resolvedThumbUrl = window.SupabaseHelper?.fixMediaUrl?.(activeContent.thumbnail_url, 'thumbnail') || activeContent.thumbnail_url;
+        posterAttributeStr = `poster="${resolvedThumbUrl}"`;
+        console.log('🖼️ Skeleton Generator: Locked poster path directly into HTML string:', resolvedThumbUrl);
+    } else {
+        console.log('🖼️ Skeleton Generator: No thumbnail available for poster attribute');
+    }
+    
+    // 3. Construct your skeleton container with the poster embedded natively
+    const skeletonHTML = `
+        <div class="video-player-wrapper">
+            <video 
+                id="inlineVideoPlayer" 
+                class="video-js vjs-default-skin" 
+                preload="none" 
+                playsinline
+                ${posterAttributeStr}>
+            </video>
+            <div id="customPosterOverlay" class="player-poster-overlay"></div>
+        </div>
+    `;
+    
+    // 4. Inject into your section container
+    const container = document.getElementById('videoPlayerSectionContainer') || document.querySelector('.video-container');
+    if (container) {
+        // Preserve the container's parent relationship
+        container.innerHTML = skeletonHTML;
+        console.log('🎥 Video skeleton injected into container');
+    } else {
+        // Fallback: try to find the inline player container
+        const playerContainer = document.getElementById('inlinePlayer');
+        if (playerContainer) {
+            const videoWrapper = playerContainer.querySelector('.video-container') || playerContainer;
+            videoWrapper.innerHTML = skeletonHTML;
+            console.log('🎥 Video skeleton injected into inlinePlayer container');
+        } else {
+            console.warn('⚠️ No container found for video skeleton');
+        }
+    }
+    
+    console.log('🎥 Video skeleton ready (preload=none) with native poster sync');
+    
+    // 5. Secondary Defensive Fallback: If custom overlay layer needs styling updates
+    if (activeContent && activeContent.thumbnail_url && resolvedThumbUrl) {
+        // Wait a tick for DOM to update
+        setTimeout(() => {
+            const posterOverlay = document.getElementById('customPosterOverlay');
+            if (posterOverlay) {
+                posterOverlay.style.backgroundImage = `url('${resolvedThumbUrl}')`;
+                posterOverlay.style.backgroundSize = detectMediaType(activeContent) === 'audio' ? 'contain' : 'cover';
+                posterOverlay.style.backgroundPosition = 'center';
+                posterOverlay.style.backgroundRepeat = 'no-repeat';
+                posterOverlay.style.display = 'block';
+                posterOverlay.style.opacity = '1';
+                posterOverlay.classList.add('active');
+                console.log('🖼️ Skeleton Generator: Custom poster overlay updated with:', resolvedThumbUrl);
+            }
+            
+            // Also ensure video element has poster
+            const videoElement = document.getElementById('inlineVideoPlayer');
+            if (videoElement) {
+                videoElement.setAttribute('poster', resolvedThumbUrl);
+                console.log('🖼️ Skeleton Generator: Video poster attribute re-applied to:', resolvedThumbUrl);
+            }
+        }, 50);
+    }
+    
+    return container;
+}
+
 /**
  * Initialize video player skeleton (preload=none for performance)
+ * Now uses the enhanced renderVideoSkeleton function
  */
-function initializeVideoPlayerSkeleton() {
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    if (videoElement) {
-        videoElement.preload = 'none';
-        videoElement.controls = false;
-        console.log('🎥 Video skeleton ready (preload=none)');
-    }
+function initializeVideoPlayerSkeleton(contentItem) {
+    renderVideoSkeleton(contentItem);
 }
+
+// ============================================
+// CLOSE VIDEO PLAYER
+// ============================================
 
 /**
  * Close video player and reset UI
@@ -1385,6 +1474,7 @@ window.initializeEnhancedVideoPlayer = initializeEnhancedVideoPlayer;
 window.loadContentIntoPlayer = loadContentIntoPlayer;
 window.getPlayableMediaUrl = getPlayableMediaUrl;
 window.detectMediaType = detectMediaType;
+window.renderVideoSkeleton = renderVideoSkeleton;
 window.initializeVideoPlayerSkeleton = initializeVideoPlayerSkeleton;
 window.closeVideoPlayer = closeVideoPlayer;
 window.showInitialPlayOverlay = showInitialPlayOverlay;
@@ -1399,6 +1489,7 @@ window.initializeSingleMediaPage = initializeSingleMediaPage;
 console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay + Single-Media Thumbnail Fix)');
 console.log('   🖼️ Single-Media Thumbnail: Isolated applySingleMediaThumbnail() function');
 console.log('   🖼️ Single-Media Thumbnail: Diagnostic initializeSingleMediaPage() entry point');
+console.log('   🖼️ Skeleton Generator: renderVideoSkeleton() with native poster sync');
 console.log('   🔧 loadContentIntoPlayer: UNCHANGED - Playlist mode safe');
 console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
 console.log('   📊 [DIAGNOSTIC] Single media boot with delayed initialization shield (400ms)');
