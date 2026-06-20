@@ -235,7 +235,7 @@ const startPlaybackFromUserGesture = async () => {
 };
 
 // ============================================
-// LOAD CONTENT INTO PLAYER - FIXED FOR SINGLE MEDIA MODE
+// LOAD CONTENT INTO PLAYER
 // ============================================
 
 /**
@@ -356,21 +356,6 @@ async function loadContentIntoPlayer(content, index = null) {
         videoElement.classList.remove('audio-mode');
         videoElement.style.objectFit = '';
         videoElement.style.background = '';
-    }
-    
-    // ============================================
-    // 🖼️ ALWAYS UPDATE HERO POSTER (SINGLE MEDIA MODE FIX)
-    // ============================================
-    // 🔥 FIX: Moved outside the playlist-only gate so Single Media Mode works!
-    if (content) {
-        updateHeroPoster(content);
-    }
-    
-    // ============================================
-    // 🖼️ ONLY EXECUTE PLAYLIST-SPECIFIC UI UPDATES
-    // ============================================
-    if (index !== null && window.isPlaylistMode) {
-        renderPlaylistItems(window.playlistData, index);
     }
     
     // ============================================
@@ -1198,4 +1183,4 @@ window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
 window.WatchSessionManager = WatchSessionManager;
 window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
 
-console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay + Single Media Mode Fix)');
+console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay)');
