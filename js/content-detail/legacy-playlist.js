@@ -76,8 +76,10 @@ function createLegacyPlaylistItem(item, index, isActive = false) {
     div.innerHTML = `
         <div class="legacy-playlist-number">${trackNumber}</div>
         <div class="legacy-playlist-thumbnail">
-            <img src="${thumbnail}" alt="${window.escapeHtml(title)}" loading="lazy"
-                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=45&fit=crop'">
+            <img src="${thumbnail}" 
+                 alt="${window.escapeHtml(title)}" 
+                 loading="lazy"
+                 onerror="this.style.display='none'; this.parentElement.classList.add('placeholder');">
             ${isActive ? '<div class="playing-indicator"><i class="fas fa-volume-up"></i></div>' : ''}
         </div>
         <div class="legacy-playlist-info">
