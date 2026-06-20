@@ -361,7 +361,7 @@ async function loadContentIntoPlayer(content, index = null) {
     // ============================================
     // 🖼️ ALWAYS UPDATE HERO POSTER (SINGLE MEDIA MODE FIX)
     // ============================================
-    // Moved outside the playlist-only gate so Single Media Mode works!
+    // 🔥 FIX: Moved outside the playlist-only gate so Single Media Mode works!
     if (content) {
         updateHeroPoster(content);
     }
