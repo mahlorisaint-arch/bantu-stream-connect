@@ -253,6 +253,7 @@ async function loadContentIntoPlayer(content, index = null) {
     const player = document.getElementById('inlinePlayer');
     const videoElement = document.getElementById('inlineVideoPlayer');
     const placeholder = document.getElementById('videoPlaceholder');
+    const videoContainer = document.querySelector('.video-container');
     
     if (!player || !videoElement) {
         console.warn('⚠️ Player elements not ready, retrying...');
@@ -277,7 +278,90 @@ async function loadContentIntoPlayer(content, index = null) {
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) closeFromHero.style.display = 'flex';
     
-    // 🎯 Get media URL using the updated getPlayableMediaUrl
+    // ============================================
+    // 🖼️ CUSTOM POSTER OVERLAY - BULLETPROOF THUMBNAIL
+    // ============================================
+    
+    // Create or get the poster overlay
+    let posterOverlay = document.querySelector('.player-poster-overlay');
+    if (!posterOverlay && videoContainer) {
+        posterOverlay = document.createElement('div');
+        posterOverlay.className = 'player-poster-overlay';
+        videoContainer.appendChild(posterOverlay);
+        console.log('🖼️ Created custom poster overlay element');
+    }
+    
+    // Detect media type
+    const isAudio = detectMediaType(content) === 'audio';
+    console.log('🎵 Is audio mode:', isAudio);
+    
+    // Set audio mode class on container
+    if (videoContainer) {
+        if (isAudio) {
+            videoContainer.classList.add('audio-active');
+        } else {
+            videoContainer.classList.remove('audio-active');
+        }
+    }
+    
+    // ============================================
+    // 🖼️ THUMBNAIL ENGINE - Both native poster AND custom overlay
+    // ============================================
+    
+    if (content.thumbnail_url) {
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+        
+        // 1. Set native poster attribute (for browsers that support it)
+        videoElement.setAttribute('poster', imgUrl);
+        
+        // 2. Set custom overlay background (BULLETPROOF - works everywhere)
+        if (posterOverlay) {
+            posterOverlay.style.backgroundImage = `url('${imgUrl}')`;
+            posterOverlay.style.backgroundSize = isAudio ? 'contain' : 'cover';
+            posterOverlay.style.backgroundPosition = 'center';
+            posterOverlay.style.backgroundRepeat = 'no-repeat';
+            posterOverlay.style.display = 'block';
+            posterOverlay.style.opacity = '1';
+            posterOverlay.classList.add('active');
+            
+            // For audio, keep overlay visible permanently
+            if (isAudio) {
+                posterOverlay.classList.add('keep-visible');
+                console.log('🎵 Audio mode - keeping poster overlay visible');
+            } else {
+                posterOverlay.classList.remove('keep-visible');
+            }
+        }
+        
+        console.log('🖼️ Thumbnail Engine Activated:', imgUrl, '| Audio mode:', isAudio);
+    } else {
+        // No thumbnail - hide overlay
+        videoElement.removeAttribute('poster');
+        if (posterOverlay) {
+            posterOverlay.style.display = 'none';
+            posterOverlay.classList.remove('active');
+        }
+        console.log('🖼️ No thumbnail available for content:', content.id);
+    }
+    
+    // ============================================
+    // VIDEO/AUDIO MODE STYLING
+    // ============================================
+    
+    if (isAudio && content.thumbnail_url) {
+        videoElement.classList.add('audio-mode');
+        videoElement.style.objectFit = 'contain';
+        videoElement.style.background = 'var(--bg-secondary, #0a0a0a)';
+    } else {
+        videoElement.classList.remove('audio-mode');
+        videoElement.style.objectFit = '';
+        videoElement.style.background = '';
+    }
+    
+    // ============================================
+    // GET MEDIA URL
+    // ============================================
+    
     let fileUrl = getPlayableMediaUrl(content);
     const isCloudflareStream = content.streaming_provider === 'cloudflare_stream';
     const isCloudflareR2 = content.streaming_provider === 'cloudflare_r2';
@@ -287,12 +371,13 @@ async function loadContentIntoPlayer(content, index = null) {
         url: fileUrl,
         isCloudflareStream,
         isCloudflareR2,
-        media_type: content.media_type
+        media_type: content.media_type,
+        isAudio: isAudio
     });
     
     // 🔥 CRITICAL FIX: If no URL found, try to use file_url directly as fallback
     if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined') {
-        console.warn('⚠️ No playable URL from getPlayableMediaUrl, trying file_url fallback...');
+        console.warn('⚠️ No playable URL from getPlayableMediaUrl, trying fallbacks...');
         if (content.file_url) {
             fileUrl = content.file_url;
             console.log('✅ Using file_url fallback:', fileUrl);
@@ -311,32 +396,10 @@ async function loadContentIntoPlayer(content, index = null) {
         }
     }
     
-    // Handle audio mode with poster
-    const isAudio = detectMediaType(content) === 'audio';
-    console.log('🎵 Is audio mode:', isAudio);
+    // ============================================
+    // GET MIME TYPE
+    // ============================================
     
-    // 🖼️ NEW: Set poster/thumbnail for video (not just audio)
-    if (content.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-        videoElement.setAttribute('poster', imgUrl);
-        console.log('🖼️ Poster set:', imgUrl);
-    } else {
-        videoElement.removeAttribute('poster');
-    }
-    
-    // Audio mode specific styling
-    if (isAudio) {
-        videoElement.classList.add('audio-mode');
-        // For audio, we want to show the poster and hide the video
-        videoElement.style.objectFit = 'contain';
-        videoElement.style.background = 'var(--bg-secondary)';
-    } else {
-        videoElement.classList.remove('audio-mode');
-        videoElement.style.objectFit = '';
-        videoElement.style.background = '';
-    }
-    
-    // Get MIME type - handle HLS manifests
     function getMediaMimeType(url = '') {
         const lower = url.toLowerCase();
         // HLS manifest
@@ -360,7 +423,35 @@ async function loadContentIntoPlayer(content, index = null) {
     
     console.log('📄 MIME type detected:', mimeType, 'isHLS:', isHLS);
     
-    // 🚨 Load source - prefer loadSource method for reuse
+    // ============================================
+    // AUTO-HIDE POSTER OVERLAY (for video only)
+    // ============================================
+    
+    // Auto-hide poster overlay when video starts playing (only for video)
+    const handleVideoPlaying = function() {
+        if (!isAudio && posterOverlay && !posterOverlay.classList.contains('keep-visible')) {
+            posterOverlay.style.opacity = '0';
+            setTimeout(() => {
+                if (posterOverlay && !posterOverlay.classList.contains('keep-visible')) {
+                    posterOverlay.style.display = 'none';
+                }
+            }, 400);
+        }
+        // Remove listener after first play
+        videoElement.removeEventListener('playing', handleVideoPlaying);
+    };
+    
+    videoElement.addEventListener('playing', handleVideoPlaying);
+    
+    // Show loading state on container
+    if (videoContainer) {
+        videoContainer.classList.add('loading');
+    }
+    
+    // ============================================
+    // LOAD SOURCE
+    // ============================================
+    
     if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
         console.log('♻️ Reusing existing player instance with loadSource');
         try {
@@ -405,9 +496,19 @@ async function loadContentIntoPlayer(content, index = null) {
         videoElement.load();
     }
     
-    // 🚨 Initialize streaming manager AFTER source change
-    // This ensures HLS.js picks up Cloudflare manifests
-    // But SKIP for audio (Cloudflare R2)
+    // Remove loading state when metadata loaded
+    const handleMetadataLoaded = function() {
+        if (videoContainer) {
+            videoContainer.classList.remove('loading');
+        }
+        videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+    };
+    videoElement.addEventListener('loadedmetadata', handleMetadataLoaded);
+    
+    // ============================================
+    // STREAMING MANAGER
+    // ============================================
+    
     if (!isAudio) {
         setTimeout(() => {
             if (window.streamingManager) {
@@ -1082,4 +1183,4 @@ window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
 window.WatchSessionManager = WatchSessionManager;
 window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
 
-console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes)');
+console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay)');
