@@ -54,6 +54,12 @@
   background: #000;
 }
 
+/* Video poster image */
+.video-container video[poster] {
+  object-fit: contain;
+  background: #0a0a0a;
+}
+
 /* Audio mode styling */
 .video-container[data-media-type="audio"] video {
   object-fit: contain;
@@ -136,6 +142,9 @@
   margin: 0;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  position: relative;
+  width: 100%;
+  flex-wrap: nowrap;
 }
 
 /* Control buttons - Glassmorphism */
@@ -156,6 +165,8 @@
   font-size: 14px;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .enhanced-video-controls .control-btn:hover {
@@ -203,11 +214,15 @@
   padding: 4px 8px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
-/* Progress container - Glassmorphism with proper alignment */
+/* ============================================ */
+/* PROGRESS CONTAINER - FIXED ALIGNMENT */
+/* ============================================ */
 .enhanced-video-controls .progress-container {
   flex: 1;
+  min-width: 60px;
   height: 4px;
   background: rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(4px) !important;
@@ -218,12 +233,61 @@
   transition: height 0.2s ease;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
-  margin: 0 !important;
+  margin: 0 8px !important;
   align-self: center !important;
+  display: flex;
+  align-items: center;
 }
 
 .enhanced-video-controls .progress-container:hover {
   height: 6px;
+}
+
+/* Progress bar input - FIXED: Inside the container */
+.enhanced-video-controls .progress-container .progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  z-index: 3;
+  border: none;
+  outline: none;
+}
+
+.enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.9) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3) !important;
+  transition: transform 0.2s ease;
+  margin-top: 0;
+}
+
+.enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.enhanced-video-controls .progress-container .progress-bar::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.9) !important;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3) !important;
 }
 
 /* Progress fill - Glassmorphism with gradient */
@@ -240,6 +304,7 @@
   pointer-events: none;
   box-shadow: 0 0 15px rgba(29, 78, 216, 0.3), 0 0 30px rgba(245, 158, 11, 0.15) !important;
   transition: width 0.1s linear;
+  z-index: 1;
 }
 
 /* Buffer fill - Glassmorphism */
@@ -254,6 +319,7 @@
   border-radius: 4px;
   width: var(--buffer, 0%);
   pointer-events: none;
+  z-index: 0;
 }
 
 /* Progress hover preview - Glassmorphism */
@@ -275,17 +341,21 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Volume control - Glassmorphism */
+/* ============================================ */
+/* VOLUME CONTROL */
+/* ============================================ */
 .enhanced-video-controls .volume-control {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .enhanced-video-controls .volume-bar {
   width: 80px;
   height: 4px;
   -webkit-appearance: none;
+  appearance: none;
   background: rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
@@ -314,18 +384,17 @@
   transform: scale(1.3);
 }
 
-/* Settings menu button - Glassmorphism */
-.settings-btn {
-  position: relative;
-}
-
-.settings-btn.active {
-  background: rgba(245, 158, 11, 0.2) !important;
-  border-color: var(--warm-gold) !important;
+.enhanced-video-controls .volume-bar::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.9) !important;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 /* ============================================ */
-/* SETTINGS MENU - Glassmorphism */
+/* SETTINGS MENU */
 /* ============================================ */
 .settings-menu {
   position: absolute;
@@ -885,7 +954,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS - 29% SCALE FOR MOBILE */
+/* RESPONSIVE ADJUSTMENTS - FIXED FOR MOBILE */
 /* ============================================ */
 @media (max-width: 768px) {
   .enhanced-video-controls {
@@ -924,14 +993,27 @@ input:checked + .toggle-slider:before {
     letter-spacing: 0.15px !important;
   }
   
+  /* FIXED: Progress container properly sized and aligned */
   .enhanced-video-controls .progress-container {
     height: 1.2px !important;
     border-radius: 0.6px !important;
     min-height: 8px !important;
+    margin: 0 4px !important;
+    flex: 1 !important;
   }
   
   .enhanced-video-controls .progress-container:hover {
     height: 1.7px !important;
+  }
+  
+  .enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb {
+    width: 8px !important;
+    height: 8px !important;
+  }
+  
+  .enhanced-video-controls .progress-container .progress-bar::-moz-range-thumb {
+    width: 8px !important;
+    height: 8px !important;
   }
   
   .enhanced-video-controls .volume-control {
@@ -1124,6 +1206,11 @@ input:checked + .toggle-slider:before {
     border-radius: 5.2px !important;
   }
   
+  .enhanced-video-controls .progress-container {
+    height: 1px !important;
+    margin: 0 3px !important;
+  }
+  
   .enhanced-video-controls .volume-bar {
     width: 20.8px !important;
     height: 1px !important;
@@ -1171,6 +1258,11 @@ input:checked + .toggle-slider:before {
   }
   
   .enhanced-video-controls .volume-bar {
+    min-height: 14px !important;
+  }
+  
+  .enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb {
+    min-width: 14px !important;
     min-height: 14px !important;
   }
 }
