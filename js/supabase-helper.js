@@ -12,6 +12,10 @@
 // - FIX #3: No 409 conflicts - proper existence checks before insert/delete
 // - FIX #4: Race condition protection with request token pattern
 // - FIX #5: Optimistic UI updates via callbacks
+// 🎯 R2 FOLDER ROUTING FIX (2026-06-20):
+// - Updated fixMediaUrl to route thumbnails to content-thumbnails/ folder
+// - Added assetContext parameter for explicit folder routing
+// - Improved path cleaning for legacy Supabase artifacts
 
 console.log('📡 Supabase Helper Initializing with Video URL fixes and Engagement API...');
 
@@ -65,79 +69,62 @@ const SupabaseHelper = {
     },
     
     // ============================================
-    // CRITICAL FIX: Fix media URL function with bucket detection
+    // CRITICAL FIX: Media URL function with R2 folder routing
     // ============================================
-    fixMediaUrl: function(url) {
+    /**
+     * Maps database string tokens straight to the designated
+     * folder layout inside the Cloudflare R2 bucket.
+     * @param {string} url - The URL or path to fix
+     * @param {string} assetContext - The context of the asset ('media', 'thumbnail', 'banner', 'avatar')
+     * @returns {string} - The fixed URL
+     */
+    fixMediaUrl: function(url, assetContext = 'media') {
         if (!url) return null;
         
-        // If already full URL, return as-is (but check for invalid supabase URLs)
-        if (url.startsWith('http')) {
-            // Fix malformed URLs that have double protocol
-            if (url.includes('http://http://') || url.includes('https://https://')) {
-                url = url.replace(/https?:\/\/https?:\/\//, 'https://');
-                url = url.replace(/http:\/\/http:\/\//, 'http://');
-            }
-            // Fix URLs that are missing the storage bucket path
-            if (url.includes('supabase.co') && !url.includes('/storage/v1/object/public/')) {
-                console.log('⚠️ Malformed Supabase URL detected, reconstructing:', url);
-                return this.reconstructMediaUrl(url);
-            }
-            console.log('✅ Already a full URL');
+        // 🚨 1. BASE64 URIs PASS-THROUGH
+        if (url.startsWith('data:image')) {
+            console.log('🖼️ Base64 data URI processed natively.');
             return url;
         }
         
-        // Remove leading slash if present
-        let cleanUrl = url;
-        if (cleanUrl.startsWith('/')) {
-            cleanUrl = cleanUrl.substring(1);
+        // 🔗 2. ABSOLUTE WEB LINKS PASS-THROUGH
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url;
         }
         
-        // Determine bucket based on path and content type
-        let bucket = 'content-media'; // default bucket
+        // 🧹 3. STRIP LEGACY SUPABASE PATH ARTIFACTS
+        let cleanPath = url.replace(/^\/+/, '');
+        cleanPath = cleanPath.replace(/^storage\/v1\/object\/public\//, '');
+        cleanPath = cleanPath.replace(/^content-media\//, '');
+        cleanPath = cleanPath.replace(/^content-thumbnails\//, '');
+        cleanPath = cleanPath.replace(/^channel-banners\//, '');
+        cleanPath = cleanPath.replace(/^profile-pictures\//, '');
+        cleanPath = cleanPath.replace(/^public\//, '');
         
-        if (cleanUrl.includes('thumbnails') || 
-            cleanUrl.includes('thumbnail') ||
-            cleanUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
-            bucket = 'content-thumbnails';
-        } else if (cleanUrl.includes('profile-pictures') || 
-                   cleanUrl.includes('avatar') ||
-                   cleanUrl.includes('profile')) {
-            bucket = 'profile-pictures';
-        } else if (cleanUrl.includes('video') || 
-                   cleanUrl.match(/\.(mp4|webm|mov|avi|mkv)$/i)) {
-            bucket = 'content-media';
+        // If the path is still empty, return null
+        if (!cleanPath || cleanPath.length === 0) {
+            console.warn('⚠️ Empty path after cleaning, returning null');
+            return null;
         }
         
-        // Construct full Supabase URL
-        const fullUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${cleanUrl}`;
-        console.log('🔗 Constructed full URL:', fullUrl);
+        const r2Domain = 'https://assets.bantustreamconnect.com';
         
-        return fullUrl;
-    },
-    
-    // Reconstruct a malformed Supabase URL
-    reconstructMediaUrl: function(url) {
-        try {
-            // Extract the path after the domain
-            const match = url.match(/supabase\.co\/(.+)$/);
-            if (match && match[1]) {
-                const path = match[1];
-                // Determine bucket from path
-                let bucket = 'content-media';
-                if (path.includes('thumbnails')) bucket = 'content-thumbnails';
-                if (path.includes('profile')) bucket = 'profile-pictures';
-                
-                // Clean the path
-                let cleanPath = path.replace(/^\/+/, '');
-                // Remove any duplicate bucket references
-                cleanPath = cleanPath.replace(/^(content-media|content-thumbnails|profile-pictures)\//, '');
-                
-                return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${cleanPath}`;
-            }
-        } catch (e) {
-            console.warn('Failed to reconstruct URL:', e);
+        // 🎯 4. EXPLICIT FOLDER ROUTING ENGINE
+        // If context or content tags imply it is a banner or profile image
+        if (assetContext === 'banner' || cleanPath.includes('banner') || cleanPath.includes('channel-banner')) {
+            return `${r2Domain}/channel-banners/${cleanPath}`;
         }
-        return url;
+        if (assetContext === 'avatar' || cleanPath.includes('avatar') || cleanPath.includes('profile')) {
+            return `${r2Domain}/profile-pictures/${cleanPath}`;
+        }
+        
+        // Handle precise separation between thumbnails and video media files
+        if (assetContext === 'thumbnail' || cleanPath.includes('thumb') || cleanPath.includes('poster') || cleanPath.includes('thumbnail')) {
+            return `${r2Domain}/content-thumbnails/${cleanPath}`;
+        }
+        
+        // Default fallback destination for videos and primary audio files
+        return `${r2Domain}/content-media/${cleanPath}`;
     },
     
     // ============================================
@@ -602,9 +589,9 @@ const SupabaseHelper = {
             // 🚨 Get live engagement counts from canonical tables
             const liveCounts = await this.loadLiveEngagementCounts(contentId);
             
-            // Fix thumbnail URL
-            const thumbnailUrl = this.fixMediaUrl(data.thumbnail_url || data.thumbnail);
-            const fileUrl = this.fixMediaUrl(data.file_url || data.media_url);
+            // Fix thumbnail URL with 'thumbnail' context
+            const thumbnailUrl = this.fixMediaUrl(data.thumbnail_url || data.thumbnail, 'thumbnail');
+            const fileUrl = this.fixMediaUrl(data.file_url || data.media_url, 'media');
             
             return {
                 id: data.id,
@@ -693,8 +680,8 @@ const SupabaseHelper = {
                     id: content?.id,
                     title: content?.title || 'Untitled',
                     description: content?.description || '',
-                    thumbnail_url: this.fixMediaUrl(content?.thumbnail_url),
-                    file_url: this.fixMediaUrl(content?.file_url),
+                    thumbnail_url: this.fixMediaUrl(content?.thumbnail_url, 'thumbnail'),
+                    file_url: this.fixMediaUrl(content?.file_url, 'media'),
                     duration: content?.duration || 0,
                     media_type: content?.media_type || 'video',
                     created_at: content?.created_at,
@@ -766,8 +753,8 @@ const SupabaseHelper = {
                     const tracks = data.map(item => ({
                         id: item.content_id,
                         title: item.Content?.title || 'Untitled',
-                        thumbnail_url: this.fixMediaUrl(item.Content?.thumbnail_url),
-                        file_url: this.fixMediaUrl(item.Content?.file_url),
+                        thumbnail_url: this.fixMediaUrl(item.Content?.thumbnail_url, 'thumbnail'),
+                        file_url: this.fixMediaUrl(item.Content?.file_url, 'media'),
                         duration: item.Content?.duration || 0,
                         media_type: item.Content?.media_type || 'video',
                         track_number: item.track_number
@@ -856,7 +843,7 @@ const SupabaseHelper = {
             if (data) {
                 return {
                     name: data.full_name || data.username || data.email?.split('@')[0] || 'Creator',
-                    avatar_url: this.fixMediaUrl(data.avatar_url)
+                    avatar_url: this.fixMediaUrl(data.avatar_url, 'avatar')
                 };
             }
         } catch (error) {
@@ -927,7 +914,7 @@ const SupabaseHelper = {
                 return {
                     id: item.id,
                     title: item.title || 'Untitled',
-                    thumbnail_url: this.fixMediaUrl(item.thumbnail_url),
+                    thumbnail_url: this.fixMediaUrl(item.thumbnail_url, 'thumbnail'),
                     views_count: liveCounts.views,
                     duration: item.duration,
                     media_type: item.media_type
@@ -1131,3 +1118,4 @@ console.log('  ✅ toggleLike/toggleFavorite/toggleWatchLater() - No 409 conflic
 console.log('  ✅ loadEngagementStates() - Race protection');
 console.log('  ✅ shareContent() - Share persistence');
 console.log('  ✅ getContentById() - Live counts from canonical tables');
+console.log('  🎯 R2 folder routing: thumbnails → /content-thumbnails/');
