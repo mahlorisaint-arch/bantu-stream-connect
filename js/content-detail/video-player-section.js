@@ -315,15 +315,22 @@ async function loadContentIntoPlayer(content, index = null) {
     const isAudio = detectMediaType(content) === 'audio';
     console.log('🎵 Is audio mode:', isAudio);
     
-    if (isAudio && content.thumbnail_url) {
+    // 🖼️ NEW: Set poster/thumbnail for video (not just audio)
+    if (content.thumbnail_url) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
         videoElement.setAttribute('poster', imgUrl);
+        console.log('🖼️ Poster set:', imgUrl);
+    } else {
+        videoElement.removeAttribute('poster');
+    }
+    
+    // Audio mode specific styling
+    if (isAudio) {
         videoElement.classList.add('audio-mode');
         // For audio, we want to show the poster and hide the video
         videoElement.style.objectFit = 'contain';
         videoElement.style.background = 'var(--bg-secondary)';
     } else {
-        videoElement.removeAttribute('poster');
         videoElement.classList.remove('audio-mode');
         videoElement.style.objectFit = '';
         videoElement.style.background = '';
