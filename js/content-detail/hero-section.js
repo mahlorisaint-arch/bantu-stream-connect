@@ -6,6 +6,73 @@
 // ============================================
 console.log('🎬 Hero Section Module Loading...');
 
+// ============================================
+// UPDATE HERO POSTER - R2 FOLDER REALIGNMENT
+// ============================================
+
+/**
+ * Update the hero poster/backdrop with thumbnail
+ * @param {Object} content - Content object with thumbnail_url
+ */
+function updateHeroPoster(content) {
+    const heroPoster = document.getElementById('heroPoster');
+    const posterPlaceholder = document.getElementById('posterPlaceholder');
+    
+    if (!heroPoster) return;
+    
+    if (content && content.thumbnail_url) {
+        // 🚨 CRITICAL: Pass 'thumbnail' context for correct R2 folder mapping
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url, 'thumbnail') || content.thumbnail_url;
+        
+        console.log('🖼️ Hero poster resolved URL:', imgUrl ? imgUrl.substring(0, 80) + (imgUrl.length > 80 ? '...' : '') : 'null');
+        
+        // Check if there's already an image
+        let existingImg = heroPoster.querySelector('img');
+        if (existingImg) {
+            existingImg.src = imgUrl;
+            existingImg.alt = content.title || 'Content thumbnail';
+            console.log('🖼️ Hero poster image updated');
+        } else {
+            // Create new image
+            const img = document.createElement('img');
+            img.src = imgUrl;
+            img.alt = content.title || 'Content thumbnail';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.onerror = function() {
+                console.warn('🖼️ Hero poster image failed to load');
+                this.style.display = 'none';
+                if (posterPlaceholder) posterPlaceholder.style.display = 'flex';
+            };
+            img.onload = function() {
+                console.log('🖼️ Hero poster image loaded successfully');
+            };
+            // Hide placeholder
+            if (posterPlaceholder) posterPlaceholder.style.display = 'none';
+            heroPoster.appendChild(img);
+            console.log('🖼️ Hero poster image created');
+        }
+        
+        // Also set background for fallback
+        heroPoster.style.backgroundImage = `url('${imgUrl}')`;
+        heroPoster.style.backgroundSize = 'cover';
+        heroPoster.style.backgroundPosition = 'center';
+        heroPoster.style.backgroundColor = 'transparent';
+        
+    } else {
+        // No thumbnail - show placeholder
+        heroPoster.style.backgroundImage = '';
+        heroPoster.style.backgroundColor = 'var(--bg-secondary)';
+        if (posterPlaceholder) posterPlaceholder.style.display = 'flex';
+        
+        // Remove any existing img
+        const existingImg = heroPoster.querySelector('img');
+        if (existingImg) existingImg.remove();
+        console.log('🖼️ No thumbnail, showing placeholder');
+    }
+}
+
 /**
  * Update the entire content UI (hero section)
  * This is the main entry point for hero section rendering
@@ -42,7 +109,7 @@ function updateContentUI(content) {
         const initial = displayName.charAt(0).toUpperCase();
         
         if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && avatarUrl !== '') {
-            const fixedAvatarUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+            const fixedAvatarUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl, 'avatar') || avatarUrl;
             creatorAvatar.innerHTML = `
                 <img src="${fixedAvatarUrl}" 
                      alt="${window.escapeHtml(displayName)}" 
@@ -70,7 +137,7 @@ function updateContentUI(content) {
     // Update poster placeholder
     const posterPlaceholder = document.getElementById('posterPlaceholder');
     if (posterPlaceholder && content.thumbnail_url) {
-        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url, 'thumbnail') || content.thumbnail_url;
         posterPlaceholder.innerHTML = `
             <img src="${imgUrl}" alt="${content.title}" 
                  style="width:100%; height:100%; object-fit:cover; border-radius: 12px;"
@@ -82,6 +149,9 @@ function updateContentUI(content) {
             </div>
         `;
     }
+    
+    // 🖼️ Update hero poster with thumbnail
+    updateHeroPoster(content);
     
     console.log('✅ Content UI updated for:', content.title);
 }
@@ -418,6 +488,7 @@ function refreshContentInBackground(contentId) {
 // ============================================
 // GLOBAL EXPORTS
 // ============================================
+window.updateHeroPoster = updateHeroPoster;
 window.updateContentUI = updateContentUI;
 window.updateContentDetails = updateContentDetails;
 window.addResumeButton = addResumeButton;
@@ -428,3 +499,5 @@ window.fetchContentProfileDetails = fetchContentProfileDetails;
 window.loadContentFromURLLegacy = loadContentFromURLLegacy;
 
 console.log('✅ Hero Section Module loaded');
+console.log('   🖼️ updateHeroPoster: R2 folder routing with thumbnail context');
+console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
