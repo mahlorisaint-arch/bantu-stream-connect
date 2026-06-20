@@ -235,7 +235,125 @@ const startPlaybackFromUserGesture = async () => {
 };
 
 // ============================================
-// LOAD CONTENT INTO PLAYER
+// 🖼️ ISOLATED SINGLE-MEDIA THUMBNAIL FIX
+// Runs independently of the core player loop
+// Guarantees zero interference with Cloudflare streams or playlist mode
+// ============================================
+
+/**
+ * Isolated thumbnail initializer specifically for Single Media Mode.
+ * Runs independently of the core player loop to guarantee zero interference with Cloudflare streams.
+ * @param {Object} content - Content object with thumbnail_url
+ */
+function applySingleMediaThumbnail(content) {
+    if (!content) {
+        console.warn('⚠️ applySingleMediaThumbnail called with no content');
+        return;
+    }
+    
+    console.log('🎬 Initializing single media thumbnail layout safely...');
+    
+    try {
+        // 1. Safely handle Hero Poster Backdrop
+        const heroPoster = document.getElementById('heroPoster');
+        const posterPlaceholder = document.getElementById('posterPlaceholder');
+        
+        if (heroPoster && content.thumbnail_url) {
+            const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+            
+            // Check if there's already an image inside heroPoster
+            let existingImg = heroPoster.querySelector('img');
+            if (existingImg) {
+                existingImg.src = imgUrl;
+                existingImg.alt = content.title || 'Content thumbnail';
+                console.log('🖼️ Single Mode: Updated existing hero poster image');
+            } else {
+                // Create new image
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.alt = content.title || 'Content thumbnail';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.onerror = function() {
+                    console.warn('🖼️ Single Mode: Hero poster image failed to load, showing placeholder');
+                    this.style.display = 'none';
+                    if (posterPlaceholder) posterPlaceholder.style.display = 'flex';
+                };
+                // Hide placeholder
+                if (posterPlaceholder) posterPlaceholder.style.display = 'none';
+                heroPoster.appendChild(img);
+                console.log('🖼️ Single Mode: Created new hero poster image');
+            }
+            
+            // Also set background for fallback
+            heroPoster.style.backgroundImage = `url('${imgUrl}')`;
+            heroPoster.style.backgroundSize = 'cover';
+            heroPoster.style.backgroundPosition = 'center';
+            console.log('🖼️ Single Mode: Hero backdrop updated.');
+        } else if (heroPoster && posterPlaceholder) {
+            // Show placeholder if no thumbnail
+            posterPlaceholder.style.display = 'flex';
+            // Remove any existing img
+            const existingImg = heroPoster.querySelector('img');
+            if (existingImg) existingImg.remove();
+            console.log('🖼️ Single Mode: No thumbnail, showing placeholder');
+        }
+
+        // 2. Safely handle Native Player Poster
+        const videoElement = document.getElementById('inlineVideoPlayer');
+        if (videoElement && content.thumbnail_url) {
+            const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
+            
+            // Set native attribute safely
+            videoElement.setAttribute('poster', imgUrl);
+            console.log('🖼️ Single Mode: Video element poster attribute attached.');
+            
+            // Also check for custom poster overlay
+            let posterOverlay = document.querySelector('.player-poster-overlay');
+            if (!posterOverlay) {
+                const videoContainer = document.querySelector('.video-container');
+                if (videoContainer) {
+                    posterOverlay = document.createElement('div');
+                    posterOverlay.className = 'player-poster-overlay';
+                    videoContainer.appendChild(posterOverlay);
+                    console.log('🖼️ Single Mode: Created custom poster overlay element');
+                }
+            }
+            
+            if (posterOverlay) {
+                posterOverlay.style.backgroundImage = `url('${imgUrl}')`;
+                posterOverlay.style.backgroundSize = detectMediaType(content) === 'audio' ? 'contain' : 'cover';
+                posterOverlay.style.backgroundPosition = 'center';
+                posterOverlay.style.backgroundRepeat = 'no-repeat';
+                posterOverlay.style.display = 'block';
+                posterOverlay.style.opacity = '1';
+                posterOverlay.classList.add('active');
+                console.log('🖼️ Single Mode: Custom poster overlay updated');
+            }
+        } else if (videoElement) {
+            videoElement.removeAttribute('poster');
+            console.log('🖼️ Single Mode: No thumbnail, removed poster attribute');
+        }
+        
+        // 3. Force browser layout redraw for the poster attribute
+        if (videoElement) {
+            const currentSrc = videoElement.getAttribute('src');
+            if (!currentSrc || currentSrc === '') {
+                videoElement.load();
+                console.log('🖼️ Single Mode: Triggered video load for poster to render');
+            }
+        }
+        
+    } catch (error) {
+        // Fallback guard ensures a failure here never halts the rest of the application
+        console.error('⚠️ Non-blocking error inside applySingleMediaThumbnail:', error);
+    }
+}
+
+// ============================================
+// LOAD CONTENT INTO PLAYER - UNCHANGED!
+// Playlist mode works perfectly, DO NOT MODIFY
 // ============================================
 
 /**
@@ -1167,6 +1285,37 @@ function initializeWatchSessionOnPlay() {
 }
 
 // ============================================
+// SINGLE MEDIA PAGE INITIALIZATION HOOK
+// ============================================
+
+/**
+ * Initialize a single media page with isolated thumbnail handling
+ * This is the safe entry point for single media mode
+ */
+async function initializeSingleMediaPage(contentItem) {
+    if (!contentItem) {
+        console.warn('⚠️ initializeSingleMediaPage called with no content');
+        return;
+    }
+    
+    console.log('🎬 Initializing Single Media Page...');
+    
+    // 1. Set playlist states to false to keep playlist arrays completely clear
+    window.isPlaylistMode = false;
+    window.playlistData = null;
+    window.currentPlaylistIndex = null;
+    window.currentPlaylistItems = [];
+    
+    // 2. Fire the isolated thumbnail application completely independently
+    applySingleMediaThumbnail(contentItem);
+    
+    // 3. Launch your original, stable streaming player
+    await loadContentIntoPlayer(contentItem, null);
+    
+    console.log('✅ Single Media Page initialized successfully');
+}
+
+// ============================================
 // GLOBAL EXPORTS
 // ============================================
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
@@ -1182,5 +1331,10 @@ window.setupInitialPlayButton = setupInitialPlayButton;
 window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
 window.WatchSessionManager = WatchSessionManager;
 window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
+window.applySingleMediaThumbnail = applySingleMediaThumbnail;
+window.initializeSingleMediaPage = initializeSingleMediaPage;
 
-console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay)');
+console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay + Single-Media Thumbnail Fix)');
+console.log('   🖼️ Single-Media Thumbnail: Isolated applySingleMediaThumbnail() function');
+console.log('   🖼️ Single-Media Thumbnail: initializeSingleMediaPage() entry point');
+console.log('   🔧 loadContentIntoPlayer: UNCHANGED - Playlist mode safe');
