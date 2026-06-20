@@ -74,7 +74,10 @@ function createPlaylistQueueItem(item, index, isActive = false) {
     
     div.innerHTML = `
         <div class="queue-thumbnail">
-            <img src="${thumbnail}" alt="${window.escapeHtml(title)}" loading="lazy">
+            <img src="${thumbnail}" 
+                 alt="${window.escapeHtml(title)}" 
+                 loading="lazy"
+                 onerror="this.style.display='none'; this.parentElement.classList.add('placeholder');">
             <div class="playing-indicator">
                 <i class="fas fa-play"></i>
             </div>
