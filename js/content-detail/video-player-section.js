@@ -1291,34 +1291,90 @@ function initializeWatchSessionOnPlay() {
 }
 
 // ============================================
-// SINGLE MEDIA PAGE INITIALIZATION HOOK
+// DIAGNOSTIC SINGLE MEDIA PAGE INITIALIZATION
 // ============================================
 
 /**
- * Initialize a single media page with isolated thumbnail handling
- * This is the safe entry point for single media mode
+ * Main entry point for loading a standalone content item on page boot.
+ * Wrapped in a defensive shield to prevent lifecycle race conditions.
+ * @param {Object} contentItem - The content item to initialize
  */
 async function initializeSingleMediaPage(contentItem) {
-    if (!contentItem) {
-        console.warn('⚠️ initializeSingleMediaPage called with no content');
-        return;
-    }
+    console.log('📊 [DIAGNOSTIC] Initializing Single Media Page Boot...');
     
-    console.log('🎬 Initializing Single Media Page...');
-    
-    // 1. Set playlist states to false to keep playlist arrays completely clear
+    // 1. Clear out playlist states completely to ensure zero cross-contamination
     window.isPlaylistMode = false;
     window.playlistData = null;
     window.currentPlaylistIndex = null;
     window.currentPlaylistItems = [];
-    
-    // 2. Fire the isolated thumbnail application completely independently
-    applySingleMediaThumbnail(contentItem);
-    
-    // 3. Launch your original, stable streaming player
-    await loadContentIntoPlayer(contentItem, null);
-    
-    console.log('✅ Single Media Page initialized successfully');
+
+    if (!contentItem) {
+        console.error('❌ [DIAGNOSTIC] Boot blocked: contentItem is null or undefined.');
+        return;
+    }
+
+    // 2. Data Shape Inspection Logger
+    console.log('📊 [DIAGNOSTIC] Content Object Shape:', {
+        hasThumbnail: !!contentItem.thumbnail_url,
+        thumbnailValue: contentItem.thumbnail_url,
+        mediaType: contentItem.media_type,
+        streamingProvider: contentItem.streaming_provider,
+        contentId: contentItem.id,
+        title: contentItem.title,
+        rawObject: contentItem
+    });
+
+    // 3. Delayed Execution Shield (Gives the DOM and Cloudflare player engine time to settle)
+    setTimeout(async () => {
+        const videoElement = document.getElementById('inlineVideoPlayer');
+        const heroPoster = document.getElementById('heroPoster');
+        const playerContainer = document.getElementById('inlinePlayer');
+
+        console.log('📊 [DIAGNOSTIC] Checking DOM Availability after delay:', {
+            videoElementExists: !!videoElement,
+            heroPosterExists: !!heroPoster,
+            playerContainerExists: !!playerContainer,
+            videoElementReady: videoElement ? 'ready' : 'missing',
+            heroPosterReady: heroPoster ? 'ready' : 'missing'
+        });
+
+        // 4. Force-apply resolved thumbnail paths to layouts before running the stream engine
+        if (contentItem.thumbnail_url) {
+            const resolvedUrl = window.SupabaseHelper?.fixMediaUrl?.(contentItem.thumbnail_url, 'thumbnail') || contentItem.thumbnail_url;
+            console.log('📊 [DIAGNOSTIC] Resolved Thumbnail URL target:', resolvedUrl);
+
+            if (videoElement) {
+                // Primary method
+                videoElement.setAttribute('poster', resolvedUrl);
+                // Secondary fallback force-paint property
+                videoElement.poster = resolvedUrl;
+                console.log('📊 [DIAGNOSTIC] Poster attribute set on video element');
+            } else {
+                console.warn('📊 [DIAGNOSTIC] videoElement not found - cannot set poster');
+            }
+            
+            if (heroPoster) {
+                heroPoster.style.backgroundImage = `url('${resolvedUrl}')`;
+                heroPoster.style.backgroundSize = 'cover';
+                heroPoster.style.backgroundPosition = 'center';
+                console.log('📊 [DIAGNOSTIC] Hero poster background set');
+            } else {
+                console.warn('📊 [DIAGNOSTIC] heroPoster not found - cannot set background');
+            }
+        } else {
+            console.warn('📊 [DIAGNOSTIC] No thumbnail_url on content item');
+        }
+
+        // 5. Fire the stable player streaming script safely
+        console.log('🚀 [DIAGNOSTIC] Passing payload to core streaming engine...');
+        try {
+            await loadContentIntoPlayer(contentItem, null);
+            console.log('✅ [DIAGNOSTIC] loadContentIntoPlayer completed successfully');
+        } catch (error) {
+            console.error('❌ [DIAGNOSTIC] loadContentIntoPlayer failed:', error);
+        }
+
+    }, 400); // 400ms delay is the sweet spot to let browser rendering threads settle
 }
 
 // ============================================
@@ -1342,6 +1398,7 @@ window.initializeSingleMediaPage = initializeSingleMediaPage;
 
 console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay + Single-Media Thumbnail Fix)');
 console.log('   🖼️ Single-Media Thumbnail: Isolated applySingleMediaThumbnail() function');
-console.log('   🖼️ Single-Media Thumbnail: initializeSingleMediaPage() entry point');
+console.log('   🖼️ Single-Media Thumbnail: Diagnostic initializeSingleMediaPage() entry point');
 console.log('   🔧 loadContentIntoPlayer: UNCHANGED - Playlist mode safe');
 console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
+console.log('   📊 [DIAGNOSTIC] Single media boot with delayed initialization shield (400ms)');
