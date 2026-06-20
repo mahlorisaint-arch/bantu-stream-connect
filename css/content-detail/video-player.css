@@ -105,6 +105,88 @@
 }
 
 /* ============================================ */
+/* CUSTOM POSTER OVERLAY - BULLETPROOF THUMBNAIL */
+/* ============================================ */
+
+/* Container must be relative to anchor the custom overlay */
+.video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    overflow: hidden;
+}
+
+/* Custom Poster Overlay Layer */
+.player-poster-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 2;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    display: none;
+    background-color: #0a0a0a;
+}
+
+/* Show overlay by default when set */
+.player-poster-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Audio mode - keep overlay visible during playback */
+.video-container.audio-active .player-poster-overlay {
+    display: block !important;
+    opacity: 1 !important;
+    background-size: contain;
+    background-color: var(--bg-secondary, #0a0a0a);
+}
+
+/* When video is playing, fade out the overlay */
+.video-container.playing .player-poster-overlay:not(.keep-visible) {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Video container states */
+.video-container.loading .player-poster-overlay {
+    display: block;
+    opacity: 1;
+}
+
+/* Ensure overlay doesn't block video player placeholder */
+.bantu-player-placeholder {
+    z-index: 1;
+}
+
+.player-poster-overlay {
+    z-index: 3;
+}
+
+.enhanced-video-controls {
+    z-index: 10;
+}
+
+/* ============================================ */
+/* RESPONSIVE ADJUSTMENTS FOR POSTER OVERLAY */
+/* ============================================ */
+@media (max-width: 768px) {
+    .player-poster-overlay {
+        background-size: contain;
+    }
+    
+    .video-container.audio-active .player-poster-overlay {
+        background-size: contain;
+    }
+}
+
+/* ============================================ */
 /* ENHANCED VIDEO CONTROLS - GLASSMORPHISM */
 /* ============================================ */
 .enhanced-video-controls {
