@@ -154,64 +154,71 @@ function showToast(message, type = 'info') {
 }
 
 // ============================================
-// UI CHROME: UIScaleController
+// 🛠️ CRITICAL FIX: Prevent global namespace pollution and duplicate declaration crashes
 // ============================================
-class UIScaleController {
-    constructor() {
-        this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-        this.minScale = 0.8;
-        this.maxScale = 1.4;
-        this.step = 0.1;
-    }
+if (typeof window.UIScaleController === 'undefined') {
+    // Wrap your class/object setup cleanly if it's not bound yet
+    window.UIScaleController = class UIScaleController {
+        constructor() {
+            this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+            this.minScale = 0.8;
+            this.maxScale = 1.4;
+            this.step = 0.1;
+            console.log("📐 UIScaleController instantiated successfully.");
+        }
 
-    init() {
-        this.applyScale();
-        this.setupEventListeners();
-    }
+        init() {
+            this.applyScale();
+            this.setupEventListeners();
+        }
 
-    setupEventListeners() {
-        document.addEventListener('scaleChanged', (e) => {
-            this.updateScaleDisplay(e.detail.scale);
-        });
-    }
+        setupEventListeners() {
+            document.addEventListener('scaleChanged', (e) => {
+                this.updateScaleDisplay(e.detail.scale);
+            });
+        }
 
-    applyScale() {
-        document.documentElement.style.setProperty('--ui-scale', this.scale);
-        localStorage.setItem('bantu_ui_scale', this.scale.toString());
-        document.dispatchEvent(new CustomEvent('scaleChanged', {
-            detail: { scale: this.scale }
-        }));
-    }
+        applyScale() {
+            document.documentElement.style.setProperty('--ui-scale', this.scale);
+            localStorage.setItem('bantu_ui_scale', this.scale.toString());
+            document.dispatchEvent(new CustomEvent('scaleChanged', {
+                detail: { scale: this.scale }
+            }));
+        }
 
-    increase() {
-        if (this.scale < this.maxScale) {
-            this.scale = Math.min(this.maxScale, this.scale + this.step);
+        increase() {
+            if (this.scale < this.maxScale) {
+                this.scale = Math.min(this.maxScale, this.scale + this.step);
+                this.applyScale();
+            }
+        }
+
+        decrease() {
+            if (this.scale > this.minScale) {
+                this.scale = Math.max(this.minScale, this.scale - this.step);
+                this.applyScale();
+            }
+        }
+
+        reset() {
+            this.scale = 1;
             this.applyScale();
         }
-    }
 
-    decrease() {
-        if (this.scale > this.minScale) {
-            this.scale = Math.max(this.minScale, this.scale - this.step);
-            this.applyScale();
+        getScale() {
+            return this.scale;
         }
-    }
 
-    reset() {
-        this.scale = 1;
-        this.applyScale();
-    }
-
-    getScale() {
-        return this.scale;
-    }
-
-    updateScaleDisplay(scale) {
-        const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
-        displays.forEach(el => {
-            if (el) el.textContent = Math.round(scale * 100) + '%';
-        });
-    }
+        updateScaleDisplay(scale) {
+            const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
+            displays.forEach(el => {
+                if (el) el.textContent = Math.round(scale * 100) + '%';
+            });
+        }
+    };
+    console.log('📐 UIScaleController registered on window.');
+} else {
+    console.warn("⚠️ Namespace Protection: window.UIScaleController already declared. Skipping duplicate initialization.");
 }
 
 // ============================================
@@ -1096,7 +1103,6 @@ window.getInitials = getInitials;
 window.debounce = debounce;
 window.showToast = showToast;
 
-window.UIScaleController = UIScaleController;
 window.initThemeSelector = initThemeSelector;
 window.applyTheme = applyTheme;
 window.setupCompleteSidebar = setupCompleteSidebar;
@@ -1122,7 +1128,7 @@ window.setupWatchLaterButton = setupWatchLaterButton;
 function initContentDetailFeatures() {
     console.log('🎬 Initializing Content Detail Features (Utility Belt)...');
     if (!window.uiScaleController) {
-        window.uiScaleController = new UIScaleController();
+        window.uiScaleController = new window.UIScaleController();
         window.uiScaleController.init();
     }
     setupCompleteSidebar();
