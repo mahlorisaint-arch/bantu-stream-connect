@@ -59,12 +59,12 @@ function detectMediaType(content) {
 }
 
 // ============================================
-// VIDEO SKELETON RENDERER - FIXED FOR SINGLE MODE
+// VIDEO SKELETON RENDERER - SAFE-GUARD CLAUSE
 // ============================================
 
 /**
  * Render the video skeleton with native poster sync
- * Prevents late-initialized layout draws from overwriting the player's poster state
+ * 🛡️ CRITICAL SAFE-GUARD: Prevents destructive innerHTML rewrite when player exists
  * @param {Object} contentItem - Optional content item to embed poster from
  */
 function renderVideoSkeleton(contentItem) {
@@ -73,10 +73,85 @@ function renderVideoSkeleton(contentItem) {
     // 1. Resolve current content item if not explicitly passed
     const activeContent = contentItem || window.currentContent || window.currentContentItem || window.StateManager?.getState?.('currentContent');
     
+    // 2. Get container
+    const container = document.getElementById('videoPlayerSectionContainer') || document.querySelector('.video-container');
+    if (!container) {
+        console.warn('⚠️ No container found for video skeleton');
+        return null;
+    }
+    
+    // 🛡️ CRITICAL SAFE-GUARD: Check if a live video player or custom controls already exist
+    const activeControls = container.querySelector('.custom-controls-container') || container.querySelector('.vjs-control-bar') || container.querySelector('.enhanced-video-controls');
+    const activeVideo = container.querySelector('video');
+    
+    if (activeControls && activeVideo) {
+        console.log('🛡️ Skeleton Generator Guard: Active player and controls detected. Aborting destructive innerHTML rewrite.');
+        
+        // Instead of erasing the DOM, safely pass the new thumbnail and video source to the existing player instance
+        if (window.enhancedVideoPlayer && typeof window.enhancedVideoPlayer.loadSource === 'function') {
+            const fileUrl = getPlayableMediaUrl(activeContent);
+            if (fileUrl) {
+                console.log('🔄 Safely routing new asset data into existing player instance.');
+                const isAudio = detectMediaType(activeContent) === 'audio';
+                const mimeType = getMediaMimeTypeFromUrl(fileUrl);
+                const isHLS = mimeType === 'application/vnd.apple.mpegurl' || fileUrl?.includes('videodelivery.net');
+                
+                window.enhancedVideoPlayer.loadSource({
+                    url: fileUrl,
+                    type: mimeType,
+                    title: activeContent?.title || '',
+                    isHLS: isHLS,
+                    streamingProvider: activeContent?.streaming_provider || null,
+                    isAudio: isAudio
+                }).catch(err => console.warn('⚠️ loadSource update failed:', err));
+            }
+        } else if (activeVideo && activeContent && activeContent.file_url) {
+            // Native fallback if global controller wrapper isn't exposed yet
+            const fileUrl = getPlayableMediaUrl(activeContent);
+            if (fileUrl && activeVideo.src !== fileUrl) {
+                console.log('🔄 Native fallback: Updating video source directly.');
+                activeVideo.src = fileUrl;
+                activeVideo.load();
+            }
+        }
+        
+        // Update poster overlay visually without tearing down structural elements
+        let resolvedThumbUrl = '';
+        if (activeContent && activeContent.thumbnail_url) {
+            resolvedThumbUrl = window.SupabaseHelper?.fixMediaUrl?.(activeContent.thumbnail_url, 'thumbnail') || activeContent.thumbnail_url;
+            
+            // Update native poster
+            if (activeVideo) {
+                activeVideo.setAttribute('poster', resolvedThumbUrl);
+            }
+            
+            // Update custom overlay
+            const existingOverlay = container.querySelector('#customPosterOverlay') || container.querySelector('.player-poster-overlay');
+            if (existingOverlay) {
+                existingOverlay.style.backgroundImage = `url('${resolvedThumbUrl}')`;
+                existingOverlay.style.backgroundSize = detectMediaType(activeContent) === 'audio' ? 'contain' : 'cover';
+                existingOverlay.style.backgroundPosition = 'center';
+                existingOverlay.style.backgroundRepeat = 'no-repeat';
+                existingOverlay.style.display = 'block';
+                existingOverlay.style.opacity = '1';
+                existingOverlay.classList.add('active');
+                console.log('🖼️ Skeleton Generator: Custom poster overlay updated via safe-guard');
+            }
+        }
+        
+        console.log('🛡️ Skeleton Generator Guard: Exiting safely. DOM preserved.');
+        return container; // EXIT FUNCTION SAFELY. DO NOT DESTROY THE DOM.
+    }
+    
+    // ==========================================================================
+    // 🚨 ONLY RUN DESTRUCTIVE INJECTION IF THE PLAYER DOES NOT EXIST YET
+    // ==========================================================================
+    console.log('🎥 Video container is empty. Proceeding with clean skeleton initialization.');
+    
     let posterAttributeStr = '';
     let resolvedThumbUrl = '';
     
-    // 2. If active single content has a thumbnail, calculate it immediately for the raw HTML
+    // 3. If active single content has a thumbnail, calculate it immediately for the raw HTML
     if (activeContent && activeContent.thumbnail_url) {
         resolvedThumbUrl = window.SupabaseHelper?.fixMediaUrl?.(activeContent.thumbnail_url, 'thumbnail') || activeContent.thumbnail_url;
         posterAttributeStr = `poster="${resolvedThumbUrl}"`;
@@ -85,7 +160,7 @@ function renderVideoSkeleton(contentItem) {
         console.log('🖼️ Skeleton Generator: No thumbnail available for poster attribute');
     }
     
-    // 3. Construct your skeleton container with the poster embedded natively
+    // 4. Construct the skeleton container with the poster embedded natively
     const skeletonHTML = `
         <div class="video-player-wrapper">
             <video 
@@ -99,31 +174,17 @@ function renderVideoSkeleton(contentItem) {
         </div>
     `;
     
-    // 4. Inject into your section container
-    const container = document.getElementById('videoPlayerSectionContainer') || document.querySelector('.video-container');
-    if (container) {
-        // Preserve the container's parent relationship
-        container.innerHTML = skeletonHTML;
-        console.log('🎥 Video skeleton injected into container');
-    } else {
-        // Fallback: try to find the inline player container
-        const playerContainer = document.getElementById('inlinePlayer');
-        if (playerContainer) {
-            const videoWrapper = playerContainer.querySelector('.video-container') || playerContainer;
-            videoWrapper.innerHTML = skeletonHTML;
-            console.log('🎥 Video skeleton injected into inlinePlayer container');
-        } else {
-            console.warn('⚠️ No container found for video skeleton');
-        }
-    }
+    // 5. Inject into container
+    container.innerHTML = skeletonHTML;
+    console.log('🎥 Video skeleton injected into container');
     
     console.log('🎥 Video skeleton ready (preload=none) with native poster sync');
     
-    // 5. Secondary Defensive Fallback: If custom overlay layer needs styling updates
+    // 6. Secondary Defensive Fallback: If custom overlay layer needs styling updates
     if (activeContent && activeContent.thumbnail_url && resolvedThumbUrl) {
         // Wait a tick for DOM to update
         setTimeout(() => {
-            const posterOverlay = document.getElementById('customPosterOverlay');
+            const posterOverlay = container.querySelector('#customPosterOverlay') || container.querySelector('.player-poster-overlay');
             if (posterOverlay) {
                 posterOverlay.style.backgroundImage = `url('${resolvedThumbUrl}')`;
                 posterOverlay.style.backgroundSize = detectMediaType(activeContent) === 'audio' ? 'contain' : 'cover';
@@ -136,7 +197,7 @@ function renderVideoSkeleton(contentItem) {
             }
             
             // Also ensure video element has poster
-            const videoElement = document.getElementById('inlineVideoPlayer');
+            const videoElement = container.querySelector('#inlineVideoPlayer');
             if (videoElement) {
                 videoElement.setAttribute('poster', resolvedThumbUrl);
                 console.log('🖼️ Skeleton Generator: Video poster attribute re-applied to:', resolvedThumbUrl);
@@ -145,6 +206,24 @@ function renderVideoSkeleton(contentItem) {
     }
     
     return container;
+}
+
+/**
+ * Get media MIME type from URL (helper for skeleton)
+ */
+function getMediaMimeTypeFromUrl(url = '') {
+    const lower = url.toLowerCase();
+    if (lower.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
+    if (lower.includes('videodelivery.net')) return 'application/vnd.apple.mpegurl';
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.mov')) return 'video/quicktime';
+    if (lower.endsWith('.mp3')) return 'audio/mpeg';
+    if (lower.endsWith('.wav')) return 'audio/wav';
+    if (lower.endsWith('.ogg')) return 'audio/ogg';
+    if (lower.endsWith('.m4a')) return 'audio/mp4';
+    if (lower.endsWith('.flac')) return 'audio/flac';
+    return 'video/mp4';
 }
 
 /**
@@ -1486,7 +1565,9 @@ window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
 window.applySingleMediaThumbnail = applySingleMediaThumbnail;
 window.initializeSingleMediaPage = initializeSingleMediaPage;
 
-console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay + Single-Media Thumbnail Fix)');
+console.log('✅ Video Player Section Module loaded (with full brain + Cloudflare support + Audio fixes + Custom Poster Overlay + Single-Media Thumbnail Fix + 🛡️ Safe-Guard Clause)');
+console.log('   🛡️ Safe-Guard Clause: Prevents destructive innerHTML rewrite when player exists');
+console.log('   🛡️ Safe-Guard Clause: Routes updates to existing player via loadSource()');
 console.log('   🖼️ Single-Media Thumbnail: Isolated applySingleMediaThumbnail() function');
 console.log('   🖼️ Single-Media Thumbnail: Diagnostic initializeSingleMediaPage() entry point');
 console.log('   🖼️ Skeleton Generator: renderVideoSkeleton() with native poster sync');
