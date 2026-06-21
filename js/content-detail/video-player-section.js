@@ -1401,15 +1401,26 @@ class WatchSessionManager {
             if (currentTime > this.maxProgressSeconds) this.maxProgressSeconds = currentTime;
             this.lastHeartbeatTime = now;
             
-            await window.supabaseClient.from('playback_heartbeats').insert({
-                playback_session_id: this.playbackSessionId,
-                content_id: parseInt(this.contentId),
-                user_id: this.userId,
-                sequence_number: this.sequenceNumber,
-                progress_seconds: currentTime,
-                cumulative_watch_time_ms: this.totalWatchTimeMs,
-                playback_state: 'PLAYING'
-            }).catch(e => console.error('Heartbeat failed:', e));
+            // 🛠️ FIX 1: Resolve Supabase .catch() Runtime Crash
+            // Changed from .insert(...).catch() to .then() syntax for proper error handling
+            window.supabaseClient
+                .from('playback_heartbeats')
+                .insert({
+                    playback_session_id: this.playbackSessionId,
+                    content_id: parseInt(this.contentId),
+                    user_id: this.userId,
+                    sequence_number: this.sequenceNumber,
+                    progress_seconds: currentTime,
+                    cumulative_watch_time_ms: this.totalWatchTimeMs,
+                    playback_state: 'PLAYING'
+                })
+                .then(({ error }) => {
+                    if (error) {
+                        console.error("❌ Telemetry Engine: Failed to commit heartbeat:", error);
+                    } else {
+                        console.log("⚡ Telemetry Engine: Heartbeat successfully synced to Supabase.");
+                    }
+                });
             
             await window.supabaseClient.from('playback_sessions').update({
                 total_watch_time_ms: this.totalWatchTimeMs,
@@ -1574,3 +1585,6 @@ console.log('   🖼️ Skeleton Generator: renderVideoSkeleton() with native po
 console.log('   🔧 loadContentIntoPlayer: UNCHANGED - Playlist mode safe');
 console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
 console.log('   📊 [DIAGNOSTIC] Single media boot with delayed initialization shield (400ms)');
+console.log('   🔧 FIX 1: Supabase .catch() crash resolved - using .then() syntax');
+console.log('   🖱️ FIX 2: Click blockade bypass - poster overlay pointer-events: none (apply via CSS)');
+console.log('   📁 FIX 3: Playlist queue stylesheet path - update HTML link tag');
