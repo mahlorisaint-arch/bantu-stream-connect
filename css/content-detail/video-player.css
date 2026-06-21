@@ -105,30 +105,34 @@
 }
 
 /* ============================================ */
-/* CUSTOM POSTER OVERLAY - BULLETPROOF THUMBNAIL */
+/* 🚨 CRITICAL FIX: Video Player State Control Layer */
+/* CSS State Architecture for automatic layer management */
 /* ============================================ */
 
-/* Container must be relative to anchor the custom overlay */
+/* Core Video Container Layout Box */
+.video-player-wrapper,
 .video-container {
     position: relative;
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: #000;
     overflow: hidden;
+    background-color: #000;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 16 / 9;
 }
 
-/* Explicit Native Video Frame Alignment */
-#inlineVideoPlayer {
+/* Explicit Base Video Layer */
+#inlineVideoPlayer,
+.video-js {
     position: relative;
-    z-index: 1; /* Sits at base layer */
+    z-index: 1 !important; /* Base layer */
     width: 100%;
     height: 100%;
     display: block;
 }
 
-/* Custom Poster Overlay Layer - BULLETPROOF */
-.player-poster-overlay,
-#customPosterOverlay {
+/* Custom Visual Thumbnail Overlay Shield */
+#customPosterOverlay,
+.player-poster-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -137,73 +141,14 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    z-index: 2; /* Sits directly over the video before load */
-    transition: opacity 0.25s ease-in-out;
-    pointer-events: none !important;
+    z-index: 5 !important; /* Sits over the video on page boot */
+    opacity: 1;
+    transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
+    visibility: visible;
+    pointer-events: none !important; /* Let clicks pass through to video */
     user-select: none !important;
-    display: none; /* Hidden by default, shown via JS */
+    display: block;
     background-color: #0a0a0a;
-}
-
-/* Show overlay by default when set */
-.player-poster-overlay.active,
-#customPosterOverlay.active {
-    display: block;
-    opacity: 1;
-    pointer-events: none !important;
-}
-
-/* When overlay should be hidden during playback */
-.player-poster-overlay.hidden,
-#customPosterOverlay.hidden {
-    display: none !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    z-index: -1 !important;
-}
-
-/* Audio mode - keep overlay visible during playback */
-.video-container.audio-active .player-poster-overlay,
-.video-container.audio-active #customPosterOverlay {
-    display: block !important;
-    opacity: 1 !important;
-    pointer-events: none !important;
-    z-index: 2 !important;
-    background-size: contain;
-    background-color: var(--bg-secondary, #0a0a0a);
-}
-
-/* When video is playing, fade out the overlay */
-.video-container.playing .player-poster-overlay:not(.keep-visible),
-.video-container.playing #customPosterOverlay:not(.keep-visible) {
-    display: none !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    z-index: -1 !important;
-}
-
-/* Video container states */
-.video-container.loading .player-poster-overlay {
-    display: block;
-    opacity: 1;
-}
-
-/* Ensure overlay doesn't block video player placeholder */
-.bantu-player-placeholder {
-    z-index: 1;
-}
-
-/* ============================================ */
-/* 🚨 CRITICAL FIX: Interaction Stack Priorities */
-/* Ensures controls remain accessible over video and overlays */
-/* ============================================ */
-
-/* Core Video Container Layout Box */
-.video-container,
-.video-player-wrapper {
-    position: relative;
-    overflow: hidden;
-    background-color: #000;
 }
 
 /* High-Priority Active Control Hub */
@@ -213,18 +158,8 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 10 !important; /* Must sit above everything else at all times */
-    pointer-events: auto !important; /* Retains touch tracking capabilities */
-}
-
-/* Force Hover/Touch Consistency across Desktop & Mobile */
-.video-container:hover .enhanced-video-controls,
-.enhanced-video-controls:hover,
-.video-container:focus-within .enhanced-video-controls,
-.enhanced-video-controls.force-visible {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    transform: translateY(0) !important;
+    z-index: 10 !important; /* Must sit above everything else */
+    pointer-events: auto !important; /* Enforces element interactivity */
 }
 
 /* Ensure all control bar elements are clickable */
@@ -255,36 +190,73 @@
     pointer-events: auto !important;
 }
 
-/* Mobile touch optimizations for controls */
-@media (hover: none) and (pointer: coarse) {
-    .enhanced-video-controls {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-        pointer-events: auto !important;
-    }
-    
-    .enhanced-video-controls .controls-bar {
-        pointer-events: auto !important;
-    }
-    
-    .enhanced-video-controls .control-btn {
-        min-width: 20px !important;
-        min-height: 20px !important;
-        touch-action: manipulation !important;
-    }
+/* ==========================================================================
+   STATE OVERRIDES: Automatic Layer Management via Parent Classes
+   ========================================================================== */
+
+/* 🚀 WHEN VIDEO IS PLAYING: Drop the overlay instantly and expose controls */
+.video-container.is-playing #customPosterOverlay,
+.video-container.is-playing .player-poster-overlay,
+.video-player-wrapper.is-playing #customPosterOverlay,
+.video-player-wrapper.is-playing .player-poster-overlay {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important; /* Clicks pass clean through to video */
+    z-index: -1 !important;
+}
+
+/* ⏸️ WHEN VIDEO IS PAUSED/ENDED: Keep overlay out of the way once user has engaged */
+.video-container.is-paused #customPosterOverlay,
+.video-container.is-paused .player-poster-overlay,
+.video-player-wrapper.is-paused #customPosterOverlay,
+.video-player-wrapper.is-paused .player-poster-overlay {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+/* 🎵 AUDIO MODE EXCEPTION: Keep overlay visible for audio tracks */
+.video-container.audio-active #customPosterOverlay,
+.video-container.audio-active .player-poster-overlay,
+.video-player-wrapper.audio-active #customPosterOverlay,
+.video-player-wrapper.audio-active .player-poster-overlay {
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 5 !important;
+    pointer-events: none !important;
+}
+
+/* 🚀 WHEN PLAYBACK STARTS, ensure controls are visible */
+.video-container.is-playing .enhanced-video-controls,
+.video-player-wrapper.is-playing .enhanced-video-controls {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Force controls to remain visible on hover */
+.video-container:hover .enhanced-video-controls,
+.enhanced-video-controls:hover,
+.video-container:focus-within .enhanced-video-controls,
+.enhanced-video-controls.force-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
 }
 
 /* ============================================ */
 /* RESPONSIVE ADJUSTMENTS FOR POSTER OVERLAY */
 /* ============================================ */
 @media (max-width: 768px) {
-    .player-poster-overlay,
-    #customPosterOverlay {
+    #customPosterOverlay,
+    .player-poster-overlay {
         background-size: contain;
     }
     
+    .video-container.audio-active #customPosterOverlay,
     .video-container.audio-active .player-poster-overlay,
-    .video-container.audio-active #customPosterOverlay {
+    .video-player-wrapper.audio-active #customPosterOverlay,
+    .video-player-wrapper.audio-active .player-poster-overlay {
         background-size: contain;
     }
 }
