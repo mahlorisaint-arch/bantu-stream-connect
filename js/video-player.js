@@ -69,11 +69,17 @@
 // - Capture-phase event listeners for mobile touch protection
 // - Logs exact computed styles to identify blockers
 // ============================================
+// 🛡️ SAFE-GUARD COMPATIBILITY (2026-06-21):
+// - Enhanced loadSource to handle both object and direct parameter calls
+// - Supports window.EnhancedVideoPlayer.loadSource(videoUrl, thumbnailUrl) pattern
+// - Maintains backward compatibility with existing loadSource usage
+// - Ensures poster overlay updates without destroying DOM
+// ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.1 - Nuclear Diagnostic Engine + CSS State Architecture)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.2 - Safe-Guard Compatibility + Nuclear Diagnostic Engine + CSS State Architecture)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -411,6 +417,11 @@
    * - Uses .is-playing, .is-paused, .audio-active classes on wrapper
    * - State-driven CSS handles all layer management
    * - Clean separation: CSS manages visibility, JS manages state
+   * 
+   * 🛡️ SAFE-GUARD COMPATIBILITY (2026-06-21):
+   * - Enhanced loadSource to handle both object and direct parameter calls
+   * - Supports window.EnhancedVideoPlayer.loadSource(videoUrl, thumbnailUrl)
+   * - Maintains backward compatibility with existing loadSource usage
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -2494,14 +2505,54 @@
       }
     }
     
+    // =====================================================
+    // 🛡️ SAFE-GUARD COMPATIBILITY: Enhanced loadSource
+    // Supports both object config and direct parameter calls
+    // =====================================================
+    
     /**
      * 🚨 CRITICAL: Load source without destroying player instance
-     * Used for playlist track changes to preserve player state
-     * This is the preferred method for non-destructive source changes
+     * Used for playlist track changes and safe-guard clause calls
+     * Supports both:
+     *   1. loadSource({ url, type, contentId, streamingProvider, isHLS, isAudio })
+     *   2. loadSource(videoUrl, thumbnailUrl) - Safe-Guard compatible
+     * 
      * ☁️ Updated to handle streamingProvider and isHLS params
      * 🎵 UPDATED: Audio detection - loads directly to HTML5 media element
+     * 🛡️ SAFE-GUARD: Supports direct parameter pattern for skeleton generator
      */
-    loadSource(sourceConfig) {
+    loadSource(sourceConfig, thumbnailUrl) {
+      // 🛡️ SAFE-GUARD COMPATIBILITY: Handle direct parameter call
+      // Pattern: loadSource(videoUrl, thumbnailUrl) from skeleton generator
+      if (typeof sourceConfig === 'string') {
+        const videoUrl = sourceConfig;
+        console.log('🛡️ Safe-Guard Compatibility: loadSource called with direct parameters', { videoUrl, thumbnailUrl });
+        
+        // Convert to object format for internal processing
+        sourceConfig = {
+          url: videoUrl,
+          type: this.getMediaMimeType(videoUrl),
+          isHLS: videoUrl.includes('.m3u8') || videoUrl.includes('videodelivery.net'),
+          isAudio: this.isAudioSource(videoUrl),
+          streamingProvider: null
+        };
+        
+        // If thumbnailUrl provided, update poster
+        if (thumbnailUrl) {
+          console.log('🛡️ Safe-Guard: Updating poster with thumbnail:', thumbnailUrl);
+          const videoElement = this.video || document.getElementById('inlineVideoPlayer');
+          if (videoElement) {
+            videoElement.setAttribute('poster', thumbnailUrl);
+            const overlay = document.getElementById('customPosterOverlay');
+            if (overlay) {
+              overlay.style.backgroundImage = `url('${thumbnailUrl}')`;
+              overlay.classList.add('active');
+            }
+          }
+        }
+      }
+      
+      // Now handle the standardized object format
       if (!this.video) return Promise.reject('Player not attached');
       if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
       
@@ -2517,7 +2568,8 @@
         contentId, 
         streamingProvider,
         isHLS,
-        isAudio
+        isAudio,
+        sourceType: typeof sourceConfig === 'object' ? 'object' : 'string'
       });
       
       // Update contentId
@@ -3055,7 +3107,10 @@
     console.log('✅ Nuclear Diagnostic Engine deployed. Scanning every 500ms for layout blockers.');
   })();
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.1 - Nuclear Diagnostic Engine + CSS State Architecture)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.2 - Safe-Guard Compatibility + Nuclear Diagnostic Engine + CSS State Architecture)');
+  console.log('   🛡️ SAFE-GUARD: loadSource() supports both object config AND direct parameters');
+  console.log('   🛡️ SAFE-GUARD: Backward compatible with skeleton generator calls');
+  console.log('   🛡️ SAFE-GUARD: Preserves poster overlay when updating source');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
