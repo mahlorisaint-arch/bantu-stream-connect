@@ -62,11 +62,18 @@
 // - Added guardedVideoContainerClick() to prevent control clicks from pausing
 // - Clean separation of concerns: CSS manages layers, JS manages state
 // ============================================
+// 🚨 NUCLEAR DIAGNOSTIC ENGINE (2026-06-21):
+// - Emergency force-correction loop runs every 500ms
+// - Bypasses script initialization crashes
+// - Injects inline CSS overrides to force-show controls and hide overlays
+// - Capture-phase event listeners for mobile touch protection
+// - Logs exact computed styles to identify blockers
+// ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.0 - CSS State Architecture + Cloudflare + Audio Fix)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.1 - Nuclear Diagnostic Engine + CSS State Architecture)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -2949,7 +2956,106 @@
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.0 - CSS State Architecture + Cloudflare + Audio Fix)');
+  // =====================================================
+  // 🚨 NUCLEAR DIAGNOSTIC ENGINE
+  // Emergency self-contained diagnostic & force-correction loop
+  // Bypasses script initialization crashes
+  // =====================================================
+  
+  (function runNuclearPlayerDiagnostic() {
+    console.log('🚨 EMERGENCY: Launching Video Player Diagnostic & Force-Correction Engine...');
+
+    // Inline structural style injection to bypass broken external CSS files
+    const stylePatch = document.createElement('style');
+    stylePatch.innerHTML = `
+        .FORCE-SHOW-CONTROLS {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            z-index: 2147483647 !important; /* Maximum possible z-index */
+        }
+        .FORCE-HIDE-OVERLAY {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            z-index: -1000 !important;
+        }
+    `;
+    document.head.appendChild(stylePatch);
+    console.log('✅ Emergency CSS Overrides Injected into Head Document.');
+
+    // Continuous Diagnostic & Enforcement Loop (Runs every 500ms)
+    setInterval(() => {
+        const video = document.getElementById('inlineVideoPlayer') || document.querySelector('video');
+        const overlay = document.getElementById('customPosterOverlay');
+        const controls = document.querySelector('.custom-controls-container') || document.querySelector('.vjs-control-bar');
+
+        if (!video) {
+            console.warn('📊 Diagnostic Warning: <video> element cannot be found in DOM right now.');
+            return;
+        }
+
+        const isPlaying = !video.paused && !video.ended;
+
+        // 🔍 DIAGNOSTIC LOGGING: Check exactly what the elements are doing
+        if (isPlaying) {
+            const overlayStyle = overlay ? window.getComputedStyle(overlay) : null;
+            const controlsStyle = controls ? window.getComputedStyle(controls) : null;
+
+            console.log('📊 PLAYER STATE: [PLAYING] | Audio/Video processing actively.');
+            
+            if (overlay) {
+                console.log(`🖼️ Overlay Target Status -> Display: ${overlayStyle.display}, Opacity: ${overlayStyle.opacity}, Z-Index: ${overlayStyle.zIndex}`);
+                
+                // 🛑 FORCE CORRECTION: Smash the overlay out of the way
+                if (overlayStyle.display !== 'none' || overlayStyle.opacity !== '0') {
+                    console.error('🚨 CRITICAL BLOCKER DETECTED: Thumbnail overlay is blindfolding the video player! Force-hiding now.');
+                    overlay.classList.add('FORCE-HIDE-OVERLAY');
+                    overlay.style.setProperty('display', 'none', 'important');
+                }
+            }
+
+            if (controls) {
+                console.log(`🎛️ Controls Target Status -> Display: ${controlsStyle.display}, Opacity: ${controlsStyle.opacity}, Z-Index: ${controlsStyle.zIndex}`);
+                
+                // 🛑 FORCE CORRECTION: Force controls into view
+                if (controlsStyle.opacity === '0' || controlsStyle.visibility === 'hidden' || controlsStyle.display === 'none') {
+                    console.error('🚨 CRITICAL BLOCKER DETECTED: Video controls are invisible during active playback! Force-showing now.');
+                    controls.classList.add('FORCE-SHOW-CONTROLS');
+                }
+            }
+        } else {
+            // Player is paused or waiting for user interaction
+            if (overlay && !overlay.classList.contains('FORCE-HIDE-OVERLAY')) {
+                // Ensure the overlay is interactive during initial load or pause
+                overlay.style.pointerEvents = 'auto';
+            }
+        }
+    }, 500);
+
+    // 📱 MOBILE BUBBLING PROTECTION: Absolute interception fallback
+    document.addEventListener('touchstart', function(e) {
+        const controlsContainer = e.target.closest('.custom-controls-container') || e.target.closest('.vjs-control-bar');
+        if (controlsContainer) {
+            console.log('📱 Emergency Mobile Guard: Touch start inside controls container detected. Stopping event propagation.');
+            e.stopPropagation();
+        }
+    }, true); // Executed during capture phase to kill event before it bubbles to the video surface
+
+    document.addEventListener('click', function(e) {
+        const controlsContainer = e.target.closest('.custom-controls-container') || e.target.closest('.vjs-control-bar') || e.target.closest('.control-btn');
+        if (controlsContainer) {
+            console.log('📱 Emergency Mobile Guard: Click inside controls detected. Isolating event.');
+            e.stopPropagation();
+        }
+    }, true);
+
+    console.log('✅ Nuclear Diagnostic Engine deployed. Scanning every 500ms for layout blockers.');
+  })();
+  
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.1 - Nuclear Diagnostic Engine + CSS State Architecture)');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
@@ -2972,6 +3078,9 @@
   console.log('   🚨 CSS STATE ARCHITECTURE: .is-playing/.is-paused classes on wrapper');
   console.log('   🚨 CSS STATE ARCHITECTURE: State-driven CSS manages poster overlay visibility');
   console.log('   🚨 CSS STATE ARCHITECTURE: guardedVideoContainerClick() prevents pause on controls');
+  console.log('   🚨 NUCLEAR DIAGNOSTIC: Force-correction loop runs every 500ms');
+  console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
+  console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
   console.log('   🚀 Ready for production deployment with Engagement System Full Integration');
   
 })();
