@@ -55,18 +55,18 @@
 // - Detaches HLS for audio tracks to prevent fatal crashes
 // - Uses safePlay() pattern for audio playback
 // ============================================
-// 🚨 POSTER OVERLAY FIX (2026-06-21):
-// - Added purgePosterOverlay() to hard-remove poster overlays on play
-// - Added restorePosterOverlay() for display on ended
+// 🚨 CSS STATE ARCHITECTURE FIX (2026-06-21):
+// - Added initializePlayerStateEngine() for automatic layer management
+// - Uses .is-playing, .is-paused, .audio-active classes on wrapper
+// - State-driven CSS handles poster overlay visibility
 // - Added guardedVideoContainerClick() to prevent control clicks from pausing
-// - Added setupGuardedVideoClickHandler() for click interception
-// - Added initializePlayerInteractionFixes() for auto-setup
+// - Clean separation of concerns: CSS manages layers, JS manages state
 // ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v3.2.1 - Poster Overlay Fix + Cloudflare Support + Audio Fix)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.0 - CSS State Architecture + Cloudflare + Audio Fix)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -171,76 +171,109 @@
   }
 
   // ============================================
-  // 🚨 CRITICAL FIX: Poster Overlay Cleanup on Play
-  // Ensures poster overlay doesn't block video rendering or control interactions
+  // 🚨 CRITICAL FIX: State Wrapper Engine
+  // Manages player state classes for automatic layer control
   // ============================================
 
   /**
-   * Purge the poster overlay when playback starts
-   * Hard removes the overlay from the layout tree so video renders properly
+   * Initialize the player state engine
+   * Binds state classes to play/pause events for automatic layer management
    */
-  function purgePosterOverlay() {
-    console.log('▶️ Playback verified active. Dismissing screen-blocking poster elements...');
+  function initializePlayerStateEngine() {
+    console.log('🔧 Initializing player state engine...');
     
-    // Check multiple possible overlay selectors
-    const overlaySelectors = [
-      '#customPosterOverlay',
-      '.player-poster-overlay',
-      '.custom-poster-overlay',
-      '.poster-overlay'
-    ];
+    const wrapper = document.querySelector('.video-container') || document.querySelector('.video-player-wrapper');
+    const videoElement = document.getElementById('inlineVideoPlayer');
     
-    overlaySelectors.forEach(selector => {
-      const posterOverlay = document.querySelector(selector);
+    if (!wrapper || !videoElement) {
+      console.warn('⚠️ Player wrapper or video element not found for state engine');
+      return;
+    }
+    
+    // Ensure wrapper has the base class
+    wrapper.classList.add('video-player-wrapper');
+    wrapper.classList.remove('is-playing');
+    wrapper.classList.add('is-paused');
+    
+    // ============================================
+    // STATE LISTENERS
+    // ============================================
+    
+    // 🚀 When the media begins actively moving
+    const handlePlaybackStarted = () => {
+      console.log('🚀 State Engine: Playback started. Removing visual blockades.');
+      wrapper.classList.remove('is-paused');
+      wrapper.classList.add('is-playing');
+      wrapper.classList.remove('audio-active');
+    };
+    
+    // ⏸️ When the user or system pauses the media
+    const handlePlaybackPaused = () => {
+      console.log('⏸️ State Engine: Playback paused.');
+      wrapper.classList.remove('is-playing');
+      wrapper.classList.add('is-paused');
+    };
+    
+    // 🏁 When content ends completely
+    const handlePlaybackEnded = () => {
+      console.log('🏁 State Engine: Video ended. Resetting wrapper state.');
+      wrapper.classList.remove('is-playing');
+      wrapper.classList.add('is-paused');
+      
+      // Bring the poster back only when the track is completely finished
+      const posterOverlay = document.getElementById('customPosterOverlay') || document.querySelector('.player-poster-overlay');
       if (posterOverlay) {
-        posterOverlay.style.opacity = '0';
-        posterOverlay.style.pointerEvents = 'none';
-        posterOverlay.style.zIndex = '-1';
-        
-        // 🚨 CRITICAL: Hard drop from the layout tree after transition so video frames can render
-        setTimeout(() => {
-          posterOverlay.style.display = 'none';
-          posterOverlay.classList.remove('active', 'visible');
-          console.log('✅ Poster overlay purged:', selector);
-        }, 250);
+        // Reset to base CSS rules
+        posterOverlay.style.removeProperty('opacity');
+        posterOverlay.style.removeProperty('visibility');
+        posterOverlay.style.removeProperty('display');
+        posterOverlay.style.removeProperty('z-index');
+        console.log('🖼️ State Engine: Poster overlay reset for ended state');
       }
-    });
+    };
     
-    // Also handle the specific overlay from video-player-section.js
-    const playerPosterOverlay = document.querySelector('.player-poster-overlay');
-    if (playerPosterOverlay && !playerPosterOverlay.classList.contains('keep-visible')) {
-      playerPosterOverlay.style.opacity = '0';
-      playerPosterOverlay.style.pointerEvents = 'none';
-      setTimeout(() => {
-        playerPosterOverlay.style.display = 'none';
-        playerPosterOverlay.style.zIndex = '-1';
-      }, 250);
-    }
+    // 🎵 Handle audio mode detection
+    const handleLoadedMetadata = () => {
+      const isAudio = videoElement.classList.contains('audio-mode') || 
+                      wrapper.classList.contains('audio-active') ||
+                      (videoElement.src && (videoElement.src.includes('.mp3') || videoElement.src.includes('.wav')));
+      
+      if (isAudio) {
+        console.log('🎵 State Engine: Audio mode detected. Keeping overlay visible.');
+        wrapper.classList.add('audio-active');
+        wrapper.classList.remove('is-playing');
+        wrapper.classList.add('is-paused');
+      }
+    };
+    
+    // Remove existing listeners to prevent duplicates
+    videoElement.removeEventListener('play', handlePlaybackStarted);
+    videoElement.removeEventListener('playing', handlePlaybackStarted);
+    videoElement.removeEventListener('pause', handlePlaybackPaused);
+    videoElement.removeEventListener('ended', handlePlaybackEnded);
+    videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    // Add the state listeners
+    videoElement.addEventListener('play', handlePlaybackStarted);
+    videoElement.addEventListener('playing', handlePlaybackStarted);
+    videoElement.addEventListener('pause', handlePlaybackPaused);
+    videoElement.addEventListener('ended', handlePlaybackEnded);
+    videoElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    console.log('✅ Player state engine initialized');
   }
 
-  /**
-   * Restore the poster overlay when video ends or is paused (for display purposes)
-   */
-  function restorePosterOverlay() {
-    console.log('⏹️ Playback ended. Restoring poster overlay for display...');
-    
-    const posterOverlay = document.querySelector('.player-poster-overlay');
-    if (posterOverlay && posterOverlay.style.backgroundImage && posterOverlay.style.backgroundImage !== 'none') {
-      posterOverlay.style.display = 'block';
-      posterOverlay.style.zIndex = '2';
-      posterOverlay.style.pointerEvents = 'none';
-      setTimeout(() => {
-        posterOverlay.style.opacity = '1';
-      }, 10);
-    }
-  }
+  // ============================================
+  // 🚨 CRITICAL FIX: Guarded Video Container Click Handler
+  // Prevents control bar clicks from bubbling into play/pause toggle
+  // ============================================
 
   /**
-   * Guarded video container click handler
+   * Setup guarded video container click handler
    * Prevents clicks on controls, buttons, and overlays from triggering play/pause
    */
   function setupGuardedVideoClickHandler() {
-    const videoContainer = document.querySelector('.video-container');
+    const videoContainer = document.querySelector('.video-container') || document.querySelector('.video-player-wrapper');
     const videoElement = document.getElementById('inlineVideoPlayer');
     
     if (!videoContainer || !videoElement) {
@@ -279,6 +312,7 @@
     
     // Existing background body click handling follows safely...
     if (videoElement.paused) {
+      console.log('🎯 Surface tap: Playing video');
       // Use safePlay if available, otherwise direct play
       if (typeof window.safePlay === 'function') {
         window.safePlay();
@@ -288,9 +322,14 @@
         videoElement.play().catch(err => console.warn('Play blocked:', err));
       }
     } else {
+      console.log('🎯 Surface tap: Pausing video');
       videoElement.pause();
     }
   }
+
+  // ============================================
+  // 🚀 INITIALIZATION: Set up all player fixes
+  // ============================================
 
   /**
    * Initialize all player interaction fixes
@@ -305,43 +344,30 @@
       return;
     }
     
-    // 1. Setup poster overlay cleanup on play
-    videoElement.removeEventListener('play', purgePosterOverlay);
-    videoElement.removeEventListener('playing', purgePosterOverlay);
-    videoElement.addEventListener('play', purgePosterOverlay);
-    videoElement.addEventListener('playing', purgePosterOverlay);
+    // 1. Initialize the state engine
+    initializePlayerStateEngine();
     
-    // 2. Restore poster overlay on ended (if needed)
-    videoElement.removeEventListener('ended', restorePosterOverlay);
-    videoElement.addEventListener('ended', restorePosterOverlay);
-    
-    // 3. Setup guarded click handler
+    // 2. Setup guarded click handler
     setupGuardedVideoClickHandler();
-    
-    // 4. Also handle pause event to ensure overlay stays hidden during playback
-    videoElement.removeEventListener('pause', function() {
-      // If video is paused but not ended, keep overlay hidden
-      if (!videoElement.ended && videoElement.currentTime > 0) {
-        const posterOverlay = document.querySelector('.player-poster-overlay');
-        if (posterOverlay && !posterOverlay.classList.contains('keep-visible')) {
-          posterOverlay.style.display = 'none';
-          posterOverlay.style.opacity = '0';
-        }
-      }
-    });
     
     console.log('✅ Player interaction fixes initialized');
   }
 
   // Auto-initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializePlayerInteractionFixes);
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initializePlayerInteractionFixes, 300);
+    });
   } else {
-    setTimeout(initializePlayerInteractionFixes, 500);
+    setTimeout(initializePlayerInteractionFixes, 300);
   }
 
   // Also re-initialize when content changes
   document.addEventListener('contentIdChanged', function() {
+    setTimeout(initializePlayerInteractionFixes, 500);
+  });
+
+  document.addEventListener('playlistLoaded', function() {
     setTimeout(initializePlayerInteractionFixes, 500);
   });
 
@@ -373,6 +399,11 @@
    * 🎵 AUDIO SUPPORT (2026-06-18):
    * - loadSource() detects audio and loads directly to HTML5 media element
    * - Detaches HLS for audio tracks to prevent fatal crashes
+   * 
+   * 🚨 CSS STATE ARCHITECTURE (2026-06-21):
+   * - Uses .is-playing, .is-paused, .audio-active classes on wrapper
+   * - State-driven CSS handles all layer management
+   * - Clean separation: CSS manages visibility, JS manages state
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -2856,7 +2887,7 @@
     console.log('⏭️ Default playNextPlaylistItem - override in content-detail.js');
   };
   
-  // 🚨 POSTER OVERLAY FIX: Initialize interaction fixes when DOM is ready
+  // 🚨 CSS STATE ARCHITECTURE: Initialize interaction fixes when DOM is ready
   document.addEventListener('DOMContentLoaded', () => {
     const videoEl = document.getElementById('inlineVideoPlayer');
     const container = videoEl ? (videoEl.closest('.video-container, .inline-player') || videoEl.parentElement) : null;
@@ -2901,7 +2932,7 @@
       }, 500);
     }
     
-    // 🚨 Initialize player interaction fixes (poster overlay cleanup, guarded clicks)
+    // 🚨 Initialize player interaction fixes (state engine + guarded clicks)
     initializePlayerInteractionFixes();
   });
   
@@ -2910,11 +2941,15 @@
     setTimeout(initializePlayerInteractionFixes, 500);
   });
   
+  document.addEventListener('playlistLoaded', function() {
+    setTimeout(initializePlayerInteractionFixes, 500);
+  });
+  
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = EnhancedVideoPlayer;
   }
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.2.1 - Poster Overlay Fix + Cloudflare + Audio Fix)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.0 - CSS State Architecture + Cloudflare + Audio Fix)');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
   console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
@@ -2934,9 +2969,9 @@
   console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
   console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
   console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with muted fallback');
-  console.log('   🚨 POSTER OVERLAY FIX: purgePosterOverlay() on play/playing events');
-  console.log('   🚨 POSTER OVERLAY FIX: Hard drop with display:none after transition');
-  console.log('   🚨 POSTER OVERLAY FIX: guardedVideoContainerClick() prevents pause on control clicks');
+  console.log('   🚨 CSS STATE ARCHITECTURE: .is-playing/.is-paused classes on wrapper');
+  console.log('   🚨 CSS STATE ARCHITECTURE: State-driven CSS manages poster overlay visibility');
+  console.log('   🚨 CSS STATE ARCHITECTURE: guardedVideoContainerClick() prevents pause on controls');
   console.log('   🚀 Ready for production deployment with Engagement System Full Integration');
   
 })();
