@@ -130,7 +130,14 @@
     display: block;
 }
 
-/* Custom Visual Thumbnail Overlay Shield */
+/* ============================================ */
+/* 🛠️ FIX 2: BREAK THE CLICK BLOCKADE ON PLAYER CONTROLS */
+/* ============================================ */
+
+/* 1. Prevent poster and overlay elements from hijacking interactions */
+.custom-poster-overlay, 
+.video-poster-container, 
+.visual-blockade,
 #customPosterOverlay,
 .player-poster-overlay {
     position: absolute;
@@ -145,13 +152,15 @@
     opacity: 1;
     transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
     visibility: visible;
-    pointer-events: none !important; /* Let clicks pass through to video */
+    pointer-events: none !important; /* 🚨 CRITICAL: Let clicks pass through to video */
     user-select: none !important;
     display: block;
     background-color: #0a0a0a;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
 }
 
-/* High-Priority Active Control Hub */
+/* 2. Force the control bar container to dominate the layer hierarchy */
 .enhanced-video-controls,
 .custom-controls-container {
     position: absolute;
@@ -159,10 +168,10 @@
     left: 0;
     width: 100%;
     z-index: 10 !important; /* Must sit above everything else */
-    pointer-events: auto !important; /* Enforces element interactivity */
+    pointer-events: auto !important; /* 🚨 CRITICAL: Enforces element interactivity */
 }
 
-/* Ensure all control bar elements are clickable */
+/* 3. Ensure all control bar elements are clickable */
 .enhanced-video-controls .controls-bar {
     z-index: 11 !important;
     pointer-events: auto !important;
@@ -180,13 +189,31 @@
     touch-action: manipulation !important;
 }
 
-/* Settings menu on top */
+/* 4. Settings menu on top */
 .settings-menu {
     z-index: 1000 !important;
     pointer-events: auto !important;
 }
 
 .settings-menu * {
+    pointer-events: auto !important;
+}
+
+/* 5. Additional safety for all interactive elements */
+.video-container .control-btn,
+.video-container .play-pause-btn,
+.video-container .settings-toggle,
+.video-container .fullscreen-btn,
+.video-container .volume-control,
+.video-container .progress-container,
+.video-container .time-display {
+    pointer-events: auto !important;
+    z-index: 12 !important;
+}
+
+/* 6. Prevent any invisible blockers from intercepting clicks */
+.video-container .video-js,
+.video-container video {
     pointer-events: auto !important;
 }
 
@@ -224,7 +251,7 @@
     opacity: 1 !important;
     visibility: visible !important;
     z-index: 5 !important;
-    pointer-events: none !important;
+    pointer-events: none !important; /* 🚨 Still let clicks pass through */
 }
 
 /* 🚀 WHEN PLAYBACK STARTS, ensure controls are visible */
