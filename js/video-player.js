@@ -75,11 +75,17 @@
 // - Maintains backward compatibility with existing loadSource usage
 // - Ensures poster overlay updates without destroying DOM
 // ============================================
+// 🎯 CROSS-DEVICE CONTROL FIX (2026-06-22):
+// - Converted document-level delegation to scoped wrapper capture-phase listeners
+// - Bypasses parent pause guards for immediate control execution
+// - Mobile Safari event drop-off protection via capture phase
+// - MutationObserver ensures mobile-compatible controls survive DOM updates
+// ============================================
 
 (function() {
   'use strict';
   
-  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.2 - Safe-Guard Compatibility + Nuclear Diagnostic Engine + CSS State Architecture)');
+  console.log('🎬 EnhancedVideoPlayer module loading... (v3.3.3 - Cross-Device Control Fix + Capture-Phase Delegation)');
 
   // Global reference for RPC view recording
   let _globalRecordContentViewRPC = null;
@@ -422,6 +428,11 @@
    * - Enhanced loadSource to handle both object and direct parameter calls
    * - Supports window.EnhancedVideoPlayer.loadSource(videoUrl, thumbnailUrl)
    * - Maintains backward compatibility with existing loadSource usage
+   * 
+   * 🎯 CROSS-DEVICE CONTROL FIX (2026-06-22):
+   * - Scoped wrapper capture-phase listeners bypass parent pause guards
+   * - Mobile Safari event drop-off protection via capture phase
+   * - MutationObserver ensures mobile-compatible controls survive DOM updates
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -559,6 +570,7 @@
       );
       
       // 🔧 FIX #5: Setup delegated event listeners for buttons (survives DOM rebuilds)
+      // 🎯 UPDATED: Now uses scoped wrapper capture-phase listeners instead of document delegation
       this._setupDelegatedEventListeners();
       
       // 🚨 Setup contentId change listener
@@ -575,57 +587,144 @@
     }
     
     // =====================================================
-    // 🔧 FIX #5: DELEGATED EVENT LISTENERS
-    // These survive DOM rebuilds and player destruction/recreation
+    // 🔧 FIX #5: DELEGATED EVENT LISTENERS (UPDATED)
+    // 🎯 CROSS-DEVICE FIX: Capture-phase listeners on scoped wrapper
+    // These bypass parent pause guards and survive DOM rebuilds
     // =====================================================
     _setupDelegatedEventListeners() {
-      // Only setup once globally
-      if (window._delegatedListenersSetup) return;
-      window._delegatedListenersSetup = true;
+      // Get the player wrapper container (scoped, not global document)
+      const wrapper = this.container || document.querySelector('.video-player-wrapper') || document.querySelector('.video-container');
       
-      console.log('🎯 Setting up delegated event listeners for player controls (survives DOM rebuilds)');
-      
-      document.addEventListener('click', (e) => {
-        // Find closest matching buttons
+      if (!wrapper) {
+        console.warn('⚠️ EnhancedVideoPlayer: Scoped wrapper not found. Falling back to document delegation.');
+        // Fallback to global document listener (legacy behavior)
+        if (window._delegatedListenersSetup) return;
+        window._delegatedListenersSetup = true;
+        
+        document.addEventListener('click', (e) => {
+          const prevBtn = e.target.closest('.prev-track-btn, .player-prev-btn');
+          const nextBtn = e.target.closest('.next-track-btn, .player-next-btn');
+          const volumeBtn = e.target.closest('.volume-btn, .player-volume-btn');
+          
+          if (prevBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('⏮️ Delegated (fallback): Previous button clicked');
+            if (typeof window.playPreviousPlaylistItem === 'function') {
+              window.playPreviousPlaylistItem();
+            } else if (typeof this.playPrevious === 'function') {
+              this.playPrevious();
+            }
+          }
+          
+          if (nextBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('⏭️ Delegated (fallback): Next button clicked');
+            if (typeof window.playNextPlaylistItem === 'function') {
+              window.playNextPlaylistItem();
+            } else if (typeof this.playNext === 'function') {
+              this.playNext();
+            }
+          }
+          
+          if (volumeBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔊 Delegated (fallback): Volume button clicked');
+            if (this.video) {
+              this.video.muted = !this.video.muted;
+              this._updateVolumeUI();
+              this._emit('playback:mute', { muted: this.video.muted });
+            }
+          }
+        });
+        console.log('✅ Delegated event listeners (fallback) registered');
+        return;
+      }
+
+      console.log('🎯 EnhancedVideoPlayer: Deploying cross-device capture listeners on player wrapper.');
+
+      // Ensure mobile browsers recognize custom control elements as interactive targets
+      const optimizeControlsForMobile = () => {
+        wrapper.querySelectorAll('.prev-track-btn, .player-prev-btn, .next-track-btn, .player-next-btn, .volume-btn, .player-volume-btn, .play-pause-btn, .fullscreen-btn').forEach(btn => {
+          btn.style.cursor = 'pointer';
+          if (!btn.getAttribute('role')) {
+            btn.setAttribute('role', 'button');
+          }
+        });
+      };
+      optimizeControlsForMobile();
+
+      // Monitor for any skeleton updates or dynamic DOM changes to maintain mobile compliance
+      if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(() => optimizeControlsForMobile());
+        observer.observe(wrapper, { childList: true, subtree: true });
+        // Store observer reference for cleanup if needed
+        this._mutationObserver = observer;
+      }
+
+      /**
+       * Capture Phase Interceptor (Notice the 'true' argument at the end of the listener)
+       * Catches the interaction on the descent, executing actions before parent elements can stall them.
+       */
+      wrapper.addEventListener('click', (e) => {
+        // Resolve target elements using precise class definitions
         const prevBtn = e.target.closest('.prev-track-btn, .player-prev-btn');
         const nextBtn = e.target.closest('.next-track-btn, .player-next-btn');
         const volumeBtn = e.target.closest('.volume-btn, .player-volume-btn');
-        
-        if (prevBtn) {
-          e.preventDefault();
+        const playPauseBtn = e.target.closest('.play-pause-btn, .player-play-btn');
+
+        // If a valid control button was interacted with, short-circuit the defensive parent guards
+        if (prevBtn || nextBtn || volumeBtn || playPauseBtn) {
           e.stopPropagation();
-          console.log('⏮️ Delegated: Previous button clicked');
-          if (typeof window.playPreviousPlaylistItem === 'function') {
-            window.playPreviousPlaylistItem();
-          } else if (typeof this.playPrevious === 'function') {
-            this.playPrevious();
+          e.stopImmediatePropagation();
+          e.preventDefault(); 
+        }
+
+        // Execute actions directly against the native video/player instances
+        if (playPauseBtn) {
+          console.log("🎯 Cross-Device Engine: Play/Pause Intercepted");
+          const video = wrapper.querySelector('video');
+          if (video) {
+            if (video.paused) {
+              video.play().catch(err => console.warn("Playback block checked:", err));
+            } else {
+              video.pause();
+            }
           }
         }
         
         if (nextBtn) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('⏭️ Delegated: Next button clicked');
+          console.log("🎯 Cross-Device Engine: Next Track Intercepted");
           if (typeof window.playNextPlaylistItem === 'function') {
             window.playNextPlaylistItem();
           } else if (typeof this.playNext === 'function') {
             this.playNext();
           }
         }
-        
-        if (volumeBtn) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('🔊 Delegated: Volume button clicked');
-          if (this.video) {
-            this.video.muted = !this.video.muted;
-            this._updateVolumeUI();
-            this._emit('playback:mute', { muted: this.video.muted });
+
+        if (prevBtn) {
+          console.log("🎯 Cross-Device Engine: Previous Track Intercepted");
+          if (typeof window.playPreviousPlaylistItem === 'function') {
+            window.playPreviousPlaylistItem();
+          } else if (typeof this.playPrevious === 'function') {
+            this.playPrevious();
           }
         }
-      });
-      
-      console.log('✅ Delegated event listeners registered');
+
+        if (volumeBtn) {
+          console.log("🎯 Cross-Device Engine: Mute Toggle Intercepted");
+          const video = wrapper.querySelector('video');
+          if (video) {
+            video.muted = !video.muted;
+            this._updateVolumeUI();
+            this._emit('playback:mute', { muted: video.muted });
+          }
+        }
+      }, true); // ← CRITICAL: 'true' enables the Capture Phase to bypass parent element click blocks.
+
+      console.log('✅ Cross-device capture-phase delegated event listeners registered on player wrapper');
     }
     
     // =====================================================
@@ -3107,12 +3206,15 @@
     console.log('✅ Nuclear Diagnostic Engine deployed. Scanning every 500ms for layout blockers.');
   })();
   
-  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.2 - Safe-Guard Compatibility + Nuclear Diagnostic Engine + CSS State Architecture)');
+  console.log('✅ EnhancedVideoPlayer module loaded successfully (v3.3.3 - Cross-Device Control Fix + Capture-Phase Delegation)');
+  console.log('   🎯 CROSS-DEVICE FIX: Scoped wrapper capture-phase listeners bypass parent guards');
+  console.log('   🎯 CROSS-DEVICE FIX: Mobile Safari event drop-off protection');
+  console.log('   🎯 CROSS-DEVICE FIX: MutationObserver for mobile-compatible controls');
   console.log('   🛡️ SAFE-GUARD: loadSource() supports both object config AND direct parameters');
   console.log('   🛡️ SAFE-GUARD: Backward compatible with skeleton generator calls');
   console.log('   🛡️ SAFE-GUARD: Preserves poster overlay when updating source');
   console.log('   🔧 FIX #2: REMOVED fake audio restore system');
-  console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume');
+  console.log('   🔧 FIX #5: ADDED delegated event listeners for prev/next/volume (UPDATED)');
   console.log('   🔧 FIX #6: REMOVED engagement buttons from player overlay');
   console.log('   🔧 FIX #8: SINGLE ended handler (no duplicates)');
   console.log('   🔧 CRITICAL: Player ONLY emits events, NEVER controls playlist');
@@ -3136,6 +3238,6 @@
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Force-correction loop runs every 500ms');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
-  console.log('   🚀 Ready for production deployment with Engagement System Full Integration');
+  console.log('   🚀 Ready for production deployment with Cross-Device Control Fix');
   
 })();
