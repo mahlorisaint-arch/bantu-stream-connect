@@ -117,8 +117,18 @@
     overflow: hidden;
 }
 
-/* Custom Poster Overlay Layer */
-.player-poster-overlay {
+/* Explicit Native Video Frame Alignment */
+#inlineVideoPlayer {
+    position: relative;
+    z-index: 1; /* Sits at base layer */
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Custom Poster Overlay Layer - BULLETPROOF */
+.player-poster-overlay,
+#customPosterOverlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -127,31 +137,49 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    z-index: 2;
-    pointer-events: none;
-    transition: opacity 0.4s ease;
-    display: none;
+    z-index: 2; /* Sits directly over the video before load */
+    transition: opacity 0.25s ease-in-out;
+    pointer-events: none !important;
+    user-select: none !important;
+    display: none; /* Hidden by default, shown via JS */
     background-color: #0a0a0a;
 }
 
 /* Show overlay by default when set */
-.player-poster-overlay.active {
+.player-poster-overlay.active,
+#customPosterOverlay.active {
     display: block;
     opacity: 1;
+    pointer-events: none !important;
+}
+
+/* When overlay should be hidden during playback */
+.player-poster-overlay.hidden,
+#customPosterOverlay.hidden {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
 }
 
 /* Audio mode - keep overlay visible during playback */
-.video-container.audio-active .player-poster-overlay {
+.video-container.audio-active .player-poster-overlay,
+.video-container.audio-active #customPosterOverlay {
     display: block !important;
     opacity: 1 !important;
+    pointer-events: none !important;
+    z-index: 2 !important;
     background-size: contain;
     background-color: var(--bg-secondary, #0a0a0a);
 }
 
 /* When video is playing, fade out the overlay */
-.video-container.playing .player-poster-overlay:not(.keep-visible) {
-    opacity: 0;
-    pointer-events: none;
+.video-container.playing .player-poster-overlay:not(.keep-visible),
+.video-container.playing #customPosterOverlay:not(.keep-visible) {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
 }
 
 /* Video container states */
@@ -165,23 +193,98 @@
     z-index: 1;
 }
 
-.player-poster-overlay {
-    z-index: 3;
+/* ============================================ */
+/* 🚨 CRITICAL FIX: Interaction Stack Priorities */
+/* Ensures controls remain accessible over video and overlays */
+/* ============================================ */
+
+/* Core Video Container Layout Box */
+.video-container,
+.video-player-wrapper {
+    position: relative;
+    overflow: hidden;
+    background-color: #000;
 }
 
-.enhanced-video-controls {
-    z-index: 10;
+/* High-Priority Active Control Hub */
+.enhanced-video-controls,
+.custom-controls-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10 !important; /* Must sit above everything else at all times */
+    pointer-events: auto !important; /* Retains touch tracking capabilities */
+}
+
+/* Force Hover/Touch Consistency across Desktop & Mobile */
+.video-container:hover .enhanced-video-controls,
+.enhanced-video-controls:hover,
+.video-container:focus-within .enhanced-video-controls,
+.enhanced-video-controls.force-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+}
+
+/* Ensure all control bar elements are clickable */
+.enhanced-video-controls .controls-bar {
+    z-index: 11 !important;
+    pointer-events: auto !important;
+}
+
+.enhanced-video-controls .controls-bar * {
+    pointer-events: auto !important;
+}
+
+.enhanced-video-controls .control-btn,
+.enhanced-video-controls button {
+    pointer-events: auto !important;
+    z-index: 12 !important;
+    position: relative;
+    touch-action: manipulation !important;
+}
+
+/* Settings menu on top */
+.settings-menu {
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+.settings-menu * {
+    pointer-events: auto !important;
+}
+
+/* Mobile touch optimizations for controls */
+@media (hover: none) and (pointer: coarse) {
+    .enhanced-video-controls {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        pointer-events: auto !important;
+    }
+    
+    .enhanced-video-controls .controls-bar {
+        pointer-events: auto !important;
+    }
+    
+    .enhanced-video-controls .control-btn {
+        min-width: 20px !important;
+        min-height: 20px !important;
+        touch-action: manipulation !important;
+    }
 }
 
 /* ============================================ */
 /* RESPONSIVE ADJUSTMENTS FOR POSTER OVERLAY */
 /* ============================================ */
 @media (max-width: 768px) {
-    .player-poster-overlay {
+    .player-poster-overlay,
+    #customPosterOverlay {
         background-size: contain;
     }
     
-    .video-container.audio-active .player-poster-overlay {
+    .video-container.audio-active .player-poster-overlay,
+    .video-container.audio-active #customPosterOverlay {
         background-size: contain;
     }
 }
@@ -196,7 +299,7 @@
   right: 0;
   background: linear-gradient(to top, rgba(15, 15, 15, 0.95), rgba(15, 15, 15, 0.6), transparent);
   padding: 20px 20px 12px;
-  z-index: 100;
+  z-index: 10 !important;
   transition: opacity 0.3s ease, transform 0.3s ease;
   opacity: 0;
   pointer-events: none;
@@ -227,6 +330,8 @@
   position: relative;
   width: 100%;
   flex-wrap: nowrap;
+  z-index: 11 !important;
+  pointer-events: auto !important;
 }
 
 /* Control buttons - Glassmorphism */
@@ -249,6 +354,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  pointer-events: auto !important;
+  z-index: 12 !important;
+  position: relative;
 }
 
 .enhanced-video-controls .control-btn:hover {
@@ -491,13 +599,18 @@
   min-width: 220px;
   max-width: 280px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-  z-index: 1000;
+  z-index: 1000 !important;
   display: none;
   animation: fadeInUp 0.2s ease;
+  pointer-events: auto !important;
 }
 
 .settings-menu.active {
   display: block;
+}
+
+.settings-menu * {
+  pointer-events: auto !important;
 }
 
 @keyframes fadeInUp {
@@ -554,6 +667,7 @@
   cursor: pointer;
   text-align: center;
   transition: all 0.2s ease;
+  pointer-events: auto !important;
 }
 
 .quality-option:hover {
@@ -592,6 +706,7 @@
   cursor: pointer;
   text-align: center;
   transition: all 0.2s ease;
+  pointer-events: auto !important;
 }
 
 .speed-option:hover {
