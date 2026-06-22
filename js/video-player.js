@@ -96,12 +96,12 @@
 // - Decouples click capture from component layout boundaries
 // - Permanent fix for controls that exist outside structural wrapper
 // ============================================
-// 🏗️ BANTU STRUCTURAL FIXES (2026-06-22):
-// - Bulletproof Atomic Fullscreen CSS Engine
-// - Ancestral Upward Traversal Force Loop for fullscreen layout preservation
-// - Background asset demotion for fullscreen contexts
-// - Automated ancestral visibility traversal across all wrapper layers
-// - iOS/Safari Webkit stacking context compatibility
+// 🚀 NUCLEAR BRIDGE V2 (2026-06-22):
+// - Structural Ancestral Force Loop for full-screen stacking priority
+// - Background canvas/poster demotion rules
+// - Ancestral upward traversal from controls to full-screen root
+// - Dynamic inline style overrides for mutation resistance
+// - Audio mode poster overlay stacking fix
 // ============================================
 
 (function() {
@@ -209,221 +209,6 @@
       console.error('❌ View recording error:', error);
       return false;
     }
-  }
-
-  // ============================================
-  // 🏗️ BANTU STRUCTURAL FIXES
-  // Bulletproof Atomic Fullscreen CSS Engine
-  // Ancestral Upward Traversal Force Loop
-  // ============================================
-
-  // 1. STATE & RESOURCE TRACKING VARIABLES
-  let bantuVisibilityInterval = null;
-  const BANTU_STYLE_ID = 'bantu-fullscreen-force-sheet';
-
-  /**
-   * Phase 1: Initialize Bulletproof Atomic Fullscreen CSS Engine
-   * Invoke this function once during your player's initial setup phase
-   */
-  function initBantuStyleEngine() {
-    if (document.getElementById(BANTU_STYLE_ID)) return;
-
-    const styleSheet = document.createElement('style');
-    styleSheet.id = BANTU_STYLE_ID;
-    styleSheet.textContent = `
-        /* Force the designated fullscreen wrapper to preserve structural layout boundaries */
-        :fullscreen, :-webkit-full-screen {
-            position: relative !important;
-            background: #000 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            display: block !important;
-        }
-
-        /* Demote all background visual canvases, poster images, and hardware media elements */
-        :fullscreen video, :-webkit-full-screen video,
-        :fullscreen audio, :-webkit-full-screen audio,
-        :fullscreen img, :-webkit-full-screen img,
-        :fullscreen [class*="poster" i], :-webkit-full-screen [class*="poster" i],
-        :fullscreen [class*="overlay" i], :-webkit-full-screen [class*="overlay" i],
-        :fullscreen [class*="thumbnail" i], :-webkit-full-screen [class*="thumbnail" i],
-        :fullscreen [class*="canvas" i], :-webkit-full-screen [class*="canvas" i] {
-            z-index: 1 !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain !important;
-        }
-
-        /* Overrule native browser shadow-DOM UI blocks completely */
-        video::-webkit-media-controls,
-        video::-webkit-media-controls-enclosure,
-        video::-webkit-media-controls-panel {
-            display: none !important;
-            -webkit-appearance: none !important;
-        }
-
-        /* Elevate your custom interactive control wrappers to the absolute Top Layer front */
-        :fullscreen .player-controls, 
-        :fullscreen .player-controls-wrapper,
-        :fullscreen .control-bar,
-        :fullscreen .video-controls,
-        :fullscreen .controls-container,
-        :-webkit-full-screen .player-controls,
-        :-webkit-full-screen .player-controls-wrapper,
-        :-webkit-full-screen .control-bar,
-        :-webkit-full-screen .video-controls,
-        :-webkit-full-screen .controls-container,
-        .enhanced-video-player:fullscreen .controls,
-        :fullscreen [class*="control-bar" i],
-        :fullscreen [class*="controls-container" i] {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 2147483647 !important;
-            position: absolute !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            min-height: 60px !important;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%) !important;
-            pointer-events: auto !important;
-        }
-        
-        /* Enforce system cursor presence during full-screen states */
-        :fullscreen, :-webkit-full-screen {
-            cursor: default !important;
-        }
-
-        /* Ensure the video element itself fills the container properly */
-        :fullscreen .video-container,
-        :-webkit-full-screen .video-container,
-        :fullscreen .video-player-wrapper,
-        :-webkit-full-screen .video-player-wrapper {
-            width: 100% !important;
-            height: 100% !important;
-            max-width: 100% !important;
-            max-height: 100% !important;
-            position: relative !important;
-            background: #000 !important;
-        }
-    `;
-    document.head.appendChild(styleSheet);
-    console.log("🎨 [Bantu Engine] Fullscreen Atomic CSS rules loaded into asset tree.");
-  }
-
-  /**
-   * Phase 2: Ancestral Upward Traversal Force Loop
-   * Intended to be fired cyclically ONLY when full-screen is actively engaged.
-   * It counteracts framework mutations or dynamic hidden flags injected by state engines.
-   */
-  function runAncestralTraversalForce() {
-    const fsElement = document.fullscreenElement || document.webkitFullscreenElement;
-    if (!fsElement) {
-      clearBantuTraversalLoop();
-      return;
-    }
-
-    // Target your primary player interaction elements inside full screen context
-    const referenceNode = fsElement.querySelector(
-      '.play-pause-btn, .player-play-btn, .fullscreen-btn, .video-controls, .player-controls, .control-bar, .controls-container, [class*="control-bar" i], [class*="controls-container" i]'
-    );
-    if (!referenceNode) return;
-
-    // Isolate the immediate container layout component wrapper row
-    let controlsContainer = referenceNode.classList.contains('play-pause-btn') || 
-                            referenceNode.classList.contains('fullscreen-btn') || 
-                            referenceNode.classList.contains('player-play-btn')
-        ? referenceNode.parentElement 
-        : referenceNode;
-
-    if (!controlsContainer) return;
-
-    // Hardcode layout structural positioning coordinates on the control container row
-    controlsContainer.style.setProperty('display', 'flex', 'important');
-    controlsContainer.style.setProperty('visibility', 'visible', 'important');
-    controlsContainer.style.setProperty('opacity', '1', 'important');
-    controlsContainer.style.setProperty('z-index', '2147483647', 'important');
-    controlsContainer.style.setProperty('position', 'absolute', 'important');
-    controlsContainer.style.setProperty('bottom', '0', 'important');
-    controlsContainer.style.setProperty('left', '0', 'important');
-    controlsContainer.style.setProperty('width', '100%', 'important');
-    controlsContainer.style.setProperty('pointer-events', 'auto', 'important');
-    controlsContainer.style.setProperty('min-height', '60px', 'important');
-    controlsContainer.style.setProperty('background', 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)', 'important');
-
-    // Walk up the DOM tree from the controls layout context up to the fullscreen container viewport boundary
-    let currentElement = controlsContainer.parentElement;
-    while (currentElement && currentElement !== fsElement && currentElement !== document.body) {
-      // Strip out frame suppression classes injected by the core script routines
-      currentElement.classList.remove('hidden', 'hide', 'd-none', 'controls-hidden', 'user-inactive', 'inactive', 'fade-out', 'js-hidden');
-      
-      // Counteract inline 'display: none' allocations instantly
-      if (window.getComputedStyle(currentElement).display === 'none') {
-        currentElement.style.setProperty('display', 'block', 'important');
-      }
-      
-      currentElement.style.setProperty('visibility', 'visible', 'important');
-      currentElement.style.setProperty('opacity', '1', 'important');
-      currentElement.style.setProperty('z-index', '2147483646', 'important');
-      currentElement.style.setProperty('position', 'absolute', 'important');
-      currentElement.style.setProperty('inset', '0', 'important');
-      currentElement.style.setProperty('pointer-events', 'none', 'important'); // Allows clicking through wrapper hulls
-
-      currentElement = currentElement.parentElement;
-    }
-  }
-
-  /**
-   * Phase 3: Loop Management Hooks
-   * Safely initializes or clears the evaluation loop routine to optimize performance metrics.
-   */
-  function startBantuTraversalLoop() {
-    if (bantuVisibilityInterval) clearInterval(bantuVisibilityInterval);
-    bantuVisibilityInterval = setInterval(runAncestralTraversalForce, 150);
-    console.log("🚀 [Bantu Engine] Fullscreen Traversal State Monitor armed.");
-  }
-
-  function clearBantuTraversalLoop() {
-    if (bantuVisibilityInterval) {
-      clearInterval(bantuVisibilityInterval);
-      bantuVisibilityInterval = null;
-      console.log("🛑 [Bantu Engine] Fullscreen Traversal State Monitor disarmed.");
-    }
-  }
-
-  /**
-   * Phase 4: Fullscreen State Toggle Handler Integration
-   * Map these execution triggers into your existing fullscreen change listener block.
-   */
-  function bindBantuFullscreenWatchers() {
-    const handleFullscreenChange = () => {
-      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (isFullscreen) {
-        startBantuTraversalLoop();
-        runAncestralTraversalForce();
-        // Force browser repaint calculations
-        window.dispatchEvent(new Event('resize'));
-      } else {
-        clearBantuTraversalLoop();
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-  }
-
-  /**
-   * Phase 5: EXPOSED INITIALIZER HOOK
-   * Call this function inside your document configuration loader setup
-   */
-  function integrateBantuStructuralFixes() {
-    initBantuStyleEngine();
-    bindBantuFullscreenWatchers();
-    console.log('🏗️ [Bantu Engine] Structural fixes integrated successfully');
   }
 
   // ============================================
@@ -815,6 +600,326 @@
   }
 
   // ============================================
+  // 🚀 NUCLEAR BRIDGE V2: Structural Ancestral Force Loop
+  // ============================================
+
+  /**
+   * Deploy the Structural Ancestral Force Loop (V2)
+   * This actively crawls upward from player buttons to full-screen root
+   * Demotes posters/overlays and forces controls to the top layer
+   */
+  function _deployNuclearBridgeV2() {
+    console.log("☢️ CRITICAL SYSTEM PATCH v2: Initializing Deep Layout, Poster Overrides & Ancestral Upward Traversal Force...");
+
+    // Clear any previous interval instances to prevent memory accumulation leaks
+    if (window.__bantuVisibilityForceInterval) {
+      clearInterval(window.__bantuVisibilityForceInterval);
+    }
+
+    // 1. Inject Bulletproof Atomic CSS Overrides for Fullscreen Stacking
+    const styleId = 'bantu-fullscreen-force-sheet';
+    let styleSheet = document.getElementById(styleId);
+    if (styleSheet) styleSheet.remove();
+
+    styleSheet = document.createElement('style');
+    styleSheet.id = styleId;
+    styleSheet.textContent = `
+        /* Force root fullscreen element boundaries */
+        :fullscreen, :-webkit-full-screen {
+            position: relative !important;
+            background: #000 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            display: block !important;
+        }
+
+        /* Demote ALL background visuals, posters, overlays, canvases and media tags to base layer */
+        :fullscreen video, :-webkit-full-screen video,
+        :fullscreen audio, :-webkit-full-screen audio,
+        :fullscreen img, :-webkit-full-screen img,
+        :fullscreen [class*="poster" i], :-webkit-full-screen [class*="poster" i],
+        :fullscreen [class*="overlay" i], :-webkit-full-screen [class*="overlay" i],
+        :fullscreen [class*="thumbnail" i], :-webkit-full-screen [class*="thumbnail" i],
+        :fullscreen [class*="canvas" i], :-webkit-full-screen [class*="canvas" i] {
+            z-index: 1 !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+        }
+
+        /* Prevent browser shadow-DOM overlays from intercepting events or drawing chrome */
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel {
+            display: none !important;
+            -webkit-appearance: none !important;
+        }
+
+        /* Pull target control systems and known wrappers to the absolute front */
+        :fullscreen .player-controls, 
+        :fullscreen .player-controls-wrapper,
+        :fullscreen .control-bar,
+        :fullscreen .video-controls,
+        :fullscreen .controls-container,
+        :-webkit-full-screen .player-controls,
+        :-webkit-full-screen .player-controls-wrapper,
+        :-webkit-full-screen .control-bar,
+        :-webkit-full-screen .video-controls,
+        :-webkit-full-screen .controls-container,
+        .enhanced-video-player:fullscreen .controls,
+        :fullscreen [class*="control-bar" i],
+        :fullscreen [class*="controls-container" i] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 2147483647 !important;
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 60px !important;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%) !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Maintain system cursor state control */
+        :fullscreen, :-webkit-full-screen {
+            cursor: default !important;
+        }
+    `;
+    document.head.appendChild(styleSheet);
+    console.log("🎨 Full-spectrum structural CSS rules and poster demotions injected.");
+
+    // 2. Continuous Ancestral Upward Traversal Engine
+    window.__bantuForceVisibilityExecutionLoop = function() {
+        const fsElement = document.fullscreenElement || document.webkitFullscreenElement;
+        if (!fsElement) return;
+
+        // Locate any core player interactive nodes inside full screen context
+        const rootInteractiveNode = fsElement.querySelector(
+            '.play-pause-btn, .player-play-btn, .fullscreen-btn, .video-controls, .player-controls, .control-bar, .controls-container, [class*="control-bar" i], [class*="controls-container" i]'
+        );
+        if (!rootInteractiveNode) return;
+
+        // Find the wrapper element block for the controls grouping context
+        let controlsContainer = rootInteractiveNode.classList.contains('play-pause-btn') || 
+                                rootInteractiveNode.classList.contains('fullscreen-btn') || 
+                                rootInteractiveNode.classList.contains('player-play-btn')
+            ? rootInteractiveNode.parentElement 
+            : rootInteractiveNode;
+
+        if (!controlsContainer) return;
+
+        // Force explicit placement styles directly onto the target UI wrapper row
+        controlsContainer.style.setProperty('display', 'flex', 'important');
+        controlsContainer.style.setProperty('visibility', 'visible', 'important');
+        controlsContainer.style.setProperty('opacity', '1', 'important');
+        controlsContainer.style.setProperty('z-index', '2147483647', 'important');
+        controlsContainer.style.setProperty('position', 'absolute', 'important');
+        controlsContainer.style.setProperty('bottom', '0', 'important');
+        controlsContainer.style.setProperty('left', '0', 'important');
+        controlsContainer.style.setProperty('width', '100%', 'important');
+        controlsContainer.style.setProperty('pointer-events', 'auto', 'important');
+
+        // Travel up the DOM tree from the controls component to the fullscreen root element node
+        let current = controlsContainer.parentElement;
+        while (current && current !== fsElement && current !== document.body) {
+            // Drop state machine suppression classes on sight
+            current.classList.remove('hidden', 'hide', 'd-none', 'controls-hidden', 'user-inactive', 'inactive', 'fade-out', 'js-hidden');
+            
+            // Override frame hiding mutations written directly to elements by video-player.js loops
+            const currentComputedDisplay = window.getComputedStyle(current).display;
+            if (currentComputedDisplay === 'none') {
+                current.style.setProperty('display', 'block', 'important');
+            }
+            current.style.setProperty('visibility', 'visible', 'important');
+            current.style.setProperty('opacity', '1', 'important');
+            current.style.setProperty('z-index', '2147483646', 'important');
+            current.style.setProperty('position', 'absolute', 'important');
+            current.style.setProperty('inset', '0', 'important');
+            current.style.setProperty('pointer-events', 'none', 'important'); // Allow clicking through empty intermediate spaces
+
+            current = current.parentElement;
+        }
+    };
+
+    // Initialize the tight structural state correction interval routine (Runs every 150ms during active playback loops)
+    window.__bantuVisibilityForceInterval = setInterval(window.__bantuForceVisibilityExecutionLoop, 150);
+
+    // Bind execution directly to window changes or fullscreen switches
+    document.addEventListener('fullscreenchange', window.__bantuForceVisibilityExecutionLoop);
+    window.addEventListener('resize', window.__bantuForceVisibilityExecutionLoop);
+
+    // 3. Fallback Click Event Interceptor Integration Setup
+    const nativeMedia = document.querySelector('video') || document.querySelector('audio');
+    if (!nativeMedia) {
+        console.error("❌ CRITICAL: No hardware media engine detected.");
+        return;
+    }
+
+    if (window.__bantuFailSafeHandler) {
+        document.removeEventListener('click', window.__bantuFailSafeHandler, true);
+    }
+
+    // Custom Floating PiP Interface Fallback for Audio Assets
+    window.__triggerBantuFloatPlayer = function() {
+        let floatBox = document.getElementById('bantu-audio-pip-float');
+        if (floatBox) {
+            floatBox.remove();
+            return;
+        }
+
+        const media = document.querySelector('video') || document.querySelector('audio');
+        const poster = media?.getAttribute('poster') || 'https://assets.bantustreamconnect.com/logo.png';
+        const title = document.querySelector('.hero-section h1, .track-title, .content-title')?.textContent || "Bantu Stream Content";
+
+        floatBox = document.createElement('div');
+        floatBox.id = 'bantu-audio-pip-float';
+        floatBox.style.cssText = `
+            position: fixed; bottom: 24px; right: 24px; width: 280px; height: 160px;
+            background: #121212; border: 1px solid #282828; border-radius: 12px;
+            z-index: 2147483647; box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+            overflow: hidden; display: flex; flex-direction: column; font-family: sans-serif; color: #fff;
+        `;
+
+        floatBox.innerHTML = `
+            <div style="position: relative; width: 100%; height: 110px; background: url('${poster}') center/cover no-repeat;">
+                <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="this.closest('#bantu-audio-pip-float').remove()">×</div>
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 8px; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${title}
+                </div>
+            </div>
+            <div style="height: 50px; display: flex; align-items: center; justify-content: center; background: #0a0a0a; gap: 24px;">
+                <button id="pip-f-prev" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">⏮</button>
+                <button id="pip-f-play" style="background:none; border:none; color:#fff; cursor:pointer; font-size:20px;">${media && !media.paused ? '⏸' : '▶'}</button>
+                <button id="pip-f-next" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px;">⏭</button>
+            </div>
+        `;
+        document.body.appendChild(floatBox);
+
+        floatBox.querySelector('#pip-f-play').onclick = () => media.paused ? media.play() : media.pause();
+        floatBox.querySelector('#pip-f-prev').onclick = () => document.querySelector('.prev-track-btn, .player-prev-btn')?.click();
+        floatBox.querySelector('#pip-f-next').onclick = () => document.querySelector('.next-track-btn, .player-next-btn')?.click();
+
+        media.addEventListener('play', () => { const b = document.getElementById('pip-f-play'); if(b) b.textContent = '⏸'; });
+        media.addEventListener('pause', () => { const b = document.getElementById('pip-f-play'); if(b) b.textContent = '▶'; });
+    };
+
+    window.__bantuFailSafeHandler = function(e) {
+        const playPauseBtn  = e.target.closest('.play-pause-btn, .player-play-btn');
+        const prevBtn       = e.target.closest('.prev-track-btn, .player-prev-btn');
+        const nextBtn       = e.target.closest('.next-track-btn, .player-next-btn');
+        const muteBtn       = e.target.closest('.mute-btn, .volume-btn, .player-mute-btn');
+        const pipBtn        = e.target.closest('.pip-btn, .player-pip-btn, .picture-in-picture-btn');
+        const settingsBtn   = e.target.closest('.settings-btn');
+        const fullscreenBtn = e.target.closest('.fullscreen-btn');
+
+        if (!(playPauseBtn || prevBtn || nextBtn || muteBtn || pipBtn || settingsBtn || fullscreenBtn)) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+
+        const activeMedia = document.querySelector('video') || document.querySelector('audio');
+        if (!activeMedia) return;
+
+        // 1. PLAY / PAUSE
+        if (playPauseBtn) {
+            activeMedia.paused ? activeMedia.play().catch(()=>{}) : activeMedia.pause();
+        }
+
+        // 2. NEXT TRACK
+        if (nextBtn) {
+            if (typeof window.playNextPlaylistItem === 'function') {
+                window.playNextPlaylistItem();
+            }
+        }
+
+        // 3. PREVIOUS TRACK
+        if (prevBtn) {
+            console.log("⚡ Nuclear Route -> Previous Track Structural Resolution");
+            const activeSidebarItem = document.querySelector('.playlist-sidebar .active, .playlist-item.active, .track-item.active, [data-content-id].active');
+            if (activeSidebarItem && activeSidebarItem.previousElementSibling) {
+                activeSidebarItem.previousElementSibling.click();
+            } else if (typeof window.playPreviousPlaylistItem === 'function' && !window.playPreviousPlaylistItem.toString().includes('Default')) {
+                window.playPreviousPlaylistItem();
+            } else if (typeof window.playPrevPlaylistItem === 'function') {
+                window.playPrevPlaylistItem();
+            } else {
+                const tracks = Array.from(document.querySelectorAll('.playlist-item, .track-item'));
+                const currentIndex = tracks.findIndex(t => t.classList.contains('active'));
+                if (currentIndex > 0) {
+                    tracks[currentIndex - 1].click();
+                }
+            }
+        }
+
+        // 4. MUTE / UNMUTE
+        if (muteBtn) {
+            activeMedia.muted = !activeMedia.muted;
+            const icon = muteBtn.querySelector('i');
+            if (icon) {
+                icon.className = activeMedia.muted ? 
+                    icon.className.replace(/fa-volume-(up|down)/g, 'fa-volume-mute') : 
+                    icon.className.replace('fa-volume-mute', 'fa-volume-up');
+            }
+        }
+
+        // 5. PICTURE-IN-PICTURE
+        if (pipBtn) {
+            if (!document.pictureInPictureElement) {
+                activeMedia.requestPictureInPicture()
+                    .catch(err => {
+                        window.__triggerBantuFloatPlayer();
+                    });
+            } else {
+                document.exitPictureInPicture().catch(()=>{});
+                const box = document.getElementById('bantu-audio-pip-float');
+                if (box) box.remove();
+            }
+        }
+
+        // 6. SETTINGS VIEW
+        if (settingsBtn) {
+            const menu = document.querySelector('.settings-menu, .player-settings-popup, .player-settings');
+            if (menu) {
+                const isHidden = window.getComputedStyle(menu).display === 'none';
+                menu.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+            }
+        }
+
+        // 7. FULLSCREEN LOCK HANDSHAKE REPAIR
+        if (fullscreenBtn) {
+            console.log("⚡ Nuclear Route -> High-Priority Fullscreen Execution Wrapper");
+            const playerWrapper = activeMedia.closest('.enhanced-video-player, #videoPlayerWrapper, .player-wrapper, .video-player-section') || activeMedia.parentElement;
+            
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (playerWrapper.requestFullscreen) {
+                    playerWrapper.requestFullscreen().then(() => {
+                        window.__bantuForceVisibilityExecutionLoop();
+                        window.dispatchEvent(new Event('resize'));
+                    }).catch(err => console.error("❌ Fullscreen error:", err));
+                } else if (playerWrapper.webkitRequestFullscreen) {
+                    playerWrapper.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+    };
+
+    document.addEventListener('click', window.__bantuFailSafeHandler, true);
+    console.log("🚀 VERSION 2 COOPERATION SYSTEM DEPLOYED AND FULLY OPERATIONAL.");
+  }
+
+  // ============================================
   // 🚀 INITIALIZATION: Set up all player fixes
   // ============================================
 
@@ -843,8 +948,8 @@
     // 4. 🌉 Deploy the orphaned controls bridge
     _setupOrphanedControlsBridge();
     
-    // 5. 🏗️ Integrate Bantu Structural Fixes
-    integrateBantuStructuralFixes();
+    // 5. ☢️ Deploy Nuclear Bridge V2 (Ancestral Force Loop)
+    _deployNuclearBridgeV2();
     
     console.log('✅ Player interaction fixes initialized');
   }
@@ -922,12 +1027,11 @@
    * - Uses .closest() to defeat FontAwesome icon trap
    * - Decouples click capture from component layout boundaries
    * 
-   * 🏗️ BANTU STRUCTURAL FIXES (2026-06-22):
-   * - Bulletproof Atomic Fullscreen CSS Engine
-   * - Ancestral Upward Traversal Force Loop for fullscreen preservation
-   * - Background asset demotion for fullscreen contexts
-   * - Automated ancestral visibility traversal across all wrapper layers
-   * - iOS/Safari Webkit stacking context compatibility
+   * ☢️ NUCLEAR BRIDGE V2 (2026-06-22):
+   * - Structural Ancestral Force Loop for full-screen stacking priority
+   * - Background canvas/poster demotion rules
+   * - Ancestral upward traversal from controls to full-screen root
+   * - Dynamic inline style overrides for mutation resistance
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -3585,7 +3689,7 @@
       }, 500);
     }
     
-    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge + Bantu structural fixes)
+    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge + nuclear bridge v2)
     initializePlayerInteractionFixes();
   });
   
@@ -3738,10 +3842,11 @@
   console.log('   🌉 ORPHANED CONTROLS BRIDGE: Global document-level delegation for external controls');
   console.log('   🌉 ORPHANED CONTROLS BRIDGE: Bypasses "ORPHANED LAYOUT DETECTED" architectural issue');
   console.log('   🌉 ORPHANED CONTROLS BRIDGE: Uses .closest() to defeat FontAwesome icon trap');
-  console.log('   🏗️ BANTU STRUCTURAL FIXES: Bulletproof Atomic Fullscreen CSS Engine');
-  console.log('   🏗️ BANTU STRUCTURAL FIXES: Ancestral Upward Traversal Force Loop');
-  console.log('   🏗️ BANTU STRUCTURAL FIXES: Background asset demotion for fullscreen contexts');
-  console.log('   🏗️ BANTU STRUCTURAL FIXES: iOS/Safari Webkit stacking context compatibility');
+  console.log('   ☢️ NUCLEAR BRIDGE V2: Structural Ancestral Force Loop for full-screen stacking');
+  console.log('   ☢️ NUCLEAR BRIDGE V2: Background canvas/poster demotion rules');
+  console.log('   ☢️ NUCLEAR BRIDGE V2: Ancestral upward traversal from controls to full-screen root');
+  console.log('   ☢️ NUCLEAR BRIDGE V2: Dynamic inline style overrides for mutation resistance');
+  console.log('   ☢️ NUCLEAR BRIDGE V2: Audio mode poster overlay stacking fix');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Force-correction loop runs every 500ms');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
