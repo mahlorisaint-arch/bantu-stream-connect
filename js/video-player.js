@@ -96,6 +96,13 @@
 // - Decouples click capture from component layout boundaries
 // - Permanent fix for controls that exist outside structural wrapper
 // ============================================
+// 🏗️ BANTU STRUCTURAL FIXES (2026-06-22):
+// - Bulletproof Atomic Fullscreen CSS Engine
+// - Ancestral Upward Traversal Force Loop for fullscreen layout preservation
+// - Background asset demotion for fullscreen contexts
+// - Automated ancestral visibility traversal across all wrapper layers
+// - iOS/Safari Webkit stacking context compatibility
+// ============================================
 
 (function() {
   'use strict';
@@ -202,6 +209,221 @@
       console.error('❌ View recording error:', error);
       return false;
     }
+  }
+
+  // ============================================
+  // 🏗️ BANTU STRUCTURAL FIXES
+  // Bulletproof Atomic Fullscreen CSS Engine
+  // Ancestral Upward Traversal Force Loop
+  // ============================================
+
+  // 1. STATE & RESOURCE TRACKING VARIABLES
+  let bantuVisibilityInterval = null;
+  const BANTU_STYLE_ID = 'bantu-fullscreen-force-sheet';
+
+  /**
+   * Phase 1: Initialize Bulletproof Atomic Fullscreen CSS Engine
+   * Invoke this function once during your player's initial setup phase
+   */
+  function initBantuStyleEngine() {
+    if (document.getElementById(BANTU_STYLE_ID)) return;
+
+    const styleSheet = document.createElement('style');
+    styleSheet.id = BANTU_STYLE_ID;
+    styleSheet.textContent = `
+        /* Force the designated fullscreen wrapper to preserve structural layout boundaries */
+        :fullscreen, :-webkit-full-screen {
+            position: relative !important;
+            background: #000 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            display: block !important;
+        }
+
+        /* Demote all background visual canvases, poster images, and hardware media elements */
+        :fullscreen video, :-webkit-full-screen video,
+        :fullscreen audio, :-webkit-full-screen audio,
+        :fullscreen img, :-webkit-full-screen img,
+        :fullscreen [class*="poster" i], :-webkit-full-screen [class*="poster" i],
+        :fullscreen [class*="overlay" i], :-webkit-full-screen [class*="overlay" i],
+        :fullscreen [class*="thumbnail" i], :-webkit-full-screen [class*="thumbnail" i],
+        :fullscreen [class*="canvas" i], :-webkit-full-screen [class*="canvas" i] {
+            z-index: 1 !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+        }
+
+        /* Overrule native browser shadow-DOM UI blocks completely */
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel {
+            display: none !important;
+            -webkit-appearance: none !important;
+        }
+
+        /* Elevate your custom interactive control wrappers to the absolute Top Layer front */
+        :fullscreen .player-controls, 
+        :fullscreen .player-controls-wrapper,
+        :fullscreen .control-bar,
+        :fullscreen .video-controls,
+        :fullscreen .controls-container,
+        :-webkit-full-screen .player-controls,
+        :-webkit-full-screen .player-controls-wrapper,
+        :-webkit-full-screen .control-bar,
+        :-webkit-full-screen .video-controls,
+        :-webkit-full-screen .controls-container,
+        .enhanced-video-player:fullscreen .controls,
+        :fullscreen [class*="control-bar" i],
+        :fullscreen [class*="controls-container" i] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 2147483647 !important;
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 60px !important;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%) !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Enforce system cursor presence during full-screen states */
+        :fullscreen, :-webkit-full-screen {
+            cursor: default !important;
+        }
+
+        /* Ensure the video element itself fills the container properly */
+        :fullscreen .video-container,
+        :-webkit-full-screen .video-container,
+        :fullscreen .video-player-wrapper,
+        :-webkit-full-screen .video-player-wrapper {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            position: relative !important;
+            background: #000 !important;
+        }
+    `;
+    document.head.appendChild(styleSheet);
+    console.log("🎨 [Bantu Engine] Fullscreen Atomic CSS rules loaded into asset tree.");
+  }
+
+  /**
+   * Phase 2: Ancestral Upward Traversal Force Loop
+   * Intended to be fired cyclically ONLY when full-screen is actively engaged.
+   * It counteracts framework mutations or dynamic hidden flags injected by state engines.
+   */
+  function runAncestralTraversalForce() {
+    const fsElement = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!fsElement) {
+      clearBantuTraversalLoop();
+      return;
+    }
+
+    // Target your primary player interaction elements inside full screen context
+    const referenceNode = fsElement.querySelector(
+      '.play-pause-btn, .player-play-btn, .fullscreen-btn, .video-controls, .player-controls, .control-bar, .controls-container, [class*="control-bar" i], [class*="controls-container" i]'
+    );
+    if (!referenceNode) return;
+
+    // Isolate the immediate container layout component wrapper row
+    let controlsContainer = referenceNode.classList.contains('play-pause-btn') || 
+                            referenceNode.classList.contains('fullscreen-btn') || 
+                            referenceNode.classList.contains('player-play-btn')
+        ? referenceNode.parentElement 
+        : referenceNode;
+
+    if (!controlsContainer) return;
+
+    // Hardcode layout structural positioning coordinates on the control container row
+    controlsContainer.style.setProperty('display', 'flex', 'important');
+    controlsContainer.style.setProperty('visibility', 'visible', 'important');
+    controlsContainer.style.setProperty('opacity', '1', 'important');
+    controlsContainer.style.setProperty('z-index', '2147483647', 'important');
+    controlsContainer.style.setProperty('position', 'absolute', 'important');
+    controlsContainer.style.setProperty('bottom', '0', 'important');
+    controlsContainer.style.setProperty('left', '0', 'important');
+    controlsContainer.style.setProperty('width', '100%', 'important');
+    controlsContainer.style.setProperty('pointer-events', 'auto', 'important');
+    controlsContainer.style.setProperty('min-height', '60px', 'important');
+    controlsContainer.style.setProperty('background', 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)', 'important');
+
+    // Walk up the DOM tree from the controls layout context up to the fullscreen container viewport boundary
+    let currentElement = controlsContainer.parentElement;
+    while (currentElement && currentElement !== fsElement && currentElement !== document.body) {
+      // Strip out frame suppression classes injected by the core script routines
+      currentElement.classList.remove('hidden', 'hide', 'd-none', 'controls-hidden', 'user-inactive', 'inactive', 'fade-out', 'js-hidden');
+      
+      // Counteract inline 'display: none' allocations instantly
+      if (window.getComputedStyle(currentElement).display === 'none') {
+        currentElement.style.setProperty('display', 'block', 'important');
+      }
+      
+      currentElement.style.setProperty('visibility', 'visible', 'important');
+      currentElement.style.setProperty('opacity', '1', 'important');
+      currentElement.style.setProperty('z-index', '2147483646', 'important');
+      currentElement.style.setProperty('position', 'absolute', 'important');
+      currentElement.style.setProperty('inset', '0', 'important');
+      currentElement.style.setProperty('pointer-events', 'none', 'important'); // Allows clicking through wrapper hulls
+
+      currentElement = currentElement.parentElement;
+    }
+  }
+
+  /**
+   * Phase 3: Loop Management Hooks
+   * Safely initializes or clears the evaluation loop routine to optimize performance metrics.
+   */
+  function startBantuTraversalLoop() {
+    if (bantuVisibilityInterval) clearInterval(bantuVisibilityInterval);
+    bantuVisibilityInterval = setInterval(runAncestralTraversalForce, 150);
+    console.log("🚀 [Bantu Engine] Fullscreen Traversal State Monitor armed.");
+  }
+
+  function clearBantuTraversalLoop() {
+    if (bantuVisibilityInterval) {
+      clearInterval(bantuVisibilityInterval);
+      bantuVisibilityInterval = null;
+      console.log("🛑 [Bantu Engine] Fullscreen Traversal State Monitor disarmed.");
+    }
+  }
+
+  /**
+   * Phase 4: Fullscreen State Toggle Handler Integration
+   * Map these execution triggers into your existing fullscreen change listener block.
+   */
+  function bindBantuFullscreenWatchers() {
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (isFullscreen) {
+        startBantuTraversalLoop();
+        runAncestralTraversalForce();
+        // Force browser repaint calculations
+        window.dispatchEvent(new Event('resize'));
+      } else {
+        clearBantuTraversalLoop();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  }
+
+  /**
+   * Phase 5: EXPOSED INITIALIZER HOOK
+   * Call this function inside your document configuration loader setup
+   */
+  function integrateBantuStructuralFixes() {
+    initBantuStyleEngine();
+    bindBantuFullscreenWatchers();
+    console.log('🏗️ [Bantu Engine] Structural fixes integrated successfully');
   }
 
   // ============================================
@@ -621,6 +843,9 @@
     // 4. 🌉 Deploy the orphaned controls bridge
     _setupOrphanedControlsBridge();
     
+    // 5. 🏗️ Integrate Bantu Structural Fixes
+    integrateBantuStructuralFixes();
+    
     console.log('✅ Player interaction fixes initialized');
   }
 
@@ -696,6 +921,13 @@
    * - Bypasses "ORPHANED LAYOUT DETECTED" architectural issue
    * - Uses .closest() to defeat FontAwesome icon trap
    * - Decouples click capture from component layout boundaries
+   * 
+   * 🏗️ BANTU STRUCTURAL FIXES (2026-06-22):
+   * - Bulletproof Atomic Fullscreen CSS Engine
+   * - Ancestral Upward Traversal Force Loop for fullscreen preservation
+   * - Background asset demotion for fullscreen contexts
+   * - Automated ancestral visibility traversal across all wrapper layers
+   * - iOS/Safari Webkit stacking context compatibility
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -3353,7 +3585,7 @@
       }, 500);
     }
     
-    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge)
+    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge + Bantu structural fixes)
     initializePlayerInteractionFixes();
   });
   
@@ -3506,6 +3738,10 @@
   console.log('   🌉 ORPHANED CONTROLS BRIDGE: Global document-level delegation for external controls');
   console.log('   🌉 ORPHANED CONTROLS BRIDGE: Bypasses "ORPHANED LAYOUT DETECTED" architectural issue');
   console.log('   🌉 ORPHANED CONTROLS BRIDGE: Uses .closest() to defeat FontAwesome icon trap');
+  console.log('   🏗️ BANTU STRUCTURAL FIXES: Bulletproof Atomic Fullscreen CSS Engine');
+  console.log('   🏗️ BANTU STRUCTURAL FIXES: Ancestral Upward Traversal Force Loop');
+  console.log('   🏗️ BANTU STRUCTURAL FIXES: Background asset demotion for fullscreen contexts');
+  console.log('   🏗️ BANTU STRUCTURAL FIXES: iOS/Safari Webkit stacking context compatibility');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Force-correction loop runs every 500ms');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
