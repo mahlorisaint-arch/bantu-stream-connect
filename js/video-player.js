@@ -88,6 +88,14 @@
 // - Controls remain interactive while background clicks still toggle play/pause
 // - Fixes failure across Android, iOS, Tablets, and Desktops
 // ============================================
+// 🌉 ORPHANED CONTROLS BRIDGE (2026-06-22):
+// - Global document-level delegation bridge for controls outside player wrapper
+// - Bypasses "ORPHANED LAYOUT DETECTED" issue where buttons live outside wrapper
+// - Uses .closest() to defeat FontAwesome icon trap
+// - Routes interactions directly to player instance methods
+// - Decouples click capture from component layout boundaries
+// - Permanent fix for controls that exist outside structural wrapper
+// ============================================
 
 (function() {
   'use strict';
@@ -419,6 +427,172 @@
   }
 
   // ============================================
+  // 🌉 ORPHANED CONTROLS BRIDGE (Global Delegation)
+  // Permanent fix for controls that exist outside the player wrapper
+  // Bypasses "ORPHANED LAYOUT DETECTED" architectural issue
+  // ============================================
+
+  /**
+   * Deploy a global document-level bridge to catch orphaned controls
+   * These are buttons that exist outside the structural player wrapper
+   * Uses .closest() to defeat the FontAwesome icon trap
+   * Routes interactions directly to the player instance
+   * Decouples click capture from component layout boundaries
+   */
+  function _setupOrphanedControlsBridge() {
+    console.log("🌉 PLAYER ENGINE: Deploying Global Bridge for external/orphaned controls...");
+
+    // Store the player instance reference
+    let playerInstance = window.bantuPlayer || window.enhancedVideoPlayer;
+
+    // Watch for player instance changes
+    const instanceObserver = new MutationObserver(() => {
+      const newInstance = window.bantuPlayer || window.enhancedVideoPlayer;
+      if (newInstance !== playerInstance) {
+        playerInstance = newInstance;
+        console.log('🌉 Bridge: Player instance updated');
+      }
+    });
+    instanceObserver.observe(document.documentElement, { attributes: false, childList: true, subtree: true });
+
+    // Bind directly to document to catch events that bypass the player wrapper
+    document.addEventListener('click', (e) => {
+      // If no player instance, log and skip
+      if (!playerInstance) {
+        console.warn('🌉 Bridge: No player instance available');
+        return;
+      }
+
+      // Safe check: If the video element is destroyed, abort
+      if (!playerInstance.video) {
+        console.warn('🌉 Bridge: Player video element not available');
+        return;
+      }
+
+      // Resolve targets cleanly using .closest() to bypass the FontAwesome icon trap
+      const playPauseBtn = e.target.closest('.play-pause-btn, .player-play-btn');
+      const prevBtn      = e.target.closest('.prev-track-btn, .player-prev-btn');
+      const nextBtn      = e.target.closest('.next-track-btn, .player-next-btn');
+      const settingsBtn  = e.target.closest('.settings-btn');
+      const fullscreenBtn = e.target.closest('.fullscreen-btn');
+      const volumeBtn    = e.target.closest('.volume-btn, .player-volume-btn');
+      const pipBtn       = e.target.closest('.pip-btn');
+
+      // Route interactions directly to player instance methods
+      if (playPauseBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Play/Pause Toggle");
+        if (typeof playerInstance.togglePlay === 'function') {
+          playerInstance.togglePlay();
+        } else if (playerInstance.video) {
+          if (playerInstance.video.paused) {
+            playerInstance.video.play().catch(err => console.warn('Play blocked:', err));
+          } else {
+            playerInstance.video.pause();
+          }
+        }
+        return;
+      }
+
+      if (nextBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Next Track");
+        if (typeof window.playNextPlaylistItem === 'function') {
+          window.playNextPlaylistItem();
+        } else if (typeof playerInstance.playNext === 'function') {
+          playerInstance.playNext();
+        } else {
+          console.warn("⚠️ Next track triggered but no playlist coordinator found.");
+        }
+        return;
+      }
+
+      if (prevBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Previous Track");
+        if (typeof window.playPreviousPlaylistItem === 'function') {
+          window.playPreviousPlaylistItem();
+        } else if (typeof playerInstance.playPrevious === 'function') {
+          playerInstance.playPrevious();
+        } else {
+          console.warn("⚠️ Previous track triggered but no playlist coordinator found.");
+        }
+        return;
+      }
+
+      if (settingsBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Settings Menu");
+        if (typeof playerInstance._toggleSettingsMenu === 'function') {
+          playerInstance._toggleSettingsMenu();
+        } else {
+          // Fallback toggle layout class if it's purely CSS/DOM driven
+          const menu = document.querySelector('.settings-menu, .player-settings-popup');
+          if (menu) {
+            const isVisible = menu.style.display === 'block';
+            menu.style.display = isVisible ? 'none' : 'block';
+            const btn = document.querySelector('.settings-btn');
+            if (btn) {
+              btn.setAttribute('aria-expanded', !isVisible);
+            }
+          }
+        }
+        return;
+      }
+
+      if (fullscreenBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Fullscreen Toggle");
+        if (typeof playerInstance.toggleFullscreen === 'function') {
+          playerInstance.toggleFullscreen();
+        } else {
+          // Fallback direct API execution
+          const container = playerInstance.container || playerInstance.video.parentElement;
+          if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => console.error('Fullscreen error:', err));
+          } else {
+            document.exitFullscreen();
+          }
+        }
+        return;
+      }
+
+      if (volumeBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Volume/Mute Toggle");
+        if (playerInstance.video) {
+          playerInstance.video.muted = !playerInstance.video.muted;
+          if (typeof playerInstance._updateVolumeUI === 'function') {
+            playerInstance._updateVolumeUI();
+          }
+          if (typeof playerInstance._emit === 'function') {
+            playerInstance._emit('playback:mute', { muted: playerInstance.video.muted });
+          }
+        }
+        return;
+      }
+
+      if (pipBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("⚡ Bridge Routed: Picture-in-Picture Toggle");
+        if (typeof playerInstance.togglePictureInPicture === 'function') {
+          playerInstance.togglePictureInPicture();
+        }
+        return;
+      }
+    });
+
+    console.log('✅ Global Bridge for orphaned controls deployed successfully');
+  }
+
+  // ============================================
   // 🚀 INITIALIZATION: Set up all player fixes
   // ============================================
 
@@ -443,6 +617,9 @@
     
     // 3. Bind mobile touch controls for iOS/Android
     _bindMobileTouchControls();
+    
+    // 4. 🌉 Deploy the orphaned controls bridge
+    _setupOrphanedControlsBridge();
     
     console.log('✅ Player interaction fixes initialized');
   }
@@ -513,6 +690,12 @@
    * - guardedVideoContainerClick() returns early without stopping propagation
    * - Control clicks bubble naturally to button handlers
    * - _bindMobileTouchControls() for iOS/Android tap compatibility
+   * 
+   * 🌉 ORPHANED CONTROLS BRIDGE (2026-06-22):
+   * - Global document-level delegation for controls outside player wrapper
+   * - Bypasses "ORPHANED LAYOUT DETECTED" architectural issue
+   * - Uses .closest() to defeat FontAwesome icon trap
+   * - Decouples click capture from component layout boundaries
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -3170,7 +3353,7 @@
       }, 500);
     }
     
-    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch)
+    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge)
     initializePlayerInteractionFixes();
   });
   
@@ -3320,6 +3503,9 @@
   console.log('   🚨 CSS STATE ARCHITECTURE: .is-playing/.is-paused classes on wrapper');
   console.log('   🚨 CSS STATE ARCHITECTURE: State-driven CSS manages poster overlay visibility');
   console.log('   🚨 CSS STATE ARCHITECTURE: guardedVideoContainerClick() prevents pause on controls');
+  console.log('   🌉 ORPHANED CONTROLS BRIDGE: Global document-level delegation for external controls');
+  console.log('   🌉 ORPHANED CONTROLS BRIDGE: Bypasses "ORPHANED LAYOUT DETECTED" architectural issue');
+  console.log('   🌉 ORPHANED CONTROLS BRIDGE: Uses .closest() to defeat FontAwesome icon trap');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Force-correction loop runs every 500ms');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
