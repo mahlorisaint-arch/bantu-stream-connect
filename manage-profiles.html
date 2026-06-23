@@ -1112,12 +1112,11 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         });
     }
 
-    // ===== R2 AVATAR UPLOAD FUNCTION - WITH AWS SDK v3 CHECKSUM FIX =====
+    // ===== R2 AVATAR UPLOAD FUNCTION - CLEAN VERSION (NO URL MANIPULATION) =====
     async function uploadAvatarToR2(file, userId) {
         try {
             console.log(`📤 Initializing handshake with Edge Function for file: ${file.name}`);
 
-            // Match your Edge Function's expected destructuring signature exactly
             const payloadBody = {
                 mediaType: 'avatar',
                 fileName: file.name
@@ -1134,18 +1133,10 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 throw new Error(`Edge Function Handshake Failed: ${signError?.message || 'Missing upload URL'}`);
             }
 
-            // 🚨 FIX: Strip the breaking AWS SDK v3 auto-checksum parameters
-            // Cloudflare R2 drops the socket connection if these specific parameters are evaluated
-            const cleanUrl = new URL(signData.uploadUrl);
-            cleanUrl.searchParams.delete('x-amz-checksum-crc32');
-            cleanUrl.searchParams.delete('x-amz-sdk-checksum-algorithm');
-            const finalUploadUrl = cleanUrl.toString();
-
             console.log(`📤 Handshake complete. Uploading binary stream directly to Cloudflare R2...`);
-            console.log(`🧹 Clean URL (checksum params removed): ${finalUploadUrl}`);
 
-            // Perform the binary PUT directly to Cloudflare's edge storage using the clean URL
-            const uploadResponse = await fetch(finalUploadUrl, {
+            // We use the raw, untouched upload URL straight from the clean backend generator
+            const uploadResponse = await fetch(signData.uploadUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': file.type
@@ -1157,7 +1148,6 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 throw new Error(`Cloudflare R2 rejected the payload: ${uploadResponse.statusText}`);
             }
 
-            // Your Edge Function explicitly returns the final public address as 'fileUrl'
             console.log(`✨ File securely deployed to CDN: ${signData.fileUrl}`);
             return signData.fileUrl;
 
