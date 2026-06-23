@@ -1112,42 +1112,31 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         });
     }
 
-    // ===== R2 AVATAR UPLOAD FUNCTION =====
+    // ===== R2 AVATAR UPLOAD FUNCTION - EDGE FUNCTION EXACT CONTRACT =====
     async function uploadAvatarToR2(file, userId) {
         try {
-            // 1. Generate a clean, unique file name matching your R2 structure
-            const fileExt = file.name.split('.').pop() || 'png';
-            const fileName = `avatar_${Date.now()}.${fileExt}`;
-            const filePath = `profile-pictures/${userId}/${fileName}`;
+            console.log(`📤 Initializing handshake with Edge Function for file: ${file.name}`);
 
-            console.log(`📤 Requesting presigned R2 upload token for: ${filePath}`);
-
-            // 2. Build a robust payload body to satisfy whatever parameter criteria your Edge Function requires
+            // Match your Edge Function's expected destructuring signature exactly
             const payloadBody = {
-                bucket: 'bantu-connect-storage',
-                filename: fileName,         // Standard lowercase variant
-                fileName: fileName,         // CamelCase variant
-                filePath: filePath,         // Full path variant
-                fileType: 'avatar',         // Instructs your routing map to use profile-pictures/
-                contentType: file.type,
-                userId: userId              // In case the function builds the directory tree dynamically
+                mediaType: 'avatar',
+                fileName: file.name
             };
 
             console.log('📦 Sending payload to Edge Function:', payloadBody);
 
-            // 3. Invoke your get-upload-url Supabase Edge Function with enhanced payload
             const { data: signData, error: signError } = await supabase.functions.invoke('get-upload-url', {
                 body: payloadBody
             });
 
             if (signError || !signData?.uploadUrl) {
                 console.error('🔴 Edge Function Payload Debug Info:', payloadBody);
-                throw new Error(`Failed to retrieve R2 presigned URL: ${signError?.message || 'Missing URL payload'}`);
+                throw new Error(`Edge Function Handshake Failed: ${signError?.message || 'Missing upload URL'}`);
             }
 
-            console.log(`📤 Uploading directly to Cloudflare R2: ${fileName} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+            console.log(`📤 Handshake complete. Uploading binary stream directly to Cloudflare R2...`);
 
-            // 4. Execute a binary PUT migration directly to the Cloudflare R2 endpoint
+            // Perform the binary PUT directly to Cloudflare's edge storage
             const uploadResponse = await fetch(signData.uploadUrl, {
                 method: 'PUT',
                 headers: {
@@ -1157,17 +1146,15 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             });
 
             if (!uploadResponse.ok) {
-                throw new Error(`Cloudflare R2 rejected storage payload: ${uploadResponse.statusText}`);
+                throw new Error(`Cloudflare R2 rejected the payload: ${uploadResponse.statusText}`);
             }
 
-            // 5. Construct the public CDN delivery URL
-            const publicUrl = `${signData.publicBaseUrl}/${filePath}`;
-            console.log(`✨ File cleanly settled in Cloudflare R2. Destination: ${publicUrl}`);
-
-            return publicUrl;
+            // Your Edge Function explicitly returns the final public address as 'fileUrl'
+            console.log(`✨ File securely deployed to CDN: ${signData.fileUrl}`);
+            return signData.fileUrl;
 
         } catch (error) {
-            console.error('❌ R2 upload failed:', error);
+            console.error("❌ R2 pipeline execution halted:", error);
             throw error;
         }
     }
