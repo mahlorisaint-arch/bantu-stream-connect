@@ -1112,7 +1112,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         });
     }
 
-    // ===== R2 AVATAR UPLOAD FUNCTION - EDGE FUNCTION EXACT CONTRACT =====
+    // ===== R2 AVATAR UPLOAD FUNCTION - WITH AWS SDK v3 CHECKSUM FIX =====
     async function uploadAvatarToR2(file, userId) {
         try {
             console.log(`📤 Initializing handshake with Edge Function for file: ${file.name}`);
@@ -1134,10 +1134,18 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 throw new Error(`Edge Function Handshake Failed: ${signError?.message || 'Missing upload URL'}`);
             }
 
-            console.log(`📤 Handshake complete. Uploading binary stream directly to Cloudflare R2...`);
+            // 🚨 FIX: Strip the breaking AWS SDK v3 auto-checksum parameters
+            // Cloudflare R2 drops the socket connection if these specific parameters are evaluated
+            const cleanUrl = new URL(signData.uploadUrl);
+            cleanUrl.searchParams.delete('x-amz-checksum-crc32');
+            cleanUrl.searchParams.delete('x-amz-sdk-checksum-algorithm');
+            const finalUploadUrl = cleanUrl.toString();
 
-            // Perform the binary PUT directly to Cloudflare's edge storage
-            const uploadResponse = await fetch(signData.uploadUrl, {
+            console.log(`📤 Handshake complete. Uploading binary stream directly to Cloudflare R2...`);
+            console.log(`🧹 Clean URL (checksum params removed): ${finalUploadUrl}`);
+
+            // Perform the binary PUT directly to Cloudflare's edge storage using the clean URL
+            const uploadResponse = await fetch(finalUploadUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': file.type
