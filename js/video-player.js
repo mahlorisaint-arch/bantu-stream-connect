@@ -103,6 +103,12 @@
 // - Dynamic inline style overrides for mutation resistance
 // - Audio mode poster overlay stacking fix
 // ============================================
+// ☢️ ABSOLUTE STRUCTURAL OVERRIDE MATRIX (2026-06-23):
+// - Hijacks HTMLVideoElement prototype to force wrapper-based fullscreen
+// - Bulletproof CSS constraints for full-screen contexts
+// - Fallback event matrix for control interactions
+// - Preload warning mitigation guidance
+// ============================================
 
 (function() {
   'use strict';
@@ -920,6 +926,185 @@
   }
 
   // ============================================
+  // ☢️ ABSOLUTE STRUCTURAL OVERRIDE MATRIX
+  // Hijacks HTMLVideoElement prototype to force wrapper-based fullscreen
+  // ============================================
+
+  /**
+   * Deploy the Absolute Structural Override Matrix
+   * This monkey-patches the browser's native Video Prototype
+   * Forces any internal script calling video.requestFullscreen() to target the wrapper instead
+   */
+  function _deployAbsoluteStructuralOverride() {
+    console.log("☢️ Deploying Absolute Structural Override Matrix...");
+
+    // Clean up old hooks to prevent memory leaks
+    if (window.__bantuDirectBridge) {
+      document.removeEventListener('click', window.__bantuDirectBridge, true);
+      document.removeEventListener('input', window.__bantuVolumeBridge, true);
+    }
+    const oldSheet = document.getElementById('bantu-hybrid-isolated-sheet');
+    if (oldSheet) oldSheet.remove();
+
+    // 1. Inject bulletproof layout constraints for full screen contexts
+    const styleSheet = document.createElement('style');
+    styleSheet.id = 'bantu-hybrid-isolated-sheet';
+    styleSheet.textContent = `
+      /* Force the wrapper container to take full device dimensions when full screen */
+      .enhanced-video-player:fullscreen,
+      #videoPlayerWrapper:fullscreen,
+      .enhanced-video-player:-webkit-full-screen,
+      #videoPlayerWrapper:-webkit-full-screen {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background: #000000 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        position: relative !important;
+      }
+
+      /* Force your custom controls to layer perfectly on top of the video during full screen */
+      :fullscreen .player-controls,
+      :fullscreen .control-bar,
+      :fullscreen .video-controls,
+      :fullscreen .controls-container,
+      :-webkit-full-screen .player-controls,
+      :-webkit-full-screen .control-bar,
+      :-webkit-full-screen .video-controls,
+      :-webkit-full-screen .controls-container {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 2147483647 !important; /* Maximum possible z-index value */
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 85px !important;
+        padding-bottom: env(safe-area-inset-bottom, 16px) !important;
+        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 80%, rgba(0,0,0,0) 100%) !important;
+        pointer-events: auto !important;
+      }
+
+      :fullscreen .player-controls *,
+      :-webkit-full-screen .player-controls * {
+        pointer-events: auto !important;
+      }
+
+      :fullscreen video, :-webkit-full-screen video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+      }
+
+      /* Annihilate the native browser control interface shadow DOM layers */
+      video::-webkit-media-controls,
+      video::-webkit-media-controls-enclosure,
+      video::-webkit-media-controls-panel {
+        display: none !important;
+        -webkit-appearance: none !important;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    console.log("🎨 Bulletproof layout constraints injected.");
+
+    // 2. THE CRITICAL FIX: Hijack the HTMLVideoElement Prototype Fullscreen Methods
+    // This forces any internal script calling video.requestFullscreen() to target the wrapper instead.
+    const hijackFullscreen = function(originalMethod) {
+      return function(options) {
+        const wrapper = document.getElementById('videoPlayerWrapper') || this.closest('.enhanced-video-player');
+        if (wrapper) {
+          console.log("🎯 Intercepted native video fullscreen call. Redirecting execution directly to Wrapper Container.");
+          return wrapper.requestFullscreen ? wrapper.requestFullscreen(options) : wrapper.webkitRequestFullscreen(options);
+        }
+        return originalMethod.apply(this, options);
+      };
+    };
+
+    if (HTMLVideoElement.prototype.requestFullscreen) {
+      HTMLVideoElement.prototype.requestFullscreen = hijackFullscreen(HTMLVideoElement.prototype.requestFullscreen);
+    }
+    if (HTMLVideoElement.prototype.webkitRequestFullscreen) {
+      HTMLVideoElement.prototype.webkitRequestFullscreen = hijackFullscreen(HTMLVideoElement.prototype.webkitRequestFullscreen);
+    }
+
+    // 3. Fallback Event Matrix: Keep control interactions working despite line 3800 guards
+    window.__bantuDirectBridge = function(e) {
+      const video = document.querySelector('video');
+      if (!video) return;
+
+      const insideControls = e.target.closest('.player-controls, .control-bar, .video-controls, .controls-container');
+      if (!insideControls) return;
+
+      const button = e.target.closest('button, [role="button"], .clickable, .control-btn');
+      if (!button) return;
+
+      console.log("⚡ Bantu Direct Bridge: Routing control interaction directly to core media states.");
+      
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      const btnText = (button.innerText || button.textContent || "").toLowerCase();
+      const btnClass = button.className.toLowerCase();
+      const btnId = button.id ? button.id.toLowerCase() : "";
+
+      // Play / Pause Logic
+      if (btnClass.includes('play') || btnClass.includes('pause') || btnId.includes('play') || btnId.includes('pause') || btnText.includes('play') || btnText.includes('pause')) {
+        if (video.paused) {
+          video.play().catch(err => console.log("Play invocation intercepted:", err));
+        } else {
+          video.pause();
+        }
+        return;
+      }
+
+      // Fullscreen Trigger Logic via UI Button Click
+      if (btnClass.includes('fullscreen') || btnClass.includes('expand') || btnId.includes('fullscreen') || btnText.includes('screen') || btnText.includes('full')) {
+        const wrapper = document.getElementById('videoPlayerWrapper') || document.querySelector('.enhanced-video-player');
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } else if (wrapper) {
+          if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+          else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+        }
+        return;
+      }
+
+      // Mute / Volume Logic
+      if (btnClass.includes('volume') || btnClass.includes('mute') || btnId.includes('volume') || btnId.includes('mute')) {
+        video.muted = !video.muted;
+        return;
+      }
+    };
+
+    window.__bantuVolumeBridge = function(e) {
+      const video = document.querySelector('video');
+      if (!video) return;
+
+      if (e.target.closest('.player-controls, .control-bar, .video-controls, .controls-container') && e.target.tagName === 'INPUT') {
+        e.stopImmediatePropagation();
+        if (e.target.className.includes('seek') || e.target.className.includes('progress') || e.target.step === 'any' || e.target.max > 10) {
+          const percentage = parseFloat(e.target.value) / parseFloat(e.target.max || 100);
+          if (!isNaN(percentage) && isFinite(video.duration)) {
+            video.currentTime = percentage * video.duration;
+          }
+        } else if (e.target.className.includes('volume')) {
+          video.volume = parseFloat(e.target.value);
+        }
+      }
+    };
+
+    document.addEventListener('click', window.__bantuDirectBridge, true);
+    document.addEventListener('input', window.__bantuVolumeBridge, true);
+
+    console.log("🚀 Domination Matrix Loaded. Full screen controls locked into place.");
+  }
+
+  // ============================================
   // 🚀 INITIALIZATION: Set up all player fixes
   // ============================================
 
@@ -950,6 +1135,9 @@
     
     // 5. ☢️ Deploy Nuclear Bridge V2 (Ancestral Force Loop)
     _deployNuclearBridgeV2();
+
+    // 6. ☢️ Deploy Absolute Structural Override Matrix (Fullscreen Hijack)
+    _deployAbsoluteStructuralOverride();
     
     console.log('✅ Player interaction fixes initialized');
   }
@@ -1032,6 +1220,11 @@
    * - Background canvas/poster demotion rules
    * - Ancestral upward traversal from controls to full-screen root
    * - Dynamic inline style overrides for mutation resistance
+   * 
+   * ☢️ ABSOLUTE STRUCTURAL OVERRIDE MATRIX (2026-06-23):
+   * - Hijacks HTMLVideoElement prototype to force wrapper-based fullscreen
+   * - Bulletproof CSS constraints for full-screen contexts
+   * - Fallback event matrix for control interactions
    */
   class EnhancedVideoPlayer {
     constructor(options = {}) {
@@ -3689,7 +3882,7 @@
       }, 500);
     }
     
-    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge + nuclear bridge v2)
+    // 🚨 Initialize player interaction fixes (state engine + guarded clicks + mobile touch + orphaned bridge + nuclear bridge v2 + absolute structural override)
     initializePlayerInteractionFixes();
   });
   
@@ -3847,6 +4040,10 @@
   console.log('   ☢️ NUCLEAR BRIDGE V2: Ancestral upward traversal from controls to full-screen root');
   console.log('   ☢️ NUCLEAR BRIDGE V2: Dynamic inline style overrides for mutation resistance');
   console.log('   ☢️ NUCLEAR BRIDGE V2: Audio mode poster overlay stacking fix');
+  console.log('   ☢️ ABSOLUTE STRUCTURAL OVERRIDE: Hijacks HTMLVideoElement prototype for fullscreen');
+  console.log('   ☢️ ABSOLUTE STRUCTURAL OVERRIDE: Forces wrapper-based fullscreen instead of native');
+  console.log('   ☢️ ABSOLUTE STRUCTURAL OVERRIDE: Bulletproof CSS constraints for full-screen contexts');
+  console.log('   ☢️ ABSOLUTE STRUCTURAL OVERRIDE: Fallback event matrix for control interactions');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Force-correction loop runs every 500ms');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
