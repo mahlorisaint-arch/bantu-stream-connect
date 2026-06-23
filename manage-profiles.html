@@ -1122,23 +1122,32 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 
             console.log(`📤 Requesting presigned R2 upload token for: ${filePath}`);
 
-            // 2. Invoke your get-upload-url Supabase Edge Function
+            // 2. Build a robust payload body to satisfy whatever parameter criteria your Edge Function requires
+            const payloadBody = {
+                bucket: 'bantu-connect-storage',
+                filename: fileName,         // Standard lowercase variant
+                fileName: fileName,         // CamelCase variant
+                filePath: filePath,         // Full path variant
+                fileType: 'avatar',         // Instructs your routing map to use profile-pictures/
+                contentType: file.type,
+                userId: userId              // In case the function builds the directory tree dynamically
+            };
+
+            console.log('📦 Sending payload to Edge Function:', payloadBody);
+
+            // 3. Invoke your get-upload-url Supabase Edge Function with enhanced payload
             const { data: signData, error: signError } = await supabase.functions.invoke('get-upload-url', {
-                body: {
-                    bucket: 'bantu-connect-storage',
-                    filePath: filePath,
-                    contentType: file.type,
-                    fileType: 'avatar' // Matches your edge function directory router
-                }
+                body: payloadBody
             });
 
             if (signError || !signData?.uploadUrl) {
+                console.error('🔴 Edge Function Payload Debug Info:', payloadBody);
                 throw new Error(`Failed to retrieve R2 presigned URL: ${signError?.message || 'Missing URL payload'}`);
             }
 
             console.log(`📤 Uploading directly to Cloudflare R2: ${fileName} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
 
-            // 3. Execute a binary PUT migration directly to the Cloudflare R2 endpoint
+            // 4. Execute a binary PUT migration directly to the Cloudflare R2 endpoint
             const uploadResponse = await fetch(signData.uploadUrl, {
                 method: 'PUT',
                 headers: {
@@ -1151,7 +1160,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 throw new Error(`Cloudflare R2 rejected storage payload: ${uploadResponse.statusText}`);
             }
 
-            // 4. Construct the public CDN delivery URL
+            // 5. Construct the public CDN delivery URL
             const publicUrl = `${signData.publicBaseUrl}/${filePath}`;
             console.log(`✨ File cleanly settled in Cloudflare R2. Destination: ${publicUrl}`);
 
