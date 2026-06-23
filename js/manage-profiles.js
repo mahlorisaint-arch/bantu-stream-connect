@@ -561,10 +561,10 @@ function setupProfileModal() {
     });
   }
   
-  // Upload avatar
+  // Upload avatar - UPDATED to use R2
   if (uploadBtn) {
     uploadBtn.addEventListener('click', async () => {
-      await uploadProfileAvatar();
+      await uploadProfileAvatarR2();
     });
   }
   
@@ -741,9 +741,9 @@ function openEditProfileModal(profileId) {
 }
 
 // ============================================
-// UPLOAD PROFILE AVATAR
+// UPLOAD PROFILE AVATAR TO CLOUDFLARE R2
 // ============================================
-async function uploadProfileAvatar() {
+async function uploadProfileAvatarR2() {
   try {
     if (!window.currentUser || !window.supabaseAuth) {
       if (typeof showToast === 'function') {
@@ -779,29 +779,11 @@ async function uploadProfileAvatar() {
       
       // Show loading
       if (typeof showToast === 'function') {
-        showToast('Uploading...', 'info');
+        showToast('Uploading to Cloudflare R2...', 'info');
       }
       
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatars/${window.currentUser.id}/${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await window.supabaseAuth.storage
-        .from('avatars')
-        .upload(fileName, file);
-      
-      if (error) {
-        console.error('Upload error:', error);
-        if (typeof showToast === 'function') {
-          showToast('Failed to upload avatar', 'error');
-        }
-        return;
-      }
-      
-      // Get public URL
-      const { data: { publicUrl } } = window.supabaseAuth.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
+      // Upload to Cloudflare R2 via Edge Function
+      const publicUrl = await uploadAvatarToR2(file, window.currentUser.id);
       
       // Preview image
       const avatarImage = document.getElementById('avatar-image');
@@ -814,7 +796,7 @@ async function uploadProfileAvatar() {
       }
       
       if (typeof showToast === 'function') {
-        showToast('Avatar uploaded successfully', 'success');
+        showToast('Avatar uploaded to Cloudflare R2 successfully', 'success');
       }
     };
     
@@ -824,6 +806,59 @@ async function uploadProfileAvatar() {
     if (typeof showToast === 'function') {
       showToast('Failed to upload avatar', 'error');
     }
+  }
+}
+
+// ============================================
+// UPLOAD AVATAR TO CLOUDFLARE R2 VIA EDGE FUNCTION
+// ============================================
+async function uploadAvatarToR2(file, userId) {
+  try {
+    // 1. Generate a clean, unique file name matching your R2 structure
+    const fileExt = file.name.split('.').pop() || 'png';
+    const fileName = `avatar_${Date.now()}.${fileExt}`;
+    const filePath = `profile-pictures/${userId}/${fileName}`;
+
+    console.log(`📤 Requesting presigned R2 upload token for: ${filePath}`);
+
+    // 2. Invoke your get-upload-url Supabase Edge Function
+    const { data: signData, error: signError } = await window.supabaseAuth.functions.invoke('get-upload-url', {
+      body: {
+        bucket: 'bantu-connect-storage',
+        filePath: filePath,
+        contentType: file.type,
+        fileType: 'avatar' // Matches your edge function directory router
+      }
+    });
+
+    if (signError || !signData?.uploadUrl) {
+      throw new Error(`Failed to retrieve R2 presigned URL: ${signError?.message || 'Missing URL payload'}`);
+    }
+
+    console.log(`📤 Uploading directly to Cloudflare R2: ${fileName} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+
+    // 3. Execute a binary PUT migration directly to the Cloudflare R2 endpoint
+    const uploadResponse = await fetch(signData.uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type
+      },
+      body: file
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Cloudflare R2 rejected storage payload: ${uploadResponse.statusText}`);
+    }
+
+    // 4. Construct the public CDN delivery URL
+    const publicUrl = `${signData.publicBaseUrl}/${filePath}`;
+    console.log(`✨ File cleanly settled in Cloudflare R2. Destination: ${publicUrl}`);
+
+    return publicUrl;
+
+  } catch (error) {
+    console.error('❌ R2 upload failed:', error);
+    throw error;
   }
 }
 
@@ -1499,3 +1534,6 @@ window.showToast = showToast;
 window.escapeHtml = escapeHtml;
 window.getInitials = getInitials;
 window.formatNumber = formatNumber;
+// Export R2 upload functions
+window.uploadProfileAvatarR2 = uploadProfileAvatarR2;
+window.uploadAvatarToR2 = uploadAvatarToR2;
