@@ -795,7 +795,6 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 <button type="button" class="avatar-btn" id="upload-avatar-btn"><i class="fas fa-upload"></i> Upload Photo</button>
 <button type="button" class="avatar-btn" id="generate-avatar-btn"><i class="fas fa-magic"></i> Use Initials</button>
 </div>
-<!-- ✅ UPDATED: 20MB limit -->
 <p class="avatar-hint">Recommended: Square image, max <strong>20MB</strong> (JPG, PNG, WEBP, GIF)</p>
 <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
 <input type="hidden" id="avatar-url">
@@ -991,7 +990,6 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 (function() {
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-    const STORAGE_BUCKET = 'profile-pictures';
 
     // Initialize Supabase client
     if (!window.bantuSupabase) {
@@ -1041,7 +1039,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         if (!url) return '';
         if (url.startsWith('http')) return url;
         const cleanPath = url.replace(/^\/+/, '');
-        return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${cleanPath}`;
+        return `${SUPABASE_URL}/storage/v1/object/public/profile-pictures/${cleanPath}`;
     }
 
     function formatDate(dateString) {
@@ -1058,7 +1056,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
 
     // ===== IMAGE COMPRESSION UTILITY =====
-    async function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.85) {
+    async function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.85) {
         return new Promise((resolve, reject) => {
             // Skip compression for small files (under 500KB)
             if (file.size < 500 * 1024) {
@@ -1114,8 +1112,59 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         });
     }
 
-    // ===== OPTIMIZED AVATAR UPLOAD WITH 20MB LIMIT AND COMPRESSION =====
-    async function uploadAvatar(file, skipCompression = false) {
+    // ===== R2 AVATAR UPLOAD FUNCTION =====
+    async function uploadAvatarToR2(file, userId) {
+        try {
+            // 1. Generate a clean, unique file name matching your R2 structure
+            const fileExt = file.name.split('.').pop() || 'png';
+            const fileName = `avatar_${Date.now()}.${fileExt}`;
+            const filePath = `profile-pictures/${userId}/${fileName}`;
+
+            console.log(`📤 Requesting presigned R2 upload token for: ${filePath}`);
+
+            // 2. Invoke your get-upload-url Supabase Edge Function
+            const { data: signData, error: signError } = await supabase.functions.invoke('get-upload-url', {
+                body: {
+                    bucket: 'bantu-connect-storage',
+                    filePath: filePath,
+                    contentType: file.type,
+                    fileType: 'avatar' // Matches your edge function directory router
+                }
+            });
+
+            if (signError || !signData?.uploadUrl) {
+                throw new Error(`Failed to retrieve R2 presigned URL: ${signError?.message || 'Missing URL payload'}`);
+            }
+
+            console.log(`📤 Uploading directly to Cloudflare R2: ${fileName} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+
+            // 3. Execute a binary PUT migration directly to the Cloudflare R2 endpoint
+            const uploadResponse = await fetch(signData.uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type
+                },
+                body: file
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error(`Cloudflare R2 rejected storage payload: ${uploadResponse.statusText}`);
+            }
+
+            // 4. Construct the public CDN delivery URL
+            const publicUrl = `${signData.publicBaseUrl}/${filePath}`;
+            console.log(`✨ File cleanly settled in Cloudflare R2. Destination: ${publicUrl}`);
+
+            return publicUrl;
+
+        } catch (error) {
+            console.error('❌ R2 upload failed:', error);
+            throw error;
+        }
+    }
+
+    // ===== AVATAR UPLOAD WITH R2 AND COMPRESSION =====
+    async function uploadAvatar(file) {
         if (!file) return null;
 
         // Validate file type
@@ -1124,7 +1173,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             return null;
         }
 
-        // ✅ Validate file size (20MB max)
+        // Validate file size (20MB max)
         if (file.size > 20 * 1024 * 1024) {
             showToast('Image must be less than 20MB', 'error');
             return null;
@@ -1141,7 +1190,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         const progressDiv = document.createElement('div');
         progressDiv.className = 'upload-progress';
         progressDiv.innerHTML = `
-            <div style="font-weight:500;color:var(--soft-white);">Uploading Profile Picture</div>
+            <div style="font-weight:500;color:var(--soft-white);">Uploading to Cloudflare R2</div>
             <div class="spinner-small"></div>
             <div style="font-size:13px;color:var(--slate-grey);margin-top:8px;">
                 <span id="upload-file-size">${(file.size / 1024 / 1024).toFixed(1)}</span>MB / 20MB
@@ -1155,11 +1204,8 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             // Update status
             document.getElementById('upload-status').textContent = 'Compressing image...';
 
-            // ✅ Compress image before upload (unless skipped)
-            let uploadFile = file;
-            if (!skipCompression) {
-                uploadFile = await compressImage(file, 800, 800, 0.85);
-            }
+            // Compress image before upload
+            let uploadFile = await compressImage(file, 800, 800, 0.85);
 
             // Update file size display
             const sizeDisplay = document.getElementById('upload-file-size');
@@ -1167,39 +1213,15 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 sizeDisplay.textContent = (uploadFile.size / 1024 / 1024).toFixed(1);
             }
 
-            document.getElementById('upload-status').textContent = 'Uploading to storage...';
+            document.getElementById('upload-status').textContent = 'Uploading to Cloudflare R2...';
 
-            const fileExt = file.name.split('.').pop()?.toLowerCase();
-            if (!fileExt) throw new Error('Invalid file extension');
+            // Upload to R2
+            const publicUrl = await uploadAvatarToR2(uploadFile, user.id);
 
-            // Clean structured path
-            const filePath = `${user.id}/avatar_${Date.now()}.${fileExt}`;
-
-            console.log('📤 Uploading:', filePath, `(${(uploadFile.size / 1024 / 1024).toFixed(2)}MB)`);
-
-            // Upload
-            const { error: uploadError } = await supabase.storage
-                .from('profile-pictures')
-                .upload(filePath, uploadFile, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
-
-            if (uploadError) throw uploadError;
-
-            // Get public URL
-            const { data } = supabase.storage
-                .from('profile-pictures')
-                .getPublicUrl(filePath);
-
-            const publicUrl = data.publicUrl;
-
-            console.log('✅ Uploaded URL:', publicUrl);
+            console.log('✅ R2 Uploaded URL:', publicUrl);
 
             progressDiv.remove();
-            
-            const compressionMsg = skipCompression ? '' : ' (compressed)';
-            showToast(`Profile picture uploaded${compressionMsg}!`, 'success');
+            showToast('Profile picture uploaded to Cloudflare R2!', 'success');
 
             return publicUrl;
 
@@ -1278,7 +1300,6 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
         grid.innerHTML = window.userProfiles.map(profile => {
-            // ✅ CDN OPTIMIZATION: Add width/height parameters
             let avatarUrl = profile.avatar_url;
             if (avatarUrl) {
                 const separator = avatarUrl.includes('?') ? '&' : '?';
@@ -1364,7 +1385,6 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 cb.checked = preferences.includes(cb.value);
             });
 
-            // ✅ CDN OPTIMIZATION: Use optimized URL for preview
             if (profile.avatar_url) {
                 const avatarImage = document.getElementById('avatar-image');
                 const avatarPlaceholder = document.getElementById('avatar-placeholder');
@@ -1527,7 +1547,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
     }
 
-    // ===== AVATAR UPLOAD SETUP WITH CDN OPTIMIZATION =====
+    // ===== AVATAR UPLOAD SETUP WITH R2 =====
     function setupAvatarUpload() {
         const uploadBtn = document.getElementById('upload-avatar-btn');
         const fileInput = document.getElementById('avatar-file-input');
@@ -1543,7 +1563,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             const file = e.target.files[0];
             if (!file) return;
 
-            // ✅ Check file size before processing (20MB)
+            // Check file size before processing (20MB)
             if (file.size > 20 * 1024 * 1024) {
                 showToast('File is too large! Maximum size is 20MB', 'error');
                 fileInput.value = '';
@@ -1559,17 +1579,17 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             };
             reader.readAsDataURL(file);
 
-            // ✅ Upload with compression
+            // Upload to R2 with compression
             const avatarUrl = await uploadAvatar(file);
 
             if (avatarUrl) {
                 avatarUrlInput.value = avatarUrl;
                 console.log('✅ Avatar URL saved:', avatarUrl);
                 
-                // ✅ Update preview with optimized CDN URL
+                // Update preview with optimized CDN URL
                 const optimizedUrl = `${avatarUrl}?width=200&height=200&fit=crop`;
                 avatarImage.src = optimizedUrl;
-                showToast('Avatar uploaded successfully (20MB limit, compressed)', 'success');
+                showToast('Avatar uploaded to Cloudflare R2 successfully', 'success');
             } else {
                 avatarImage.style.display = 'none';
                 avatarPlaceholder.style.display = 'flex';
@@ -1949,7 +1969,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
                 document.getElementById('app').style.display = 'block';
             }, 500);
 
-            console.log('✅ Manage Profiles initialized with 20MB upload limit');
+            console.log('✅ Manage Profiles initialized with Cloudflare R2 upload');
 
         } catch (error) {
             console.error('❌ Error initializing manage profiles:', error);
