@@ -587,7 +587,7 @@
 }
 
 /* ============================================ */
-/* THEME SELECTOR */
+/* THEME SELECTOR - FIXED FOR SIDEBAR OVERLAY */
 /* ============================================ */
 .theme-selector {
   position: fixed;
@@ -597,13 +597,15 @@
   border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 8px;
-  z-index: 1000;
+  z-index: 10000 !important;
   display: none;
   flex-direction: column;
   gap: 4px;
   backdrop-filter: blur(20px);
   min-width: 160px;
   animation: menuFadeIn 0.2s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
 }
 
 .theme-selector.active {
@@ -614,7 +616,7 @@
   background: none;
   border: none;
   color: var(--soft-white);
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -624,6 +626,7 @@
   font-size: 13px;
   width: 100%;
   text-align: left;
+  min-height: 36px;
 }
 
 .theme-option:hover {
@@ -874,6 +877,29 @@
     width: 95%;
     padding: 20px;
   }
+
+  /* ============================================ */
+  /* THEME SELECTOR - MOBILE FIX */
+  /* ============================================ */
+  .theme-selector {
+    top: 70px;
+    right: 10px;
+    min-width: 140px;
+    padding: 6px;
+    z-index: 10000 !important;
+  }
+  
+  .theme-option {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
+    gap: 8px;
+  }
+  
+  .theme-option i {
+    width: 16px;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 550px) {
@@ -904,11 +930,30 @@
   .search-results-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
+  /* ============================================ */
+  /* THEME SELECTOR - MOBILE PHONE FIX */
+  /* ============================================ */
   .theme-selector {
-    top: 70px;
-    right: 10px;
-    min-width: 140px;
+    top: 65px;
+    right: 8px;
+    min-width: 120px;
+    padding: 4px;
+    border-radius: 10px;
+    z-index: 10000 !important;
+  }
+  
+  .theme-option {
+    padding: 5px 8px;
+    font-size: 11px;
+    min-height: 28px;
+    gap: 6px;
+    border-radius: 6px;
+  }
+  
+  .theme-option i {
+    width: 14px;
+    font-size: 11px;
   }
   
   .create-playlist-form {
