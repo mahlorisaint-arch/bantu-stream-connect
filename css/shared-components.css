@@ -651,7 +651,7 @@ body {
 }
 
 /* ============================================ */
-/* MOBILE HEADER FIXES */
+/* MOBILE HEADER FIXES - ICONS REDUCED TO 50% */
 /* ============================================ */
 @media (max-width: 768px) {
   .header {
@@ -678,11 +678,27 @@ body {
     max-width: 120px;
   }
   
+  /* REDUCED ICON SIZE - 50% of original */
   .icon-btn {
-    width: 2.125rem !important;
-    height: 2.125rem !important;
-    font-size: 0.875rem !important;
+    width: 1.1875rem !important;
+    height: 1.1875rem !important;
+    font-size: 0.625rem !important;
     flex-shrink: 0 !important;
+    min-width: 1.1875rem !important;
+    min-height: 1.1875rem !important;
+  }
+  
+  /* Specifically target voice, search, and notification icons */
+  #voice-search-btn.icon-btn,
+  #search-btn.icon-btn,
+  #notifications-btn.icon-btn {
+    width: 1.1875rem !important;
+    height: 1.1875rem !important;
+    font-size: 0.625rem !important;
+    min-width: 1.1875rem !important;
+    min-height: 1.1875rem !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
   }
   
   .header-actions {
@@ -736,10 +752,23 @@ body {
     max-width: 100px;
   }
   
+  /* REDUCED ICON SIZE - 50% of original (smaller screens) */
   .icon-btn {
-    width: 2rem !important;
-    height: 2rem !important;
-    font-size: 0.8125rem !important;
+    width: 1rem !important;
+    height: 1rem !important;
+    font-size: 0.5rem !important;
+    min-width: 1rem !important;
+    min-height: 1rem !important;
+  }
+  
+  #voice-search-btn.icon-btn,
+  #search-btn.icon-btn,
+  #notifications-btn.icon-btn {
+    width: 1rem !important;
+    height: 1rem !important;
+    font-size: 0.5rem !important;
+    min-width: 1rem !important;
+    min-height: 1rem !important;
   }
   
   .header-actions {
@@ -763,9 +792,23 @@ body {
     max-width: 90px;
   }
   
+  /* REDUCED ICON SIZE - 50% of original (smallest screens) */
   .icon-btn {
-    width: 1.875rem !important;
-    height: 1.875rem !important;
+    width: 0.9375rem !important;
+    height: 0.9375rem !important;
+    font-size: 0.4375rem !important;
+    min-width: 0.9375rem !important;
+    min-height: 0.9375rem !important;
+  }
+  
+  #voice-search-btn.icon-btn,
+  #search-btn.icon-btn,
+  #notifications-btn.icon-btn {
+    width: 0.9375rem !important;
+    height: 0.9375rem !important;
+    font-size: 0.4375rem !important;
+    min-width: 0.9375rem !important;
+    min-height: 0.9375rem !important;
   }
   
   .rsa-badge {
