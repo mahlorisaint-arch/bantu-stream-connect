@@ -2,7 +2,7 @@
 /* SHARED COMPONENTS - BANTU STREAM CONNECT */
 /* Platform-wide consistent header, sidebar, navigation styles */
 /* Extracted from content-detail.css for consistency */
-/* Version: 3.1 - PREMIUM GLASSMORPHIC SEARCH MATRIX */
+/* Version: 3.2 - PREMIUM GLASSMORPHIC SEARCH MATRIX + SEARCH BUTTON */
 /* ============================================ */
 
 /* ============================================ */
@@ -328,6 +328,88 @@ body {
   transform: translateY(-0.125rem);
 }
 
+/* ============================================ */
+/* SEARCH BUTTON - WITH KEYBOARD SHORTCUT */
+/* ============================================ */
+.search-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  width: auto;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  transition: all 0.3s ease;
+  height: 2.375rem;
+  cursor: pointer;
+  color: var(--soft-white);
+}
+
+.search-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-wave, #00e5ff);
+  transform: translateY(-0.125rem);
+}
+
+.search-btn .search-shortcut {
+  font-size: 0.65rem;
+  color: var(--text-muted, #a0aec0);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+}
+
+/* Mobile Search Button */
+@media (max-width: 768px) {
+  .search-btn .search-shortcut {
+    display: none;
+  }
+  
+  .search-btn {
+    width: 2.375rem !important;
+    height: 2.375rem !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ============================================ */
+/* VOICE SEARCH BUTTON INSIDE SEARCH INPUT */
+/* ============================================ */
+.voice-search-modal-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted, #a0aec0);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.voice-search-modal-btn:hover {
+  color: var(--accent-wave, #00e5ff);
+  background: rgba(0, 229, 255, 0.1);
+}
+
+.voice-search-modal-btn:active {
+  transform: translateY(-50%) scale(0.9);
+}
+
+/* ============================================ */
+/* NOTIFICATION BADGE */
+/* ============================================ */
 .notification-badge {
   position: absolute;
   top: -0.3125rem;
@@ -1352,7 +1434,7 @@ body {
 
 #search-input {
   width: 100%;
-  padding: 1.25rem 1.5rem 1.25rem 3.5rem;
+  padding: 1.25rem 3.5rem 1.25rem 3.5rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
@@ -1388,6 +1470,7 @@ body {
   font-size: 1.2rem;
   pointer-events: none;
   transition: color 0.3s;
+  z-index: 1;
 }
 .search-input-wrapper:focus-within::before {
   color: var(--accent-wave);
