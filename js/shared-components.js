@@ -18,7 +18,9 @@ window.platformComponents = window.platformComponents || {
     notifications: [],
     searchDebounceTimer: null,
     voiceRecognition: null,
-    analyticsChart: null
+    analyticsChart: null,
+    searchHistory: JSON.parse(localStorage.getItem('bantu_search_history')) || [],
+    activeFilters: { category: '', type: '', sort: 'newest' }
 };
 
 // ============================================ */
@@ -426,165 +428,451 @@ async function updateProfileDropdown() {
 }
 
 // ============================================ */
-// 1. COMPLETE SEARCH FUNCTIONALITY (with thumbnail fix) */
+// 1. PREMIUM SEARCH ENGINE - THREE-STATE SYSTEM */
+// Complete replacement of old search modal with new premium system */
 // ============================================ */
 
 function setupSearchModal() {
-    const searchBtn = document.getElementById('search-btn');
-    const searchModal = document.getElementById('search-modal');
-    const closeSearchBtn = document.getElementById('close-search-btn');
-    const searchInput = document.getElementById('search-input');
-    const categoryFilter = document.getElementById('category-filter');
-    const sortFilter = document.getElementById('sort-filter');
-    
-    if (!searchBtn || !searchModal) return;
-    
-    // Open modal
-    searchBtn.onclick = () => {
-        searchModal.classList.add('active');
-        setTimeout(() => searchInput?.focus(), 100);
-    };
-    
-    // Close modal
-    if (closeSearchBtn) {
-        closeSearchBtn.onclick = () => searchModal.classList.remove('active');
-    }
-    
-    // Close on escape
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('search-input');
+    const closeBtn = document.getElementById('close-search-btn');
+    const searchTriggerBtn = document.getElementById('search-btn');
+    const cancelVoiceBtn = document.getElementById('voice-search-cancel');
+
+    if (!modal || !input) return;
+
+    // Global Activation Shortcut (Cmd + K or Ctrl + K)
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && searchModal?.classList.contains('active')) {
-            searchModal.classList.remove('active');
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            openSearchModal(modal, input);
         }
     });
-    
-    // Search input handler with debounce
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(window.platformComponents.searchDebounceTimer);
-            window.platformComponents.searchDebounceTimer = setTimeout(() => {
-                performSearch(e.target.value, categoryFilter?.value, sortFilter?.value);
-            }, 500);
-        });
+
+    // Button Triggers
+    if (searchTriggerBtn) {
+        searchTriggerBtn.addEventListener('click', () => openSearchModal(modal, input));
     }
-    
-    // Filter handlers
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', () => {
-            performSearch(searchInput?.value, categoryFilter.value, sortFilter?.value);
-        });
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => closeSearchModal(modal));
     }
-    
-    if (sortFilter) {
-        sortFilter.addEventListener('change', () => {
-            performSearch(searchInput?.value, categoryFilter?.value, sortFilter.value);
-        });
+
+    // Modal Background Overlay Escape click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeSearchModal(modal);
+    });
+
+    // Escape Key Safeguard
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeSearchModal(modal);
+        }
+    });
+
+    // Intelligent Input Event Router
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        
+        clearTimeout(window.platformComponents.searchDebounceTimer);
+        
+        if (query.length === 0) {
+            renderSearchZeroState();
+            return;
+        }
+
+        // Fast interactive debounce for high premium app performance
+        window.platformComponents.searchDebounceTimer = setTimeout(() => {
+            performAdvancedSearch(query);
+        }, 350);
+    });
+
+    // Auto-routing if user focuses an empty search bar
+    input.addEventListener('focus', () => {
+        if (input.value.trim().length === 0) {
+            renderSearchZeroState();
+        }
+    });
+
+    // Set up voice capabilities and pill components
+    setupFilterPills(input);
+    setupVoiceSearch(input);
+}
+
+function openSearchModal(modal, input) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Lock background scrolling
+    setTimeout(() => input.focus(), 50); // Fluid focus transition
+    if (input.value.trim().length === 0) {
+        renderSearchZeroState();
     }
 }
 
-async function performSearch(query, category = '', sortBy = 'newest') {
-    const resultsGrid = document.getElementById('search-results-grid');
-    if (!resultsGrid) return;
-    
-    if (!query || query.length < 2) {
-        resultsGrid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>Type at least 2 characters to search</p></div>';
-        return;
-    }
-    
-    resultsGrid.innerHTML = '<div class="loading-spinner-small"></div>';
-    
-    try {
-        let supabaseQuery = window.supabaseClient
-            .from('Content')
-            .select(`
-                id, 
-                title, 
-                description, 
-                thumbnail_url, 
-                duration, 
-                genre, 
-                language,
-                views_count,
-                created_at,
-                user_id,
-                user_profiles!user_id(full_name, username, avatar_url)
-            `)
-            .eq('status', 'published')
-            .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`);
-        
-        // Apply category filter
-        if (category && category !== '') {
-            supabaseQuery = supabaseQuery.eq('genre', category);
-        }
-        
-        // Get results
-        const { data: content, error } = await supabaseQuery.limit(50);
-        
-        if (error) throw error;
-        
-        // Sort results
-        let results = content || [];
-        if (sortBy === 'popular') {
-            results.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-        } else if (sortBy === 'newest') {
-            results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        }
-        
-        renderSearchResults(results, query);
-        
-    } catch (error) {
-        console.error('Search error:', error);
-        resultsGrid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error searching. Please try again.</p></div>';
-    }
-}
-
-// FIXED: Thumbnail URL construction for search results
-function renderSearchResults(results, query) {
-    const resultsGrid = document.getElementById('search-results-grid');
-    
-    if (!results || results.length === 0) {
-        resultsGrid.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>No results found for "${escapeHtml(query)}"</p></div>`;
-        return;
-    }
-    
-    resultsGrid.innerHTML = results.map(item => {
-        // FIXED: Proper thumbnail URL construction
-        let thumbnail = 'https://via.placeholder.com/400x225?text=No+Thumbnail';
-        if (item.thumbnail_url) {
-            if (item.thumbnail_url.startsWith('http')) {
-                thumbnail = item.thumbnail_url;
-            } else if (item.thumbnail_url.startsWith('/')) {
-                thumbnail = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content${item.thumbnail_url}`;
-            } else {
-                thumbnail = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${item.thumbnail_url}`;
-            }
-        }
-        
-        const creatorName = item.user_profiles?.full_name || item.user_profiles?.username || 'Unknown Creator';
-        const views = formatNumber(item.views_count || 0);
-        const duration = item.duration ? formatDuration(item.duration) : '';
-        
-        return `
-            <div class="search-result-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                <div class="search-result-thumbnail">
-                    <img src="${thumbnail}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='https://via.placeholder.com/400x225?text=No+Image'">
-                    ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
-                </div>
-                <div class="search-result-info">
-                    <h4>${escapeHtml(item.title)}</h4>
-                    <p class="creator-name">${escapeHtml(creatorName)}</p>
-                    <div class="result-meta">
-                        <span><i class="fas fa-eye"></i> ${views} views</span>
-                        ${item.genre ? `<span><i class="fas fa-tag"></i> ${escapeHtml(item.genre)}</span>` : ''}
-                    </div>
-                    ${item.description ? `<p class="description-preview">${escapeHtml(item.description.substring(0, 100))}${item.description.length > 100 ? '...' : ''}</p>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
+function closeSearchModal(modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = ''; // Release scroll block
 }
 
 // ============================================ */
-// 2. COMPLETE ANALYTICS FUNCTIONALITY (FIXED: 4 metrics) */
+// 2. COMPONENT STRATEGY: MOOD/FILTER PILLS */
+// ============================================ */
+function setupFilterPills(inputElement) {
+    const pills = document.querySelectorAll('.search-filter-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const group = pill.dataset.filterGroup; // 'category', 'type', 'sort'
+            const value = pill.dataset.filterValue;
+
+            // Deactivate siblings in same functional group
+            document.querySelectorAll(`.search-filter-pill[data-filter-group="${group}"]`)
+                .forEach(sibling => sibling.classList.remove('active'));
+
+            pill.classList.add('active');
+            window.platformComponents.activeFilters[group] = value;
+
+            // Re-execute lookup dynamically if query exists
+            const currentQuery = inputElement.value.trim();
+            if (currentQuery.length >= 2) {
+                performAdvancedSearch(currentQuery);
+            }
+        });
+    });
+}
+
+// ============================================ */
+// 3. STATE CONTROLLER: ZERO-STATE ENGINE (History & Recommendations) */
+// ============================================ */
+function renderSearchZeroState() {
+    const resultsGrid = document.getElementById('search-results-grid');
+    if (!resultsGrid) return;
+
+    const history = window.platformComponents.searchHistory;
+
+    resultsGrid.innerHTML = `
+        <div class="search-zero-state-container">
+            <div class="search-history-section">
+                <div class="section-header-row">
+                    <h4>Recent Locks ⏱️</h4>
+                    ${history.length > 0 ? `<button class="clear-history-btn" onclick="clearSearchHistory()">Clear All</button>` : ''}
+                </div>
+                <div class="history-pills-container">
+                    ${history.length === 0 ? 
+                        `<p class="neutral-placeholder-text">Your recent lookup history is clear.</p>` : 
+                        history.map(term => `
+                            <span class="history-pill" onclick="triggerFastSearch('${escapeHtml(term)}')">
+                                <i class="fas fa-history"></i> <span class="term-text">${escapeHtml(term)}</span>
+                            </span>
+                        `).join('')
+                    }
+                </div>
+            </div>
+            <div class="search-trending-section">
+                <h4>Trending Across The Stream 🌊</h4>
+                <div id="trending-search-placeholder" class="trending-mini-grid">
+                    <div class="loading-spinner-small"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    loadTrendingSearchItems();
+}
+
+async function loadTrendingSearchItems() {
+    const placeholder = document.getElementById('trending-search-placeholder');
+    if (!placeholder) return;
+
+    try {
+        // Query top premium recommendations ordered by view traction
+        const { data, error } = await window.supabaseClient
+            .from('Content')
+            .select('id, title, thumbnail_url, views_count, genre')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .limit(3);
+
+        if (error || !data || data.length === 0) {
+            placeholder.innerHTML = '<p class="neutral-placeholder-text">Checking live stream waves...</p>';
+            return;
+        }
+
+        placeholder.innerHTML = data.map(item => `
+            <div class="trending-mini-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
+                <img src="${parseThumbnailUrl(item.thumbnail_url)}" alt="" onerror="this.src='images/card-fallback.jpg'">
+                <div class="mini-card-details">
+                    <h5>${escapeHtml(item.title)}</h5>
+                    <span>${formatNumber(item.views_count)} views · ${escapeHtml(item.genre || 'Vibe')}</span>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (err) {
+        placeholder.innerHTML = '<p class="neutral-placeholder-text">Failed to fetch modern recommendations.</p>';
+    }
+}
+
+// ============================================ */
+// 4. SYSTEM PROCESSING: CORE FULL-TEXT MULTI-TRACK QUERY */
+// ============================================ */
+async function performAdvancedSearch(query) {
+    const resultsGrid = document.getElementById('search-results-grid');
+    if (!resultsGrid) return;
+
+    if (query.length < 2) {
+        resultsGrid.innerHTML = `<div class="search-status-message"><p>Keep typing... find your path.</p></div>`;
+        return;
+    }
+
+    resultsGrid.innerHTML = `
+        <div class="search-loading-container">
+            <div class="loading-spinner-small"></div>
+            <p>Decoding Bantu Stream channels...</p>
+        </div>
+    `;
+
+    const filters = window.platformComponents.activeFilters;
+
+    try {
+        // --- DATA TRACK 1: FETCH MATCHING CREATORS ---
+        let creatorQuery = window.supabaseClient
+            .from('user_profiles')
+            .select('id, full_name, username, avatar_url, role')
+            .eq('role', 'creator')
+            .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
+            .limit(4);
+
+        // --- DATA TRACK 2: FETCH CONTENT DROPS (WITH TRANSFORMS) ---
+        let contentQuery = window.supabaseClient
+            .from('Content')
+            .select(`
+                id, title, description, thumbnail_url, duration, genre, 
+                views_count, created_at, content_type, user_id,
+                user_profiles!inner (full_name, username, avatar_url)
+            `)
+            .eq('status', 'published')
+            .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`);
+
+        // Apply functional UI Pill Filters
+        if (filters.category) contentQuery = contentQuery.eq('genre', filters.category);
+        if (filters.type) contentQuery = contentQuery.eq('content_type', filters.type);
+        
+        if (filters.sort === 'popular') {
+            contentQuery = contentQuery.order('views_count', { ascending: false });
+        } else {
+            contentQuery = contentQuery.order('created_at', { ascending: false });
+        }
+        
+        contentQuery = contentQuery.limit(24);
+
+        // Execute queries parallelized for ultra-low platform overhead latency
+        const [creatorsRes, contentRes] = await Promise.all([creatorQuery, contentQuery]);
+
+        if (contentRes.error) throw contentRes.error;
+
+        saveSearchHistoryTerm(query);
+        renderSplitSearchResults(creatorsRes.data || [], contentRes.data || [], query);
+
+    } catch (error) {
+        console.error("Search failure response context: ", error);
+        resultsGrid.innerHTML = `
+            <div class="search-error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>An execution error interrupted the discovery system link.</p>
+                <button onclick="performAdvancedSearch('${escapeHtml(query)}')">Retry Connection</button>
+            </div>
+        `;
+    }
+}
+
+// ============================================ */
+// 5. HIGH-FIDELITY RENDER MATRIX: SPLIT INTERACTIVE SECTIONS */
+// ============================================ */
+function renderSplitSearchResults(creators, drops, query) {
+    const resultsGrid = document.getElementById('search-results-grid');
+    if (!resultsGrid) return;
+
+    if (creators.length === 0 && drops.length === 0) {
+        resultsGrid.innerHTML = `
+            <div class="search-empty-state">
+                <p>No waves matching "<strong>${escapeHtml(query)}</strong>" discovered.</p>
+                <span>Check your spelling or shift your mood filters to expand the pipeline parameters.</span>
+            </div>
+        `;
+        return;
+    }
+
+    // Split items into sub-vibe categories instantly
+    const longFormDrops = drops.filter(d => d.duration >= 600 || d.content_type === 'video');
+    const shortAudioDrops = drops.filter(d => d.duration < 600 || d.content_type === 'audio');
+
+    resultsGrid.innerHTML = `
+        <div class="split-search-matrix-wrapper">
+            
+            ${creators.length > 0 ? `
+                <div class="split-section creators-split-track">
+                    <h4>Matching Channels 🎙️</h4>
+                    <div class="creators-flex-row">
+                        ${creators.map(creator => `
+                            <div class="creator-mini-profile-card" onclick="window.location.href='channel.html?id=${creator.id}'">
+                                <img src="${creator.avatar_url || 'images/default-avatar.png'}" alt="">
+                                <div class="creator-meta">
+                                    <h6>${escapeHtml(creator.full_name)}</h6>
+                                    <span>@${escapeHtml(creator.username)}</span>
+                                </div>
+                                <button class="lock-in-fast-btn"><i class="fas fa-link"></i> Look</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${longFormDrops.length > 0 ? `
+                <div class="split-section drops-split-track">
+                    <h4>Long-Form Drops & Features 🎞️</h4>
+                    <div class="premium-search-grid-layout">
+                        ${longFormDrops.map(drop => generatePremiumCardHtml(drop)).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${shortAudioDrops.length > 0 ? `
+                <div class="split-section audio-split-track">
+                    <h4>Short Waves & Audio Drops 🎵</h4>
+                    <div class="premium-search-grid-layout">
+                        ${shortAudioDrops.map(drop => generatePremiumCardHtml(drop)).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+        </div>
+    `;
+}
+
+function generatePremiumCardHtml(drop) {
+    const durationStr = drop.duration ? formatDuration(drop.duration) : '';
+    const creatorName = drop.user_profiles ? drop.user_profiles.full_name : 'Independent Creator';
+    
+    return `
+        <div class="premium-search-card" onclick="window.location.href='content-detail.html?id=${drop.id}'">
+            <div class="thumbnail-wrapper-frame">
+                <img src="${parseThumbnailUrl(drop.thumbnail_url)}" alt="" onerror="this.src='images/card-fallback.jpg'">
+                ${durationStr ? `<span class="premium-duration-badge">${durationStr}</span>` : ''}
+            </div>
+            <div class="premium-card-payload">
+                <h5>${escapeHtml(drop.title)}</h5>
+                <p class="premium-card-author-row">By <span>${escapeHtml(creatorName)}</span></p>
+                <div class="premium-card-footer-metrics">
+                    <span><i class="fas fa-eye"></i> ${formatNumber(drop.views_count)} views</span>
+                    <span class="genre-tag-node">${escapeHtml(drop.genre || 'Stream')}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================ */
+// 6. UTILITY METHODS & STORAGE HOOKS */
+// ============================================ */
+function parseThumbnailUrl(url) {
+    if (!url) return 'images/card-fallback.jpg';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const storagePrefix = 'https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/';
+    return storagePrefix + (url.startsWith('/') ? url.substring(1) : url);
+}
+
+function saveSearchHistoryTerm(term) {
+    let history = window.platformComponents.searchHistory;
+    if (!history.includes(term)) {
+        history.unshift(term);
+        if (history.length > 6) history.pop();
+        window.platformComponents.searchHistory = history;
+        localStorage.setItem('bantu_search_history', JSON.stringify(history));
+    }
+}
+
+function triggerFastSearch(term) {
+    const input = document.getElementById('search-input');
+    if (!input) return;
+    input.value = term;
+    performAdvancedSearch(term);
+}
+
+function clearSearchHistory() {
+    window.platformComponents.searchHistory = [];
+    localStorage.removeItem('bantu_search_history');
+    renderSearchZeroState();
+}
+
+// Legacy search function kept for backward compatibility
+async function performSearch(query, category = '', sortBy = 'newest') {
+    // This is now handled by the new performAdvancedSearch
+    // Keeping for backward compatibility
+    if (query && query.length >= 2) {
+        await performAdvancedSearch(query);
+    }
+}
+
+// ============================================ */
+// 7. EXPERIMENTAL ADAPTIVE VOICE CONTROLLER */
+// ============================================ */
+function setupVoiceSearch(inputElement) {
+    const voiceTrigger = document.getElementById('voice-search-btn');
+    const voiceStatus = document.getElementById('voice-search-status');
+    const voiceText = document.getElementById('voice-status-text');
+    const cancelVoiceBtn = document.getElementById('voice-search-cancel');
+
+    if (!voiceTrigger || !voiceStatus) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        voiceTrigger.style.display = 'none'; // Fallback safely if browser engine doesn't implement web speech APIs
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-ZA'; // Configured localized South African dialect capture context
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    voiceTrigger.addEventListener('click', () => {
+        try {
+            recognition.start();
+        } catch (e) {
+            recognition.stop();
+        }
+    });
+
+    recognition.onstart = () => {
+        voiceStatus.classList.add('active');
+        if (voiceText) voiceText.innerText = 'Listening to speech signatures...';
+    };
+
+    recognition.onerror = () => {
+        if (voiceText) voiceText.innerText = 'Link failure. Try again.';
+        setTimeout(() => voiceStatus.classList.remove('active'), 1500);
+    };
+
+    recognition.onend = () => {
+        voiceStatus.classList.remove('active');
+    };
+
+    recognition.onresult = (event) => {
+        const speechToTextResult = event.results[0][0].transcript;
+        if (inputElement) {
+            inputElement.value = speechToTextResult;
+            performAdvancedSearch(speechToTextResult);
+        }
+    };
+
+    if (cancelVoiceBtn) {
+        cancelVoiceBtn.addEventListener('click', () => {
+            recognition.stop();
+            voiceStatus.classList.remove('active');
+        });
+    }
+}
+
+// ============================================ */
+// 8. COMPLETE ANALYTICS FUNCTIONALITY (FIXED: 4 metrics) */
 // ============================================ */
 
 function setupAnalytics() {
@@ -877,7 +1165,7 @@ function showNoAnalyticsData() {
 }
 
 // ============================================ */
-// 3. COMPLETE NOTIFICATIONS FUNCTIONALITY */
+// 9. COMPLETE NOTIFICATIONS FUNCTIONALITY */
 // ============================================ */
 
 function setupNotifications() {
@@ -1149,216 +1437,7 @@ function updateNotificationBadge(count) {
 }
 
 // ============================================ */
-// 4. COMPLETE VOICE SEARCH FUNCTIONALITY */
-// ============================================ */
-
-function setupVoiceSearch() {
-    const voiceBtn = document.getElementById('voice-search-btn');
-    const modalVoiceBtn = document.getElementById('voice-search-modal-btn');
-    
-    // Check if browser supports speech recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        console.warn('Speech recognition not supported');
-        if (voiceBtn) voiceBtn.style.display = 'none';
-        return;
-    }
-    
-    // Initialize recognition
-    window.platformComponents.voiceRecognition = new SpeechRecognition();
-    const recognition = window.platformComponents.voiceRecognition;
-    
-    recognition.lang = 'en-ZA'; // South African English
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    
-    let voiceStatusDiv = document.getElementById('voice-search-status');
-    if (!voiceStatusDiv) {
-        voiceStatusDiv = createVoiceStatusElement();
-    }
-    
-    const startVoiceSearch = async () => {
-        // Check microphone permission
-        try {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (err) {
-            showMicrophonePermissionPrompt();
-            return;
-        }
-        
-        const user = await getCurrentUser();
-        if (!user || !user.id) {
-            showToast('Please sign in to use voice search', 'warning');
-            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            return;
-        }
-        
-        try {
-            recognition.start();
-            showVoiceStatus('Listening...', true);
-            
-            // Auto-stop after 5 seconds if no speech
-            setTimeout(() => {
-                if (recognition) {
-                    try { recognition.stop(); } catch(e) {}
-                }
-            }, 5000);
-            
-        } catch (error) {
-            console.error('Voice recognition error:', error);
-            showToast('Error starting voice search', 'error');
-            hideVoiceStatus();
-        }
-    };
-    
-    recognition.onstart = () => {
-        console.log('Voice recognition started');
-        showVoiceStatus('Listening... Speak now', true);
-    };
-    
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        const isFinal = event.results[0].isFinal;
-        
-        if (isFinal) {
-            showVoiceStatus(`Searching: "${transcript}"`, false);
-            
-            // Fill search input and trigger search
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) {
-                searchInput.value = transcript;
-                performSearch(transcript, '', 'newest');
-                
-                // Open search modal if not open
-                const searchModal = document.getElementById('search-modal');
-                if (searchModal && !searchModal.classList.contains('active')) {
-                    searchModal.classList.add('active');
-                }
-            }
-            
-            setTimeout(() => hideVoiceStatus(), 1500);
-        } else {
-            showVoiceStatus(transcript, true);
-        }
-    };
-    
-    recognition.onerror = (event) => {
-        console.error('Voice recognition error:', event.error);
-        let errorMessage = 'Voice search error';
-        
-        switch(event.error) {
-            case 'no-speech':
-                errorMessage = 'No speech detected';
-                break;
-            case 'audio-capture':
-                errorMessage = 'Microphone not found';
-                break;
-            case 'not-allowed':
-                errorMessage = 'Microphone permission denied';
-                break;
-            case 'network':
-                errorMessage = 'Network error';
-                break;
-        }
-        
-        showToast(errorMessage, 'warning');
-        hideVoiceStatus();
-    };
-    
-    recognition.onend = () => {
-        console.log('Voice recognition ended');
-        setTimeout(() => hideVoiceStatus(), 500);
-    };
-    
-    if (voiceBtn) {
-        voiceBtn.onclick = startVoiceSearch;
-    }
-    
-    if (modalVoiceBtn) {
-        modalVoiceBtn.onclick = startVoiceSearch;
-    }
-}
-
-function createVoiceStatusElement() {
-    const div = document.createElement('div');
-    div.id = 'voice-search-status';
-    div.className = 'voice-search-status';
-    div.innerHTML = `
-        <i class="fas fa-microphone-alt"></i>
-        <span id="voice-status-text">Listening...</span>
-        <button class="voice-search-cancel" id="voice-search-cancel">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-    document.body.appendChild(div);
-    
-    const cancelBtn = document.getElementById('voice-search-cancel');
-    if (cancelBtn && window.platformComponents.voiceRecognition) {
-        cancelBtn.onclick = () => {
-            window.platformComponents.voiceRecognition.stop();
-            hideVoiceStatus();
-        };
-    }
-    
-    return div;
-}
-
-function showVoiceStatus(message, isActive) {
-    const statusDiv = document.getElementById('voice-search-status');
-    const statusText = document.getElementById('voice-status-text');
-    
-    if (statusDiv && statusText) {
-        statusText.textContent = message;
-        statusDiv.classList.add('active');
-        if (isActive) {
-            statusDiv.style.animation = 'voicePulse 1.5s infinite';
-        }
-    }
-}
-
-function hideVoiceStatus() {
-    const statusDiv = document.getElementById('voice-search-status');
-    if (statusDiv) {
-        statusDiv.classList.remove('active');
-        statusDiv.style.animation = '';
-    }
-}
-
-function showMicrophonePermissionPrompt() {
-    const promptDiv = document.createElement('div');
-    promptDiv.className = 'voice-permission-prompt';
-    promptDiv.innerHTML = `
-        <i class="fas fa-microphone-alt"></i>
-        <p>Voice search needs microphone access</p>
-        <button id="voice-permission-allow">Allow</button>
-        <button id="voice-permission-dismiss">Dismiss</button>
-    `;
-    document.body.appendChild(promptDiv);
-    
-    document.getElementById('voice-permission-allow')?.addEventListener('click', async () => {
-        try {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-            showToast('Microphone access granted', 'success');
-            promptDiv.remove();
-        } catch (err) {
-            showToast('Microphone access denied', 'error');
-            promptDiv.remove();
-        }
-    });
-    
-    document.getElementById('voice-permission-dismiss')?.addEventListener('click', () => {
-        promptDiv.remove();
-    });
-    
-    setTimeout(() => {
-        if (promptDiv.parentNode) promptDiv.remove();
-    }, 10000);
-}
-
-// ============================================ */
-// 5. PROFILE DROPDOWN (FIXED: No redirect, toggles dropdown) */
+// 10. PROFILE DROPDOWN (FIXED: No redirect, toggles dropdown) */
 // ============================================ */
 
 function setupProfileDropdown() {
@@ -2101,7 +2180,7 @@ function setupHeaderButtons() {
     // All buttons are set up in their respective functions:
     // - Voice search: setupVoiceSearch
     // - Analytics: setupAnalytics
-    // - Search: setupSearchModal
+    // - Search: setupSearchModal (now uses premium search)
     // - Notifications: setupNotifications
     // - Profile: setupProfileDropdown
 }
@@ -2122,10 +2201,9 @@ async function initSharedComponents() {
     
     // Setup all components
     setupHeaderButtons();
-    setupSearchModal();        // COMPLETE with thumbnail fix
+    setupSearchModal();        // PREMIUM SEARCH with three-state system
     setupAnalytics();          // COMPLETE with full metrics
     setupNotifications();      // COMPLETE
-    setupVoiceSearch();        // COMPLETE
     setupBottomNavigation();
     setupSidebarClose();
     setupSidebarToggles();
@@ -2150,7 +2228,7 @@ async function initSharedComponents() {
         window.uiScaleController.init();
     }
     
-    // NEW: Initialize creator mode
+    // Initialize creator mode
     await initCreatorMode();
     
     // Make functions globally available
@@ -2159,14 +2237,17 @@ async function initSharedComponents() {
     window.updateHeaderProfile = updateHeaderProfile;
     window.updateSidebarProfile = updateSidebarProfile;
     window.performSearch = performSearch;
+    window.performAdvancedSearch = performAdvancedSearch;
     window.switchProfile = switchProfile;
     window.createNewProfile = createNewProfile;
     window.markNotificationAsRead = markNotificationAsRead;
     window.applyThemeToDocument = applyThemeToDocument;
     window.initCreatorMode = initCreatorMode;
+    window.clearSearchHistory = clearSearchHistory;
+    window.triggerFastSearch = triggerFastSearch;
     
     window.platformComponents.initialized = true;
-    console.log('✅ Shared components initialized successfully with creator mode');
+    console.log('✅ Shared components initialized successfully with premium search');
 }
 
 // ============================================ */
@@ -2187,11 +2268,14 @@ if (typeof module !== 'undefined' && module.exports) {
         updateHeaderProfile,
         updateSidebarProfile,
         performSearch,
+        performAdvancedSearch,
         switchProfile,
         createNewProfile,
         markNotificationAsRead,
         UIScaleController,
         applyThemeToDocument,
-        initCreatorMode
+        initCreatorMode,
+        clearSearchHistory,
+        triggerFastSearch
     };
 }
