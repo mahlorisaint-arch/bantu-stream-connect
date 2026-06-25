@@ -4,7 +4,7 @@
 // Complete implementation for Search, Analytics, Notifications, Voice Search, Profile */
 // ============================================ */
 
-console.log('📦 Shared Components v3.4 - Fixed search column names...');
+console.log('📦 Shared Components v3.5 - Fixed content_engagement_stats join...');
 
 // ============================================ */
 // GLOBAL VARIABLES */
@@ -582,12 +582,18 @@ async function loadTrendingSearchItems() {
     if (!placeholder) return;
 
     try {
-        // FIXED: Changed views_count to total_views
+        // FIXED: Join with content_engagement_stats to get total_views
         const { data, error } = await window.supabaseClient
             .from('Content')
-            .select('id, title, thumbnail_url, total_views, genre')
+            .select(`
+                id, 
+                title, 
+                thumbnail_url, 
+                genre,
+                content_engagement_stats!inner(total_views)
+            `)
             .eq('status', 'published')
-            .order('total_views', { ascending: false })
+            .order('total_views', { referencedTable: 'content_engagement_stats', ascending: false })
             .limit(3);
 
         if (error || !data || data.length === 0) {
@@ -595,7 +601,13 @@ async function loadTrendingSearchItems() {
             return;
         }
 
-        placeholder.innerHTML = data.map(item => `
+        // Normalize data - flatten the nested stats object
+        const normalizedData = data.map(item => ({
+            ...item,
+            total_views: item.content_engagement_stats?.total_views || 0
+        }));
+
+        placeholder.innerHTML = normalizedData.map(item => `
             <div class="trending-mini-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
                 <img src="${parseThumbnailUrl(item.thumbnail_url)}" alt="" onerror="this.src='images/card-fallback.jpg'">
                 <div class="mini-card-details">
@@ -642,13 +654,21 @@ async function performAdvancedSearch(query) {
             .limit(4);
 
         // --- DATA TRACK 2: FETCH CONTENT DROPS (WITH TRANSFORMS) ---
-        // FIXED: Changed views_count to total_views
+        // FIXED: Join with content_engagement_stats for total_views
         let contentQuery = window.supabaseClient
             .from('Content')
             .select(`
-                id, title, description, thumbnail_url, duration, genre, 
-                total_views, created_at, content_type, user_id,
-                user_profiles!inner (full_name, username, avatar_url)
+                id, 
+                title, 
+                description, 
+                thumbnail_url, 
+                duration, 
+                genre, 
+                created_at, 
+                content_type, 
+                user_id,
+                user_profiles!inner(full_name, username, avatar_url),
+                content_engagement_stats(total_views)
             `)
             .eq('status', 'published')
             .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`);
@@ -657,9 +677,9 @@ async function performAdvancedSearch(query) {
         if (filters.category) contentQuery = contentQuery.eq('genre', filters.category);
         if (filters.type) contentQuery = contentQuery.eq('content_type', filters.type);
         
-        // FIXED: Changed views_count to total_views
+        // FIXED: Order by the joined table column
         if (filters.sort === 'popular') {
-            contentQuery = contentQuery.order('total_views', { ascending: false });
+            contentQuery = contentQuery.order('total_views', { referencedTable: 'content_engagement_stats', ascending: false });
         } else {
             contentQuery = contentQuery.order('created_at', { ascending: false });
         }
@@ -674,8 +694,14 @@ async function performAdvancedSearch(query) {
             throw contentRes.error;
         }
 
+        // Flatten the stats object structural payload for the Virtual Scroll array layer
+        const localizedResults = (contentRes.data || []).map(row => ({
+            ...row,
+            total_views: row.content_engagement_stats?.total_views || 0
+        }));
+
         saveSearchHistoryTerm(query);
-        renderSplitSearchResults(creatorsRes.data || [], contentRes.data || [], query);
+        renderSplitSearchResults(creatorsRes.data || [], localizedResults, query);
 
     } catch (error) {
         console.error("Search failure response context: ", error);
@@ -756,6 +782,7 @@ function renderSplitSearchResults(creators, drops, query) {
 function generatePremiumCardHtml(drop) {
     const durationStr = drop.duration ? formatDuration(drop.duration) : '';
     const creatorName = drop.user_profiles ? drop.user_profiles.full_name : 'Independent Creator';
+    const viewCount = drop.total_views || 0;
     
     return `
         <div class="premium-search-card" onclick="window.location.href='content-detail.html?id=${drop.id}'">
@@ -767,7 +794,7 @@ function generatePremiumCardHtml(drop) {
                 <h5>${escapeHtml(drop.title)}</h5>
                 <p class="premium-card-author-row">By <span>${escapeHtml(creatorName)}</span></p>
                 <div class="premium-card-footer-metrics">
-                    <span><i class="fas fa-eye"></i> ${formatNumber(drop.total_views)} views</span>
+                    <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)} views</span>
                     <span class="genre-tag-node">${escapeHtml(drop.genre || 'Stream')}</span>
                 </div>
             </div>
@@ -907,16 +934,21 @@ function setupAnalytics() {
     setupChartControls();
 }
 
-// FIXED: Analytics now uses total_views
+// FIXED: Analytics now uses content_engagement_stats for total_views
 async function loadCompleteAnalyticsData() {
     const user = await getCurrentUser();
     if (!user || !user.id) return;
     
     try {
-        // FIXED: Changed views_count to total_views
+        // Get user's content with engagement stats joined
         const { data: contentList } = await window.supabaseClient
             .from('Content')
-            .select('id, title, total_views, created_at')
+            .select(`
+                id, 
+                title, 
+                created_at,
+                content_engagement_stats(total_views)
+            `)
             .eq('user_id', user.id);
         
         if (!contentList || contentList.length === 0) {
