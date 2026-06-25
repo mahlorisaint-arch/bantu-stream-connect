@@ -60,6 +60,7 @@
     <link rel="stylesheet" href="css/home-feed-ui.css">
     <link rel="stylesheet" href="css/home-feed-features.css">
     <link rel="stylesheet" href="css/shared-components.css">
+    <link rel="stylesheet" href="css/home-feed/modals.css">
     
     <!-- Modular Section CSS -->
     <link rel="stylesheet" href="css/home-feed/hero-content.css">
@@ -230,82 +231,13 @@
             <div class="header-actions">
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
                 <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
-               <!-- ============================================ -->
-<!-- SEARCH BUTTON - UPDATED FOR PREMIUM SEARCH -->
-<!-- ============================================ -->
-<button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
-    <i class="fas fa-search"></i>
-    <span class="search-shortcut">⌘K</span>
-</button>
-
-<!-- ============================================ -->
-<!-- PREMIUM GLASSMORPHIC SEARCH MODAL - WITH PROPER BACKDROP BLUR -->
-<!-- ============================================ -->
-<div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
-    <!-- This overlay covers everything and provides the blur -->
-    <div class="search-modal-overlay"></div>
-    
-    <!-- Search Modal Content -->
-    <div class="search-modal-content">
-        <!-- Search Modal Header -->
-        <div class="search-modal-header">
-            <div class="search-input-wrapper">
-                <input 
-                    type="text" 
-                    id="search-input" 
-                    class="search-input" 
-                    placeholder="Search creators, drops, vibes..." 
-                    autocomplete="off"
-                    spellcheck="false"
-                    aria-label="Search input"
-                />
-                <button id="voice-search-modal-btn" class="voice-search-modal-btn" aria-label="Voice search">
-                    <i class="fas fa-microphone"></i>
+                <!-- ============================================ -->
+                <!-- SEARCH BUTTON - UPDATED FOR PREMIUM SEARCH -->
+                <!-- ============================================ -->
+                <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
+                    <i class="fas fa-search"></i>
+                    <span class="search-shortcut">⌘K</span>
                 </button>
-            </div>
-            <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-
-        <!-- Filter Pills Bar -->
-        <div class="search-filter-pills-bar">
-            <!-- Category Filters -->
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">🧬 STEM</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">🎬 Movies</button>
-            
-            <!-- Type Filters -->
-            <button class="search-filter-pill" data-filter-group="type" data-filter-value="">All Types</button>
-            <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">🎞️ Video</button>
-            <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">🎵 Audio</button>
-            
-            <!-- Sort Filters -->
-            <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
-            <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
-        </div>
-
-        <!-- Search Results Grid -->
-        <div id="search-results-grid" class="search-results-grid">
-            <!-- Results will be dynamically rendered here -->
-        </div>
-    </div>
-</div>
-
-<!-- ============================================ -->
-<!-- VOICE SEARCH STATUS OVERLAY -->
-<!-- ============================================ -->
-<div id="voice-search-status" class="voice-search-status">
-    <i class="fas fa-microphone-alt"></i>
-    <span id="voice-status-text">Listening...</span>
-    <button id="voice-search-cancel" class="voice-search-cancel" aria-label="Cancel voice search">
-        <i class="fas fa-times"></i>
-    </button>
-</div>
                 <button id="notifications-btn" class="icon-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notification-count" style="display: none;">0</span>
@@ -724,10 +656,77 @@
         </div>
     </div>
 
+    <!-- ============================================ -->
+    <!-- PREMIUM GLASSMORPHIC SEARCH MODAL - WITH PROPER BACKDROP BLUR -->
+    <!-- ============================================ -->
+    <div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
+        <!-- This overlay covers everything and provides the blur -->
+        <div class="search-modal-overlay"></div>
+        
+        <!-- Search Modal Content -->
+        <div class="search-modal-content">
+            <!-- Search Modal Header -->
+            <div class="search-modal-header">
+                <div class="search-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        class="search-input" 
+                        placeholder="Search creators, drops, vibes..." 
+                        autocomplete="off"
+                        spellcheck="false"
+                        aria-label="Search input"
+                    />
+                    <button id="voice-search-modal-btn" class="voice-search-modal-btn" aria-label="Voice search">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+                <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Filter Pills Bar -->
+            <div class="search-filter-pills-bar">
+                <!-- Category Filters -->
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">🧬 STEM</button>
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
+                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">🎬 Movies</button>
+                
+                <!-- Type Filters -->
+                <button class="search-filter-pill" data-filter-group="type" data-filter-value="">All Types</button>
+                <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">🎞️ Video</button>
+                <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">🎵 Audio</button>
+                
+                <!-- Sort Filters -->
+                <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
+                <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
+            </div>
+
+            <!-- Search Results Grid -->
+            <div id="search-results-grid" class="search-results-grid">
+                <!-- Results will be dynamically rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- VOICE SEARCH STATUS OVERLAY -->
+    <!-- ============================================ -->
+    <div id="voice-search-status" class="voice-search-status">
+        <i class="fas fa-microphone-alt"></i>
+        <span id="voice-status-text">Listening...</span>
+        <button id="voice-search-cancel" class="voice-search-cancel" aria-label="Cancel voice search">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
     <!-- Modals -->
     <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>My Personal Analytics</h2><button id="close-analytics" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Watch Time</h3><div class="analytics-value" id="personal-watch-time">0h</div><div class="analytics-trend" id="watch-time-trend">+0%</div></div><div class="analytics-card"><h3>Sessions</h3><div class="analytics-value" id="personal-sessions">0</div><div class="analytics-trend" id="sessions-trend">+0%</div></div><div class="analytics-card"><h3>Return Rate</h3><div class="analytics-value" id="return-rate">0%</div><div class="analytics-trend" id="return-trend">+0%</div></div><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="personal-views">0</div><div class="analytics-trend" id="views-trend">+0%</div></div></div><div class="charts-container"><canvas id="engagement-chart"></canvas></div></div></div></div>
-
-    <div id="search-modal" class="search-modal"><div class="search-modal-header"><div class="search-input-container"><i class="search-icon fas fa-search"></i><input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off"><button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search"><i class="fas fa-microphone"></i></button></div><button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="search-filters"><div class="filter-group"><label class="filter-label">Category</label><select id="category-filter" class="filter-select"><option value="">All Categories</option><option value="Music">Music</option><option value="STEM">STEM</option><option value="Culture">Culture</option><option value="News">News</option><option value="Sports">Sports</option><option value="Movies">Movies</option><option value="Documentaries">Documentaries</option><option value="Podcasts">Podcasts</option></select></div><div class="filter-group"><label class="filter-label">Sort By</label><select id="sort-filter" class="filter-select"><option value="newest">Newest First</option><option value="popular">Most Popular</option><option value="trending">Trending</option><option value="connectors">Most Connectors</option></select></div><div class="filter-group"><label class="filter-label">Language</label><select id="language-filter" class="filter-select"><option value="">All Languages</option><option value="en">English</option><option value="zu">IsiZulu</option><option value="xh">IsiXhosa</option><option value="af">Afrikaans</option><option value="nso">Sepedi</option><option value="st">Sesotho</option><option value="tn">Setswana</option><option value="ss">siSwati</option><option value="ve">Tshivenda</option><option value="ts">Xitsonga</option><option value="nr">isiNdebele</option></select></div></div><div id="search-results" class="search-results"><div id="search-results-grid" class="search-results-grid"></div></div></div>
 
     <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h2>Notifications</h2><button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"></div><div class="notifications-footer"><button id="mark-all-read" class="text-btn">Mark all as read</button><button id="notification-settings" class="text-btn">Settings</button></div></div>
 
@@ -738,8 +737,6 @@
     <div id="tip-modal" class="tip-modal"><div class="tip-content"><div class="tip-header"><h2><i class="fas fa-gift"></i> Support Creator</h2><button id="close-tip" class="close-btn"><i class="fas fa-times"></i></button></div><div class="tip-body"><div class="creator-info-tip" id="tip-creator-info"></div><div class="tip-amounts"><h3>Select Amount</h3><div class="tip-options"><button class="tip-option" data-amount="5">R5</button><button class="tip-option" data-amount="10">R10</button><button class="tip-option" data-amount="25">R25</button><button class="tip-option" data-amount="50">R50</button><button class="tip-option" data-amount="100">R100</button><button class="tip-option custom" data-amount="custom"><i class="fas fa-pen"></i> Custom</button></div><div class="custom-amount" id="custom-amount" style="display: none;"><input type="number" id="custom-tip-amount" placeholder="Enter amount (R)"></div></div><div class="tip-message"><h3>Message (Optional)</h3><textarea id="tip-message" placeholder="Say something nice..."></textarea></div></div><div class="tip-footer"><button id="send-tip" class="primary-btn"><i class="fas fa-gift"></i> Send Tip</button></div></div></div>
 
     <div id="badges-modal" class="badges-modal"><div class="badges-content"><div class="badges-header"><h2><i class="fas fa-medal"></i> Your Badges</h2><button id="close-badges" class="close-btn"><i class="fas fa-times"></i></button></div><div class="badges-body"><div class="badges-stats"><div class="badge-stat"><span class="badge-stat-value" id="badges-earned">0</span><span class="badge-stat-label">Badges Earned</span></div><div class="badge-stat"><span class="badge-stat-value" id="badges-total">12</span><span class="badge-stat-label">Total Available</span></div><div class="badge-stat"><span class="badge-stat-value" id="exploration-score">0</span><span class="badge-stat-label">Exploration Score</span></div></div><div class="badges-grid" id="badges-grid"></div></div></div></div>
-
-    <div id="voice-search-status" class="voice-search-status"><div class="voice-status-content"><i class="fas fa-microphone"></i><span id="voice-status-text">Listening...</span></div></div>
 
     <div id="shortcuts-modal" class="analytics-modal" style="display: none;"><div class="analytics-content"><div class="analytics-header"><h2>Keyboard Shortcuts</h2><button id="close-shortcuts" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="shortcuts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;"><div><kbd>Ctrl+K</kbd> - Search</div><div><kbd>Alt+N</kbd> - Notifications</div><div><kbd>Alt+A</kbd> - Analytics</div><div><kbd>Alt+P</kbd> - Profile</div><div><kbd>Ctrl++</kbd> - Increase UI</div><div><kbd>Ctrl+-</kbd> - Decrease UI</div><div><kbd>Ctrl+0</kbd> - Reset UI</div><div><kbd>Alt+T</kbd> - Toggle Theme</div><div><kbd>/</kbd> - Focus Search</div><div><kbd>?</kbd> - Show Help</div></div></div></div></div>
 
