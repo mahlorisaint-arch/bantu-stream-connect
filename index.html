@@ -230,7 +230,82 @@
             <div class="header-actions">
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
                 <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
-                <button id="search-btn" class="icon-btn search-btn" title="Search"><i class="fas fa-search"></i></button>
+               <!-- ============================================ -->
+<!-- SEARCH BUTTON - UPDATED FOR PREMIUM SEARCH -->
+<!-- ============================================ -->
+<button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
+    <i class="fas fa-search"></i>
+    <span class="search-shortcut">⌘K</span>
+</button>
+
+<!-- ============================================ -->
+<!-- PREMIUM GLASSMORPHIC SEARCH MODAL - WITH PROPER BACKDROP BLUR -->
+<!-- ============================================ -->
+<div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
+    <!-- This overlay covers everything and provides the blur -->
+    <div class="search-modal-overlay"></div>
+    
+    <!-- Search Modal Content -->
+    <div class="search-modal-content">
+        <!-- Search Modal Header -->
+        <div class="search-modal-header">
+            <div class="search-input-wrapper">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    class="search-input" 
+                    placeholder="Search creators, drops, vibes..." 
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Search input"
+                />
+                <button id="voice-search-modal-btn" class="voice-search-modal-btn" aria-label="Voice search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Filter Pills Bar -->
+        <div class="search-filter-pills-bar">
+            <!-- Category Filters -->
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">🧬 STEM</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">🎬 Movies</button>
+            
+            <!-- Type Filters -->
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="">All Types</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">🎞️ Video</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">🎵 Audio</button>
+            
+            <!-- Sort Filters -->
+            <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
+            <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
+        </div>
+
+        <!-- Search Results Grid -->
+        <div id="search-results-grid" class="search-results-grid">
+            <!-- Results will be dynamically rendered here -->
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- VOICE SEARCH STATUS OVERLAY -->
+<!-- ============================================ -->
+<div id="voice-search-status" class="voice-search-status">
+    <i class="fas fa-microphone-alt"></i>
+    <span id="voice-status-text">Listening...</span>
+    <button id="voice-search-cancel" class="voice-search-cancel" aria-label="Cancel voice search">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
                 <button id="notifications-btn" class="icon-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notification-count" style="display: none;">0</span>
