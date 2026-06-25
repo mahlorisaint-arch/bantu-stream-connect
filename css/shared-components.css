@@ -332,11 +332,11 @@ body {
 /* SEARCH BUTTON - WITH KEYBOARD SHORTCUT */
 /* ============================================ */
 .search-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0 1rem;
-  width: auto;
+  width: auto !important;
   border-radius: 2rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
@@ -344,6 +344,7 @@ body {
   height: 2.375rem;
   cursor: pointer;
   color: var(--soft-white);
+  flex-shrink: 0;
 }
 
 .search-btn:hover {
@@ -361,6 +362,7 @@ body {
   font-weight: 500;
   letter-spacing: 0.5px;
   border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  display: inline-block;
 }
 
 /* Mobile Search Button */
@@ -376,6 +378,16 @@ body {
     border-radius: 50% !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
+    min-width: 2.375rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-btn {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    font-size: 0.8125rem !important;
   }
 }
 
@@ -1389,16 +1401,17 @@ body {
 /* PREMIUM GLASSMORPHIC SEARCH MODAL - NEW */
 /* ============================================ */
 
-/* 1. THE PARENT OVERLAY CANVAS */
+/* 1. THE PARENT OVERLAY CANVAS - ENHANCED BACKDROP BLUR */
 #search-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at 50% 0%, rgba(20, 30, 48, 0.4), rgba(5, 7, 12, 0.95));
-  backdrop-filter: blur(25px) saturate(190%);
-  -webkit-backdrop-filter: blur(25px) saturate(190%);
+  /* Enhanced backdrop blur to fully obscure background content */
+  background: radial-gradient(circle at 50% 0%, rgba(10, 14, 18, 0.85), rgba(5, 7, 12, 0.98));
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
   z-index: 9999;
   opacity: 0;
   pointer-events: none;
@@ -1413,6 +1426,42 @@ body {
 #search-modal.active {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* Additional backdrop overlay to ensure background is fully obscured */
+#search-modal::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 7, 12, 0.6);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#search-modal.active::before {
+  opacity: 1;
+}
+
+/* Light theme backdrop */
+.theme-light #search-modal {
+  background: radial-gradient(circle at 50% 0%, rgba(240, 245, 250, 0.9), rgba(255, 255, 255, 0.98));
+}
+
+.theme-light #search-modal::before {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* High contrast theme backdrop */
+.theme-high-contrast #search-modal {
+  background: radial-gradient(circle at 50% 0%, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 1));
+}
+
+.theme-high-contrast #search-modal::before {
+  background: rgba(0, 0, 0, 0.9);
 }
 
 /* 2. MAIN HEADER BAR & INPUT SCULPTING */
