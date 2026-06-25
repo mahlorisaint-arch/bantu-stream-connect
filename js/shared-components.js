@@ -24,6 +24,41 @@ window.platformComponents = window.platformComponents || {
 };
 
 // ============================================ */
+// FIX: ENSURE SUPABASE CLIENT IS AVAILABLE */
+// ============================================ */
+// If supabaseClient is not set but supabaseAuth is, use supabaseAuth
+if (!window.supabaseClient && window.supabaseAuth) {
+    window.supabaseClient = window.supabaseAuth;
+    console.log('🔧 [SEARCH-FIX] Using supabaseAuth as supabaseClient for search');
+}
+
+// If neither is set, try to get from the global supabase
+if (!window.supabaseClient && window.supabase) {
+    window.supabaseClient = window.supabase;
+    console.log('🔧 [SEARCH-FIX] Using window.supabase as supabaseClient for search');
+}
+
+// If still not set, create a fallback that will show a user-friendly message
+if (!window.supabaseClient) {
+    console.warn('⚠️ [SEARCH-FIX] No Supabase client found. Search will not work.');
+    // Create a fallback client that shows an error message
+    window.supabaseClient = {
+        from: () => {
+            console.error('❌ [SEARCH] Supabase client not initialized. Please refresh the page.');
+            return {
+                select: () => ({
+                    eq: () => ({
+                        order: () => ({
+                            limit: () => Promise.resolve({ data: [], error: new Error('Supabase client not initialized') })
+                        })
+                    })
+                })
+            };
+        }
+    };
+}
+
+// ============================================ */
 // THEME MANAGER - FIXED (AFFECTS ENTIRE PAGE)
 // ============================================ */
 
@@ -581,8 +616,15 @@ async function loadTrendingSearchItems() {
     const placeholder = document.getElementById('trending-search-placeholder');
     if (!placeholder) return;
 
+    // Check if supabaseClient is available
+    if (!window.supabaseClient || typeof window.supabaseClient.from !== 'function') {
+        placeholder.innerHTML = '<p class="neutral-placeholder-text">Search is loading... Please refresh the page.</p>';
+        console.warn('⚠️ [SEARCH] Supabase client not available for trending items');
+        return;
+    }
+
     try {
-        // FIXED: Join with content_engagement_stats to get total_views
+        // Query top premium recommendations ordered by view traction
         const { data, error } = await window.supabaseClient
             .from('Content')
             .select(`
@@ -629,6 +671,18 @@ async function loadTrendingSearchItems() {
 async function performAdvancedSearch(query) {
     const resultsGrid = document.getElementById('search-results-grid');
     if (!resultsGrid) return;
+
+    // Check if supabaseClient is available
+    if (!window.supabaseClient || typeof window.supabaseClient.from !== 'function') {
+        resultsGrid.innerHTML = `
+            <div class="search-error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Search is not available. Please refresh the page.</p>
+                <button onclick="location.reload()">Refresh Page</button>
+            </div>
+        `;
+        return;
+    }
 
     if (query.length < 2) {
         resultsGrid.innerHTML = `<div class="search-status-message"><p>Keep typing... find your path.</p></div>`;
