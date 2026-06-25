@@ -4,7 +4,7 @@
 // Complete implementation for Search, Analytics, Notifications, Voice Search, Profile */
 // ============================================ */
 
-console.log('📦 Shared Components v3.3 - Complete with all features and fixes...');
+console.log('📦 Shared Components v3.4 - Fixed search column names...');
 
 // ============================================ */
 // GLOBAL VARIABLES */
@@ -582,12 +582,12 @@ async function loadTrendingSearchItems() {
     if (!placeholder) return;
 
     try {
-        // Query top premium recommendations ordered by view traction
+        // FIXED: Changed views_count to total_views
         const { data, error } = await window.supabaseClient
             .from('Content')
-            .select('id, title, thumbnail_url, views_count, genre')
+            .select('id, title, thumbnail_url, total_views, genre')
             .eq('status', 'published')
-            .order('views_count', { ascending: false })
+            .order('total_views', { ascending: false })
             .limit(3);
 
         if (error || !data || data.length === 0) {
@@ -600,12 +600,13 @@ async function loadTrendingSearchItems() {
                 <img src="${parseThumbnailUrl(item.thumbnail_url)}" alt="" onerror="this.src='images/card-fallback.jpg'">
                 <div class="mini-card-details">
                     <h5>${escapeHtml(item.title)}</h5>
-                    <span>${formatNumber(item.views_count)} views · ${escapeHtml(item.genre || 'Vibe')}</span>
+                    <span>${formatNumber(item.total_views)} views · ${escapeHtml(item.genre || 'Vibe')}</span>
                 </div>
             </div>
         `).join('');
 
     } catch (err) {
+        console.error('⚠️ Failed to load search recommendations:', err.message);
         placeholder.innerHTML = '<p class="neutral-placeholder-text">Failed to fetch modern recommendations.</p>';
     }
 }
@@ -641,11 +642,12 @@ async function performAdvancedSearch(query) {
             .limit(4);
 
         // --- DATA TRACK 2: FETCH CONTENT DROPS (WITH TRANSFORMS) ---
+        // FIXED: Changed views_count to total_views
         let contentQuery = window.supabaseClient
             .from('Content')
             .select(`
                 id, title, description, thumbnail_url, duration, genre, 
-                views_count, created_at, content_type, user_id,
+                total_views, created_at, content_type, user_id,
                 user_profiles!inner (full_name, username, avatar_url)
             `)
             .eq('status', 'published')
@@ -655,8 +657,9 @@ async function performAdvancedSearch(query) {
         if (filters.category) contentQuery = contentQuery.eq('genre', filters.category);
         if (filters.type) contentQuery = contentQuery.eq('content_type', filters.type);
         
+        // FIXED: Changed views_count to total_views
         if (filters.sort === 'popular') {
-            contentQuery = contentQuery.order('views_count', { ascending: false });
+            contentQuery = contentQuery.order('total_views', { ascending: false });
         } else {
             contentQuery = contentQuery.order('created_at', { ascending: false });
         }
@@ -666,7 +669,10 @@ async function performAdvancedSearch(query) {
         // Execute queries parallelized for ultra-low platform overhead latency
         const [creatorsRes, contentRes] = await Promise.all([creatorQuery, contentQuery]);
 
-        if (contentRes.error) throw contentRes.error;
+        if (contentRes.error) {
+            console.error('shared-components.js: Search failure response context:', contentRes.error);
+            throw contentRes.error;
+        }
 
         saveSearchHistoryTerm(query);
         renderSplitSearchResults(creatorsRes.data || [], contentRes.data || [], query);
@@ -761,7 +767,7 @@ function generatePremiumCardHtml(drop) {
                 <h5>${escapeHtml(drop.title)}</h5>
                 <p class="premium-card-author-row">By <span>${escapeHtml(creatorName)}</span></p>
                 <div class="premium-card-footer-metrics">
-                    <span><i class="fas fa-eye"></i> ${formatNumber(drop.views_count)} views</span>
+                    <span><i class="fas fa-eye"></i> ${formatNumber(drop.total_views)} views</span>
                     <span class="genre-tag-node">${escapeHtml(drop.genre || 'Stream')}</span>
                 </div>
             </div>
@@ -901,16 +907,16 @@ function setupAnalytics() {
     setupChartControls();
 }
 
-// FIXED: Analytics now shows Total Views, Avg. Watch Time, Engagement Rate, Comments
+// FIXED: Analytics now uses total_views
 async function loadCompleteAnalyticsData() {
     const user = await getCurrentUser();
     if (!user || !user.id) return;
     
     try {
-        // Get user's content
+        // FIXED: Changed views_count to total_views
         const { data: contentList } = await window.supabaseClient
             .from('Content')
-            .select('id, title, views_count, created_at')
+            .select('id, title, total_views, created_at')
             .eq('user_id', user.id);
         
         if (!contentList || contentList.length === 0) {
