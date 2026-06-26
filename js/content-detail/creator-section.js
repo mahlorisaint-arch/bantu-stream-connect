@@ -554,34 +554,12 @@ async function refreshConnectionButtons() {
 }
 
 // ============================================
-// CREATOR VERIFICATION FUNCTIONS - BANTU STREAM CONNECT
+// EXTENDED CREATOR VERIFICATION LAYER
 // ============================================
 
 /**
- * Check if a creator is verified via the correct creators table source
- * @param {string} creatorId - The creator's user ID
- * @returns {Promise<boolean>} True if verified, false otherwise
- */
-async function checkCreatorVerified(creatorId) {
-    if (!creatorId) return false;
-    
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('creators')
-            .select('is_verified')
-            .eq('id', creatorId)
-            .maybeSingle(); // Prevents throwing an unhandled exception if profile is only a standard user
-        
-        if (error) throw error;
-        return data?.is_verified === true;
-    } catch (err) {
-        console.warn('Error checking creator verification status:', err);
-        return false;
-    }
-}
-
-/**
  * Get creator verification details and metadata
+ * Checks distinct tiers: Founder vs Standard Verified Creator
  * @param {string} creatorId - The creator's user ID
  * @returns {Promise<Object>} Verification metrics
  */
@@ -592,33 +570,30 @@ async function getCreatorVerificationDetails(creatorId) {
     try {
         const { data, error } = await window.supabaseClient
             .from('creators')
-            .select('is_verified, is_founder, is_journalist, is_educator')
+            .select('is_verified, is_creator_verified, is_founder, is_journalist, is_educator')
             .eq('id', creatorId)
             .maybeSingle();
         
         if (error) throw error;
-        if (!data || !data.is_verified) return fallbackState;
+        if (!data) return fallbackState;
 
-        // Determine special badge classes based on creator metadata flags
-        let badgeClass = 'standard-verified';
-        let label = 'Verified Creator';
-
+        // Priority Tier 1: Founder Status (Bantu Brand Core)
         if (data.is_founder) {
-            badgeClass = 'founder-verified';
-            label = 'Founder';
-        } else if (data.is_journalist) {
-            badgeClass = 'journalist-verified';
-            label = 'Verified Journalist';
-        } else if (data.is_educator) {
-            badgeClass = 'educator-verified';
-            label = 'Verified Educator';
+            return { isVerified: true, badgeClass: 'founder-verified', label: 'Founder' };
+        }
+        
+        // Priority Tier 2: Explicit Creator Verification
+        if (data.is_creator_verified) {
+            return { isVerified: true, badgeClass: 'creator-verified', label: 'Verified Creator' };
         }
 
-        return {
-            isVerified: true,
-            badgeClass: badgeClass,
-            label: label
-        };
+        // Priority Tier 3: Legacy Global Verification Fallback
+        if (data.is_verified) {
+            return { isVerified: true, badgeClass: 'standard-verified', label: 'Verified' };
+        }
+
+        // If no flags are true, return unverified state
+        return fallbackState;
     } catch (err) {
         console.warn('Error reading verification detailed record:', err);
         return fallbackState;
@@ -627,28 +602,29 @@ async function getCreatorVerificationDetails(creatorId) {
 
 /**
  * Render custom glassmorphic verification badge in the content-detail page
- * Completely cleans out hardcoded text placeholders
  * @param {string} creatorId - The creator's user ID
  * @param {HTMLElement} badgeContainer - Container where badge/text renders
  */
 async function renderVerificationBadge(creatorId, badgeContainer) {
     if (!badgeContainer) return;
     
-    // Clear out the basic default structural string ("Verified Creator - Joined 2024")
+    // Always wipe out the default text completely
     badgeContainer.innerHTML = '';
     
     const details = await getCreatorVerificationDetails(creatorId);
     
-    // If they aren't verified, nothing renders here. The default timestamp layout is bypassed.
     if (details.isVerified) {
         const badgeElement = document.createElement('div');
         badgeElement.className = `bsc-verified-badge ${details.badgeClass}`;
         badgeElement.title = details.label;
         
+        // Dynamic crown icon for founder, dynamic verify badge icon for creators
+        const iconClass = details.badgeClass === 'founder-verified' ? 'fas fa-crown' : 'fas fa-shield-check';
+        
         badgeElement.innerHTML = `
             <div class="badge-glass-glow"></div>
             <span class="badge-icon">
-                <i class="fas fa-shield-check"></i>
+                <i class="${iconClass}"></i>
             </span>
             <span class="badge-label">${details.label}</span>
         `;
@@ -705,7 +681,6 @@ window.refreshConnectionButtons = refreshConnectionButtons;
 window.updateCreatorDisplayName = updateCreatorDisplayName;
 window.initCreatorSection = initCreatorSection;
 window.getCurrentCreatorData = getCurrentCreatorData;
-window.checkCreatorVerified = checkCreatorVerified;
 window.getCreatorVerificationDetails = getCreatorVerificationDetails;
 window.renderVerificationBadge = renderVerificationBadge;
 
@@ -759,27 +734,50 @@ if (originalSetCurrentContent) {
 }
 
 // ============================================================
-// SAFE AUTOMATIC INITIALIZATION (Isolated from main engine)
+// SAFE DYNAMIC INITIALIZATION (Listens to Content Lifecycle)
 // ============================================================
-window.addEventListener('load', async () => {
+function triggerIsolatedBadgeInjected() {
     try {
         // Find the "Joined 2024" container safely
         const subHeaderContainer = document.querySelector('.creator-subtext-metadata');
-        if (!subHeaderContainer) return; // Exit quietly if the element isn't present
+        if (!subHeaderContainer) return;
 
-        // Pull the creator data that your main page has already bound to the window context
+        // Pull the freshly hydrated creator ID from the platform state metrics
         const creatorId = window.currentContentItem?.creator_id || 
                           (window.getCurrentCreatorData ? window.getCurrentCreatorData()?.id : null);
         
-        if (!creatorId) return; // Exit quietly if the page layout hasn't loaded any data
+        // If the platform state isn't ready yet, skip and wait for the structural update event
+        if (!creatorId) return; 
 
-        // Run the badge injector safely
-        await renderVerificationBadge(creatorId, subHeaderContainer);
+        // Run the glassmorphic badge injector safely
+        renderVerificationBadge(creatorId, subHeaderContainer);
     } catch (autoInitError) {
-        // Strict guard container: absolutely guarantees that any failure here 
-        // will not affect video playback, streaming, or UI responsive states.
-        console.warn('Creator badge auto-init deferred safely:', autoInitError.message);
+        // Defensive isolation barrier
+        console.warn('Creator badge injection deferred safely:', autoInitError.message);
     }
-});
+}
 
-console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + Verification Badge)');
+// 1. Check immediately on window load state
+window.addEventListener('load', triggerIsolatedBadgeInjected);
+
+// 2. ALSO listen to your player engine's content sync event to capture dynamic updates
+window.addEventListener('contentIdChanged', triggerIsolatedBadgeInjected);
+
+// 3. Fallback: Run when your creator module prints its successful initialization log
+if (window.supabaseClient) {
+    // Check every 600ms for the creator container element to load, max 5 attempts
+    let checkAttempts = 0;
+    const corePollingCheck = setInterval(() => {
+        checkAttempts++;
+        const targetElement = document.querySelector('.creator-subtext-metadata');
+        const activeId = window.currentContentItem?.creator_id || (window.getCurrentCreatorData ? window.getCurrentCreatorData()?.id : null);
+        
+        if (targetElement && activeId) {
+            triggerIsolatedBadgeInjected();
+            clearInterval(corePollingCheck);
+        }
+        if (checkAttempts >= 5) clearInterval(corePollingCheck);
+    }, 600);
+}
+
+console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + Extended Verification)');
