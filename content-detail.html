@@ -910,14 +910,17 @@
 <!-- ============================================ -->
 <div id="analytics-modal" class="analytics-modal" role="dialog" aria-modal="true" aria-label="Analytics Dashboard">
     <div class="analytics-content">
-        <!-- Analytics Header -->
+        
+        <!-- ======================================== -->
+        <!-- ANALYTICS HEADER -->
+        <!-- ======================================== -->
         <div class="analytics-header">
             <h2>
                 <i class="fas fa-chart-line" style="color: var(--warm-gold);"></i> 
                 Analytics Dashboard
             </h2>
             <div class="analytics-header-actions">
-                <button id="refresh-analytics" class="icon-btn" title="Refresh Data">
+                <button id="refresh-analytics" class="icon-btn" title="Refresh Data" aria-label="Refresh analytics data">
                     <i class="fas fa-sync-alt"></i>
                 </button>
                 <button id="close-analytics" class="close-search-btn" aria-label="Close analytics">
@@ -926,17 +929,24 @@
             </div>
         </div>
 
-        <!-- Analytics Body -->
+        <!-- ======================================== -->
+        <!-- ANALYTICS BODY -->
+        <!-- ======================================== -->
         <div class="analytics-body">
-            <!-- Period Selector -->
+            
+            <!-- ======================================== -->
+            <!-- PERIOD SELECTOR -->
+            <!-- ======================================== -->
             <div class="analytics-period-selector">
-                <button class="period-btn active" data-period="7d">Last 7 Days</button>
-                <button class="period-btn" data-period="30d">Last 30 Days</button>
-                <button class="period-btn" data-period="90d">Last 90 Days</button>
-                <button class="period-btn" data-period="all">All Time</button>
+                <button class="period-btn active" data-period="7d">📊 Last 7 Days</button>
+                <button class="period-btn" data-period="30d">📈 Last 30 Days</button>
+                <button class="period-btn" data-period="90d">📉 Last 90 Days</button>
+                <button class="period-btn" data-period="all">📅 All Time</button>
             </div>
 
-            <!-- Stats Grid - 4 Core Metrics -->
+            <!-- ======================================== -->
+            <!-- 4 CORE METRICS GRID -->
+            <!-- ======================================== -->
             <div class="analytics-stats-grid">
                 <!-- Total Views -->
                 <div class="analytics-stat-card">
@@ -987,80 +997,93 @@
                 </div>
             </div>
 
-            <!-- Extended Stats Row -->
+            <!-- ======================================== -->
+            <!-- EXTENDED STATS ROW -->
+            <!-- ======================================== -->
             <div class="analytics-extended-stats">
                 <div class="extended-stat">
-                    <span class="extended-label">Total Content</span>
+                    <span class="extended-label">📦 Total Content</span>
                     <span class="extended-value" id="total-content">0</span>
                 </div>
                 <div class="extended-stat">
-                    <span class="extended-label">Total Likes</span>
+                    <span class="extended-label">❤️ Total Likes</span>
                     <span class="extended-value" id="total-likes">0</span>
                 </div>
                 <div class="extended-stat">
-                    <span class="extended-label">Total Shares</span>
+                    <span class="extended-label">🔄 Total Shares</span>
                     <span class="extended-value" id="total-shares">0</span>
                 </div>
                 <div class="extended-stat">
-                    <span class="extended-label">Unique Viewers</span>
+                    <span class="extended-label">👤 Unique Viewers</span>
                     <span class="extended-value" id="unique-viewers">0</span>
                 </div>
                 <div class="extended-stat">
-                    <span class="extended-label">Avg. Session</span>
+                    <span class="extended-label">⏱️ Avg. Session</span>
                     <span class="extended-value" id="avg-session">0:00</span>
                 </div>
                 <div class="extended-stat">
-                    <span class="extended-label">Bounce Rate</span>
+                    <span class="extended-label">📉 Bounce Rate</span>
                     <span class="extended-value" id="bounce-rate">0%</span>
                 </div>
             </div>
 
-            <!-- Chart Container -->
-            <div class="charts-container">
-                <div class="chart-header">
-                    <h3><i class="fas fa-chart-area"></i> View Trends</h3>
-                    <div class="chart-controls">
-                        <button class="chart-btn active" data-period="7d">7D</button>
-                        <button class="chart-btn" data-period="30d">30D</button>
-                        <button class="chart-btn" data-period="90d">90D</button>
+            <!-- ======================================== -->
+            <!-- CHART + TOP CONTENT - SIDE BY SIDE -->
+            <!-- ======================================== -->
+            <div class="analytics-chart-top-content-row">
+                
+                <!-- Chart Container -->
+                <div class="charts-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-area" style="color: var(--warm-gold);"></i> View Trends</h3>
+                        <div class="chart-controls">
+                            <button class="chart-btn active" data-period="7d">7D</button>
+                            <button class="chart-btn" data-period="30d">30D</button>
+                            <button class="chart-btn" data-period="90d">90D</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="analytics-chart"></canvas>
                     </div>
                 </div>
-                <div class="chart-wrapper">
-                    <canvas id="analytics-chart"></canvas>
+
+                <!-- Top Content Section -->
+                <div class="top-content-section">
+                    <h3><i class="fas fa-trophy" style="color: var(--warm-gold);"></i> Top Performing Content</h3>
+                    <div id="top-content-list" class="top-content-list">
+                        <div class="loading-spinner-small"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Top Content Section -->
-            <div class="top-content-section">
-                <h3><i class="fas fa-trophy" style="color: var(--warm-gold);"></i> Top Performing Content</h3>
-                <div id="top-content-list" class="top-content-list">
-                    <div class="loading-spinner-small"></div>
-                </div>
-            </div>
-
-            <!-- Audience Insights -->
+            <!-- ======================================== -->
+            <!-- AUDIENCE INSIGHTS -->
+            <!-- ======================================== -->
             <div class="audience-insights">
                 <h3><i class="fas fa-users" style="color: var(--bantu-blue);"></i> Audience Insights</h3>
                 <div class="insights-grid">
                     <div class="insight-card">
-                        <span class="insight-label">Returning Viewers</span>
+                        <span class="insight-label">🔄 Returning Viewers</span>
                         <span class="insight-value" id="returning-viewers">0%</span>
                     </div>
                     <div class="insight-card">
-                        <span class="insight-label">New Viewers</span>
+                        <span class="insight-label">✨ New Viewers</span>
                         <span class="insight-value" id="new-viewers">0%</span>
                     </div>
                     <div class="insight-card">
-                        <span class="insight-label">Peak Time</span>
+                        <span class="insight-label">🌙 Peak Time</span>
                         <span class="insight-value" id="peak-time">--:--</span>
                     </div>
                     <div class="insight-card">
-                        <span class="insight-label">Best Day</span>
+                        <span class="insight-label">📅 Best Day</span>
                         <span class="insight-value" id="best-day">--</span>
                     </div>
                 </div>
             </div>
+
         </div>
+        <!-- END ANALYTICS BODY -->
+        
     </div>
 </div>
 
