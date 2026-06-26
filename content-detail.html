@@ -396,7 +396,164 @@
         </div>
         <div class="header-actions">
             <button id="voice-search-btn" class="icon-btn"><i class="fas fa-microphone"></i></button>
-            <button id="analytics-btn" class="icon-btn"><i class="fas fa-chart-line"></i></button>
+            <!-- ============================================ -->
+<!-- ANALYTICS MODAL - COMPLETE DASHBOARD -->
+<!-- ============================================ -->
+<div id="analytics-modal" class="analytics-modal" role="dialog" aria-modal="true" aria-label="Analytics Dashboard">
+    <div class="analytics-content">
+        <!-- Analytics Header -->
+        <div class="analytics-header">
+            <h2>
+                <i class="fas fa-chart-line" style="color: var(--warm-gold);"></i> 
+                Analytics Dashboard
+            </h2>
+            <div class="analytics-header-actions">
+                <button id="refresh-analytics" class="icon-btn" title="Refresh Data">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button id="close-analytics" class="close-search-btn" aria-label="Close analytics">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Analytics Body -->
+        <div class="analytics-body">
+            <!-- Period Selector -->
+            <div class="analytics-period-selector">
+                <button class="period-btn active" data-period="7d">Last 7 Days</button>
+                <button class="period-btn" data-period="30d">Last 30 Days</button>
+                <button class="period-btn" data-period="90d">Last 90 Days</button>
+                <button class="period-btn" data-period="all">All Time</button>
+            </div>
+
+            <!-- Stats Grid - 4 Core Metrics -->
+            <div class="analytics-stats-grid">
+                <!-- Total Views -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--bantu-blue);">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h3>Total Views</h3>
+                    <div class="analytics-value" id="total-views">0</div>
+                    <div class="analytics-trend" id="views-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+
+                <!-- Average Watch Time -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--warm-gold);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Avg. Watch Time</h3>
+                    <div class="analytics-value" id="avg-watch-time">0:00</div>
+                    <div class="analytics-trend" id="watch-time-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+
+                <!-- Engagement Rate -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--success-color);">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3>Engagement Rate</h3>
+                    <div class="analytics-value" id="engagement-rate">0%</div>
+                    <div class="analytics-trend" id="engagement-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+
+                <!-- Total Comments -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: #8B5CF6;">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Total Comments</h3>
+                    <div class="analytics-value" id="total-comments">0</div>
+                    <div class="analytics-trend" id="comments-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extended Stats Row -->
+            <div class="analytics-extended-stats">
+                <div class="extended-stat">
+                    <span class="extended-label">Total Content</span>
+                    <span class="extended-value" id="total-content">0</span>
+                </div>
+                <div class="extended-stat">
+                    <span class="extended-label">Total Likes</span>
+                    <span class="extended-value" id="total-likes">0</span>
+                </div>
+                <div class="extended-stat">
+                    <span class="extended-label">Total Shares</span>
+                    <span class="extended-value" id="total-shares">0</span>
+                </div>
+                <div class="extended-stat">
+                    <span class="extended-label">Unique Viewers</span>
+                    <span class="extended-value" id="unique-viewers">0</span>
+                </div>
+                <div class="extended-stat">
+                    <span class="extended-label">Avg. Session</span>
+                    <span class="extended-value" id="avg-session">0:00</span>
+                </div>
+                <div class="extended-stat">
+                    <span class="extended-label">Bounce Rate</span>
+                    <span class="extended-value" id="bounce-rate">0%</span>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="charts-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-area"></i> View Trends</h3>
+                    <div class="chart-controls">
+                        <button class="chart-btn active" data-period="7d">7D</button>
+                        <button class="chart-btn" data-period="30d">30D</button>
+                        <button class="chart-btn" data-period="90d">90D</button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="analytics-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Content Section -->
+            <div class="top-content-section">
+                <h3><i class="fas fa-trophy" style="color: var(--warm-gold);"></i> Top Performing Content</h3>
+                <div id="top-content-list" class="top-content-list">
+                    <div class="loading-spinner-small"></div>
+                </div>
+            </div>
+
+            <!-- Audience Insights -->
+            <div class="audience-insights">
+                <h3><i class="fas fa-users" style="color: var(--bantu-blue);"></i> Audience Insights</h3>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <span class="insight-label">Returning Viewers</span>
+                        <span class="insight-value" id="returning-viewers">0%</span>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-label">New Viewers</span>
+                        <span class="insight-value" id="new-viewers">0%</span>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-label">Peak Time</span>
+                        <span class="insight-value" id="peak-time">--:--</span>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-label">Best Day</span>
+                        <span class="insight-value" id="best-day">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
             <!-- ============================================ -->
 <!-- SEARCH BUTTON - UPDATED FOR PREMIUM SEARCH -->
 <!-- ============================================ -->
