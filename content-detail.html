@@ -399,15 +399,17 @@
 <button id="analytics-btn" class="icon-btn" title="Analytics Dashboard" aria-label="Analytics Dashboard">
     <i class="fas fa-chart-line"></i>
 </button>
-            <!-- ============================================ -->
-<!-- SEARCH BUTTON - UPDATED FOR PREMIUM SEARCH -->
-<!-- ============================================ -->
+        
 <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
     <i class="fas fa-search"></i>
     <span class="search-shortcut">⌘K</span>
 </button>
 
-            <button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display: none;">0</span></button>
+           <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications" style="position:relative;width:2.375rem;height:2.375rem;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:var(--soft-white);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s ease;font-size:var(--icon-md);flex-shrink:0;">
+    <i class="fas fa-bell"></i>
+    <span class="notification-badge" id="notification-count" style="display:none;position:absolute;top:-0.3125rem;right:-0.3125rem;background:var(--error-color);color:white;font-size:0.625rem;font-weight:bold;width:1.125rem;height:1.125rem;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid var(--deep-black);">0</span>
+</button>
+
             <div class="profile-switcher">
                 <button id="current-profile-btn" class="profile-btn">
                     <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
