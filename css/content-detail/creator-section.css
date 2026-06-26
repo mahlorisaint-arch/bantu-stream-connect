@@ -855,5 +855,133 @@
 }
 
 /* ============================================ */
+/* BANTU STREAM CONNECT - VERIFIED BADGE CORES */
+/* ============================================ */
+
+.bsc-verified-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 30px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  isolation: isolate;
+  user-select: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Glassmorphic Base Blurring Layer */
+.badge-glass-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* Shimmer Light Reflection Effect across the Glass Contour */
+.bsc-verified-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent
+  );
+  transform: skewX(-25deg);
+  animation: badgeShimmer 4s infinite linear;
+}
+
+@keyframes badgeShimmer {
+  0% { left: -120%; }
+  30% { left: 150%; }
+  100% { left: 150%; }
+}
+
+/* ─── VARIANT TIERING DESIGN SCHEMES ─── */
+
+/* 1. Standard Creator Verification - Refined Bantu Theme Accent */
+.bsc-verified-badge.standard-verified {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(29, 78, 216, 0.25);
+  color: #60A5FA; /* Warm, responsive light azure contrast */
+}
+.bsc-verified-badge.standard-verified .badge-icon i {
+  color: #3B82F6;
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.5));
+}
+.bsc-verified-badge.standard-verified .badge-label {
+  color: var(--soft-white);
+}
+
+/* 2. Founder Variant - Premium Strategic Warm Gold */
+.bsc-verified-badge.founder-verified {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #FBBF24;
+}
+.bsc-verified-badge.founder-verified .badge-icon i {
+  color: #F59E0B;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}
+.bsc-verified-badge.founder-verified .badge-label {
+  color: #FDE047;
+  font-weight: 700;
+}
+
+/* 3. Journalist Variant - Deep Emerald Transparency */
+.bsc-verified-badge.journalist-verified {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #34D399;
+}
+.bsc-verified-badge.journalist-verified .badge-icon i {
+  color: #10B981;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5));
+}
+.bsc-verified-badge.journalist-verified .badge-label {
+  color: var(--soft-white);
+}
+
+/* 4. Educator Variant - Amethyst Deep Transparent Velvet */
+.bsc-verified-badge.educator-verified {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(139, 92, 246, 0.25);
+  color: #C084FC;
+}
+.bsc-verified-badge.educator-verified .badge-icon i {
+  color: #8B5CF6;
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.5));
+}
+.bsc-verified-badge.educator-verified .badge-label {
+  color: var(--soft-white);
+}
+
+/* Structural Icon Tweaks */
+.bsc-verified-badge .badge-icon {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+}
+
+.bsc-verified-badge .badge-label {
+  font-size: 11px;
+}
+
+/* ============================================ */
 /* END OF CREATOR SECTION MODULE */
 /* ============================================ */
