@@ -798,7 +798,7 @@ function renderSplitSearchResults(creators, drops, query) {
                     <h4>Matching Channels 🎙️</h4>
                     <div class="creators-flex-row">
                         ${creators.map(creator => `
-                            <div class="creator-mini-profile-card" onclick="window.location.href='channel.html?id=${creator.id}'">
+                            <div class="creator-mini-profile-card" onclick="window.location.href='creator-channel.html?id=${creator.id}&name=${encodeURIComponent(creator.full_name || creator.username || 'Creator')}'">
                                 <img src="${creator.avatar_url || 'images/default-avatar.png'}" alt="">
                                 <div class="creator-meta">
                                     <h6>${escapeHtml(creator.full_name)}</h6>
@@ -1314,9 +1314,15 @@ window.setupChartControls = setupChartControls;
 window.showNoAnalyticsData = showNoAnalyticsData;
 
 // ============================================ */
-// 9. COMPLETE NOTIFICATIONS FUNCTIONALITY */
+// 9. COMPLETE NOTIFICATIONS FUNCTIONALITY - PREMIUM GLASSMORPHIC ENGINE */
 // ============================================ */
 
+// Global state tracking for notification tab routing
+let currentNotificationTab = 'all';
+
+// ============================================ */
+// 9A. SETUP NOTIFICATIONS - MAIN INITIALIZATION */
+// ============================================ */
 function setupNotifications() {
     const notificationsBtn = document.getElementById('notifications-btn');
     const panel = document.getElementById('notifications-panel');
@@ -1326,27 +1332,74 @@ function setupNotifications() {
     
     if (!notificationsBtn || !panel) return;
     
-    notificationsBtn.onclick = () => {
-        panel.classList.add('active');
-        loadCompleteNotifications();
+    // Open notifications panel
+    notificationsBtn.onclick = (e) => {
+        e.stopPropagation();
+        panel.classList.toggle('active');
+        if (panel.classList.contains('active')) {
+            loadCompleteNotifications();
+        }
     };
     
+    // Close notifications panel on close click
     if (closeBtn) {
         closeBtn.onclick = () => panel.classList.remove('active');
     }
+
+    // Close panel when clicking outside to maintain premium modal feel
+    document.addEventListener('click', (e) => {
+        if (panel.classList.contains('active') && !panel.contains(e.target) && e.target !== notificationsBtn) {
+            panel.classList.remove('active');
+        }
+    });
     
+    // Mark all as read
     if (markAllReadBtn) {
-        markAllReadBtn.onclick = () => markAllNotificationsAsRead();
+        markAllReadBtn.onclick = (e) => {
+            e.stopPropagation();
+            markAllNotificationsAsRead();
+        };
     }
     
+    // Settings button
     if (settingsBtn) {
-        settingsBtn.onclick = () => openNotificationSettings();
+        settingsBtn.onclick = (e) => {
+            e.stopPropagation();
+            openNotificationSettings();
+        };
     }
+
+    // Setup filter tabs
+    setupNotificationTabs();
     
     // Setup realtime subscription
     setupRealtimeNotifications();
 }
 
+// ============================================ */
+// 9B. SETUP DYNAMIC GLASS FILTER TABS */
+// ============================================ */
+function setupNotificationTabs() {
+    const tabs = document.querySelectorAll('.notification-tab');
+    if (!tabs.length) return;
+
+    tabs.forEach(tab => {
+        tab.onclick = (e) => {
+            e.stopPropagation();
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentNotificationTab = tab.dataset.tab; // 'all', 'unread', 'mentions'
+            
+            if (window.platformComponents.notifications) {
+                renderNotificationsList(window.platformComponents.notifications);
+            }
+        };
+    });
+}
+
+// ============================================ */
+// 9C. LOAD COMPLETE NOTIFICATIONS */
+// ============================================ */
 async function loadCompleteNotifications() {
     const user = await getCurrentUser();
     const notificationsList = document.getElementById('notifications-list');
@@ -1355,10 +1408,13 @@ async function loadCompleteNotifications() {
     
     if (!user || !user.id) {
         notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
+            <div class="empty-notifications glassmorphic-empty">
+                <div class="empty-icon-wrapper">
+                    <i class="fas fa-lock"></i>
+                </div>
                 <p>Sign in to see notifications</p>
-                <button class="text-btn" onclick="window.location.href='login.html'">Sign In</button>
+                <span class="empty-subtitle">Track custom platform streams, tips, and tracking.</span>
+                <button class="premium-auth-btn" onclick="window.location.href='login.html'">Sign In</button>
             </div>
         `;
         return;
@@ -1379,72 +1435,133 @@ async function loadCompleteNotifications() {
         
         const unreadCount = window.platformComponents.notifications.filter(n => !n.is_read).length;
         updateNotificationBadge(unreadCount);
+        updateNotificationsHeaderCount(unreadCount);
         
     } catch (error) {
         console.error('Error loading notifications:', error);
         notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Error loading notifications</p>
-                <button class="text-btn" onclick="location.reload()">Retry</button>
+            <div class="empty-notifications glassmorphic-empty">
+                <div class="empty-icon-wrapper crash-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <p>Failed to sync notifications</p>
+                <span class="empty-subtitle">Our streaming pipeline had trouble fetching your feed.</span>
+                <button class="premium-auth-btn" onclick="loadCompleteNotifications()">Retry Link</button>
             </div>
         `;
     }
 }
 
+// ============================================ */
+// 9D. RENDER NOTIFICATIONS LIST (PREMIUM GLASSMORPHIC) */
+// ============================================ */
 function renderNotificationsList(notifications) {
     const notificationsList = document.getElementById('notifications-list');
+    if (!notificationsList) return;
     
-    if (!notifications || notifications.length === 0) {
+    // Filter down local arrays based on selected glassmorphic tab
+    let filtered = [...notifications];
+    if (currentNotificationTab === 'unread') {
+        filtered = notifications.filter(n => !n.is_read);
+    } else if (currentNotificationTab === 'mentions') {
+        filtered = notifications.filter(n => n.type === 'mention' || n.type === 'reply');
+    }
+
+    if (filtered.length === 0) {
+        let emptyMessage = "No notifications yet";
+        let emptySubtitle = "When creators interact with your profile, updates appear here.";
+        let emptyIcon = "fa-bell-slash";
+
+        if (currentNotificationTab === 'unread') {
+            emptyMessage = "You're all caught up!";
+            emptySubtitle = "No unread alerts resting in your system queue tracker.";
+            emptyIcon = "fa-check-double";
+        } else if (currentNotificationTab === 'mentions') {
+            emptyMessage = "No mentions yet";
+            emptySubtitle = "Threads, discussions, or comments referencing you land here.";
+            emptyIcon = "fa-at";
+        }
+
         notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
-                <p>No notifications yet</p>
-                <p style="font-size: 12px;">When you get notifications, they'll appear here</p>
+            <div class="empty-notifications glassmorphic-empty">
+                <div class="empty-icon-wrapper">
+                    <i class="fas ${emptyIcon}"></i>
+                </div>
+                <p>${emptyMessage}</p>
+                <span class="empty-subtitle">${emptySubtitle}</span>
             </div>
         `;
         return;
     }
     
-    notificationsList.innerHTML = notifications.map(notification => `
-        <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-            <div class="notification-icon">
-                <i class="fas ${getNotificationIcon(notification.type)}"></i>
+    notificationsList.innerHTML = filtered.map(notification => {
+        const iconMeta = getNotificationIconMeta(notification.type);
+        return `
+            <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
+                <div class="notification-glass-wrapper"></div>
+                
+                <div class="notification-avatar-container">
+                    <div class="notification-icon-badge" style="background: ${iconMeta.bg}; color: ${iconMeta.color};">
+                        <i class="fas ${iconMeta.icon}"></i>
+                    </div>
+                </div>
+
+                <div class="notification-content">
+                    <div class="notification-title-row">
+                        <h4>${escapeHtml(notification.title)}</h4>
+                        <span class="notification-time">${formatTimeAgo(notification.created_at)}</span>
+                    </div>
+                    <p class="notification-msg-body">${escapeHtml(notification.message)}</p>
+                </div>
+
+                <div class="notification-meta-indicators">
+                    ${!notification.is_read ? `<span class="notification-glow-dot" style="box-shadow: 0 0 10px ${iconMeta.bg}; background: ${iconMeta.bg};"></span>` : ''}
+                </div>
+
+                <div class="notification-action-slide">
+                    ${!notification.is_read ? `
+                        <button class="action-slide-btn mark-read-slide" data-id="${notification.id}" title="Mark as Read">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    ` : ''}
+                    <button class="action-slide-btn delete-slide" data-id="${notification.id}" title="Dismiss">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             </div>
-            <div class="notification-content">
-                <h4>${escapeHtml(notification.title)}</h4>
-                <p>${escapeHtml(notification.message)}</p>
-                <span class="notification-time">${formatTimeAgo(notification.created_at)}</span>
-            </div>
-            <div class="notification-actions">
-                ${!notification.is_read ? `<button class="notification-action-btn mark-read" data-id="${notification.id}">Mark Read</button>` : ''}
-                <button class="notification-action-btn delete" data-id="${notification.id}">Delete</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
-    // Add event listeners to notification actions
-    document.querySelectorAll('.mark-read').forEach(btn => {
+    // Bind action events inside the sliding UI layer
+    document.querySelectorAll('.mark-read-slide').forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             markNotificationAsRead(btn.dataset.id);
         };
     });
     
-    document.querySelectorAll('.delete').forEach(btn => {
+    document.querySelectorAll('.delete-slide').forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
-            deleteNotification(btn.dataset.id);
+            // Optional: animate item slide-out before removing it from DOM
+            const item = btn.closest('.notification-item');
+            if (item) {
+                item.style.transform = 'translateX(100%)';
+                item.style.opacity = '0';
+                setTimeout(() => deleteNotification(btn.dataset.id), 250);
+            } else {
+                deleteNotification(btn.dataset.id);
+            }
         };
     });
     
-    // Make notification items clickable
+    // Handle notification context router transitions
     document.querySelectorAll('.notification-item').forEach(item => {
         item.onclick = () => {
             const id = item.dataset.id;
             const notification = notifications.find(n => n.id === id);
             if (notification && !notification.is_read) {
-                markNotificationAsRead(id);
+                markNotificationAsReadSilent(id);
             }
             if (notification?.action_url) {
                 window.location.href = notification.action_url;
@@ -1453,6 +1570,9 @@ function renderNotificationsList(notifications) {
     });
 }
 
+// ============================================ */
+// 9E. MARK SINGLE NOTIFICATION AS READ */
+// ============================================ */
 async function markNotificationAsRead(notificationId) {
     try {
         const { error } = await window.supabaseClient
@@ -1462,22 +1582,39 @@ async function markNotificationAsRead(notificationId) {
         
         if (error) throw error;
         
-        // Update local state
         const notification = window.platformComponents.notifications.find(n => n.id === notificationId);
         if (notification) notification.is_read = true;
         
-        // Re-render
         renderNotificationsList(window.platformComponents.notifications);
         
-        // Update badge
         const unreadCount = window.platformComponents.notifications.filter(n => !n.is_read).length;
         updateNotificationBadge(unreadCount);
+        updateNotificationsHeaderCount(unreadCount);
         
+        showToast('Notification marked as read', 'success');
     } catch (error) {
         console.error('Error marking notification as read:', error);
+        showToast('Error modifying alert queue state', 'error');
     }
 }
 
+// ============================================ */
+// 9F. SILENT READING BACKEND ROUTE (FOR REDIRECTS) */
+// ============================================ */
+async function markNotificationAsReadSilent(notificationId) {
+    try {
+        await window.supabaseClient
+            .from('notifications')
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq('id', notificationId);
+    } catch (err) {
+        console.warn('Silent read synchronization error:', err.message);
+    }
+}
+
+// ============================================ */
+// 9G. MARK ALL NOTIFICATIONS AS READ */
+// ============================================ */
 async function markAllNotificationsAsRead() {
     const user = await getCurrentUser();
     if (!user) return;
@@ -1491,19 +1628,21 @@ async function markAllNotificationsAsRead() {
         
         if (error) throw error;
         
-        // Update local state
         window.platformComponents.notifications.forEach(n => n.is_read = true);
         renderNotificationsList(window.platformComponents.notifications);
         updateNotificationBadge(0);
+        updateNotificationsHeaderCount(0);
         
-        showToast('All notifications marked as read', 'success');
-        
+        showToast('All alerts marked as read', 'success');
     } catch (error) {
         console.error('Error marking all as read:', error);
-        showToast('Error marking notifications as read', 'error');
+        showToast('Failed executing batch operational sweeps', 'error');
     }
 }
 
+// ============================================ */
+// 9H. DELETE NOTIFICATION */
+// ============================================ */
 async function deleteNotification(notificationId) {
     try {
         const { error } = await window.supabaseClient
@@ -1513,66 +1652,87 @@ async function deleteNotification(notificationId) {
         
         if (error) throw error;
         
-        // Remove from local state
         window.platformComponents.notifications = window.platformComponents.notifications.filter(n => n.id !== notificationId);
         renderNotificationsList(window.platformComponents.notifications);
         
-        showToast('Notification deleted', 'success');
+        const unreadCount = window.platformComponents.notifications.filter(n => !n.is_read).length;
+        updateNotificationBadge(unreadCount);
+        updateNotificationsHeaderCount(unreadCount);
         
     } catch (error) {
         console.error('Error deleting notification:', error);
-        showToast('Error deleting notification', 'error');
+        showToast('Failed to drop targeted alert frame', 'error');
     }
 }
 
-function setupRealtimeNotifications() {
+// ============================================ */
+// 9I. SETUP REALTIME NOTIFICATIONS */
+// ============================================ */
+async function setupRealtimeNotifications() {
     if (!window.supabaseClient) return;
     
-    const user = getCurrentUser();
-    if (!user) return;
+    const user = await getCurrentUser();
+    if (!user || !user.id) return;
     
-    const subscription = window.supabaseClient
-        .channel('notifications-channel')
+    window.supabaseClient
+        .channel('realtime-notifications-layer')
         .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
             table: 'notifications',
             filter: `user_id=eq.${user.id}`
         }, (payload) => {
-            // Add new notification to list
             const newNotification = payload.new;
+            
+            if (!window.platformComponents.notifications) {
+                window.platformComponents.notifications = [];
+            }
+            
             window.platformComponents.notifications.unshift(newNotification);
             renderNotificationsList(window.platformComponents.notifications);
             
-            // Update badge
             const unreadCount = window.platformComponents.notifications.filter(n => !n.is_read).length;
             updateNotificationBadge(unreadCount);
+            updateNotificationsHeaderCount(unreadCount);
             
-            // Show toast for new notification
-            showToast(newNotification.title, 'info');
+            // Dispatch a premium stylized system announcement message
+            showToast(`🔔 ${newNotification.title}`, 'info');
         })
         .subscribe();
 }
 
+// ============================================ */
+// 9J. OPEN NOTIFICATION SETTINGS */
+// ============================================ */
 function openNotificationSettings() {
-    // Navigate to notification settings page
     window.location.href = 'notification-settings.html';
 }
 
-function getNotificationIcon(type) {
-    const icons = {
-        like: 'fa-heart',
-        comment: 'fa-comment',
-        follow: 'fa-user-plus',
-        view_milestone: 'fa-trophy',
-        achievement: 'fa-medal',
-        system: 'fa-bell',
-        warning: 'fa-exclamation-triangle',
-        success: 'fa-check-circle'
+// ============================================ */
+// 9K. GET NOTIFICATION METADATA WITH BRAND CORES */
+// ============================================ */
+function getNotificationIconMeta(type) {
+    const defaultMeta = { icon: 'fa-bell', bg: 'rgba(139, 92, 246, 0.15)', color: '#A78BFA' };
+    const mapping = {
+        like: { icon: 'fa-heart', bg: 'rgba(239, 68, 68, 0.15)', color: '#F87171' },
+        comment: { icon: 'fa-comment', bg: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA' },
+        follow: { icon: 'fa-user-plus', bg: 'rgba(16, 185, 129, 0.15)', color: '#34D399' },
+        view_milestone: { icon: 'fa-trophy', bg: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24' },
+        achievement: { icon: 'fa-medal', bg: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24' },
+        system: { icon: 'fa-shield-alt', bg: 'rgba(107, 114, 128, 0.15)', color: '#9CA3AF' },
+        warning: { icon: 'fa-exclamation-triangle', bg: 'rgba(220, 38, 38, 0.2)', color: '#F87171' },
+        success: { icon: 'fa-check-circle', bg: 'rgba(16, 185, 129, 0.15)', color: '#34D399' },
+        share: { icon: 'fa-share-alt', bg: 'rgba(6, 182, 212, 0.15)', color: '#22D3EE' },
+        mention: { icon: 'fa-at', bg: 'rgba(236, 72, 153, 0.15)', color: '#F472B6' },
+        reply: { icon: 'fa-reply', bg: 'rgba(20, 184, 166, 0.15)', color: '#2DD4BF' },
+        live: { icon: 'fa-broadcast-tower', bg: 'rgba(239, 68, 68, 0.2)', color: '#EF4444' }
     };
-    return icons[type] || 'fa-bell';
+    return mapping[type] || defaultMeta;
 }
 
+// ============================================ */
+// 9L. UPDATE NOTIFICATION BADGE (Header) */
+// ============================================ */
 function updateNotificationBadge(count) {
     const badge = document.getElementById('notification-count');
     if (badge) {
@@ -1584,6 +1744,29 @@ function updateNotificationBadge(count) {
         }
     }
 }
+
+// ============================================ */
+// 9M. UPDATE NOTIFICATIONS HEADER COUNT */
+// ============================================ */
+function updateNotificationsHeaderCount(count) {
+    const headerCount = document.getElementById('notifications-header-count');
+    if (headerCount) {
+        headerCount.textContent = count > 0 ? `(${count})` : '';
+    }
+}
+
+// ============================================ */
+// 9N. EXPOSE NOTIFICATIONS FUNCTIONS GLOBALLY */
+// ============================================ */
+window.loadCompleteNotifications = loadCompleteNotifications;
+window.renderNotificationsList = renderNotificationsList;
+window.markNotificationAsRead = markNotificationAsRead;
+window.markAllNotificationsAsRead = markAllNotificationsAsRead;
+window.deleteNotification = deleteNotification;
+window.setupRealtimeNotifications = setupRealtimeNotifications;
+window.openNotificationSettings = openNotificationSettings;
+window.updateNotificationBadge = updateNotificationBadge;
+window.updateNotificationsHeaderCount = updateNotificationsHeaderCount;
 
 // ============================================ */
 // 10. PROFILE DROPDOWN (FIXED: No redirect, toggles dropdown) */
@@ -2352,7 +2535,7 @@ async function initSharedComponents() {
     setupHeaderButtons();
     setupSearchModal();        // PREMIUM SEARCH with three-state system
     setupAnalytics();          // COMPLETE with optimized metrics
-    setupNotifications();      // COMPLETE
+    setupNotifications();      // COMPLETE with premium glassmorphic engine
     setupBottomNavigation();
     setupSidebarClose();
     setupSidebarToggles();
