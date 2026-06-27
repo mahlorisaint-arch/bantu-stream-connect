@@ -601,39 +601,56 @@ async function getCreatorVerificationDetails(creatorId) {
 }
 
 /**
- * Render custom glassmorphic verification badge in the content-detail page
- * Uses futuristic geometric tech icons for a minimalist high-tech aesthetic
+ * Render premium holographic verification badge with hover portal
+ * Uses Dual-Sized Architecture: Micro-jewel + Hover hologram
  * @param {string} creatorId - The creator's user ID
- * @param {HTMLElement} badgeContainer - Container where badge/text renders
+ * @param {HTMLElement} badgeContainer - Container where badge renders
  */
 async function renderVerificationBadge(creatorId, badgeContainer) {
     if (!badgeContainer) return;
     
-    // Always wipe out the default text completely
+    // Clear container
     badgeContainer.innerHTML = '';
     
     const details = await getCreatorVerificationDetails(creatorId);
-    
-    if (details.isVerified) {
-        const badgeElement = document.createElement('div');
-        badgeElement.className = `bsc-verified-badge ${details.badgeClass}`;
-        badgeElement.title = details.label;
-        
-        // Geometric tech icons: Diamond for founders, Hexagon Nodes for verified creators
-        const iconGlyph = details.badgeClass === 'founder-verified' 
-            ? '<i class="fa-solid fa-diamond"></i>' 
-            : '<i class="fa-solid fa-hexagon-nodes"></i>';
-        
-        badgeElement.innerHTML = `
-            <div class="badge-glass-glow"></div>
-            <span class="badge-icon">
-                ${iconGlyph}
-            </span>
-            <span class="badge-label">${details.label}</span>
-        `;
-        
-        badgeContainer.appendChild(badgeElement);
+    if (!details.isVerified) return;
+
+    // Map badge tier to visual theme
+    let tierClass = 'verified-tier';
+    let iconClass = 'fa-solid fa-hexagon-nodes';
+    let svgPath = `<path d="M35,15 C38,18 45,22 48,26 C50,30 55,38 52,45 C50,50 42,58 38,62 C35,65 30,75 25,80 C20,72 18,65 15,55 C12,45 14,35 20,25 Z" fill="currentColor"/>`;
+
+    if (details.badgeClass === 'founder-verified') {
+        tierClass = 'founder-tier';
+        iconClass = 'fa-solid fa-diamond';
+        svgPath = `<path d="M50,5 L95,45 L50,95 L5,45 Z" fill="currentColor"/>`;
+    } else if (details.badgeClass === 'creator-verified') {
+        tierClass = 'creator-tier';
+        iconClass = 'fa-solid fa-tower-broadcast';
+        svgPath = `<path d="M35,15 C38,18 45,22 48,26 C50,30 55,38 52,45 C50,50 42,58 38,62 C35,65 30,75 25,80 C20,72 18,65 15,55 C12,45 14,35 20,25 Z" fill="currentColor"/>`;
     }
+
+    const jewelElement = document.createElement('div');
+    jewelElement.className = `bsc-inline-jewel ${tierClass}`;
+    jewelElement.title = details.label;
+    
+    jewelElement.innerHTML = `
+        <span class="jewel-icon"><i class="${iconClass}"></i></span>
+        <span class="jewel-label">${details.label}</span>
+        
+        <div class="bsc-hologram-portal">
+            <div class="portal-platform"></div>
+            <div class="portal-logo-container">
+                <svg viewBox="0 0 100 100" class="portal-svg-logo">
+                    ${svgPath}
+                </svg>
+            </div>
+            <div class="portal-title">${details.label}</div>
+            <div class="portal-subtitle">BANTU CONNECT</div>
+        </div>
+    `;
+
+    badgeContainer.appendChild(jewelElement);
 }
 
 // ============================================
@@ -783,4 +800,4 @@ if (window.supabaseClient) {
     }, 600);
 }
 
-console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + Extended Verification)');
+console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + Holographic Verification Portal)');
