@@ -855,6 +855,169 @@
 }
 
 /* ============================================ */
+/* HOLOGRAPHIC VERIFICATION PORTAL - CORE STYLES */
+/* ============================================ */
+
+:root {
+  --bsc-radius-token: 6px;
+  --bsc-blur-premium: 20px;
+  --gpu-transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ─── INLINE METADATA MICRO-JEWEL ─── */
+.bsc-inline-jewel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--bsc-radius-token);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: visible;
+  isolation: isolate;
+  transition: var(--gpu-transition);
+}
+
+/* Dynamic Badge Theme Injection Tokens */
+.bsc-inline-jewel.founder-tier { 
+  --primary: #b554ff; 
+  --secondary: #742dff; 
+  --glow: #cb6cff; 
+  color: #fde047; 
+}
+
+.bsc-inline-jewel.creator-tier { 
+  --primary: #38b7ff; 
+  --secondary: #005cff; 
+  --glow: #48d3ff; 
+  color: #e2e8f0; 
+}
+
+.bsc-inline-jewel.verified-tier { 
+  --primary: #20ffe8; 
+  --secondary: #00c4c7; 
+  --glow: #6ffff8; 
+  color: #cbd5e1; 
+}
+
+.bsc-inline-jewel .jewel-icon i {
+  color: var(--primary);
+  filter: drop-shadow(0 0 4px var(--glow));
+}
+
+/* ─── FLOATING TELEMETRY PORTAL HOVER WRAPPER ─── */
+.bsc-hologram-portal {
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px) scale(0.9);
+  width: 220px;
+  height: 300px;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 16px;
+  background: rgba(10, 18, 35, 0.85);
+  backdrop-filter: blur(var(--bsc-blur-premium)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--bsc-blur-premium)) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 20px 50px rgba(0,0,0,0.6),
+    0 0 30px var(--glow);
+  z-index: 999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: var(--gpu-transition);
+}
+
+/* Trigger Portal on Hover */
+.bsc-inline-jewel:hover .bsc-hologram-portal {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* ─── HOLOGRAM PORTAL INTERNAL ASSETS ─── */
+.portal-platform {
+  position: absolute;
+  top: 55%;
+  width: 110px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--primary), transparent 70%);
+  filter: blur(6px);
+  animation: bscPulse 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.portal-logo-container {
+  position: relative;
+  height: 100px;
+  margin-top: -30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bscFloat 4s infinite ease-in-out;
+}
+
+.portal-logo-container svg {
+  width: 70px;
+  height: 70px;
+  filter: drop-shadow(0 0 15px var(--primary));
+}
+
+/* Hologram Orbit Ring */
+.portal-logo-container::before {
+  content: "";
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  animation: bscRotate 15s linear infinite;
+}
+
+.portal-title {
+  margin-top: 25px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 10px var(--primary);
+}
+
+.portal-subtitle {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--primary);
+  margin-top: 4px;
+}
+
+/* ─── GPU ACCELERATED MOTIONS ─── */
+@keyframes bscPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes bscFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes bscRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
 /* FUTURISTIC GLASSISOLATION BADGE ARCHITECTURE */
 /* ============================================ */
 
@@ -865,7 +1028,7 @@
   justify-content: center;
   gap: 8px;
   padding: 5px 14px;
-  border-radius: 4px; /* Sharp, modern tech corners instead of pill shapes */
+  border-radius: 4px;
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 700;
@@ -874,8 +1037,6 @@
   overflow: hidden;
   isolation: isolate;
   user-select: none;
-  
-  /* Deep structural glass shadow */
   box-shadow: 
     0 4px 30px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -889,7 +1050,7 @@
   inset: 0;
   z-index: -2;
   border-radius: inherit;
-  padding: 1px; /* Creates the ultra-thin neon border wrapper */
+  padding: 1px;
   background: linear-gradient(135deg, var(--badge-glow-start), transparent 60%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
