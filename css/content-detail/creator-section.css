@@ -112,21 +112,353 @@
   border-radius: 50%;
 }
 
-/* Avatar badge (verified, etc.) */
-.creator-avatar .verified-badge {
+/* ============================================ */
+/* 3D HOLOGRAPHIC IDENTITY TOKENS - v4.0 */
+/* Replaces the old verified badge system */
+/* ============================================ */
+
+/* --- THE HOLO-CARD VIEWPORT CONTAINER --- */
+.bsc-identity-token {
+  position: relative;
+  width: 280px;
+  height: 440px;
+  margin: 20px auto;
+  border-radius: 34px;
+  overflow: hidden;
+  background: rgba(10, 18, 35, 0.45);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+/* --- THE LAYERED GLOBAL DESIGN THEMES --- */
+.bsc-identity-token.founder-card {
+  --primary: #b554ff;
+  --secondary: #742dff;
+  --glow: #cb6cff;
+  border-color: rgba(181, 84, 255, 0.3);
+}
+.bsc-identity-token.creator-card {
+  --primary: #38b7ff;
+  --secondary: #005cff;
+  --glow: #48d3ff;
+  border-color: rgba(56, 183, 255, 0.3);
+}
+.bsc-identity-token.verified-card {
+  --primary: #20ffe8;
+  --secondary: #00c4c7;
+  --glow: #6ffff8;
+  border-color: rgba(32, 255, 232, 0.3);
+}
+
+/* --- PREMIUM INTERACTIVE REFLECTION & DEPTH --- */
+.bsc-identity-token::before {
+  content: "";
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
-  background: var(--bantu-blue);
+  top: -40%;
+  left: -20%;
+  width: 140%;
+  height: 60%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transform: rotate(-18deg);
+  pointer-events: none;
+  transition: all 0.6s ease;
+}
+
+.bsc-identity-token:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 
+    0 50px 100px rgba(0, 0, 0, 0.6),
+    0 0 40px var(--glow);
+}
+
+.bsc-identity-token:hover::before {
+  left: 120%;
+}
+
+/* --- THE NEON BOUNDARY LAYER --- */
+.token-border-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 0 20px var(--glow),
+    inset 0 0 40px rgba(255, 255, 255, 0.02);
+}
+
+/* --- FLOATING PLATFORM EMITTER --- */
+.token-emitter-platform {
+  position: absolute;
+  left: 50%;
+  top: 200px;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 24px;
   border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--primary), transparent 70%);
+  filter: blur(6px);
+  animation: platformPulse 3.5s infinite ease-in-out;
+}
+
+/* --- CONTINENT HOLOGRAM ENGINE --- */
+.token-hologram-container {
+  position: absolute;
+  left: 50%;
+  top: 55px;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: hologramFloat 5s infinite ease-in-out;
+}
+
+.token-hologram-container svg {
+  width: 100px;
+  height: 100px;
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 1.5;
+  filter: 
+    drop-shadow(0 0 8px var(--primary))
+    drop-shadow(0 0 20px var(--secondary));
+}
+
+/* Crystalline Rotating Orbit Rings */
+.token-hologram-container::before {
+  content: "";
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  animation: compassRotate 16s linear infinite;
+}
+
+/* --- THE TYPOGRAPHY ARCS --- */
+.token-title {
+  position: absolute;
+  bottom: 105px;
+  width: 100%;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 0 0 15px var(--primary);
+}
+
+.token-subtitle {
+  position: absolute;
+  bottom: 75px;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+/* --- BRAND TAG BASE EMBLEM --- */
+.token-base-emblem {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 55px;
+  height: 32px;
+  border-radius: 10px 10px 20px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.token-base-emblem i {
+  font-size: 11px;
+  color: var(--primary);
+  filter: drop-shadow(0 0 4px var(--primary));
+}
+
+/* --- HARDWARE KINETIC ANIMATIONS --- */
+@keyframes platformPulse {
+  0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(0.85); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.1); filter: blur(8px); }
+}
+@keyframes hologramFloat {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -10px); }
+}
+@keyframes compassRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --- INLINE METADATA MICRO-JEWEL (Compact Badge) --- */
+.bsc-inline-jewel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 10px;
-  color: white;
-  border: 2px solid var(--card-bg);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: visible;
+  isolation: isolate;
+  transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Dynamic Badge Theme Injection Tokens */
+.bsc-inline-jewel.founder-tier { 
+  --primary: #b554ff; 
+  --secondary: #742dff; 
+  --glow: #cb6cff; 
+  color: #fde047; 
+}
+
+.bsc-inline-jewel.creator-tier { 
+  --primary: #38b7ff; 
+  --secondary: #005cff; 
+  --glow: #48d3ff; 
+  color: #e2e8f0; 
+}
+
+.bsc-inline-jewel.verified-tier { 
+  --primary: #20ffe8; 
+  --secondary: #00c4c7; 
+  --glow: #6ffff8; 
+  color: #cbd5e1; 
+}
+
+.bsc-inline-jewel .jewel-icon i {
+  color: var(--primary);
+  filter: drop-shadow(0 0 4px var(--glow));
+}
+
+/* --- FLOATING TELEMETRY PORTAL HOVER WRAPPER --- */
+.bsc-hologram-portal {
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px) scale(0.9);
+  width: 220px;
+  height: 300px;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 16px;
+  background: rgba(10, 18, 35, 0.85);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 20px 50px rgba(0,0,0,0.6),
+    0 0 30px var(--glow);
+  z-index: 999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Trigger Portal on Hover */
+.bsc-inline-jewel:hover .bsc-hologram-portal {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* --- HOLOGRAM PORTAL INTERNAL ASSETS --- */
+.portal-platform {
+  position: absolute;
+  top: 55%;
+  width: 110px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--primary), transparent 70%);
+  filter: blur(6px);
+  animation: bscPulse 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.portal-logo-container {
+  position: relative;
+  height: 100px;
+  margin-top: -30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bscFloat 4s infinite ease-in-out;
+}
+
+.portal-logo-container svg {
+  width: 70px;
+  height: 70px;
+  filter: drop-shadow(0 0 15px var(--primary));
+}
+
+/* Hologram Orbit Ring */
+.portal-logo-container::before {
+  content: "";
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  animation: bscRotate 15s linear infinite;
+}
+
+.portal-title {
+  margin-top: 25px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 10px var(--primary);
+}
+
+.portal-subtitle {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--primary);
+  margin-top: 4px;
+}
+
+/* --- GPU ACCELERATED MOTIONS --- */
+@keyframes bscPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes bscFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes bscRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ============================================ */
@@ -155,7 +487,6 @@
   color: var(--bantu-blue);
 }
 
-/* The paragraph with "Verified Creator • Joined 2024" */
 .creator-details p {
   font-size: 13px;
   color: var(--slate-grey);
@@ -164,6 +495,7 @@
   align-items: center;
   gap: 6px;
   line-height: 1.2;
+  flex-wrap: wrap;
 }
 
 .creator-details p i {
@@ -409,13 +741,6 @@
     flex-shrink: 0 !important;
   }
   
-  .creator-avatar .verified-badge {
-    width: 14px !important;
-    height: 14px !important;
-    font-size: 7px !important;
-    border-width: 1.5px !important;
-  }
-  
   .creator-details {
     flex: 1 !important;
     min-width: 0 !important;
@@ -501,13 +826,6 @@
     flex-shrink: 0 !important;
   }
   
-  .creator-avatar .verified-badge {
-    width: 12px !important;
-    height: 12px !important;
-    font-size: 6px !important;
-    border-width: 1px !important;
-  }
-  
   .creator-details h3,
   #creatorDisplayName {
     font-size: 12px !important;
@@ -569,7 +887,6 @@
 
 /* Small tablets and large phones */
 @media (max-width: 550px) {
-  /* Keep everything in a single row - NO WRAPPING */
   .creator-info {
     flex-wrap: nowrap !important;
     gap: 8px !important;
@@ -628,7 +945,6 @@
 
 /* Phones */
 @media (max-width: 480px) {
-  /* Keep everything in a single row - NO WRAPPING */
   .creator-info {
     flex-wrap: nowrap !important;
     gap: 6px !important;
@@ -663,13 +979,6 @@
     height: 32px !important;
     font-size: 0.7rem !important;
     border-width: 1.5px !important;
-  }
-  
-  .creator-avatar .verified-badge {
-    width: 9px !important;
-    height: 9px !important;
-    font-size: 4px !important;
-    border-width: 1px !important;
   }
   
   .creator-details h3,
@@ -753,6 +1062,145 @@
   }
 }
 
+/* ============================================ */
+/* 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES */
+/* ============================================ */
+
+@media (max-width: 768px) {
+  .bsc-identity-token {
+    width: 220px;
+    height: 360px;
+    border-radius: 28px;
+  }
+  
+  .token-hologram-container {
+    width: 110px;
+    height: 110px;
+    top: 45px;
+  }
+  
+  .token-hologram-container svg {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .token-hologram-container::before {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .token-emitter-platform {
+    width: 110px;
+    height: 18px;
+    top: 160px;
+  }
+  
+  .token-title {
+    font-size: 22px;
+    bottom: 85px;
+  }
+  
+  .token-subtitle {
+    font-size: 11px;
+    bottom: 60px;
+  }
+  
+  .token-base-emblem {
+    width: 45px;
+    height: 26px;
+    bottom: 10px;
+  }
+  
+  .token-base-emblem i {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bsc-identity-token {
+    width: 180px;
+    height: 300px;
+    border-radius: 22px;
+    margin: 12px auto;
+  }
+  
+  .token-hologram-container {
+    width: 90px;
+    height: 90px;
+    top: 35px;
+  }
+  
+  .token-hologram-container svg {
+    width: 65px;
+    height: 65px;
+  }
+  
+  .token-hologram-container::before {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .token-emitter-platform {
+    width: 90px;
+    height: 14px;
+    top: 135px;
+  }
+  
+  .token-title {
+    font-size: 18px;
+    bottom: 70px;
+    letter-spacing: 3px;
+  }
+  
+  .token-subtitle {
+    font-size: 9px;
+    bottom: 50px;
+    letter-spacing: 4px;
+  }
+  
+  .token-base-emblem {
+    width: 38px;
+    height: 22px;
+    bottom: 8px;
+    border-radius: 8px 8px 14px 14px;
+  }
+  
+  .token-base-emblem i {
+    font-size: 7px;
+  }
+  
+  .bsc-hologram-portal {
+    width: 180px;
+    height: 250px;
+    bottom: 120%;
+  }
+  
+  .portal-logo-container svg {
+    width: 55px;
+    height: 55px;
+  }
+  
+  .portal-logo-container::before {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .portal-title {
+    font-size: 15px;
+    margin-top: 18px;
+  }
+  
+  .portal-subtitle {
+    font-size: 8px;
+    letter-spacing: 3px;
+  }
+  
+  .portal-platform {
+    width: 85px;
+    height: 14px;
+  }
+}
+
 /* Touch device optimizations - mobile only */
 @media (hover: none) and (pointer: coarse) {
   .creator-info:hover {
@@ -779,6 +1227,13 @@
   
   .creator-info {
     padding: 4px !important;
+  }
+  
+  /* Touch-friendly hologram portal */
+  .bsc-inline-jewel:active .bsc-hologram-portal {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
@@ -852,307 +1307,6 @@
 
 .connect-btn.connection-success {
   animation: connectionSuccess 0.5s ease;
-}
-
-/* ============================================ */
-/* HOLOGRAPHIC VERIFICATION PORTAL - CORE STYLES */
-/* ============================================ */
-
-:root {
-  --bsc-radius-token: 6px;
-  --bsc-blur-premium: 20px;
-  --gpu-transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-/* ─── INLINE METADATA MICRO-JEWEL ─── */
-.bsc-inline-jewel {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: var(--bsc-radius-token);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: visible;
-  isolation: isolate;
-  transition: var(--gpu-transition);
-}
-
-/* Dynamic Badge Theme Injection Tokens */
-.bsc-inline-jewel.founder-tier { 
-  --primary: #b554ff; 
-  --secondary: #742dff; 
-  --glow: #cb6cff; 
-  color: #fde047; 
-}
-
-.bsc-inline-jewel.creator-tier { 
-  --primary: #38b7ff; 
-  --secondary: #005cff; 
-  --glow: #48d3ff; 
-  color: #e2e8f0; 
-}
-
-.bsc-inline-jewel.verified-tier { 
-  --primary: #20ffe8; 
-  --secondary: #00c4c7; 
-  --glow: #6ffff8; 
-  color: #cbd5e1; 
-}
-
-.bsc-inline-jewel .jewel-icon i {
-  color: var(--primary);
-  filter: drop-shadow(0 0 4px var(--glow));
-}
-
-/* ─── FLOATING TELEMETRY PORTAL HOVER WRAPPER ─── */
-.bsc-hologram-portal {
-  position: absolute;
-  bottom: 130%;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px) scale(0.9);
-  width: 220px;
-  height: 300px;
-  opacity: 0;
-  pointer-events: none;
-  border-radius: 16px;
-  background: rgba(10, 18, 35, 0.85);
-  backdrop-filter: blur(var(--bsc-blur-premium)) saturate(170%);
-  -webkit-backdrop-filter: blur(var(--bsc-blur-premium)) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 20px 50px rgba(0,0,0,0.6),
-    0 0 30px var(--glow);
-  z-index: 999;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: var(--gpu-transition);
-}
-
-/* Trigger Portal on Hover */
-.bsc-inline-jewel:hover .bsc-hologram-portal {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(-50%) translateY(0) scale(1);
-}
-
-/* ─── HOLOGRAM PORTAL INTERNAL ASSETS ─── */
-.portal-platform {
-  position: absolute;
-  top: 55%;
-  width: 110px;
-  height: 20px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, var(--primary), transparent 70%);
-  filter: blur(6px);
-  animation: bscPulse 3s infinite ease-in-out;
-  pointer-events: none;
-}
-
-.portal-logo-container {
-  position: relative;
-  height: 100px;
-  margin-top: -30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: bscFloat 4s infinite ease-in-out;
-}
-
-.portal-logo-container svg {
-  width: 70px;
-  height: 70px;
-  filter: drop-shadow(0 0 15px var(--primary));
-}
-
-/* Hologram Orbit Ring */
-.portal-logo-container::before {
-  content: "";
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  border: 1px dashed rgba(255, 255, 255, 0.25);
-  animation: bscRotate 15s linear infinite;
-}
-
-.portal-title {
-  margin-top: 25px;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: #fff;
-  text-shadow: 0 0 10px var(--primary);
-}
-
-.portal-subtitle {
-  font-size: 10px;
-  letter-spacing: 4px;
-  color: var(--primary);
-  margin-top: 4px;
-}
-
-/* ─── GPU ACCELERATED MOTIONS ─── */
-@keyframes bscPulse {
-  0%, 100% { opacity: 0.4; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-
-@keyframes bscFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes bscRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* ============================================ */
-/* FUTURISTIC GLASSISOLATION BADGE ARCHITECTURE */
-/* ============================================ */
-
-.bsc-verified-badge {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 5px 14px;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  overflow: hidden;
-  isolation: isolate;
-  user-select: none;
-  box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-/* Cosmic Ambient Glow Behind the Badge */
-.bsc-verified-badge::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, var(--badge-glow-start), transparent 60%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-}
-
-/* Hyper-Frosted Liquid Glass Core */
-.badge-glass-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  background: rgba(10, 10, 12, 0.45);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-}
-
-/* Kinetic Angular Light Flare */
-.bsc-verified-badge::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -60%;
-  width: 30%;
-  height: 200%;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.25) 50%,
-    transparent
-  );
-  transform: rotate(35deg);
-  animation: kineticLensFlare 6s infinite cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes kineticLensFlare {
-  0% { left: -80%; opacity: 0; }
-  5% { opacity: 1; }
-  15% { left: 130%; opacity: 0; }
-  100% { left: 130%; opacity: 0; }
-}
-
-/* Hover Interactive Response - High Fidelity */
-.bsc-verified-badge:hover {
-  transform: translateY(-1px);
-  box-shadow: 
-    0 8px 35px rgba(0, 0, 0, 0.5),
-    0 0 15px var(--badge-glow-fallback);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* ──── FUTURISTIC COLOR MATRICES ──── */
-
-/* FOUNDER: Cybernetic Gold Core */
-.bsc-verified-badge.founder-verified {
-  --badge-glow-start: #F59E0B;
-  --badge-glow-fallback: rgba(245, 158, 11, 0.25);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(0, 0, 0, 0.2) 100%);
-  color: #FDE047;
-}
-.bsc-verified-badge.founder-verified .badge-icon i {
-  color: #FBBF24;
-  filter: drop-shadow(0 0 8px #F59E0B);
-  animation: corePulse 3s infinite ease-in-out;
-}
-
-/* CREATOR VERIFIED: Bio-Luminescent Teal Core */
-.bsc-verified-badge.creator-verified {
-  --badge-glow-start: #06B6D4;
-  --badge-glow-fallback: rgba(6, 182, 212, 0.2);
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.04) 0%, rgba(0, 0, 0, 0.2) 100%);
-  color: #E2E8F0;
-}
-.bsc-verified-badge.creator-verified .badge-icon i {
-  color: #2DD4BF;
-  filter: drop-shadow(0 0 6px rgba(45, 212, 191, 0.6));
-}
-
-/* LEGACY STANDARD: Warm Responsive Blue Core */
-.bsc-verified-badge.standard-verified {
-  --badge-glow-start: #3B82F6;
-  --badge-glow-fallback: rgba(59, 130, 246, 0.2);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.04) 0%, rgba(0, 0, 0, 0.2) 100%);
-  color: #CBD5E1;
-}
-.bsc-verified-badge.standard-verified .badge-icon i {
-  color: #60A5FA;
-  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
-}
-
-/* Internal Icon Pulsing Subtle Ambient Loop */
-@keyframes corePulse {
-  0%, 100% { filter: drop-shadow(0 0 6px var(--badge-glow-start)); opacity: 0.9; }
-  50% { filter: drop-shadow(0 0 12px var(--badge-glow-start)); opacity: 1; }
-}
-
-.bsc-verified-badge .badge-icon {
-  display: flex;
-  align-items: center;
-  font-size: 10px;
 }
 
 /* ============================================ */
