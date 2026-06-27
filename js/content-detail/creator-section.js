@@ -554,7 +554,7 @@ async function refreshConnectionButtons() {
 }
 
 // ============================================
-// EXTENDED CREATOR VERIFICATION LAYER
+// DYNAMIC 3D CRYSTALLINE IDENTITY TOKEN RENDER ENGINE
 // ============================================
 
 /**
@@ -601,13 +601,16 @@ async function getCreatorVerificationDetails(creatorId) {
 }
 
 /**
- * Render premium holographic verification badge with hover portal
- * Uses Dual-Sized Architecture: Micro-jewel + Hover hologram
+ * Render 3D Crystalline Identity Token with holographic display
+ * Builds the exact visual states from design specifications
  * @param {string} creatorId - The creator's user ID
  * @param {HTMLElement} badgeContainer - Container where badge renders
  */
 async function renderVerificationBadge(creatorId, badgeContainer) {
-    if (!badgeContainer) return;
+    if (!badgeContainer) {
+        console.warn('⚠️ renderVerificationBadge: No container provided');
+        return;
+    }
     
     // Clear container
     badgeContainer.innerHTML = '';
@@ -615,42 +618,67 @@ async function renderVerificationBadge(creatorId, badgeContainer) {
     const details = await getCreatorVerificationDetails(creatorId);
     if (!details.isVerified) return;
 
-    // Map badge tier to visual theme
-    let tierClass = 'verified-tier';
-    let iconClass = 'fa-solid fa-hexagon-nodes';
-    let svgPath = `<path d="M35,15 C38,18 45,22 48,26 C50,30 55,38 52,45 C50,50 42,58 38,62 C35,65 30,75 25,80 C20,72 18,65 15,55 C12,45 14,35 20,25 Z" fill="currentColor"/>`;
-
+    let cardTier = 'verified-card';
+    let baseIcon = 'fa-solid fa-check';
+    
+    // Custom SVG Content Nodes based on exact image asset blueprint
+    let internalSvgGlow = '';
+    
     if (details.badgeClass === 'founder-verified') {
-        tierClass = 'founder-tier';
-        iconClass = 'fa-solid fa-diamond';
-        svgPath = `<path d="M50,5 L95,45 L50,95 L5,45 Z" fill="currentColor"/>`;
+        cardTier = 'founder-card';
+        baseIcon = 'fa-solid fa-gem';
+        // African continent vector wrapped in crystalline geometric paths
+        internalSvgGlow = `
+            <g class="holo-layer">
+                <path d="M45,20 C52,24 58,22 64,28 C68,32 75,42 70,52 C66,60 58,68 52,75 C45,82 38,90 32,85 C26,75 22,65 18,50 C15,35 24,25 35,22 Z" stroke="var(--primary)" stroke-width="1.5" fill="none"/>
+                <path d="M45,20 L52,75 M64,28 L18,50 M70,52 L35,22" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+                <circle cx="45" cy="20" r="2" fill="var(--glow)"/>
+                <circle cx="52" cy="75" r="2" fill="var(--glow)"/>
+            </g>`;
     } else if (details.badgeClass === 'creator-verified') {
-        tierClass = 'creator-tier';
-        iconClass = 'fa-solid fa-tower-broadcast';
-        svgPath = `<path d="M35,15 C38,18 45,22 48,26 C50,30 55,38 52,45 C50,50 42,58 38,62 C35,65 30,75 25,80 C20,72 18,65 15,55 C12,45 14,35 20,25 Z" fill="currentColor"/>`;
+        cardTier = 'creator-card';
+        baseIcon = 'fa-solid fa-tower-broadcast';
+        // African continent emitting dynamic broadcast arcs
+        internalSvgGlow = `
+            <g class="holo-layer">
+                <path d="M45,20 C52,24 58,22 64,28 C68,32 75,42 70,52 C66,60 58,68 52,75 C45,82 38,90 32,85 C26,75 22,65 18,50 C15,35 24,25 35,22 Z" stroke="var(--primary)" stroke-width="1.5" fill="none"/>
+                <path d="M68,30 A15,15 0 0,1 74,45" stroke="var(--glow)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M74,24 A25,25 0 0,1 82,46" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+            </g>`;
+    } else {
+        cardTier = 'verified-card';
+        // Luminous glass orb encapsulating the emblem
+        internalSvgGlow = `
+            <g class="holo-layer">
+                <circle cx="50" cy="50" r="36" stroke="var(--primary)" stroke-width="1" fill="none"/>
+                <path d="M45,28 C50,31 55,30 60,34 C63,37 68,44 65,51 C62,57 56,63 51,68 C46,73 40,79 35,75 C30,68 27,60 24,49 C22,38 29,31 38,29 Z" stroke="var(--glow)" stroke-width="1" fill="none"/>
+            </g>`;
     }
 
-    const jewelElement = document.createElement('div');
-    jewelElement.className = `bsc-inline-jewel ${tierClass}`;
-    jewelElement.title = details.label;
+    // Build the structural 3D Monolith Token
+    const tokenCard = document.createElement('div');
+    tokenCard.className = `bsc-identity-token ${cardTier}`;
     
-    jewelElement.innerHTML = `
-        <span class="jewel-icon"><i class="${iconClass}"></i></span>
-        <span class="jewel-label">${details.label}</span>
+    tokenCard.innerHTML = `
+        <div class="token-border-glow"></div>
+        <div class="token-emitter-platform"></div>
         
-        <div class="bsc-hologram-portal">
-            <div class="portal-platform"></div>
-            <div class="portal-logo-container">
-                <svg viewBox="0 0 100 100" class="portal-svg-logo">
-                    ${svgPath}
-                </svg>
-            </div>
-            <div class="portal-title">${details.label}</div>
-            <div class="portal-subtitle">BANTU CONNECT</div>
+        <div class="token-hologram-container">
+            <svg viewBox="0 0 100 100">
+                ${internalSvgGlow}
+            </svg>
+        </div>
+        
+        <div class="token-title">${details.label}</div>
+        <div class="token-subtitle">Verified</div>
+        
+        <div class="token-base-emblem">
+            <i class="${baseIcon}"></i>
         </div>
     `;
 
-    badgeContainer.appendChild(jewelElement);
+    badgeContainer.appendChild(tokenCard);
+    console.log('✅ 3D Crystalline Identity Token rendered for:', details.label);
 }
 
 // ============================================
@@ -800,4 +828,4 @@ if (window.supabaseClient) {
     }, 600);
 }
 
-console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + Holographic Verification Portal)');
+console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + 3D Crystalline Identity Tokens)');
