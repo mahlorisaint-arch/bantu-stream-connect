@@ -602,6 +602,7 @@ async function getCreatorVerificationDetails(creatorId) {
 
 /**
  * Render custom glassmorphic verification badge in the content-detail page
+ * Uses futuristic geometric tech icons for a minimalist high-tech aesthetic
  * @param {string} creatorId - The creator's user ID
  * @param {HTMLElement} badgeContainer - Container where badge/text renders
  */
@@ -618,13 +619,15 @@ async function renderVerificationBadge(creatorId, badgeContainer) {
         badgeElement.className = `bsc-verified-badge ${details.badgeClass}`;
         badgeElement.title = details.label;
         
-        // Dynamic crown icon for founder, dynamic verify badge icon for creators
-        const iconClass = details.badgeClass === 'founder-verified' ? 'fas fa-crown' : 'fas fa-shield-check';
+        // Geometric tech icons: Diamond for founders, Hexagon Nodes for verified creators
+        const iconGlyph = details.badgeClass === 'founder-verified' 
+            ? '<i class="fa-solid fa-diamond"></i>' 
+            : '<i class="fa-solid fa-hexagon-nodes"></i>';
         
         badgeElement.innerHTML = `
             <div class="badge-glass-glow"></div>
             <span class="badge-icon">
-                <i class="${iconClass}"></i>
+                ${iconGlyph}
             </span>
             <span class="badge-label">${details.label}</span>
         `;
