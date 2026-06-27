@@ -553,9 +553,9 @@ async function refreshConnectionButtons() {
     console.log('✅ Connection buttons refreshed');
 }
 
-// ============================================
-// DYNAMIC 3D CRYSTALLINE IDENTITY TOKEN RENDER ENGINE
-// ============================================
+// ============================================================
+// DYNAMIC 3D CRYSTALLINE IDENTITY TOKEN RENDER ENGINE (v4.1)
+// ============================================================
 
 /**
  * Get creator verification details and metadata
@@ -603,6 +603,7 @@ async function getCreatorVerificationDetails(creatorId) {
 /**
  * Render 3D Crystalline Identity Token with holographic display
  * Builds the exact visual states from design specifications
+ * Uses production-ready SVG paths matching the visual asset silhouettes
  * @param {string} creatorId - The creator's user ID
  * @param {HTMLElement} badgeContainer - Container where badge renders
  */
@@ -621,37 +622,56 @@ async function renderVerificationBadge(creatorId, badgeContainer) {
     let cardTier = 'verified-card';
     let baseIcon = 'fa-solid fa-check';
     
-    // Custom SVG Content Nodes based on exact image asset blueprint
+    // Accurate, production-ready SVG paths matching the visual asset silhouettes
     let internalSvgGlow = '';
     
+    // Exact Africa Silhouette Outline shared across templates
+    const africaPath = `M48 24c2.5-.6 6.5-1.2 8.7-.3 4 .1 6.2 1.2 10.2 4.3 2.1 2.1 4.6 7.5 3.4 11.5-1.5 4-6.8 6.2-8.7 9.3-1.8 3.1-4 7.1-5 11.5-.6 2.5-2.1 7.1-4.3 8.1-.9.6-3.1-.9-4-4-.9-3.1-4-7.1-5.3-10.9-1.8-4.6-4-6.8-8.1-7.8-3.7-.9-6.2-2.8-7.5-6.8-.9-3.1-3.1-5.3-1.8-8.4.9-2.1 5-3.1 8.1-1.8 2.1.9 4.3-.3 7.5-2.2z`;
+
     if (details.badgeClass === 'founder-verified') {
         cardTier = 'founder-card';
         baseIcon = 'fa-solid fa-gem';
-        // African continent vector wrapped in crystalline geometric paths
+        // Founder Tier: Africa + Internal Poly-Mesh & Core Soundwaves
         internalSvgGlow = `
             <g class="holo-layer">
-                <path d="M45,20 C52,24 58,22 64,28 C68,32 75,42 70,52 C66,60 58,68 52,75 C45,82 38,90 32,85 C26,75 22,65 18,50 C15,35 24,25 35,22 Z" stroke="var(--primary)" stroke-width="1.5" fill="none"/>
-                <path d="M45,20 L52,75 M64,28 L18,50 M70,52 L35,22" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
-                <circle cx="45" cy="20" r="2" fill="var(--glow)"/>
-                <circle cx="52" cy="75" r="2" fill="var(--glow)"/>
+                <path d="${africaPath}" stroke="var(--primary)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                
+                <path d="M42 46a7 7 0 0 1 11 0" stroke="var(--glow)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <path d="M39 42a12 12 0 0 1 17 0" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                
+                <path d="M48,24 L42,35 L52,32 L64,28 M42,35 L35,40 L39,52 M52,32 L56,48 L48,60" stroke="rgba(255,255,255,0.12)" stroke-width="0.5" fill="none"/>
+                <circle cx="48" cy="24" r="1.5" fill="var(--glow)"/>
+                <circle cx="42" cy="35" r="1.5" fill="var(--glow)"/>
+                <circle cx="56" cy="48" r="1.5" fill="var(--glow)"/>
             </g>`;
     } else if (details.badgeClass === 'creator-verified') {
         cardTier = 'creator-card';
         baseIcon = 'fa-solid fa-tower-broadcast';
-        // African continent emitting dynamic broadcast arcs
+        // Creator Tier: Africa with both integrated internal signal lines and external right-side broadcast waves
         internalSvgGlow = `
             <g class="holo-layer">
-                <path d="M45,20 C52,24 58,22 64,28 C68,32 75,42 70,52 C66,60 58,68 52,75 C45,82 38,90 32,85 C26,75 22,65 18,50 C15,35 24,25 35,22 Z" stroke="var(--primary)" stroke-width="1.5" fill="none"/>
-                <path d="M68,30 A15,15 0 0,1 74,45" stroke="var(--glow)" stroke-width="2" stroke-linecap="round"/>
-                <path d="M74,24 A25,25 0 0,1 82,46" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="${africaPath}" stroke="var(--primary)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                
+                <path d="M42 46a7 7 0 0 1 11 0" stroke="var(--glow)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <path d="M39 42a12 12 0 0 1 17 0" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                
+                <path d="M70 32a14 14 0 0 1 0 24" stroke="var(--glow)" stroke-width="2" stroke-linecap="round" fill="none"/>
+                <path d="M76 25a22 22 0 0 1 0 38" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
             </g>`;
     } else {
         cardTier = 'verified-card';
-        // Luminous glass orb encapsulating the emblem
+        baseIcon = 'fa-solid fa-check';
+        // Verified Tier: Africa + Signal waves encapsulated cleanly inside the Crystalline Glass Orb
         internalSvgGlow = `
             <g class="holo-layer">
-                <circle cx="50" cy="50" r="36" stroke="var(--primary)" stroke-width="1" fill="none"/>
-                <path d="M45,28 C50,31 55,30 60,34 C63,37 68,44 65,51 C62,57 56,63 51,68 C46,73 40,79 35,75 C30,68 27,60 24,49 C22,38 29,31 38,29 Z" stroke="var(--glow)" stroke-width="1" fill="none"/>
+                <circle cx="50" cy="50" r="38" stroke="var(--primary)" stroke-width="1.25" fill="none" opacity="0.4"/>
+                
+                <g transform="translate(2, 2) scale(0.96)">
+                    <path d="${africaPath}" stroke="var(--glow)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                    
+                    <path d="M42 46a7 7 0 0 1 11 0" stroke="var(--glow)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                    <path d="M39 42a12 12 0 0 1 17 0" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                </g>
             </g>`;
     }
 
@@ -664,7 +684,7 @@ async function renderVerificationBadge(creatorId, badgeContainer) {
         <div class="token-emitter-platform"></div>
         
         <div class="token-hologram-container">
-            <svg viewBox="0 0 100 100">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 ${internalSvgGlow}
             </svg>
         </div>
@@ -828,4 +848,4 @@ if (window.supabaseClient) {
     }, 600);
 }
 
-console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + 3D Crystalline Identity Tokens)');
+console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + 3D Crystalline Identity Tokens v4.1)');
