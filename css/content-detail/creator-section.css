@@ -113,33 +113,34 @@
 }
 
 /* ============================================ */
-/* 3D HOLOGRAPHIC IDENTITY TOKENS - LANDSCAPE ORIENTATION (v4.2) */
-/* Remapped layout for ultra-compact inline vertical profile */
+/* 3D HOLOGRAPHIC IDENTITY TOKENS - LANDSCAPE ORIENTATION (v4.3) */
+/* Reduced to 30-40% of original size for compact inline display */
 /* ============================================ */
 
 /* --- THE HOLO-CARD VIEWPORT CONTAINER --- */
 .bsc-identity-token {
   position: relative;
-  /* Changed from 112px x 176px to clean horizontal bounds */
-  width: 240px; 
-  height: 68px; 
-  margin: 8px 0;
-  border-radius: 12px;
+  /* Reduced from 240px to 96px (40%) */
+  width: 96px;
+  /* Reduced from 68px to 27px (40%) */
+  height: 27px;
+  margin: 4px 0;
+  border-radius: 6px;
   overflow: hidden;
   background: rgba(10, 18, 35, 0.45);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 0.5px rgba(255, 255, 255, 0.05) inset;
   
   /* Layout transformation: Stack left-to-right */
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  padding: 0 12px;
+  padding: 0 4px;
   
   transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   transform-style: preserve-3d;
@@ -181,10 +182,10 @@
 }
 
 .bsc-identity-token:hover {
-  transform: translateY(-2px) scale(1.01);
+  transform: translateY(-1px) scale(1.02);
   box-shadow: 
-    0 16px 32px rgba(0, 0, 0, 0.5),
-    0 0 12px var(--glow);
+    0 6px 12px rgba(0, 0, 0, 0.5),
+    0 0 6px var(--glow);
 }
 .bsc-identity-token:hover::before {
   left: 120%;
@@ -196,17 +197,19 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    inset 0 0 6px var(--glow),
-    inset 0 0 12px rgba(255, 255, 255, 0.02);
+    inset 0 0 3px var(--glow),
+    inset 0 0 6px rgba(255, 255, 255, 0.02);
 }
 
 /* --- LEFT SIDE: UNIFIED HOLOGRAM GRAPHIC STACK --- */
 .token-left-graphic-wrapper {
   position: relative;
-  width: 52px;
-  height: 52px;
+  /* Reduced from 52px to 20px (38%) */
+  width: 20px;
+  /* Reduced from 52px to 20px (38%) */
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,21 +220,25 @@
 .token-emitter-platform {
   position: absolute;
   left: 50%;
-  bottom: 2px;
+  bottom: 1px;
   transform: translateX(-50%);
-  width: 44px;
-  height: 6px;
+  /* Reduced from 44px to 16px (36%) */
+  width: 16px;
+  /* Reduced from 6px to 2px (33%) */
+  height: 2px;
   border-radius: 50%;
   background: radial-gradient(ellipse at center, var(--primary), transparent 70%);
-  filter: blur(2px);
+  filter: blur(1px);
   animation: platformPulse 3.5s infinite ease-in-out;
 }
 
 /* CONTINENT HOLOGRAM ENGINE */
 .token-hologram-container {
   position: relative;
-  width: 48px;
-  height: 48px;
+  /* Reduced from 48px to 18px (37.5%) */
+  width: 18px;
+  /* Reduced from 48px to 18px (37.5%) */
+  height: 18px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -240,24 +247,28 @@
 }
 
 .token-hologram-container svg {
-  width: 36px;
-  height: 36px;
+  /* Reduced from 36px to 14px (39%) */
+  width: 14px;
+  /* Reduced from 36px to 14px (39%) */
+  height: 14px;
   fill: none;
   stroke: var(--primary);
-  stroke-width: 1.5;
+  stroke-width: 1.2;
   filter: 
-    drop-shadow(0 0 2.5px var(--primary))
-    drop-shadow(0 0 6px var(--secondary));
+    drop-shadow(0 0 1px var(--primary))
+    drop-shadow(0 0 2.5px var(--secondary));
 }
 
 /* Crystalline Rotating Orbit Rings */
 .token-hologram-container::before {
   content: "";
   position: absolute;
-  width: 46px;
-  height: 46px;
+  /* Reduced from 46px to 17px (37%) */
+  width: 17px;
+  /* Reduced from 46px to 17px (37%) */
+  height: 17px;
   border-radius: 50%;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border: 0.5px dashed rgba(255, 255, 255, 0.15);
   animation: compassRotate 16s linear infinite;
 }
 
@@ -267,38 +278,45 @@
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  margin-left: 12px;
+  /* Reduced from 12px to 4px (33%) */
+  margin-left: 4px;
   flex-grow: 1;
 }
 
 .token-title {
-  font-size: 13px;
+  /* Reduced from 13px to 6px (46%) */
+  font-size: 6px;
   font-weight: 900;
-  letter-spacing: 1.5px;
+  /* Reduced from 1.5px to 0.6px (40%) */
+  letter-spacing: 0.6px;
   color: #fff;
   text-transform: uppercase;
-  text-shadow: 0 0 6px var(--primary);
-  line-height: 1.2;
+  text-shadow: 0 0 2.5px var(--primary);
+  line-height: 1.1;
 }
 
 .token-subtitle {
-  font-size: 7px;
+  /* Reduced from 7px to 3.5px (50%) */
+  font-size: 3.5px;
   font-weight: 700;
-  letter-spacing: 2px;
+  /* Reduced from 2px to 1px (50%) */
+  letter-spacing: 1px;
   color: var(--primary);
   text-transform: uppercase;
-  margin-top: 1px;
+  margin-top: 0.5px;
   line-height: 1;
 }
 
 /* --- BRAND TAG BASE EMBLEM (Repositioned to the absolute far right edge) --- */
 .token-base-emblem {
   position: relative;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  /* Reduced from 20px to 10px (50%) */
+  width: 10px;
+  /* Reduced from 20px to 10px (50%) */
+  height: 10px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -306,19 +324,20 @@
   margin-left: auto;
 }
 .token-base-emblem i {
-  font-size: 8px;
+  /* Reduced from 8px to 4px (50%) */
+  font-size: 4px;
   color: var(--primary);
-  filter: drop-shadow(0 0 2px var(--primary));
+  filter: drop-shadow(0 0 1px var(--primary));
 }
 
 /* --- HARDWARE KINETIC ANIMATIONS --- */
 @keyframes platformPulse {
   0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(0.85); }
-  50% { opacity: 1; transform: translateX(-50%) scale(1.05); filter: blur(2.5px); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.05); filter: blur(1.2px); }
 }
 @keyframes hologramFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  50% { transform: translateY(-1.5px); }
 }
 @keyframes compassRotate {
   from { transform: rotate(0deg); }
@@ -820,6 +839,52 @@
   .social-link i {
     font-size: 10px !important;
   }
+
+  /* --- 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES (REDUCED) --- */
+  .bsc-identity-token {
+    width: 80px !important;
+    height: 22px !important;
+    padding: 0 3px !important;
+    border-radius: 4px !important;
+  }
+  .token-left-graphic-wrapper {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  .token-hologram-container {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .token-hologram-container svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+  .token-hologram-container::before {
+    width: 13px !important;
+    height: 13px !important;
+  }
+  .token-emitter-platform {
+    width: 13px !important;
+    height: 1.5px !important;
+  }
+  .token-title {
+    font-size: 5px !important;
+    letter-spacing: 0.4px !important;
+  }
+  .token-subtitle {
+    font-size: 3px !important;
+    letter-spacing: 0.8px !important;
+  }
+  .token-base-emblem {
+    width: 8px !important;
+    height: 8px !important;
+  }
+  .token-base-emblem i {
+    font-size: 3.5px !important;
+  }
+  .token-right-meta-block {
+    margin-left: 3px !important;
+  }
 }
 
 /* Tablets - medium */
@@ -901,34 +966,50 @@
     font-size: 9px !important;
   }
 
-  /* --- 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES (LANDSCAPE) --- */
+  /* --- 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES (REDUCED) --- */
   .bsc-identity-token {
-    width: 200px !important;
-    height: 56px !important;
-    padding: 0 10px !important;
+    width: 70px !important;
+    height: 20px !important;
+    padding: 0 3px !important;
+    border-radius: 4px !important;
   }
   .token-left-graphic-wrapper {
-    width: 42px !important;
-    height: 42px !important;
+    width: 14px !important;
+    height: 14px !important;
   }
   .token-hologram-container {
-    width: 38px !important;
-    height: 38px !important;
+    width: 12px !important;
+    height: 12px !important;
   }
   .token-hologram-container svg {
-    width: 28px !important;
-    height: 28px !important;
+    width: 9px !important;
+    height: 9px !important;
   }
   .token-hologram-container::before {
-    width: 36px !important;
-    height: 36px !important;
+    width: 11px !important;
+    height: 11px !important;
+  }
+  .token-emitter-platform {
+    width: 11px !important;
+    height: 1.5px !important;
   }
   .token-title {
-    font-size: 11px !important;
-    letter-spacing: 1px !important;
+    font-size: 4.5px !important;
+    letter-spacing: 0.3px !important;
   }
   .token-subtitle {
-    font-size: 6px !important;
+    font-size: 2.5px !important;
+    letter-spacing: 0.6px !important;
+  }
+  .token-base-emblem {
+    width: 7px !important;
+    height: 7px !important;
+  }
+  .token-base-emblem i {
+    font-size: 3px !important;
+  }
+  .token-right-meta-block {
+    margin-left: 2px !important;
   }
 }
 
@@ -1108,29 +1189,46 @@
     margin: 0 !important;
   }
 
-  /* --- 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES (LANDSCAPE) --- */
+  /* --- 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES (REDUCED) --- */
   .bsc-identity-token {
-    width: 175px !important;
-    height: 48px !important;
-    padding: 0 8px !important;
+    width: 60px !important;
+    height: 18px !important;
+    padding: 0 2px !important;
+    border-radius: 3px !important;
   }
   .token-left-graphic-wrapper {
-    width: 36px !important;
-    height: 36px !important;
+    width: 12px !important;
+    height: 12px !important;
+  }
+  .token-hologram-container {
+    width: 10px !important;
+    height: 10px !important;
   }
   .token-hologram-container svg {
-    width: 24px !important;
-    height: 24px !important;
+    width: 8px !important;
+    height: 8px !important;
+  }
+  .token-hologram-container::before {
+    width: 9px !important;
+    height: 9px !important;
+  }
+  .token-emitter-platform {
+    width: 9px !important;
+    height: 1px !important;
   }
   .token-title {
-    font-size: 9.5px !important;
-    letter-spacing: 0.5px !important;
+    font-size: 4px !important;
+    letter-spacing: 0.2px !important;
   }
   .token-subtitle {
-    font-size: 5.5px !important;
+    font-size: 2px !important;
+    letter-spacing: 0.4px !important;
   }
   .token-base-emblem {
-    display: none !important; /* Hide mini micro-jewel icon on micro screens to maximize typography room */
+    display: none !important; /* Hide mini micro-jewel icon on micro screens */
+  }
+  .token-right-meta-block {
+    margin-left: 2px !important;
   }
   
   .bsc-hologram-portal {
