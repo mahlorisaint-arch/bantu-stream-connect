@@ -554,7 +554,8 @@ async function refreshConnectionButtons() {
 }
 
 // ============================================================
-// DYNAMIC 3D CRYSTALLINE IDENTITY TOKEN RENDER ENGINE (v4.1)
+// DYNAMIC 3D CRYSTALLINE IDENTITY TOKEN RENDER ENGINE (v4.2)
+// Horizontal Layout Optimization Match
 // ============================================================
 
 /**
@@ -601,9 +602,8 @@ async function getCreatorVerificationDetails(creatorId) {
 }
 
 /**
- * Render 3D Crystalline Identity Token with holographic display
- * Builds the exact visual states from design specifications
- * Uses production-ready SVG paths matching the visual asset silhouettes
+ * Render 3D Crystalline Identity Token with horizontal landscape layout
+ * Places the holographic graphics side-by-side with metadata to minimize vertical scale
  * @param {string} creatorId - The creator's user ID
  * @param {HTMLElement} badgeContainer - Container where badge renders
  */
@@ -675,22 +675,26 @@ async function renderVerificationBadge(creatorId, badgeContainer) {
             </g>`;
     }
 
-    // Build the structural 3D Monolith Token
+    // Build the structural 3D Horizontal Landscape Token Container
     const tokenCard = document.createElement('div');
     tokenCard.className = `bsc-identity-token ${cardTier}`;
     
     tokenCard.innerHTML = `
         <div class="token-border-glow"></div>
-        <div class="token-emitter-platform"></div>
         
-        <div class="token-hologram-container">
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                ${internalSvgGlow}
-            </svg>
+        <div class="token-left-graphic-wrapper">
+            <div class="token-emitter-platform"></div>
+            <div class="token-hologram-container">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    ${internalSvgGlow}
+                </svg>
+            </div>
         </div>
         
-        <div class="token-title">${details.label}</div>
-        <div class="token-subtitle">Verified</div>
+        <div class="token-right-meta-block">
+            <div class="token-title">${details.label}</div>
+            <div class="token-subtitle">Verified</div>
+        </div>
         
         <div class="token-base-emblem">
             <i class="${baseIcon}"></i>
@@ -698,7 +702,7 @@ async function renderVerificationBadge(creatorId, badgeContainer) {
     `;
 
     badgeContainer.appendChild(tokenCard);
-    console.log('✅ 3D Crystalline Identity Token rendered for:', details.label);
+    console.log('✅ Horizontal 3D Identity Token rendered for:', details.label);
 }
 
 // ============================================
@@ -848,4 +852,4 @@ if (window.supabaseClient) {
     }, 600);
 }
 
-console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + 3D Crystalline Identity Tokens v4.1)');
+console.log('✅ Creator Section Module loaded (Fully fixed for Single + Playlist modes + Horizontal 3D Identity Tokens v4.2)');
