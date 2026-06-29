@@ -21,19 +21,16 @@ function updateHeroPoster(content) {
     if (!heroPoster) return;
     
     if (content && content.thumbnail_url) {
-        // 🚨 CRITICAL: Pass 'thumbnail' context for correct R2 folder mapping
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url, 'thumbnail') || content.thumbnail_url;
         
         console.log('🖼️ Hero poster resolved URL:', imgUrl ? imgUrl.substring(0, 80) + (imgUrl.length > 80 ? '...' : '') : 'null');
         
-        // Check if there's already an image
         let existingImg = heroPoster.querySelector('img');
         if (existingImg) {
             existingImg.src = imgUrl;
             existingImg.alt = content.title || 'Content thumbnail';
             console.log('🖼️ Hero poster image updated');
         } else {
-            // Create new image
             const img = document.createElement('img');
             img.src = imgUrl;
             img.alt = content.title || 'Content thumbnail';
@@ -48,25 +45,21 @@ function updateHeroPoster(content) {
             img.onload = function() {
                 console.log('🖼️ Hero poster image loaded successfully');
             };
-            // Hide placeholder
             if (posterPlaceholder) posterPlaceholder.style.display = 'none';
             heroPoster.appendChild(img);
             console.log('🖼️ Hero poster image created');
         }
         
-        // Also set background for fallback
         heroPoster.style.backgroundImage = `url('${imgUrl}')`;
         heroPoster.style.backgroundSize = 'cover';
         heroPoster.style.backgroundPosition = 'center';
         heroPoster.style.backgroundColor = 'transparent';
         
     } else {
-        // No thumbnail - show placeholder
         heroPoster.style.backgroundImage = '';
         heroPoster.style.backgroundColor = 'var(--bg-secondary)';
         if (posterPlaceholder) posterPlaceholder.style.display = 'flex';
         
-        // Remove any existing img
         const existingImg = heroPoster.querySelector('img');
         if (existingImg) existingImg.remove();
         console.log('🖼️ No thumbnail, showing placeholder');
@@ -75,7 +68,6 @@ function updateHeroPoster(content) {
 
 /**
  * Update the entire content UI (hero section)
- * This is the main entry point for hero section rendering
  */
 function updateContentUI(content) {
     if (!content) return;
@@ -97,22 +89,17 @@ function updateContentUI(content) {
     window.safeSetText('favoritesCount', window.formatNumber(content.favorites_count));
     window.safeSetText('commentsCount', `(${window.formatNumber(content.comments_count)})`);
     
-    // Update genre in hero meta
-    updateHeroGenreUI(content.genre);
-    
-    // FIX: Update duration properly - keep it in the meta row
+    // Update duration
     const duration = window.formatDuration(content.duration || 3600);
     const durationSpan = document.querySelector('.meta-item.duration-badge span');
     if (durationSpan) {
         durationSpan.textContent = duration;
     } else {
-        // Fallback: use safeSetText
         window.safeSetText('durationText', duration);
     }
     window.safeSetText('contentDurationFull', duration);
     
     window.safeSetText('uploadDate', window.formatDate(content.created_at));
-    window.safeSetText('contentGenre', content.genre || 'General');
     window.safeSetText('contentDescriptionShort', window.truncateText(content.description, 150));
     window.safeSetText('contentDescriptionFull', content.description);
     
@@ -165,7 +152,6 @@ function updateContentUI(content) {
         `;
     }
     
-    // 🖼️ Update hero poster with thumbnail
     updateHeroPoster(content);
     
     console.log('✅ Content UI updated for:', content.title);
@@ -175,7 +161,6 @@ function updateContentUI(content) {
  * Update hero likes UI
  */
 function updateHeroLikesUI(likesCount) {
-    // Update likes count in hero meta
     const likesMetaItem = document.querySelector('.meta-item.likes-badge');
     if (likesMetaItem) {
         const likesSpan = likesMetaItem.querySelector('span');
@@ -189,7 +174,6 @@ function updateHeroLikesUI(likesCount) {
         }
     }
     
-    // Also update the like button count if it exists
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn && !likeBtn.classList.contains('active')) {
         const currentText = likeBtn.textContent.trim();
@@ -204,24 +188,6 @@ function updateHeroLikesUI(likesCount) {
 }
 
 /**
- * Update hero genre UI
- */
-function updateHeroGenreUI(genre) {
-    const genreMetaItem = document.querySelector('.meta-item.genre-badge');
-    if (genreMetaItem) {
-        const genreSpan = genreMetaItem.querySelector('span');
-        if (genreSpan) {
-            genreSpan.textContent = genre || 'General';
-        } else {
-            genreMetaItem.innerHTML = `
-                <i class="fas fa-tag"></i>
-                <span>${genre || 'General'}</span>
-            `;
-        }
-    }
-}
-
-/**
  * Update content details (alias for updateContentUI for compatibility)
  */
 function updateContentDetails(content) {
@@ -230,14 +196,12 @@ function updateContentDetails(content) {
 
 /**
  * Add resume button to hero actions
- * Fetches watch progress data to determine resume position
  */
 async function addResumeButton(progressSeconds) {
     const heroActions = document.querySelector('.hero-actions');
     if (!heroActions) return;
     if (document.getElementById('resumeBtn')) return;
     
-    // If progressSeconds not provided, fetch from database
     let finalProgress = progressSeconds;
     if (!finalProgress && window.currentUserId && window.currentContent?.id) {
         try {
@@ -295,7 +259,7 @@ function removeResumeButton() {
 }
 
 /**
- * Set hero poster to playing state (visual feedback)
+ * Set hero poster to playing state
  */
 function setHeroPosterPlaying(isPlaying) {
     const heroPoster = document.getElementById('heroPoster');
@@ -314,14 +278,9 @@ function setHeroPosterPlaying(isPlaying) {
 // REAL-TIME ENGAGEMENT SYNC
 // ============================================
 
-/**
- * Set up real-time engagement sync for hero section
- * Listens for engagement updates from stats-grid module
- */
 function setupHeroEngagementSync() {
     console.log('🔄 Setting up hero engagement sync...');
     
-    // Listen for like updates
     window.addEventListener('like-updated', (event) => {
         const { contentId, likesCount, isLiked } = event.detail || {};
         
@@ -329,7 +288,6 @@ function setupHeroEngagementSync() {
             console.log('❤️ Hero likes sync received:', likesCount);
             updateHeroLikesUI(likesCount);
             
-            // Update like button state
             const likeBtn = document.getElementById('likeBtn');
             if (likeBtn) {
                 if (isLiked) {
@@ -343,7 +301,6 @@ function setupHeroEngagementSync() {
         }
     });
     
-    // Listen for view updates
     window.addEventListener('views-updated', (event) => {
         const { contentId, viewsCount } = event.detail || {};
         
@@ -360,14 +317,12 @@ function setupHeroEngagementSync() {
         }
     });
     
-    // Listen for engagement state changes (like, favorite, watch later)
     window.addEventListener('engagement-state-changed', (event) => {
         const { contentId, states } = event.detail || {};
         
         if (String(contentId) === String(window.currentContent?.id) && states) {
             console.log('🔄 Hero engagement state sync received:', states);
             
-            // Update like button
             if (states.liked !== undefined) {
                 const likeBtn = document.getElementById('likeBtn');
                 if (likeBtn) {
@@ -381,7 +336,6 @@ function setupHeroEngagementSync() {
                 }
             }
             
-            // Update favorite button
             if (states.favorited !== undefined) {
                 const favoriteBtn = document.getElementById('favoriteBtn');
                 if (favoriteBtn) {
@@ -395,7 +349,6 @@ function setupHeroEngagementSync() {
                 }
             }
             
-            // Update watch later button
             if (states.watchLater !== undefined) {
                 const watchLaterBtn = document.getElementById('watchLaterBtn');
                 if (watchLaterBtn) {
@@ -414,9 +367,6 @@ function setupHeroEngagementSync() {
     console.log('✅ Hero engagement sync setup complete');
 }
 
-/**
- * Manually refresh hero engagement data from database
- */
 async function refreshHeroEngagement() {
     const contentId = window.currentContent?.id;
     if (!contentId) return;
@@ -457,8 +407,7 @@ async function refreshHeroEngagement() {
 }
 
 // ============================================
-// LOAD CRITICAL CONTENT DATA (Hero section specific)
-// Fetches content details from database including watch progress
+// LOAD CRITICAL CONTENT DATA
 // ============================================
 
 async function loadCriticalContentData(contentId) {
@@ -511,7 +460,6 @@ async function loadCriticalContentData(contentId) {
         thumbnail_url: profileData.thumbnail_url,
         file_url: profileData.file_url,
         media_type: profileData.media_type || 'video',
-        genre: profileData.genre || 'General',
         created_at: profileData.created_at,
         duration: profileData.duration || 3600,
         language: profileData.language || 'English',
@@ -542,7 +490,6 @@ async function loadCriticalContentData(contentId) {
         addResumeButton(contentObj.watch_progress);
     }
     
-    // Setup engagement sync after content loads
     setupHeroEngagementSync();
 }
 
@@ -559,7 +506,6 @@ async function fetchContentProfileDetails(contentId) {
                 duration,
                 media_type,
                 content_format,
-                genre,
                 created_at,
                 user_id,
                 user_profiles!user_id (
@@ -651,7 +597,6 @@ async function loadContentFromURLLegacy() {
             thumbnail_url: contentData.thumbnail_url,
             file_url: contentData.file_url,
             media_type: contentData.media_type || 'video',
-            genre: contentData.genre || 'General',
             created_at: contentData.created_at,
             duration: contentData.duration || contentData.duration_seconds || 3600,
             language: contentData.language || 'English',
@@ -679,7 +624,6 @@ async function loadContentFromURLLegacy() {
             addResumeButton(contentObj.watch_progress);
         }
         
-        // Setup engagement sync after content loads
         setupHeroEngagementSync();
     } catch (error) {
         console.error('❌ Content load failed:', error);
@@ -696,7 +640,6 @@ function refreshContentInBackground(contentId) {
                 window.currentContent.views_count = liveCounts.views;
                 window.currentContent.likes_count = liveCounts.likes;
                 
-                // Update hero UI
                 updateHeroLikesUI(liveCounts.likes);
                 const viewsEl = document.getElementById('viewsCount');
                 if (viewsEl) viewsEl.textContent = window.formatNumber(liveCounts.views) + ' views';
@@ -716,7 +659,6 @@ window.updateHeroPoster = updateHeroPoster;
 window.updateContentUI = updateContentUI;
 window.updateContentDetails = updateContentDetails;
 window.updateHeroLikesUI = updateHeroLikesUI;
-window.updateHeroGenreUI = updateHeroGenreUI;
 window.addResumeButton = addResumeButton;
 window.removeResumeButton = removeResumeButton;
 window.setHeroPosterPlaying = setHeroPosterPlaying;
@@ -729,4 +671,3 @@ window.refreshHeroEngagement = refreshHeroEngagement;
 console.log('✅ Hero Section Module loaded');
 console.log('   🖼️ updateHeroPoster: R2 folder routing with thumbnail context');
 console.log('   ❤️ Real-time likes sync enabled in hero section');
-console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
