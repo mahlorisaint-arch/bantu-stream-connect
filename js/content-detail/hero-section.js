@@ -100,8 +100,15 @@ function updateContentUI(content) {
     // Update genre in hero meta
     updateHeroGenreUI(content.genre);
     
+    // FIX: Update duration properly - keep it in the meta row
     const duration = window.formatDuration(content.duration || 3600);
-    window.safeSetText('durationText', duration);
+    const durationSpan = document.querySelector('.meta-item.duration-badge span');
+    if (durationSpan) {
+        durationSpan.textContent = duration;
+    } else {
+        // Fallback: use safeSetText
+        window.safeSetText('durationText', duration);
+    }
     window.safeSetText('contentDurationFull', duration);
     
     window.safeSetText('uploadDate', window.formatDate(content.created_at));
