@@ -303,6 +303,43 @@
 }
 
 /* ============================================ */
+/* ALBUM TOGGLE BUTTON (Show Tracklist) */
+/* ============================================ */
+.album-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--soft-white);
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.album-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  gap: 10px;
+}
+
+.album-toggle-btn:active {
+  transform: translateY(0);
+}
+
+.album-toggle-btn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.album-toggle-btn:hover i {
+  transform: scale(1.1);
+}
+
+/* ============================================ */
 /* PLAY NOW BUTTON (#playBtn) */
 /* ============================================ */
 #playBtn {
@@ -688,7 +725,8 @@
 #favoriteBtn:disabled,
 #watchLaterBtn:disabled,
 #shareBtn:disabled,
-.resume-btn:disabled {
+.resume-btn:disabled,
+.album-toggle-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
@@ -826,7 +864,8 @@
   #watchLaterBtn,
   #shareBtn,
   .resume-btn,
-  #closePlayerFromHero {
+  #closePlayerFromHero,
+  .album-toggle-btn {
     padding: 6px 12px !important;
     font-size: 7px !important;
     border-radius: 20px !important;
@@ -840,7 +879,8 @@
   #watchLaterBtn i,
   #shareBtn i,
   .resume-btn i,
-  #closePlayerFromHero i {
+  #closePlayerFromHero i,
+  .album-toggle-btn i {
     font-size: 7px !important;
   }
   
@@ -855,7 +895,8 @@
   #watchLaterBtn:hover,
   #shareBtn:hover,
   .resume-btn:hover,
-  #closePlayerFromHero:hover {
+  #closePlayerFromHero:hover,
+  .album-toggle-btn:hover {
     transform: none !important;
     gap: 4px !important;
   }
@@ -903,7 +944,8 @@
   #watchLaterBtn,
   #shareBtn,
   .resume-btn,
-  #closePlayerFromHero {
+  #closePlayerFromHero,
+  .album-toggle-btn {
     padding: 5px 10px !important;
     font-size: 6px !important;
     border-radius: 16px !important;
@@ -916,7 +958,8 @@
   #watchLaterBtn i,
   #shareBtn i,
   .resume-btn i,
-  #closePlayerFromHero i {
+  #closePlayerFromHero i,
+  .album-toggle-btn i {
     font-size: 6px !important;
   }
   
@@ -960,21 +1003,24 @@
   #likeBtn span,
   #favoriteBtn span,
   #watchLaterBtn span,
-  #shareBtn span {
+  #shareBtn span,
+  .album-toggle-btn span {
     display: none !important;
   }
   
   #likeBtn,
   #favoriteBtn,
   #watchLaterBtn,
-  #shareBtn {
+  #shareBtn,
+  .album-toggle-btn {
     padding: 4px 6px !important;
   }
   
   #likeBtn i,
   #favoriteBtn i,
   #watchLaterBtn i,
-  #shareBtn i {
+  #shareBtn i,
+  .album-toggle-btn i {
     font-size: 6px !important;
     margin: 0 !important;
   }
@@ -1021,7 +1067,8 @@
   #watchLaterBtn:active,
   #shareBtn:active,
   .resume-btn:active,
-  #closePlayerFromHero:active {
+  #closePlayerFromHero:active,
+  .album-toggle-btn:active {
     transform: scale(0.96) !important;
   }
 }
@@ -1036,7 +1083,8 @@
 .theme-light #likeBtn,
 .theme-light #favoriteBtn,
 .theme-light #watchLaterBtn,
-.theme-light #shareBtn {
+.theme-light #shareBtn,
+.theme-light .album-toggle-btn {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
   color: var(--deep-navy);
@@ -1045,7 +1093,8 @@
 .theme-light #likeBtn:hover,
 .theme-light #favoriteBtn:hover,
 .theme-light #watchLaterBtn:hover,
-.theme-light #shareBtn:hover {
+.theme-light #shareBtn:hover,
+.theme-light .album-toggle-btn:hover {
   background: rgba(0, 0, 0, 0.1);
 }
 
@@ -1080,7 +1129,8 @@
 .theme-high-contrast #likeBtn,
 .theme-high-contrast #favoriteBtn,
 .theme-high-contrast #watchLaterBtn,
-.theme-high-contrast #shareBtn {
+.theme-high-contrast #shareBtn,
+.theme-high-contrast .album-toggle-btn {
   border: 2px solid white;
   background: black;
   color: white;
