@@ -164,7 +164,7 @@
   100% { background-position: 0% 50%; }
 }
 
-/* Hero metadata row - NOW INCLUDES LIKES AND GENRE */
+/* Hero metadata row - ALL ITEMS INLINE TOGETHER */
 .hero-meta {
   display: flex;
   align-items: center;
@@ -174,7 +174,7 @@
 }
 
 .meta-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--slate-grey);
@@ -183,6 +183,7 @@
   padding: 4px 10px;
   border-radius: 20px;
   transition: all 0.2s ease;
+  flex: 0 0 auto;
 }
 
 .meta-item:hover {
@@ -205,7 +206,7 @@
   color: var(--warm-gold);
 }
 
-/* Total likes badge styling - MOVED FROM STATS GRID */
+/* Total likes badge styling */
 .meta-item.likes-badge {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
@@ -225,10 +226,11 @@
   color: var(--bantu-blue);
 }
 
-/* Duration badge styling */
+/* Duration badge styling - NOW SAME AS OTHERS */
 .meta-item.duration-badge {
   background: rgba(255, 255, 255, 0.08);
   color: var(--slate-grey);
+  flex: 0 0 auto;
 }
 
 .meta-item.duration-badge i {
@@ -303,7 +305,7 @@
 }
 
 /* ============================================ */
-/* ALBUM TOGGLE BUTTON (Show Tracklist) */
+/* ALBUM TOGGLE BUTTON (Show/Hide Playlist) */
 /* ============================================ */
 .album-toggle-btn {
   background: rgba(255, 255, 255, 0.08);
@@ -999,7 +1001,7 @@
     gap: 4px !important;
   }
   
-  /* Icon-only mode for very small screens - with 50% scale */
+  /* Icon-only mode for very small screens */
   #likeBtn span,
   #favoriteBtn span,
   #watchLaterBtn span,
