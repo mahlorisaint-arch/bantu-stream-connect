@@ -168,9 +168,11 @@
 .hero-meta {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .meta-item {
@@ -184,6 +186,7 @@
   border-radius: 20px;
   transition: all 0.2s ease;
   flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .meta-item:hover {
