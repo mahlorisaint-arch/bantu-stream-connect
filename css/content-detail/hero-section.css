@@ -164,7 +164,7 @@
   100% { background-position: 0% 50%; }
 }
 
-/* Hero metadata row */
+/* Hero metadata row - NOW INCLUDES LIKES AND GENRE */
 .hero-meta {
   display: flex;
   align-items: center;
@@ -203,6 +203,46 @@
 
 .meta-item.genre-badge i {
   color: var(--warm-gold);
+}
+
+/* Total likes badge styling - MOVED FROM STATS GRID */
+.meta-item.likes-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.meta-item.likes-badge i {
+  color: #ef4444;
+}
+
+/* Views badge styling */
+.meta-item.views-badge {
+  background: rgba(29, 78, 216, 0.15);
+  color: var(--bantu-blue);
+}
+
+.meta-item.views-badge i {
+  color: var(--bantu-blue);
+}
+
+/* Duration badge styling */
+.meta-item.duration-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--slate-grey);
+}
+
+.meta-item.duration-badge i {
+  color: var(--slate-grey);
+}
+
+/* Upload date badge styling */
+.meta-item.date-badge {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--slate-grey);
+}
+
+.meta-item.date-badge i {
+  color: var(--slate-grey);
 }
 
 /* Hero description */
