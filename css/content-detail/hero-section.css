@@ -199,16 +199,6 @@
   font-size: 12px;
 }
 
-/* Genre badge special styling */
-.meta-item.genre-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--warm-gold);
-}
-
-.meta-item.genre-badge i {
-  color: var(--warm-gold);
-}
-
 /* Total likes badge styling */
 .meta-item.likes-badge {
   background: rgba(239, 68, 68, 0.15);
@@ -229,11 +219,10 @@
   color: var(--bantu-blue);
 }
 
-/* Duration badge styling - NOW SAME AS OTHERS */
+/* Duration badge styling */
 .meta-item.duration-badge {
   background: rgba(255, 255, 255, 0.08);
   color: var(--slate-grey);
-  flex: 0 0 auto;
 }
 
 .meta-item.duration-badge i {
@@ -308,7 +297,7 @@
 }
 
 /* ============================================ */
-/* ALBUM TOGGLE BUTTON (Show/Hide Playlist) */
+/* ALBUM TOGGLE BUTTON (Playlist) */
 /* ============================================ */
 .album-toggle-btn {
   background: rgba(255, 255, 255, 0.08);
