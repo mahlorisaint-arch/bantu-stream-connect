@@ -5,16 +5,12 @@
 
 /* ============================================ */
 /* CONTENT HERO - MAIN CONTAINER */
-/* Note: Base layout is in layout.css, this file adds hero-specific styles */
 /* ============================================ */
-
-/* Hero container - styled in layout.css, adding enhancements here */
 .content-hero {
   position: relative;
   transition: all 0.3s ease;
 }
 
-/* Hero gradient border effect - enhanced version */
 .content-hero::after {
   content: '';
   position: absolute;
@@ -34,7 +30,7 @@
 }
 
 /* ============================================ */
-/* HERO POSTER - ENHANCED */
+/* HERO POSTER */
 /* ============================================ */
 .hero-poster {
   position: relative;
@@ -63,7 +59,6 @@
   transform: scale(1.05);
 }
 
-/* Poster placeholder (when image fails to load) */
 .poster-placeholder {
   width: 100%;
   height: 100%;
@@ -87,7 +82,6 @@
   font-weight: 500;
 }
 
-/* Play overlay - enhanced */
 .play-overlay {
   position: absolute;
   top: 0;
@@ -143,7 +137,6 @@
   gap: 12px;
 }
 
-/* Title with gradient animation */
 .hero-info h1 {
   font-family: 'Orbitron', sans-serif;
   font-size: 24px;
@@ -164,7 +157,9 @@
   100% { background-position: 0% 50%; }
 }
 
-/* Hero metadata row - ALL ITEMS INLINE TOGETHER */
+/* ============================================ */
+/* HERO METADATA - FIXED: ALL ITEMS ON ONE LINE */
+/* ============================================ */
 .hero-meta {
   display: flex;
   align-items: center;
@@ -172,7 +167,8 @@
   margin-bottom: 8px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 4px 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .meta-item {
@@ -185,7 +181,7 @@
   padding: 4px 10px;
   border-radius: 20px;
   transition: all 0.2s ease;
-  flex: 0 0 auto;
+  flex-shrink: 0;
   white-space: nowrap;
 }
 
@@ -199,7 +195,6 @@
   font-size: 12px;
 }
 
-/* Total likes badge styling */
 .meta-item.likes-badge {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
@@ -209,7 +204,6 @@
   color: #ef4444;
 }
 
-/* Views badge styling */
 .meta-item.views-badge {
   background: rgba(29, 78, 216, 0.15);
   color: var(--bantu-blue);
@@ -219,7 +213,6 @@
   color: var(--bantu-blue);
 }
 
-/* Duration badge styling */
 .meta-item.duration-badge {
   background: rgba(255, 255, 255, 0.08);
   color: var(--slate-grey);
@@ -229,7 +222,6 @@
   color: var(--slate-grey);
 }
 
-/* Upload date badge styling */
 .meta-item.date-badge {
   background: rgba(255, 255, 255, 0.05);
   color: var(--slate-grey);
@@ -239,7 +231,9 @@
   color: var(--slate-grey);
 }
 
-/* Hero description */
+/* ============================================ */
+/* HERO DESCRIPTION */
+/* ============================================ */
 .hero-description {
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.6;
@@ -257,7 +251,6 @@
   display: block;
 }
 
-/* Read more/less toggle */
 .description-toggle {
   background: none;
   border: none;
@@ -296,9 +289,6 @@
   margin-top: 8px;
 }
 
-/* ============================================ */
-/* ALBUM TOGGLE BUTTON (Playlist) */
-/* ============================================ */
 .album-toggle-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -334,7 +324,7 @@
 }
 
 /* ============================================ */
-/* PLAY NOW BUTTON (#playBtn) */
+/* PLAY NOW BUTTON */
 /* ============================================ */
 #playBtn {
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
@@ -389,7 +379,7 @@
 }
 
 /* ============================================ */
-/* RESUME BUTTON (dynamically added) */
+/* RESUME BUTTON */
 /* ============================================ */
 .resume-btn {
   background: linear-gradient(135deg, #F59E0B, #1D4ED8) !important;
@@ -440,19 +430,13 @@
 }
 
 @keyframes resumePulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
 /* ============================================ */
-/* LIKE BUTTON (#likeBtn) */
+/* LIKE BUTTON */
 /* ============================================ */
 #likeBtn {
   background: rgba(255, 255, 255, 0.08);
@@ -488,7 +472,6 @@
   transform: scale(1.1);
 }
 
-/* Like button active/liked state */
 #likeBtn.active {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
   border-color: #ef4444;
@@ -505,7 +488,7 @@
 }
 
 /* ============================================ */
-/* FAVORITE BUTTON (#favoriteBtn) */
+/* FAVORITE BUTTON */
 /* ============================================ */
 #favoriteBtn {
   background: rgba(255, 255, 255, 0.08);
@@ -541,7 +524,6 @@
   transform: scale(1.1);
 }
 
-/* Favorite button active/favorited state */
 #favoriteBtn.active {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
   border-color: var(--warm-gold);
@@ -558,7 +540,7 @@
 }
 
 /* ============================================ */
-/* WATCH LATER BUTTON (#watchLaterBtn) */
+/* WATCH LATER BUTTON */
 /* ============================================ */
 #watchLaterBtn {
   background: rgba(255, 255, 255, 0.08);
@@ -595,7 +577,6 @@
   transform: scale(1.1);
 }
 
-/* Watch Later button saved/active state */
 #watchLaterBtn.active {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
   border-color: var(--success-color);
@@ -612,7 +593,7 @@
 }
 
 /* ============================================ */
-/* SHARE BUTTON (#shareBtn) */
+/* SHARE BUTTON */
 /* ============================================ */
 #shareBtn {
   background: rgba(255, 255, 255, 0.08);
@@ -648,7 +629,6 @@
   transform: scale(1.1);
 }
 
-/* Share button active/shared state (temporary) */
 #shareBtn.shared {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
   border-color: #8b5cf6;
@@ -659,7 +639,6 @@
   color: #8b5cf6;
 }
 
-/* Share button loading state */
 #shareBtn.loading {
   pointer-events: none;
   opacity: 0.7;
@@ -674,7 +653,7 @@
 }
 
 /* ============================================ */
-/* CLOSE PLAYER BUTTON (#closePlayerFromHero) */
+/* CLOSE PLAYER BUTTON */
 /* ============================================ */
 #closePlayerFromHero {
   background: rgba(239, 68, 68, 0.15);
@@ -712,7 +691,7 @@
 }
 
 /* ============================================ */
-/* DISABLED STATE FOR ALL BUTTONS */
+/* DISABLED STATE */
 /* ============================================ */
 #playBtn:disabled,
 #likeBtn:disabled,
@@ -728,7 +707,7 @@
 }
 
 /* ============================================ */
-/* VIDEO ACTIVE STATE - When player is showing */
+/* VIDEO ACTIVE STATE */
 /* ============================================ */
 .content-hero.video-active {
   padding: 0;
@@ -744,26 +723,6 @@
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
   border-top: 1px solid var(--card-border);
-}
-
-/* ============================================ */
-/* PLAYER CONTROLS BUTTON OVERRIDES */
-/* Ensure player buttons don't conflict with hero buttons */
-/* ============================================ */
-.video-container #playBtn,
-.video-container #likeBtn,
-.video-container #favoriteBtn,
-.video-container #watchLaterBtn,
-.video-container #shareBtn {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.video-container #playBtn:hover,
-.video-container #likeBtn:hover,
-.video-container #favoriteBtn:hover,
-.video-container #watchLaterBtn:hover,
-.video-container #shareBtn:hover {
-  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ============================================ */
@@ -794,10 +753,9 @@
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS - 50% SCALE FOR MOBILE */
+/* RESPONSIVE - ALL META ITEMS STAY INLINE */
 /* ============================================ */
 @media (max-width: 768px) {
-  /* Hero card - scale to 50% */
   .content-hero {
     padding: 8px !important;
     gap: 10px !important;
@@ -816,6 +774,7 @@
   .hero-meta {
     gap: 6px !important;
     margin-bottom: 4px !important;
+    flex-wrap: nowrap !important;
   }
   
   .meta-item {
@@ -823,6 +782,7 @@
     padding: 2px 5px !important;
     gap: 3px !important;
     border-radius: 12px !important;
+    flex-shrink: 0 !important;
   }
   
   .meta-item i {
@@ -851,7 +811,6 @@
     margin-top: 4px !important;
   }
   
-  /* All buttons - 50% scale */
   #playBtn,
   #likeBtn,
   #favoriteBtn,
@@ -899,14 +858,12 @@
     animation: none !important;
   }
   
-  /* Play icon overlay - 50% scale */
   .play-icon-large {
     width: 40px !important;
     height: 40px !important;
     font-size: 16px !important;
   }
   
-  /* Poster placeholder */
   .poster-placeholder i {
     font-size: 1.5rem !important;
   }
@@ -915,7 +872,6 @@
     font-size: 6px !important;
   }
   
-  /* Video active state - 50% scale */
   .content-hero.video-active {
     margin: 0 -10px 10px -10px !important;
   }
@@ -993,7 +949,6 @@
     gap: 4px !important;
   }
   
-  /* Icon-only mode for very small screens */
   #likeBtn span,
   #favoriteBtn span,
   #watchLaterBtn span,
@@ -1045,7 +1000,6 @@
   }
 }
 
-/* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
   .hero-poster:hover {
     transform: none !important;
@@ -1068,7 +1022,7 @@
 }
 
 /* ============================================ */
-/* THEME SUPPORT FOR BUTTONS */
+/* THEME SUPPORT */
 /* ============================================ */
 .theme-light #playBtn {
   box-shadow: 0 4px 15px rgba(29, 78, 216, 0.2);
