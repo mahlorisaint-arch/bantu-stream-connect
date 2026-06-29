@@ -86,11 +86,19 @@ function updateContentUI(content) {
     window.safeSetText('creatorName', creatorName);
     window.safeSetText('creatorDisplayName', creatorName);
     
+    // Update views
     window.safeSetText('viewsCount', window.formatNumber(content.views_count) + ' views');
     window.safeSetText('viewsCountFull', window.formatNumber(content.views_count));
-    window.safeSetText('likesCount', window.formatNumber(content.likes_count));
+    
+    // Update likes in hero meta
+    updateHeroLikesUI(content.likes_count);
+    
+    // Update favorites
     window.safeSetText('favoritesCount', window.formatNumber(content.favorites_count));
     window.safeSetText('commentsCount', `(${window.formatNumber(content.comments_count)})`);
+    
+    // Update genre in hero meta
+    updateHeroGenreUI(content.genre);
     
     const duration = window.formatDuration(content.duration || 3600);
     window.safeSetText('durationText', duration);
@@ -154,6 +162,56 @@ function updateContentUI(content) {
     updateHeroPoster(content);
     
     console.log('✅ Content UI updated for:', content.title);
+}
+
+/**
+ * Update hero likes UI
+ */
+function updateHeroLikesUI(likesCount) {
+    // Update likes count in hero meta
+    const likesMetaItem = document.querySelector('.meta-item.likes-badge');
+    if (likesMetaItem) {
+        const likesSpan = likesMetaItem.querySelector('span');
+        if (likesSpan) {
+            likesSpan.textContent = window.formatNumber(likesCount) + ' likes';
+        } else {
+            likesMetaItem.innerHTML = `
+                <i class="fas fa-heart"></i>
+                <span>${window.formatNumber(likesCount)} likes</span>
+            `;
+        }
+    }
+    
+    // Also update the like button count if it exists
+    const likeBtn = document.getElementById('likeBtn');
+    if (likeBtn && !likeBtn.classList.contains('active')) {
+        const currentText = likeBtn.textContent.trim();
+        if (currentText.includes('Like') || currentText.includes('Liked')) {
+            const span = likeBtn.querySelector('span');
+            if (span) {
+                const isLiked = likeBtn.classList.contains('active');
+                span.textContent = isLiked ? 'Liked' : 'Like';
+            }
+        }
+    }
+}
+
+/**
+ * Update hero genre UI
+ */
+function updateHeroGenreUI(genre) {
+    const genreMetaItem = document.querySelector('.meta-item.genre-badge');
+    if (genreMetaItem) {
+        const genreSpan = genreMetaItem.querySelector('span');
+        if (genreSpan) {
+            genreSpan.textContent = genre || 'General';
+        } else {
+            genreMetaItem.innerHTML = `
+                <i class="fas fa-tag"></i>
+                <span>${genre || 'General'}</span>
+            `;
+        }
+    }
 }
 
 /**
@@ -246,6 +304,152 @@ function setHeroPosterPlaying(isPlaying) {
 }
 
 // ============================================
+// REAL-TIME ENGAGEMENT SYNC
+// ============================================
+
+/**
+ * Set up real-time engagement sync for hero section
+ * Listens for engagement updates from stats-grid module
+ */
+function setupHeroEngagementSync() {
+    console.log('🔄 Setting up hero engagement sync...');
+    
+    // Listen for like updates
+    window.addEventListener('like-updated', (event) => {
+        const { contentId, likesCount, isLiked } = event.detail || {};
+        
+        if (String(contentId) === String(window.currentContent?.id)) {
+            console.log('❤️ Hero likes sync received:', likesCount);
+            updateHeroLikesUI(likesCount);
+            
+            // Update like button state
+            const likeBtn = document.getElementById('likeBtn');
+            if (likeBtn) {
+                if (isLiked) {
+                    likeBtn.classList.add('active');
+                    likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+                } else {
+                    likeBtn.classList.remove('active');
+                    likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+                }
+            }
+        }
+    });
+    
+    // Listen for view updates
+    window.addEventListener('views-updated', (event) => {
+        const { contentId, viewsCount } = event.detail || {};
+        
+        if (String(contentId) === String(window.currentContent?.id)) {
+            console.log('👁️ Hero views sync received:', viewsCount);
+            const viewsEl = document.getElementById('viewsCount');
+            if (viewsEl) {
+                viewsEl.textContent = window.formatNumber(viewsCount) + ' views';
+            }
+            const viewsFullEl = document.getElementById('viewsCountFull');
+            if (viewsFullEl) {
+                viewsFullEl.textContent = window.formatNumber(viewsCount);
+            }
+        }
+    });
+    
+    // Listen for engagement state changes (like, favorite, watch later)
+    window.addEventListener('engagement-state-changed', (event) => {
+        const { contentId, states } = event.detail || {};
+        
+        if (String(contentId) === String(window.currentContent?.id) && states) {
+            console.log('🔄 Hero engagement state sync received:', states);
+            
+            // Update like button
+            if (states.liked !== undefined) {
+                const likeBtn = document.getElementById('likeBtn');
+                if (likeBtn) {
+                    if (states.liked) {
+                        likeBtn.classList.add('active');
+                        likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+                    } else {
+                        likeBtn.classList.remove('active');
+                        likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+                    }
+                }
+            }
+            
+            // Update favorite button
+            if (states.favorited !== undefined) {
+                const favoriteBtn = document.getElementById('favoriteBtn');
+                if (favoriteBtn) {
+                    if (states.favorited) {
+                        favoriteBtn.classList.add('active');
+                        favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+                    } else {
+                        favoriteBtn.classList.remove('active');
+                        favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+                    }
+                }
+            }
+            
+            // Update watch later button
+            if (states.watchLater !== undefined) {
+                const watchLaterBtn = document.getElementById('watchLaterBtn');
+                if (watchLaterBtn) {
+                    if (states.watchLater) {
+                        watchLaterBtn.classList.add('active');
+                        watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+                    } else {
+                        watchLaterBtn.classList.remove('active');
+                        watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log('✅ Hero engagement sync setup complete');
+}
+
+/**
+ * Manually refresh hero engagement data from database
+ */
+async function refreshHeroEngagement() {
+    const contentId = window.currentContent?.id;
+    if (!contentId) return;
+    
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('content_engagement_stats')
+            .select('total_likes, total_views')
+            .eq('content_id', contentId)
+            .maybeSingle();
+        
+        if (error) throw error;
+        if (data) {
+            if (data.total_likes !== undefined) {
+                updateHeroLikesUI(data.total_likes);
+                if (window.currentContent) {
+                    window.currentContent.likes_count = data.total_likes;
+                }
+            }
+            if (data.total_views !== undefined) {
+                const viewsEl = document.getElementById('viewsCount');
+                if (viewsEl) {
+                    viewsEl.textContent = window.formatNumber(data.total_views) + ' views';
+                }
+                const viewsFullEl = document.getElementById('viewsCountFull');
+                if (viewsFullEl) {
+                    viewsFullEl.textContent = window.formatNumber(data.total_views);
+                }
+                if (window.currentContent) {
+                    window.currentContent.views_count = data.total_views;
+                }
+            }
+            console.log('✅ Hero engagement refreshed:', data);
+        }
+    } catch (error) {
+        console.warn('Failed to refresh hero engagement:', error);
+    }
+}
+
+// ============================================
 // LOAD CRITICAL CONTENT DATA (Hero section specific)
 // Fetches content details from database including watch progress
 // ============================================
@@ -330,6 +534,9 @@ async function loadCriticalContentData(contentId) {
     if (contentObj.watch_progress > 10 && !contentObj.is_completed) {
         addResumeButton(contentObj.watch_progress);
     }
+    
+    // Setup engagement sync after content loads
+    setupHeroEngagementSync();
 }
 
 async function fetchContentProfileDetails(contentId) {
@@ -345,6 +552,7 @@ async function fetchContentProfileDetails(contentId) {
                 duration,
                 media_type,
                 content_format,
+                genre,
                 created_at,
                 user_id,
                 user_profiles!user_id (
@@ -463,6 +671,9 @@ async function loadContentFromURLLegacy() {
         if (contentObj.watch_progress > 10 && !contentObj.is_completed) {
             addResumeButton(contentObj.watch_progress);
         }
+        
+        // Setup engagement sync after content loads
+        setupHeroEngagementSync();
     } catch (error) {
         console.error('❌ Content load failed:', error);
         window.showToast('Content not available. Please try again.', 'error');
@@ -477,6 +688,12 @@ function refreshContentInBackground(contentId) {
             if (window.currentContent && window.currentContent.id == contentId) {
                 window.currentContent.views_count = liveCounts.views;
                 window.currentContent.likes_count = liveCounts.likes;
+                
+                // Update hero UI
+                updateHeroLikesUI(liveCounts.likes);
+                const viewsEl = document.getElementById('viewsCount');
+                if (viewsEl) viewsEl.textContent = window.formatNumber(liveCounts.views) + ' views';
+                
                 if (typeof updateCountsUI === 'function') updateCountsUI(window.currentContent);
                 window.currentContent._cachedAt = Date.now();
                 localStorage.setItem(`content_${contentId}`, JSON.stringify(window.currentContent));
@@ -491,13 +708,18 @@ function refreshContentInBackground(contentId) {
 window.updateHeroPoster = updateHeroPoster;
 window.updateContentUI = updateContentUI;
 window.updateContentDetails = updateContentDetails;
+window.updateHeroLikesUI = updateHeroLikesUI;
+window.updateHeroGenreUI = updateHeroGenreUI;
 window.addResumeButton = addResumeButton;
 window.removeResumeButton = removeResumeButton;
 window.setHeroPosterPlaying = setHeroPosterPlaying;
 window.loadCriticalContentData = loadCriticalContentData;
 window.fetchContentProfileDetails = fetchContentProfileDetails;
 window.loadContentFromURLLegacy = loadContentFromURLLegacy;
+window.setupHeroEngagementSync = setupHeroEngagementSync;
+window.refreshHeroEngagement = refreshHeroEngagement;
 
 console.log('✅ Hero Section Module loaded');
 console.log('   🖼️ updateHeroPoster: R2 folder routing with thumbnail context');
+console.log('   ❤️ Real-time likes sync enabled in hero section');
 console.log('   🎯 R2 folder routing: thumbnails → /content-thumbnails/');
