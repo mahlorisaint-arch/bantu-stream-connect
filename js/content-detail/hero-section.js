@@ -89,14 +89,13 @@ function updateContentUI(content) {
     window.safeSetText('favoritesCount', window.formatNumber(content.favorites_count));
     window.safeSetText('commentsCount', `(${window.formatNumber(content.comments_count)})`);
     
-    // Update duration
+    // FIX: Update duration - ONLY update the span inside the meta item
     const duration = window.formatDuration(content.duration || 3600);
     const durationSpan = document.querySelector('.meta-item.duration-badge span');
     if (durationSpan) {
         durationSpan.textContent = duration;
-    } else {
-        window.safeSetText('durationText', duration);
     }
+    // Also update contentDurationFull if it exists
     window.safeSetText('contentDurationFull', duration);
     
     window.safeSetText('uploadDate', window.formatDate(content.created_at));
