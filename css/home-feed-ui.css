@@ -171,14 +171,16 @@ CORE UI UTILITIES
 }
 
 /* ============================================
-WELCOME BANNER - FIXED CONTAINER
+WELCOME BANNER - REDUCED TO 40% SIZE
 ============================================ */
 .welcome-banner {
     background: linear-gradient(135deg, rgba(29, 78, 216, 0.15), rgba(245, 158, 11, 0.15));
     border: 1px solid rgba(245, 158, 11, 0.3);
-    border-radius: 20px;
-    padding: 30px;
-    margin: 20px 0 30px 0;
+    border-radius: 12px;
+    /* Reduced from 30px to 12px (40%) */
+    padding: 12px 20px;
+    /* Reduced from 20px to 8px (40%) */
+    margin: 8px 0 12px 0;
     backdrop-filter: blur(10px);
     text-align: center;
     width: 100%;
@@ -187,15 +189,19 @@ WELCOME BANNER - FIXED CONTAINER
 }
 
 .welcome-banner h2 {
-    font-size: 28px;
+    /* Reduced from 28px to 14px (50%) */
+    font-size: 14px;
     font-weight: 600;
-    margin-bottom: 10px;
+    /* Reduced from 10px to 4px (40%) */
+    margin-bottom: 4px;
     color: var(--soft-white, #F8FAFC);
 }
 
 .welcome-banner p {
-    font-size: 16px;
+    /* Reduced from 16px to 8px (50%) */
+    font-size: 8px;
     color: var(--slate-grey, #94A3B8);
+    margin: 0;
 }
 
 #user-name {
@@ -206,15 +212,17 @@ WELCOME BANNER - FIXED CONTAINER
 }
 
 /* ============================================
-LANGUAGE FILTER BAR - FIXED
+LANGUAGE FILTER BAR - REDUCED TO 40% SIZE
 ============================================ */
 .language-filter-bar {
     background: rgba(10, 14, 18, 0.6);
     backdrop-filter: blur(10px);
     border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 50px;
-    margin: 20px 0;
-    padding: 10px 20px;
+    border-radius: 30px;
+    /* Reduced from 20px to 8px (40%) */
+    margin: 8px 0;
+    /* Reduced from 10px 20px to 4px 8px (40%) */
+    padding: 4px 8px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -224,36 +232,42 @@ LANGUAGE FILTER BAR - FIXED
 .language-filter-container {
     display: flex;
     align-items: center;
-    gap: 15px;
+    /* Reduced from 15px to 6px (40%) */
+    gap: 6px;
     white-space: nowrap;
 }
 
 .language-filter-container i {
     color: var(--warm-gold, #F59E0B);
-    font-size: 18px;
+    /* Reduced from 18px to 10px (55%) */
+    font-size: 10px;
     flex-shrink: 0;
 }
 
 .language-filter-label {
     color: var(--soft-white, #F8FAFC);
-    font-size: 14px;
+    /* Reduced from 14px to 8px (57%) */
+    font-size: 8px;
     font-weight: 500;
     flex-shrink: 0;
 }
 
 .language-chips {
     display: flex;
-    gap: 8px;
+    /* Reduced from 8px to 4px (50%) */
+    gap: 4px;
     flex-wrap: wrap;
 }
 
 .language-chip {
-    padding: 6px 16px;
+    /* Reduced from 6px 16px to 3px 8px (50%) */
+    padding: 3px 8px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 30px;
+    border-radius: 20px;
     color: var(--slate-grey, #94A3B8);
-    font-size: 13px;
+    /* Reduced from 13px to 8px (61%) */
+    font-size: 8px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -273,19 +287,21 @@ LANGUAGE FILTER BAR - FIXED
 }
 
 .language-chip-more {
-    padding: 6px 16px;
+    /* Reduced from 6px 16px to 3px 8px (50%) */
+    padding: 3px 8px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px dashed var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 30px;
+    border-radius: 20px;
     color: var(--slate-grey, #94A3B8);
-    font-size: 13px;
+    /* Reduced from 13px to 8px (61%) */
+    font-size: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     white-space: nowrap;
 }
 
 /* ============================================
-COMMUNITY STATS BAR - FIXED
+COMMUNITY STATS BAR - REDUCED TO 40% SIZE
 ============================================ */
 .community-stats-bar {
     display: flex;
@@ -293,35 +309,43 @@ COMMUNITY STATS BAR - FIXED
     background: rgba(10, 14, 18, 0.6);
     backdrop-filter: blur(10px);
     border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 60px;
-    margin: 20px 0 30px 0;
-    padding: 15px 20px;
+    /* Reduced from 60px to 24px (40%) */
+    border-radius: 24px;
+    /* Reduced from 20px to 8px (40%) */
+    margin: 8px 0 12px 0;
+    /* Reduced from 15px 20px to 6px 8px (40%) */
+    padding: 6px 8px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     flex-wrap: wrap;
-    gap: 15px;
+    /* Reduced from 15px to 6px (40%) */
+    gap: 6px;
 }
 
 .community-stat {
     display: flex;
     align-items: center;
-    gap: 10px;
+    /* Reduced from 10px to 4px (40%) */
+    gap: 4px;
 }
 
 .community-stat i {
     color: var(--warm-gold, #F59E0B);
-    font-size: 24px;
+    /* Reduced from 24px to 12px (50%) */
+    font-size: 12px;
 }
 
 .community-stat-value {
-    font-size: 20px;
+    /* Reduced from 20px to 10px (50%) */
+    font-size: 10px;
     font-weight: 700;
     color: var(--soft-white, #F8FAFC);
 }
 
 .community-stat-label {
-    font-size: 12px;
+    /* Reduced from 12px to 7px (58%) */
+    font-size: 7px;
     color: var(--slate-grey, #94A3B8);
 }
 
@@ -942,29 +966,73 @@ RESPONSIVE
         gap: 12px;
     }
     
+    /* WELCOME BANNER - TABLET REDUCTION */
     .welcome-banner {
-        padding: 20px;
+        padding: 10px 15px !important;
+        border-radius: 10px !important;
+        margin: 6px 0 10px 0 !important;
     }
     
     .welcome-banner h2 {
-        font-size: 22px;
+        font-size: 12px !important;
+        margin-bottom: 3px !important;
     }
     
+    .welcome-banner p {
+        font-size: 7px !important;
+    }
+    
+    /* LANGUAGE FILTER BAR - TABLET REDUCTION */
+    .language-filter-bar {
+        padding: 3px 6px !important;
+        border-radius: 24px !important;
+        margin: 6px 0 !important;
+    }
+    
+    .language-filter-container {
+        gap: 4px !important;
+    }
+    
+    .language-filter-container i {
+        font-size: 8px !important;
+    }
+    
+    .language-filter-label {
+        font-size: 7px !important;
+    }
+    
+    .language-chip {
+        padding: 2px 6px !important;
+        font-size: 7px !important;
+    }
+    
+    .language-chip-more {
+        padding: 2px 6px !important;
+        font-size: 7px !important;
+    }
+    
+    /* COMMUNITY STATS BAR - TABLET REDUCTION */
     .community-stats-bar {
-        padding: 12px 15px;
-        gap: 12px;
+        padding: 4px 6px !important;
+        border-radius: 20px !important;
+        margin: 6px 0 10px 0 !important;
+        gap: 4px !important;
+    }
+    
+    .community-stat {
+        gap: 3px !important;
     }
     
     .community-stat i {
-        font-size: 18px;
+        font-size: 10px !important;
     }
     
     .community-stat-value {
-        font-size: 16px;
+        font-size: 8px !important;
     }
     
     .community-stat-label {
-        font-size: 10px;
+        font-size: 6px !important;
     }
     
     .wavelet-card {
@@ -1010,6 +1078,77 @@ RESPONSIVE
         gap: 6px;
     }
     
+    /* WELCOME BANNER - PHONE REDUCTION */
+    .welcome-banner {
+        padding: 6px 10px !important;
+        border-radius: 8px !important;
+        margin: 4px 0 6px 0 !important;
+    }
+    
+    .welcome-banner h2 {
+        font-size: 10px !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .welcome-banner p {
+        font-size: 6px !important;
+    }
+    
+    /* LANGUAGE FILTER BAR - PHONE REDUCTION */
+    .language-filter-bar {
+        padding: 2px 4px !important;
+        border-radius: 16px !important;
+        margin: 4px 0 !important;
+    }
+    
+    .language-filter-container {
+        gap: 3px !important;
+    }
+    
+    .language-filter-container i {
+        font-size: 7px !important;
+    }
+    
+    .language-filter-label {
+        display: none !important;
+    }
+    
+    .language-chip {
+        padding: 2px 5px !important;
+        font-size: 6px !important;
+        border-radius: 14px !important;
+    }
+    
+    .language-chip-more {
+        padding: 2px 5px !important;
+        font-size: 6px !important;
+        border-radius: 14px !important;
+    }
+    
+    /* COMMUNITY STATS BAR - PHONE REDUCTION */
+    .community-stats-bar {
+        padding: 3px 4px !important;
+        border-radius: 14px !important;
+        margin: 4px 0 6px 0 !important;
+        gap: 3px !important;
+    }
+    
+    .community-stat {
+        gap: 2px !important;
+    }
+    
+    .community-stat i {
+        font-size: 8px !important;
+    }
+    
+    .community-stat-value {
+        font-size: 7px !important;
+    }
+    
+    .community-stat-label {
+        font-size: 5px !important;
+    }
+    
     .wavelet-card {
         width: 140px;
     }
@@ -1023,10 +1162,6 @@ RESPONSIVE
         width: 40px;
         height: 40px;
         font-size: 16px;
-    }
-    
-    .language-filter-label {
-        display: none;
     }
 }
 
