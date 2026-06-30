@@ -231,17 +231,15 @@
             <div class="header-actions">
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
                 <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
-                <!-- ============================================ -->
-                <!-- SEARCH BUTTON - UPDATED FOR PREMIUM SEARCH -->
-                <!-- ============================================ -->
+                
                 <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
-                    <i class="fas fa-search"></i>
-                    <span class="search-shortcut">⌘K</span>
-                </button>
-                <button id="notifications-btn" class="icon-btn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-                </button>
+    <i class="fas fa-search"></i>
+    <span class="search-shortcut">⌘K</span>
+</button>
+                 <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">
+    <i class="fas fa-bell"></i>
+    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+</button>
                 <div class="profile-switcher">
                     <button id="current-profile-btn" class="profile-btn" title="Profile">
                         <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
@@ -657,79 +655,269 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- PREMIUM GLASSMORPHIC SEARCH MODAL - WITH PROPER BACKDROP BLUR -->
-    <!-- ============================================ -->
-    <div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
-        <!-- This overlay covers everything and provides the blur -->
-        <div class="search-modal-overlay"></div>
-        
-        <!-- Search Modal Content -->
-        <div class="search-modal-content">
-            <!-- Search Modal Header -->
-            <div class="search-modal-header">
-                <div class="search-input-wrapper">
-                    <input 
-                        type="text" 
-                        id="search-input" 
-                        class="search-input" 
-                        placeholder="Search creators, drops, vibes..." 
-                        autocomplete="off"
-                        spellcheck="false"
-                        aria-label="Search input"
-                    />
-                    <button id="voice-search-modal-btn" class="voice-search-modal-btn" aria-label="Voice search">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                </div>
-                <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <!-- Filter Pills Bar -->
-            <div class="search-filter-pills-bar">
-                <!-- Category Filters -->
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">🧬 STEM</button>
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
-                <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">🎬 Movies</button>
-                
-                <!-- Type Filters -->
-                <button class="search-filter-pill" data-filter-group="type" data-filter-value="">All Types</button>
-                <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">🎞️ Video</button>
-                <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">🎵 Audio</button>
-                
-                <!-- Sort Filters -->
-                <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
-                <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
-            </div>
-
-            <!-- Search Results Grid -->
-            <div id="search-results-grid" class="search-results-grid">
-                <!-- Results will be dynamically rendered here -->
-            </div>
+<!-- NOTIFICATIONS PANEL - COMPLETE -->
+<!-- ============================================ -->
+<div id="notifications-panel" class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
+    
+    <!-- Notifications Header -->
+    <div class="notifications-header">
+        <h2>
+            <i class="fas fa-bell" style="color: var(--warm-gold);"></i> 
+            Notifications
+            <span class="notification-count-badge" id="notifications-header-count">0</span>
+        </h2>
+        <div class="notifications-header-actions">
+            <button id="mark-all-read" class="text-btn" title="Mark all as read" style="background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:12px;font-weight:500;padding:6px 12px;border-radius:6px;transition:all 0.3s ease;display:flex;align-items:center;gap:4px;">
+                <i class="fas fa-check-double"></i> Mark all read
+            </button>
+            <button id="close-notifications" class="close-btn" title="Close notifications" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:16px;flex-shrink:0;">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- VOICE SEARCH STATUS OVERLAY -->
-    <!-- ============================================ -->
-    <div id="voice-search-status" class="voice-search-status">
-        <i class="fas fa-microphone-alt"></i>
-        <span id="voice-status-text">Listening...</span>
-        <button id="voice-search-cancel" class="voice-search-cancel" aria-label="Cancel voice search">
-            <i class="fas fa-times"></i>
-        </button>
+    <!-- Notifications List -->
+    <div id="notifications-list" class="notifications-list">
+        <!-- Notifications will be dynamically rendered here -->
+        <div class="empty-notifications">
+            <i class="fas fa-bell-slash"></i>
+            <p>No notifications yet</p>
+            <span>When you get notifications, they'll appear here</span>
+        </div>
     </div>
 
+    <!-- Notifications Footer -->
+    <div class="notifications-footer">
+        <button id="notification-settings" class="text-btn" style="width:100%;background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:13px;font-weight:500;padding:10px;border-radius:8px;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <i class="fas fa-cog"></i> Settings
+        </button>
+    </div>
+</div>
+
     <!-- Modals -->
-    <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>My Personal Analytics</h2><button id="close-analytics" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Watch Time</h3><div class="analytics-value" id="personal-watch-time">0h</div><div class="analytics-trend" id="watch-time-trend">+0%</div></div><div class="analytics-card"><h3>Sessions</h3><div class="analytics-value" id="personal-sessions">0</div><div class="analytics-trend" id="sessions-trend">+0%</div></div><div class="analytics-card"><h3>Return Rate</h3><div class="analytics-value" id="return-rate">0%</div><div class="analytics-trend" id="return-trend">+0%</div></div><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="personal-views">0</div><div class="analytics-trend" id="views-trend">+0%</div></div></div><div class="charts-container"><canvas id="engagement-chart"></canvas></div></div></div></div>
+    <!-- ============================================ -->
+<!-- ANALYTICS MODAL - COMPLETE DASHBOARD -->
+<!-- ============================================ -->
+<div id="analytics-modal" class="analytics-modal" role="dialog" aria-modal="true" aria-label="Analytics Dashboard">
+    <div class="analytics-content">
+        
+        <!-- ======================================== -->
+        <!-- ANALYTICS HEADER -->
+        <!-- ======================================== -->
+        <div class="analytics-header">
+            <h2>
+                <i class="fas fa-chart-line" style="color: var(--warm-gold);"></i> 
+                Analytics Dashboard
+            </h2>
+            <div class="analytics-header-actions">
+                <button id="refresh-analytics" class="icon-btn" title="Refresh Data" aria-label="Refresh analytics data" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:16px;flex-shrink:0;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button id="close-analytics" class="modal-close-btn" aria-label="Close analytics" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:18px;flex-shrink:0;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
 
-    <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h2>Notifications</h2><button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"></div><div class="notifications-footer"><button id="mark-all-read" class="text-btn">Mark all as read</button><button id="notification-settings" class="text-btn">Settings</button></div></div>
+        <!-- ======================================== -->
+        <!-- ANALYTICS BODY -->
+        <!-- ======================================== -->
+        <div class="analytics-body">
+            
+            <!-- ======================================== -->
+            <!-- PERIOD SELECTOR -->
+            <!-- ======================================== -->
+            <div class="analytics-period-selector">
+                <button class="period-btn active" data-period="7d" style="padding:8px 18px;background:linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));border:1px solid var(--warm-gold);border-radius:20px;color:var(--deep-black);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s ease;font-family:'Inter',sans-serif;box-shadow:0 4px 15px rgba(245,158,11,0.3);">📊 Last 7 Days</button>
+                <button class="period-btn" data-period="30d" style="padding:8px 18px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:20px;color:var(--slate-grey);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.3s ease;font-family:'Inter',sans-serif;">📈 Last 30 Days</button>
+                <button class="period-btn" data-period="90d" style="padding:8px 18px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:20px;color:var(--slate-grey);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.3s ease;font-family:'Inter',sans-serif;">📉 Last 90 Days</button>
+                <button class="period-btn" data-period="all" style="padding:8px 18px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:20px;color:var(--slate-grey);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.3s ease;font-family:'Inter',sans-serif;">📅 All Time</button>
+            </div>
 
+            <!-- ======================================== -->
+            <!-- 4 CORE METRICS GRID -->
+            <!-- ======================================== -->
+            <div class="analytics-stats-grid">
+                <!-- Total Views -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--bantu-blue);">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h3>Total Views</h3>
+                    <div class="analytics-value" id="total-views">0</div>
+                    <div class="analytics-trend" id="views-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+
+                <!-- Average Watch Time -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--warm-gold);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Avg. Watch Time</h3>
+                    <div class="analytics-value" id="avg-watch-time">0:00</div>
+                    <div class="analytics-trend" id="watch-time-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+
+                <!-- Engagement Rate -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--success-color);">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3>Engagement Rate</h3>
+                    <div class="analytics-value" id="engagement-rate">0%</div>
+                    <div class="analytics-trend" id="engagement-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+
+                <!-- Total Comments -->
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: #8B5CF6;">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Total Comments</h3>
+                    <div class="analytics-value" id="total-comments">0</div>
+                    <div class="analytics-trend" id="comments-trend">
+                        <i class="fas fa-arrow-up"></i> +0%
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- EXTENDED STATS ROW -->
+            <!-- ======================================== -->
+            <div class="analytics-extended-stats" style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px;padding:16px 20px;background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid var(--card-border);">
+                <div class="extended-stat" style="text-align:center;padding:4px 0;">
+                    <span class="extended-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500;">📦 Total Content</span>
+                    <span class="extended-value" id="total-content" style="font-size:18px;font-weight:700;color:var(--soft-white);">0</span>
+                </div>
+                <div class="extended-stat" style="text-align:center;padding:4px 0;">
+                    <span class="extended-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500;">❤️ Total Likes</span>
+                    <span class="extended-value" id="total-likes" style="font-size:18px;font-weight:700;color:var(--soft-white);">0</span>
+                </div>
+                <div class="extended-stat" style="text-align:center;padding:4px 0;">
+                    <span class="extended-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500;">🔄 Total Shares</span>
+                    <span class="extended-value" id="total-shares" style="font-size:18px;font-weight:700;color:var(--soft-white);">0</span>
+                </div>
+                <div class="extended-stat" style="text-align:center;padding:4px 0;">
+                    <span class="extended-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500;">👤 Unique Viewers</span>
+                    <span class="extended-value" id="unique-viewers" style="font-size:18px;font-weight:700;color:var(--soft-white);">0</span>
+                </div>
+                <div class="extended-stat" style="text-align:center;padding:4px 0;">
+                    <span class="extended-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500;">⏱️ Avg. Session</span>
+                    <span class="extended-value" id="avg-session" style="font-size:18px;font-weight:700;color:var(--soft-white);">0:00</span>
+                </div>
+                <div class="extended-stat" style="text-align:center;padding:4px 0;">
+                    <span class="extended-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500;">📉 Bounce Rate</span>
+                    <span class="extended-value" id="bounce-rate" style="font-size:18px;font-weight:700;color:var(--soft-white);">0%</span>
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- CHART + TOP CONTENT - SIDE BY SIDE -->
+            <!-- ======================================== -->
+            <div class="analytics-chart-top-content-row" style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-bottom:24px;">
+                
+                <!-- Chart Container -->
+                <div class="charts-container" style="background:rgba(255,255,255,0.02);border:1px solid var(--card-border);border-radius:16px;padding:20px;">
+                    <div class="chart-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                        <h3 style="font-size:14px;font-weight:600;color:var(--soft-white);display:flex;align-items:center;gap:8px;"><i class="fas fa-chart-area" style="color: var(--warm-gold);"></i> View Trends</h3>
+                        <div class="chart-controls" style="display:flex;gap:6px;">
+                            <button class="chart-btn active" data-period="7d" style="padding:4px 12px;background:var(--warm-gold);border:1px solid var(--warm-gold);border-radius:12px;color:var(--deep-black);font-size:12px;cursor:pointer;transition:all 0.3s ease;font-weight:600;">7D</button>
+                            <button class="chart-btn" data-period="30d" style="padding:4px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:12px;color:var(--slate-grey);font-size:12px;cursor:pointer;transition:all 0.3s ease;">30D</button>
+                            <button class="chart-btn" data-period="90d" style="padding:4px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:12px;color:var(--slate-grey);font-size:12px;cursor:pointer;transition:all 0.3s ease;">90D</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper" style="width:100%;height:280px;">
+                        <canvas id="analytics-chart" style="width:100% !important;height:100% !important;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Content Section - FIXED ORGANIZATION -->
+                <div class="top-content-section" style="display:flex;flex-direction:column;background:rgba(255,255,255,0.02);border:1px solid var(--card-border);border-radius:16px;padding:20px;min-height:320px;">
+                    <h3 style="font-size:14px;font-weight:600;color:var(--soft-white);margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                        <i class="fas fa-trophy" style="color: var(--warm-gold);"></i> Top Performing Content
+                    </h3>
+                    <div id="top-content-list" class="top-content-list" style="display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;max-height:260px;">
+                        <div class="loading-spinner-small" style="width:32px;height:32px;border:3px solid rgba(255,255,255,0.05);border-top-color:var(--accent-wave);border-radius:50%;animation:spin 0.8s linear infinite;margin:auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- AUDIENCE INSIGHTS -->
+            <!-- ======================================== -->
+            <div class="audience-insights" style="background:rgba(255,255,255,0.02);border:1px solid var(--card-border);border-radius:16px;padding:20px;">
+                <h3 style="font-size:14px;font-weight:600;color:var(--soft-white);margin-bottom:16px;display:flex;align-items:center;gap:8px;"><i class="fas fa-users" style="color: var(--bantu-blue);"></i> Audience Insights</h3>
+                <div class="insights-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+                    <div class="insight-card" style="text-align:center;padding:14px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid var(--card-border);transition:all 0.3s ease;">
+                        <span class="insight-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:500;">🔄 Returning Viewers</span>
+                        <span class="insight-value" id="returning-viewers" style="font-size:22px;font-weight:700;color:var(--soft-white);">0%</span>
+                    </div>
+                    <div class="insight-card" style="text-align:center;padding:14px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid var(--card-border);transition:all 0.3s ease;">
+                        <span class="insight-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:500;">✨ New Viewers</span>
+                        <span class="insight-value" id="new-viewers" style="font-size:22px;font-weight:700;color:var(--soft-white);">0%</span>
+                    </div>
+                    <div class="insight-card" style="text-align:center;padding:14px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid var(--card-border);transition:all 0.3s ease;">
+                        <span class="insight-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:500;">🌙 Peak Time</span>
+                        <span class="insight-value" id="peak-time" style="font-size:22px;font-weight:700;color:var(--soft-white);">--:--</span>
+                    </div>
+                    <div class="insight-card" style="text-align:center;padding:14px 12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid var(--card-border);transition:all 0.3s ease;">
+                        <span class="insight-label" style="display:block;font-size:10px;color:var(--slate-grey);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:500;">📅 Best Day</span>
+                        <span class="insight-value" id="best-day" style="font-size:22px;font-weight:700;color:var(--soft-white);">--</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- END ANALYTICS BODY -->
+        
+    </div>
+</div>
+
+    <!-- ============================================ -->
+<!-- NOTIFICATIONS PANEL - COMPLETE -->
+<!-- ============================================ -->
+<div id="notifications-panel" class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
+    
+    <!-- Notifications Header -->
+    <div class="notifications-header">
+        <h2>
+            <i class="fas fa-bell" style="color: var(--warm-gold);"></i> 
+            Notifications
+            <span class="notification-count-badge" id="notifications-header-count">0</span>
+        </h2>
+        <div class="notifications-header-actions">
+            <button id="mark-all-read" class="text-btn" title="Mark all as read" style="background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:12px;font-weight:500;padding:6px 12px;border-radius:6px;transition:all 0.3s ease;display:flex;align-items:center;gap:4px;">
+                <i class="fas fa-check-double"></i> Mark all read
+            </button>
+            <button id="close-notifications" class="close-btn" title="Close notifications" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:16px;flex-shrink:0;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="notifications-list" class="notifications-list">
+        <!-- Notifications will be dynamically rendered here -->
+        <div class="empty-notifications">
+            <i class="fas fa-bell-slash"></i>
+            <p>No notifications yet</p>
+            <span>When you get notifications, they'll appear here</span>
+        </div>
+    </div>
+
+    <!-- Notifications Footer -->
+    <div class="notifications-footer">
+        <button id="notification-settings" class="text-btn" style="width:100%;background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:13px;font-weight:500;padding:10px;border-radius:8px;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <i class="fas fa-cog"></i> Settings
+        </button>
+    </div>
+</div>
     <div id="theme-selector" class="theme-selector"><button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button><button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button><button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button></div>
 
     <div id="watch-party-modal" class="watch-party-modal"><div class="watch-party-content"><div class="watch-party-header"><h2><i class="fas fa-users"></i> Start a Watch Party</h2><button id="close-watch-party" class="close-btn"><i class="fas fa-times"></i></button></div><div class="watch-party-body"><div class="watch-party-content-selector"><h3>Select Content</h3><div class="watch-party-search"><input type="text" id="watch-party-search" placeholder="Search content..."></div><div class="watch-party-content-list" id="watch-party-content-list"></div></div><div class="watch-party-settings"><h3>Party Settings</h3><div class="setting-item"><label><input type="checkbox" id="party-sync-playback" checked> Sync playback for everyone</label></div><div class="setting-item"><label><input type="checkbox" id="party-chat-enabled" checked> Enable party chat</label></div><div class="setting-item"><label>Invite Friends</label><div class="invite-friends"><input type="text" id="party-invite-email" placeholder="Enter email"><button id="party-invite-btn" class="btn-small">Invite</button></div></div></div></div><div class="watch-party-footer"><button id="start-watch-party" class="primary-btn"><i class="fas fa-play"></i> Start Party</button><button id="copy-party-link" class="secondary-btn"><i class="fas fa-link"></i> Copy Invite Link</button></div></div></div>
