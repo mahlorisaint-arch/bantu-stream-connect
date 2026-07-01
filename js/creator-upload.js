@@ -13,13 +13,19 @@ let uploadStartTime = 0, uploadStartBytes = 0, lastLoadedBytes = 0, lastUpdateTi
 let selectedGenres = [], selectedSAGenres = [], movieTags = [];
 
 // DOM Elements
-const loadingScreen = document.getElementById('loading'), app = document.getElementById('app');
+const loadingScreen = document.getElementById('loading');
+const app = document.getElementById('app');
 const authModal = document.getElementById('auth-modal');
-const publishBtn = document.getElementById('publish-btn'), saveDraftBtn = document.getElementById('save-draft-btn');
-const progressSection = document.getElementById('upload-progress'), progressFill = document.getElementById('progress-fill');
-const progressPercentage = document.getElementById('progress-percentage'), progressText = document.getElementById('progress-text');
-const progressSpeed = document.getElementById('progress-speed'), progressEta = document.getElementById('progress-eta');
-const uploadFormState = document.getElementById('upload-form-state'), processingState = document.getElementById('processing-state');
+const publishBtn = document.getElementById('publish-btn');
+const saveDraftBtn = document.getElementById('save-draft-btn');
+const progressSection = document.getElementById('upload-progress');
+const progressFill = document.getElementById('progress-fill');
+const progressPercentage = document.getElementById('progress-percentage');
+const progressText = document.getElementById('progress-text');
+const progressSpeed = document.getElementById('progress-speed');
+const progressEta = document.getElementById('progress-eta');
+const uploadFormState = document.getElementById('upload-form-state');
+const processingState = document.getElementById('processing-state');
 const successState = document.getElementById('success-state');
 const processingMessage = document.getElementById('processing-message');
 
@@ -135,6 +141,12 @@ function createTagsInput(field, containerId, tagsArray) {
 // ============================================
 async function loadGenresForUpload() {
     try {
+        // Check if supabaseClient is available
+        if (!window.supabaseClient) {
+            console.warn('Supabase client not available for loading genres');
+            return { parentGenres: [], subGenres: [] };
+        }
+        
         const { data: genres, error } = await window.supabaseClient
             .from('genres')
             .select('id, name, slug, parent_genre_id')
@@ -184,6 +196,12 @@ async function loadGenresForUpload() {
 
 async function loadTagsForUpload() {
     try {
+        // Check if supabaseClient is available
+        if (!window.supabaseClient) {
+            console.warn('Supabase client not available for loading tags');
+            return [];
+        }
+        
         const { data: tags, error } = await window.supabaseClient
             .from('tags')
             .select('id, name, tag_type')
@@ -279,20 +297,69 @@ function setupContentFormatToggle() {
 }
 
 // ============================================
-// AUTHENTICATION FUNCTIONS
+// AUTHENTICATION FUNCTIONS - FIXED
 // ============================================
-async function checkAuthentication() {
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (session?.user) {
-        currentSession = session;
-        currentUserId = session.user.id;
-        return session.user;
+async function getSupabaseClient() {
+    // Try to get the client from various sources
+    if (window.supabaseClient && typeof window.supabaseClient.auth !== 'undefined') {
+        return window.supabaseClient;
     }
+    
+    // Try supabaseAuth (from AuthHelper)
+    if (window.supabaseAuth && typeof window.supabaseAuth.auth !== 'undefined') {
+        window.supabaseClient = window.supabaseAuth;
+        return window.supabaseAuth;
+    }
+    
+    // Try window.supabase (from the CDN script)
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+        // Create client if it doesn't exist
+        if (!window.supabaseClient) {
+            window.supabaseClient = window.supabase.createClient(
+                'https://ydnxqnbjoshvxteevemc.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+            );
+        }
+        return window.supabaseClient;
+    }
+    
+    // If still not available, create a new client
+    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        window.supabaseClient = supabase.createClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
+        return window.supabaseClient;
+    }
+    
+    console.error('❌ [CREATOR-UPLOAD] No Supabase client available');
     return null;
 }
 
+async function checkAuthentication() {
+    try {
+        const client = await getSupabaseClient();
+        if (!client) return null;
+        
+        const { data: { session } } = await client.auth.getSession();
+        if (session?.user) {
+            currentSession = session;
+            currentUserId = session.user.id;
+            return session.user;
+        }
+        return null;
+    } catch (error) {
+        console.warn('⚠️ Authentication check failed:', error.message);
+        return null;
+    }
+}
+
 // ============================================
-// INITIALIZATION
+// SETUP FUNCTIONS (These are defined in the section files)
+// ============================================
+
+// ============================================
+// INITIALIZATION - SKELETON FIRST THEN LOAD
 // ============================================
 async function initMusicUploadExtensions() {
     await loadGenresForUpload();
@@ -301,33 +368,232 @@ async function initMusicUploadExtensions() {
 }
 
 async function initialize() {
+    console.log('🚀 Initializing Creator Upload...');
+    
+    // Show skeleton/loading state
     loadingScreen.style.display = 'flex';
     app.style.display = 'none';
     
-    const user = await checkAuthentication();
-    if (!user) authModal.classList.add('active');
+    try {
+        // STEP 1: Get Supabase client first
+        const client = await getSupabaseClient();
+        if (!client) {
+            console.warn('⚠️ Supabase client not available, some features may not work');
+        }
+        
+        // STEP 2: Check authentication
+        const user = await checkAuthentication();
+        if (!user) {
+            // Show auth modal but don't block loading
+            if (authModal) authModal.classList.add('active');
+            console.log('👤 User not authenticated, showing login prompt');
+        } else {
+            console.log('👤 User authenticated:', user.email);
+        }
+        
+        // STEP 3: Setup UI (these functions should be defined in section files)
+        // Check if each function exists before calling
+        if (typeof setupMediaTypeSelector === 'function') {
+            setupMediaTypeSelector();
+        } else {
+            console.warn('⚠️ setupMediaTypeSelector not defined');
+        }
+        
+        if (typeof setupMediaUpload === 'function') {
+            setupMediaUpload();
+        } else {
+            console.warn('⚠️ setupMediaUpload not defined');
+        }
+        
+        if (typeof setupThumbnailUpload === 'function') {
+            setupThumbnailUpload();
+        } else {
+            console.warn('⚠️ setupThumbnailUpload not defined');
+        }
+        
+        if (typeof setupListeners === 'function') {
+            setupListeners();
+        } else {
+            console.warn('⚠️ setupListeners not defined');
+        }
+        
+        if (typeof updateGenreForm === 'function') {
+            updateGenreForm();
+        } else {
+            console.warn('⚠️ updateGenreForm not defined');
+        }
+        
+        if (typeof updateButtonsState === 'function') {
+            updateButtonsState();
+        } else {
+            console.warn('⚠️ updateButtonsState not defined');
+        }
+        
+        if (typeof updateChecklist === 'function') {
+            updateChecklist();
+        } else {
+            console.warn('⚠️ updateChecklist not defined');
+        }
+        
+        if (typeof loadDraftFromLocalStorage === 'function') {
+            loadDraftFromLocalStorage();
+        } else {
+            console.warn('⚠️ loadDraftFromLocalStorage not defined');
+        }
+        
+        // STEP 4: Load music extensions
+        await initMusicUploadExtensions();
+        
+        // STEP 5: Setup profile button for navigation
+        const profileBtn = document.getElementById('profile-btn');
+        if (profileBtn) {
+            const newProfileBtn = profileBtn.cloneNode(true);
+            profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
+            newProfileBtn.addEventListener('click', () => {
+                window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+            });
+        }
+        
+        // STEP 6: Setup back button
+        const backBtn = document.getElementById('back-btn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => window.history.back());
+        }
+        
+        // STEP 7: Setup auth buttons
+        const authLoginBtn = document.getElementById('auth-login-btn');
+        if (authLoginBtn) {
+            authLoginBtn.addEventListener('click', () => {
+                window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+            });
+        }
+        
+        const authCancelBtn = document.getElementById('auth-cancel-btn');
+        if (authCancelBtn) {
+            authCancelBtn.addEventListener('click', () => {
+                if (authModal) authModal.classList.remove('active');
+            });
+        }
+        
+        console.log('✅ Creator Upload initialized successfully');
+        
+    } catch (error) {
+        console.error('❌ Error initializing creator upload:', error);
+        // Show error but don't break the page
+        if (showToast) {
+            showToast('Some features may not work properly. Please refresh the page.', 'warning');
+        }
+    }
     
-    setupMediaTypeSelector();
-    setupMediaUpload();
-    setupThumbnailUpload();
-    setupListeners();
-    updateGenreForm();
-    updateButtonsState();
-    updateChecklist();
-    loadDraftFromLocalStorage();
-    await initMusicUploadExtensions();
-    
+    // Hide loading screen and show app
     loadingScreen.style.display = 'none';
     app.style.display = 'block';
 }
 
-// Initialize the app
-initialize();
+// ============================================
+// GLOBAL FUNCTIONS - These are referenced in HTML
+// ============================================
+window.removeMediaFile = function() {
+    if (typeof removeMediaFile === 'function') {
+        removeMediaFile();
+    } else {
+        selectedMediaFile = null;
+        extractedDuration = null;
+        const fileInfo = document.getElementById('media-file-info');
+        const zoneText = document.getElementById('media-zone-text');
+        const durationDisplay = document.getElementById('duration-display');
+        if (fileInfo) fileInfo.style.display = 'none';
+        if (zoneText) zoneText.textContent = 'Click or drag video/audio files here';
+        if (durationDisplay) durationDisplay.style.display = 'none';
+        if (typeof updateButtonsState === 'function') updateButtonsState();
+        if (typeof updateChecklist === 'function') updateChecklist();
+    }
+};
 
-// Supabase client initialization
+window.openImagePicker = function() {
+    const input = document.getElementById('thumbnail-file-input');
+    if (input) input.click();
+};
+
+window.captureCameraImage = function() {
+    const input = document.getElementById('camera-file-input');
+    if (input) input.click();
+};
+
+window.viewContent = function() {
+    window.location.href = 'content-library.html';
+};
+
+window.shareContent = function() {
+    if (navigator.share) {
+        navigator.share({ title: 'Check out my content on Bantu Stream Connect!', url: window.location.origin });
+    } else {
+        navigator.clipboard.writeText(window.location.origin);
+        if (typeof showToast === 'function') {
+            showToast('Link copied to clipboard', 'success');
+        }
+    }
+};
+
+window.uploadAnother = function() {
+    const form = document.getElementById('upload-form');
+    if (form) form.reset();
+    selectedMediaFile = null;
+    selectedThumbnailFile = null;
+    extractedDuration = null;
+    selectedMood = null;
+    chapters = [];
+    selectedGenres = [];
+    selectedSAGenres = [];
+    movieTags = [];
+    
+    const fileInfo = document.getElementById('media-file-info');
+    const thumbPreview = document.getElementById('thumbnail-preview');
+    const durationDisplay = document.getElementById('duration-display');
+    const successStateEl = document.getElementById('success-state');
+    const formState = document.getElementById('upload-form-state');
+    
+    if (fileInfo) fileInfo.style.display = 'none';
+    if (thumbPreview) thumbPreview.style.display = 'none';
+    if (durationDisplay) durationDisplay.style.display = 'none';
+    if (successStateEl) successStateEl.classList.remove('active');
+    if (formState) formState.style.display = 'block';
+    
+    if (typeof updateGenreForm === 'function') updateGenreForm();
+    if (typeof updateChecklist === 'function') updateChecklist();
+    if (typeof updateButtonsState === 'function') updateButtonsState();
+    
+    if (typeof showToast === 'function') {
+        showToast('Ready for next upload!', 'success');
+    }
+};
+
+window.goToDashboard = function() {
+    window.location.href = 'creator-dashboard.html';
+};
+
+// ============================================
+// Supabase client initialization fallback
+// ============================================
 if (!window.supabaseClient) {
-    window.supabaseClient = supabase.createClient(
-        'https://ydnxqnbjoshvxteevemc.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-    );
+    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        window.supabaseClient = supabase.createClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
+        console.log('🔧 [CREATOR-UPLOAD] Created Supabase client fallback');
+    }
 }
+
+// ============================================
+// START INITIALIZATION
+// ============================================
+// Wait for DOM to be ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    // DOM is already ready, start immediately
+    initialize();
+}
+
+console.log('📦 Creator Upload v2.0 - Loading...');
