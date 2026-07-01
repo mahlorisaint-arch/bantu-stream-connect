@@ -1,0 +1,21 @@
+/* Upload Quality Score Styles */
+.quality-checklist {
+background: rgba(29,78,216,.1);
+border: 1px solid var(--bantu-blue);
+border-radius: 12px; padding: 20px;
+margin: 20px 0;
+}
+.checklist-header {
+display: flex; justify-content: space-between;
+align-items: center; margin-bottom: 15px;
+}
+.checklist-score {
+font-family: 'Orbitron', sans-serif;
+font-size: 18px; color: var(--warm-gold);
+}
+.checklist-item {
+display: flex; align-items: center; gap: 10px;
+margin-bottom: 8px; font-size: 14px; color: var(--slate-grey);
+}
+.checklist-item.completed { color: var(--success-color); }
+.checklist-item i { width: 20px; text-align: center; }
