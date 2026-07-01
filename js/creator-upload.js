@@ -36,8 +36,11 @@ function showToast(message, type = 'error') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
-    document.getElementById('toast-container').appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    const container = document.getElementById('toast-container');
+    if (container) {
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
 }
 
 function formatFileSize(bytes) {
@@ -141,13 +144,13 @@ function createTagsInput(field, containerId, tagsArray) {
 // ============================================
 async function loadGenresForUpload() {
     try {
-        // Check if supabaseClient is available
-        if (!window.supabaseClient) {
+        const client = await getSupabaseClient();
+        if (!client) {
             console.warn('Supabase client not available for loading genres');
             return { parentGenres: [], subGenres: [] };
         }
         
-        const { data: genres, error } = await window.supabaseClient
+        const { data: genres, error } = await client
             .from('genres')
             .select('id, name, slug, parent_genre_id')
             .eq('is_active', true)
@@ -196,13 +199,13 @@ async function loadGenresForUpload() {
 
 async function loadTagsForUpload() {
     try {
-        // Check if supabaseClient is available
-        if (!window.supabaseClient) {
+        const client = await getSupabaseClient();
+        if (!client) {
             console.warn('Supabase client not available for loading tags');
             return [];
         }
         
-        const { data: tags, error } = await window.supabaseClient
+        const { data: tags, error } = await client
             .from('tags')
             .select('id, name, tag_type')
             .eq('is_active', true)
@@ -300,7 +303,7 @@ function setupContentFormatToggle() {
 // AUTHENTICATION FUNCTIONS - FIXED
 // ============================================
 async function getSupabaseClient() {
-    // Try to get the client from various sources
+    // Check if client already exists and is valid
     if (window.supabaseClient && typeof window.supabaseClient.auth !== 'undefined') {
         return window.supabaseClient;
     }
@@ -311,19 +314,17 @@ async function getSupabaseClient() {
         return window.supabaseAuth;
     }
     
-    // Try window.supabase (from the CDN script)
+    // Try window.supabase (from the CDN script) - check if it has createClient
     if (window.supabase && typeof window.supabase.createClient === 'function') {
         // Create client if it doesn't exist
-        if (!window.supabaseClient) {
-            window.supabaseClient = window.supabase.createClient(
-                'https://ydnxqnbjoshvxteevemc.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-            );
-        }
+        window.supabaseClient = window.supabase.createClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
         return window.supabaseClient;
     }
     
-    // If still not available, create a new client
+    // Try to use the global supabase variable (from CDN script)
     if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
         window.supabaseClient = supabase.createClient(
             'https://ydnxqnbjoshvxteevemc.supabase.co',
@@ -339,14 +340,41 @@ async function getSupabaseClient() {
 async function checkAuthentication() {
     try {
         const client = await getSupabaseClient();
-        if (!client) return null;
+        if (!client) {
+            console.warn('⚠️ No Supabase client available for authentication');
+            return null;
+        }
         
-        const { data: { session } } = await client.auth.getSession();
+        // First try to get the session directly
+        const { data: { session }, error: sessionError } = await client.auth.getSession();
+        
+        if (sessionError) {
+            console.warn('⚠️ Session error:', sessionError.message);
+            return null;
+        }
+        
         if (session?.user) {
             currentSession = session;
             currentUserId = session.user.id;
+            console.log('✅ User authenticated:', session.user.email);
             return session.user;
         }
+        
+        // If no session, try to get user directly
+        const { data: { user }, error: userError } = await client.auth.getUser();
+        
+        if (userError) {
+            console.warn('⚠️ User error:', userError.message);
+            return null;
+        }
+        
+        if (user) {
+            currentUserId = user.id;
+            console.log('✅ User authenticated (via getUser):', user.email);
+            return user;
+        }
+        
+        console.log('👤 No authenticated user found');
         return null;
     } catch (error) {
         console.warn('⚠️ Authentication check failed:', error.message);
@@ -379,16 +407,29 @@ async function initialize() {
         const client = await getSupabaseClient();
         if (!client) {
             console.warn('⚠️ Supabase client not available, some features may not work');
+        } else {
+            console.log('✅ Supabase client initialized');
+            
+            // Set the client globally for other functions
+            if (!window.supabaseClient) {
+                window.supabaseClient = client;
+            }
         }
         
         // STEP 2: Check authentication
         const user = await checkAuthentication();
         if (!user) {
             // Show auth modal but don't block loading
-            if (authModal) authModal.classList.add('active');
+            if (authModal) {
+                authModal.classList.add('active');
+            }
             console.log('👤 User not authenticated, showing login prompt');
         } else {
             console.log('👤 User authenticated:', user.email);
+            // Hide auth modal if shown
+            if (authModal) {
+                authModal.classList.remove('active');
+            }
         }
         
         // STEP 3: Setup UI (these functions should be defined in section files)
@@ -450,27 +491,37 @@ async function initialize() {
             const newProfileBtn = profileBtn.cloneNode(true);
             profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
             newProfileBtn.addEventListener('click', () => {
-                window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+                if (currentUserId) {
+                    window.location.href = 'profile.html';
+                } else {
+                    window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+                }
             });
         }
         
         // STEP 6: Setup back button
         const backBtn = document.getElementById('back-btn');
         if (backBtn) {
-            backBtn.addEventListener('click', () => window.history.back());
+            const newBackBtn = backBtn.cloneNode(true);
+            backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+            newBackBtn.addEventListener('click', () => window.history.back());
         }
         
         // STEP 7: Setup auth buttons
         const authLoginBtn = document.getElementById('auth-login-btn');
         if (authLoginBtn) {
-            authLoginBtn.addEventListener('click', () => {
+            const newAuthLoginBtn = authLoginBtn.cloneNode(true);
+            authLoginBtn.parentNode.replaceChild(newAuthLoginBtn, authLoginBtn);
+            newAuthLoginBtn.addEventListener('click', () => {
                 window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
             });
         }
         
         const authCancelBtn = document.getElementById('auth-cancel-btn');
         if (authCancelBtn) {
-            authCancelBtn.addEventListener('click', () => {
+            const newAuthCancelBtn = authCancelBtn.cloneNode(true);
+            authCancelBtn.parentNode.replaceChild(newAuthCancelBtn, authCancelBtn);
+            newAuthCancelBtn.addEventListener('click', () => {
                 if (authModal) authModal.classList.remove('active');
             });
         }
@@ -480,7 +531,7 @@ async function initialize() {
     } catch (error) {
         console.error('❌ Error initializing creator upload:', error);
         // Show error but don't break the page
-        if (showToast) {
+        if (typeof showToast === 'function') {
             showToast('Some features may not work properly. Please refresh the page.', 'warning');
         }
     }
@@ -596,4 +647,4 @@ if (document.readyState === 'loading') {
     initialize();
 }
 
-console.log('📦 Creator Upload v2.0 - Loading...');
+console.log('📦 Creator Upload v2.1 - Loading...');
