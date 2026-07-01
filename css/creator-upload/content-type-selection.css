@@ -1,0 +1,26 @@
+/* Content Type Selection Styles */
+.media-type-selector { display: flex; gap: 12px; margin-bottom: 15px; }
+.media-type-option {
+flex: 1; padding: 12px;
+background: rgba(255,255,255,.05);
+border: 2px solid var(--card-border);
+border-radius: 12px;
+cursor: pointer; transition: all .3s ease;
+text-align: center; font-size: 14px; font-weight: 500;
+}
+.media-type-option:hover { border-color: var(--warm-gold); background: rgba(245,158,11,.05); }
+.media-type-option.selected {
+border-color: var(--warm-gold);
+background: rgba(245,158,11,.1); color: var(--warm-gold);
+}
+.media-type-option i { display: block; font-size: 24px; margin-bottom: 8px; }
+
+.shorts-info-box {
+background: rgba(245,158,11,.1); border: 1px solid var(--warm-gold);
+border-radius: 12px; padding: 15px; margin: 15px 0; display: none;
+}
+.shorts-info-box.active { display: block; }
+.shorts-info-box h4 { color: var(--warm-gold); margin-bottom: 8px; font-size: 16px; }
+.shorts-info-box ul { list-style: none; padding-left: 0; font-size: 14px; color: var(--slate-grey); }
+.shorts-info-box li { margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+.shorts-info-box li i { color: var(--warm-gold); font-size: 12px; }
