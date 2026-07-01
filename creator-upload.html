@@ -109,30 +109,27 @@
             <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
             
             <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
-                <i class="fas fa-search"></i>
-                <span class="search-shortcut">⌘K</span>
-            </button>
+    <i class="fas fa-search"></i>
+    <span class="search-shortcut">⌘K</span>
+</button>
             
             <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">
-                <i class="fas fa-bell"></i>
-                <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-            </button>
+    <i class="fas fa-bell"></i>
+    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+</button>
             
             <div class="profile-switcher">
-                <button id="current-profile-btn" class="profile-btn" title="Profile">
+                <button id="current-profile-btn" class="profile-btn">
                     <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
-                    <span class="profile-name" id="current-profile-name">Guest</span>
-                    <i class="fas fa-chevron-down"></i>
+                    <span class="profile-name" id="current-profile-name">Guest</span><i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="profile-dropdown" id="profile-dropdown">
                     <div class="profile-dropdown-header"><h4>Switch Profile</h4></div>
                     <div class="profile-list" id="profile-list"></div>
-                    <div class="profile-dropdown-footer">
-                        <button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button>
-                    </div>
+                    <div class="profile-dropdown-footer"><button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button></div>
                 </div>
             </div>
-            <div class="rsa-badge" title="Proudly South African"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
+            <div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
         </div>
     </header>
 
@@ -713,29 +710,45 @@
     </div>
 </div>
 
-<!-- ============================================ -->
-<!-- NOTIFICATIONS PANEL - MATCHES INDEX.HTML -->
+ <!-- ============================================ -->
+<!-- NOTIFICATIONS PANEL - COMPLETE -->
 <!-- ============================================ -->
 <div id="notifications-panel" class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
+    
+    <!-- Notifications Header -->
     <div class="notifications-header">
-        <h2><i class="fas fa-bell" style="color: var(--warm-gold);"></i> Notifications <span class="notification-count-badge" id="notifications-header-count">0</span></h2>
+        <h2>
+            <i class="fas fa-bell" style="color: var(--warm-gold);"></i> 
+            Notifications
+            <span class="notification-count-badge" id="notifications-header-count">0</span>
+        </h2>
         <div class="notifications-header-actions">
-            <button id="mark-all-read" class="text-btn" title="Mark all as read"><i class="fas fa-check-double"></i> Mark all read</button>
-            <button id="close-notifications" class="close-btn"><i class="fas fa-times"></i></button>
+            <button id="mark-all-read" class="text-btn" title="Mark all as read" style="background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:12px;font-weight:500;padding:6px 12px;border-radius:6px;transition:all 0.3s ease;display:flex;align-items:center;gap:4px;">
+                <i class="fas fa-check-double"></i> Mark all read
+            </button>
+            <button id="close-notifications" class="close-btn" title="Close notifications" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:16px;flex-shrink:0;">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     </div>
+
+    <!-- Notifications List -->
     <div id="notifications-list" class="notifications-list">
+        <!-- Notifications will be dynamically rendered here -->
         <div class="empty-notifications">
             <i class="fas fa-bell-slash"></i>
             <p>No notifications yet</p>
             <span>When you get notifications, they'll appear here</span>
         </div>
     </div>
+
+    <!-- Notifications Footer -->
     <div class="notifications-footer">
-        <button id="notification-settings" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+        <button id="notification-settings" class="text-btn" style="width:100%;background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:13px;font-weight:500;padding:10px;border-radius:8px;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <i class="fas fa-cog"></i> Settings
+        </button>
     </div>
 </div>
-
 <!-- ============================================ -->
 <!-- THEME SELECTOR -->
 <!-- ============================================ -->
