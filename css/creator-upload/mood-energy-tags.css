@@ -1,0 +1,32 @@
+/* Mood & Energy Tags Styles */
+.mood-tags-section {
+margin: 20px 0;
+padding: 20px;
+background: rgba(29,78,216,.1);
+border: 1px solid var(--bantu-blue);
+border-radius: 12px;
+display: none;
+}
+.mood-tags-section.active { display: block; }
+.mood-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+gap: 10px;
+margin-top: 15px;
+}
+.mood-option {
+padding: 10px;
+background: rgba(255,255,255,.05);
+border: 1px solid var(--card-border);
+border-radius: 10px;
+text-align: center;
+cursor: pointer;
+transition: all .2s ease;
+font-size: 14px;
+}
+.mood-option:hover { background: rgba(245,158,11,.1); border-color: var(--warm-gold); }
+.mood-option.selected {
+background: var(--warm-gold);
+color: var(--deep-black);
+border-color: var(--warm-gold);
+}
