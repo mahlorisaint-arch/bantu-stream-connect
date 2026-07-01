@@ -1,0 +1,20 @@
+/* Genre-Specific Dynamic Forms Styles */
+.dynamic-fields-container {
+background: rgba(0,0,0,0.2);
+border-radius: 16px;
+padding: 20px;
+margin: 20px 0;
+border: 1px solid var(--card-border);
+display: none;
+}
+.dynamic-fields-container.active { display: block; }
+.dynamic-fields-title {
+font-size: 18px;
+font-weight: 600;
+margin-bottom: 20px;
+color: var(--warm-gold);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.dynamic-fields-title i { font-size: 20px; }
