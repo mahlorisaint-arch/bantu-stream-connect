@@ -254,17 +254,14 @@ function setupListeners() {
         });
     }
     
-    const notificationsBtn = document.getElementById('notifications-btn');
-    const notificationsPanel = document.getElementById('notifications-panel');
-    const closeNotifications = document.getElementById('close-notifications');
-    
-    if (notificationsBtn && notificationsPanel) {
-        notificationsBtn.addEventListener('click', () => notificationsPanel.classList.toggle('active'));
-    }
-    
-    if (closeNotifications && notificationsPanel) {
-        closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
-    }
+    // ============================================
+    // NOTIFICATIONS - REMOVED because shared-components.js handles it globally
+    // The notifications button and panel are managed by shared-components.js
+    // ============================================
+    // The following code has been removed to prevent conflicts with shared-components.js:
+    // - notificationsBtn click handler
+    // - closeNotifications click handler
+    // These are now handled by the global shared-components.js
 }
 
 // Make functions globally available
