@@ -15,11 +15,6 @@
     })();
 </script>
 
-<!-- Preload Critical Resources -->
-<link rel="preload" href="css/creator-upload.css" as="style">
-<link rel="preload" href="css/shared-components.css" as="style">
-<link rel="preload" href="css/creator-upload/modals.css" as="style">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -85,16 +80,6 @@
 <div id="loading" class="loading-screen">
     <div class="spinner"></div>
     <div id="loading-text">Loading Creator Upload...</div>
-</div>
-
-<!-- ============================================ -->
-<!-- ANIMATED BACKGROUND -->
-<!-- ============================================ -->
-<div class="animated-bg">
-    <div class="glow-cycle glow-1"></div>
-    <div class="glow-cycle glow-2"></div>
-    <div class="glow-cycle glow-3"></div>
-    <div class="glow-cycle glow-4"></div>
 </div>
 
 <!-- ============================================ -->
@@ -469,7 +454,7 @@
         <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
     </div>
     
-    <!-- UPDATED SIDEBAR NAVIGATION - Matches index.html structure -->
+    <!-- SIDEBAR NAVIGATION - Matches index.html -->
     <nav class="sidebar-nav">
         <!-- MAIN NAVIGATION -->
         <div class="sidebar-section" data-section="main">
@@ -556,7 +541,7 @@
         </div>
     </nav>
     
-    <!-- Enhanced Sidebar Footer with Creator Mode Toggle -->
+    <!-- Sidebar Footer -->
     <div class="sidebar-footer" id="sidebar-footer">
         <!-- Creator Mode Toggle -->
         <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
@@ -591,7 +576,7 @@
 </div>
 
 <!-- ============================================ -->
-<!-- PREMIUM GLASSMORPHIC SEARCH MODAL - MATCHES INDEX.HTML -->
+<!-- SEARCH MODAL - MATCHES INDEX.HTML -->
 <!-- ============================================ -->
 <div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
     <div class="search-modal-overlay"></div>
@@ -765,15 +750,10 @@
 <!-- JAVASCRIPT FILES -->
 <!-- ============================================ -->
 
-<!-- 1. Core Utilities -->
-<script src="env.js"></script>
-<script src="js/rate-limiter.js"></script>
-<script src="js/image-fix.js"></script>
-
-<!-- 2. Global Shared Components -->
+<!-- 1. Global Shared Components -->
 <script src="js/shared-components.js"></script>
 
-<!-- 3. Creator Upload Section JS Files -->
+<!-- 2. Creator Upload Section JS Files -->
 <script src="js/creator-upload/content-type-selection.js"></script>
 <script src="js/creator-upload/core-content-metadata.js"></script>
 <script src="js/creator-upload/genre-specific-dynamic-forms.js"></script>
@@ -787,132 +767,8 @@
 <script src="js/creator-upload/upload-management-workflow.js"></script>
 <script src="js/creator-upload/post-upload-actions.js"></script>
 
-<!-- 4. Main Creator Upload JS -->
+<!-- 3. Main Creator Upload JS -->
 <script src="js/creator-upload.js"></script>
-
-<!-- ============================================ -->
-<!-- FORCE PROFILE UPDATE AFTER PAGE LOAD -->
-<!-- ============================================ -->
-<script>
-(function() {
-    // Function to update all profile displays
-    async function updateAllProfiles() {
-        console.log('🔄 Updating all profile displays...');
-        
-        if (window.supabaseAuth) {
-            try {
-                const { data: { session } } = await window.supabaseAuth.auth.getSession();
-                const user = session?.user;
-                
-                if (user) {
-                    console.log('👤 User found:', user.email);
-                    
-                    const { data: profile } = await window.supabaseAuth
-                        .from('user_profiles')
-                        .select('full_name, username, avatar_url')
-                        .eq('id', user.id)
-                        .single();
-                    
-                    const displayName = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User';
-                    const initials = displayName.charAt(0).toUpperCase();
-                    
-                    // Update header profile
-                    const headerProfileImg = document.querySelector('#userProfilePlaceholder');
-                    const headerProfileName = document.querySelector('#current-profile-name');
-                    
-                    if (headerProfileName) headerProfileName.textContent = displayName;
-                    
-                    if (headerProfileImg) {
-                        headerProfileImg.innerHTML = '';
-                        if (profile?.avatar_url) {
-                            const img = document.createElement('img');
-                            img.src = profile.avatar_url;
-                            img.alt = displayName;
-                            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-                            img.onerror = () => {
-                                headerProfileImg.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
-                            };
-                            headerProfileImg.appendChild(img);
-                        } else {
-                            headerProfileImg.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
-                        }
-                    }
-                    
-                    // Update sidebar profile
-                    const sidebarAvatar = document.querySelector('#sidebar-profile-avatar');
-                    const sidebarName = document.querySelector('#sidebar-profile-name');
-                    const sidebarEmail = document.querySelector('#sidebar-profile-email');
-                    
-                    if (sidebarName) sidebarName.textContent = displayName;
-                    if (sidebarEmail) sidebarEmail.textContent = user.email || 'Logged in';
-                    
-                    if (sidebarAvatar) {
-                        sidebarAvatar.innerHTML = '';
-                        if (profile?.avatar_url) {
-                            const img = document.createElement('img');
-                            img.src = profile.avatar_url;
-                            img.alt = displayName;
-                            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-                            img.onerror = () => {
-                                sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:white;">${initials}</span>`;
-                            };
-                            sidebarAvatar.appendChild(img);
-                        } else {
-                            sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:white;">${initials}</span>`;
-                        }
-                    }
-                    
-                    console.log('✅ Profile updated for:', displayName);
-                } else {
-                    console.log('👤 No user logged in - showing guest mode');
-                    
-                    // Set guest mode
-                    const headerProfileName = document.querySelector('#current-profile-name');
-                    if (headerProfileName) headerProfileName.textContent = 'Guest';
-                    
-                    const headerProfileImg = document.querySelector('#userProfilePlaceholder');
-                    if (headerProfileImg) {
-                        headerProfileImg.innerHTML = '<i class="fas fa-user"></i>';
-                    }
-                    
-                    const sidebarName = document.querySelector('#sidebar-profile-name');
-                    if (sidebarName) sidebarName.textContent = 'Guest';
-                    
-                    const sidebarEmail = document.querySelector('#sidebar-profile-email');
-                    if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
-                    
-                    const sidebarAvatar = document.querySelector('#sidebar-profile-avatar');
-                    if (sidebarAvatar) {
-                        sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
-                    }
-                }
-            } catch (err) {
-                console.error('Profile update error:', err);
-            }
-        }
-    }
-    
-    // Run on page load
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(updateAllProfiles, 500);
-        });
-    } else {
-        setTimeout(updateAllProfiles, 500);
-    }
-    
-    // Listen for auth state changes
-    if (window.supabaseAuth) {
-        window.supabaseAuth.auth.onAuthStateChange(() => {
-            console.log('🔐 Auth state changed, updating profiles...');
-            setTimeout(updateAllProfiles, 500);
-        });
-    }
-    
-    document.addEventListener('authReady', updateAllProfiles);
-    document.addEventListener('profileUpdated', updateAllProfiles);
-})();
-</script>
 
 </body>
 </html>
