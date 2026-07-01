@@ -543,7 +543,6 @@
     
     <!-- Sidebar Footer -->
     <div class="sidebar-footer" id="sidebar-footer">
-        <!-- Creator Mode Toggle -->
         <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
             <label class="toggle-switch">
                 <input type="checkbox" id="creatorModeSwitch">
@@ -749,6 +748,39 @@
 <!-- ============================================ -->
 <!-- JAVASCRIPT FILES -->
 <!-- ============================================ -->
+
+<!-- IMPORTANT: Supabase client MUST be initialized first -->
+<script>
+// Initialize Supabase client BEFORE any other scripts
+(function() {
+    console.log('🔧 Initializing Supabase client for creator-upload...');
+    
+    // Check if supabase is available from CDN
+    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        window.supabaseClient = supabase.createClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
+        console.log('✅ Supabase client initialized successfully');
+        
+        // Also set as supabaseAuth for shared-components compatibility
+        window.supabaseAuth = window.supabaseClient;
+    } else {
+        console.warn('⚠️ Supabase library not loaded, will retry...');
+        // Retry after a short delay
+        setTimeout(function() {
+            if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+                window.supabaseClient = supabase.createClient(
+                    'https://ydnxqnbjoshvxteevemc.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+                );
+                window.supabaseAuth = window.supabaseClient;
+                console.log('✅ Supabase client initialized successfully (retry)');
+            }
+        }, 500);
+    }
+})();
+</script>
 
 <!-- 1. Global Shared Components -->
 <script src="js/shared-components.js"></script>
