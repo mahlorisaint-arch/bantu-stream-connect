@@ -1,0 +1,45 @@
+/* News Article Features Styles */
+#news-fields {
+background: rgba(29, 78, 216, 0.1);
+border: 1px solid var(--bantu-blue);
+border-radius: 16px;
+padding: 20px;
+margin: 20px 0;
+display: none;
+}
+#news-fields.active { display: block; }
+.news-fields-title {
+font-size: 18px;
+font-weight: 600;
+margin-bottom: 20px;
+color: var(--warm-gold);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.news-fields-title i { font-size: 20px; }
+#news-fields .form-group { margin-bottom: 20px; }
+#article-body {
+min-height: 200px;
+resize: vertical;
+font-family: 'Inter', sans-serif;
+}
+.breaking-news-toggle {
+display: flex;
+align-items: center;
+gap: 10px;
+margin: 15px 0;
+}
+.breaking-news-toggle input[type="checkbox"] {
+width: 20px;
+height: 20px;
+accent-color: var(--error-color);
+}
+.read-time-input {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.read-time-input input {
+max-width: 100px;
+}
