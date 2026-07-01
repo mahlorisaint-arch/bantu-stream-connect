@@ -2,32 +2,65 @@
 // CORE CONTENT METADATA FUNCTIONS
 // ============================================
 function updateButtonsState() {
-    const title = document.getElementById('content-title').value.trim();
-    const desc = document.getElementById('content-description').value.trim();
-    const genre = document.getElementById('content-genre').value;
+    const title = document.getElementById('content-title');
+    const desc = document.getElementById('content-description');
+    const genre = document.getElementById('content-genre');
+    
+    const titleVal = title ? title.value.trim() : '';
+    const descVal = desc ? desc.value.trim() : '';
+    const genreVal = genre ? genre.value : '';
+    
     const isNews = selectedMediaType === 'news';
     const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
     const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
-    const metadataValid = isNews ? true : validateGenreMetadata();
     
-    saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-    publishBtn.disabled = !title || !desc || (!isNews && !selectedMediaFile) || isUploading || !currentUserId || !hasRequiredDuration || !genre || !metadataValid;
+    // Safely check if validateGenreMetadata exists
+    let metadataValid = true;
+    if (typeof validateGenreMetadata === 'function') {
+        metadataValid = isNews ? true : validateGenreMetadata();
+    }
+    
+    if (saveDraftBtn) {
+        saveDraftBtn.disabled = !titleVal || isUploading || !currentUserId;
+    }
+    
+    if (publishBtn) {
+        publishBtn.disabled = !titleVal || !descVal || (!isNews && !selectedMediaFile) || isUploading || !currentUserId || !hasRequiredDuration || !genreVal || !metadataValid;
+    }
     
     if (isUploading) {
-        publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-        saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        if (publishBtn) {
+            publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+        }
+        if (saveDraftBtn) {
+            saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
     } else {
-        publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
-        saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+        if (publishBtn) {
+            publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
+        }
+        if (saveDraftBtn) {
+            saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+        }
     }
 }
 
 function saveDraftToLocalStorage() {
     if (!currentUserId) return;
+    
+    const title = document.getElementById('content-title');
+    const desc = document.getElementById('content-description');
+    const genre = document.getElementById('content-genre');
+    const newsSource = document.getElementById('news-source');
+    const newsCategory = document.getElementById('news-category');
+    const readTime = document.getElementById('read-time');
+    const isBreaking = document.getElementById('is-breaking');
+    const articleBody = document.getElementById('article-body');
+    
     const draft = {
-        title: document.getElementById('content-title').value,
-        description: document.getElementById('content-description').value,
-        genre: document.getElementById('content-genre').value,
+        title: title ? title.value : '',
+        description: desc ? desc.value : '',
+        genre: genre ? genre.value : '',
         mediaType: selectedMediaType,
         hasMedia: !!selectedMediaFile,
         mediaName: selectedMediaFile?.name || null,
@@ -37,11 +70,11 @@ function saveDraftToLocalStorage() {
         selectedGenres: [...selectedGenres],
         selectedSAGenres: [...selectedSAGenres],
         movieTags: [...movieTags],
-        newsSource: document.getElementById('news-source')?.value || '',
-        newsCategory: document.getElementById('news-category')?.value || '',
-        readTime: document.getElementById('read-time')?.value || '3',
-        isBreaking: document.getElementById('is-breaking')?.checked || false,
-        articleBody: document.getElementById('article-body')?.value || ''
+        newsSource: newsSource ? newsSource.value : '',
+        newsCategory: newsCategory ? newsCategory.value : '',
+        readTime: readTime ? readTime.value : '3',
+        isBreaking: isBreaking ? isBreaking.checked : false,
+        articleBody: articleBody ? articleBody.value : ''
     };
     localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
 }
@@ -50,74 +83,137 @@ function loadDraftFromLocalStorage() {
     if (!currentUserId) return;
     const draftStr = localStorage.getItem(`draft_${currentUserId}`);
     if (draftStr) {
-        const draft = JSON.parse(draftStr);
-        document.getElementById('content-title').value = draft.title || '';
-        document.getElementById('content-description').value = draft.description || '';
-        if (draft.genre) {
-            document.getElementById('content-genre').value = draft.genre;
-            updateGenreForm();
+        try {
+            const draft = JSON.parse(draftStr);
+            const title = document.getElementById('content-title');
+            const desc = document.getElementById('content-description');
+            const genre = document.getElementById('content-genre');
+            
+            if (title) title.value = draft.title || '';
+            if (desc) desc.value = draft.description || '';
+            if (draft.genre && genre) {
+                genre.value = draft.genre;
+                if (typeof updateGenreForm === 'function') updateGenreForm();
+            }
+            if (draft.selectedMood) {
+                const moodEl = document.querySelector(`.mood-option[data-mood="${draft.selectedMood}"]`);
+                if (moodEl) moodEl.click();
+            }
+            if (draft.chapters) {
+                chapters = draft.chapters;
+                if (typeof renderChaptersList === 'function') renderChaptersList();
+            }
+            if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
+            if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
+            if (draft.movieTags) movieTags = [...draft.movieTags];
+            
+            const newsSource = document.getElementById('news-source');
+            const newsCategory = document.getElementById('news-category');
+            const readTime = document.getElementById('read-time');
+            const isBreaking = document.getElementById('is-breaking');
+            const articleBody = document.getElementById('article-body');
+            
+            if (newsSource) newsSource.value = draft.newsSource || '';
+            if (newsCategory) newsCategory.value = draft.newsCategory || '';
+            if (readTime) readTime.value = draft.readTime || '3';
+            if (isBreaking) isBreaking.checked = draft.isBreaking || false;
+            if (articleBody) articleBody.value = draft.articleBody || '';
+            
+            if (typeof updateChecklist === 'function') updateChecklist();
+            if (typeof updateButtonsState === 'function') updateButtonsState();
+            if (draft.hasMedia && typeof showToast === 'function') {
+                showToast(`Draft recovered: ${draft.mediaName}`, 'success');
+            }
+        } catch (e) {
+            console.warn('Failed to load draft:', e);
         }
-        if (draft.selectedMood) {
-            const moodEl = document.querySelector(`.mood-option[data-mood="${draft.selectedMood}"]`);
-            if (moodEl) moodEl.click();
-        }
-        if (draft.chapters) {
-            chapters = draft.chapters;
-            renderChaptersList();
-        }
-        if (draft.selectedGenres) selectedGenres = [...draft.selectedGenres];
-        if (draft.selectedSAGenres) selectedSAGenres = [...draft.selectedSAGenres];
-        if (draft.movieTags) movieTags = [...draft.movieTags];
-        if (draft.newsSource) document.getElementById('news-source').value = draft.newsSource;
-        if (draft.newsCategory) document.getElementById('news-category').value = draft.newsCategory;
-        if (draft.readTime) document.getElementById('read-time').value = draft.readTime;
-        if (draft.isBreaking) document.getElementById('is-breaking').checked = draft.isBreaking;
-        if (draft.articleBody) document.getElementById('article-body').value = draft.articleBody;
-        updateChecklist();
-        updateButtonsState();
-        if (draft.hasMedia) showToast(`Draft recovered: ${draft.mediaName}`, 'success');
     }
 }
 
 function setupListeners() {
-    document.getElementById('upload-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!isUploading) {
-            await uploadContent(false);
-        }
-    });
+    const form = document.getElementById('upload-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isUploading && typeof uploadContent === 'function') {
+                await uploadContent(false);
+            }
+        });
+    }
     
-    document.getElementById('save-draft-btn').addEventListener('click', () => {
-        if (!isUploading) uploadContent(true);
-    });
+    const saveDraftBtnEl = document.getElementById('save-draft-btn');
+    if (saveDraftBtnEl) {
+        saveDraftBtnEl.addEventListener('click', () => {
+            if (!isUploading && typeof uploadContent === 'function') uploadContent(true);
+        });
+    }
     
-    ['content-title', 'content-description'].forEach(id => {
-        document.getElementById(id).addEventListener('input', () => {
-            updateButtonsState();
-            updateChecklist();
+    const titleInput = document.getElementById('content-title');
+    const descInput = document.getElementById('content-description');
+    
+    if (titleInput) {
+        titleInput.addEventListener('input', () => {
+            if (typeof updateButtonsState === 'function') updateButtonsState();
+            if (typeof updateChecklist === 'function') updateChecklist();
             saveDraftToLocalStorage();
         });
-    });
+    }
     
-    document.getElementById('content-genre').addEventListener('change', () => {
-        selectedGenres = [];
-        selectedSAGenres = [];
-        movieTags = [];
-        updateGenreForm();
-        updateButtonsState();
-        updateChecklist();
-        saveDraftToLocalStorage();
-    });
+    if (descInput) {
+        descInput.addEventListener('input', () => {
+            if (typeof updateButtonsState === 'function') updateButtonsState();
+            if (typeof updateChecklist === 'function') updateChecklist();
+            saveDraftToLocalStorage();
+        });
+    }
     
-    document.getElementById('auth-login-btn').addEventListener('click', () => {
-        window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-    });
+    const genreSelect = document.getElementById('content-genre');
+    if (genreSelect) {
+        genreSelect.addEventListener('change', () => {
+            selectedGenres = [];
+            selectedSAGenres = [];
+            movieTags = [];
+            if (typeof updateGenreForm === 'function') updateGenreForm();
+            if (typeof updateButtonsState === 'function') updateButtonsState();
+            if (typeof updateChecklist === 'function') updateChecklist();
+            saveDraftToLocalStorage();
+        });
+    }
     
-    document.getElementById('auth-cancel-btn').addEventListener('click', () => authModal.classList.remove('active'));
-    document.getElementById('back-btn').addEventListener('click', () => window.history.back());
-    document.getElementById('profile-btn').addEventListener('click', () => {
-        window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-    });
+    const authLoginBtn = document.getElementById('auth-login-btn');
+    if (authLoginBtn) {
+        const newBtn = authLoginBtn.cloneNode(true);
+        authLoginBtn.parentNode.replaceChild(newBtn, authLoginBtn);
+        newBtn.addEventListener('click', () => {
+            window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+        });
+    }
+    
+    const authCancelBtn = document.getElementById('auth-cancel-btn');
+    if (authCancelBtn) {
+        const newBtn = authCancelBtn.cloneNode(true);
+        authCancelBtn.parentNode.replaceChild(newBtn, authCancelBtn);
+        newBtn.addEventListener('click', () => {
+            const modal = document.getElementById('auth-modal');
+            if (modal) modal.classList.remove('active');
+        });
+    }
+    
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+        const newBtn = backBtn.cloneNode(true);
+        backBtn.parentNode.replaceChild(newBtn, backBtn);
+        newBtn.addEventListener('click', () => window.history.back());
+    }
+    
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) {
+        const newBtn = profileBtn.cloneNode(true);
+        profileBtn.parentNode.replaceChild(newBtn, profileBtn);
+        newBtn.addEventListener('click', () => {
+            window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+        });
+    }
     
     document.querySelectorAll('.mood-option').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -130,8 +226,8 @@ function setupListeners() {
     
     document.addEventListener('change', (e) => {
         if (e.target.id && e.target.id.startsWith('field-')) {
-            updateButtonsState();
-            updateChecklist();
+            if (typeof updateButtonsState === 'function') updateButtonsState();
+            if (typeof updateChecklist === 'function') updateChecklist();
             saveDraftToLocalStorage();
         }
     });
@@ -139,17 +235,40 @@ function setupListeners() {
     const searchBtn = document.getElementById('search-btn');
     const searchModal = document.getElementById('search-modal');
     const closeSearchBtn = document.getElementById('close-search-btn');
+    
     if (searchBtn && searchModal) {
-        searchBtn.addEventListener('click', () => searchModal.classList.add('active'));
+        searchBtn.addEventListener('click', () => {
+            searchModal.classList.add('active');
+            const input = document.getElementById('search-input');
+            if (input) setTimeout(() => input.focus(), 100);
+        });
+    }
+    
+    if (closeSearchBtn && searchModal) {
         closeSearchBtn.addEventListener('click', () => searchModal.classList.remove('active'));
-        searchModal.addEventListener('click', (e) => { if (e.target === searchModal) searchModal.classList.remove('active'); });
+    }
+    
+    if (searchModal) {
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal) searchModal.classList.remove('active');
+        });
     }
     
     const notificationsBtn = document.getElementById('notifications-btn');
     const notificationsPanel = document.getElementById('notifications-panel');
     const closeNotifications = document.getElementById('close-notifications');
+    
     if (notificationsBtn && notificationsPanel) {
-        notificationsBtn.addEventListener('click', () => notificationsPanel.classList.add('active'));
+        notificationsBtn.addEventListener('click', () => notificationsPanel.classList.toggle('active'));
+    }
+    
+    if (closeNotifications && notificationsPanel) {
         closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
     }
 }
+
+// Make functions globally available
+window.saveDraftToLocalStorage = saveDraftToLocalStorage;
+window.loadDraftFromLocalStorage = loadDraftFromLocalStorage;
+window.updateButtonsState = updateButtonsState;
+window.setupListeners = setupListeners;
