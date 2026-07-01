@@ -1,0 +1,34 @@
+/* Media File Upload & Processing Styles */
+.upload-zone {
+border: 2px dashed rgba(255,255,255,.3);
+border-radius: 16px; padding: 40px 20px;
+text-align: center; cursor: pointer;
+transition: all .3s ease; margin-bottom: 20px;
+background: rgba(255,255,255,.05);
+}
+.upload-zone:hover { border-color: var(--warm-gold); background: rgba(245,158,11,.05); }
+.upload-zone-icon { font-size: 48px; color: var(--warm-gold); margin-bottom: 15px; }
+.upload-zone-text { font-size: 16px; color: var(--slate-grey); margin-bottom: 10px; }
+.upload-zone-hint { font-size: 14px; color: rgba(255,255,255,.5); }
+.duration-display {
+display: flex; align-items: center; justify-content: center;
+gap: 10px; margin: 15px 0; font-size: 14px; color: var(--slate-grey);
+padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.2);
+}
+.duration-display.valid { color: var(--success-color); border: 1px solid var(--success-color); }
+.duration-display.invalid { color: var(--error-color); border: 1px solid var(--error-color); }
+.duration-badge {
+background: var(--warm-gold); color: var(--deep-black);
+padding: 4px 12px; border-radius: 20px;
+font-weight: 600; font-size: 12px; margin-left: 10px;
+}
+.file-info {
+display: flex; align-items: center; gap: 15px;
+padding: 15px; background: rgba(255,255,255,.05);
+border-radius: 12px; margin-top: 10px;
+border: 1px solid var(--card-border); display: none;
+}
+.file-icon { font-size: 24px; color: var(--warm-gold); }
+.file-name { font-weight: 600; margin-bottom: 5px; color: var(--soft-white); }
+.file-size { font-size: 14px; color: var(--slate-grey); }
+.file-remove { color: var(--error-color); cursor: pointer; font-size: 20px; }
