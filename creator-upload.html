@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Upload Content - Bantu Stream Connect</title>
+
+<!-- Apply saved theme BEFORE page renders -->
+<script>
+    (function() {
+        const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+        document.documentElement.classList.add(`theme-${savedTheme}`);
+        const savedScale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+        document.documentElement.style.setProperty('--ui-scale', savedScale);
+    })();
+</script>
+
+<!-- Preload Critical Resources -->
+<link rel="preload" href="css/creator-upload.css" as="style">
+<link rel="preload" href="css/shared-components.css" as="style">
+<link rel="preload" href="css/creator-upload/modals.css" as="style">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,9 +27,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
 
-<!-- ============================================ -->
-<!-- CSS FILES - EXTRACTED FROM ORIGINAL -->
-<!-- ============================================ -->
+<!-- Core CSS -->
+<link rel="stylesheet" href="css/shared-components.css">
+<link rel="stylesheet" href="css/creator-upload/modals.css">
+
+<!-- Creator Upload CSS Files -->
 <link rel="stylesheet" href="css/creator-upload.css">
 <link rel="stylesheet" href="css/creator-upload/content-type-selection.css">
 <link rel="stylesheet" href="css/creator-upload/core-content-metadata.css">
@@ -27,570 +45,735 @@
 <link rel="stylesheet" href="css/creator-upload/upload-quality-score.css">
 <link rel="stylesheet" href="css/creator-upload/upload-management-workflow.css">
 <link rel="stylesheet" href="css/creator-upload/post-upload-actions.css">
-<link rel="stylesheet" href="css/creator-upload/modals.css">
-<link rel="stylesheet" href="css/shared-components.css">
 
 <style>
-/* ============================================ */
-/* CREATOR UPLOAD - ADDITIONAL STYLES */
-/* These styles were extracted to the main CSS files above */
-/* The :root variables and remaining styles are now in css/creator-upload.css */
-/* ============================================ */
+/* Critical CSS for skeleton loading */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0A0E12;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(245, 158, 11, 0.2);
+    border-top-color: #F59E0B;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+#app { opacity: 0; animation: fadeIn 0.3s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
 </head>
 <body>
+
+<!-- ============================================ -->
+<!-- LOADING SCREEN -->
+<!-- ============================================ -->
 <div id="loading" class="loading-screen">
-<div class="spinner"></div>
-<div id="loading-text">Loading Creator Upload...</div>
+    <div class="spinner"></div>
+    <div id="loading-text">Loading Creator Upload...</div>
 </div>
 
 <!-- ============================================ -->
-<!-- AUTH MODAL -->
+<!-- ANIMATED BACKGROUND -->
 <!-- ============================================ -->
-<div id="auth-modal" class="auth-modal">
-<div class="auth-content">
-<div style="font-size:64px;color:var(--warm-gold);margin-bottom:20px"><i class="fas fa-lock"></i></div>
-<h2 style="font-family:'Orbitron',sans-serif;font-size:24px;margin-bottom:15px;color:var(--soft-white)">Authentication Required</h2>
-<p style="color:var(--slate-grey);margin-bottom:30px;line-height:1.6">You need to be logged in to upload content. Please sign in to share your content with the community.</p>
-<div style="display:flex;gap:15px">
-<button id="auth-login-btn" style="flex:1;padding:15px;border-radius:12px;font-size:16px;font-weight:600;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:var(--soft-white);border:none">Log In</button>
-<button id="auth-cancel-btn" style="flex:1;padding:15px;border-radius:12px;font-size:16px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--card-border);color:var(--soft-white)">Cancel</button>
-</div>
-</div>
-</div>
-
-<!-- ============================================ -->
-<!-- SEARCH MODAL - PREMIUM GLASSMORPHIC -->
-<!-- ============================================ -->
-<div id="search-modal" class="search-modal">
-<div class="search-modal-overlay"></div>
-<div class="search-modal-content">
-<div class="search-modal-header">
-<div class="search-input-wrapper">
-<i class="search-icon fas fa-search"></i>
-<input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-<button class="voice-search-modal-btn" id="voice-search-modal-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
-</div>
-<button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
-</div>
-<div class="search-filter-pills-bar">
-<button class="search-filter-pill active" data-filter-group="category" data-filter-value="">All</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">Music</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="STEM">STEM</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">Culture</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="News">News</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">Sports</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">Movies</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="Documentaries">Documentaries</button>
-<button class="search-filter-pill" data-filter-group="category" data-filter-value="Podcasts">Podcasts</button>
-<button class="search-filter-pill" data-filter-group="sort" data-filter-value="newest">Newest</button>
-<button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">Popular</button>
-<button class="search-filter-pill" data-filter-group="sort" data-filter-value="trending">Trending</button>
-</div>
-<div id="search-results-grid" class="search-results-grid"></div>
-</div>
-</div>
-
-<!-- ============================================ -->
-<!-- VOICE SEARCH STATUS -->
-<!-- ============================================ -->
-<div class="voice-search-status" id="voice-search-status">
-<i class="fas fa-microphone-alt"></i>
-<span id="voice-status-text">Listening to speech signatures...</span>
-<button id="voice-search-cancel" class="voice-search-cancel"><i class="fas fa-times"></i></button>
-</div>
-
-<!-- ============================================ -->
-<!-- ANALYTICS MODAL -->
-<!-- ============================================ -->
-<div id="analytics-modal" class="analytics-modal">
-<div class="analytics-content">
-<div class="analytics-header">
-<h2><i class="fas fa-chart-line"></i> Analytics</h2>
-<div class="analytics-header-actions">
-<button class="icon-btn" id="close-analytics"><i class="fas fa-times"></i></button>
-</div>
-</div>
-<div class="analytics-body">
-<div class="analytics-period-selector">
-<button class="period-btn active" data-period="7d">7 Days</button>
-<button class="period-btn" data-period="30d">30 Days</button>
-<button class="period-btn" data-period="90d">90 Days</button>
-</div>
-<div class="analytics-stats-grid">
-<div class="analytics-stat-card">
-<div class="stat-icon">👁️</div>
-<h3>Total Views</h3>
-<div class="analytics-value" id="total-views">0</div>
-<div class="analytics-trend up" id="views-trend"><i class="fas fa-arrow-up"></i> +12%</div>
-</div>
-<div class="analytics-stat-card">
-<div class="stat-icon">⏱️</div>
-<h3>Watch Time</h3>
-<div class="analytics-value" id="total-watch-time">0:00</div>
-<div class="analytics-trend up" id="watch-time-trend"><i class="fas fa-arrow-up"></i> +8%</div>
-</div>
-<div class="analytics-stat-card">
-<div class="stat-icon">💬</div>
-<h3>Comments</h3>
-<div class="analytics-value" id="total-comments">0</div>
-<div class="analytics-trend up" id="engagement-trend"><i class="fas fa-arrow-up"></i> +5%</div>
-</div>
-<div class="analytics-stat-card">
-<div class="stat-icon">❤️</div>
-<h3>Likes</h3>
-<div class="analytics-value" id="total-likes">0</div>
-<div class="analytics-trend up">+10%</div>
-</div>
-</div>
-<div class="analytics-chart-top-content-row">
-<div class="charts-container">
-<div class="chart-header">
-<h3><i class="fas fa-chart-bar"></i> Views Over Time</h3>
-<div class="chart-controls">
-<button class="chart-btn active" data-period="7d">7D</button>
-<button class="chart-btn" data-period="30d">30D</button>
-<button class="chart-btn" data-period="90d">90D</button>
-</div>
-</div>
-<div class="chart-wrapper">
-<canvas id="analytics-chart"></canvas>
-</div>
-</div>
-<div class="top-content-section">
-<h3><i class="fas fa-fire"></i> Top Content</h3>
-<div class="top-content-list" id="top-content-list">
-<div class="top-content-item">
-<div class="content-info">
-<h4>No content yet</h4>
-<span>Start creating to see your top performers</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="analytics-extended-stats">
-<div class="extended-stat">
-<span class="extended-label">Total Content</span>
-<span class="extended-value" id="total-content">0</span>
-</div>
-<div class="extended-stat">
-<span class="extended-label">Avg. Watch Time</span>
-<span class="extended-value" id="avg-watch-time">0:00</span>
-</div>
-<div class="extended-stat">
-<span class="extended-label">Engagement Rate</span>
-<span class="extended-value" id="engagement-rate">0%</span>
-</div>
-<div class="extended-stat">
-<span class="extended-label">Total Shares</span>
-<span class="extended-value" id="total-shares">0</span>
-</div>
-<div class="extended-stat">
-<span class="extended-label">Unique Viewers</span>
-<span class="extended-value" id="unique-viewers">0</span>
-</div>
-<div class="extended-stat">
-<span class="extended-label">Watch Time (hrs)</span>
-<span class="extended-value" id="watch-time-hours">0</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<!-- ============================================ -->
-<!-- NOTIFICATIONS PANEL -->
-<!-- ============================================ -->
-<div id="notifications-panel" class="notifications-panel">
-<div class="notifications-header">
-<h2>Notifications <span id="notifications-header-count"></span></h2>
-<button class="icon-btn" id="close-notifications"><i class="fas fa-times"></i></button>
-</div>
-<div class="notification-tabs-container">
-<button class="notification-tab active" data-tab="all">All</button>
-<button class="notification-tab" data-tab="unread">Unread</button>
-<button class="notification-tab" data-tab="mentions">Mentions</button>
-</div>
-<div class="notifications-list" id="notifications-list"></div>
-<div class="notifications-footer">
-<button class="text-btn" id="mark-all-read">Mark all as read</button>
-<button class="text-btn" id="notification-settings">Settings</button>
-</div>
-</div>
-
-<!-- ============================================ -->
-<!-- SIDEBAR OVERLAY -->
-<!-- ============================================ -->
-<div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-<!-- ============================================ -->
-<!-- SIDEBAR MENU -->
-<!-- ============================================ -->
-<aside id="sidebar-menu" class="sidebar-menu">
-<div class="sidebar-header">
-<div class="sidebar-logo" onclick="window.location.href='index.html'">
-<div class="sidebar-logo-text">BANTU STREAM</div>
-</div>
-<button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
-</div>
-<div class="sidebar-profile" id="sidebar-profile">
-<div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user" style="font-size:1.5rem;"></i></div>
-<div class="sidebar-profile-info">
-<div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
-<div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
-</div>
-</div>
-<nav class="sidebar-nav">
-<div class="sidebar-section" data-section="main">
-<div class="sidebar-section-header">
-<span>Main</span>
-<i class="fas fa-chevron-down toggle-icon"></i>
-</div>
-<div class="sidebar-section-items">
-<a href="index.html" class="sidebar-nav-item"><i class="fas fa-home"></i> Home</a>
-<a href="content-library.html" class="sidebar-nav-item"><i class="fas fa-th-large"></i> Library</a>
-<a href="creator-upload.html" class="sidebar-nav-item active"><i class="fas fa-upload"></i> Upload</a>
-<a href="creator-dashboard.html" class="sidebar-nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
-</div>
-</div>
-<div class="sidebar-section" data-section="categories">
-<div class="sidebar-section-header">
-<span>Categories</span>
-<i class="fas fa-chevron-down toggle-icon"></i>
-</div>
-<div class="sidebar-section-items">
-<a href="category-music.html" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i> Music</a>
-<a href="category-stem.html" class="sidebar-nav-item" data-category="stem"><i class="fas fa-flask"></i> STEM</a>
-<a href="category-culture.html" class="sidebar-nav-item" data-category="culture"><i class="fas fa-globe-africa"></i> Culture</a>
-<a href="category-news.html" class="sidebar-nav-item" data-category="news"><i class="fas fa-newspaper"></i> News</a>
-<a href="category-sports.html" class="sidebar-nav-item" data-category="sports"><i class="fas fa-futbol"></i> Sports</a>
-<a href="category-movies.html" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i> Movies</a>
-<a href="category-documentaries.html" class="sidebar-nav-item" data-category="documentaries"><i class="fas fa-video"></i> Documentaries</a>
-<a href="category-podcasts.html" class="sidebar-nav-item" data-category="podcasts"><i class="fas fa-podcast"></i> Podcasts</a>
-</div>
-</div>
-<div class="sidebar-section" data-section="creator" style="display:none;">
-<div class="sidebar-section-header">
-<span>Creator Tools</span>
-<i class="fas fa-chevron-down toggle-icon"></i>
-</div>
-<div class="sidebar-section-items">
-<a href="creator-upload.html" class="sidebar-nav-item"><i class="fas fa-upload"></i> Upload</a>
-<a href="creator-dashboard.html" class="sidebar-nav-item"><i class="fas fa-chart-line"></i> Analytics</a>
-<a href="manage-content.html" class="sidebar-nav-item"><i class="fas fa-edit"></i> Manage Content</a>
-<a href="creator-earnings.html" class="sidebar-nav-item"><i class="fas fa-coins"></i> Earnings</a>
-</div>
-</div>
-</nav>
-<div class="sidebar-footer">
-<div class="creator-mode-toggle" id="creatorModeToggle" style="display:none;">
-<label class="toggle-label">
-<input type="checkbox" id="creatorModeSwitch">
-<span>Creator Mode</span>
-</label>
-</div>
-<div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-<span><i class="fas fa-palette"></i> Theme</span>
-<i class="fas fa-chevron-right"></i>
-</div>
-<div class="sidebar-scale-control">
-<div class="scale-control-row">
-<span style="font-size:0.8rem;color:var(--slate-grey);">UI Size</span>
-<button class="scale-btn" id="sidebar-scale-decrease">−</button>
-<span class="scale-value" id="sidebar-scale-value">100%</span>
-<button class="scale-btn" id="sidebar-scale-increase">+</button>
-</div>
-<div class="scale-control-row">
-<button class="scale-btn" id="sidebar-scale-reset">Reset to Default</button>
-</div>
-</div>
-<button class="text-btn" id="sidebar-logout" style="text-align:center;margin-top:0.5rem;color:var(--error-color);">
-<i class="fas fa-sign-out-alt"></i> Logout
-</button>
-</div>
-</aside>
-
-<!-- ============================================ -->
-<!-- THEME SELECTOR -->
-<!-- ============================================ -->
-<div id="theme-selector" class="theme-selector">
-<button class="theme-option active" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
-<button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
-<button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+<div class="animated-bg">
+    <div class="glow-cycle glow-1"></div>
+    <div class="glow-cycle glow-2"></div>
+    <div class="glow-cycle glow-3"></div>
+    <div class="glow-cycle glow-4"></div>
 </div>
 
 <!-- ============================================ -->
 <!-- MAIN APP -->
 <!-- ============================================ -->
 <div id="app">
-<header class="header">
-<div class="logo" onclick="window.location.href='index.html'">
-<button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
-<div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo"></div>
-<div class="logo-text">BANTU STREAM CONNECT</div>
-</div>
-<div style="display:flex;gap:10px;align-items:center">
-<button id="back-btn" class="icon-btn" title="Go Back"><i class="fas fa-arrow-left"></i></button>
-<button id="search-btn" class="search-btn" title="Search"><i class="fas fa-search"></i><span class="search-shortcut">⌘K</span></button>
-<button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
-<button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
-<button id="notifications-btn" class="icon-btn" title="Notifications"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display:none">0</span></button>
-<div class="profile-switcher">
-<button class="profile-btn" id="current-profile-btn">
-<div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
-<span class="profile-name" id="current-profile-name">Guest</span>
-<i class="fas fa-chevron-down"></i>
-</button>
-<div class="profile-dropdown" id="profile-dropdown">
-<div class="profile-dropdown-header">
-<h4>Switch Profile</h4>
-</div>
-<div class="profile-list" id="profile-list"></div>
-<div class="profile-dropdown-footer">
-<button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button>
-</div>
-</div>
-</div>
-<div class="rsa-badge">🇿🇦 RSA</div>
-</div>
-</header>
 
-<main>
-<div class="upload-card">
-<div class="creator-streak" id="creator-streak" style="display:none"><i class="fas fa-fire"></i><span id="streak-count">0</span> Uploads This Week</div>
-<h1>UPLOAD YOUR CONTENT</h1>
-<div id="upload-form-state">
-<form id="upload-form" novalidate>
-<div class="form-group">
-<label class="form-label">Content Type <span>*</span></label>
-<div class="media-type-selector">
-<div class="media-type-option selected" data-type="regular"><i class="fas fa-video"></i>Regular Video</div>
-<div class="media-type-option" data-type="short"><i class="fas fa-bolt"></i>Short/Reel</div>
-<div class="media-type-option" data-type="news"><i class="fas fa-newspaper"></i>News Article</div>
-</div>
-<div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Shorts are vertical videos under 60 seconds that appear in the Quick Bits section</div>
-</div>
-<div class="shorts-info-box" id="shorts-info">
-<h4><i class="fas fa-info-circle"></i> Shorts Guidelines</h4>
-<ul><li><i class="fas fa-check"></i> Maximum duration: 60 seconds</li><li><i class="fas fa-check"></i> Recommended aspect ratio: 9:16 (vertical)</li><li><i class="fas fa-check"></i> Add trending audio for better discovery</li><li><i class="fas fa-check"></i> Use engaging thumbnails to attract viewers</li></ul>
-</div>
-<div class="form-group"><label class="form-label">Title <span>*</span></label><input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required></div>
-<div class="form-group"><label class="form-label">Description <span>*</span></label><textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea></div>
-<div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
-<div class="form-group">
-<label><i class="fas fa-layer-group"></i> Content Format</label>
-<select id="content_format" class="form-input" required>
-<option value="">Select format...</option>
-<option value="music">Music (Audio Only)</option>
-<option value="music_video">Music Video</option>
-<option value="film">Film / Movie</option>
-<option value="documentary">Documentary</option>
-<option value="series_episode">Series Episode</option>
-<option value="podcast_episode">Podcast Episode</option>
-<option value="short">Short / Short Film</option>
-<option value="long_form">Long Form Video</option>
-</select>
-<small class="form-text text-muted">Select what type of content you're uploading</small>
-</div>
-<div id="news-fields">
-<div class="news-fields-title"><i class="fas fa-newspaper"></i> News Article Details</div>
-<div class="form-group">
-<label class="form-label">Source <span>*</span></label>
-<input type="text" id="news-source" class="form-input" placeholder="Source (e.g. Bantu News, Reuters)" required>
-</div>
-<div class="form-group">
-<label class="form-label">Category <span>*</span></label>
-<select id="news-category" class="form-input" required>
-<option value="">Select category</option>
-<option value="politics">Politics</option>
-<option value="business">Business</option>
-<option value="technology">Technology</option>
-<option value="health">Health</option>
-<option value="sports">Sports</option>
-<option value="entertainment">Entertainment</option>
-<option value="culture">Culture</option>
-<option value="other">Other</option>
-</select>
-</div>
-<div class="form-group read-time-input">
-<label class="form-label">Read Time (minutes)</label>
-<input type="number" id="read-time" class="form-input" placeholder="3" min="1" max="60" value="3">
-<small class="form-text text-muted" style="color: var(--slate-grey); margin-left: 10px;">Auto-calculated if left blank</small>
-</div>
-<div class="breaking-news-toggle">
-<label>
-<input type="checkbox" id="is-breaking" />
-<span style="font-weight: 600; color: var(--error-color);">🔥 Breaking News</span>
-</label>
-</div>
-<div class="form-group">
-<label class="form-label">Article Body <span>*</span></label>
-<textarea id="article-body" class="form-input" placeholder="Write your article content here. Each paragraph on a new line." rows="10" required></textarea>
-<small class="form-text text-muted" style="color: var(--slate-grey);">Tip: Press Enter for new paragraphs. Content will be structured automatically.</small>
-</div>
-</div>
-<div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
-<div id="movie-classification-section" class="movie-classification-section">
-<div class="dynamic-fields-title"><i class="fas fa-film"></i> Film Classification</div>
-<div class="classification-grid">
-<div class="genre-section">
-<h4><i class="fas fa-tags"></i> Primary Genres (Multi-select)</h4>
-<div class="genre-chips" id="primary-genres-chips">
-<button type="button" class="genre-chip" data-genre="Drama">Drama</button>
-<button type="button" class="genre-chip" data-genre="Action">Action</button>
-<button type="button" class="genre-chip" data-genre="Romance">Romance</button>
-<button type="button" class="genre-chip" data-genre="Thriller">Thriller</button>
-<button type="button" class="genre-chip" data-genre="Comedy">Comedy</button>
-<button type="button" class="genre-chip" data-genre="Sci-Fi">Sci-Fi</button>
-<button type="button" class="genre-chip" data-genre="Horror">Horror</button>
-<button type="button" class="genre-chip" data-genre="Documentary">Documentary</button>
-</div>
-</div>
-<div class="sa-genre-section">
-<h4><i class="fas fa-map-marker-alt"></i> South African Genres (Multi-select)</h4>
-<div class="sa-genre-chips" id="sa-genres-chips">
-<button type="button" class="sa-genre-chip" data-sa-genre="Township Drama">Township Drama</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="Kasi Comedy">Kasi Comedy</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="Taxi Industry Stories">Taxi Stories</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="SA Romantic Comedy">SA Rom-Com</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="Southern African Gothic">SA Gothic</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="Struggle Stories">Struggle Stories</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="Rural Life Stories">Rural Stories</button>
-<button type="button" class="sa-genre-chip" data-sa-genre="Faith & Spiritual Narratives">Faith Stories</button>
-</div>
-</div>
-</div>
-<div class="form-group" style="margin-top: 20px;">
-<label class="form-label"><i class="fas fa-language"></i> Primary Language</label>
-<select id="movie-language" class="form-input">
-<option value="English">English</option>
-<option value="Zulu">isiZulu</option>
-<option value="Xhosa">isiXhosa</option>
-<option value="Afrikaans">Afrikaans</option>
-<option value="Sotho">Sesotho</option>
-<option value="Tswana">Setswana</option>
-<option value="Pedi">Sepedi</option>
-<option value="Tsonga">Xitsonga</option>
-<option value="Swati">siSwati</option>
-<option value="Venda">Tshivenda</option>
-<option value="Ndebele">isiNdebele</option>
-</select>
-</div>
-<div class="form-group">
-<label class="form-label"><i class="fas fa-hashtag"></i> Tags (Cities, Languages, Keywords)</label>
-<div class="tags-input-container">
-<div class="tags-list" id="movie-tags-list"></div>
-<input type="text" class="tags-input" id="movie-tags-input" placeholder="Type and press Enter (e.g., Soweto, Zulu, Township)">
-</div>
-<small class="form-text text-muted" style="color: var(--slate-grey);">Add tags for better discovery: cities, languages, themes</small>
-</div>
-<div class="bantu-original-toggle">
-<label>
-<input type="checkbox" id="is-bantu-original">
-<span>☑️ This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
-</label>
-<small class="form-text text-muted" style="color: var(--slate-grey); margin-top: 5px; display: block;">Bantu Originals get featured placement and priority discovery</small>
-</div>
-</div>
-<div class="form-group" id="music-genre-group" style="display: none;">
-<label><i class="fas fa-music"></i> Music Genre</label>
-<select id="music-genre" class="form-input">
-<option value="">Select genre...</option>
-</select>
-<div id="subgenre-container" style="margin-top: 10px; display: none;">
-<label>Subgenre (optional)</label>
-<select id="music-subgenre" class="form-input">
-<option value="">Select subgenre...</option>
-</select>
-</div>
-<small class="form-text text-muted">Select the primary genre for your music content</small>
-</div>
-<div class="form-group" id="music-tags-group" style="display: none;">
-<label><i class="fas fa-tags"></i> Tags (Language, Mood, City)</label>
-<div id="tag-buttons" class="tag-buttons-container"></div>
-<small class="form-text text-muted">Select tags that describe your music</small>
-</div>
-<div id="tempo-group" class="form-group" style="display: none;">
-<label><i class="fas fa-metronome"></i> Tempo (BPM)</label>
-<input type="number" id="tempo" class="form-input" placeholder="e.g., 112" step="1" min="40" max="220">
-<small class="form-text text-muted">Optional: Beats per minute (112-115 for Amapiano, 125-130 for Gqom)</small>
-</div>
-<div id="key-group" class="form-group" style="display: none;">
-<label><i class="fas fa-music"></i> Musical Key</label>
-<select id="key_signature" class="form-input">
-<option value="">Select key (optional)</option>
-<option value="C">C Major</option>
-<option value="Cm">C Minor</option>
-<option value="D">D Major</option>
-<option value="Dm">D Minor</option>
-<option value="E">E Major</option>
-<option value="Em">E Minor</option>
-<option value="F">F Major</option>
-<option value="Fm">F Minor</option>
-<option value="G">G Major</option>
-<option value="Gm">G Minor</option>
-<option value="A">A Major</option>
-<option value="Am">A Minor</option>
-<option value="B">B Major</option>
-<option value="Bm">B Minor</option>
-</select>
-</div>
-<div id="explicit-group" class="form-group" style="display: none;">
-<label>
-<input type="checkbox" id="is_explicit" value="true">
-<i class="fas fa-exclamation-triangle"></i> Contains explicit content
-</label>
-</div>
-<div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and movies)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
-<div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
-<div class="quality-checklist"><div class="checklist-header"><span>Upload Quality Score</span><span class="checklist-score" id="quality-score">0%</span></div><div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div><div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div><div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div><div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div><div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div><div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div></div>
-<div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none"></div>
-<div class="form-group thumbnail-section"><label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label><div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px"><i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.</div><div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag thumbnail image here</div><div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div></div><div id="thumbnail-preview" class="thumbnail-preview"><img id="thumbnail-image" src="" alt="Thumbnail Preview"></div><div class="thumbnail-actions"><button type="button" class="thumbnail-btn" onclick="window.openImagePicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Choose from Gallery</button><button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button></div><input type="file" id="thumbnail-file-input" accept="image/*" style="display:none"><input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none"></div>
-<div id="upload-progress" class="upload-progress"><div class="progress-header"><span>Uploading...</span><span id="progress-percentage">0%</span></div><div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div><div class="progress-stats"><span id="progress-speed">Speed: 0 MB/s</span><span id="progress-eta">ETA: --:--</span></div><div id="progress-text" style="margin-top:10px;text-align:center">Preparing upload...</div></div>
-<div class="action-buttons"><button type="button" id="save-draft-btn" class="action-btn draft" disabled><i class="fas fa-save"></i> Save Draft</button><button type="submit" id="publish-btn" class="action-btn publish" disabled><i class="fas fa-cloud-upload-alt"></i> Publish Content</button></div>
-</form>
-<div class="helper-text">Your content will be reviewed and published within 24 hours. Make sure to follow our community guidelines.<br><span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span></div>
-</div>
-<div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message" id="processing-message">🎉 Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
-<div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">🚀 Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
-</div>
-</main>
+    <!-- ============================================ -->
+    <!-- HEADER - MATCHES INDEX.HTML -->
+    <!-- ============================================ -->
+    <header class="header">
+        <div class="logo" onclick="window.location.href='index.html'">
+            <button class="menu-toggle" id="menu-toggle" title="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo-icon">
+                <img src="assets/icon/bantu_stream_connect_icon.png" 
+                     alt="Bantu Stream Connect" 
+                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2265%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3EB%3C/text%3E%3C/svg%3E'"
+                     style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <div class="logo-text">BANTU STREAM CONNECT</div>
+        </div>
+        <div class="header-actions">
+            <button id="back-btn" class="icon-btn" title="Go Back"><i class="fas fa-arrow-left"></i></button>
+            <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
+            <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
+            
+            <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
+                <i class="fas fa-search"></i>
+                <span class="search-shortcut">⌘K</span>
+            </button>
+            
+            <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+            </button>
+            
+            <div class="profile-switcher">
+                <button id="current-profile-btn" class="profile-btn" title="Profile">
+                    <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
+                    <span class="profile-name" id="current-profile-name">Guest</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="profile-dropdown" id="profile-dropdown">
+                    <div class="profile-dropdown-header"><h4>Switch Profile</h4></div>
+                    <div class="profile-list" id="profile-list"></div>
+                    <div class="profile-dropdown-footer">
+                        <button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button>
+                    </div>
+                </div>
+            </div>
+            <div class="rsa-badge" title="Proudly South African"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
+        </div>
+    </header>
 
-<footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
+    <!-- ============================================ -->
+    <!-- MAIN CONTENT -->
+    <!-- ============================================ -->
+    <main>
+        <div class="upload-card">
+            <div class="creator-streak" id="creator-streak" style="display:none"><i class="fas fa-fire"></i><span id="streak-count">0</span> Uploads This Week</div>
+            <h1>UPLOAD YOUR CONTENT</h1>
+            
+            <!-- ============================================ -->
+            <!-- AUTH MODAL (In-page) -->
+            <!-- ============================================ -->
+            <div id="auth-modal" class="auth-modal">
+                <div class="auth-content">
+                    <div style="font-size:64px;color:var(--warm-gold);margin-bottom:20px"><i class="fas fa-lock"></i></div>
+                    <h2 style="font-family:'Orbitron',sans-serif;font-size:24px;margin-bottom:15px;color:var(--soft-white)">Authentication Required</h2>
+                    <p style="color:var(--slate-grey);margin-bottom:30px;line-height:1.6">You need to be logged in to upload content. Please sign in to share your content with the community.</p>
+                    <div style="display:flex;gap:15px">
+                        <button id="auth-login-btn" style="flex:1;padding:15px;border-radius:12px;font-size:16px;font-weight:600;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:var(--soft-white);border:none">Log In</button>
+                        <button id="auth-cancel-btn" style="flex:1;padding:15px;border-radius:12px;font-size:16px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--card-border);color:var(--soft-white)">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- UPLOAD FORM STATE -->
+            <!-- ============================================ -->
+            <div id="upload-form-state">
+                <form id="upload-form" novalidate>
+                    <!-- Content Type Selection -->
+                    <div class="form-group">
+                        <label class="form-label">Content Type <span>*</span></label>
+                        <div class="media-type-selector">
+                            <div class="media-type-option selected" data-type="regular"><i class="fas fa-video"></i>Regular Video</div>
+                            <div class="media-type-option" data-type="short"><i class="fas fa-bolt"></i>Short/Reel</div>
+                            <div class="media-type-option" data-type="news"><i class="fas fa-newspaper"></i>News Article</div>
+                        </div>
+                        <div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Shorts are vertical videos under 60 seconds that appear in the Quick Bits section</div>
+                    </div>
+
+                    <div class="shorts-info-box" id="shorts-info">
+                        <h4><i class="fas fa-info-circle"></i> Shorts Guidelines</h4>
+                        <ul><li><i class="fas fa-check"></i> Maximum duration: 60 seconds</li><li><i class="fas fa-check"></i> Recommended aspect ratio: 9:16 (vertical)</li><li><i class="fas fa-check"></i> Add trending audio for better discovery</li><li><i class="fas fa-check"></i> Use engaging thumbnails to attract viewers</li></ul>
+                    </div>
+
+                    <!-- Core Metadata -->
+                    <div class="form-group"><label class="form-label">Title <span>*</span></label><input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required></div>
+                    <div class="form-group"><label class="form-label">Description <span>*</span></label><textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea></div>
+                    
+                    <div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-layer-group"></i> Content Format</label>
+                        <select id="content_format" class="form-input" required>
+                            <option value="">Select format...</option>
+                            <option value="music">Music (Audio Only)</option>
+                            <option value="music_video">Music Video</option>
+                            <option value="film">Film / Movie</option>
+                            <option value="documentary">Documentary</option>
+                            <option value="series_episode">Series Episode</option>
+                            <option value="podcast_episode">Podcast Episode</option>
+                            <option value="short">Short / Short Film</option>
+                            <option value="long_form">Long Form Video</option>
+                        </select>
+                        <small class="form-text text-muted">Select what type of content you're uploading</small>
+                    </div>
+
+                    <!-- News Fields -->
+                    <div id="news-fields">
+                        <div class="news-fields-title"><i class="fas fa-newspaper"></i> News Article Details</div>
+                        <div class="form-group">
+                            <label class="form-label">Source <span>*</span></label>
+                            <input type="text" id="news-source" class="form-input" placeholder="Source (e.g. Bantu News, Reuters)" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Category <span>*</span></label>
+                            <select id="news-category" class="form-input" required>
+                                <option value="">Select category</option>
+                                <option value="politics">Politics</option>
+                                <option value="business">Business</option>
+                                <option value="technology">Technology</option>
+                                <option value="health">Health</option>
+                                <option value="sports">Sports</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="culture">Culture</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group read-time-input">
+                            <label class="form-label">Read Time (minutes)</label>
+                            <input type="number" id="read-time" class="form-input" placeholder="3" min="1" max="60" value="3">
+                            <small class="form-text text-muted" style="color: var(--slate-grey); margin-left: 10px;">Auto-calculated if left blank</small>
+                        </div>
+                        <div class="breaking-news-toggle">
+                            <label>
+                                <input type="checkbox" id="is-breaking" />
+                                <span style="font-weight: 600; color: var(--error-color);">🔥 Breaking News</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Article Body <span>*</span></label>
+                            <textarea id="article-body" class="form-input" placeholder="Write your article content here. Each paragraph on a new line." rows="10" required></textarea>
+                            <small class="form-text text-muted" style="color: var(--slate-grey);">Tip: Press Enter for new paragraphs. Content will be structured automatically.</small>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Fields -->
+                    <div id="dynamic-fields-container" class="dynamic-fields-container"><div class="dynamic-fields-title"><i class="fas fa-layer-group"></i><span id="dynamic-fields-title">Additional Details</span></div><div id="dynamic-fields-content"></div></div>
+
+                    <!-- Movie Classification -->
+                    <div id="movie-classification-section" class="movie-classification-section">
+                        <div class="dynamic-fields-title"><i class="fas fa-film"></i> Film Classification</div>
+                        <div class="classification-grid">
+                            <div class="genre-section">
+                                <h4><i class="fas fa-tags"></i> Primary Genres (Multi-select)</h4>
+                                <div class="genre-chips" id="primary-genres-chips">
+                                    <button type="button" class="genre-chip" data-genre="Drama">Drama</button>
+                                    <button type="button" class="genre-chip" data-genre="Action">Action</button>
+                                    <button type="button" class="genre-chip" data-genre="Romance">Romance</button>
+                                    <button type="button" class="genre-chip" data-genre="Thriller">Thriller</button>
+                                    <button type="button" class="genre-chip" data-genre="Comedy">Comedy</button>
+                                    <button type="button" class="genre-chip" data-genre="Sci-Fi">Sci-Fi</button>
+                                    <button type="button" class="genre-chip" data-genre="Horror">Horror</button>
+                                    <button type="button" class="genre-chip" data-genre="Documentary">Documentary</button>
+                                </div>
+                            </div>
+                            <div class="sa-genre-section">
+                                <h4><i class="fas fa-map-marker-alt"></i> South African Genres (Multi-select)</h4>
+                                <div class="sa-genre-chips" id="sa-genres-chips">
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Township Drama">Township Drama</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Kasi Comedy">Kasi Comedy</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Taxi Industry Stories">Taxi Stories</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="SA Romantic Comedy">SA Rom-Com</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Southern African Gothic">SA Gothic</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Struggle Stories">Struggle Stories</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Rural Life Stories">Rural Stories</button>
+                                    <button type="button" class="sa-genre-chip" data-sa-genre="Faith & Spiritual Narratives">Faith Stories</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label class="form-label"><i class="fas fa-language"></i> Primary Language</label>
+                            <select id="movie-language" class="form-input">
+                                <option value="English">English</option>
+                                <option value="Zulu">isiZulu</option>
+                                <option value="Xhosa">isiXhosa</option>
+                                <option value="Afrikaans">Afrikaans</option>
+                                <option value="Sotho">Sesotho</option>
+                                <option value="Tswana">Setswana</option>
+                                <option value="Pedi">Sepedi</option>
+                                <option value="Tsonga">Xitsonga</option>
+                                <option value="Swati">siSwati</option>
+                                <option value="Venda">Tshivenda</option>
+                                <option value="Ndebele">isiNdebele</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-hashtag"></i> Tags (Cities, Languages, Keywords)</label>
+                            <div class="tags-input-container">
+                                <div class="tags-list" id="movie-tags-list"></div>
+                                <input type="text" class="tags-input" id="movie-tags-input" placeholder="Type and press Enter (e.g., Soweto, Zulu, Township)">
+                            </div>
+                            <small class="form-text text-muted" style="color: var(--slate-grey);">Add tags for better discovery: cities, languages, themes</small>
+                        </div>
+                        <div class="bantu-original-toggle">
+                            <label>
+                                <input type="checkbox" id="is-bantu-original">
+                                <span>☑️ This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
+                            </label>
+                            <small class="form-text text-muted" style="color: var(--slate-grey); margin-top: 5px; display: block;">Bantu Originals get featured placement and priority discovery</small>
+                        </div>
+                    </div>
+
+                    <!-- Music Fields -->
+                    <div class="form-group" id="music-genre-group" style="display: none;">
+                        <label><i class="fas fa-music"></i> Music Genre</label>
+                        <select id="music-genre" class="form-input">
+                            <option value="">Select genre...</option>
+                        </select>
+                        <div id="subgenre-container" style="margin-top: 10px; display: none;">
+                            <label>Subgenre (optional)</label>
+                            <select id="music-subgenre" class="form-input">
+                                <option value="">Select subgenre...</option>
+                            </select>
+                        </div>
+                        <small class="form-text text-muted">Select the primary genre for your music content</small>
+                    </div>
+
+                    <div class="form-group" id="music-tags-group" style="display: none;">
+                        <label><i class="fas fa-tags"></i> Tags (Language, Mood, City)</label>
+                        <div id="tag-buttons" class="tag-buttons-container"></div>
+                        <small class="form-text text-muted">Select tags that describe your music</small>
+                    </div>
+
+                    <div id="tempo-group" class="form-group" style="display: none;">
+                        <label><i class="fas fa-metronome"></i> Tempo (BPM)</label>
+                        <input type="number" id="tempo" class="form-input" placeholder="e.g., 112" step="1" min="40" max="220">
+                        <small class="form-text text-muted">Optional: Beats per minute (112-115 for Amapiano, 125-130 for Gqom)</small>
+                    </div>
+
+                    <div id="key-group" class="form-group" style="display: none;">
+                        <label><i class="fas fa-music"></i> Musical Key</label>
+                        <select id="key_signature" class="form-input">
+                            <option value="">Select key (optional)</option>
+                            <option value="C">C Major</option>
+                            <option value="Cm">C Minor</option>
+                            <option value="D">D Major</option>
+                            <option value="Dm">D Minor</option>
+                            <option value="E">E Major</option>
+                            <option value="Em">E Minor</option>
+                            <option value="F">F Major</option>
+                            <option value="Fm">F Minor</option>
+                            <option value="G">G Major</option>
+                            <option value="Gm">G Minor</option>
+                            <option value="A">A Major</option>
+                            <option value="Am">A Minor</option>
+                            <option value="B">B Major</option>
+                            <option value="Bm">B Minor</option>
+                        </select>
+                    </div>
+
+                    <div id="explicit-group" class="form-group" style="display: none;">
+                        <label>
+                            <input type="checkbox" id="is_explicit" value="true">
+                            <i class="fas fa-exclamation-triangle"></i> Contains explicit content
+                        </label>
+                    </div>
+
+                    <!-- Mood Tags -->
+                    <div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and movies)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
+
+                    <!-- Chapters -->
+                    <div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
+
+                    <!-- Quality Checklist -->
+                    <div class="quality-checklist"><div class="checklist-header"><span>Upload Quality Score</span><span class="checklist-score" id="quality-score">0%</span></div><div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div><div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div><div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div><div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div><div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div><div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div></div>
+
+                    <!-- Media Upload -->
+                    <div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none"></div>
+
+                    <!-- Thumbnail -->
+                    <div class="form-group thumbnail-section"><label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label><div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px"><i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.</div><div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag thumbnail image here</div><div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div></div><div id="thumbnail-preview" class="thumbnail-preview"><img id="thumbnail-image" src="" alt="Thumbnail Preview"></div><div class="thumbnail-actions"><button type="button" class="thumbnail-btn" onclick="window.openImagePicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Choose from Gallery</button><button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button></div><input type="file" id="thumbnail-file-input" accept="image/*" style="display:none"><input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none"></div>
+
+                    <!-- Upload Progress -->
+                    <div id="upload-progress" class="upload-progress"><div class="progress-header"><span>Uploading...</span><span id="progress-percentage">0%</span></div><div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div><div class="progress-stats"><span id="progress-speed">Speed: 0 MB/s</span><span id="progress-eta">ETA: --:--</span></div><div id="progress-text" style="margin-top:10px;text-align:center">Preparing upload...</div></div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons"><button type="button" id="save-draft-btn" class="action-btn draft" disabled><i class="fas fa-save"></i> Save Draft</button><button type="submit" id="publish-btn" class="action-btn publish" disabled><i class="fas fa-cloud-upload-alt"></i> Publish Content</button></div>
+                </form>
+                <div class="helper-text">Your content will be reviewed and published within 24 hours. Make sure to follow our community guidelines.<br><span style="color:var(--warm-gold)">Our discovery system helps new creators reach audiences interested in their content.</span></div>
+            </div>
+
+            <!-- Processing State -->
+            <div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message" id="processing-message">🎉 Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
+
+            <!-- Success State -->
+            <div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">🚀 Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
+        </div>
+    </main>
+
+    <!-- ============================================ -->
+    <!-- FOOTER - MATCHES INDEX.HTML -->
+    <!-- ============================================ -->
+    <footer class="footer">
+        <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart" style="color: var(--warm-gold);"></i> Built in South Africa • NO DNA, JUST RSA</p>
+        <div class="footer-links">
+            <a href="privacy-policy.html">Privacy Policy</a>
+            <a href="terms-of-service.html">Terms of Service</a>
+            <a href="support.html">Support</a>
+        </div>
+    </footer>
+
+    <!-- ============================================ -->
+    <!-- BOTTOM NAVIGATION - MATCHES INDEX.HTML -->
+    <!-- ============================================ -->
+    <div class="navigation-button-container">
+        <div class="navigation-button">
+            <div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div>
+            <div class="nav-icon" id="nav-history-btn" title="Watch History"><i class="fas fa-history"></i></div>
+            <div class="nav-icon" id="nav-create-btn" title="Create Content"><i class="fas fa-plus-circle"></i></div>
+            <div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TOAST CONTAINER -->
+    <!-- ============================================ -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ============================================ -->
+    <!-- BACK TO TOP BUTTON -->
+    <!-- ============================================ -->
+    <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+
 </div>
 
-<div id="toast-container"></div>
+<!-- ============================================ -->
+<!-- SIDEBAR - MATCHES INDEX.HTML -->
+<!-- ============================================ -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+    <div class="sidebar-header">
+        <div class="sidebar-logo" onclick="window.location.href='index.html'">
+            <div class="logo-icon">
+                <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <span class="sidebar-logo-text">BANTU</span>
+        </div>
+        <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sidebar-profile" id="sidebar-profile">
+        <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+        <div class="sidebar-profile-info">
+            <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+            <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+        </div>
+        <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
+    </div>
+    
+    <!-- UPDATED SIDEBAR NAVIGATION - Matches index.html structure -->
+    <nav class="sidebar-nav">
+        <!-- MAIN NAVIGATION -->
+        <div class="sidebar-section" data-section="main">
+            <div class="sidebar-section-header" data-toggle="main">
+                <span>MAIN</span>
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+            <div class="sidebar-section-items" id="section-main">
+                <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+                <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+                <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+                <a href="creators.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+            </div>
+        </div>
 
-<!-- ============================================ -->
-<!-- BOTTOM NAVIGATION -->
-<!-- ============================================ -->
-<div class="navigation-button-container">
-<div class="navigation-button">
-<button class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></button>
-<button class="nav-icon" id="nav-history-btn" title="History"><i class="fas fa-history"></i></button>
-<button class="nav-icon" id="nav-create-btn" title="Create"><i class="fas fa-plus-circle"></i></button>
-<button class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></button>
+        <!-- CONTENT CATEGORIES -->
+        <div class="sidebar-section" data-section="categories">
+            <div class="sidebar-section-header" data-toggle="categories">
+                <span>CATEGORIES</span>
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+            <div class="sidebar-section-items" id="section-categories">
+                <a href="https://bantustreamconnect.com/category/music" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+                <a href="https://bantustreamconnect.com/category/stem" class="sidebar-nav-item" data-category="stem"><i class="fas fa-atom"></i><span>STEM</span></a>
+                <a href="https://bantustreamconnect.com/category/culture" class="sidebar-nav-item" data-category="culture"><i class="fas fa-drum"></i><span>Culture</span></a>
+                <a href="https://bantustreamconnect.com/category/news" class="sidebar-nav-item" data-category="news"><i class="fas fa-newspaper"></i><span>News</span></a>
+                <a href="https://bantustreamconnect.com/category/sports" class="sidebar-nav-item" data-category="sports"><i class="fas fa-futbol"></i><span>Sports</span></a>
+                <a href="https://bantustreamconnect.com/category/movies" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+                <a href="https://bantustreamconnect.com/category/documentaries" class="sidebar-nav-item" data-category="documentaries"><i class="fas fa-video"></i><span>Documentaries</span></a>
+                <a href="https://bantustreamconnect.com/category/podcasts" class="sidebar-nav-item" data-category="podcasts"><i class="fas fa-microphone-alt"></i><span>Podcasts</span></a>
+            </div>
+        </div>
+
+        <!-- YOUR CONTENT -->
+        <div class="sidebar-section" data-section="your-content">
+            <div class="sidebar-section-header" data-toggle="your-content">
+                <span>YOU</span>
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+            <div class="sidebar-section-items" id="section-your-content">
+                <a href="content-library.html" class="sidebar-nav-item" data-page="library"><i class="fas fa-book"></i><span>Library</span></a>
+                <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+                <a href="my-uploads.html" class="sidebar-nav-item" data-page="uploads"><i class="fas fa-upload"></i><span>My Uploads</span></a>
+            </div>
+        </div>
+
+        <!-- CREATOR ZONE -->
+        <div class="sidebar-section creator-only" data-section="creator" style="display: none;">
+            <div class="sidebar-section-header" data-toggle="creator">
+                <span>CREATOR</span>
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+            <div class="sidebar-section-items" id="section-creator">
+                <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+                <a href="creator-analytics.html" class="sidebar-nav-item" data-page="analytics"><i class="fas fa-chart-line"></i><span>Creator Analytics</span></a>
+                <a href="creator-upload.html" class="sidebar-nav-item active" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+            </div>
+        </div>
+
+        <!-- COMMUNITY & SOCIAL -->
+        <div class="sidebar-section" data-section="community">
+            <div class="sidebar-section-header" data-toggle="community">
+                <span>COMMUNITY</span>
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+            <div class="sidebar-section-items" id="section-community">
+                <a href="index.html#community-pulse-section" class="sidebar-nav-item" data-page="pulse"><i class="fas fa-bolt"></i><span>Community Pulse</span></a>
+                <a href="https://bantustreamconnect.com/watch-party" class="sidebar-nav-item" id="sidebar-watch-party"><i class="fas fa-users"></i><span>Watch Party</span></a>
+                <a href="https://bantustreamconnect.com/my-badges" class="sidebar-nav-item" id="sidebar-badges"><i class="fas fa-medal"></i><span>My Badges</span></a>
+            </div>
+        </div>
+
+        <!-- ACCOUNT & SETTINGS -->
+        <div class="sidebar-section" data-section="account">
+            <div class="sidebar-section-header" data-toggle="account">
+                <span>ACCOUNT</span>
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+            <div class="sidebar-section-items" id="section-account">
+                <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+                <a href="settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+                <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Enhanced Sidebar Footer with Creator Mode Toggle -->
+    <div class="sidebar-footer" id="sidebar-footer">
+        <!-- Creator Mode Toggle -->
+        <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+            <label class="toggle-switch">
+                <input type="checkbox" id="creatorModeSwitch">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Creator Mode</span>
+        </div>
+        
+        <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+            <span><i class="fas fa-palette"></i> Theme</span>
+            <i class="fas fa-chevron-right"></i>
+        </div>
+        
+        <div class="sidebar-scale-control">
+            <div class="scale-control-row">
+                <span><i class="fas fa-text-height"></i> UI Size</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button>
+                    <span class="scale-value" id="sidebar-scale-value">100%</span>
+                    <button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <div class="scale-control-row">
+                <button class="scale-btn" id="sidebar-scale-reset" style="width: 100%;">
+                    <i class="fas fa-undo"></i> Reset to Default
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- ============================================ -->
+<!-- PREMIUM GLASSMORPHIC SEARCH MODAL - MATCHES INDEX.HTML -->
+<!-- ============================================ -->
+<div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
+    <div class="search-modal-overlay"></div>
+    <div class="search-modal-content">
+        <div class="search-modal-header">
+            <div class="search-input-wrapper">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    class="search-input" 
+                    placeholder="Search creators, drops, vibes..." 
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Search input"
+                />
+                <button id="voice-search-modal-btn" class="voice-search-modal-btn" aria-label="Voice search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="search-filter-pills-bar">
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">🧬 STEM</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">🎬 Movies</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="">All Types</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">🎞️ Video</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">🎵 Audio</button>
+            <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
+            <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
+        </div>
+
+        <div id="search-results-grid" class="search-results-grid"></div>
+    </div>
 </div>
 
 <!-- ============================================ -->
-<!-- BACK TO TOP BUTTON -->
+<!-- VOICE SEARCH STATUS OVERLAY -->
 <!-- ============================================ -->
-<button class="back-to-top" id="backToTopBtn" title="Back to Top"><i class="fas fa-chevron-up"></i></button>
+<div id="voice-search-status" class="voice-search-status">
+    <i class="fas fa-microphone-alt"></i>
+    <span id="voice-status-text">Listening...</span>
+    <button id="voice-search-cancel" class="voice-search-cancel" aria-label="Cancel voice search">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT FILES - EXTRACTED FROM ORIGINAL -->
+<!-- ANALYTICS MODAL - MATCHES INDEX.HTML -->
 <!-- ============================================ -->
+<div id="analytics-modal" class="analytics-modal" role="dialog" aria-modal="true" aria-label="Analytics Dashboard">
+    <div class="analytics-content">
+        <div class="analytics-header">
+            <h2><i class="fas fa-chart-line" style="color: var(--warm-gold);"></i> Analytics Dashboard</h2>
+            <div class="analytics-header-actions">
+                <button id="refresh-analytics" class="icon-btn" title="Refresh Data" aria-label="Refresh analytics data"><i class="fas fa-sync-alt"></i></button>
+                <button id="close-analytics" class="modal-close-btn" aria-label="Close analytics"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="analytics-body">
+            <div class="analytics-period-selector">
+                <button class="period-btn active" data-period="7d">📊 Last 7 Days</button>
+                <button class="period-btn" data-period="30d">📈 Last 30 Days</button>
+                <button class="period-btn" data-period="90d">📉 Last 90 Days</button>
+                <button class="period-btn" data-period="all">📅 All Time</button>
+            </div>
+            <div class="analytics-stats-grid">
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--bantu-blue);"><i class="fas fa-eye"></i></div>
+                    <h3>Total Views</h3>
+                    <div class="analytics-value" id="total-views">0</div>
+                    <div class="analytics-trend" id="views-trend"><i class="fas fa-arrow-up"></i> +0%</div>
+                </div>
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--warm-gold);"><i class="fas fa-clock"></i></div>
+                    <h3>Avg. Watch Time</h3>
+                    <div class="analytics-value" id="avg-watch-time">0:00</div>
+                    <div class="analytics-trend" id="watch-time-trend"><i class="fas fa-arrow-up"></i> +0%</div>
+                </div>
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: var(--success-color);"><i class="fas fa-heart"></i></div>
+                    <h3>Engagement Rate</h3>
+                    <div class="analytics-value" id="engagement-rate">0%</div>
+                    <div class="analytics-trend" id="engagement-trend"><i class="fas fa-arrow-up"></i> +0%</div>
+                </div>
+                <div class="analytics-stat-card">
+                    <div class="stat-icon" style="color: #8B5CF6;"><i class="fas fa-comments"></i></div>
+                    <h3>Total Comments</h3>
+                    <div class="analytics-value" id="total-comments">0</div>
+                    <div class="analytics-trend" id="comments-trend"><i class="fas fa-arrow-up"></i> +0%</div>
+                </div>
+            </div>
+            <div class="analytics-extended-stats">
+                <div class="extended-stat"><span class="extended-label">📦 Total Content</span><span class="extended-value" id="total-content">0</span></div>
+                <div class="extended-stat"><span class="extended-label">❤️ Total Likes</span><span class="extended-value" id="total-likes">0</span></div>
+                <div class="extended-stat"><span class="extended-label">🔄 Total Shares</span><span class="extended-value" id="total-shares">0</span></div>
+                <div class="extended-stat"><span class="extended-label">👤 Unique Viewers</span><span class="extended-value" id="unique-viewers">0</span></div>
+                <div class="extended-stat"><span class="extended-label">⏱️ Avg. Session</span><span class="extended-value" id="avg-session">0:00</span></div>
+                <div class="extended-stat"><span class="extended-label">📉 Bounce Rate</span><span class="extended-value" id="bounce-rate">0%</span></div>
+            </div>
+            <div class="analytics-chart-top-content-row">
+                <div class="charts-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-area" style="color: var(--warm-gold);"></i> View Trends</h3>
+                        <div class="chart-controls">
+                            <button class="chart-btn active" data-period="7d">7D</button>
+                            <button class="chart-btn" data-period="30d">30D</button>
+                            <button class="chart-btn" data-period="90d">90D</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper"><canvas id="analytics-chart"></canvas></div>
+                </div>
+                <div class="top-content-section">
+                    <h3><i class="fas fa-trophy" style="color: var(--warm-gold);"></i> Top Performing Content</h3>
+                    <div id="top-content-list" class="top-content-list"></div>
+                </div>
+            </div>
+            <div class="audience-insights">
+                <h3><i class="fas fa-users" style="color: var(--bantu-blue);"></i> Audience Insights</h3>
+                <div class="insights-grid">
+                    <div class="insight-card"><span class="insight-label">🔄 Returning Viewers</span><span class="insight-value" id="returning-viewers">0%</span></div>
+                    <div class="insight-card"><span class="insight-label">✨ New Viewers</span><span class="insight-value" id="new-viewers">0%</span></div>
+                    <div class="insight-card"><span class="insight-label">🌙 Peak Time</span><span class="insight-value" id="peak-time">--:--</span></div>
+                    <div class="insight-card"><span class="insight-label">📅 Best Day</span><span class="insight-value" id="best-day">--</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ============================================ -->
-<!-- 1. SHARED COMPONENTS JS -->
+<!-- NOTIFICATIONS PANEL - MATCHES INDEX.HTML -->
 <!-- ============================================ -->
+<div id="notifications-panel" class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
+    <div class="notifications-header">
+        <h2><i class="fas fa-bell" style="color: var(--warm-gold);"></i> Notifications <span class="notification-count-badge" id="notifications-header-count">0</span></h2>
+        <div class="notifications-header-actions">
+            <button id="mark-all-read" class="text-btn" title="Mark all as read"><i class="fas fa-check-double"></i> Mark all read</button>
+            <button id="close-notifications" class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    <div id="notifications-list" class="notifications-list">
+        <div class="empty-notifications">
+            <i class="fas fa-bell-slash"></i>
+            <p>No notifications yet</p>
+            <span>When you get notifications, they'll appear here</span>
+        </div>
+    </div>
+    <div class="notifications-footer">
+        <button id="notification-settings" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- THEME SELECTOR -->
+<!-- ============================================ -->
+<div id="theme-selector" class="theme-selector">
+    <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+    <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+    <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT FILES -->
+<!-- ============================================ -->
+
+<!-- 1. Core Utilities -->
+<script src="env.js"></script>
+<script src="js/rate-limiter.js"></script>
+<script src="js/image-fix.js"></script>
+
+<!-- 2. Global Shared Components -->
 <script src="js/shared-components.js"></script>
 
-<!-- ============================================ -->
-<!-- 2. CREATOR UPLOAD SECTION JS FILES -->
-<!-- ============================================ -->
+<!-- 3. Creator Upload Section JS Files -->
 <script src="js/creator-upload/content-type-selection.js"></script>
 <script src="js/creator-upload/core-content-metadata.js"></script>
 <script src="js/creator-upload/genre-specific-dynamic-forms.js"></script>
@@ -604,10 +787,132 @@
 <script src="js/creator-upload/upload-management-workflow.js"></script>
 <script src="js/creator-upload/post-upload-actions.js"></script>
 
-<!-- ============================================ -->
-<!-- 3. MAIN CREATOR UPLOAD JS -->
-<!-- ============================================ -->
+<!-- 4. Main Creator Upload JS -->
 <script src="js/creator-upload.js"></script>
+
+<!-- ============================================ -->
+<!-- FORCE PROFILE UPDATE AFTER PAGE LOAD -->
+<!-- ============================================ -->
+<script>
+(function() {
+    // Function to update all profile displays
+    async function updateAllProfiles() {
+        console.log('🔄 Updating all profile displays...');
+        
+        if (window.supabaseAuth) {
+            try {
+                const { data: { session } } = await window.supabaseAuth.auth.getSession();
+                const user = session?.user;
+                
+                if (user) {
+                    console.log('👤 User found:', user.email);
+                    
+                    const { data: profile } = await window.supabaseAuth
+                        .from('user_profiles')
+                        .select('full_name, username, avatar_url')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    const displayName = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User';
+                    const initials = displayName.charAt(0).toUpperCase();
+                    
+                    // Update header profile
+                    const headerProfileImg = document.querySelector('#userProfilePlaceholder');
+                    const headerProfileName = document.querySelector('#current-profile-name');
+                    
+                    if (headerProfileName) headerProfileName.textContent = displayName;
+                    
+                    if (headerProfileImg) {
+                        headerProfileImg.innerHTML = '';
+                        if (profile?.avatar_url) {
+                            const img = document.createElement('img');
+                            img.src = profile.avatar_url;
+                            img.alt = displayName;
+                            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                            img.onerror = () => {
+                                headerProfileImg.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
+                            };
+                            headerProfileImg.appendChild(img);
+                        } else {
+                            headerProfileImg.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
+                        }
+                    }
+                    
+                    // Update sidebar profile
+                    const sidebarAvatar = document.querySelector('#sidebar-profile-avatar');
+                    const sidebarName = document.querySelector('#sidebar-profile-name');
+                    const sidebarEmail = document.querySelector('#sidebar-profile-email');
+                    
+                    if (sidebarName) sidebarName.textContent = displayName;
+                    if (sidebarEmail) sidebarEmail.textContent = user.email || 'Logged in';
+                    
+                    if (sidebarAvatar) {
+                        sidebarAvatar.innerHTML = '';
+                        if (profile?.avatar_url) {
+                            const img = document.createElement('img');
+                            img.src = profile.avatar_url;
+                            img.alt = displayName;
+                            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                            img.onerror = () => {
+                                sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:white;">${initials}</span>`;
+                            };
+                            sidebarAvatar.appendChild(img);
+                        } else {
+                            sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;color:white;">${initials}</span>`;
+                        }
+                    }
+                    
+                    console.log('✅ Profile updated for:', displayName);
+                } else {
+                    console.log('👤 No user logged in - showing guest mode');
+                    
+                    // Set guest mode
+                    const headerProfileName = document.querySelector('#current-profile-name');
+                    if (headerProfileName) headerProfileName.textContent = 'Guest';
+                    
+                    const headerProfileImg = document.querySelector('#userProfilePlaceholder');
+                    if (headerProfileImg) {
+                        headerProfileImg.innerHTML = '<i class="fas fa-user"></i>';
+                    }
+                    
+                    const sidebarName = document.querySelector('#sidebar-profile-name');
+                    if (sidebarName) sidebarName.textContent = 'Guest';
+                    
+                    const sidebarEmail = document.querySelector('#sidebar-profile-email');
+                    if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+                    
+                    const sidebarAvatar = document.querySelector('#sidebar-profile-avatar');
+                    if (sidebarAvatar) {
+                        sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
+                    }
+                }
+            } catch (err) {
+                console.error('Profile update error:', err);
+            }
+        }
+    }
+    
+    // Run on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateAllProfiles, 500);
+        });
+    } else {
+        setTimeout(updateAllProfiles, 500);
+    }
+    
+    // Listen for auth state changes
+    if (window.supabaseAuth) {
+        window.supabaseAuth.auth.onAuthStateChange(() => {
+            console.log('🔐 Auth state changed, updating profiles...');
+            setTimeout(updateAllProfiles, 500);
+        });
+    }
+    
+    document.addEventListener('authReady', updateAllProfiles);
+    document.addEventListener('profileUpdated', updateAllProfiles);
+})();
+</script>
 
 </body>
 </html>
