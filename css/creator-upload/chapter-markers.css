@@ -1,0 +1,50 @@
+/* Chapter Markers Styles */
+.chapters-section {
+margin: 20px 0;
+padding: 20px;
+background: rgba(0,0,0,0.2);
+border-radius: 12px;
+display: none;
+}
+.chapters-section.active { display: block; }
+.chapter-item {
+display: flex;
+gap: 10px;
+margin-bottom: 10px;
+align-items: center;
+}
+.chapter-time {
+width: 80px;
+padding: 10px;
+background: rgba(255,255,255,.05);
+border: 1px solid var(--card-border);
+border-radius: 8px;
+color: var(--soft-white);
+}
+.chapter-title {
+flex: 1;
+padding: 10px;
+background: rgba(255,255,255,.05);
+border: 1px solid var(--card-border);
+border-radius: 8px;
+color: var(--soft-white);
+}
+.remove-chapter {
+background: var(--error-color);
+border: none;
+color: white;
+width: 32px;
+height: 32px;
+border-radius: 8px;
+cursor: pointer;
+}
+.add-chapter-btn {
+margin-top: 10px;
+padding: 10px;
+background: rgba(255,255,255,.05);
+border: 1px solid var(--card-border);
+border-radius: 8px;
+color: var(--soft-white);
+cursor: pointer;
+width: 100%;
+}
