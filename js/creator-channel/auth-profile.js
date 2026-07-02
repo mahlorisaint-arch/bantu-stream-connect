@@ -5,12 +5,13 @@
 // ===== AUTH CHECK =====
 async function checkAuth() {
   try {
-    if (!window.supabase) {
+    const client = window.supabaseClient || window.supabase;
+    if (!client) {
       console.warn('⚠️ Supabase not available for auth check');
       return null;
     }
     
-    const { data, error } = await window.supabase.auth.getSession();
+    const { data, error } = await client.auth.getSession();
     if (error) throw error;
     
     window.currentUser = data?.session?.user || null;
@@ -29,9 +30,12 @@ async function checkAuth() {
 
 async function loadUserProfile() {
   try {
-    if (!window.currentUser || !window.supabase) return;
+    if (!window.currentUser) return;
     
-    const { data: profile, error } = await window.supabase
+    const client = window.supabaseClient || window.supabase;
+    if (!client) return;
+    
+    const { data: profile, error } = await client
       .from('user_profiles')
       .select('*')
       .eq('id', window.currentUser.id)
@@ -60,9 +64,10 @@ async function updateProfileUI() {
   
   if (window.currentUser) {
     try {
-      if (!window.supabase) return;
+      const client = window.supabaseClient || window.supabase;
+      if (!client) return;
       
-      const { data: profile } = await window.supabase
+      const { data: profile } = await client
         .from('user_profiles')
         .select('full_name, username, avatar_url')
         .eq('id', window.currentUser.id)
@@ -136,29 +141,8 @@ async function updateProfileUI() {
   }
 }
 
-// ===== AUTH STATE CHANGE =====
-// Check if supabase exists before setting up auth listener
-if (window.supabase && typeof window.supabase.auth.onAuthStateChange === 'function') {
-  window.supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN') {
-      window.currentUser = session.user;
-      loadUserProfile();
-      if (typeof showToast === 'function') {
-        showToast('Welcome back!', 'success');
-      }
-    } else if (event === 'SIGNED_OUT') {
-      window.currentUser = null;
-      updateProfileUI();
-      updateNotificationBadge(0);
-      window.notifications = [];
-      if (typeof showToast === 'function') {
-        showToast('Signed out', 'info');
-      }
-    }
-  });
-} else {
-  console.warn('⚠️ Supabase auth not available for state change listener');
-}
+// ===== AUTH STATE CHANGE - REMOVED to avoid conflict with shared-components.js =====
+// shared-components.js already handles auth state changes globally
 
 // Make functions globally available
 window.checkAuth = checkAuth;
