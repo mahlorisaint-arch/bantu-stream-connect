@@ -1,0 +1,152 @@
+/* ===== CHANNEL TRAILER ===== */
+.channel-trailer-section { margin-bottom: 40px; position: relative; z-index: 5; }
+.trailer-container {
+background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px;
+overflow: hidden; backdrop-filter: blur(10px); border-left: 3px solid var(--warm-gold);
+}
+.trailer-header { padding: 20px 25px; border-bottom: 1px solid var(--card-border); }
+.trailer-title {
+font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 700;
+color: var(--warm-gold); display: flex; align-items: center; gap: 10px;
+}
+.trailer-content { display: flex; flex-direction: column; }
+@media (min-width: 768px) { .trailer-content { flex-direction: row; } }
+.trailer-video {
+flex: 2; position: relative; background: #000; min-height: 200px; cursor: pointer;
+}
+.trailer-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.trailer-play-btn {
+position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+width: 70px; height: 70px; background: rgba(245, 158, 11, 0.9); border-radius: 50%;
+display: flex; align-items: center; justify-content: center; color: white;
+font-size: 28px; cursor: pointer; transition: all 0.3s ease; border: 3px solid rgba(255, 255, 255, 0.3);
+}
+.trailer-play-btn:hover {
+transform: translate(-50%, -50%) scale(1.1); background: var(--warm-gold);
+box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+}
+.trailer-info { flex: 1; padding: 25px; background: rgba(0, 0, 0, 0.2); }
+.trailer-info h3 { font-size: 18px; margin-bottom: 10px; color: var(--soft-white); }
+.trailer-info p { color: var(--slate-grey); font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+.trailer-stats { display: flex; gap: 20px; font-size: 13px; color: var(--warm-gold); }
+
+/* ===== ACTIVITY FEED ===== */
+.activity-section { margin-bottom: 40px; }
+.activity-feed {
+background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px;
+padding: 20px; backdrop-filter: blur(10px);
+}
+.activity-item {
+display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid var(--card-border);
+transition: background 0.3s ease;
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-item:hover { background: rgba(255, 255, 255, 0.05); }
+.activity-icon {
+width: 40px; height: 40px; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;
+}
+.activity-content { flex: 1; }
+.activity-text { font-size: 14px; margin-bottom: 5px; color: var(--soft-white); }
+.activity-text strong { color: var(--warm-gold); }
+.activity-time { font-size: 12px; color: var(--slate-grey); display: flex; align-items: center; gap: 5px; }
+
+/* ===== FAN HIGHLIGHTS ===== */
+.fan-section { margin-bottom: 40px; }
+.fan-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.fan-card {
+background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+padding: 20px; backdrop-filter: blur(10px); transition: all 0.3s ease;
+}
+.fan-card:hover { border-color: var(--warm-gold); transform: translateY(-5px); }
+.fan-header { display: flex; gap: 12px; margin-bottom: 15px; }
+.fan-avatar { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 2px solid var(--warm-gold); }
+.fan-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.fan-info h4 { font-size: 16px; margin-bottom: 3px; color: var(--soft-white); }
+.fan-badge { font-size: 12px; color: var(--warm-gold); }
+.fan-comment { font-size: 14px; line-height: 1.6; color: var(--slate-grey); margin-bottom: 15px; font-style: italic; }
+.fan-stats { display: flex; gap: 15px; font-size: 13px; }
+.fan-stats i { color: var(--warm-gold); margin-right: 5px; }
+
+/* ===== ACHIEVEMENTS ===== */
+.achievements-section { margin-bottom: 40px; }
+.achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+.achievement-card {
+background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+padding: 20px; text-align: center; transition: all 0.3s ease; backdrop-filter: blur(10px);
+}
+.achievement-card.completed { border-color: var(--warm-gold); background: rgba(245, 158, 11, 0.05); }
+.achievement-card.in-progress { opacity: 0.7; }
+.achievement-icon {
+width: 60px; height: 60px; border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 24px;
+}
+.achievement-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--soft-white); }
+.achievement-progress { font-size: 12px; color: var(--warm-gold); margin-bottom: 10px; }
+.achievement-date { font-size: 11px; color: var(--slate-grey); }
+
+/* ===== SCHEDULE ===== */
+.schedule-section { margin-bottom: 40px; }
+.schedule-banner {
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); border-radius: 20px;
+padding: 30px; display: flex; align-items: center; justify-content: space-between;
+flex-wrap: wrap; gap: 20px;
+}
+.schedule-info h3 { font-family: 'Orbitron', sans-serif; font-size: 24px; margin-bottom: 10px; color: white; }
+.schedule-info p { color: rgba(255, 255, 255, 0.9); display: flex; align-items: center; gap: 10px; }
+.schedule-badge {
+background: white; color: var(--deep-black); padding: 8px 20px; border-radius: 30px;
+font-weight: 600; display: flex; align-items: center; gap: 10px;
+}
+
+/* ===== RECOMMENDED CREATORS ===== */
+.recommended-section { margin-bottom: 40px; }
+.recommended-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+.recommended-creator {
+background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease;
+}
+.recommended-creator:hover { transform: translateY(-5px); border-color: var(--warm-gold); }
+.recommended-avatar {
+width: 80px; height: 80px; border-radius: 50%; overflow: hidden; margin: 0 auto 15px;
+border: 3px solid var(--warm-gold);
+display: flex; align-items: center; justify-content: center;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+}
+.recommended-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.recommended-name {
+font-size: 16px; font-weight: 600; margin-bottom: 3px; color: var(--soft-white);
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.recommended-username {
+font-size: 13px; color: var(--slate-grey); margin-bottom: 10px;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.recommended-follow-btn {
+background: transparent; border: 1px solid var(--warm-gold); color: var(--warm-gold);
+padding: 8px 20px; border-radius: 30px; font-size: 13px; font-weight: 600;
+cursor: pointer; transition: all 0.3s ease;
+white-space: nowrap;
+}
+.recommended-follow-btn:hover { background: var(--warm-gold); color: var(--deep-black); transform: translateY(-2px); }
+.recommended-follow-btn.connected {
+background: var(--success-color); border-color: var(--success-color); color: white;
+}
+.recommended-follow-btn.connected:hover { background: #059669; transform: none; }
+
+/* ===== SUPPORT ===== */
+.support-section { margin-bottom: 40px; }
+.support-card {
+background: linear-gradient(135deg, var(--card-bg), rgba(245, 158, 11, 0.1));
+border: 2px solid var(--warm-gold); border-radius: 24px; padding: 30px;
+display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;
+}
+.support-info h3 { font-family: 'Orbitron', sans-serif; font-size: 24px; margin-bottom: 10px; color: var(--soft-white); }
+.support-info p { color: var(--slate-grey); }
+.support-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+.support-btn { padding: 15px 30px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; border: none; }
+.support-btn.primary { background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue)); color: white; }
+.support-btn.secondary { background: transparent; border: 1px solid var(--warm-gold); color: var(--warm-gold); }
+.support-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3); }
