@@ -32,12 +32,13 @@ async function loadRecommendedCreators() {
   if (!grid) return;
   
   try {
-    if (!window.supabase) {
+    const client = window.supabaseClient || window.supabase;
+    if (!client) {
       grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">Unable to load recommendations</p>';
       return;
     }
     
-    const { data: connectors, error: connError } = await window.supabase
+    const { data: connectors, error: connError } = await client
       .from('connectors')
       .select('connector_id')
       .eq('connected_id', window.creatorId)
@@ -49,7 +50,7 @@ async function loadRecommendedCreators() {
     
     if (connectors && connectors.length > 0) {
       const connectorIds = connectors.map(c => c.connector_id);
-      const { data: profiles, error: profError } = await window.supabase
+      const { data: profiles, error: profError } = await client
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio')
         .in('id', connectorIds)
@@ -62,7 +63,7 @@ async function loadRecommendedCreators() {
     }
     
     if (recommended.length === 0) {
-      const { data: randomCreators, error: randError } = await window.supabase
+      const { data: randomCreators, error: randError } = await client
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio')
         .eq('role', 'creator')
@@ -76,8 +77,8 @@ async function loadRecommendedCreators() {
     if (recommended.length > 0) {
       const connectionChecks = await Promise.all(recommended.map(async (creator) => {
         if (!window.currentUser) return { id: creator.id, isConnected: false };
-        if (!window.supabase) return { id: creator.id, isConnected: false };
-        const { data: conn } = await window.supabase
+        if (!client) return { id: creator.id, isConnected: false };
+        const { data: conn } = await client
           .from('connectors')
           .select('id')
           .eq('connector_id', window.currentUser.id)
@@ -113,7 +114,9 @@ async function loadRecommendedCreators() {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const targetId = btn.dataset.targetId;
-          await handleRecommendedConnect(targetId, btn);
+          if (typeof handleRecommendedConnect === 'function') {
+            await handleRecommendedConnect(targetId, btn);
+          }
         });
       });
       
@@ -142,7 +145,10 @@ function setupSidebar() {
   const sidebarOverlay = document.getElementById('sidebar-overlay');
   const sidebarMenu = document.getElementById('sidebar-menu');
   
-  if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
+  if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) {
+    console.warn('⚠️ Sidebar elements not found');
+    return;
+  }
   
   const openSidebar = () => {
     sidebarMenu.classList.add('active');
@@ -156,7 +162,7 @@ function setupSidebar() {
     document.body.style.overflow = '';
   };
   
-  // Remove any existing listeners
+  // Remove any existing listeners by cloning
   const newMenuToggle = menuToggle.cloneNode(true);
   menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
   
@@ -177,6 +183,8 @@ function setupSidebar() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
   });
+  
+  console.log('✅ Sidebar setup complete');
 }
 
 // ===== NAVIGATION BUTTONS =====
@@ -212,8 +220,9 @@ function setupNavigationButtons() {
     navCreate.parentNode.replaceChild(newNavCreate, navCreate);
     newNavCreate.addEventListener('click', async (e) => {
       e.preventDefault();
-      if (window.supabase) {
-        const { data } = await window.supabase.auth.getSession();
+      const client = window.supabaseClient || window.supabase;
+      if (client) {
+        const { data } = await client.auth.getSession();
         if (data?.session) {
           window.location.href = 'creator-upload.html';
         } else {
@@ -243,11 +252,15 @@ function setupNavigationButtons() {
       }
     });
   }
+  
+  console.log('✅ Navigation buttons setup complete');
 }
 
 // ===== INITIALIZE CREATOR CHANNEL =====
 async function initializeCreatorChannel() {
   try {
+    console.log('🚀 Initializing Creator Channel...');
+    
     const loading = document.getElementById('loading');
     const app = document.getElementById('app');
     
@@ -260,14 +273,16 @@ async function initializeCreatorChannel() {
     if (typeof initThemeSystem === 'function') {
       initThemeSystem();
     } else {
-      console.warn('⚠️ initThemeSystem not available');
+      console.warn('⚠️ initThemeSystem not available - using shared-components theme');
     }
     
     // Initialize UI Scale
-    window.uiScaleController = new UIScaleController();
-    window.uiScaleController.init();
-    if (typeof setupScaleControls === 'function') {
-      setupScaleControls();
+    if (typeof UIScaleController === 'function') {
+      window.uiScaleController = new UIScaleController();
+      window.uiScaleController.init();
+      if (typeof setupScaleControls === 'function') {
+        setupScaleControls();
+      }
     }
     
     // Fix horizontal scroll on mobile
@@ -278,10 +293,18 @@ async function initializeCreatorChannel() {
     setupNavigationButtons();
     
     // Check auth
-    await checkAuth();
+    if (typeof checkAuth === 'function') {
+      await checkAuth();
+    } else {
+      console.warn('⚠️ checkAuth not available');
+    }
     
     // Load creator data
-    await loadCreatorData();
+    if (typeof loadCreatorData === 'function') {
+      await loadCreatorData();
+    } else {
+      console.warn('⚠️ loadCreatorData not available');
+    }
     
     // Setup event listeners (from events-listeners.js)
     if (typeof setupEventListeners === 'function') {
@@ -295,20 +318,7 @@ async function initializeCreatorChannel() {
       if (app) app.style.display = 'block';
     }, 500);
     
-    console.log('✅ Creator channel initialized with PHASE 5 database migration!');
-    console.log('   🚀 Using content_engagement_stats for metrics');
-    console.log('   🚀 Using playlist_contents junction table for playlists');
-    console.log('   🚀 Using status = "published" for content filtering');
-    console.log('   🚀 Using sort_index for ordering');
-    console.log('   🚨 FIXED: Removed fragile Content:content_id!inner syntax');
-    console.log('   🚨 FIXED: Enterprise-safe TWO-QUERY approach bypasses PostgREST embedding');
-    console.log('   🚨 FIXED: Proper item count using playlist_contents.length');
-    console.log('   🚨 FIXED: Proper thumbnail extraction with fallback chain');
-    console.log('   🚨 FIXED: Playlist click navigation with playlist_id parameter');
-    console.log('   🚨 FIXED: Album track extraction with proper sorting and mapping');
-    console.log('   🚨 FIXED: Replaced views_count/likes_count with live_views/favorites_count');
-    console.log('   🔧 CRITICAL: String() type normalization for ID lookups in all merge functions');
-    console.log('   🎨 BANNER UPLOAD: Using Edge Function → Cloudflare R2 with 20MB limit');
+    console.log('✅ Creator channel initialized successfully');
     
   } catch (error) {
     console.error('❌ Error initializing:', error);
@@ -334,7 +344,10 @@ window.setupNavigationButtons = setupNavigationButtons;
 // ===== START THE APPLICATION =====
 // Wait for DOM to be ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCreatorChannel);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Small delay to ensure shared-components.js loads first
+        setTimeout(initializeCreatorChannel, 100);
+    });
 } else {
-    initializeCreatorChannel();
+    setTimeout(initializeCreatorChannel, 100);
 }
