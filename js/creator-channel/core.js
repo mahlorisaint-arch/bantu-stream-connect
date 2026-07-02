@@ -2,10 +2,20 @@
 // CORE - CONFIGURATION, STATE, HELPERS
 // ============================================
 
-// SUPABASE CONFIGURATION
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ===== SUPABASE CONFIGURATION =====
+// Check if supabase client already exists
+if (!window.supabaseClient) {
+    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        window.supabaseClient = supabase.createClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
+        console.log('✅ Supabase client initialized in core.js');
+    }
+}
+
+// Use the existing client or create a reference
+const supabase = window.supabaseClient;
 
 // ===== GLOBAL STATE =====
 window.currentUser = null;
@@ -79,7 +89,7 @@ function fixMediaUrl(url) {
   if (!url) return '';
   if (url.startsWith('http')) return url;
   if (url.startsWith('data:')) return url;
-  return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+  return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 
 function showConfetti() {
@@ -307,3 +317,4 @@ window.UIScaleController = UIScaleController;
 window.initThemeSystem = initThemeSystem;
 window.applyTheme = applyTheme;
 window.setupScaleControls = setupScaleControls;
+window.supabase = supabase;
