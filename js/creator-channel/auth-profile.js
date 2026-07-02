@@ -5,7 +5,12 @@
 // ===== AUTH CHECK =====
 async function checkAuth() {
   try {
-    const { data, error } = await supabase.auth.getSession();
+    if (!window.supabase) {
+      console.warn('⚠️ Supabase not available for auth check');
+      return null;
+    }
+    
+    const { data, error } = await window.supabase.auth.getSession();
     if (error) throw error;
     
     window.currentUser = data?.session?.user || null;
@@ -24,9 +29,9 @@ async function checkAuth() {
 
 async function loadUserProfile() {
   try {
-    if (!window.currentUser) return;
+    if (!window.currentUser || !window.supabase) return;
     
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await window.supabase
       .from('user_profiles')
       .select('*')
       .eq('id', window.currentUser.id)
@@ -55,7 +60,9 @@ async function updateProfileUI() {
   
   if (window.currentUser) {
     try {
-      const { data: profile } = await supabase
+      if (!window.supabase) return;
+      
+      const { data: profile } = await window.supabase
         .from('user_profiles')
         .select('full_name, username, avatar_url')
         .eq('id', window.currentUser.id)
@@ -130,19 +137,28 @@ async function updateProfileUI() {
 }
 
 // ===== AUTH STATE CHANGE =====
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN') {
-    window.currentUser = session.user;
-    loadUserProfile();
-    showToast('Welcome back!', 'success');
-  } else if (event === 'SIGNED_OUT') {
-    window.currentUser = null;
-    updateProfileUI();
-    updateNotificationBadge(0);
-    window.notifications = [];
-    showToast('Signed out', 'info');
-  }
-});
+// Check if supabase exists before setting up auth listener
+if (window.supabase && typeof window.supabase.auth.onAuthStateChange === 'function') {
+  window.supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') {
+      window.currentUser = session.user;
+      loadUserProfile();
+      if (typeof showToast === 'function') {
+        showToast('Welcome back!', 'success');
+      }
+    } else if (event === 'SIGNED_OUT') {
+      window.currentUser = null;
+      updateProfileUI();
+      updateNotificationBadge(0);
+      window.notifications = [];
+      if (typeof showToast === 'function') {
+        showToast('Signed out', 'info');
+      }
+    }
+  });
+} else {
+  console.warn('⚠️ Supabase auth not available for state change listener');
+}
 
 // Make functions globally available
 window.checkAuth = checkAuth;
