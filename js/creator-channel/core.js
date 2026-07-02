@@ -2,20 +2,9 @@
 // CORE - CONFIGURATION, STATE, HELPERS
 // ============================================
 
-// ===== SUPABASE CONFIGURATION =====
-// Check if supabase client already exists
-if (!window.supabaseClient) {
-    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
-        window.supabaseClient = supabase.createClient(
-            'https://ydnxqnbjoshvxteevemc.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-        );
-        console.log('✅ Supabase client initialized in core.js');
-    }
-}
-
-// Use the existing client or create a reference
-const supabase = window.supabaseClient;
+// ===== USE EXISTING SUPABASE CLIENT =====
+// Don't redeclare - use the one from shared-components.js or window
+const supabase = window.supabaseClient || window.supabase;
 
 // ===== GLOBAL STATE =====
 window.currentUser = null;
@@ -317,4 +306,3 @@ window.UIScaleController = UIScaleController;
 window.initThemeSystem = initThemeSystem;
 window.applyTheme = applyTheme;
 window.setupScaleControls = setupScaleControls;
-window.supabase = supabase;
