@@ -32,7 +32,12 @@ async function loadRecommendedCreators() {
   if (!grid) return;
   
   try {
-    const { data: connectors, error: connError } = await supabase
+    if (!window.supabase) {
+      grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">Unable to load recommendations</p>';
+      return;
+    }
+    
+    const { data: connectors, error: connError } = await window.supabase
       .from('connectors')
       .select('connector_id')
       .eq('connected_id', window.creatorId)
@@ -44,7 +49,7 @@ async function loadRecommendedCreators() {
     
     if (connectors && connectors.length > 0) {
       const connectorIds = connectors.map(c => c.connector_id);
-      const { data: profiles, error: profError } = await supabase
+      const { data: profiles, error: profError } = await window.supabase
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio')
         .in('id', connectorIds)
@@ -57,7 +62,7 @@ async function loadRecommendedCreators() {
     }
     
     if (recommended.length === 0) {
-      const { data: randomCreators, error: randError } = await supabase
+      const { data: randomCreators, error: randError } = await window.supabase
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio')
         .eq('role', 'creator')
@@ -71,7 +76,8 @@ async function loadRecommendedCreators() {
     if (recommended.length > 0) {
       const connectionChecks = await Promise.all(recommended.map(async (creator) => {
         if (!window.currentUser) return { id: creator.id, isConnected: false };
-        const { data: conn } = await supabase
+        if (!window.supabase) return { id: creator.id, isConnected: false };
+        const { data: conn } = await window.supabase
           .from('connectors')
           .select('id')
           .eq('connector_id', window.currentUser.id)
@@ -129,6 +135,116 @@ async function loadRecommendedCreators() {
   }
 }
 
+// ===== SIDEBAR SETUP =====
+function setupSidebar() {
+  const menuToggle = document.getElementById('menu-toggle');
+  const sidebarClose = document.getElementById('sidebar-close');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebarMenu = document.getElementById('sidebar-menu');
+  
+  if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
+  
+  const openSidebar = () => {
+    sidebarMenu.classList.add('active');
+    sidebarOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+  
+  const closeSidebar = () => {
+    sidebarMenu.classList.remove('active');
+    sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+  
+  // Remove any existing listeners
+  const newMenuToggle = menuToggle.cloneNode(true);
+  menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
+  
+  newMenuToggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openSidebar();
+  });
+  
+  const newSidebarClose = sidebarClose.cloneNode(true);
+  sidebarClose.parentNode.replaceChild(newSidebarClose, sidebarClose);
+  newSidebarClose.addEventListener('click', closeSidebar);
+  
+  const newSidebarOverlay = sidebarOverlay.cloneNode(true);
+  sidebarOverlay.parentNode.replaceChild(newSidebarOverlay, sidebarOverlay);
+  newSidebarOverlay.addEventListener('click', closeSidebar);
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
+  });
+}
+
+// ===== NAVIGATION BUTTONS =====
+function setupNavigationButtons() {
+  const navHome = document.getElementById('nav-home-btn');
+  if (navHome) {
+    const newNavHome = navHome.cloneNode(true);
+    navHome.parentNode.replaceChild(newNavHome, navHome);
+    newNavHome.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = 'index.html';
+    });
+  }
+  
+  const navHistory = document.getElementById('nav-history-btn');
+  if (navHistory) {
+    const newNavHistory = navHistory.cloneNode(true);
+    navHistory.parentNode.replaceChild(newNavHistory, navHistory);
+    newNavHistory.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (!window.currentUser) {
+        showToast('Please sign in to view watch history', 'warning');
+        window.location.href = `login.html?redirect=watch-history.html`;
+        return;
+      }
+      window.location.href = 'watch-history.html';
+    });
+  }
+  
+  const navCreate = document.getElementById('nav-create-btn');
+  if (navCreate) {
+    const newNavCreate = navCreate.cloneNode(true);
+    navCreate.parentNode.replaceChild(newNavCreate, navCreate);
+    newNavCreate.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (window.supabase) {
+        const { data } = await window.supabase.auth.getSession();
+        if (data?.session) {
+          window.location.href = 'creator-upload.html';
+        } else {
+          showToast('Please sign in to create content', 'warning');
+          window.location.href = `login.html?redirect=creator-upload.html`;
+        }
+      } else {
+        showToast('Please sign in to create content', 'warning');
+        window.location.href = `login.html?redirect=creator-upload.html`;
+      }
+    });
+  }
+  
+  const navMenu = document.getElementById('nav-menu-btn');
+  if (navMenu) {
+    const newNavMenu = navMenu.cloneNode(true);
+    navMenu.parentNode.replaceChild(newNavMenu, navMenu);
+    newNavMenu.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sidebarMenu = document.getElementById('sidebar-menu');
+      const sidebarOverlay = document.getElementById('sidebar-overlay');
+      if (sidebarMenu && sidebarOverlay) {
+        sidebarMenu.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    });
+  }
+}
+
 // ===== INITIALIZE CREATOR CHANNEL =====
 async function initializeCreatorChannel() {
   try {
@@ -140,13 +256,19 @@ async function initializeCreatorChannel() {
     
     window.loadingText = document.getElementById('loading-text');
     
-    // Initialize theme system
-    initThemeSystem();
+    // Initialize theme system (from core.js)
+    if (typeof initThemeSystem === 'function') {
+      initThemeSystem();
+    } else {
+      console.warn('⚠️ initThemeSystem not available');
+    }
     
     // Initialize UI Scale
     window.uiScaleController = new UIScaleController();
     window.uiScaleController.init();
-    setupScaleControls();
+    if (typeof setupScaleControls === 'function') {
+      setupScaleControls();
+    }
     
     // Fix horizontal scroll on mobile
     fixMobileHorizontalScroll();
@@ -155,9 +277,18 @@ async function initializeCreatorChannel() {
     setupSidebar();
     setupNavigationButtons();
     
+    // Check auth
     await checkAuth();
+    
+    // Load creator data
     await loadCreatorData();
-    setupEventListeners();
+    
+    // Setup event listeners (from events-listeners.js)
+    if (typeof setupEventListeners === 'function') {
+      setupEventListeners();
+    } else {
+      console.warn('⚠️ setupEventListeners not available');
+    }
     
     setTimeout(() => {
       if (loading) loading.style.display = 'none';
@@ -181,101 +312,15 @@ async function initializeCreatorChannel() {
     
   } catch (error) {
     console.error('❌ Error initializing:', error);
-    showToast('Failed to initialize', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to initialize', 'error');
+    }
     setTimeout(() => {
       const loading = document.getElementById('loading');
       const app = document.getElementById('app');
       if (loading) loading.style.display = 'none';
       if (app) app.style.display = 'block';
     }, 1000);
-  }
-}
-
-// ===== SIDEBAR SETUP =====
-function setupSidebar() {
-  const menuToggle = document.getElementById('menu-toggle');
-  const sidebarClose = document.getElementById('sidebar-close');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  const sidebarMenu = document.getElementById('sidebar-menu');
-  
-  if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
-  
-  const openSidebar = () => {
-    sidebarMenu.classList.add('active');
-    sidebarOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  };
-  
-  const closeSidebar = () => {
-    sidebarMenu.classList.remove('active');
-    sidebarOverlay.classList.remove('active');
-    document.body.style.overflow = '';
-  };
-  
-  menuToggle.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openSidebar();
-  });
-  
-  sidebarClose.addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
-  
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
-  });
-}
-
-// ===== NAVIGATION BUTTONS =====
-function setupNavigationButtons() {
-  const navHome = document.getElementById('nav-home-btn');
-  if (navHome) {
-    navHome.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.href = 'index.html';
-    });
-  }
-  
-  const navHistory = document.getElementById('nav-history-btn');
-  if (navHistory) {
-    navHistory.addEventListener('click', async (e) => {
-      e.preventDefault();
-      if (!window.currentUser) {
-        showToast('Please sign in to view watch history', 'warning');
-        window.location.href = `login.html?redirect=watch-history.html`;
-        return;
-      }
-      window.location.href = 'watch-history.html';
-    });
-  }
-  
-  const navCreate = document.getElementById('nav-create-btn');
-  if (navCreate) {
-    navCreate.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const { data } = await supabase.auth.getSession();
-      if (data?.session) {
-        window.location.href = 'creator-upload.html';
-      } else {
-        showToast('Please sign in to create content', 'warning');
-        window.location.href = `login.html?redirect=creator-upload.html`;
-      }
-    });
-  }
-  
-  const navMenu = document.getElementById('nav-menu-btn');
-  if (navMenu) {
-    navMenu.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const sidebarMenu = document.getElementById('sidebar-menu');
-      const sidebarOverlay = document.getElementById('sidebar-overlay');
-      if (sidebarMenu && sidebarOverlay) {
-        sidebarMenu.classList.add('active');
-        sidebarOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      }
-    });
   }
 }
 
@@ -287,9 +332,9 @@ window.setupSidebar = setupSidebar;
 window.setupNavigationButtons = setupNavigationButtons;
 
 // ===== START THE APPLICATION =====
-// The creator-channel.js had this at the end:
-// Start the application
-initializeCreatorChannel();
-
-// So we call it here
-initializeCreatorChannel();
+// Wait for DOM to be ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCreatorChannel);
+} else {
+    initializeCreatorChannel();
+}
