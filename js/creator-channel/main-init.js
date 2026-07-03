@@ -269,11 +269,10 @@ async function initializeCreatorChannel() {
     
     window.loadingText = document.getElementById('loading-text');
     
-    // Initialize theme system (from core.js)
+    // Theme is already applied by shared-components.js
+    // Just initialize theme selector if needed
     if (typeof initThemeSystem === 'function') {
       initThemeSystem();
-    } else {
-      console.warn('⚠️ initThemeSystem not available - using shared-components theme');
     }
     
     // Initialize UI Scale
@@ -293,24 +292,14 @@ async function initializeCreatorChannel() {
     setupNavigationButtons();
     
     // Check auth
-    if (typeof checkAuth === 'function') {
-      await checkAuth();
-    } else {
-      console.warn('⚠️ checkAuth not available');
-    }
+    await checkAuth();
     
     // Load creator data
-    if (typeof loadCreatorData === 'function') {
-      await loadCreatorData();
-    } else {
-      console.warn('⚠️ loadCreatorData not available');
-    }
+    await loadCreatorData();
     
-    // Setup event listeners (from events-listeners.js)
+    // Setup event listeners
     if (typeof setupEventListeners === 'function') {
       setupEventListeners();
-    } else {
-      console.warn('⚠️ setupEventListeners not available');
     }
     
     setTimeout(() => {
