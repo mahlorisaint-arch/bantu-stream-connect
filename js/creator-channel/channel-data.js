@@ -1,7 +1,7 @@
 // ============================================
 // CHANNEL-DATA - DATA LOADING FUNCTIONS
 // ============================================
-
+const client = window.supabaseClient || window.supabase;
 // ===== GET URL PARAMETER =====
 function getUrlParam(name) {
   const urlParams = new URLSearchParams(window.location.search);
