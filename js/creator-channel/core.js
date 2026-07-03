@@ -97,61 +97,6 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// ===== UI SCALE CONTROLLER =====
-class UIScaleController {
-  constructor() {
-    this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-    this.minScale = 0.8;
-    this.maxScale = 1.4;
-    this.step = 0.1;
-  }
-  
-  init() {
-    this.applyScale();
-    this.setupEventListeners();
-  }
-  
-  setupEventListeners() {
-    document.addEventListener('scaleChanged', (e) => {
-      this.updateScaleDisplay(e.detail.scale);
-    });
-  }
-  
-  applyScale() {
-    document.documentElement.style.setProperty('--ui-scale', this.scale);
-    localStorage.setItem('bantu_ui_scale', this.scale.toString());
-    document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale: this.scale } }));
-  }
-  
-  increase() {
-    if (this.scale < this.maxScale) {
-      this.scale = Math.min(this.maxScale, this.scale + this.step);
-      this.applyScale();
-    }
-  }
-  
-  decrease() {
-    if (this.scale > this.minScale) {
-      this.scale = Math.max(this.minScale, this.scale - this.step);
-      this.applyScale();
-    }
-  }
-  
-  reset() {
-    this.scale = 1;
-    this.applyScale();
-  }
-  
-  getScale() { return this.scale; }
-  
-  updateScaleDisplay(scale) {
-    const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
-    displays.forEach(el => {
-      if (el) el.textContent = Math.round(scale * 100) + '%';
-    });
-  }
-}
-
 // ===== THEME SYSTEM FUNCTIONS =====
 function initThemeSystem() {
   console.log('🎨 Initializing theme system...');
@@ -298,7 +243,6 @@ window.getInitials = getInitials;
 window.fixMediaUrl = fixMediaUrl;
 window.showConfetti = showConfetti;
 window.formatDuration = formatDuration;
-window.UIScaleController = UIScaleController;
 window.initThemeSystem = initThemeSystem;
 window.applyTheme = applyTheme;
 window.setupScaleControls = setupScaleControls;
