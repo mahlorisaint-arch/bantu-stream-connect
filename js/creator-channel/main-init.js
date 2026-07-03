@@ -2,9 +2,6 @@
 // MAIN-INIT - INITIALIZATION & STARTUP
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-const supabase = window.supabaseClient || window.supabase;
-
 // ===== FIX MOBILE HORIZONTAL SCROLL =====
 function fixMobileHorizontalScroll() {
   document.body.style.overflowX = 'hidden';
