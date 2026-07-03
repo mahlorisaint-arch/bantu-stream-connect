@@ -2,9 +2,6 @@
 // AUTH-PROFILE - AUTHENTICATION & PROFILE MANAGEMENT
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-const supabase = window.supabaseClient || window.supabase;
-
 // ===== AUTH CHECK =====
 async function checkAuth() {
   try {
