@@ -2,11 +2,6 @@
 // CORE - CONFIGURATION, STATE, HELPERS
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-// shared-components.js sets window.supabaseClient
-// Use that or fallback to window.supabase
-const supabase = window.supabaseClient || window.supabase;
-
 // ===== GLOBAL STATE =====
 window.currentUser = null;
 window.notifications = [];
