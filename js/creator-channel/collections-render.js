@@ -2,9 +2,6 @@
 // COLLECTIONS-RENDER - COLLECTIONS GRID
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-const supabase = window.supabaseClient || window.supabase;
-
 // ===== GET COLLECTION ITEM COUNT =====
 function getCollectionItemCount(collection) {
   return collection.playlist_contents?.length || 0;
