@@ -5,13 +5,7 @@
 // ===== AUTH CHECK =====
 async function checkAuth() {
   try {
-    const client = window.supabaseClient || window.supabase;
-    if (!client) {
-      console.warn('⚠️ Supabase not available for auth check');
-      return null;
-    }
-    
-    const { data, error } = await client.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
     
     window.currentUser = data?.session?.user || null;
@@ -32,10 +26,7 @@ async function loadUserProfile() {
   try {
     if (!window.currentUser) return;
     
-    const client = window.supabaseClient || window.supabase;
-    if (!client) return;
-    
-    const { data: profile, error } = await client
+    const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('id', window.currentUser.id)
@@ -64,10 +55,7 @@ async function updateProfileUI() {
   
   if (window.currentUser) {
     try {
-      const client = window.supabaseClient || window.supabase;
-      if (!client) return;
-      
-      const { data: profile } = await client
+      const { data: profile } = await supabase
         .from('user_profiles')
         .select('full_name, username, avatar_url')
         .eq('id', window.currentUser.id)
@@ -140,9 +128,6 @@ async function updateProfileUI() {
     if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
   }
 }
-
-// ===== AUTH STATE CHANGE - REMOVED to avoid conflict with shared-components.js =====
-// shared-components.js already handles auth state changes globally
 
 // Make functions globally available
 window.checkAuth = checkAuth;
