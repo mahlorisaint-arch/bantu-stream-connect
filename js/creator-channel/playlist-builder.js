@@ -2,6 +2,9 @@
 // PLAYLIST-BUILDER - PLAYLIST CREATION & MANAGEMENT
 // ============================================
 
+// ===== USE EXISTING SUPABASE CLIENT =====
+const supabase = window.supabaseClient || window.supabase;
+
 // ===== PLAYLIST DATABASE OPERATIONS =====
 async function savePlaylistV2(playlistData, playlistId = null) {
   const now = new Date().toISOString();
