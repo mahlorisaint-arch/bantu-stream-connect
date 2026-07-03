@@ -2,9 +2,9 @@
 // CORE - CONFIGURATION, STATE, HELPERS
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-// Don't redeclare - use the one from shared-components.js or window
-const supabase = window.supabaseClient || window.supabase;
+// ===== USE EXISTING SUPABASE CLIENT - DO NOT REDECLARE =====
+// supabase is already declared globally by the HTML script tag
+// Just use it directly
 
 // ===== GLOBAL STATE =====
 window.currentUser = null;
