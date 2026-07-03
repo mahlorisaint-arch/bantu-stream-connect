@@ -2,10 +2,6 @@
 // CORE - CONFIGURATION, STATE, HELPERS
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT - DO NOT REDECLARE =====
-// supabase is already declared globally by the HTML script tag
-// Just use it directly
-
 // ===== GLOBAL STATE =====
 window.currentUser = null;
 window.notifications = [];
