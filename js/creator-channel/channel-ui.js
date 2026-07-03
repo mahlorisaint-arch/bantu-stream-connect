@@ -2,6 +2,9 @@
 // CHANNEL-UI - UI RENDERING FUNCTIONS
 // ============================================
 
+// ===== USE EXISTING SUPABASE CLIENT =====
+const supabase = window.supabaseClient || window.supabase;
+
 // ===== UPDATE CREATOR UI =====
 function updateCreatorUI() {
   if (!window.creatorProfile) return;
