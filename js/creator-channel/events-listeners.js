@@ -2,6 +2,9 @@
 // EVENTS-LISTENERS - ALL EVENT BINDINGS
 // ============================================
 
+// ===== USE EXISTING SUPABASE CLIENT =====
+const supabase = window.supabaseClient || window.supabase;
+
 // ===== SETUP ALL EVENT LISTENERS =====
 function setupEventListeners() {
   // Profile button
