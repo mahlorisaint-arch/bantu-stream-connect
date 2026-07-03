@@ -32,13 +32,7 @@ async function loadRecommendedCreators() {
   if (!grid) return;
   
   try {
-    const client = window.supabaseClient || window.supabase;
-    if (!client) {
-      grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">Unable to load recommendations</p>';
-      return;
-    }
-    
-    const { data: connectors, error: connError } = await client
+    const { data: connectors, error: connError } = await supabase
       .from('connectors')
       .select('connector_id')
       .eq('connected_id', window.creatorId)
@@ -50,7 +44,7 @@ async function loadRecommendedCreators() {
     
     if (connectors && connectors.length > 0) {
       const connectorIds = connectors.map(c => c.connector_id);
-      const { data: profiles, error: profError } = await client
+      const { data: profiles, error: profError } = await supabase
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio')
         .in('id', connectorIds)
@@ -63,7 +57,7 @@ async function loadRecommendedCreators() {
     }
     
     if (recommended.length === 0) {
-      const { data: randomCreators, error: randError } = await client
+      const { data: randomCreators, error: randError } = await supabase
         .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio')
         .eq('role', 'creator')
@@ -77,8 +71,7 @@ async function loadRecommendedCreators() {
     if (recommended.length > 0) {
       const connectionChecks = await Promise.all(recommended.map(async (creator) => {
         if (!window.currentUser) return { id: creator.id, isConnected: false };
-        if (!client) return { id: creator.id, isConnected: false };
-        const { data: conn } = await client
+        const { data: conn } = await supabase
           .from('connectors')
           .select('id')
           .eq('connector_id', window.currentUser.id)
@@ -145,10 +138,7 @@ function setupSidebar() {
   const sidebarOverlay = document.getElementById('sidebar-overlay');
   const sidebarMenu = document.getElementById('sidebar-menu');
   
-  if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) {
-    console.warn('⚠️ Sidebar elements not found');
-    return;
-  }
+  if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
   
   const openSidebar = () => {
     sidebarMenu.classList.add('active');
@@ -162,38 +152,25 @@ function setupSidebar() {
     document.body.style.overflow = '';
   };
   
-  // Remove any existing listeners by cloning
-  const newMenuToggle = menuToggle.cloneNode(true);
-  menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
-  
-  newMenuToggle.addEventListener('click', (e) => {
+  menuToggle.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     openSidebar();
   });
   
-  const newSidebarClose = sidebarClose.cloneNode(true);
-  sidebarClose.parentNode.replaceChild(newSidebarClose, sidebarClose);
-  newSidebarClose.addEventListener('click', closeSidebar);
-  
-  const newSidebarOverlay = sidebarOverlay.cloneNode(true);
-  sidebarOverlay.parentNode.replaceChild(newSidebarOverlay, sidebarOverlay);
-  newSidebarOverlay.addEventListener('click', closeSidebar);
+  sidebarClose.addEventListener('click', closeSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
   
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
   });
-  
-  console.log('✅ Sidebar setup complete');
 }
 
 // ===== NAVIGATION BUTTONS =====
 function setupNavigationButtons() {
   const navHome = document.getElementById('nav-home-btn');
   if (navHome) {
-    const newNavHome = navHome.cloneNode(true);
-    navHome.parentNode.replaceChild(newNavHome, navHome);
-    newNavHome.addEventListener('click', (e) => {
+    navHome.addEventListener('click', (e) => {
       e.preventDefault();
       window.location.href = 'index.html';
     });
@@ -201,9 +178,7 @@ function setupNavigationButtons() {
   
   const navHistory = document.getElementById('nav-history-btn');
   if (navHistory) {
-    const newNavHistory = navHistory.cloneNode(true);
-    navHistory.parentNode.replaceChild(newNavHistory, navHistory);
-    newNavHistory.addEventListener('click', async (e) => {
+    navHistory.addEventListener('click', async (e) => {
       e.preventDefault();
       if (!window.currentUser) {
         showToast('Please sign in to view watch history', 'warning');
@@ -216,19 +191,11 @@ function setupNavigationButtons() {
   
   const navCreate = document.getElementById('nav-create-btn');
   if (navCreate) {
-    const newNavCreate = navCreate.cloneNode(true);
-    navCreate.parentNode.replaceChild(newNavCreate, navCreate);
-    newNavCreate.addEventListener('click', async (e) => {
+    navCreate.addEventListener('click', async (e) => {
       e.preventDefault();
-      const client = window.supabaseClient || window.supabase;
-      if (client) {
-        const { data } = await client.auth.getSession();
-        if (data?.session) {
-          window.location.href = 'creator-upload.html';
-        } else {
-          showToast('Please sign in to create content', 'warning');
-          window.location.href = `login.html?redirect=creator-upload.html`;
-        }
+      const { data } = await supabase.auth.getSession();
+      if (data?.session) {
+        window.location.href = 'creator-upload.html';
       } else {
         showToast('Please sign in to create content', 'warning');
         window.location.href = `login.html?redirect=creator-upload.html`;
@@ -238,9 +205,7 @@ function setupNavigationButtons() {
   
   const navMenu = document.getElementById('nav-menu-btn');
   if (navMenu) {
-    const newNavMenu = navMenu.cloneNode(true);
-    navMenu.parentNode.replaceChild(newNavMenu, navMenu);
-    newNavMenu.addEventListener('click', (e) => {
+    navMenu.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       const sidebarMenu = document.getElementById('sidebar-menu');
@@ -252,8 +217,6 @@ function setupNavigationButtons() {
       }
     });
   }
-  
-  console.log('✅ Navigation buttons setup complete');
 }
 
 // ===== INITIALIZE CREATOR CHANNEL =====
@@ -269,8 +232,7 @@ async function initializeCreatorChannel() {
     
     window.loadingText = document.getElementById('loading-text');
     
-    // Theme is already applied by shared-components.js
-    // Just initialize theme selector if needed
+    // Initialize theme system
     if (typeof initThemeSystem === 'function') {
       initThemeSystem();
     }
@@ -334,7 +296,6 @@ window.setupNavigationButtons = setupNavigationButtons;
 // Wait for DOM to be ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        // Small delay to ensure shared-components.js loads first
         setTimeout(initializeCreatorChannel, 100);
     });
 } else {
