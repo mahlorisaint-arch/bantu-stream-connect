@@ -2,9 +2,6 @@
 // MODALS - ANALYTICS, NOTIFICATIONS, BANNER, ABOUT
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-const supabase = window.supabaseClient || window.supabase;
-
 // ===== ANALYTICS FUNCTIONS =====
 function initAnalyticsModal() {
   const modal = document.getElementById('analytics-modal');
