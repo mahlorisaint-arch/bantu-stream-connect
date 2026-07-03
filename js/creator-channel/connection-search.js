@@ -2,9 +2,6 @@
 // CONNECTION-SEARCH - CONNECT, SEARCH, SHARE
 // ============================================
 
-// ===== USE EXISTING SUPABASE CLIENT =====
-const supabase = window.supabaseClient || window.supabase;
-
 // ===== HANDLE LOGIN REQUIRED =====
 function handleLoginRequired() {
   showToast('Please log in to connect', 'info');
