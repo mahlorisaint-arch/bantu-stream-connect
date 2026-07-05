@@ -12,15 +12,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Swiper JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<!-- Chart.js for Analytics -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- External CSS -->
 <link rel="stylesheet" href="css/creator-channel.css">
 </head>
 <body>
+
 <!-- SIDEBAR OVERLAY & MENU -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
@@ -115,7 +111,7 @@
 </div>
 </div>
 
-<!-- THEME SELECTOR (Fixed) -->
+<!-- THEME SELECTOR -->
 <div id="theme-selector" class="theme-selector">
   <button class="theme-option" data-theme="dark">
     <i class="fas fa-moon"></i> Dark
@@ -149,7 +145,6 @@
 </div>
 </div>
 
-<!-- ANALYTICS MODAL -->
 <div id="analytics-modal" class="modal">
   <div class="modal-content" style="max-width:900px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -166,7 +161,6 @@
   </div>
 </div>
 
-<!-- BANNER UPLOAD MODAL (UPDATED WITH PROGRESS INDICATOR) -->
 <div id="banner-upload-modal" class="banner-upload-modal">
 <div class="banner-upload-content">
 <h2 class="banner-upload-title">Customize Channel Banner</h2>
@@ -176,7 +170,6 @@
 <i class="fas fa-image" style="font-size: 32px; margin-right: 10px;"></i>
 Banner preview
 </div>
-<!-- NEW: Upload Progress Indicator -->
 <div class="banner-upload-progress" id="banner-upload-progress" style="display:none;">
 <div class="progress-bar">
 <div class="progress-fill" id="upload-progress-fill" style="width:0%;"></div>
@@ -294,7 +287,6 @@ Banner preview
 </div>
 </div>
 
-<!-- PLAYLIST BUILDER MODAL -->
 <div id="playlist-builder-modal" class="modal">
   <div class="modal-content" style="max-width:950px;padding:0;overflow:hidden;">
     <div style="padding:16px 20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;background:var(--card-bg);">
@@ -336,7 +328,6 @@ Banner preview
   </div>
 </div>
 
-<!-- Templates for Playlist Builder -->
 <template id="pl-item-tmpl">
   <div class="pl-item" draggable="true" style="display:flex;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:8px;margin-bottom:8px;cursor:grab;">
     <div style="width:80px;height:45px;border-radius:6px;overflow:hidden;flex-shrink:0;">
@@ -415,249 +406,192 @@ Banner preview
 </div>
 </header>
 
+<!-- ===== CHANNEL BANNER - KEPT AS IS ===== -->
 <div class="channel-banner" id="channel-banner">
 <button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
 <i class="fas fa-camera"></i> Change Banner
 </button>
 <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
+<!-- NEW: Streak badge on banner -->
+<div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span>-day upload streak</div>
 </div>
 
-<main class="container">
+<!-- ===== CHANNEL PROFILE (NEW DESIGN) ===== -->
+<div class="channel-profile">
+  <div class="channel-identity">
+    <div class="channel-avatar-container">
+      <div class="channel-avatar" id="creator-avatar-container">
+        <div class="creator-initials" id="creator-initials">?</div>
+      </div>
+      <div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
+    </div>
+    <div>
+      <div class="channel-name-row">
+        <h1 id="creator-name" class="channel-name">Creator Name</h1>
+        <span class="verified-badge" id="verified-badge" style="display: none;"><i class="fas fa-check-circle"></i></span>
+        <span class="creator-badge" id="creator-badge">Content Creator</span>
+      </div>
+      <div class="channel-meta">
+        <span id="creator-username">@username</span>
+        <span class="meta-divider">·</span>
+        <span id="connector-count-display">0</span> in the circle
+        <span class="meta-divider">·</span>
+        <span id="content-type-display">Series, shorts, podcast</span>
+      </div>
+    </div>
+  </div>
+  <div class="channel-actions">
+    <button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
+    <button id="notify-btn" class="action-btn icon-action-btn" title="Notifications"><i class="fas fa-bell"></i></button>
+    <button id="more-btn" class="action-btn icon-action-btn" title="More"><i class="fas fa-ellipsis-h"></i></button>
+  </div>
+</div>
 
-<!-- CHANNEL TRAILER SECTION -->
-<section class="channel-trailer-section" id="trailer-section" style="display: none;">
-<div class="trailer-container">
-<div class="trailer-header">
-<div class="trailer-title"><i class="fas fa-play-circle"></i> CHANNEL TRAILER</div>
+<!-- ===== TABS (NEW DESIGN) ===== -->
+<div class="channel-tabs" id="channel-tabs">
+  <div class="channel-tab is-active" data-tab="home">Home</div>
+  <div class="channel-tab" data-tab="series">Series</div>
+  <div class="channel-tab" data-tab="shorts">Shorts</div>
+  <div class="channel-tab" data-tab="podcast">Podcast</div>
+  <div class="channel-tab" data-tab="community">Community</div>
+  <div class="channel-tab" data-tab="about">About</div>
 </div>
-<div class="trailer-content">
-<div class="trailer-video" id="trailer-video">
-<img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&h=450&fit=crop" alt="Channel Trailer">
-<div class="trailer-play-btn" id="trailer-play-btn"><i class="fas fa-play"></i></div>
-</div>
-<div class="trailer-info">
-<h3 id="trailer-title">Welcome to My Channel</h3>
-<p id="trailer-description">Get to know the creator and what content to expect!</p>
-<div class="trailer-stats">
-<span><i class="fas fa-eye"></i> <span id="trailer-views">0</span></span>
-<span><i class="fas fa-clock"></i> <span id="trailer-duration">0:00</span></span>
-</div>
-</div>
-</div>
-</div>
+
+<!-- ===== HOME PANEL ===== -->
+<section class="tab-panel" data-panel="home">
+  <div class="channel-body">
+    <div class="channel-main">
+
+      <!-- Featured/Pinned Content -->
+      <div class="featured-card" id="featured-card" style="display: none;">
+        <span class="featured-badge" id="featured-badge">New</span>
+        <span class="featured-duration" id="featured-duration">18:42</span>
+        <div class="featured-card__caption">
+          <p class="upload-card__title" id="featured-title">Featured Content</p>
+          <span class="upload-card__meta" id="featured-meta">0 views · Just now</span>
+        </div>
+      </div>
+
+      <!-- Creator's World (Mobile/Tablet) -->
+      <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;">
+        <!-- Dynamic content -->
+      </div>
+
+      <!-- Recent Uploads -->
+      <p class="section-label">Recent uploads</p>
+      <div class="upload-grid" id="upload-grid">
+        <!-- Dynamic content -->
+      </div>
+      <div id="no-content" class="empty-state" style="display: none;">
+        <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
+        <h3>No Uploads Yet</h3>
+        <p>This creator hasn't uploaded any content</p>
+      </div>
+    </div>
+
+    <!-- Sidebar (Desktop) -->
+    <aside class="channel-sidebar" id="channel-sidebar">
+      <div class="sidebar-panel" id="world-panel">
+        <p class="sidebar-panel-title">Creator's world</p>
+        <div class="world-row" id="world-row-desktop">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+      <div class="sidebar-panel" id="top-supporter-panel">
+        <p class="sidebar-panel-title">Top supporter this week</p>
+        <div class="top-supporter" id="top-supporter">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+    </aside>
+  </div>
 </section>
 
-<!-- CREATOR HEADER -->
-<section class="creator-header">
-<div class="creator-info">
-<div class="creator-avatar-container">
-<div class="creator-avatar" id="creator-avatar-container"></div>
-<div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
-</div>
-<div class="creator-details">
-<div class="creator-name-row">
-<h1 id="creator-name" class="creator-name">Creator Name</h1>
-<span class="creator-badge" id="creator-badge">Content Creator</span>
-</div>
-<div id="creator-username" class="creator-username">@username</div>
-<div id="creator-bio" class="creator-bio">Creator bio will appear here</div>
-</div>
-</div>
+<!-- ===== COMMUNITY PANEL ===== -->
+<section class="tab-panel" data-panel="community" hidden>
+  <div class="channel-body">
+    <div class="channel-main community-main">
+
+      <!-- Pinned Post -->
+      <div class="pinned-post" id="pinned-post" style="display: none;">
+        <span>📌</span>
+        <div>
+          <p class="pinned-post-author">Pinned by <span id="pinned-post-creator">Creator</span></p>
+          <p class="pinned-post-content" id="pinned-post-content">Season 4 writers' room opens this month</p>
+        </div>
+      </div>
+
+      <!-- Poll -->
+      <div class="poll-section" id="poll-section" style="display: none;">
+        <p class="section-label">Who should guest next on the podcast?</p>
+        <div class="poll-option">
+          <div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">62%</span></div>
+          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:62%;background:#5DCAA5;"></div></div>
+        </div>
+        <div class="poll-option">
+          <div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">38%</span></div>
+          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:38%;background:#7F77DD;"></div></div>
+        </div>
+        <span class="poll-meta" id="poll-meta">0 votes · 0 days left</span>
+      </div>
+
+      <!-- Fan Wall -->
+      <div class="section-divider">
+        <p class="section-label">Fan wall</p>
+        <div class="fan-wall" id="fan-wall">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+    </div>
+
+    <aside class="channel-sidebar community-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">This week's top voices</p>
+        <div class="leaderboard" id="leaderboard">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+    </aside>
+  </div>
 </section>
 
-<!-- IDENTITY CARD -->
-<section class="identity-card">
-<div class="identity-header">
-<div class="identity-quote" id="creator-quote">"Creating authentic African stories for the world"</div>
-<button id="edit-identity-btn" class="edit-identity-btn" style="display: none;">
-<i class="fas fa-edit"></i> Edit
-</button>
-</div>
-<div class="identity-mission" id="creator-mission">
-Passionate about sharing African culture, technology, and innovation through compelling visual stories.
-</div>
-<div class="identity-tags" id="creator-tags">
-<span class="identity-tag">#AfricanFuturism</span>
-<span class="identity-tag">#Tech</span>
-<span class="identity-tag">#Culture</span>
-</div>
-<div class="identity-details">
-<div class="identity-item"><i class="fas fa-map-marker-alt"></i><span id="creator-location">Johannesburg, South Africa</span></div>
-<div class="identity-item"><i class="fas fa-calendar"></i><span id="creator-joined">Joined March 2025</span></div>
-<div class="identity-item"><i class="fas fa-link"></i><a id="creator-website" href="#" target="_blank" style="display: none;">Website</a></div>
-<div class="identity-item"><i class="fas fa-clock"></i><span id="creator-schedule">Uploads every Friday</span></div>
-</div>
-</section>
+<!-- ===== ABOUT PANEL ===== -->
+<section class="tab-panel" data-panel="about" hidden>
+  <div class="about-content">
+    <div class="about-bio" id="about-bio">
+      <p class="about-bio-text">Creator bio will appear here</p>
+      <span class="about-joined" id="about-joined">Joined Bantu Stream Connect · March 2023 · Johannesburg, South Africa</span>
+    </div>
 
-<!-- STATS SECTION -->
-<section class="stats-section">
-<div class="stat-card">
-<div id="videos-count" class="stat-number">0</div>
-<div class="stat-label">Videos</div>
-<div class="stat-trend" id="videos-trend" style="display: none;"><i class="fas fa-arrow-up"></i> +12% this month</div>
-</div>
-<div class="stat-card" id="connectors-stat-card">
-<div id="connectors-count" class="stat-number">0</div>
-<div class="stat-label">Connectors</div>
-<div class="stat-trend" id="connectors-trend" style="display: none;"><i class="fas fa-arrow-up"></i> +48 new</div>
-</div>
-<div class="stat-card">
-<div id="views-count" class="stat-number">0</div>
-<div class="stat-label">Total Views</div>
-<div class="stat-trend" id="views-trend" style="display: none;"><i class="fas fa-arrow-up"></i> +3.2K</div>
-</div>
-<div class="stat-card">
-<div id="engagement-count" class="stat-number">0%</div>
-<div class="stat-label">Engagement</div>
-<div class="stat-trend" id="engagement-trend" style="display: none;"><i class="fas fa-arrow-up"></i> +5%</div>
-</div>
-</section>
+    <div class="about-stats" id="about-stats">
+      <div class="about-stat"><p class="about-stat-number" id="about-total-views">0</p><span class="about-stat-label">Total views</span></div>
+      <div class="about-stat"><p class="about-stat-number" id="about-total-uploads">0</p><span class="about-stat-label">Uploads</span></div>
+      <div class="about-stat"><p class="about-stat-number streak" id="about-streak">0</p><span class="about-stat-label">Day streak</span></div>
+      <div class="about-stat"><p class="about-stat-number" id="about-originals">0</p><span class="about-stat-label">Bantu originals</span></div>
+    </div>
 
-<!-- ACTION BUTTONS -->
-<section class="action-buttons">
-<button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
-<button id="share-btn" class="action-btn share-btn"><i class="fas fa-share"></i> Share Channel</button>
-<button id="support-btn" class="action-btn share-btn" style="background: linear-gradient(135deg, var(--warm-gold), #f97316);"><i class="fas fa-gift"></i> Support</button>
-</section>
+    <p class="section-label">What they make</p>
+    <div class="content-mix-bar" id="content-mix-bar">
+      <div style="width:40%;background:#04342C;"></div>
+      <div style="width:25%;background:#26215C;"></div>
+      <div style="width:20%;background:#712B13;"></div>
+      <div style="width:15%;background:#4A1B0C;"></div>
+    </div>
+    <div class="content-mix-legend" id="content-mix-legend">
+      <span>🟢 Series 40%</span>
+      <span>🟣 Podcast 25%</span>
+      <span>🟠 Shorts 20%</span>
+      <span>🟤 Community 15%</span>
+    </div>
 
-<!-- PINNED CONTENT -->
-<section class="pinned-section" id="pinned-section" style="display: none;">
-<div class="pinned-header"><i class="fas fa-thumbtack"></i> PINNED BY CREATOR</div>
-<div class="pinned-card" id="pinned-card">
-<div class="pinned-badge">⭐ FEATURED</div>
-<div class="pinned-thumbnail">
-<img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop" alt="Pinned Content" id="pinned-thumbnail">
-</div>
-<div class="pinned-info">
-<h3 class="pinned-title" id="pinned-title">Featured Content</h3>
-<p class="pinned-description" id="pinned-description">Check out this featured content from the creator</p>
-<div class="pinned-stats">
-<span class="pinned-stat"><i class="fas fa-eye"></i> <span id="pinned-views">0</span></span>
-<span class="pinned-stat"><i class="fas fa-heart"></i> <span id="pinned-likes">0</span></span>
-<span class="pinned-stat"><i class="fas fa-clock"></i> <span id="pinned-time">Recently</span></span>
-</div>
-<button class="pinned-watch-btn" id="pinned-watch-btn"><i class="fas fa-play"></i> Watch Now</button>
-</div>
-</div>
+    <div class="section-divider">
+      <p class="section-label">The journey</p>
+      <div class="journey-timeline" id="journey-timeline">
+        <!-- Dynamic content -->
+      </div>
+    </div>
+  </div>
 </section>
-
-<!-- CONTENT TABS -->
-<div class="content-tabs" id="content-tabs">
-<button class="content-tab active" data-tab="all">All</button>
-<button class="content-tab" data-tab="videos">Videos</button>
-<button class="content-tab" data-tab="shorts">Shorts</button>
-<button class="content-tab" data-tab="music">Music</button>
-<button class="content-tab" data-tab="podcasts">Podcasts</button>
-<button class="content-tab" data-tab="series">Series</button>
-<button class="content-tab" data-tab="films">Films</button>
-<button class="content-tab" data-tab="stem">STEM</button>
-<button class="content-tab" data-tab="documentaries">Documentaries</button>
-<button class="content-tab" data-tab="about">About</button>
-</div>
-
-<!-- ===== PHASE 1D: SERIES & PLAYLISTS SECTION (UNIFIED) ===== -->
-<!-- This section displays playlists/albums/series as cards like YouTube/Spotify/Netflix -->
-<section class="playlists-section" id="playlists-section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-layer-group"></i> SERIES & PLAYLISTS</h2>
-<a href="playlists.html?creatorId=CREATOR_ID_PLACEHOLDER" class="view-all-link" id="view-all-playlists">View All <i class="fas fa-arrow-right"></i></a>
-</div>
-<!-- Collections Grid - Unified with the Playlists Section -->
-<div id="collectionsGrid" class="collections-grid">
-<!-- Dynamic content loaded by JavaScript -->
-<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--slate-grey);">
-  <i class="fas fa-spinner fa-spin" style="font-size:32px;"></i>
-  <p style="margin-top:16px;">Loading collections...</p>
-</div>
-</div>
-<!-- Legacy playlists grid (fallback) -->
-<div id="playlists-empty" class="empty-state" style="display: none;">
-<div class="empty-icon"><i class="fas fa-list"></i></div>
-<h3>No playlists yet</h3>
-<p>This creator hasn't created any playlists yet.</p>
-</div>
-<div class="playlists-grid" id="playlists-grid" style="display: none;"></div>
-</section>
-
-<!-- LATEST UPLOADS SECTION -->
-<section class="section" id="uploads-section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-video"></i> LATEST UPLOADS</h2>
-<div id="content-count" class="content-count">0 items</div>
-</div>
-<div class="content-grid" id="content-grid"></div>
-<div id="no-content" class="empty-state" style="display: none;">
-<div class="empty-icon"><i class="fas fa-video-slash"></i></div>
-<h3>No Uploads Yet</h3>
-<p>This creator hasn't uploaded any content</p>
-</div>
-</section>
-
-<!-- MOST POPULAR SECTION -->
-<section class="popular-section" id="popular-section" style="display: none;">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-fire"></i> MOST POPULAR</h2>
-</div>
-<div class="popular-grid" id="popular-grid"></div>
-</section>
-
-<!-- RECENT ACTIVITY SECTION -->
-<section class="activity-section" id="activity-section" style="display: none;">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-rss"></i> RECENT ACTIVITY</h2>
-</div>
-<div class="activity-feed" id="activity-feed"></div>
-</section>
-
-<!-- TOP FAN HIGHLIGHTS SECTION -->
-<section class="fan-section" id="fan-section" style="display: none;">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-star"></i> TOP FAN HIGHLIGHTS</h2>
-</div>
-<div class="fan-grid" id="fan-grid"></div>
-</section>
-
-<!-- CREATOR ACHIEVEMENTS SECTION -->
-<section class="achievements-section" id="achievements-section" style="display: none;">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-trophy"></i> CREATOR ACHIEVEMENTS</h2>
-</div>
-<div class="achievements-grid" id="achievements-grid"></div>
-</section>
-
-<!-- UPLOAD SCHEDULE SECTION -->
-<section class="schedule-section" id="schedule-section" style="display: none;">
-<div class="schedule-banner">
-<div class="schedule-info">
-<h3><i class="fas fa-calendar-alt"></i> Upload Schedule</h3>
-<p><i class="fas fa-clock"></i> <span id="schedule-text">New episodes every Tuesday & Friday</span></p>
-</div>
-<div class="schedule-badge"><i class="fas fa-bell"></i> Get Reminded</div>
-</div>
-</section>
-
-<!-- RECOMMENDED CREATORS SECTION -->
-<section class="recommended-section" id="recommended-section" style="display: none;">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-users"></i> CREATORS YOU MAY LIKE</h2>
-</div>
-<div class="recommended-grid" id="recommended-grid"></div>
-</section>
-
-<!-- SUPPORT SECTION -->
-<section class="support-section" id="support-section" style="display: none;">
-<div class="support-card">
-<div class="support-info">
-<h3>Support This Creator</h3>
-<p>Help them create more amazing content</p>
-</div>
-<div class="support-buttons">
-<button class="support-btn primary" id="tip-btn"><i class="fas fa-gift"></i> Send Tip</button>
-<button class="support-btn secondary" id="membership-btn"><i class="fas fa-crown"></i> Join Membership</button>
-</div>
-</div>
-</section>
-</main>
 
 <footer class="footer">
 <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
