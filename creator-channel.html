@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Chart.js for Analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- External CSS -->
 <link rel="stylesheet" href="css/creator-channel.css">
 </head>
@@ -134,7 +136,8 @@
 <div class="glow-cycle glow-3"></div>
 </div>
 
-<!-- MODALS -->
+<!-- ===== MODALS ===== -->
+<!-- Connectors Modal -->
 <div id="connectors-modal" class="modal">
 <div class="modal-content">
 <h2 class="modal-title" id="modal-title">Connectors (0)</h2>
@@ -145,6 +148,7 @@
 </div>
 </div>
 
+<!-- Analytics Modal -->
 <div id="analytics-modal" class="modal">
   <div class="modal-content" style="max-width:900px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -161,6 +165,7 @@
   </div>
 </div>
 
+<!-- Banner Upload Modal -->
 <div id="banner-upload-modal" class="banner-upload-modal">
 <div class="banner-upload-content">
 <h2 class="banner-upload-title">Customize Channel Banner</h2>
@@ -194,6 +199,7 @@ Banner preview
 </div>
 </div>
 
+<!-- Edit About Modal - WIRED UP -->
 <div id="edit-about-modal" class="modal">
 <div class="modal-content">
 <h2 class="modal-title"><i class="fas fa-edit"></i> Edit About Section</h2>
@@ -234,6 +240,7 @@ Banner preview
 </div>
 </div>
 
+<!-- Search Modal -->
 <div id="search-modal" class="search-modal">
 <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
 <div class="search-modal-header">
@@ -273,6 +280,7 @@ Banner preview
 </div>
 </div>
 
+<!-- Notifications Panel -->
 <div id="notifications-panel" class="modal">
 <div class="modal-content">
 <div class="notifications-header">
@@ -287,6 +295,7 @@ Banner preview
 </div>
 </div>
 
+<!-- Playlist Builder Modal -->
 <div id="playlist-builder-modal" class="modal">
   <div class="modal-content" style="max-width:950px;padding:0;overflow:hidden;">
     <div style="padding:16px 20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;background:var(--card-bg);">
@@ -328,6 +337,7 @@ Banner preview
   </div>
 </div>
 
+<!-- Templates -->
 <template id="pl-item-tmpl">
   <div class="pl-item" draggable="true" style="display:flex;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:8px;margin-bottom:8px;cursor:grab;">
     <div style="width:80px;height:45px;border-radius:6px;overflow:hidden;flex-shrink:0;">
@@ -412,11 +422,10 @@ Banner preview
 <i class="fas fa-camera"></i> Change Banner
 </button>
 <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
-<!-- NEW: Streak badge on banner -->
 <div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span>-day upload streak</div>
 </div>
 
-<!-- ===== CHANNEL PROFILE (NEW DESIGN) ===== -->
+<!-- ===== CHANNEL PROFILE ===== -->
 <div class="channel-profile">
   <div class="channel-identity">
     <div class="channel-avatar-container">
@@ -447,22 +456,20 @@ Banner preview
   </div>
 </div>
 
-<!-- ===== TABS (NEW DESIGN) ===== -->
-<div class="channel-tabs" id="channel-tabs">
-  <div class="channel-tab is-active" data-tab="home">Home</div>
-  <div class="channel-tab" data-tab="series">Series</div>
-  <div class="channel-tab" data-tab="shorts">Shorts</div>
-  <div class="channel-tab" data-tab="podcast">Podcast</div>
-  <div class="channel-tab" data-tab="community">Community</div>
-  <div class="channel-tab" data-tab="about">About</div>
+<!-- ===== TABS ===== -->
+<div class="channel-tabs" id="channel-tabs" role="tablist">
+  <button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
+  <button class="channel-tab" data-tab="series" role="tab" aria-selected="false">Series</button>
+  <button class="channel-tab" data-tab="shorts" role="tab" aria-selected="false">Shorts</button>
+  <button class="channel-tab" data-tab="podcast" role="tab" aria-selected="false">Podcast</button>
+  <button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community</button>
+  <button class="channel-tab" data-tab="about" role="tab" aria-selected="false">About</button>
 </div>
 
 <!-- ===== HOME PANEL ===== -->
-<section class="tab-panel" data-panel="home">
+<section class="tab-panel" data-panel="home" role="tabpanel">
   <div class="channel-body">
     <div class="channel-main">
-
-      <!-- Featured/Pinned Content -->
       <div class="featured-card" id="featured-card" style="display: none;">
         <span class="featured-badge" id="featured-badge">New</span>
         <span class="featured-duration" id="featured-duration">18:42</span>
@@ -471,48 +478,80 @@ Banner preview
           <span class="upload-card__meta" id="featured-meta">0 views · Just now</span>
         </div>
       </div>
-
-      <!-- Creator's World (Mobile/Tablet) -->
-      <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;">
-        <!-- Dynamic content -->
-      </div>
-
-      <!-- Recent Uploads -->
+      <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;"></div>
       <p class="section-label">Recent uploads</p>
-      <div class="upload-grid" id="upload-grid">
-        <!-- Dynamic content -->
-      </div>
+      <div class="upload-grid" id="upload-grid"></div>
       <div id="no-content" class="empty-state" style="display: none;">
         <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
         <h3>No Uploads Yet</h3>
         <p>This creator hasn't uploaded any content</p>
       </div>
     </div>
-
-    <!-- Sidebar (Desktop) -->
     <aside class="channel-sidebar" id="channel-sidebar">
       <div class="sidebar-panel" id="world-panel">
         <p class="sidebar-panel-title">Creator's world</p>
-        <div class="world-row" id="world-row-desktop">
-          <!-- Dynamic content -->
-        </div>
+        <div class="world-row" id="world-row-desktop"></div>
       </div>
       <div class="sidebar-panel" id="top-supporter-panel">
         <p class="sidebar-panel-title">Top supporter this week</p>
-        <div class="top-supporter" id="top-supporter">
-          <!-- Dynamic content -->
-        </div>
+        <div class="top-supporter" id="top-supporter"></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== SERIES PANEL - NEW ===== -->
+<section class="tab-panel" data-panel="series" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Series content</p>
+      <div id="series-content"></div>
+    </div>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About series</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Series are grouped by season for easy binge-watching.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== SHORTS PANEL - NEW ===== -->
+<section class="tab-panel" data-panel="shorts" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Shorts</p>
+      <div class="upload-grid" id="shorts-content"></div>
+    </div>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About shorts</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Quick, snackable content from the creator.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== PODCAST PANEL - NEW ===== -->
+<section class="tab-panel" data-panel="podcast" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Podcasts</p>
+      <div class="upload-grid podcast-grid" id="podcast-content"></div>
+    </div>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About podcasts</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Audio and video episodes from the creator.</p>
       </div>
     </aside>
   </div>
 </section>
 
 <!-- ===== COMMUNITY PANEL ===== -->
-<section class="tab-panel" data-panel="community" hidden>
+<section class="tab-panel" data-panel="community" hidden role="tabpanel">
   <div class="channel-body">
     <div class="channel-main community-main">
-
-      <!-- Pinned Post -->
       <div class="pinned-post" id="pinned-post" style="display: none;">
         <span>📌</span>
         <div>
@@ -520,8 +559,6 @@ Banner preview
           <p class="pinned-post-content" id="pinned-post-content">Season 4 writers' room opens this month</p>
         </div>
       </div>
-
-      <!-- Poll -->
       <div class="poll-section" id="poll-section" style="display: none;">
         <p class="section-label">Who should guest next on the podcast?</p>
         <div class="poll-option">
@@ -534,29 +571,22 @@ Banner preview
         </div>
         <span class="poll-meta" id="poll-meta">0 votes · 0 days left</span>
       </div>
-
-      <!-- Fan Wall -->
       <div class="section-divider">
         <p class="section-label">Fan wall</p>
-        <div class="fan-wall" id="fan-wall">
-          <!-- Dynamic content -->
-        </div>
+        <div class="fan-wall" id="fan-wall"></div>
       </div>
     </div>
-
     <aside class="channel-sidebar community-sidebar">
       <div class="sidebar-panel">
         <p class="sidebar-panel-title">This week's top voices</p>
-        <div class="leaderboard" id="leaderboard">
-          <!-- Dynamic content -->
-        </div>
+        <div class="leaderboard" id="leaderboard"></div>
       </div>
     </aside>
   </div>
 </section>
 
 <!-- ===== ABOUT PANEL ===== -->
-<section class="tab-panel" data-panel="about" hidden>
+<section class="tab-panel" data-panel="about" hidden role="tabpanel">
   <div class="about-content">
     <div class="about-bio" id="about-bio">
       <p class="about-bio-text">Creator bio will appear here</p>
@@ -571,28 +601,17 @@ Banner preview
     </div>
 
     <p class="section-label">What they make</p>
-    <div class="content-mix-bar" id="content-mix-bar">
-      <div style="width:40%;background:#04342C;"></div>
-      <div style="width:25%;background:#26215C;"></div>
-      <div style="width:20%;background:#712B13;"></div>
-      <div style="width:15%;background:#4A1B0C;"></div>
-    </div>
-    <div class="content-mix-legend" id="content-mix-legend">
-      <span>🟢 Series 40%</span>
-      <span>🟣 Podcast 25%</span>
-      <span>🟠 Shorts 20%</span>
-      <span>🟤 Community 15%</span>
-    </div>
+    <div class="content-mix-bar" id="content-mix-bar"></div>
+    <div class="content-mix-legend" id="content-mix-legend"></div>
 
     <div class="section-divider">
       <p class="section-label">The journey</p>
-      <div class="journey-timeline" id="journey-timeline">
-        <!-- Dynamic content -->
-      </div>
+      <div class="journey-timeline" id="journey-timeline"></div>
     </div>
   </div>
 </section>
 
+<!-- FOOTER -->
 <footer class="footer">
 <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
 <div class="footer-links">
