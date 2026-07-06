@@ -12,9 +12,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Swiper JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <!-- Chart.js for Analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- External CSS -->
@@ -25,95 +22,95 @@
 <!-- SIDEBAR OVERLAY & MENU -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
-  <div class="sidebar-header">
-    <div class="sidebar-logo" onclick="window.location.href='index.html'">
-      <div class="logo-icon">
-        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-      </div>
-      <span class="sidebar-logo-text">BANTU</span>
-    </div>
-    <button class="sidebar-close" id="sidebar-close">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-  <div class="sidebar-profile" id="sidebar-profile">
-    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
-      <i class="fas fa-user"></i>
-    </div>
-    <div class="sidebar-profile-info">
-      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
-      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
-    </div>
-    <i class="fas fa-chevron-right"></i>
-  </div>
-  <nav class="sidebar-nav">
-    <a href="index.html" class="sidebar-nav-item active">
-      <i class="fas fa-home"></i>
-      <span>Home</span>
-    </a>
-    <a href="explore-screen.html" class="sidebar-nav-item">
-      <i class="fas fa-compass"></i>
-      <span>Explore</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
-      <i class="fas fa-history"></i>
-      <span>Watch History</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
-      <i class="fas fa-chart-line"></i>
-      <span>Analytics</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-      <i class="fas fa-bell"></i>
-      <span>Notifications</span>
-      <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-      <i class="fas fa-medal"></i>
-      <span>My Badges</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-      <i class="fas fa-users"></i>
-      <span>Watch Party</span>
-    </a>
-    <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-      <i class="fas fa-plus-circle"></i>
-      <span>Create</span>
-    </a>
-    <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
-      <i class="fas fa-tachometer-alt"></i>
-      <span>Dashboard</span>
-    </a>
-    <a href="manage-profiles.html" class="sidebar-nav-item">
-      <i class="fas fa-user-cog"></i>
-      <span>Manage Profiles</span>
-    </a>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-      <span><i class="fas fa-palette"></i> Theme</span>
-      <i class="fas fa-chevron-right"></i>
-    </div>
-    <div class="sidebar-scale-control">
-      <div class="scale-control-row">
-        <span><i class="fas fa-text-height"></i> UI Size</span>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button class="scale-btn" id="sidebar-scale-decrease">
-            <i class="fas fa-minus"></i>
-          </button>
-          <span class="scale-value" id="sidebar-scale-value">100%</span>
-          <button class="scale-btn" id="sidebar-scale-increase">
-            <i class="fas fa-plus"></i>
-          </button>
-        </div>
-      </div>
-      <div class="scale-control-row">
-        <button class="scale-btn" id="sidebar-scale-reset">
-          <i class="fas fa-undo"></i> Reset to Default
-        </button>
-      </div>
-    </div>
-  </div>
+<div class="sidebar-header">
+<div class="sidebar-logo" onclick="window.location.href='index.html'">
+<div class="logo-icon">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+</div>
+<span class="sidebar-logo-text">BANTU</span>
+</div>
+<button class="sidebar-close" id="sidebar-close">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<div class="sidebar-profile" id="sidebar-profile">
+<div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
+<i class="fas fa-user"></i>
+</div>
+<div class="sidebar-profile-info">
+<div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+<div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+</div>
+<i class="fas fa-chevron-right"></i>
+</div>
+<nav class="sidebar-nav">
+<a href="index.html" class="sidebar-nav-item active">
+<i class="fas fa-home"></i>
+<span>Home</span>
+</a>
+<a href="explore-screen.html" class="sidebar-nav-item">
+<i class="fas fa-compass"></i>
+<span>Explore</span>
+</a>
+<a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
+<i class="fas fa-history"></i>
+<span>Watch History</span>
+</a>
+<a href="#" class="sidebar-nav-item" id="sidebar-analytics">
+<i class="fas fa-chart-line"></i>
+<span>Analytics</span>
+</a>
+<a href="#" class="sidebar-nav-item" id="sidebar-notifications">
+<i class="fas fa-bell"></i>
+<span>Notifications</span>
+<span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
+</a>
+<a href="#" class="sidebar-nav-item" id="sidebar-badges">
+<i class="fas fa-medal"></i>
+<span>My Badges</span>
+</a>
+<a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
+<i class="fas fa-users"></i>
+<span>Watch Party</span>
+</a>
+<a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+<i class="fas fa-plus-circle"></i>
+<span>Create</span>
+</a>
+<a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+<i class="fas fa-tachometer-alt"></i>
+<span>Dashboard</span>
+</a>
+<a href="manage-profiles.html" class="sidebar-nav-item">
+<i class="fas fa-user-cog"></i>
+<span>Manage Profiles</span>
+</a>
+</nav>
+<div class="sidebar-footer">
+<div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+<span><i class="fas fa-palette"></i> Theme</span>
+<i class="fas fa-chevron-right"></i>
+</div>
+<div class="sidebar-scale-control">
+<div class="scale-control-row">
+<span><i class="fas fa-text-height"></i> UI Size</span>
+<div style="display: flex; align-items: center; gap: 8px;">
+<button class="scale-btn" id="sidebar-scale-decrease">
+<i class="fas fa-minus"></i>
+</button>
+<span class="scale-value" id="sidebar-scale-value">100%</span>
+<button class="scale-btn" id="sidebar-scale-increase">
+<i class="fas fa-plus"></i>
+</button>
+</div>
+</div>
+<div class="scale-control-row">
+<button class="scale-btn" id="sidebar-scale-reset">
+<i class="fas fa-undo"></i> Reset to Default
+</button>
+</div>
+</div>
+</div>
 </div>
 
 <!-- THEME SELECTOR -->
@@ -129,29 +126,26 @@
   </button>
 </div>
 
-<!-- LOADING SCREEN -->
 <div id="loading" class="loading-screen">
-  <div class="spinner"></div>
-  <div id="loading-text">Loading Creator Channel...</div>
+<div class="spinner"></div>
+<div id="loading-text">Loading Creator Channel...</div>
 </div>
-
-<!-- ANIMATED BACKGROUND -->
 <div class="animated-bg">
-  <div class="glow-cycle glow-1"></div>
-  <div class="glow-cycle glow-2"></div>
-  <div class="glow-cycle glow-3"></div>
+<div class="glow-cycle glow-1"></div>
+<div class="glow-cycle glow-2"></div>
+<div class="glow-cycle glow-3"></div>
 </div>
 
-<!-- ============ MODALS ============ -->
+<!-- ===== MODALS ===== -->
 <!-- Connectors Modal -->
 <div id="connectors-modal" class="modal">
-  <div class="modal-content">
-    <h2 class="modal-title" id="modal-title">Connectors (0)</h2>
-    <div id="connectors-list" style="margin-bottom: 20px; max-height: 50vh; overflow-y: auto;"></div>
-    <div class="modal-actions">
-      <button id="close-modal-btn" class="modal-btn close">Close</button>
-    </div>
-  </div>
+<div class="modal-content">
+<h2 class="modal-title" id="modal-title">Connectors (0)</h2>
+<div id="connectors-list" style="margin-bottom: 20px; max-height: 50vh; overflow-y: auto;"></div>
+<div class="modal-actions">
+<button id="close-modal-btn" class="modal-btn close">Close</button>
+</div>
+</div>
 </div>
 
 <!-- Analytics Modal -->
@@ -173,132 +167,132 @@
 
 <!-- Banner Upload Modal -->
 <div id="banner-upload-modal" class="banner-upload-modal">
-  <div class="banner-upload-content">
-    <h2 class="banner-upload-title">Customize Channel Banner</h2>
-    <div class="banner-preview" id="banner-preview">
-      <img id="banner-preview-img" class="banner-preview-img" src="" alt="Banner preview">
-      <div id="banner-preview-placeholder" class="banner-preview-placeholder">
-        <i class="fas fa-image" style="font-size: 32px; margin-right: 10px;"></i>
-        Banner preview
-      </div>
-      <div class="banner-upload-progress" id="banner-upload-progress" style="display:none;">
-        <div class="progress-bar">
-          <div class="progress-fill" id="upload-progress-fill" style="width:0%;"></div>
-        </div>
-        <span id="upload-progress-text">Uploading...</span>
-      </div>
-    </div>
-    <div class="banner-upload-options">
-      <button id="banner-file-upload" class="banner-upload-btn">
-        <i class="fas fa-cloud-upload-alt"></i> Upload Image
-      </button>
-      <input type="file" id="banner-file-input" accept="image/*" style="display: none;">
-      <div class="banner-url-input">
-        <input type="text" id="banner-url-input" class="banner-url-field" placeholder="Or enter image URL...">
-        <button id="banner-url-apply" class="banner-url-apply">Apply</button>
-      </div>
-    </div>
-    <div class="banner-upload-actions">
-      <button id="banner-save" class="banner-save-btn">Save Changes</button>
-      <button id="banner-cancel" class="banner-cancel-btn">Cancel</button>
-    </div>
-  </div>
+<div class="banner-upload-content">
+<h2 class="banner-upload-title">Customize Channel Banner</h2>
+<div class="banner-preview" id="banner-preview">
+<img id="banner-preview-img" class="banner-preview-img" src="" alt="Banner preview">
+<div id="banner-preview-placeholder" class="banner-preview-placeholder">
+<i class="fas fa-image" style="font-size: 32px; margin-right: 10px;"></i>
+Banner preview
+</div>
+<div class="banner-upload-progress" id="banner-upload-progress" style="display:none;">
+<div class="progress-bar">
+<div class="progress-fill" id="upload-progress-fill" style="width:0%;"></div>
+</div>
+<span id="upload-progress-text">Uploading...</span>
+</div>
+</div>
+<div class="banner-upload-options">
+<button id="banner-file-upload" class="banner-upload-btn">
+<i class="fas fa-cloud-upload-alt"></i> Upload Image
+</button>
+<input type="file" id="banner-file-input" accept="image/*" style="display: none;">
+<div class="banner-url-input">
+<input type="text" id="banner-url-input" class="banner-url-field" placeholder="Or enter image URL...">
+<button id="banner-url-apply" class="banner-url-apply">Apply</button>
+</div>
+</div>
+<div class="banner-upload-actions">
+<button id="banner-save" class="banner-save-btn">Save Changes</button>
+<button id="banner-cancel" class="banner-cancel-btn">Cancel</button>
+</div>
+</div>
 </div>
 
-<!-- Edit About Modal -->
+<!-- Edit About Modal - WIRED UP -->
 <div id="edit-about-modal" class="modal">
-  <div class="modal-content">
-    <h2 class="modal-title"><i class="fas fa-edit"></i> Edit About Section</h2>
-    <form id="edit-about-form">
-      <div class="form-group">
-        <label class="form-label">Creator Quote</label>
-        <textarea class="form-textarea" id="edit-quote" placeholder="Your creator quote..."></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mission Statement</label>
-        <textarea class="form-textarea" id="edit-mission" placeholder="Your mission as a creator..."></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Location</label>
-        <input type="text" class="form-input" id="edit-location" placeholder="City, Country">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Website URL</label>
-        <input type="url" class="form-input" id="edit-website" placeholder="https://yourwebsite.com">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Upload Schedule</label>
-        <input type="text" class="form-input" id="edit-schedule" placeholder="e.g., New videos every Friday">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Tags/Interests (comma-separated)</label>
-        <input type="text" class="form-input" id="edit-tags" placeholder="#Tech, #Culture, #Music">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Social Links (JSON format)</label>
-        <textarea class="form-textarea" id="edit-social" placeholder='{"instagram": "url", "twitter": "url", "youtube": "url"}' style="min-height: 80px;"></textarea>
-      </div>
-    </form>
-    <div class="modal-actions">
-      <button id="save-about-btn" class="modal-btn close"><i class="fas fa-save"></i> Save Changes</button>
-      <button id="cancel-about-btn" class="modal-btn cancel">Cancel</button>
-    </div>
-  </div>
+<div class="modal-content">
+<h2 class="modal-title"><i class="fas fa-edit"></i> Edit About Section</h2>
+<form id="edit-about-form">
+<div class="form-group">
+<label class="form-label">Creator Quote</label>
+<textarea class="form-textarea" id="edit-quote" placeholder="Your creator quote..."></textarea>
+</div>
+<div class="form-group">
+<label class="form-label">Mission Statement</label>
+<textarea class="form-textarea" id="edit-mission" placeholder="Your mission as a creator..."></textarea>
+</div>
+<div class="form-group">
+<label class="form-label">Location</label>
+<input type="text" class="form-input" id="edit-location" placeholder="City, Country">
+</div>
+<div class="form-group">
+<label class="form-label">Website URL</label>
+<input type="url" class="form-input" id="edit-website" placeholder="https://yourwebsite.com">
+</div>
+<div class="form-group">
+<label class="form-label">Upload Schedule</label>
+<input type="text" class="form-input" id="edit-schedule" placeholder="e.g., New videos every Friday">
+</div>
+<div class="form-group">
+<label class="form-label">Tags/Interests (comma-separated)</label>
+<input type="text" class="form-input" id="edit-tags" placeholder="#Tech, #Culture, #Music">
+</div>
+<div class="form-group">
+<label class="form-label">Social Links (JSON format)</label>
+<textarea class="form-textarea" id="edit-social" placeholder='{"instagram": "url", "twitter": "url", "youtube": "url"}' style="min-height: 80px;"></textarea>
+</div>
+</form>
+<div class="modal-actions">
+<button id="save-about-btn" class="modal-btn close"><i class="fas fa-save"></i> Save Changes</button>
+<button id="cancel-about-btn" class="modal-btn cancel">Cancel</button>
+</div>
+</div>
 </div>
 
 <!-- Search Modal -->
 <div id="search-modal" class="search-modal">
-  <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
-    <div class="search-modal-header">
-      <div class="search-input-container">
-        <i class="search-icon fas fa-search"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-      </div>
-      <button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="search-filters">
-      <div class="filter-group">
-        <label class="filter-label">Category</label>
-        <select id="category-filter" class="filter-select">
-          <option value="">All Categories</option>
-          <option value="Music">Music</option>
-          <option value="STEM">STEM</option>
-          <option value="Culture">Culture</option>
-          <option value="News">News</option>
-          <option value="Sports">Sports</option>
-          <option value="Movies">Movies</option>
-          <option value="Documentaries">Documentaries</option>
-          <option value="Podcasts">Podcasts</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Sort By</label>
-        <select id="sort-filter" class="filter-select">
-          <option value="newest">Newest First</option>
-          <option value="popular">Most Popular</option>
-          <option value="trending">Trending</option>
-        </select>
-      </div>
-    </div>
-    <div class="search-results">
-      <div id="search-results-grid" class="search-results-grid"></div>
-    </div>
-  </div>
+<div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
+<div class="search-modal-header">
+<div class="search-input-container">
+<i class="search-icon fas fa-search"></i>
+<input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+</div>
+<button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
+</div>
+<div class="search-filters">
+<div class="filter-group">
+<label class="filter-label">Category</label>
+<select id="category-filter" class="filter-select">
+<option value="">All Categories</option>
+<option value="Music">Music</option>
+<option value="STEM">STEM</option>
+<option value="Culture">Culture</option>
+<option value="News">News</option>
+<option value="Sports">Sports</option>
+<option value="Movies">Movies</option>
+<option value="Documentaries">Documentaries</option>
+<option value="Podcasts">Podcasts</option>
+</select>
+</div>
+<div class="filter-group">
+<label class="filter-label">Sort By</label>
+<select id="sort-filter" class="filter-select">
+<option value="newest">Newest First</option>
+<option value="popular">Most Popular</option>
+<option value="trending">Trending</option>
+</select>
+</div>
+</div>
+<div class="search-results">
+<div id="search-results-grid" class="search-results-grid"></div>
+</div>
+</div>
 </div>
 
 <!-- Notifications Panel -->
 <div id="notifications-panel" class="modal">
-  <div class="modal-content">
-    <div class="notifications-header">
-      <h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; margin: 0; color: var(--soft-white);">Notifications</h2>
-      <button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="notifications-list" id="notifications-list"></div>
-    <div class="notifications-footer">
-      <button id="mark-all-read" class="modal-btn close" style="flex: 1;">Mark all as read</button>
-      <button id="notification-settings" class="modal-btn cancel" style="flex: 1;">Settings</button>
-    </div>
-  </div>
+<div class="modal-content">
+<div class="notifications-header">
+<h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; margin: 0; color: var(--soft-white);">Notifications</h2>
+<button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
+</div>
+<div class="notifications-list" id="notifications-list"></div>
+<div class="notifications-footer">
+<button id="mark-all-read" class="modal-btn close" style="flex: 1;">Mark all as read</button>
+<button id="notification-settings" class="modal-btn cancel" style="flex: 1;">Settings</button>
+</div>
+</div>
 </div>
 
 <!-- Playlist Builder Modal -->
@@ -343,7 +337,7 @@
   </div>
 </div>
 
-<!-- Templates for Playlist Builder -->
+<!-- Templates -->
 <template id="pl-item-tmpl">
   <div class="pl-item" draggable="true" style="display:flex;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:8px;margin-bottom:8px;cursor:grab;">
     <div style="width:80px;height:45px;border-radius:6px;overflow:hidden;flex-shrink:0;">
@@ -369,329 +363,281 @@
   </div>
 </template>
 
-<!-- ============ MAIN APP ============ -->
 <div id="app" style="display: none;">
-  
-  <!-- HEADER (PRESERVED EXACTLY) -->
-  <header class="header">
-    <div class="logo" onclick="window.location.href='index.html'">
-      <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
-        <i class="fas fa-bars"></i>
-      </button>
-      <div class="logo-icon">
-        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-      </div>
-      <div class="logo-text">BANTU STREAM CONNECT</div>
-    </div>
-    <div class="header-actions">
-      <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-        <i class="fas fa-microphone"></i>
-      </button>
-      <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
-        <i class="fas fa-chart-line"></i>
-      </button>
-      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
-        <i class="fas fa-search"></i>
-      </button>
-      <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
-        <i class="fas fa-bell"></i>
-        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-      </button>
-      <div class="profile-switcher">
-        <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
-          <div class="profile-placeholder" id="userProfilePlaceholder">
-            <i class="fas fa-user"></i>
-          </div>
-          <span class="profile-name" id="current-profile-name">Guest</span>
-          <i class="fas fa-chevron-down"></i>
-        </button>
-        <div class="profile-dropdown" id="profile-dropdown">
-          <div class="profile-dropdown-header">
-            <h4>Switch Profile</h4>
-          </div>
-          <div class="profile-list" id="profile-list"></div>
-          <div class="profile-dropdown-footer">
-            <button class="text-btn" id="manage-profiles-btn">
-              <i class="fas fa-user-cog"></i> Manage Profiles
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="rsa-badge" title="Proudly South African">
-        <i class="fas fa-map-marker-alt"></i>
-        <span>RSA</span>
-      </div>
-    </div>
-  </header>
+<!-- HEADER -->
+<header class="header">
+<div class="logo" onclick="window.location.href='index.html'">
+<button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+<i class="fas fa-bars"></i>
+</button>
+<div class="logo-icon">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+</div>
+<div class="logo-text">BANTU STREAM CONNECT</div>
+</div>
+<div class="header-actions">
+<button id="voice-search-btn" class="icon-btn" title="Voice Search">
+<i class="fas fa-microphone"></i>
+</button>
+<button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+<i class="fas fa-chart-line"></i>
+</button>
+<button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+<i class="fas fa-search"></i>
+</button>
+<button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+<i class="fas fa-bell"></i>
+<span class="notification-badge" id="notification-count" style="display: none;">0</span>
+</button>
+<div class="profile-switcher">
+<button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+<div class="profile-placeholder" id="userProfilePlaceholder">
+<i class="fas fa-user"></i>
+</div>
+<span class="profile-name" id="current-profile-name">Guest</span>
+<i class="fas fa-chevron-down"></i>
+</button>
+<div class="profile-dropdown" id="profile-dropdown">
+<div class="profile-dropdown-header">
+<h4>Switch Profile</h4>
+</div>
+<div class="profile-list" id="profile-list"></div>
+<div class="profile-dropdown-footer">
+<button class="text-btn" id="manage-profiles-btn">
+<i class="fas fa-user-cog"></i> Manage Profiles
+</button>
+</div>
+</div>
+</div>
+<div class="rsa-badge" title="Proudly South African">
+<i class="fas fa-map-marker-alt"></i>
+<span>RSA</span>
+</div>
+</div>
+</header>
 
-  <!-- ============ BANNER (PRESERVED EXACTLY AS ORIGINAL) ============ -->
-  <div class="channel-banner" id="channel-banner">
-    <button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
-      <i class="fas fa-camera"></i> Change Banner
-    </button>
-    <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
-  </div>
+<!-- ===== CHANNEL BANNER - KEPT AS IS ===== -->
+<div class="channel-banner" id="channel-banner">
+<button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
+<i class="fas fa-camera"></i> Change Banner
+</button>
+<div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
+<div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span>-day upload streak</div>
+</div>
 
-  <!-- ============ NEW: CHANNEL PROFILE HEADER ============ -->
-  <div class="channel-profile">
-    <div class="channel-identity">
-      <div class="channel-avatar-container">
-        <div class="channel-avatar" id="creator-avatar-container"></div>
-        <div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
+<!-- ===== CHANNEL PROFILE ===== -->
+<div class="channel-profile">
+  <div class="channel-identity">
+    <div class="channel-avatar-container">
+      <div class="channel-avatar" id="creator-avatar-container">
+        <div class="creator-initials" id="creator-initials">?</div>
       </div>
-      <div>
-        <div class="channel-name-row">
-          <h1 id="creator-name" class="channel-name">Creator Name</h1>
-          <span class="creator-badge" id="creator-badge">Content Creator</span>
-        </div>
-        <div class="channel-meta">
-          <span id="creator-username">@username</span>
-          <span class="meta-divider">·</span>
-          <span id="connectors-count">0</span> in the circle
-          <span class="meta-divider">·</span>
-          <span id="content-type-display">Series, shorts, podcast</span>
-        </div>
-      </div>
+      <div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
     </div>
-    <div class="channel-actions">
-      <button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
-      <button id="share-btn" class="action-btn icon-action-btn" title="Share"><i class="fas fa-share"></i></button>
-      <button id="support-btn" class="action-btn icon-action-btn" title="Support"><i class="fas fa-gift"></i></button>
+    <div>
+      <div class="channel-name-row">
+        <h1 id="creator-name" class="channel-name">Creator Name</h1>
+        <span class="verified-badge" id="verified-badge" style="display: none;"><i class="fas fa-check-circle"></i></span>
+        <span class="creator-badge" id="creator-badge">Content Creator</span>
+      </div>
+      <div class="channel-meta">
+        <span id="creator-username">@username</span>
+        <span class="meta-divider">·</span>
+        <span id="connector-count-display">0</span> in the circle
+        <span class="meta-divider">·</span>
+        <span id="content-type-display">Series, shorts, podcast</span>
+      </div>
     </div>
   </div>
-
-  <!-- ============ NEW: CHANNEL TABS ============ -->
-  <div class="channel-tabs" id="channel-tabs">
-    <div class="channel-tab is-active" data-tab="home">Home</div>
-    <div class="channel-tab" data-tab="series">Series</div>
-    <div class="channel-tab" data-tab="shorts">Shorts</div>
-    <div class="channel-tab" data-tab="podcast">Podcast</div>
-    <div class="channel-tab" data-tab="community">Community</div>
-    <div class="channel-tab" data-tab="about">About</div>
+  <div class="channel-actions">
+    <button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
+    <button id="notify-btn" class="action-btn icon-action-btn" title="Notifications"><i class="fas fa-bell"></i></button>
+    <button id="more-btn" class="action-btn icon-action-btn" title="More"><i class="fas fa-ellipsis-h"></i></button>
   </div>
+</div>
 
-  <!-- ============ HOME PANEL ============ -->
-  <section class="tab-panel" data-panel="home">
-    <div class="channel-body">
-      <div class="channel-main">
+<!-- ===== TABS ===== -->
+<div class="channel-tabs" id="channel-tabs" role="tablist">
+  <button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
+  <button class="channel-tab" data-tab="series" role="tab" aria-selected="false">Series</button>
+  <button class="channel-tab" data-tab="shorts" role="tab" aria-selected="false">Shorts</button>
+  <button class="channel-tab" data-tab="podcast" role="tab" aria-selected="false">Podcast</button>
+  <button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community</button>
+  <button class="channel-tab" data-tab="about" role="tab" aria-selected="false">About</button>
+</div>
 
-        <!-- Featured/Pinned Content -->
-        <div class="featured-card" id="pinned-section" style="display: none;">
-          <span class="featured-badge" id="featured-badge">New</span>
-          <span class="featured-duration" id="pinned-time">0:00</span>
-          <div class="featured-card__caption">
-            <p class="upload-card__title" id="pinned-title">Featured Content</p>
-            <span class="upload-card__meta" id="pinned-views">0 views</span>
-          </div>
-          <!-- Hidden elements for JS compatibility -->
-          <img id="pinned-thumbnail" style="display:none;">
-          <span id="pinned-description" style="display:none;"></span>
-          <span id="pinned-likes" style="display:none;"></span>
-          <button id="pinned-watch-btn" style="display:none;"></button>
+<!-- ===== HOME PANEL ===== -->
+<section class="tab-panel" data-panel="home" role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <div class="featured-card" id="featured-card" style="display: none;">
+        <span class="featured-badge" id="featured-badge">New</span>
+        <span class="featured-duration" id="featured-duration">18:42</span>
+        <div class="featured-card__caption">
+          <p class="upload-card__title" id="featured-title">Featured Content</p>
+          <span class="upload-card__meta" id="featured-meta">0 views · Just now</span>
         </div>
-
-        <!-- Creator's World (Mobile/Tablet) -->
-        <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;">
-          <!-- Dynamic content loaded by JavaScript -->
-        </div>
-
-        <!-- Recent Uploads -->
-        <p class="section-label">Recent uploads</p>
-        <div class="upload-grid" id="content-grid">
-          <!-- Dynamic content cards rendered by JS -->
-        </div>
-        <div id="no-content" class="empty-state" style="display: none;">
-          <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
-          <h3>No Uploads Yet</h3>
-          <p>This creator hasn't uploaded any content</p>
-        </div>
-        <div id="content-count" style="display:none;"></div>
       </div>
-
-      <!-- Sidebar (Desktop) -->
-      <aside class="channel-sidebar" id="channel-sidebar">
-        <div class="sidebar-panel" id="world-panel">
-          <p class="sidebar-panel-title">Creator's world</p>
-          <div class="world-row" id="world-row-desktop">
-            <!-- Dynamic content loaded by JavaScript -->
-          </div>
-        </div>
-        <div class="sidebar-panel" id="top-supporter-panel">
-          <p class="sidebar-panel-title">Top supporter this week</p>
-          <div class="top-supporter" id="top-supporter">
-            <!-- Dynamic content -->
-          </div>
-        </div>
-      </aside>
-    </div>
-  </section>
-
-  <!-- ============ SERIES PANEL ============ -->
-  <section class="tab-panel" data-panel="series" hidden>
-    <div class="channel-body">
-      <div class="channel-main">
-        <p class="section-label">Series</p>
-        <div class="upload-grid" id="series-grid"></div>
-        <div id="series-empty" class="empty-state" style="display:none;">
-          <div class="empty-icon"><i class="fas fa-tv"></i></div>
-          <h3>No Series Yet</h3>
-        </div>
+      <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;"></div>
+      <p class="section-label">Recent uploads</p>
+      <div class="upload-grid" id="upload-grid"></div>
+      <div id="no-content" class="empty-state" style="display: none;">
+        <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
+        <h3>No Uploads Yet</h3>
+        <p>This creator hasn't uploaded any content</p>
       </div>
     </div>
-  </section>
-
-  <!-- ============ SHORTS PANEL ============ -->
-  <section class="tab-panel" data-panel="shorts" hidden>
-    <div class="channel-body">
-      <div class="channel-main">
-        <p class="section-label">Shorts</p>
-        <div class="upload-grid" id="shorts-grid"></div>
-        <div id="shorts-empty" class="empty-state" style="display:none;">
-          <div class="empty-icon"><i class="fas fa-bolt"></i></div>
-          <h3>No Shorts Yet</h3>
-        </div>
+    <aside class="channel-sidebar" id="channel-sidebar">
+      <div class="sidebar-panel" id="world-panel">
+        <p class="sidebar-panel-title">Creator's world</p>
+        <div class="world-row" id="world-row-desktop"></div>
       </div>
+      <div class="sidebar-panel" id="top-supporter-panel">
+        <p class="sidebar-panel-title">Top supporter this week</p>
+        <div class="top-supporter" id="top-supporter"></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== SERIES PANEL - NEW ===== -->
+<section class="tab-panel" data-panel="series" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Series content</p>
+      <div id="series-content"></div>
     </div>
-  </section>
-
-  <!-- ============ PODCAST PANEL ============ -->
-  <section class="tab-panel" data-panel="podcast" hidden>
-    <div class="channel-body">
-      <div class="channel-main">
-        <p class="section-label">Podcast</p>
-        <div class="upload-grid" id="podcast-grid"></div>
-        <div id="podcast-empty" class="empty-state" style="display:none;">
-          <div class="empty-icon"><i class="fas fa-podcast"></i></div>
-          <h3>No Podcasts Yet</h3>
-        </div>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About series</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Series are grouped by season for easy binge-watching.</p>
       </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== SHORTS PANEL - NEW ===== -->
+<section class="tab-panel" data-panel="shorts" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Shorts</p>
+      <div class="upload-grid" id="shorts-content"></div>
     </div>
-  </section>
-
-  <!-- ============ COMMUNITY PANEL ============ -->
-  <section class="tab-panel" data-panel="community" hidden>
-    <div class="channel-body">
-      <div class="channel-main community-main">
-
-        <!-- Pinned Post -->
-        <div class="pinned-post" id="pinned-post" style="display: none;">
-          <span>📌</span>
-          <div>
-            <p class="pinned-post-author">Pinned by <span id="pinned-post-creator">Creator</span></p>
-            <p class="pinned-post-content" id="pinned-post-content">Pinned content</p>
-          </div>
-        </div>
-
-        <!-- Poll -->
-        <div class="poll-section" id="poll-section" style="display: none;">
-          <p class="section-label">Poll</p>
-          <div class="poll-option">
-            <div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">0%</span></div>
-            <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:0%;background:#5DCAA5;"></div></div>
-          </div>
-          <div class="poll-option">
-            <div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">0%</span></div>
-            <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:0%;background:#7F77DD;"></div></div>
-          </div>
-          <span class="poll-meta" id="poll-meta">0 votes</span>
-        </div>
-
-        <!-- Fan Wall -->
-        <div class="section-divider">
-          <p class="section-label">Fan wall</p>
-          <div class="fan-wall" id="fan-wall">
-            <!-- Dynamic content -->
-          </div>
-        </div>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About shorts</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Quick, snackable content from the creator.</p>
       </div>
+    </aside>
+  </div>
+</section>
 
-      <aside class="channel-sidebar community-sidebar">
-        <div class="sidebar-panel">
-          <p class="sidebar-panel-title">This week's top voices</p>
-          <div class="leaderboard" id="leaderboard">
-            <!-- Dynamic content -->
-          </div>
-        </div>
-      </aside>
+<!-- ===== PODCAST PANEL - NEW ===== -->
+<section class="tab-panel" data-panel="podcast" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Podcasts</p>
+      <div class="upload-grid podcast-grid" id="podcast-content"></div>
     </div>
-  </section>
-
-  <!-- ============ ABOUT PANEL ============ -->
-  <section class="tab-panel" data-panel="about" hidden>
-    <div class="about-content">
-      <div class="about-bio" id="about-bio">
-        <p class="about-bio-text" id="creator-bio">Creator bio will appear here</p>
-        <span class="about-joined" id="about-joined">Joined Bantu Stream Connect</span>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About podcasts</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Audio and video episodes from the creator.</p>
       </div>
+    </aside>
+  </div>
+</section>
 
-      <div class="about-stats" id="about-stats">
-        <div class="about-stat"><p class="about-stat-number" id="views-count">0</p><span class="about-stat-label">Total views</span></div>
-        <div class="about-stat"><p class="about-stat-number" id="videos-count">0</p><span class="about-stat-label">Uploads</span></div>
-        <div class="about-stat"><p class="about-stat-number streak" id="about-streak">0</p><span class="about-stat-label">Day streak</span></div>
-        <div class="about-stat"><p class="about-stat-number" id="engagement-count">0%</p><span class="about-stat-label">Engagement</span></div>
+<!-- ===== COMMUNITY PANEL ===== -->
+<section class="tab-panel" data-panel="community" hidden role="tabpanel">
+  <div class="channel-body">
+    <div class="channel-main community-main">
+      <div class="pinned-post" id="pinned-post" style="display: none;">
+        <span>📌</span>
+        <div>
+          <p class="pinned-post-author">Pinned by <span id="pinned-post-creator">Creator</span></p>
+          <p class="pinned-post-content" id="pinned-post-content">Season 4 writers' room opens this month</p>
+        </div>
       </div>
-
-      <p class="section-label">What they make</p>
-      <div class="content-mix-bar" id="content-mix-bar">
-        <div style="width:40%;background:#04342C;"></div>
-        <div style="width:25%;background:#26215C;"></div>
-        <div style="width:20%;background:#712B13;"></div>
-        <div style="width:15%;background:#4A1B0C;"></div>
+      <div class="poll-section" id="poll-section" style="display: none;">
+        <p class="section-label">Who should guest next on the podcast?</p>
+        <div class="poll-option">
+          <div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">62%</span></div>
+          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:62%;background:#5DCAA5;"></div></div>
+        </div>
+        <div class="poll-option">
+          <div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">38%</span></div>
+          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:38%;background:#7F77DD;"></div></div>
+        </div>
+        <span class="poll-meta" id="poll-meta">0 votes · 0 days left</span>
       </div>
-      <div class="content-mix-legend" id="content-mix-legend">
-        <span>🟢 Series 40%</span>
-        <span>🟣 Podcast 25%</span>
-        <span>🟠 Shorts 20%</span>
-        <span>🟤 Community 15%</span>
-      </div>
-
       <div class="section-divider">
-        <p class="section-label">The journey</p>
-        <div class="journey-timeline" id="journey-timeline">
-          <!-- Dynamic content -->
-        </div>
+        <p class="section-label">Fan wall</p>
+        <div class="fan-wall" id="fan-wall"></div>
       </div>
-      
-      <!-- Hidden legacy sections for JS compatibility -->
-      <div id="trailer-section" style="display:none;"></div>
-      <div id="popular-section" style="display:none;"></div>
-      <div id="activity-section" style="display:none;"></div>
-      <div id="fan-section" style="display:none;"></div>
-      <div id="achievements-section" style="display:none;"></div>
-      <div id="schedule-section" style="display:none;"></div>
-      <div id="recommended-section" style="display:none;"></div>
-      <div id="support-section" style="display:none;"></div>
-      <div id="playlists-section" style="display:none;"></div>
     </div>
-  </section>
+    <aside class="channel-sidebar community-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">This week's top voices</p>
+        <div class="leaderboard" id="leaderboard"></div>
+      </div>
+    </aside>
+  </div>
+</section>
 
-  <!-- FOOTER (PRESERVED EXACTLY) -->
-  <footer class="footer">
-    <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
-    <div class="footer-links">
-      <a href="privacy-policy.html">Privacy Policy</a>
-      <a href="terms-of-service.html">Terms of Service</a>
-      <a href="support.html">Support</a>
+<!-- ===== ABOUT PANEL ===== -->
+<section class="tab-panel" data-panel="about" hidden role="tabpanel">
+  <div class="about-content">
+    <div class="about-bio" id="about-bio">
+      <p class="about-bio-text">Creator bio will appear here</p>
+      <span class="about-joined" id="about-joined">Joined Bantu Stream Connect · March 2023 · Johannesburg, South Africa</span>
     </div>
-  </footer>
 
-  <!-- NAVIGATION BUTTON (PRESERVED EXACTLY) -->
-  <div class="navigation-button-container">
-    <div class="navigation-button">
-      <div class="nav-icon" id="nav-home-btn" title="Home">
-        <i class="fas fa-home"></i>
-      </div>
-      <div class="nav-icon" id="nav-history-btn" title="Watch History">
-        <i class="fas fa-history"></i>
-      </div>
-      <div class="nav-icon" id="nav-create-btn" title="Create Content">
-        <i class="fas fa-plus-circle"></i>
-      </div>
-      <div class="nav-icon" id="nav-menu-btn" title="Menu">
-        <i class="fas fa-bars"></i>
-      </div>
+    <div class="about-stats" id="about-stats">
+      <div class="about-stat"><p class="about-stat-number" id="about-total-views">0</p><span class="about-stat-label">Total views</span></div>
+      <div class="about-stat"><p class="about-stat-number" id="about-total-uploads">0</p><span class="about-stat-label">Uploads</span></div>
+      <div class="about-stat"><p class="about-stat-number streak" id="about-streak">0</p><span class="about-stat-label">Day streak</span></div>
+      <div class="about-stat"><p class="about-stat-number" id="about-originals">0</p><span class="about-stat-label">Bantu originals</span></div>
+    </div>
+
+    <p class="section-label">What they make</p>
+    <div class="content-mix-bar" id="content-mix-bar"></div>
+    <div class="content-mix-legend" id="content-mix-legend"></div>
+
+    <div class="section-divider">
+      <p class="section-label">The journey</p>
+      <div class="journey-timeline" id="journey-timeline"></div>
     </div>
   </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+<div class="footer-links">
+<a href="privacy-policy.html">Privacy Policy</a>
+<a href="terms-of-service.html">Terms of Service</a>
+<a href="support.html">Support</a>
+</div>
+</footer>
+
+<!-- NAVIGATION BUTTON -->
+<div class="navigation-button-container">
+<div class="navigation-button">
+<div class="nav-icon" id="nav-home-btn" title="Home">
+<i class="fas fa-home"></i>
+</div>
+<div class="nav-icon" id="nav-history-btn" title="Watch History">
+<i class="fas fa-history"></i>
+</div>
+<div class="nav-icon" id="nav-create-btn" title="Create Content">
+<i class="fas fa-plus-circle"></i>
+</div>
+<div class="nav-icon" id="nav-menu-btn" title="Menu">
+<i class="fas fa-bars"></i>
+</div>
+</div>
+</div>
 </div>
 
 <div id="toast-container"></div>
