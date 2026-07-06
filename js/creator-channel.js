@@ -21,6 +21,21 @@ window.currentTab = 'home';
 window.streakCount = 0;
 window.fanComments = [];
 window.pollData = null;
+window.creatorPosts = [];
+window.contentTypeColors = {
+  'Series': '#04342C',
+  'Short': '#712B13',
+  'Podcast': '#26215C',
+  'Video': '#1D4ED8',
+  'Music': '#EC4899',
+  'Film': '#8B5CF6',
+  'Documentary': '#0F766E',
+  'STEM': '#0E7490',
+  'Culture': '#B45309',
+  'News': '#1F2937',
+  'Sports': '#DC2626',
+  'Other': '#6B7280'
+};
 
 // ===== HELPER FUNCTIONS =====
 function showToast(message, type = 'info') {
@@ -117,7 +132,79 @@ function formatDuration(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// ===== PHASE 5: LOAD CONTENT WITH ENGAGEMENT STATS =====
+function getContentType(content) {
+  return content.content_format || content.media_type || 'Video';
+}
+
+function getContentTypeColor(type) {
+  return window.contentTypeColors[type] || '#6B7280';
+}
+
+// ===== COMPUTE REAL STREAK COUNT =====
+function computeStreakCount(contentArray) {
+  if (!contentArray || contentArray.length === 0) return 0;
+  
+  // Get unique dates of uploads
+  const dates = contentArray
+    .map(c => new Date(c.created_at))
+    .filter(d => !isNaN(d))
+    .sort((a, b) => b - a);
+  
+  if (dates.length === 0) return 0;
+  
+  // Check for consecutive days from most recent
+  let streak = 1;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const mostRecent = new Date(dates[0]);
+  mostRecent.setHours(0, 0, 0, 0);
+  
+  // If most recent upload is more than 1 day ago, streak is 0
+  const daysSinceLastUpload = Math.floor((today - mostRecent) / (1000 * 60 * 60 * 24));
+  if (daysSinceLastUpload > 1) return 0;
+  
+  // Count consecutive days backwards
+  for (let i = 1; i < dates.length; i++) {
+    const current = new Date(dates[i]);
+    current.setHours(0, 0, 0, 0);
+    const prev = new Date(dates[i-1]);
+    prev.setHours(0, 0, 0, 0);
+    
+    const diffDays = Math.floor((prev - current) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      streak++;
+    } else if (diffDays > 1) {
+      break;
+    }
+  }
+  
+  return streak;
+}
+
+// ===== COMPUTE CONTENT MIX =====
+function computeContentMix(contentArray) {
+  const mix = {};
+  contentArray.forEach(c => {
+    const type = getContentType(c);
+    mix[type] = (mix[type] || 0) + 1;
+  });
+  
+  const total = contentArray.length || 1;
+  const result = [];
+  Object.keys(mix).forEach(type => {
+    result.push({
+      type: type,
+      count: mix[type],
+      percentage: Math.round((mix[type] / total) * 100),
+      color: getContentTypeColor(type)
+    });
+  });
+  
+  return result.sort((a, b) => b.count - a.count);
+}
+
+// ===== LOAD CONTENT WITH ENGAGEMENT STATS =====
 async function loadContentWithEngagementStats(creatorId, limit = 50) {
   const { data, error } = await supabase
     .from('Content')
@@ -135,11 +222,15 @@ async function loadContentWithEngagementStats(creatorId, limit = 50) {
       user_id,
       is_pinned,
       is_channel_trailer,
+      is_original,
       status,
       live_views,
       favorites_count,
       comments_count,
       shares_count,
+      season_number,
+      episode_number,
+      episode_title,
       user_profiles!user_id (
         id,
         full_name,
@@ -171,6 +262,73 @@ async function loadContentWithEngagementStats(creatorId, limit = 50) {
     favorites_count: item.favorites_count || 0,
     valid_views_count: item.content_engagement_stats?.total_valid_views || 0
   }));
+}
+
+// ===== LOAD CREATOR POSTS =====
+async function loadCreatorPosts(creatorId) {
+  try {
+    const { data, error } = await supabase
+      .from('creator_posts')
+      .select('*')
+      .eq('creator_id', creatorId)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    window.creatorPosts = data || [];
+    return window.creatorPosts;
+  } catch (error) {
+    console.error('Error loading creator posts:', error);
+    window.creatorPosts = [];
+    return [];
+  }
+}
+
+// ===== LOAD POLL DATA =====
+async function loadPollData(creatorId) {
+  try {
+    const { data, error } = await supabase
+      .from('polls')
+      .select(`
+        *,
+        poll_options (*),
+        poll_votes (count)
+      `)
+      .eq('creator_id', creatorId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+      
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      const poll = data[0];
+      const options = poll.poll_options || [];
+      const totalVotes = poll.poll_votes?.[0]?.count || 0;
+      
+      window.pollData = {
+        id: poll.id,
+        question: poll.question,
+        options: options.map(o => ({
+          id: o.id,
+          label: o.option_text,
+          votes: o.vote_count || 0
+        })),
+        totalVotes: totalVotes,
+        daysLeft: Math.max(0, Math.floor((new Date(poll.expires_at) - new Date()) / (1000 * 60 * 60 * 24)))
+      };
+    } else {
+      // Create default poll if none exists
+      window.pollData = null;
+    }
+    
+    return window.pollData;
+  } catch (error) {
+    console.error('Error loading poll data:', error);
+    window.pollData = null;
+    return null;
+  }
 }
 
 // ===== LOAD PLAYLISTS WITH JUNCTION TABLE =====
@@ -558,7 +716,7 @@ function setupNavigationButtons() {
   }
 }
 
-// ===== TABS SETUP (NEW) =====
+// ===== TABS SETUP (FIXED - ALL TABS WORK) =====
 function setupTabs() {
   const tabs = document.querySelectorAll('.channel-tab');
   const panels = document.querySelectorAll('.tab-panel');
@@ -575,10 +733,16 @@ function setupTabs() {
       panels.forEach(panel => {
         if (panel.dataset.panel === target) {
           panel.hidden = false;
-          // Trigger render for the tab
-          if (target === 'home') renderHomeTab();
-          else if (target === 'community') renderCommunityTab();
-          else if (target === 'about') renderAboutTab();
+          // Render the appropriate tab
+          switch(target) {
+            case 'home': renderHomeTab(); break;
+            case 'series': renderSeriesTab(); break;
+            case 'shorts': renderShortsTab(); break;
+            case 'podcast': renderPodcastTab(); break;
+            case 'community': renderCommunityTab(); break;
+            case 'about': renderAboutTab(); break;
+            default: break;
+          }
         } else {
           panel.hidden = true;
         }
@@ -589,11 +753,174 @@ function setupTabs() {
   });
 }
 
-// ===== RENDER HOME TAB (NEW) =====
+// ===== RENDER HOME TAB =====
 function renderHomeTab() {
   renderFeaturedCard();
   renderWorldRow();
-  renderUploadGrid();
+  renderUploadGrid('all');
+}
+
+// ===== RENDER SERIES TAB (NEW) =====
+function renderSeriesTab() {
+  const main = document.querySelector('[data-panel="series"] .channel-main');
+  if (!main) return;
+  
+  const seriesContent = window.creatorContent.filter(c => 
+    getContentType(c) === 'Series' || c.content_format === 'series'
+  );
+  
+  if (seriesContent.length === 0) {
+    main.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-tv"></i></div>
+        <h3>No Series Yet</h3>
+        <p>This creator hasn't published any series content</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Group by season
+  const seasons = {};
+  seriesContent.forEach(c => {
+    const season = c.season_number || 1;
+    if (!seasons[season]) seasons[season] = [];
+    seasons[season].push(c);
+  });
+  
+  const sortedSeasons = Object.keys(seasons).sort((a, b) => b - a);
+  
+  let html = `<div class="series-container">`;
+  
+  sortedSeasons.forEach(season => {
+    const episodes = seasons[season].sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0));
+    html += `
+      <div class="series-season">
+        <div class="season-header">
+          <h3 class="season-title">Season ${season}</h3>
+          <span class="season-episode-count">${episodes.length} episode${episodes.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="upload-grid">
+    `;
+    
+    episodes.forEach(item => {
+      html += createUploadCardHTML(item);
+    });
+    
+    html += `
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `</div>`;
+  main.innerHTML = html;
+  
+  // Add click handlers
+  main.querySelectorAll('.upload-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `content-detail.html?id=${id}`;
+    });
+  });
+}
+
+// ===== RENDER SHORTS TAB (NEW) =====
+function renderShortsTab() {
+  const main = document.querySelector('[data-panel="shorts"] .channel-main');
+  if (!main) return;
+  
+  const shortsContent = window.creatorContent.filter(c => 
+    getContentType(c) === 'Short' || c.media_type === 'short'
+  );
+  
+  if (shortsContent.length === 0) {
+    main.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-bolt"></i></div>
+        <h3>No Shorts Yet</h3>
+        <p>This creator hasn't published any shorts</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = `<div class="upload-grid">`;
+  shortsContent.forEach(item => {
+    html += createUploadCardHTML(item);
+  });
+  html += `</div>`;
+  main.innerHTML = html;
+  
+  main.querySelectorAll('.upload-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `content-detail.html?id=${id}`;
+    });
+  });
+}
+
+// ===== RENDER PODCAST TAB (NEW) =====
+function renderPodcastTab() {
+  const main = document.querySelector('[data-panel="podcast"] .channel-main');
+  if (!main) return;
+  
+  const podcastContent = window.creatorContent.filter(c => 
+    getContentType(c) === 'Podcast' || c.content_format === 'podcast'
+  );
+  
+  if (podcastContent.length === 0) {
+    main.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-podcast"></i></div>
+        <h3>No Podcasts Yet</h3>
+        <p>This creator hasn't published any podcasts</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = `<div class="upload-grid podcast-grid">`;
+  podcastContent.forEach(item => {
+    // Podcasts get a slightly different card with episode number
+    html += `
+      <div class="upload-card podcast-card" data-content-id="${item.id}">
+        <div class="upload-card__thumb" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400&h=225&fit=crop')});">
+          <span class="upload-card__badge" style="background:#26215C;color:#CECBF6;">Podcast</span>
+          ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
+        </div>
+        <p class="upload-card__title">${escapeHtml(item.episode_title || item.title || 'Untitled')}</p>
+        <p class="upload-card__meta">Episode ${item.episode_number || 1} · ${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  main.innerHTML = html;
+  
+  main.querySelectorAll('.upload-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `content-detail.html?id=${id}`;
+    });
+  });
+}
+
+// ===== CREATE UPLOAD CARD HTML (REUSABLE) =====
+function createUploadCardHTML(item) {
+  const type = getContentType(item);
+  const color = getContentTypeColor(type);
+  const thumbnail = fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop');
+  
+  return `
+    <div class="upload-card" data-content-id="${item.id}">
+      <div class="upload-card__thumb" style="background-image:url(${thumbnail});">
+        <span class="upload-card__badge" style="background:${color};color:white;">${escapeHtml(type)}</span>
+        ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
+      </div>
+      <p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
+      <p class="upload-card__meta">${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
+    </div>
+  `;
 }
 
 // ===== RENDER FEATURED CARD =====
@@ -601,7 +928,6 @@ function renderFeaturedCard() {
   const card = document.getElementById('featured-card');
   if (!card) return;
   
-  // Find pinned content or most recent upload
   const pinned = window.creatorContent.find(c => c.is_pinned === true);
   const featured = pinned || (window.creatorContent.length > 0 ? window.creatorContent[0] : null);
   
@@ -638,19 +964,27 @@ function renderFeaturedCard() {
   };
 }
 
-// ===== RENDER WORLD ROW =====
+// ===== RENDER WORLD ROW (FIXED - USES CONTENT TYPE COLORS) =====
 function renderWorldRow() {
   const mobileRow = document.getElementById('world-row-mobile');
   const desktopRow = document.getElementById('world-row-desktop');
   
   if (!mobileRow && !desktopRow) return;
   
-  // Get unique genres or content types
-  const genres = [...new Set(window.creatorContent.map(c => c.genre || c.content_format || 'Other'))];
-  const worldItems = genres.slice(0, 6).map(genre => ({
-    label: genre,
-    color: ['#26215C', '#04342C', '#4A1B0C', '#1D4ED8', '#F59E0B', '#EC4899'][Math.floor(Math.random() * 6)]
-  }));
+  // Get unique content types from actual content
+  const typeCounts = {};
+  window.creatorContent.forEach(c => {
+    const type = getContentType(c);
+    typeCounts[type] = (typeCounts[type] || 0) + 1;
+  });
+  
+  const worldItems = Object.keys(typeCounts)
+    .sort((a, b) => typeCounts[b] - typeCounts[a])
+    .slice(0, 6)
+    .map(type => ({
+      label: type,
+      color: getContentTypeColor(type)
+    }));
   
   if (worldItems.length === 0) {
     if (mobileRow) mobileRow.style.display = 'none';
@@ -679,13 +1013,18 @@ function renderWorldRow() {
 }
 
 // ===== RENDER UPLOAD GRID =====
-function renderUploadGrid() {
+function renderUploadGrid(filter = 'all') {
   const grid = document.getElementById('upload-grid');
   const noContent = document.getElementById('no-content');
   
   if (!grid) return;
   
-  const content = window.creatorContent || [];
+  let content = window.creatorContent || [];
+  
+  // Apply filter
+  if (filter !== 'all') {
+    content = content.filter(c => getContentType(c).toLowerCase() === filter);
+  }
   
   if (content.length === 0) {
     grid.innerHTML = '';
@@ -701,29 +1040,7 @@ function renderUploadGrid() {
     return new Date(b.created_at) - new Date(a.created_at);
   }).slice(0, 6);
   
-  grid.innerHTML = sorted.map(item => {
-    const type = item.content_format || item.media_type || 'Video';
-    const badgeColors = {
-      'Short': '#712B13',
-      'Podcast': '#26215C',
-      'Series': '#04342C',
-      'Video': '#1D4ED8',
-      'Music': '#EC4899',
-      'Film': '#8B5CF6'
-    };
-    const color = badgeColors[type] || '#1D4ED8';
-    
-    return `
-      <div class="upload-card" data-content-id="${item.id}">
-        <div class="upload-card__thumb" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop')});">
-          <span class="upload-card__badge" style="background:${color};color:white;">${escapeHtml(type)}</span>
-          ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
-        </div>
-        <p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
-        <p class="upload-card__meta">${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
-      </div>
-    `;
-  }).join('');
+  grid.innerHTML = sorted.map(item => createUploadCardHTML(item)).join('');
   
   grid.querySelectorAll('.upload-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -733,7 +1050,7 @@ function renderUploadGrid() {
   });
 }
 
-// ===== RENDER COMMUNITY TAB (NEW) =====
+// ===== RENDER COMMUNITY TAB =====
 function renderCommunityTab() {
   renderPinnedPost();
   renderPoll();
@@ -741,12 +1058,28 @@ function renderCommunityTab() {
   renderLeaderboard();
 }
 
-// ===== RENDER PINNED POST =====
+// ===== RENDER PINNED POST (FIXED - USES CREATOR POSTS) =====
 function renderPinnedPost() {
   const post = document.getElementById('pinned-post');
   if (!post) return;
   
-  // Check if there's a pinned comment or post
+  // Check for pinned creator post
+  const pinnedPost = window.creatorPosts.find(p => p.is_pinned === true);
+  
+  if (pinnedPost) {
+    post.style.display = 'flex';
+    const creator = document.getElementById('pinned-post-creator');
+    if (creator) {
+      creator.textContent = window.creatorProfile?.full_name || window.creatorProfile?.username || 'Creator';
+    }
+    const content = document.getElementById('pinned-post-content');
+    if (content) {
+      content.textContent = pinnedPost.content || 'No content';
+    }
+    return;
+  }
+  
+  // Fallback: use pinned content or fan comment
   const pinnedContent = window.creatorContent.find(c => c.is_pinned === true);
   
   if (!pinnedContent && window.fanComments.length === 0) {
@@ -773,37 +1106,14 @@ function renderPinnedPost() {
   }
 }
 
-// ===== RENDER POLL =====
+// ===== RENDER POLL (FIXED - REAL DATA) =====
 function renderPoll() {
   const pollSection = document.getElementById('poll-section');
   if (!pollSection) return;
   
-  // Check if we have poll data
   if (!window.pollData) {
-    // Generate sample poll data if none exists
-    const contentTypes = ['Series', 'Podcast', 'Shorts', 'Documentary'];
-    const typeCounts = {};
-    window.creatorContent.forEach(c => {
-      const type = c.content_format || c.media_type || 'Other';
-      typeCounts[type] = (typeCounts[type] || 0) + 1;
-    });
-    
-    const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
-    if (sorted.length >= 2) {
-      window.pollData = {
-        question: `What content should we make next?`,
-        options: [
-          { label: `More ${sorted[0][0]}`, votes: Math.floor(Math.random() * 100) + 50 },
-          { label: `More ${sorted[1][0]}`, votes: Math.floor(Math.random() * 50) + 20 }
-        ],
-        totalVotes: 0,
-        daysLeft: Math.floor(Math.random() * 5) + 1
-      };
-      window.pollData.totalVotes = window.pollData.options.reduce((sum, o) => sum + o.votes, 0);
-    } else {
-      pollSection.style.display = 'none';
-      return;
-    }
+    pollSection.style.display = 'none';
+    return;
   }
   
   pollSection.style.display = 'block';
@@ -815,6 +1125,11 @@ function renderPoll() {
   const pct2 = document.getElementById('poll-option-2-pct');
   const fill2 = document.getElementById('poll-option-2-fill');
   const meta = document.getElementById('poll-meta');
+  const question = pollSection.querySelector('.section-label');
+  
+  if (question) {
+    question.textContent = window.pollData.question || 'What should we make next?';
+  }
   
   if (window.pollData.options.length >= 2) {
     const total = window.pollData.totalVotes || 1;
@@ -840,7 +1155,6 @@ async function renderFanWall() {
   const wall = document.getElementById('fan-wall');
   if (!wall) return;
   
-  // Get comments from the creator's content
   const contentIds = window.creatorContent.map(c => c.id);
   
   if (contentIds.length === 0) {
@@ -903,7 +1217,6 @@ async function renderLeaderboard() {
   const board = document.getElementById('leaderboard');
   if (!board) return;
   
-  // Get top commenters from the creator's content
   const contentIds = window.creatorContent.map(c => c.id);
   
   if (contentIds.length === 0) {
@@ -926,7 +1239,6 @@ async function renderLeaderboard() {
       
     if (error) throw error;
     
-    // Count comments per user
     const userCounts = {};
     (data || []).forEach(comment => {
       if (comment.user_id) {
@@ -943,7 +1255,6 @@ async function renderLeaderboard() {
       return;
     }
     
-    // Get user profiles
     const userIds = sorted.map(([id]) => id);
     const { data: profiles } = await supabase
       .from('user_profiles')
@@ -979,7 +1290,7 @@ async function renderLeaderboard() {
   }
 }
 
-// ===== RENDER ABOUT TAB (NEW) =====
+// ===== RENDER ABOUT TAB (FIXED - REAL DATA) =====
 function renderAboutTab() {
   const bioText = document.getElementById('about-bio-text');
   const joined = document.getElementById('about-joined');
@@ -988,72 +1299,123 @@ function renderAboutTab() {
   const streak = document.getElementById('about-streak');
   const originals = document.getElementById('about-originals');
   const timeline = document.getElementById('journey-timeline');
+  const contentMixBar = document.getElementById('content-mix-bar');
+  const contentMixLegend = document.getElementById('content-mix-legend');
   
+  // Bio
   if (bioText && window.creatorProfile) {
     bioText.textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories.';
   }
   
+  // Joined
   if (joined && window.creatorProfile) {
     const date = window.creatorProfile.created_at ? new Date(window.creatorProfile.created_at) : new Date();
     const location = window.creatorProfile.location || 'Johannesburg, South Africa';
     joined.textContent = `Joined Bantu Stream Connect · ${date.toLocaleString('default', { month: 'long', year: 'numeric' })} · ${location}`;
   }
   
+  // Total Views
   if (totalViews) {
     const sum = window.creatorContent.reduce((s, c) => s + (c.views_count || 0), 0);
     totalViews.textContent = formatNumber(sum);
   }
   
+  // Total Uploads
   if (totalUploads) {
     totalUploads.textContent = window.creatorContent.length;
   }
   
+  // REAL Streak Count
   if (streak) {
-    streak.textContent = window.streakCount || Math.floor(Math.random() * 30) + 1;
+    window.streakCount = computeStreakCount(window.creatorContent);
+    streak.textContent = window.streakCount;
   }
   
+  // REAL Originals Count
   if (originals) {
-    const originalsCount = window.creatorContent.filter(c => c.is_original === true || c.content_format === 'Bantu Original').length;
-    originals.textContent = originalsCount || Math.floor(Math.random() * 3) + 1;
+    const originalsCount = window.creatorContent.filter(c => c.is_original === true).length;
+    originals.textContent = originalsCount || 0;
   }
   
-  // Update timeline
-  if (timeline) {
-    const milestones = [
-      { date: 'March 2023', title: 'First upload', desc: 'Started the journey' },
-      { date: 'January 2024', title: 'First original', desc: 'Content recognized' },
-      { date: 'June 2025', title: '100K milestone', desc: 'Growing the community' }
-    ];
+  // CONTENT MIX BAR (FIXED - REAL DATA)
+  if (contentMixBar && contentMixLegend) {
+    const mix = computeContentMix(window.creatorContent);
     
-    if (window.creatorContent.length > 0 && window.creatorProfile?.created_at) {
+    if (mix.length === 0) {
+      contentMixBar.innerHTML = '<div style="width:100%;background:#6B7280;"></div>';
+      contentMixLegend.innerHTML = '<span>No content yet</span>';
+    } else {
+      // Build the bar
+      contentMixBar.innerHTML = mix.map(item => `
+        <div style="width:${item.percentage}%;background:${item.color};"></div>
+      `).join('');
+      
+      // Build the legend
+      contentMixLegend.innerHTML = mix.map(item => `
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${item.color};margin-right:4px;"></span> ${escapeHtml(item.type)} ${item.percentage}%</span>
+      `).join('');
+    }
+  }
+  
+  // Journey Timeline
+  if (timeline) {
+    const milestones = [];
+    
+    if (window.creatorProfile?.created_at) {
       const startDate = new Date(window.creatorProfile.created_at);
-      milestones[0] = {
+      milestones.push({
         date: startDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
         title: 'First upload',
-        desc: `Started creating on Bantu Stream Connect`
-      };
+        desc: 'Started creating on Bantu Stream Connect',
+        color: '#5DCAA5'
+      });
     }
     
-    if (window.creatorContent.length > 10) {
-      milestones[1] = { date: '2024', title: '10+ uploads', desc: 'Building the library' };
+    if (window.creatorContent.length >= 10) {
+      milestones.push({
+        date: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
+        title: '10+ uploads',
+        desc: 'Building the content library',
+        color: '#7F77DD'
+      });
     }
     
-    if (window.connectorCount > 100) {
-      milestones[2] = { date: '2025', title: '100+ connectors', desc: 'Growing the circle' };
+    if (window.connectorCount >= 100) {
+      milestones.push({
+        date: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
+        title: '100+ connectors',
+        desc: 'Growing the community',
+        color: 'var(--accent-streak)'
+      });
     }
     
-    timeline.innerHTML = milestones.map((m, index) => {
-      const colors = ['#5DCAA5', '#7F77DD', 'var(--accent-streak)'];
-      return `
-        <div class="journey-item">
-          <div class="journey-dot" style="background:${colors[index % colors.length]};"></div>
-          <div>
-            <p class="journey-item__title">${escapeHtml(m.date)} — ${escapeHtml(m.title)}</p>
-            <p class="journey-item__desc">${escapeHtml(m.desc)}</p>
-          </div>
+    if (window.creatorContent.some(c => c.is_original === true)) {
+      milestones.push({
+        date: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
+        title: 'Bantu Original created',
+        desc: 'Official Bantu Stream Connect original content',
+        color: '#F59E0B'
+      });
+    }
+    
+    if (milestones.length === 0) {
+      milestones.push({
+        date: 'Just getting started',
+        title: 'Welcome!',
+        desc: 'The journey begins here',
+        color: '#6B7280'
+      });
+    }
+    
+    timeline.innerHTML = milestones.map((m, index) => `
+      <div class="journey-item">
+        <div class="journey-dot" style="background:${m.color};"></div>
+        <div>
+          <p class="journey-item__title">${escapeHtml(m.date)} — ${escapeHtml(m.title)}</p>
+          <p class="journey-item__desc">${escapeHtml(m.desc)}</p>
         </div>
-      `;
-    }).join('');
+      </div>
+    `).join('');
   }
 }
 
@@ -1065,6 +1427,11 @@ function initAnalyticsModal() {
   const analyticsBtn = document.getElementById('analytics-btn');
   if (analyticsBtn) {
     analyticsBtn.addEventListener('click', () => {
+      // Check if user is the owner
+      if (window.currentUser?.id !== window.creatorId) {
+        showToast('Analytics are only available to the channel owner', 'warning');
+        return;
+      }
       modal.classList.add('active');
       loadChannelAnalytics();
     });
@@ -1147,6 +1514,671 @@ async function loadChannelAnalytics() {
       }
     }
   });
+}
+
+// ===== EDIT ABOUT MODAL (WIRED UP) =====
+function showEditAboutModal() {
+  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+    showToast('Only the channel owner can edit this section', 'warning');
+    return;
+  }
+  
+  const quoteInput = document.getElementById('edit-quote');
+  const missionInput = document.getElementById('edit-mission');
+  const locationInput = document.getElementById('edit-location');
+  const websiteInput = document.getElementById('edit-website');
+  const scheduleInput = document.getElementById('edit-schedule');
+  const tagsInput = document.getElementById('edit-tags');
+  const socialInput = document.getElementById('edit-social');
+  const modal = document.getElementById('edit-about-modal');
+  
+  if (quoteInput) quoteInput.value = window.creatorProfile?.quote || '';
+  if (missionInput) missionInput.value = window.creatorProfile?.mission || '';
+  if (locationInput) locationInput.value = window.creatorProfile?.location || '';
+  if (websiteInput) websiteInput.value = window.creatorProfile?.website_url || '';
+  if (scheduleInput) scheduleInput.value = window.creatorProfile?.upload_schedule || '';
+  if (tagsInput) tagsInput.value = window.creatorProfile?.interests || '';
+  if (socialInput) socialInput.value = window.creatorProfile?.social_links ? JSON.stringify(window.creatorProfile.social_links, null, 2) : '';
+  
+  if (modal) modal.classList.add('active');
+}
+
+function hideEditAboutModal() {
+  const modal = document.getElementById('edit-about-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function saveAboutSection() {
+  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+    showToast('Only the channel owner can edit this section', 'warning');
+    return;
+  }
+  
+  try {
+    const updates = { updated_at: new Date().toISOString() };
+    
+    const fields = [
+      { id: 'edit-quote', key: 'quote' },
+      { id: 'edit-mission', key: 'mission' },
+      { id: 'edit-location', key: 'location' },
+      { id: 'edit-website', key: 'website_url' },
+      { id: 'edit-schedule', key: 'upload_schedule' },
+      { id: 'edit-tags', key: 'interests' }
+    ];
+    
+    fields.forEach(({ id, key }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const val = el.value.trim();
+        if (val) updates[key] = val;
+      }
+    });
+    
+    const socialInput = document.getElementById('edit-social');
+    if (socialInput) {
+      const socialValue = socialInput.value.trim();
+      if (socialValue) {
+        try {
+          updates.social_links = JSON.parse(socialValue);
+        } catch (e) {
+          showToast('Invalid JSON for social links', 'warning');
+          return;
+        }
+      }
+    }
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(updates)
+      .eq('id', window.creatorId)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    if (data) window.creatorProfile = { ...window.creatorProfile, ...data };
+    
+    renderAboutTab();
+    hideEditAboutModal();
+    showToast('About section updated successfully! ✨', 'success');
+  } catch (error) {
+    console.error('Save error:', error);
+    showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error');
+  }
+}
+
+// ===== BANNER FUNCTIONS =====
+async function handleBannerUpload(file) {
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+  if (!validTypes.includes(file.type)) {
+    showToast('Please upload a valid image (JPEG, PNG, or WEBP)', 'error');
+    return false;
+  }
+  
+  const maxSize = 20 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showToast('Image must be less than 20MB', 'error');
+    return false;
+  }
+  
+  const progressContainer = document.getElementById('banner-upload-progress');
+  const progressFill = document.getElementById('upload-progress-fill');
+  const progressText = document.getElementById('upload-progress-text');
+  
+  if (progressContainer) progressContainer.style.display = 'block';
+  if (progressText) progressText.textContent = 'Requesting upload URL...';
+  
+  try {
+    const { data: uploadData, error: uploadError } = await supabase.functions.invoke('get-upload-url', {
+      body: { mediaType: 'banner', fileName: file.name }
+    });
+    
+    if (uploadError) throw new Error(uploadError.message);
+    if (!uploadData?.uploadUrl) throw new Error('No upload URL received');
+    
+    if (progressText) progressText.textContent = 'Uploading to CDN...';
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadData.uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type);
+    
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && progressFill) {
+        const percent = (e.loaded / e.total) * 100;
+        progressFill.style.width = percent + '%';
+        if (progressText) progressText.textContent = `Uploading: ${Math.round(percent)}%`;
+      }
+    };
+    
+    await new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve();
+        else reject(new Error(`Upload failed: ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.send(file);
+    });
+    
+    if (progressText) progressText.textContent = 'Updating profile...';
+    
+    const { error: dbError } = await supabase
+      .from('user_profiles')
+      .update({ channel_banner_url: uploadData.fileUrl })
+      .eq('id', window.creatorId);
+      
+    if (dbError) throw dbError;
+    
+    setBannerImage(uploadData.fileUrl);
+    showToast('Banner updated successfully! 🎉', 'success');
+    
+    if (window.creatorProfile) {
+      window.creatorProfile.channel_banner_url = uploadData.fileUrl;
+    }
+    
+    if (progressContainer) {
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+        if (progressFill) progressFill.style.width = '0%';
+      }, 1000);
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error('Banner upload error:', error);
+    showToast('Failed to upload banner: ' + error.message, 'error');
+    if (progressContainer) progressContainer.style.display = 'none';
+    return false;
+  }
+}
+
+function setBannerImage(url) {
+  if (!url) return;
+  const banner = document.getElementById('channel-banner');
+  if (banner) {
+    const cleanUrl = url.replace(/^["']|["']$/g, '');
+    banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${cleanUrl}')`;
+    banner.style.backgroundSize = 'cover';
+    banner.style.backgroundPosition = 'center';
+  }
+}
+
+function showBannerUploadModal() {
+  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+    showToast('Only the channel owner can change the banner', 'warning');
+    return;
+  }
+  
+  const modal = document.getElementById('banner-upload-modal');
+  if (modal) modal.classList.add('active');
+}
+
+function hideBannerUploadModal() {
+  const modal = document.getElementById('banner-upload-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+// ===== PROFILE UPDATE (FIXED - FOUNDER + VERIFIED BADGES) =====
+async function updateProfileUI() {
+  const placeholder = document.getElementById('userProfilePlaceholder');
+  const nameEl = document.getElementById('current-profile-name');
+  const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+  const sidebarName = document.getElementById('sidebar-profile-name');
+  const sidebarEmail = document.getElementById('sidebar-profile-email');
+  const creatorAvatar = document.getElementById('creator-avatar-container');
+  const creatorInitials = document.getElementById('creator-initials');
+  const creatorName = document.getElementById('creator-name');
+  const creatorUsername = document.getElementById('creator-username');
+  const connectorDisplay = document.getElementById('connector-count-display');
+  const streakCount = document.getElementById('streak-count');
+  const founderBadge = document.getElementById('founder-badge');
+  const verifiedBadge = document.getElementById('verified-badge');
+  const creatorBadge = document.getElementById('creator-badge');
+  
+  if (!placeholder || !nameEl) return;
+  
+  placeholder.innerHTML = '';
+  
+  if (window.currentUser) {
+    try {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('full_name, username, avatar_url')
+        .eq('id', window.currentUser.id)
+        .maybeSingle();
+        
+      const displayName = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
+      
+      nameEl.textContent = displayName;
+      if (sidebarName) sidebarName.textContent = displayName;
+      if (sidebarEmail) sidebarEmail.textContent = window.currentUser.email || 'user@example.com';
+      
+      if (profile?.avatar_url) {
+        const avatarUrl = fixMediaUrl(profile.avatar_url);
+        const img = document.createElement('img');
+        img.className = 'profile-img';
+        img.src = avatarUrl;
+        img.alt = displayName;
+        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
+        
+        img.onerror = () => {
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
+          fallback.textContent = getInitials(displayName);
+          placeholder.innerHTML = '';
+          placeholder.appendChild(fallback);
+          if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.appendChild(fallback.cloneNode(true));
+          }
+        };
+        
+        placeholder.appendChild(img);
+        
+        if (sidebarAvatar) {
+          const sidebarImg = img.cloneNode(true);
+          sidebarImg.onload = () => {
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.appendChild(sidebarImg);
+          };
+          sidebarImg.onerror = () => {
+            const fallback = document.createElement('div');
+            fallback.className = 'profile-placeholder';
+            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
+            fallback.textContent = getInitials(displayName);
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.appendChild(fallback);
+          };
+        }
+      } else {
+        const fallback = document.createElement('div');
+        fallback.className = 'profile-placeholder';
+        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
+        fallback.textContent = getInitials(displayName);
+        placeholder.appendChild(fallback);
+        if (sidebarAvatar) {
+          const sidebarFallback = fallback.cloneNode(true);
+          sidebarAvatar.innerHTML = '';
+          sidebarAvatar.appendChild(sidebarFallback);
+        }
+      }
+    } catch (e) {
+      console.warn('Profile fetch error:', e);
+    }
+  } else {
+    nameEl.textContent = 'Guest';
+    if (sidebarName) sidebarName.textContent = 'Guest';
+    if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+    placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+    if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
+  }
+  
+  // Update creator profile section
+  if (window.creatorProfile) {
+    const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
+    if (creatorName) creatorName.textContent = displayName;
+    if (creatorUsername) creatorUsername.textContent = `@${window.creatorProfile.username || 'creator'}`;
+    if (creatorInitials) creatorInitials.textContent = getInitials(displayName);
+    if (connectorDisplay) connectorDisplay.textContent = formatNumber(window.connectorCount || 0);
+    
+    // REAL streak count
+    if (streakCount) {
+      window.streakCount = computeStreakCount(window.creatorContent);
+      streakCount.textContent = window.streakCount;
+    }
+    
+    // FOUNDER BADGE (FIXED)
+    if (founderBadge) {
+      founderBadge.style.display = window.creatorProfile.is_founder === true ? 'block' : 'none';
+    }
+    
+    // VERIFIED BADGE (FIXED)
+    if (verifiedBadge) {
+      verifiedBadge.style.display = window.creatorProfile.is_verified === true ? 'inline' : 'none';
+    }
+    
+    // CREATOR BADGE - derive from dominant content type
+    if (creatorBadge) {
+      const mix = computeContentMix(window.creatorContent);
+      if (mix.length > 0) {
+        const dominantType = mix[0].type;
+        const labels = {
+          'Series': 'Series Creator',
+          'Podcast': 'Podcaster',
+          'Short': 'Short Creator',
+          'Film': 'Filmmaker',
+          'Music': 'Musician',
+          'Documentary': 'Documentarian',
+          'STEM': 'STEM Creator',
+          'Culture': 'Cultural Storyteller'
+        };
+        creatorBadge.textContent = labels[dominantType] || 'Content Creator';
+      } else {
+        creatorBadge.textContent = 'Content Creator';
+      }
+    }
+    
+    // Update avatar
+    if (creatorAvatar && window.creatorProfile.avatar_url) {
+      const avatarUrl = fixMediaUrl(window.creatorProfile.avatar_url);
+      creatorAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`;
+    }
+  }
+}
+
+// ===== NOTIFICATIONS =====
+async function loadNotifications() {
+  try {
+    if (!window.currentUser) {
+      updateNotificationBadge(0);
+      return;
+    }
+    
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', window.currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+      
+    if (error) throw error;
+    
+    window.notifications = data || [];
+    const unreadCount = window.notifications.filter(n => !n.is_read).length;
+    updateNotificationBadge(unreadCount);
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    updateNotificationBadge(0);
+  }
+}
+
+function updateNotificationBadge(count) {
+  const mainBadge = document.getElementById('notification-count');
+  const sidebarBadge = document.getElementById('sidebar-notification-count');
+  
+  [mainBadge, sidebarBadge].forEach(badge => {
+    if (badge) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+  });
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notifications-list');
+  if (!list) return;
+  
+  if (!window.currentUser) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`;
+    return;
+  }
+  
+  if (!window.notifications || window.notifications.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`;
+    return;
+  }
+  
+  list.innerHTML = window.notifications.map(n => {
+    const icon = getNotificationIcon(n.type);
+    const readClass = n.is_read ? 'opacity:0.7;' : 'background:rgba(245,158,11,0.1);';
+    const unreadDot = !n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);margin-top:5px;"></div>' : '';
+    
+    return `<div style="padding:15px;border-bottom:1px solid var(--card-border);${readClass}"><div style="display:flex;gap:12px;"><div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="${icon}" style="font-size:18px;"></i></div><div style="flex:1;"><div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div><div style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div><div style="font-size:12px;color:var(--warm-gold);">${formatTimeAgo(n.created_at)}</div></div>${unreadDot}</div></div>`;
+  }).join('');
+}
+
+function getNotificationIcon(type) {
+  switch(type) {
+    case 'like': return 'fas fa-heart';
+    case 'comment': return 'fas fa-comment';
+    case 'follow': return 'fas fa-user-plus';
+    default: return 'fas fa-bell';
+  }
+}
+
+// ===== AUTH CHECK =====
+async function checkAuth() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    
+    window.currentUser = data?.session?.user || null;
+    
+    if (window.currentUser) {
+      console.log('✅ User authenticated:', window.currentUser.email);
+      await loadUserProfile();
+    }
+    
+    return window.currentUser;
+  } catch (error) {
+    console.error('Auth check error:', error);
+    return null;
+  }
+}
+
+async function loadUserProfile() {
+  try {
+    if (!window.currentUser) return;
+    
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', window.currentUser.id)
+      .maybeSingle();
+      
+    if (error) throw error;
+    
+    updateProfileUI();
+    await loadNotifications();
+  } catch (error) {
+    console.error('Error loading profile:', error);
+  }
+}
+
+// ===== DATA LOADING FUNCTIONS =====
+function getUrlParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+async function loadCreatorData() {
+  try {
+    window.creatorId = getUrlParam('id');
+    if (!window.creatorId) {
+      showToast('Creator ID not found', 'error');
+      window.location.href = 'content-library.html';
+      return;
+    }
+    
+    window.loadingText = document.getElementById('loading-text');
+    if (window.loadingText) window.loadingText.textContent = 'Loading creator profile...';
+    
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', window.creatorId)
+      .maybeSingle();
+      
+    if (profileError || !profile) {
+      showToast('Creator not found', 'error');
+      window.location.href = 'content-library.html';
+      return;
+    }
+    
+    window.creatorProfile = profile;
+    
+    // Load banner
+    if (profile.channel_banner_url) {
+      setBannerImage(profile.channel_banner_url);
+    }
+    
+    if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
+    
+    window.creatorContent = await loadContentWithEngagementStats(window.creatorId, 50);
+    
+    // Compute real streak count
+    window.streakCount = computeStreakCount(window.creatorContent);
+    
+    const { count: connectorCount, error: countError } = await supabase
+      .from('connectors')
+      .select('*', { count: 'exact', head: true })
+      .eq('connected_id', window.creatorId)
+      .eq('connection_type', 'creator');
+      
+    if (countError) throw countError;
+    window.connectorCount = connectorCount || 0;
+    
+    if (window.currentUser) {
+      const { data: connections } = await supabase
+        .from('connectors')
+        .select('*')
+        .eq('connector_id', window.currentUser.id)
+        .eq('connected_id', window.creatorId)
+        .eq('connection_type', 'creator')
+        .limit(1);
+      window.isConnected = connections && connections.length > 0;
+    } else {
+      window.isConnected = false;
+    }
+    
+    if (window.loadingText) window.loadingText.textContent = 'Loading community data...';
+    
+    // Load creator posts
+    await loadCreatorPosts(window.creatorId);
+    
+    // Load poll data
+    await loadPollData(window.creatorId);
+    
+    if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
+    
+    window.playlists = await loadPlaylistsWithItems(window.creatorId);
+    
+    const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
+    window.achievements = badges || [];
+    
+    console.log('✅ Creator data loaded:', {
+      profile: window.creatorProfile,
+      contentCount: window.creatorContent.length,
+      connectorCount: window.connectorCount,
+      isConnected: window.isConnected,
+      playlists: window.playlists.length,
+      streakCount: window.streakCount,
+      posts: window.creatorPosts.length,
+      pollData: window.pollData
+    });
+    
+    // Update all UI
+    updateProfileUI();
+    updateConnectButton();
+    renderHomeTab();
+    renderAboutTab();
+    
+    // Load community data
+    await renderCommunityTab();
+    
+    // Hide loading screen
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading) loading.style.display = 'none';
+    if (app) app.style.display = 'block';
+    
+  } catch (error) {
+    console.error('❌ Error loading creator channel:', error);
+    showToast('Failed to load creator channel', 'error');
+    setTimeout(() => {
+      const loading = document.getElementById('loading');
+      const app = document.getElementById('app');
+      if (loading) loading.style.display = 'none';
+      if (app) app.style.display = 'block';
+    }, 2000);
+  }
+}
+
+// ===== UPDATE CONNECT BUTTON =====
+function updateConnectButton() {
+  const btn = document.getElementById('connect-btn');
+  if (!btn) return;
+  
+  if (!window.currentUser) {
+    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect';
+    btn.onclick = handleLoginRequired;
+    return;
+  }
+  
+  if (window.currentUser.id === window.creatorId) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-user"></i> You';
+    return;
+  }
+  
+  if (window.isConnected) {
+    btn.innerHTML = 'Connected';
+    btn.classList.add('connected');
+    btn.onclick = handleDisconnect;
+  } else {
+    btn.innerHTML = 'Connect';
+    btn.classList.remove('connected');
+    btn.onclick = handleConnect;
+  }
+}
+
+function handleLoginRequired() {
+  showToast('Please log in to connect', 'info');
+  window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
+}
+
+async function handleConnect() {
+  if (!window.currentUser) {
+    handleLoginRequired();
+    return;
+  }
+  
+  if (window.currentUser.id === window.creatorId) {
+    showToast('You cannot connect to your own channel', 'info');
+    return;
+  }
+  
+  try {
+    const { error } = await supabase.from('connectors').insert({
+      connector_id: window.currentUser.id,
+      connected_id: window.creatorId,
+      connection_type: 'creator',
+      created_at: new Date().toISOString()
+    });
+    
+    if (error) throw error;
+    
+    window.isConnected = true;
+    window.connectorCount++;
+    updateConnectButton();
+    updateProfileUI();
+    showConfetti();
+    showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}!`, 'success');
+  } catch (error) {
+    console.error('Error connecting:', error);
+    showToast('Failed to connect', 'error');
+  }
+}
+
+async function handleDisconnect() {
+  try {
+    const { error } = await supabase.from('connectors').delete()
+      .eq('connector_id', window.currentUser.id)
+      .eq('connected_id', window.creatorId)
+      .eq('connection_type', 'creator');
+      
+    if (error) throw error;
+    
+    window.isConnected = false;
+    window.connectorCount = Math.max(0, window.connectorCount - 1);
+    updateConnectButton();
+    updateProfileUI();
+    showToast('Disconnected', 'info');
+  } catch (error) {
+    console.error('Error disconnecting:', error);
+    showToast('Failed to disconnect', 'error');
+  }
 }
 
 // ===== PLAYLIST BUILDER FUNCTIONS =====
@@ -1737,527 +2769,6 @@ async function deletePlaylistV2Wrapper() {
   }
 }
 
-// ===== BANNER FUNCTIONS =====
-async function handleBannerUpload(file) {
-  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-  if (!validTypes.includes(file.type)) {
-    showToast('Please upload a valid image (JPEG, PNG, or WEBP)', 'error');
-    return false;
-  }
-  
-  const maxSize = 20 * 1024 * 1024;
-  if (file.size > maxSize) {
-    showToast('Image must be less than 20MB', 'error');
-    return false;
-  }
-  
-  const progressContainer = document.getElementById('banner-upload-progress');
-  const progressFill = document.getElementById('upload-progress-fill');
-  const progressText = document.getElementById('upload-progress-text');
-  
-  if (progressContainer) progressContainer.style.display = 'block';
-  if (progressText) progressText.textContent = 'Requesting upload URL...';
-  
-  try {
-    const { data: uploadData, error: uploadError } = await supabase.functions.invoke('get-upload-url', {
-      body: { mediaType: 'banner', fileName: file.name }
-    });
-    
-    if (uploadError) throw new Error(uploadError.message);
-    if (!uploadData?.uploadUrl) throw new Error('No upload URL received');
-    
-    if (progressText) progressText.textContent = 'Uploading to CDN...';
-    
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', uploadData.uploadUrl);
-    xhr.setRequestHeader('Content-Type', file.type);
-    
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && progressFill) {
-        const percent = (e.loaded / e.total) * 100;
-        progressFill.style.width = percent + '%';
-        if (progressText) progressText.textContent = `Uploading: ${Math.round(percent)}%`;
-      }
-    };
-    
-    await new Promise((resolve, reject) => {
-      xhr.onload = () => {
-        if (xhr.status === 200) resolve();
-        else reject(new Error(`Upload failed: ${xhr.status}`));
-      };
-      xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(file);
-    });
-    
-    if (progressText) progressText.textContent = 'Updating profile...';
-    
-    const { error: dbError } = await supabase
-      .from('user_profiles')
-      .update({ channel_banner_url: uploadData.fileUrl })
-      .eq('id', window.creatorId);
-      
-    if (dbError) throw dbError;
-    
-    setBannerImage(uploadData.fileUrl);
-    showToast('Banner updated successfully! 🎉', 'success');
-    
-    if (window.creatorProfile) {
-      window.creatorProfile.channel_banner_url = uploadData.fileUrl;
-    }
-    
-    if (progressContainer) {
-      setTimeout(() => {
-        progressContainer.style.display = 'none';
-        if (progressFill) progressFill.style.width = '0%';
-      }, 1000);
-    }
-    
-    return true;
-    
-  } catch (error) {
-    console.error('Banner upload error:', error);
-    showToast('Failed to upload banner: ' + error.message, 'error');
-    if (progressContainer) progressContainer.style.display = 'none';
-    return false;
-  }
-}
-
-function setBannerImage(url) {
-  if (!url) return;
-  const banner = document.getElementById('channel-banner');
-  if (banner) {
-    const cleanUrl = url.replace(/^["']|["']$/g, '');
-    banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${cleanUrl}')`;
-    banner.style.backgroundSize = 'cover';
-    banner.style.backgroundPosition = 'center';
-  }
-}
-
-function showBannerUploadModal() {
-  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can change the banner', 'warning');
-    return;
-  }
-  
-  const modal = document.getElementById('banner-upload-modal');
-  if (modal) modal.classList.add('active');
-}
-
-function hideBannerUploadModal() {
-  const modal = document.getElementById('banner-upload-modal');
-  if (modal) modal.classList.remove('active');
-}
-
-// ===== PROFILE UPDATE =====
-async function updateProfileUI() {
-  const placeholder = document.getElementById('userProfilePlaceholder');
-  const nameEl = document.getElementById('current-profile-name');
-  const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
-  const sidebarName = document.getElementById('sidebar-profile-name');
-  const sidebarEmail = document.getElementById('sidebar-profile-email');
-  const creatorAvatar = document.getElementById('creator-avatar-container');
-  const creatorInitials = document.getElementById('creator-initials');
-  const creatorName = document.getElementById('creator-name');
-  const creatorUsername = document.getElementById('creator-username');
-  const connectorDisplay = document.getElementById('connector-count-display');
-  const streakCount = document.getElementById('streak-count');
-  
-  if (!placeholder || !nameEl) return;
-  
-  placeholder.innerHTML = '';
-  
-  if (window.currentUser) {
-    try {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('full_name, username, avatar_url')
-        .eq('id', window.currentUser.id)
-        .maybeSingle();
-        
-      const displayName = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
-      
-      nameEl.textContent = displayName;
-      if (sidebarName) sidebarName.textContent = displayName;
-      if (sidebarEmail) sidebarEmail.textContent = window.currentUser.email || 'user@example.com';
-      
-      if (profile?.avatar_url) {
-        const avatarUrl = fixMediaUrl(profile.avatar_url);
-        const img = document.createElement('img');
-        img.className = 'profile-img';
-        img.src = avatarUrl;
-        img.alt = displayName;
-        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
-        
-        img.onerror = () => {
-          const fallback = document.createElement('div');
-          fallback.className = 'profile-placeholder';
-          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
-          fallback.textContent = getInitials(displayName);
-          placeholder.innerHTML = '';
-          placeholder.appendChild(fallback);
-          if (sidebarAvatar) {
-            sidebarAvatar.innerHTML = '';
-            sidebarAvatar.appendChild(fallback.cloneNode(true));
-          }
-        };
-        
-        placeholder.appendChild(img);
-        
-        if (sidebarAvatar) {
-          const sidebarImg = img.cloneNode(true);
-          sidebarImg.onload = () => {
-            sidebarAvatar.innerHTML = '';
-            sidebarAvatar.appendChild(sidebarImg);
-          };
-          sidebarImg.onerror = () => {
-            const fallback = document.createElement('div');
-            fallback.className = 'profile-placeholder';
-            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
-            fallback.textContent = getInitials(displayName);
-            sidebarAvatar.innerHTML = '';
-            sidebarAvatar.appendChild(fallback);
-          };
-        }
-      } else {
-        const fallback = document.createElement('div');
-        fallback.className = 'profile-placeholder';
-        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
-        fallback.textContent = getInitials(displayName);
-        placeholder.appendChild(fallback);
-        if (sidebarAvatar) {
-          const sidebarFallback = fallback.cloneNode(true);
-          sidebarAvatar.innerHTML = '';
-          sidebarAvatar.appendChild(sidebarFallback);
-        }
-      }
-    } catch (e) {
-      console.warn('Profile fetch error:', e);
-    }
-  } else {
-    nameEl.textContent = 'Guest';
-    if (sidebarName) sidebarName.textContent = 'Guest';
-    if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
-    placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
-    if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
-  }
-  
-  // Update creator profile section
-  if (window.creatorProfile) {
-    const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
-    if (creatorName) creatorName.textContent = displayName;
-    if (creatorUsername) creatorUsername.textContent = `@${window.creatorProfile.username || 'creator'}`;
-    if (creatorInitials) creatorInitials.textContent = getInitials(displayName);
-    if (connectorDisplay) connectorDisplay.textContent = formatNumber(window.connectorCount || 0);
-    if (streakCount) streakCount.textContent = window.streakCount || Math.floor(Math.random() * 30) + 1;
-    
-    // Update avatar
-    if (creatorAvatar && window.creatorProfile.avatar_url) {
-      const avatarUrl = fixMediaUrl(window.creatorProfile.avatar_url);
-      creatorAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`;
-    }
-  }
-}
-
-// ===== NOTIFICATIONS =====
-async function loadNotifications() {
-  try {
-    if (!window.currentUser) {
-      updateNotificationBadge(0);
-      return;
-    }
-    
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', window.currentUser.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-      
-    if (error) throw error;
-    
-    window.notifications = data || [];
-    const unreadCount = window.notifications.filter(n => !n.is_read).length;
-    updateNotificationBadge(unreadCount);
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    updateNotificationBadge(0);
-  }
-}
-
-function updateNotificationBadge(count) {
-  const mainBadge = document.getElementById('notification-count');
-  const sidebarBadge = document.getElementById('sidebar-notification-count');
-  
-  [mainBadge, sidebarBadge].forEach(badge => {
-    if (badge) {
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-  });
-}
-
-function renderNotifications() {
-  const list = document.getElementById('notifications-list');
-  if (!list) return;
-  
-  if (!window.currentUser) {
-    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`;
-    return;
-  }
-  
-  if (!window.notifications || window.notifications.length === 0) {
-    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`;
-    return;
-  }
-  
-  list.innerHTML = window.notifications.map(n => {
-    const icon = getNotificationIcon(n.type);
-    const readClass = n.is_read ? 'opacity:0.7;' : 'background:rgba(245,158,11,0.1);';
-    const unreadDot = !n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);margin-top:5px;"></div>' : '';
-    
-    return `<div style="padding:15px;border-bottom:1px solid var(--card-border);${readClass}"><div style="display:flex;gap:12px;"><div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="${icon}" style="font-size:18px;"></i></div><div style="flex:1;"><div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div><div style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div><div style="font-size:12px;color:var(--warm-gold);">${formatTimeAgo(n.created_at)}</div></div>${unreadDot}</div></div>`;
-  }).join('');
-}
-
-function getNotificationIcon(type) {
-  switch(type) {
-    case 'like': return 'fas fa-heart';
-    case 'comment': return 'fas fa-comment';
-    case 'follow': return 'fas fa-user-plus';
-    default: return 'fas fa-bell';
-  }
-}
-
-// ===== AUTH CHECK =====
-async function checkAuth() {
-  try {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    
-    window.currentUser = data?.session?.user || null;
-    
-    if (window.currentUser) {
-      console.log('✅ User authenticated:', window.currentUser.email);
-      await loadUserProfile();
-    }
-    
-    return window.currentUser;
-  } catch (error) {
-    console.error('Auth check error:', error);
-    return null;
-  }
-}
-
-async function loadUserProfile() {
-  try {
-    if (!window.currentUser) return;
-    
-    const { data: profile, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', window.currentUser.id)
-      .maybeSingle();
-      
-    if (error) throw error;
-    
-    updateProfileUI();
-    await loadNotifications();
-  } catch (error) {
-    console.error('Error loading profile:', error);
-  }
-}
-
-// ===== DATA LOADING FUNCTIONS =====
-function getUrlParam(name) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(name);
-}
-
-async function loadCreatorData() {
-  try {
-    window.creatorId = getUrlParam('id');
-    if (!window.creatorId) {
-      showToast('Creator ID not found', 'error');
-      window.location.href = 'content-library.html';
-      return;
-    }
-    
-    window.loadingText = document.getElementById('loading-text');
-    if (window.loadingText) window.loadingText.textContent = 'Loading creator profile...';
-    
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', window.creatorId)
-      .maybeSingle();
-      
-    if (profileError || !profile) {
-      showToast('Creator not found', 'error');
-      window.location.href = 'content-library.html';
-      return;
-    }
-    
-    window.creatorProfile = profile;
-    
-    // Load banner
-    if (profile.channel_banner_url) {
-      setBannerImage(profile.channel_banner_url);
-    }
-    
-    if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
-    
-    window.creatorContent = await loadContentWithEngagementStats(window.creatorId, 50);
-    
-    const { count: connectorCount, error: countError } = await supabase
-      .from('connectors')
-      .select('*', { count: 'exact', head: true })
-      .eq('connected_id', window.creatorId)
-      .eq('connection_type', 'creator');
-      
-    if (countError) throw countError;
-    window.connectorCount = connectorCount || 0;
-    
-    if (window.currentUser) {
-      const { data: connections } = await supabase
-        .from('connectors')
-        .select('*')
-        .eq('connector_id', window.currentUser.id)
-        .eq('connected_id', window.creatorId)
-        .eq('connection_type', 'creator')
-        .limit(1);
-      window.isConnected = connections && connections.length > 0;
-    } else {
-      window.isConnected = false;
-    }
-    
-    if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
-    
-    window.playlists = await loadPlaylistsWithItems(window.creatorId);
-    
-    const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
-    window.achievements = badges || [];
-    
-    console.log('✅ Creator data loaded:', {
-      profile: window.creatorProfile,
-      contentCount: window.creatorContent.length,
-      connectorCount: window.connectorCount,
-      isConnected: window.isConnected,
-      playlists: window.playlists.length
-    });
-    
-    // Update all UI
-    updateProfileUI();
-    updateConnectButton();
-    renderHomeTab();
-    renderAboutTab();
-    
-    // Load community data
-    await renderCommunityTab();
-    
-    // Hide loading screen
-    const loading = document.getElementById('loading');
-    const app = document.getElementById('app');
-    if (loading) loading.style.display = 'none';
-    if (app) app.style.display = 'block';
-    
-  } catch (error) {
-    console.error('❌ Error loading creator channel:', error);
-    showToast('Failed to load creator channel', 'error');
-    setTimeout(() => {
-      const loading = document.getElementById('loading');
-      const app = document.getElementById('app');
-      if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
-    }, 2000);
-  }
-}
-
-// ===== UPDATE CONNECT BUTTON =====
-function updateConnectButton() {
-  const btn = document.getElementById('connect-btn');
-  if (!btn) return;
-  
-  if (!window.currentUser) {
-    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect';
-    btn.onclick = handleLoginRequired;
-    return;
-  }
-  
-  if (window.currentUser.id === window.creatorId) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-user"></i> You';
-    return;
-  }
-  
-  if (window.isConnected) {
-    btn.innerHTML = 'Connected';
-    btn.classList.add('connected');
-    btn.onclick = handleDisconnect;
-  } else {
-    btn.innerHTML = 'Connect';
-    btn.classList.remove('connected');
-    btn.onclick = handleConnect;
-  }
-}
-
-function handleLoginRequired() {
-  showToast('Please log in to connect', 'info');
-  window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
-}
-
-async function handleConnect() {
-  if (!window.currentUser) {
-    handleLoginRequired();
-    return;
-  }
-  
-  if (window.currentUser.id === window.creatorId) {
-    showToast('You cannot connect to your own channel', 'info');
-    return;
-  }
-  
-  try {
-    const { error } = await supabase.from('connectors').insert({
-      connector_id: window.currentUser.id,
-      connected_id: window.creatorId,
-      connection_type: 'creator',
-      created_at: new Date().toISOString()
-    });
-    
-    if (error) throw error;
-    
-    window.isConnected = true;
-    window.connectorCount++;
-    updateConnectButton();
-    updateProfileUI();
-    showConfetti();
-    showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}!`, 'success');
-  } catch (error) {
-    console.error('Error connecting:', error);
-    showToast('Failed to connect', 'error');
-  }
-}
-
-async function handleDisconnect() {
-  try {
-    const { error } = await supabase.from('connectors').delete()
-      .eq('connector_id', window.currentUser.id)
-      .eq('connected_id', window.creatorId)
-      .eq('connection_type', 'creator');
-      
-    if (error) throw error;
-    
-    window.isConnected = false;
-    window.connectorCount = Math.max(0, window.connectorCount - 1);
-    updateConnectButton();
-    updateProfileUI();
-    showToast('Disconnected', 'info');
-  } catch (error) {
-    console.error('Error disconnecting:', error);
-    showToast('Failed to disconnect', 'error');
-  }
-}
-
 // ===== SEARCH =====
 async function searchContent(query, category = '', sortBy = 'newest') {
   try {
@@ -2323,6 +2834,47 @@ function renderSearchResults(results) {
   });
 }
 
+// ===== SHOW CONNECTORS MODAL =====
+async function showConnectorsModal() {
+  try {
+    const { data: connectors, error } = await supabase
+      .from('connectors')
+      .select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`)
+      .eq('connected_id', window.creatorId)
+      .eq('connection_type', 'creator');
+      
+    if (error) throw error;
+    
+    const title = document.getElementById('modal-title');
+    const list = document.getElementById('connectors-list');
+    const profiles = connectors.map(c => c.user_profiles);
+    
+    if (title) title.textContent = `Connectors (${profiles.length})`;
+    
+    if (list) {
+      if (profiles.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>';
+      } else {
+        list.innerHTML = profiles.map(p => {
+          const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
+          return `
+            <div style="display:flex;align-items:center;gap:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;">
+              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--warm-gold);"><img src="${avatarUrl}" alt="${p.full_name || p.username}" style="width:100%;height:100%;object-fit:cover;"></div>
+              <div><div style="font-weight:600;color:var(--soft-white);">${escapeHtml(p.full_name || p.username)}</div><div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(p.username || 'user')}</div></div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    
+    const modal = document.getElementById('connectors-modal');
+    if (modal) modal.classList.add('active');
+  } catch (error) {
+    console.error('Error loading connectors:', error);
+    showToast('Failed to load connectors', 'error');
+  }
+}
+
 // ===== SETUP EVENT LISTENERS =====
 function setupEventListeners() {
   // Profile button
@@ -2361,6 +2913,24 @@ function setupEventListeners() {
       }
     }
   });
+  
+  // Edit About - WIRED UP
+  const editAboutBtn = document.getElementById('edit-about-btn');
+  if (editAboutBtn) {
+    editAboutBtn.addEventListener('click', showEditAboutModal);
+  }
+  
+  // Cancel About
+  const cancelAboutBtn = document.getElementById('cancel-about-btn');
+  if (cancelAboutBtn) {
+    cancelAboutBtn.addEventListener('click', hideEditAboutModal);
+  }
+  
+  // Save About
+  const saveAboutBtn = document.getElementById('save-about-btn');
+  if (saveAboutBtn) {
+    saveAboutBtn.addEventListener('click', saveAboutSection);
+  }
   
   // Banner edit
   const bannerEditBtn = document.getElementById('banner-edit-btn');
@@ -2725,47 +3295,6 @@ function setupEventListeners() {
   }
 }
 
-// ===== SHOW CONNECTORS MODAL =====
-async function showConnectorsModal() {
-  try {
-    const { data: connectors, error } = await supabase
-      .from('connectors')
-      .select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`)
-      .eq('connected_id', window.creatorId)
-      .eq('connection_type', 'creator');
-      
-    if (error) throw error;
-    
-    const title = document.getElementById('modal-title');
-    const list = document.getElementById('connectors-list');
-    const profiles = connectors.map(c => c.user_profiles);
-    
-    if (title) title.textContent = `Connectors (${profiles.length})`;
-    
-    if (list) {
-      if (profiles.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>';
-      } else {
-        list.innerHTML = profiles.map(p => {
-          const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-          return `
-            <div style="display:flex;align-items:center;gap:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;">
-              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--warm-gold);"><img src="${avatarUrl}" alt="${p.full_name || p.username}" style="width:100%;height:100%;object-fit:cover;"></div>
-              <div><div style="font-weight:600;color:var(--soft-white);">${escapeHtml(p.full_name || p.username)}</div><div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(p.username || 'user')}</div></div>
-            </div>
-          `;
-        }).join('');
-      }
-    }
-    
-    const modal = document.getElementById('connectors-modal');
-    if (modal) modal.classList.add('active');
-  } catch (error) {
-    console.error('Error loading connectors:', error);
-    showToast('Failed to load connectors', 'error');
-  }
-}
-
 // ===== FIX MOBILE HORIZONTAL SCROLL =====
 function fixMobileHorizontalScroll() {
   document.body.style.overflowX = 'hidden';
@@ -2822,12 +3351,17 @@ async function initializeCreatorChannel() {
       if (app) app.style.display = 'block';
     }, 500);
     
-    console.log('✅ Creator channel initialized with PHASE 5 + NEW DESIGN!');
-    console.log('   🚀 Using content_engagement_stats for metrics');
-    console.log('   🚀 Using playlist_contents junction table for playlists');
-    console.log('   🎨 New design: Home, Community, About tabs');
-    console.log('   🎨 Mobile-first responsive layout');
-    console.log('   🎨 Banner section kept as is');
+    console.log('✅ Creator channel initialized - ALL FIXES APPLIED!');
+    console.log('   🚀 All 6 tabs now work (Home, Series, Shorts, Podcast, Community, About)');
+    console.log('   🎯 REAL streak count computed from upload history');
+    console.log('   📊 REAL content mix bar from actual content');
+    console.log('   🎨 Consistent content-type colors everywhere');
+    console.log('   ✏️ Edit About modal fully wired up');
+    console.log('   👑 Founder & Verified badges toggle correctly');
+    console.log('   🔒 Analytics: owner-only access');
+    console.log('   📝 Creator posts from database');
+    console.log('   📊 Poll data from database (real votes)');
+    console.log('   🎯 Creator badge auto-generates from dominant type');
     
   } catch (error) {
     console.error('❌ Error initializing:', error);
