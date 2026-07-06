@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="css/creator-channel.css">
 </head>
 <body>
+
 <!-- SIDEBAR OVERLAY & MENU -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
@@ -142,7 +143,6 @@
 </div>
 
 <!-- ============ MODALS ============ -->
-
 <!-- Connectors Modal -->
 <div id="connectors-modal" class="modal">
   <div class="modal-content">
@@ -371,434 +371,301 @@
 
 <!-- ============ MAIN APP ============ -->
 <div id="app" style="display: none;">
-  <div class="channel-page">
-
-    <!-- HEADER -->
-    <header class="header">
-      <div class="logo" onclick="window.location.href='index.html'">
-        <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
-          <i class="fas fa-bars"></i>
-        </button>
-        <div class="logo-icon">
-          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-        </div>
-        <div class="logo-text">BANTU STREAM CONNECT</div>
-      </div>
-      <div class="header-actions">
-        <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-          <i class="fas fa-microphone"></i>
-        </button>
-        <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
-          <i class="fas fa-chart-line"></i>
-        </button>
-        <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
-          <i class="fas fa-search"></i>
-        </button>
-        <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
-          <i class="fas fa-bell"></i>
-          <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-        </button>
-        <div class="profile-switcher">
-          <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
-            <div class="profile-placeholder" id="userProfilePlaceholder">
-              <i class="fas fa-user"></i>
-            </div>
-            <span class="profile-name" id="current-profile-name">Guest</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="profile-dropdown" id="profile-dropdown">
-            <div class="profile-dropdown-header">
-              <h4>Switch Profile</h4>
-            </div>
-            <div class="profile-list" id="profile-list"></div>
-            <div class="profile-dropdown-footer">
-              <button class="text-btn" id="manage-profiles-btn">
-                <i class="fas fa-user-cog"></i> Manage Profiles
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="rsa-badge" title="Proudly South African">
-          <i class="fas fa-map-marker-alt"></i>
-          <span>RSA</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- ============ BANNER (PRESERVED EXACTLY AS ORIGINAL) ============ -->
-    <div class="channel-banner" id="channel-banner">
-      <button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
-        <i class="fas fa-camera"></i> Change Banner
+  
+  <!-- HEADER (PRESERVED EXACTLY) -->
+  <header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+      <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+        <i class="fas fa-bars"></i>
       </button>
-      <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
+      <div class="logo-icon">
+        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+      </div>
+      <div class="logo-text">BANTU STREAM CONNECT</div>
     </div>
-
-    <!-- ============ NEW: CHANNEL PROFILE HEADER ============ -->
-    <div class="channel-profile">
-      <div class="channel-identity">
-        <div class="creator-avatar-container" style="position:relative;width:64px;height:64px;">
-          <div class="channel-avatar" id="creator-avatar-container"></div>
-          <div id="founder-badge" class="founder-badge" style="display: none; top:-8px; right:-8px; font-size:10px; padding:3px 10px;">FOUNDER</div>
-        </div>
-        <div>
-          <div class="channel-name" id="creator-name">Creator Name</div>
-          <div class="channel-meta">
-            <span id="creator-username">@username</span> · 
-            <span id="connectors-count-inline">0</span> in the circle · 
-            <span id="creator-tagline">Content Creator</span>
+    <div class="header-actions">
+      <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+        <i class="fas fa-microphone"></i>
+      </button>
+      <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+        <i class="fas fa-chart-line"></i>
+      </button>
+      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+        <i class="fas fa-search"></i>
+      </button>
+      <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+      </button>
+      <div class="profile-switcher">
+        <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+          <div class="profile-placeholder" id="userProfilePlaceholder">
+            <i class="fas fa-user"></i>
+          </div>
+          <span class="profile-name" id="current-profile-name">Guest</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="profile-dropdown" id="profile-dropdown">
+          <div class="profile-dropdown-header">
+            <h4>Switch Profile</h4>
+          </div>
+          <div class="profile-list" id="profile-list"></div>
+          <div class="profile-dropdown-footer">
+            <button class="text-btn" id="manage-profiles-btn">
+              <i class="fas fa-user-cog"></i> Manage Profiles
+            </button>
           </div>
         </div>
       </div>
-      <div class="channel-actions">
-        <button id="connect-btn" class="action-btn connect-btn" style="flex:0 0 auto; padding:9px 18px; font-size:13px;">
-          <i class="fas fa-link"></i> <span id="connect-text">Connect</span>
-        </button>
-        <button id="share-btn" class="action-btn share-btn" style="flex:0 0 auto; width:38px; padding:9px;">
-          <i class="fas fa-share"></i>
-        </button>
-        <button id="support-btn" class="action-btn share-btn" style="flex:0 0 auto; width:38px; padding:9px; background: linear-gradient(135deg, var(--warm-gold), #f97316);">
-          <i class="fas fa-gift"></i>
-        </button>
+      <div class="rsa-badge" title="Proudly South African">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>RSA</span>
       </div>
     </div>
+  </header>
 
-    <!-- ============ NEW: CHANNEL TABS ============ -->
-    <div class="channel-tabs" id="channel-tabs">
-      <button class="channel-tab is-active" data-tab="home">Home</button>
-      <button class="channel-tab" data-tab="series">Series</button>
-      <button class="channel-tab" data-tab="shorts">Shorts</button>
-      <button class="channel-tab" data-tab="podcast">Podcast</button>
-      <button class="channel-tab" data-tab="community">Community</button>
-      <button class="channel-tab" data-tab="about">About</button>
-    </div>
-
-    <!-- ============ HOME PANEL ============ -->
-    <section class="tab-panel" data-panel="home">
-      <div class="channel-body">
-        <div class="channel-main">
-
-          <!-- Channel Trailer -->
-          <section class="channel-trailer-section" id="trailer-section" style="display: none;">
-            <div class="trailer-container">
-              <div class="trailer-header">
-                <div class="trailer-title"><i class="fas fa-play-circle"></i> CHANNEL TRAILER</div>
-              </div>
-              <div class="trailer-content">
-                <div class="trailer-video" id="trailer-video">
-                  <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&h=450&fit=crop" alt="Channel Trailer">
-                  <div class="trailer-play-btn" id="trailer-play-btn"><i class="fas fa-play"></i></div>
-                </div>
-                <div class="trailer-info">
-                  <h3 id="trailer-title">Welcome to My Channel</h3>
-                  <p id="trailer-description">Get to know the creator and what content to expect!</p>
-                  <div class="trailer-stats">
-                    <span><i class="fas fa-eye"></i> <span id="trailer-views">0</span></span>
-                    <span><i class="fas fa-clock"></i> <span id="trailer-duration">0:00</span></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Pinned Content (Featured Card) -->
-          <section class="pinned-section" id="pinned-section" style="display: none;">
-            <div class="featured-card" id="pinned-card">
-              <div class="pinned-badge">⭐ FEATURED</div>
-              <div class="pinned-thumbnail" style="width:100%;height:100%;">
-                <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop" alt="Pinned Content" id="pinned-thumbnail" style="width:100%;height:100%;object-fit:cover;">
-              </div>
-              <div class="featured-card__caption">
-                <h3 class="pinned-title" id="pinned-title" style="font-size:16px;">Featured Content</h3>
-                <p class="pinned-description" id="pinned-description" style="font-size:12px; color:var(--slate-grey); margin:4px 0;">Check out this featured content</p>
-                <div class="pinned-stats" style="font-size:11px;">
-                  <span class="pinned-stat"><i class="fas fa-eye"></i> <span id="pinned-views">0</span></span>
-                  <span class="pinned-stat"><i class="fas fa-heart"></i> <span id="pinned-likes">0</span></span>
-                  <span class="pinned-stat"><i class="fas fa-clock"></i> <span id="pinned-time">Recently</span></span>
-                </div>
-                <button class="pinned-watch-btn" id="pinned-watch-btn" style="margin-top:8px; padding:8px 16px; font-size:12px;"><i class="fas fa-play"></i> Watch Now</button>
-              </div>
-            </div>
-          </section>
-
-          <!-- Creator's World (Playlists / Series) - Mobile inline version -->
-          <div class="sidebar-only-mobile" style="margin-bottom:20px;">
-            <section class="playlists-section" id="playlists-section-mobile">
-              <div class="section-header">
-                <h2 class="section-title" style="font-size:16px;"><i class="fas fa-layer-group"></i> SERIES & PLAYLISTS</h2>
-                <a href="#" class="view-all-link" id="view-all-playlists-mobile" style="font-size:12px;">View All <i class="fas fa-arrow-right"></i></a>
-              </div>
-              <div id="collectionsGridMobile" class="world-row">
-                <!-- Dynamic content loaded by JavaScript -->
-              </div>
-            </section>
-          </div>
-
-          <!-- Latest Uploads -->
-          <section class="section" id="uploads-section">
-            <div class="section-header">
-              <h2 class="section-title" style="font-size:16px;"><i class="fas fa-video"></i> LATEST UPLOADS</h2>
-              <div id="content-count" class="content-count" style="font-size:12px; color:var(--slate-grey);">0 items</div>
-            </div>
-            <div class="upload-grid" id="content-grid">
-              <!-- Dynamic content cards rendered by JS -->
-            </div>
-            <div id="no-content" class="empty-state" style="display: none;">
-              <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
-              <h3>No Uploads Yet</h3>
-              <p>This creator hasn't uploaded any content</p>
-            </div>
-          </section>
-
-          <!-- Most Popular -->
-          <section class="popular-section" id="popular-section" style="display: none;">
-            <div class="section-header">
-              <h2 class="section-title" style="font-size:16px;"><i class="fas fa-fire"></i> MOST POPULAR</h2>
-            </div>
-            <div class="popular-grid" id="popular-grid"></div>
-          </section>
-
-          <!-- Recommended Creators (mobile inline) -->
-          <section class="recommended-section sidebar-only-mobile" id="recommended-section-mobile" style="display: none;">
-            <div class="section-header">
-              <h2 class="section-title" style="font-size:16px;"><i class="fas fa-users"></i> CREATORS YOU MAY LIKE</h2>
-            </div>
-            <div class="recommended-grid" id="recommended-grid-mobile"></div>
-          </section>
-
-        </div>
-
-        <!-- Desktop Sidebar -->
-        <aside class="channel-sidebar sidebar-only-desktop">
-
-          <!-- Creator's World (Playlists / Series) -->
-          <div style="background:var(--bg-panel);border-radius:10px;padding:14px;margin-bottom:14px;">
-            <section class="playlists-section" id="playlists-section" style="margin-bottom:0;">
-              <div class="section-header" style="margin-bottom:10px;">
-                <h2 class="section-title" style="font-size:14px;"><i class="fas fa-layer-group"></i> SERIES & PLAYLISTS</h2>
-                <a href="#" class="view-all-link" id="view-all-playlists" style="font-size:11px;">View All <i class="fas fa-arrow-right"></i></a>
-              </div>
-              <div class="world-row" id="collectionsGrid">
-                <!-- Dynamic content loaded by JavaScript -->
-                <div style="text-align:center;padding:20px;color:var(--slate-grey);font-size:12px;">
-                  <i class="fas fa-spinner fa-spin"></i> Loading...
-                </div>
-              </div>
-              <div id="playlists-empty" class="empty-state" style="display: none; padding:20px;">
-                <div class="empty-icon" style="font-size:24px;"><i class="fas fa-list"></i></div>
-                <p style="font-size:12px;">No playlists yet</p>
-              </div>
-              <div class="playlists-grid" id="playlists-grid" style="display: none;"></div>
-            </section>
-          </div>
-
-          <!-- Top Supporter -->
-          <div style="background:var(--bg-panel);border-radius:10px;padding:14px;margin-bottom:14px;">
-            <p style="font-size:14px;font-weight:500;margin:0 0 8px;">Top Supporter</p>
-            <div id="top-supporter-slot" style="display:flex;align-items:center;gap:8px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));"></div>
-              <span style="font-size:12px;color:var(--slate-grey);">Be the first to support!</span>
-            </div>
-          </div>
-
-          <!-- Recommended Creators (desktop sidebar) -->
-          <section class="recommended-section" id="recommended-section" style="display: none; margin-bottom:0;">
-            <div style="background:var(--bg-panel);border-radius:10px;padding:14px;">
-              <p style="font-size:14px;font-weight:500;margin:0 0 12px;">Creators You May Like</p>
-              <div class="recommended-grid" id="recommended-grid" style="grid-template-columns:1fr;gap:10px;"></div>
-            </div>
-          </section>
-
-        </aside>
-      </div>
-    </section>
-
-    <!-- ============ SERIES PANEL (placeholder) ============ -->
-    <section class="tab-panel" data-panel="series" hidden>
-      <div class="channel-body">
-        <div class="channel-main">
-          <div class="section-header">
-            <h2 class="section-title"><i class="fas fa-tv"></i> SERIES</h2>
-          </div>
-          <div id="series-grid" class="upload-grid">
-            <!-- Populated dynamically by JS filtering -->
-          </div>
-          <div id="series-empty" class="empty-state" style="display:none;">
-            <div class="empty-icon"><i class="fas fa-tv"></i></div>
-            <h3>No Series Yet</h3>
-            <p>This creator hasn't published any series</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ SHORTS PANEL (placeholder) ============ -->
-    <section class="tab-panel" data-panel="shorts" hidden>
-      <div class="channel-body">
-        <div class="channel-main">
-          <div class="section-header">
-            <h2 class="section-title"><i class="fas fa-bolt"></i> SHORTS</h2>
-          </div>
-          <div id="shorts-grid" class="upload-grid">
-            <!-- Populated dynamically by JS filtering -->
-          </div>
-          <div id="shorts-empty" class="empty-state" style="display:none;">
-            <div class="empty-icon"><i class="fas fa-bolt"></i></div>
-            <h3>No Shorts Yet</h3>
-            <p>This creator hasn't published any shorts</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ PODCAST PANEL (placeholder) ============ -->
-    <section class="tab-panel" data-panel="podcast" hidden>
-      <div class="channel-body">
-        <div class="channel-main">
-          <div class="section-header">
-            <h2 class="section-title"><i class="fas fa-podcast"></i> PODCAST</h2>
-          </div>
-          <div id="podcast-grid" class="upload-grid">
-            <!-- Populated dynamically by JS filtering -->
-          </div>
-          <div id="podcast-empty" class="empty-state" style="display:none;">
-            <div class="empty-icon"><i class="fas fa-podcast"></i></div>
-            <h3>No Podcasts Yet</h3>
-            <p>This creator hasn't published any podcasts</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ COMMUNITY PANEL ============ -->
-    <section class="tab-panel" data-panel="community" hidden>
-      <div class="channel-body">
-        <div class="channel-main community-main">
-
-          <!-- Recent Activity Feed -->
-          <section class="activity-section" id="activity-section" style="display: none;">
-            <div class="section-header">
-              <h2 class="section-title" style="font-size:16px;"><i class="fas fa-rss"></i> RECENT ACTIVITY</h2>
-            </div>
-            <div class="activity-feed" id="activity-feed"></div>
-          </section>
-
-          <!-- Top Fan Highlights -->
-          <section class="fan-section" id="fan-section" style="display: none;">
-            <div class="section-divider">
-              <div class="section-header">
-                <h2 class="section-title" style="font-size:16px;"><i class="fas fa-star"></i> TOP FAN HIGHLIGHTS</h2>
-              </div>
-              <div class="fan-grid" id="fan-grid"></div>
-            </div>
-          </section>
-
-        </div>
-
-        <!-- Community Sidebar -->
-        <aside class="channel-sidebar community-sidebar sidebar-only-desktop">
-          <div style="background:var(--bg-panel);border-radius:10px;padding:14px;">
-            <p style="font-size:14px;font-weight:500;margin:0 0 12px;">This Week's Top Voices</p>
-            <div id="community-leaderboard">
-              <!-- Populated dynamically -->
-              <p style="font-size:12px;color:var(--slate-grey);">Engage with the community to appear here!</p>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <!-- ============ ABOUT PANEL ============ -->
-    <section class="tab-panel" data-panel="about" hidden>
-      <div class="channel-body">
-        <div class="channel-main">
-
-          <!-- Identity Card -->
-          <section class="identity-card">
-            <div class="identity-header">
-              <div class="identity-quote" id="creator-quote">"Creating authentic stories for the world"</div>
-              <button id="edit-identity-btn" class="edit-identity-btn" style="display: none;">
-                <i class="fas fa-edit"></i> Edit
-              </button>
-            </div>
-            <div class="identity-mission" id="creator-mission">
-              Passionate about sharing culture, technology, and innovation through compelling visual stories.
-            </div>
-            <div class="identity-tags" id="creator-tags"></div>
-            <div class="identity-details">
-              <div class="identity-item"><i class="fas fa-map-marker-alt"></i><span id="creator-location">Location</span></div>
-              <div class="identity-item"><i class="fas fa-calendar"></i><span id="creator-joined">Joined</span></div>
-              <div class="identity-item"><i class="fas fa-link"></i><a id="creator-website" href="#" target="_blank" style="display: none;">Website</a></div>
-              <div class="identity-item"><i class="fas fa-clock"></i><span id="creator-schedule">Upload schedule</span></div>
-            </div>
-          </section>
-
-          <!-- Bio -->
-          <div style="padding:16px 0;">
-            <p id="creator-bio" style="font-size:13px;line-height:1.7;color:var(--slate-grey);margin:0 0 4px;">Creator bio will appear here</p>
-          </div>
-
-          <!-- About Stats -->
-          <div class="about-stats" style="margin-bottom:18px;">
-            <div class="about-stat">
-              <p id="views-count" style="font-size:16px;font-weight:500;margin:0;">0</p>
-              <span style="font-size:10px;color:var(--text-secondary);">Total views</span>
-            </div>
-            <div class="about-stat">
-              <p id="videos-count" style="font-size:16px;font-weight:500;margin:0;">0</p>
-              <span style="font-size:10px;color:var(--text-secondary);">Uploads</span>
-            </div>
-            <div class="about-stat" id="connectors-stat-card" style="cursor:pointer;">
-              <p id="connectors-count" style="font-size:16px;font-weight:500;margin:0;">0</p>
-              <span style="font-size:10px;color:var(--text-secondary);">Connectors</span>
-            </div>
-            <div class="about-stat">
-              <p id="engagement-count" style="font-size:16px;font-weight:500;margin:0;">0%</p>
-              <span style="font-size:10px;color:var(--text-secondary);">Engagement</span>
-            </div>
-          </div>
-
-          <!-- Creator Achievements -->
-          <section class="achievements-section" id="achievements-section" style="display: none;">
-            <div class="section-divider">
-              <div class="section-header">
-                <h2 class="section-title" style="font-size:16px;"><i class="fas fa-trophy"></i> CREATOR ACHIEVEMENTS</h2>
-              </div>
-              <div class="achievements-grid" id="achievements-grid"></div>
-            </div>
-          </section>
-
-          <!-- Upload Schedule -->
-          <section class="schedule-section" id="schedule-section" style="display: none;">
-            <div class="schedule-banner">
-              <div class="schedule-info">
-                <h3><i class="fas fa-calendar-alt"></i> Upload Schedule</h3>
-                <p><i class="fas fa-clock"></i> <span id="schedule-text">New episodes coming soon</span></p>
-              </div>
-              <div class="schedule-badge"><i class="fas fa-bell"></i> Get Reminded</div>
-            </div>
-          </section>
-
-          <!-- Support Section -->
-          <section class="support-section" id="support-section" style="display: none;">
-            <div class="support-card">
-              <div class="support-info">
-                <h3>Support This Creator</h3>
-                <p>Help them create more amazing content</p>
-              </div>
-              <div class="support-buttons">
-                <button class="support-btn primary" id="tip-btn"><i class="fas fa-gift"></i> Send Tip</button>
-                <button class="support-btn secondary" id="membership-btn"><i class="fas fa-crown"></i> Join Membership</button>
-              </div>
-            </div>
-          </section>
-
-        </div>
-      </div>
-    </section>
-
+  <!-- ============ BANNER (PRESERVED EXACTLY AS ORIGINAL) ============ -->
+  <div class="channel-banner" id="channel-banner">
+    <button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
+      <i class="fas fa-camera"></i> Change Banner
+    </button>
+    <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
   </div>
 
-  <!-- FOOTER -->
+  <!-- ============ NEW: CHANNEL PROFILE HEADER ============ -->
+  <div class="channel-profile">
+    <div class="channel-identity">
+      <div class="channel-avatar-container">
+        <div class="channel-avatar" id="creator-avatar-container"></div>
+        <div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
+      </div>
+      <div>
+        <div class="channel-name-row">
+          <h1 id="creator-name" class="channel-name">Creator Name</h1>
+          <span class="creator-badge" id="creator-badge">Content Creator</span>
+        </div>
+        <div class="channel-meta">
+          <span id="creator-username">@username</span>
+          <span class="meta-divider">·</span>
+          <span id="connectors-count">0</span> in the circle
+          <span class="meta-divider">·</span>
+          <span id="content-type-display">Series, shorts, podcast</span>
+        </div>
+      </div>
+    </div>
+    <div class="channel-actions">
+      <button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
+      <button id="share-btn" class="action-btn icon-action-btn" title="Share"><i class="fas fa-share"></i></button>
+      <button id="support-btn" class="action-btn icon-action-btn" title="Support"><i class="fas fa-gift"></i></button>
+    </div>
+  </div>
+
+  <!-- ============ NEW: CHANNEL TABS ============ -->
+  <div class="channel-tabs" id="channel-tabs">
+    <div class="channel-tab is-active" data-tab="home">Home</div>
+    <div class="channel-tab" data-tab="series">Series</div>
+    <div class="channel-tab" data-tab="shorts">Shorts</div>
+    <div class="channel-tab" data-tab="podcast">Podcast</div>
+    <div class="channel-tab" data-tab="community">Community</div>
+    <div class="channel-tab" data-tab="about">About</div>
+  </div>
+
+  <!-- ============ HOME PANEL ============ -->
+  <section class="tab-panel" data-panel="home">
+    <div class="channel-body">
+      <div class="channel-main">
+
+        <!-- Featured/Pinned Content -->
+        <div class="featured-card" id="pinned-section" style="display: none;">
+          <span class="featured-badge" id="featured-badge">New</span>
+          <span class="featured-duration" id="pinned-time">0:00</span>
+          <div class="featured-card__caption">
+            <p class="upload-card__title" id="pinned-title">Featured Content</p>
+            <span class="upload-card__meta" id="pinned-views">0 views</span>
+          </div>
+          <!-- Hidden elements for JS compatibility -->
+          <img id="pinned-thumbnail" style="display:none;">
+          <span id="pinned-description" style="display:none;"></span>
+          <span id="pinned-likes" style="display:none;"></span>
+          <button id="pinned-watch-btn" style="display:none;"></button>
+        </div>
+
+        <!-- Creator's World (Mobile/Tablet) -->
+        <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;">
+          <!-- Dynamic content loaded by JavaScript -->
+        </div>
+
+        <!-- Recent Uploads -->
+        <p class="section-label">Recent uploads</p>
+        <div class="upload-grid" id="content-grid">
+          <!-- Dynamic content cards rendered by JS -->
+        </div>
+        <div id="no-content" class="empty-state" style="display: none;">
+          <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
+          <h3>No Uploads Yet</h3>
+          <p>This creator hasn't uploaded any content</p>
+        </div>
+        <div id="content-count" style="display:none;"></div>
+      </div>
+
+      <!-- Sidebar (Desktop) -->
+      <aside class="channel-sidebar" id="channel-sidebar">
+        <div class="sidebar-panel" id="world-panel">
+          <p class="sidebar-panel-title">Creator's world</p>
+          <div class="world-row" id="world-row-desktop">
+            <!-- Dynamic content loaded by JavaScript -->
+          </div>
+        </div>
+        <div class="sidebar-panel" id="top-supporter-panel">
+          <p class="sidebar-panel-title">Top supporter this week</p>
+          <div class="top-supporter" id="top-supporter">
+            <!-- Dynamic content -->
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ SERIES PANEL ============ -->
+  <section class="tab-panel" data-panel="series" hidden>
+    <div class="channel-body">
+      <div class="channel-main">
+        <p class="section-label">Series</p>
+        <div class="upload-grid" id="series-grid"></div>
+        <div id="series-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon"><i class="fas fa-tv"></i></div>
+          <h3>No Series Yet</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SHORTS PANEL ============ -->
+  <section class="tab-panel" data-panel="shorts" hidden>
+    <div class="channel-body">
+      <div class="channel-main">
+        <p class="section-label">Shorts</p>
+        <div class="upload-grid" id="shorts-grid"></div>
+        <div id="shorts-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon"><i class="fas fa-bolt"></i></div>
+          <h3>No Shorts Yet</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PODCAST PANEL ============ -->
+  <section class="tab-panel" data-panel="podcast" hidden>
+    <div class="channel-body">
+      <div class="channel-main">
+        <p class="section-label">Podcast</p>
+        <div class="upload-grid" id="podcast-grid"></div>
+        <div id="podcast-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon"><i class="fas fa-podcast"></i></div>
+          <h3>No Podcasts Yet</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMMUNITY PANEL ============ -->
+  <section class="tab-panel" data-panel="community" hidden>
+    <div class="channel-body">
+      <div class="channel-main community-main">
+
+        <!-- Pinned Post -->
+        <div class="pinned-post" id="pinned-post" style="display: none;">
+          <span>📌</span>
+          <div>
+            <p class="pinned-post-author">Pinned by <span id="pinned-post-creator">Creator</span></p>
+            <p class="pinned-post-content" id="pinned-post-content">Pinned content</p>
+          </div>
+        </div>
+
+        <!-- Poll -->
+        <div class="poll-section" id="poll-section" style="display: none;">
+          <p class="section-label">Poll</p>
+          <div class="poll-option">
+            <div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">0%</span></div>
+            <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:0%;background:#5DCAA5;"></div></div>
+          </div>
+          <div class="poll-option">
+            <div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">0%</span></div>
+            <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:0%;background:#7F77DD;"></div></div>
+          </div>
+          <span class="poll-meta" id="poll-meta">0 votes</span>
+        </div>
+
+        <!-- Fan Wall -->
+        <div class="section-divider">
+          <p class="section-label">Fan wall</p>
+          <div class="fan-wall" id="fan-wall">
+            <!-- Dynamic content -->
+          </div>
+        </div>
+      </div>
+
+      <aside class="channel-sidebar community-sidebar">
+        <div class="sidebar-panel">
+          <p class="sidebar-panel-title">This week's top voices</p>
+          <div class="leaderboard" id="leaderboard">
+            <!-- Dynamic content -->
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ ABOUT PANEL ============ -->
+  <section class="tab-panel" data-panel="about" hidden>
+    <div class="about-content">
+      <div class="about-bio" id="about-bio">
+        <p class="about-bio-text" id="creator-bio">Creator bio will appear here</p>
+        <span class="about-joined" id="about-joined">Joined Bantu Stream Connect</span>
+      </div>
+
+      <div class="about-stats" id="about-stats">
+        <div class="about-stat"><p class="about-stat-number" id="views-count">0</p><span class="about-stat-label">Total views</span></div>
+        <div class="about-stat"><p class="about-stat-number" id="videos-count">0</p><span class="about-stat-label">Uploads</span></div>
+        <div class="about-stat"><p class="about-stat-number streak" id="about-streak">0</p><span class="about-stat-label">Day streak</span></div>
+        <div class="about-stat"><p class="about-stat-number" id="engagement-count">0%</p><span class="about-stat-label">Engagement</span></div>
+      </div>
+
+      <p class="section-label">What they make</p>
+      <div class="content-mix-bar" id="content-mix-bar">
+        <div style="width:40%;background:#04342C;"></div>
+        <div style="width:25%;background:#26215C;"></div>
+        <div style="width:20%;background:#712B13;"></div>
+        <div style="width:15%;background:#4A1B0C;"></div>
+      </div>
+      <div class="content-mix-legend" id="content-mix-legend">
+        <span>🟢 Series 40%</span>
+        <span>🟣 Podcast 25%</span>
+        <span>🟠 Shorts 20%</span>
+        <span>🟤 Community 15%</span>
+      </div>
+
+      <div class="section-divider">
+        <p class="section-label">The journey</p>
+        <div class="journey-timeline" id="journey-timeline">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+      
+      <!-- Hidden legacy sections for JS compatibility -->
+      <div id="trailer-section" style="display:none;"></div>
+      <div id="popular-section" style="display:none;"></div>
+      <div id="activity-section" style="display:none;"></div>
+      <div id="fan-section" style="display:none;"></div>
+      <div id="achievements-section" style="display:none;"></div>
+      <div id="schedule-section" style="display:none;"></div>
+      <div id="recommended-section" style="display:none;"></div>
+      <div id="support-section" style="display:none;"></div>
+      <div id="playlists-section" style="display:none;"></div>
+    </div>
+  </section>
+
+  <!-- FOOTER (PRESERVED EXACTLY) -->
   <footer class="footer">
     <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
     <div class="footer-links">
@@ -808,7 +675,7 @@
     </div>
   </footer>
 
-  <!-- NAVIGATION BUTTON -->
+  <!-- NAVIGATION BUTTON (PRESERVED EXACTLY) -->
   <div class="navigation-button-container">
     <div class="navigation-button">
       <div class="nav-icon" id="nav-home-btn" title="Home">
