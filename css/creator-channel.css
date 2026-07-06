@@ -1,6 +1,6 @@
 /* ==========================================================================
    BANTU STREAM CONNECT — CREATOR CHANNEL PAGE
-   COMPLETE MERGED FILE (Existing + New Design + All Fixes)
+   COMPLETE MERGED FILE (Existing + New Design)
    ========================================================================== */
 
 /* ===== CSS VARIABLES ===== */
@@ -135,10 +135,7 @@ html, body {
 .channel-body,
 .channel-main,
 .channel-sidebar,
-.about-content,
-.series-container,
-.series-season,
-.podcast-grid {
+.about-content {
   overflow-x: hidden !important;
   max-width: 100% !important;
 }
@@ -584,7 +581,7 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   box-shadow: 0 8px 25px rgba(245,158,11,0.4);
 }
 
-/* Streak badge on banner */
+/* NEW: Streak badge on banner */
 .streak-badge {
   position: absolute;
   bottom: 30px;
@@ -676,7 +673,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   .creator-initials { font-size: 40px; }
 }
 
-/* FOUNDER BADGE - Now toggles properly */
 .founder-badge {
   position: absolute;
   bottom: -4px;
@@ -690,16 +686,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   box-shadow: 0 4px 15px rgba(245,158,11,0.4);
   z-index: 2;
   white-space: nowrap;
-}
-
-/* VERIFIED BADGE - Now toggles properly */
-.verified-badge {
-  color: #1DA1F2;
-  font-size: 16px;
-}
-
-.verified-badge i {
-  font-size: 18px;
 }
 
 .channel-name-row {
@@ -719,7 +705,15 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   .channel-name { font-size: 24px; }
 }
 
-/* CREATOR BADGE - Auto-generates from dominant content type */
+.verified-badge {
+  color: #1DA1F2;
+  font-size: 16px;
+}
+
+.verified-badge i {
+  font-size: 18px;
+}
+
 .creator-badge {
   background: rgba(245, 158, 11, 0.2);
   border: 1px solid rgba(245, 158, 11, 0.3);
@@ -806,7 +800,7 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
 }
 
 /* ============================================
-   TABS (NEW DESIGN) - FIXED: Keyboard accessible
+   TABS (NEW DESIGN)
    ============================================ */
 .channel-tabs {
   display: flex;
@@ -816,7 +810,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   border-bottom: 0.5px solid var(--border-subtle);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  role: "tablist";
 }
 
 .channel-tabs::-webkit-scrollbar {
@@ -841,12 +834,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   transition: all 0.2s ease;
   border-bottom: 2px solid transparent;
   user-select: none;
-  background: none;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  font-family: inherit;
-  role: "tab";
 }
 
 .channel-tab:hover {
@@ -1006,7 +993,7 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
 }
 
 /* ============================================
-   WORLD ROW - FIXED: Uses content-type colors consistently
+   WORLD ROW
    ============================================ */
 .world-row {
   display: flex;
@@ -1108,7 +1095,7 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
 }
 
 /* ============================================
-   UPLOAD GRID - FIXED: Consistent card styles
+   UPLOAD GRID
    ============================================ */
 .upload-grid {
   display: grid;
@@ -1203,52 +1190,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
 }
 
 /* ============================================
-   SERIES TAB - NEW: Season grouping
-   ============================================ */
-.series-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.series-season {
-  background: var(--bg-panel);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-}
-
-.season-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-3);
-}
-
-.season-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.season-episode-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-/* ============================================
-   PODCAST TAB - NEW: Episode numbering
-   ============================================ */
-.podcast-card .upload-card__title {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.podcast-card .upload-card__meta {
-  color: var(--text-secondary);
-}
-
-/* ============================================
    SIDEBAR PANELS (DESKTOP)
    ============================================ */
 .sidebar-panel {
@@ -1312,7 +1253,7 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   line-height: 1.5;
 }
 
-/* Poll - FIXED: Real data from database */
+/* Poll */
 .poll-section {
   margin-bottom: var(--space-4);
 }
@@ -1429,7 +1370,7 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
 }
 
 /* ============================================
-   ABOUT TAB - FIXED: Real content mix bar
+   ABOUT TAB
    ============================================ */
 .about-content {
   padding: 16px 0;
@@ -1503,7 +1444,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   color: var(--text-secondary);
 }
 
-/* CONTENT MIX BAR - FIXED: Dynamically generated */
 .content-mix-bar {
   display: flex;
   height: 8px;
@@ -1603,17 +1543,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   margin-bottom: 20px;
   color: var(--warm-gold);
   opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: 18px;
-  margin-bottom: 8px;
-  color: var(--soft-white);
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: var(--slate-grey);
 }
 
 /* ============================================
@@ -2075,15 +2004,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
     font-size: 10px !important;
   }
   
-  /* Series tab mobile */
-  .series-season {
-    padding: var(--space-2) !important;
-  }
-  
-  .season-title {
-    font-size: 14px !important;
-  }
-  
   /* About stats */
   .about-stat {
     min-width: 70px !important;
@@ -2333,13 +2253,6 @@ body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
   
   .upload-card__title {
     font-size: 10px !important;
-  }
-  
-  /* Series tab small */
-  .season-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 4px !important;
   }
 }
 
