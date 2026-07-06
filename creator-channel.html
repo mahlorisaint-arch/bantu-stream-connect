@@ -136,8 +136,7 @@
 <div class="glow-cycle glow-3"></div>
 </div>
 
-<!-- ===== MODALS ===== -->
-<!-- Connectors Modal -->
+<!-- MODALS -->
 <div id="connectors-modal" class="modal">
 <div class="modal-content">
 <h2 class="modal-title" id="modal-title">Connectors (0)</h2>
@@ -148,7 +147,6 @@
 </div>
 </div>
 
-<!-- Analytics Modal -->
 <div id="analytics-modal" class="modal">
   <div class="modal-content" style="max-width:900px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -165,7 +163,6 @@
   </div>
 </div>
 
-<!-- Banner Upload Modal -->
 <div id="banner-upload-modal" class="banner-upload-modal">
 <div class="banner-upload-content">
 <h2 class="banner-upload-title">Customize Channel Banner</h2>
@@ -199,7 +196,6 @@ Banner preview
 </div>
 </div>
 
-<!-- Edit About Modal - WIRED UP -->
 <div id="edit-about-modal" class="modal">
 <div class="modal-content">
 <h2 class="modal-title"><i class="fas fa-edit"></i> Edit About Section</h2>
@@ -240,7 +236,6 @@ Banner preview
 </div>
 </div>
 
-<!-- Search Modal -->
 <div id="search-modal" class="search-modal">
 <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
 <div class="search-modal-header">
@@ -280,7 +275,6 @@ Banner preview
 </div>
 </div>
 
-<!-- Notifications Panel -->
 <div id="notifications-panel" class="modal">
 <div class="modal-content">
 <div class="notifications-header">
@@ -295,7 +289,6 @@ Banner preview
 </div>
 </div>
 
-<!-- Playlist Builder Modal -->
 <div id="playlist-builder-modal" class="modal">
   <div class="modal-content" style="max-width:950px;padding:0;overflow:hidden;">
     <div style="padding:16px 20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;background:var(--card-bg);">
@@ -337,7 +330,6 @@ Banner preview
   </div>
 </div>
 
-<!-- Templates -->
 <template id="pl-item-tmpl">
   <div class="pl-item" draggable="true" style="display:flex;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:8px;margin-bottom:8px;cursor:grab;">
     <div style="width:80px;height:45px;border-radius:6px;overflow:hidden;flex-shrink:0;">
@@ -457,17 +449,17 @@ Banner preview
 </div>
 
 <!-- ===== TABS ===== -->
-<div class="channel-tabs" id="channel-tabs" role="tablist">
-  <button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
-  <button class="channel-tab" data-tab="series" role="tab" aria-selected="false">Series</button>
-  <button class="channel-tab" data-tab="shorts" role="tab" aria-selected="false">Shorts</button>
-  <button class="channel-tab" data-tab="podcast" role="tab" aria-selected="false">Podcast</button>
-  <button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community</button>
-  <button class="channel-tab" data-tab="about" role="tab" aria-selected="false">About</button>
+<div class="channel-tabs" id="channel-tabs">
+  <button class="channel-tab is-active" data-tab="home">Home</button>
+  <button class="channel-tab" data-tab="series">Series</button>
+  <button class="channel-tab" data-tab="shorts">Shorts</button>
+  <button class="channel-tab" data-tab="podcast">Podcast</button>
+  <button class="channel-tab" data-tab="community">Community</button>
+  <button class="channel-tab" data-tab="about">About</button>
 </div>
 
 <!-- ===== HOME PANEL ===== -->
-<section class="tab-panel" data-panel="home" role="tabpanel">
+<section class="tab-panel" data-panel="home">
   <div class="channel-body">
     <div class="channel-main">
       <div class="featured-card" id="featured-card" style="display: none;">
@@ -500,24 +492,24 @@ Banner preview
   </div>
 </section>
 
-<!-- ===== SERIES PANEL - NEW ===== -->
-<section class="tab-panel" data-panel="series" hidden role="tabpanel">
+<!-- ===== SERIES PANEL ===== -->
+<section class="tab-panel" data-panel="series" hidden>
   <div class="channel-body">
     <div class="channel-main">
-      <p class="section-label">Series content</p>
+      <p class="section-label">Series</p>
       <div id="series-content"></div>
     </div>
     <aside class="channel-sidebar">
       <div class="sidebar-panel">
         <p class="sidebar-panel-title">About series</p>
-        <p style="font-size:12px;color:var(--text-secondary);">Series are grouped by season for easy binge-watching.</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Series are grouped by season.</p>
       </div>
     </aside>
   </div>
 </section>
 
-<!-- ===== SHORTS PANEL - NEW ===== -->
-<section class="tab-panel" data-panel="shorts" hidden role="tabpanel">
+<!-- ===== SHORTS PANEL ===== -->
+<section class="tab-panel" data-panel="shorts" hidden>
   <div class="channel-body">
     <div class="channel-main">
       <p class="section-label">Shorts</p>
@@ -526,14 +518,14 @@ Banner preview
     <aside class="channel-sidebar">
       <div class="sidebar-panel">
         <p class="sidebar-panel-title">About shorts</p>
-        <p style="font-size:12px;color:var(--text-secondary);">Quick, snackable content from the creator.</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Quick, snackable content.</p>
       </div>
     </aside>
   </div>
 </section>
 
-<!-- ===== PODCAST PANEL - NEW ===== -->
-<section class="tab-panel" data-panel="podcast" hidden role="tabpanel">
+<!-- ===== PODCAST PANEL ===== -->
+<section class="tab-panel" data-panel="podcast" hidden>
   <div class="channel-body">
     <div class="channel-main">
       <p class="section-label">Podcasts</p>
@@ -542,32 +534,32 @@ Banner preview
     <aside class="channel-sidebar">
       <div class="sidebar-panel">
         <p class="sidebar-panel-title">About podcasts</p>
-        <p style="font-size:12px;color:var(--text-secondary);">Audio and video episodes from the creator.</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Audio and video episodes.</p>
       </div>
     </aside>
   </div>
 </section>
 
 <!-- ===== COMMUNITY PANEL ===== -->
-<section class="tab-panel" data-panel="community" hidden role="tabpanel">
+<section class="tab-panel" data-panel="community" hidden>
   <div class="channel-body">
     <div class="channel-main community-main">
       <div class="pinned-post" id="pinned-post" style="display: none;">
         <span>📌</span>
         <div>
           <p class="pinned-post-author">Pinned by <span id="pinned-post-creator">Creator</span></p>
-          <p class="pinned-post-content" id="pinned-post-content">Season 4 writers' room opens this month</p>
+          <p class="pinned-post-content" id="pinned-post-content"></p>
         </div>
       </div>
       <div class="poll-section" id="poll-section" style="display: none;">
-        <p class="section-label">Who should guest next on the podcast?</p>
+        <p class="section-label" id="poll-question">What should we make next?</p>
         <div class="poll-option">
-          <div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">62%</span></div>
-          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:62%;background:#5DCAA5;"></div></div>
+          <div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">0%</span></div>
+          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:0%;"></div></div>
         </div>
         <div class="poll-option">
-          <div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">38%</span></div>
-          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:38%;background:#7F77DD;"></div></div>
+          <div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">0%</span></div>
+          <div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:0%;"></div></div>
         </div>
         <span class="poll-meta" id="poll-meta">0 votes · 0 days left</span>
       </div>
@@ -586,11 +578,11 @@ Banner preview
 </section>
 
 <!-- ===== ABOUT PANEL ===== -->
-<section class="tab-panel" data-panel="about" hidden role="tabpanel">
+<section class="tab-panel" data-panel="about" hidden>
   <div class="about-content">
     <div class="about-bio" id="about-bio">
-      <p class="about-bio-text">Creator bio will appear here</p>
-      <span class="about-joined" id="about-joined">Joined Bantu Stream Connect · March 2023 · Johannesburg, South Africa</span>
+      <p class="about-bio-text" id="about-bio-text">Creator bio will appear here</p>
+      <span class="about-joined" id="about-joined">Joined Bantu Stream Connect</span>
     </div>
 
     <div class="about-stats" id="about-stats">
@@ -607,6 +599,13 @@ Banner preview
     <div class="section-divider">
       <p class="section-label">The journey</p>
       <div class="journey-timeline" id="journey-timeline"></div>
+    </div>
+
+    <!-- EDIT ABOUT BUTTON - KEPT -->
+    <div style="margin-top:20px;">
+      <button id="edit-identity-btn" class="edit-identity-btn" style="display: none;">
+        <i class="fas fa-edit"></i> Edit About
+      </button>
     </div>
   </div>
 </section>
