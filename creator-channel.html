@@ -528,41 +528,31 @@ Banner preview
 </aside>
 </div>
 </section>
-<!-- ===== COMMUNITY PANEL ===== -->
-<section class="tab-panel" data-panel="community" hidden role="tabpanel">
-<div class="channel-body">
-<div class="channel-main community-main">
-<div class="pinned-post" id="pinned-post" style="display: none;">
-<span>📌</span>
-<div>
-<p class="pinned-post-author">Pinned by <span id="pinned-post-creator">Creator</span></p>
-<p class="pinned-post-content" id="pinned-post-content">Season 4 writers' room opens this month</p>
-</div>
-</div>
-<div class="poll-section" id="poll-section" style="display: none;">
-<p class="section-label">Who should guest next on the podcast?</p>
-<div class="poll-option">
-<div class="poll-option__labels"><span id="poll-option-1-label">Option 1</span><span id="poll-option-1-pct">62%</span></div>
-<div class="poll-option__track"><div class="poll-option__fill" id="poll-option-1-fill" style="width:62%;background:#5DCAA5;"></div></div>
-</div>
-<div class="poll-option">
-<div class="poll-option__labels"><span id="poll-option-2-label">Option 2</span><span id="poll-option-2-pct">38%</span></div>
-<div class="poll-option__track"><div class="poll-option__fill" id="poll-option-2-fill" style="width:38%;background:#7F77DD;"></div></div>
-</div>
-<span class="poll-meta" id="poll-meta">0 votes · 0 days left</span>
-</div>
-<div class="section-divider">
-<p class="section-label">Fan wall</p>
-<div class="fan-wall" id="fan-wall"></div>
-</div>
-</div>
-<aside class="channel-sidebar community-sidebar">
-<div class="sidebar-panel">
-<p class="sidebar-panel-title">This week's top voices</p>
-<div class="leaderboard" id="leaderboard"></div>
-</div>
-</aside>
-</div>
+<!-- ===== COMMUNITY PANEL - UPDATED WITH PULSE ===== -->
+<section class="tab-panel" data-panel="community" id="panel-community" role="tabpanel" aria-labelledby="tab-community" hidden>
+  <div class="channel-body">
+    <div class="channel-main community-main">
+
+      <div class="pulse-section-header">
+        <p class="section-label" style="margin:0;">Community</p>
+        <div class="pulse-button-container" id="pulse-button-container">
+          <!-- "Post update" / "Discover creators" buttons render here via
+               CommunityPulse.setupButtonBar() reused from community-pulse.js,
+               OR wire your own owner-only button pointing to
+               https://bantustreamconnect.com/create-communitypulse -->
+        </div>
+      </div>
+
+      <div id="community-pulse-feed" class="pulse-grid"></div>
+    </div>
+
+    <aside class="channel-sidebar community-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">This week's top voices</p>
+        <div class="leaderboard" id="leaderboard"></div>
+      </div>
+    </aside>
+  </div>
 </section>
 <!-- ===== ABOUT PANEL ===== -->
 <section class="tab-panel" data-panel="about" hidden role="tabpanel">
