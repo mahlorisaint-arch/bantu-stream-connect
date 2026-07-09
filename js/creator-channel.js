@@ -816,7 +816,7 @@ attachUploadCardClicks(container);
 }
 
 // ==========================================================================
-// COMMUNITY TAB — Pulse Integration (UPDATED WITH NEW POLL TABLES)
+// COMMUNITY TAB — Pulse Integration (FIXED: Removed poll_expires_at)
 // ==========================================================================
 
 const ChannelPulse = {
@@ -834,10 +834,12 @@ const ChannelPulse = {
     feedEl.innerHTML = this.skeletonHTML();
 
     try {
+      // FIX: Removed 'poll_expires_at' from this select statement. 
+      // We get the expiration date from pulse_post_polls.ends_at instead.
       const { data: posts, error } = await supabase
         .from('pulse_posts')
         .select(`
-          id, content, post_type, created_at, visibility, is_pinned, poll_expires_at,
+          id, content, post_type, created_at, visibility, is_pinned,
           creator_id,
           user_profiles!creator_id ( id, username, full_name, avatar_url ),
           pulse_smart_links ( id, link_type, target_content_id, external_url, cta_text ),
@@ -978,7 +980,7 @@ const ChannelPulse = {
           voteCounts,
           totalVotes,
           userVoteIndex: userVote ? userVote.selected_option_index : null,
-          expiresAt: poll.ends_at
+          expiresAt: poll.ends_at // Correctly pulling from pulse_post_polls.ends_at
         };
       } catch (e) {
         console.warn(`Could not load poll for post ${post.id}:`, e);
