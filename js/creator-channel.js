@@ -19,8 +19,6 @@ window.playlistItems = [];
 window.creatorLibrary = [];
 window.currentTab = 'home';
 window.streakCount = 0;
-window.fanComments = [];
-window.pollData = null;
 
 // ===== HELPER FUNCTIONS =====
 function showToast(message, type = 'info') {
@@ -706,7 +704,6 @@ container.innerHTML = worldItems.map(item => `
 };
 
 if (mobileRow) {
-// mobileRow.style.display = 'block'; // Hidden via CSS now
 renderItems(mobileRow);
 }
 
@@ -818,251 +815,540 @@ container.innerHTML = podcastContent.map(item => renderUploadCardHTML(item, 'pod
 attachUploadCardClicks(container);
 }
 
+// ==========================================================================
+// COMMUNITY TAB — Pulse Integration (UPDATED WITH NEW POLL TABLES)
+// ==========================================================================
+
+const ChannelPulse = {
+  reactionCounts: {},
+  repostCounts: {},
+  commentCounts: {},
+  userReactions: {},
+  userReposts: {},
+  pollCache: {},
+
+  async load() {
+    const feedEl = document.getElementById('community-pulse-feed');
+    if (!feedEl) return;
+
+    feedEl.innerHTML = this.skeletonHTML();
+
+    try {
+      const { data: posts, error } = await supabase
+        .from('pulse_posts')
+        .select(`
+          id, content, post_type, created_at, visibility, is_pinned, poll_expires_at,
+          creator_id,
+          user_profiles!creator_id ( id, username, full_name, avatar_url ),
+          pulse_smart_links ( id, link_type, target_content_id, external_url, cta_text ),
+          pulse_post_media ( id, media_url, media_type, order_index )
+        `)
+        .eq('creator_id', window.creatorId)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      if (!posts || posts.length === 0) {
+        feedEl.innerHTML = this.emptyStateHTML();
+        this.wireEmptyState();
+        renderLeaderboardFromPulse([]);
+        return;
+      }
+
+      await this.loadCounts(posts);
+      await this.preloadPollsFor(posts.filter(p => p.post_type === 'poll'));
+      this.renderFeed(posts, feedEl);
+      renderLeaderboardFromPulse(posts);
+
+    } catch (e) {
+      console.error('Error loading channel pulse feed:', e);
+      feedEl.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px;">Could not load community posts</p>';
+    }
+  },
+
+  skeletonHTML() {
+    return Array.from({ length: 2 }).map(() => `
+      <div class="pulse-skeleton">
+        <div class="skeleton-avatar"></div>
+        <div class="skeleton-content">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  emptyStateHTML() {
+    return `
+      <div class="empty-pulse">
+        <i class="fas fa-newspaper" style="font-size:40px;color:var(--slate-grey);"></i>
+        <p style="color:var(--slate-grey);margin-top:12px;font-size:13px;">
+          ${window.isOwner ? "You haven't posted an update yet." : "No community posts yet."}
+        </p>
+      </div>
+    `;
+  },
+
+  wireEmptyState() {
+    // Placeholder for future inline CTA
+  },
+
+  async loadCounts(posts) {
+    for (const post of posts) {
+      const id = post.id;
+      try {
+        const { count: reactions } = await supabase
+          .from('pulse_post_reactions').select('id', { count: 'exact', head: true })
+          .eq('post_id', id).eq('reaction_type', 'fire');
+        this.reactionCounts[id] = reactions || 0;
+
+        if (window.currentUser) {
+          const { data: ur } = await supabase
+            .from('pulse_post_reactions').select('id')
+            .eq('post_id', id).eq('user_id', window.currentUser.id).eq('reaction_type', 'fire').maybeSingle();
+          this.userReactions[id] = !!ur;
+        } else {
+          this.userReactions[id] = false;
+        }
+
+        const { count: reposts } = await supabase
+          .from('pulse_post_reposts').select('id', { count: 'exact', head: true }).eq('post_id', id);
+        this.repostCounts[id] = reposts || 0;
+
+        if (window.currentUser) {
+          const { data: urp } = await supabase
+            .from('pulse_post_reposts').select('id')
+            .eq('post_id', id).eq('user_id', window.currentUser.id).maybeSingle();
+          this.userReposts[id] = !!urp;
+        } else {
+          this.userReposts[id] = false;
+        }
+
+        const { count: comments } = await supabase
+          .from('pulse_post_comments').select('id', { count: 'exact', head: true }).eq('post_id', id);
+        this.commentCounts[id] = comments || 0;
+      } catch (e) {
+        console.warn(`Could not load counts for pulse post ${id}:`, e);
+        this.reactionCounts[id] = this.reactionCounts[id] || 0;
+        this.repostCounts[id] = this.repostCounts[id] || 0;
+        this.commentCounts[id] = this.commentCounts[id] || 0;
+      }
+    }
+  },
+
+  async preloadPollsFor(pollPosts) {
+    for (const post of pollPosts) {
+      try {
+        // 1. Fetch the poll configuration for this post
+        const { data: poll, error: pollError } = await supabase
+          .from('pulse_post_polls')
+          .select('*')
+          .eq('post_id', post.id)
+          .maybeSingle();
+
+        if (pollError || !poll) {
+          this.pollCache[post.id] = null;
+          continue;
+        }
+
+        // 2. Fetch the votes for this poll
+        const { data: votes } = await supabase
+          .from('pulse_poll_votes')
+          .select('selected_option_index, user_id')
+          .eq('poll_id', poll.id);
+
+        // Tally votes by index
+        const voteCounts = {};
+        const totalVotes = (votes || []).length;
+        (votes || []).forEach(v => {
+          voteCounts[v.selected_option_index] = (voteCounts[v.selected_option_index] || 0) + 1;
+        });
+
+        // Check if current user voted
+        const userVote = window.currentUser
+          ? (votes || []).find(v => v.user_id === window.currentUser.id)
+          : null;
+
+        this.pollCache[post.id] = {
+          pollId: poll.id,
+          question: poll.question,
+          options: poll.options, // Your JSONB array
+          voteCounts,
+          totalVotes,
+          userVoteIndex: userVote ? userVote.selected_option_index : null,
+          expiresAt: poll.ends_at
+        };
+      } catch (e) {
+        console.warn(`Could not load poll for post ${post.id}:`, e);
+        this.pollCache[post.id] = null;
+      }
+    }
+  },
+
+  renderFeed(posts, feedEl) {
+    feedEl.innerHTML = '';
+    posts.forEach(post => feedEl.appendChild(this.buildPostCard(post)));
+  },
+
+  buildPostCard(post) {
+    const creator = post.user_profiles || { username: 'creator', full_name: 'Creator', avatar_url: null };
+    const displayName = creator.full_name || creator.username || 'Creator';
+    const avatarUrl = creator.avatar_url ? fixMediaUrl(creator.avatar_url) : null;
+    const initials = displayName.charAt(0).toUpperCase();
+    const id = post.id;
+
+    const card = document.createElement('div');
+    card.className = 'pulse-card';
+    card.dataset.postId = id;
+
+    const pinnedFlag = post.is_pinned ? '<span class="pulse-pinned-flag"><i class="fas fa-thumbtack"></i> Pinned</span>' : '';
+
+    card.innerHTML = `
+      <div class="pulse-header">
+        <div class="pulse-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}">` : initials}</div>
+        <div class="pulse-creator-info">
+          <h4>${escapeHtml(displayName)} ${pinnedFlag}</h4>
+          <span>${formatTimeAgo(post.created_at)}</span>
+        </div>
+      </div>
+      <div class="pulse-content">${escapeHtml(post.content)}</div>
+      ${post.post_type === 'poll' ? this.buildPollHTML(post.id) : ''}
+      ${this.buildMediaHTML(post.pulse_post_media)}
+      ${this.buildSmartLinkHTML(post.pulse_smart_links?.[0])}
+      <div class="pulse-actions">
+        <button class="action-btn fire-btn ${this.userReactions[id] ? 'active' : ''}" data-id="${id}">
+          <i class="fas fa-fire"></i> <span class="reaction-count">${this.reactionCounts[id] || 0}</span>
+        </button>
+        <button class="action-btn comment-btn" data-id="${id}">
+          <i class="fas fa-comment"></i> <span class="comment-count">${this.commentCounts[id] || 0}</span>
+        </button>
+        <button class="action-btn repost-btn ${this.userReposts[id] ? 'active' : ''}" data-id="${id}">
+          <i class="fas fa-retweet"></i> <span class="repost-count">${this.repostCounts[id] || 0}</span>
+        </button>
+        <button class="action-btn share-btn" data-id="${id}"><i class="fas fa-share"></i></button>
+      </div>
+    `;
+
+    card.querySelector('.fire-btn')?.addEventListener('click', () => this.handleReaction(id));
+    card.querySelector('.comment-btn')?.addEventListener('click', () => this.handleComment(id));
+    card.querySelector('.repost-btn')?.addEventListener('click', () => this.handleRepost(id));
+    card.querySelector('.share-btn')?.addEventListener('click', () => this.handleShare(id));
+
+    if (post.post_type === 'poll') {
+      card.querySelectorAll('.pulse-poll-option:not(.is-locked)').forEach(el => {
+        el.addEventListener('click', () => this.castPollVote(id, Number(el.dataset.optionIndex)));
+      });
+    }
+
+    const smartLinkEl = card.querySelector('.smart-link-card');
+    const smartLinkData = post.pulse_smart_links?.[0];
+    if (smartLinkEl && smartLinkData) {
+      smartLinkEl.addEventListener('click', () => this.handleSmartLinkClick(smartLinkData));
+    }
+
+    return card;
+  },
+
+  buildPollHTML(postId) {
+    const pollData = this.pollCache[postId];
+    if (!pollData) return '';
+
+    const hasVoted = pollData.userVoteIndex !== null;
+    const expired = pollData.expiresAt ? new Date(pollData.expiresAt) < new Date() : false;
+    const colors = ['#5DCAA5', '#7F77DD', '#F0997B', '#EF9F27'];
+
+    // pollData.options is a JSONB array. This safely handles both string arrays ["A", "B"] and object arrays [{"text": "A"}]
+    const rows = pollData.options.map((opt, index) => {
+      const optLabel = typeof opt === 'string' ? opt : (opt.text || opt.label || `Option ${index + 1}`);
+      const count = pollData.voteCounts[index] || 0;
+      const pct = pollData.totalVotes > 0 ? Math.round((count / pollData.totalVotes) * 100) : 0;
+      const isUserChoice = pollData.userVoteIndex === index;
+      
+      return `
+        <div class="pulse-poll-option ${hasVoted || expired ? 'is-locked' : ''}" data-option-index="${index}">
+          <div class="pulse-poll-option__labels">
+            <span>${escapeHtml(optLabel)}${isUserChoice ? ' <i class="fas fa-check" style="font-size:10px;"></i>' : ''}</span>
+            ${hasVoted || expired ? `<span>${pct}%</span>` : ''}
+          </div>
+          ${hasVoted || expired ? `<div class="pulse-poll-option__track"><div class="pulse-poll-option__fill" style="width:${pct}%;background:${colors[index % colors.length]};"></div></div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    const metaText = `${formatNumber(pollData.totalVotes)} votes${expired ? ' · Poll closed' : (hasVoted ? ' · You voted' : ' · Tap an option to vote')}`;
+
+    return `<div class="pulse-poll"><p style="font-weight:600;margin-bottom:8px;font-size:14px;">${escapeHtml(pollData.question)}</p>${rows}<span class="pulse-poll-meta">${metaText}</span></div>`;
+  },
+
+  buildMediaHTML(mediaArray) {
+    if (!mediaArray || mediaArray.length === 0) return '';
+    const media = mediaArray[0];
+    if (media.media_type === 'image') {
+      return `<div class="pulse-media"><img src="${fixMediaUrl(media.media_url)}" loading="lazy" onerror="this.style.display='none'"></div>`;
+    }
+    if (media.media_type === 'video') {
+      return `<div class="pulse-media"><video controls preload="metadata"><source src="${fixMediaUrl(media.media_url)}"></video></div>`;
+    }
+    return '';
+  },
+
+  buildSmartLinkHTML(link) {
+    if (!link) return '';
+    const iconMap = { music: 'fa-music', video: 'fa-video', podcast: 'fa-podcast', playlist: 'fa-list', article: 'fa-newspaper' };
+    const icon = iconMap[link.link_type] || 'fa-link';
+    const ctaText = link.cta_text || `Open ${link.link_type}`;
+    return `
+      <div class="smart-link-card">
+        <div class="smart-link-icon"><i class="fas ${icon}"></i></div>
+        <div class="smart-link-info"><h5>${escapeHtml(link.link_type.toUpperCase())}</h5><p>${escapeHtml(ctaText)}</p></div>
+        <div class="smart-link-arrow"><i class="fas fa-chevron-right"></i></div>
+      </div>
+    `;
+  },
+
+  async castPollVote(postId, optionIndex) {
+    if (!window.currentUser) { showToast('Please sign in to vote', 'warning'); return; }
+    const pollData = this.pollCache[postId];
+    if (!pollData) return;
+    if (pollData.userVoteIndex !== null) { showToast('You already voted', 'info'); return; }
+
+    try {
+      // Insert into your existing pulse_poll_votes table
+      const { error } = await supabase.from('pulse_poll_votes').insert({
+        poll_id: pollData.pollId,
+        user_id: window.currentUser.id,
+        selected_option_index: optionIndex
+      });
+      if (error) throw error;
+
+      // Update local cache instantly for snappy UI
+      pollData.voteCounts[optionIndex] = (pollData.voteCounts[optionIndex] || 0) + 1;
+      pollData.totalVotes++;
+      pollData.userVoteIndex = optionIndex;
+
+      // Re-render the poll UI to show results
+      const card = document.querySelector(`.pulse-card[data-post-id="${postId}"]`);
+      const pollContainer = card?.querySelector('.pulse-poll');
+      if (pollContainer) {
+        pollContainer.outerHTML = this.buildPollHTML(postId);
+        // Re-attach click listeners (though they will be locked now)
+        card.querySelectorAll('.pulse-poll-option:not(.is-locked)').forEach(el => {
+          el.addEventListener('click', () => this.castPollVote(postId, Number(el.dataset.optionIndex)));
+        });
+      }
+      showToast('Vote counted!', 'success');
+    } catch (e) {
+      console.error('Error voting:', e);
+      showToast('Could not record your vote', 'error');
+    }
+  },
+
+  async handleReaction(postId) {
+    if (!window.currentUser) { showToast('Please sign in to react', 'warning'); return; }
+    const btn = document.querySelector(`.fire-btn[data-id="${postId}"]`);
+    if (!btn) return;
+    const wasActive = btn.classList.contains('active');
+    const countSpan = btn.querySelector('.reaction-count');
+    let count = parseInt(countSpan.textContent) || 0;
+
+    try {
+      if (wasActive) {
+        const { error } = await supabase.from('pulse_post_reactions').delete()
+          .eq('post_id', postId).eq('user_id', window.currentUser.id).eq('reaction_type', 'fire');
+        if (error) throw error;
+        btn.classList.remove('active'); count--; countSpan.textContent = count;
+        this.userReactions[postId] = false; this.reactionCounts[postId] = count;
+      } else {
+        const { error } = await supabase.from('pulse_post_reactions').insert({
+          post_id: postId, user_id: window.currentUser.id, reaction_type: 'fire'
+        });
+        if (error) throw error;
+        btn.classList.add('active'); count++; countSpan.textContent = count;
+        this.userReactions[postId] = true; this.reactionCounts[postId] = count;
+      }
+    } catch (e) {
+      console.error('Reaction error:', e);
+      showToast('Failed to update reaction', 'error');
+    }
+  },
+
+  async handleRepost(postId) {
+    if (!window.currentUser) { showToast('Please sign in to repost', 'warning'); return; }
+    const btn = document.querySelector(`.repost-btn[data-id="${postId}"]`);
+    if (!btn) return;
+    const wasActive = btn.classList.contains('active');
+    const countSpan = btn.querySelector('.repost-count');
+    let count = parseInt(countSpan.textContent) || 0;
+
+    try {
+      if (wasActive) {
+        const { error } = await supabase.from('pulse_post_reposts').delete()
+          .eq('post_id', postId).eq('user_id', window.currentUser.id);
+        if (error) throw error;
+        btn.classList.remove('active'); count--; countSpan.textContent = count;
+        this.userReposts[postId] = false; this.repostCounts[postId] = count;
+      } else {
+        const { error } = await supabase.from('pulse_post_reposts').insert({ post_id: postId, user_id: window.currentUser.id });
+        if (error) throw error;
+        btn.classList.add('active'); count++; countSpan.textContent = count;
+        this.userReposts[postId] = true; this.repostCounts[postId] = count;
+        showToast('Reposted to your profile!', 'success');
+      }
+    } catch (e) {
+      console.error('Repost error:', e);
+      showToast('Failed to update repost', 'error');
+    }
+  },
+
+  async handleComment(postId) {
+    if (!window.currentUser) { showToast('Please sign in to comment', 'warning'); return; }
+
+    const { data: comments } = await supabase
+      .from('pulse_post_comments')
+      .select(`id, content, user_id, created_at, user_profiles!user_id ( full_name, username, avatar_url )`)
+      .eq('post_id', postId).is('parent_comment_id', null)
+      .order('created_at', { ascending: false });
+
+    const list = comments || [];
+    const modalHtml = `
+      <div id="pulse-comment-modal-${postId}" class="modal-overlay">
+        <div class="modal-content" style="max-width:500px;">
+          <div class="modal-header"><h3><i class="fas fa-comment"></i> Comments (${list.length})</h3><button class="modal-close">&times;</button></div>
+          <div class="modal-body" style="max-height:400px;overflow-y:auto;">
+            <div class="comments-list" style="margin-bottom:16px;">
+              ${list.length === 0 ? '<p style="color:var(--slate-grey);text-align:center;">No comments yet</p>' : ''}
+              ${list.map(c => {
+                const author = c.user_profiles || {};
+                const name = author.full_name || author.username || 'User';
+                return `
+                  <div class="comment-item" style="padding:12px;border-bottom:1px solid var(--card-border);">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:bold;">${name.charAt(0).toUpperCase()}</div>
+                      <div><strong style="font-size:13px;">${escapeHtml(name)}</strong><div style="font-size:10px;color:var(--slate-grey);">${formatTimeAgo(c.created_at)}</div></div>
+                    </div>
+                    <p style="font-size:13px;margin:0;">${escapeHtml(c.content)}</p>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <textarea id="pulse-comment-input-${postId}" placeholder="Write a comment..." rows="3" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:12px;padding:12px;color:var(--soft-white);font-family:inherit;resize:vertical;"></textarea>
+          </div>
+          <div class="modal-footer"><button class="cancel-btn">Cancel</button><button class="submit-btn post-comment-btn">Post comment</button></div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById(`pulse-comment-modal-${postId}`);
+    const close = () => modal.remove();
+    modal.querySelector('.modal-close').addEventListener('click', close);
+    modal.querySelector('.cancel-btn').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    modal.querySelector('.post-comment-btn').addEventListener('click', async () => {
+      const input = document.getElementById(`pulse-comment-input-${postId}`);
+      const text = input.value.trim();
+      if (!text) { showToast('Write something first', 'warning'); return; }
+      try {
+        const { error } = await supabase.from('pulse_post_comments').insert({
+          post_id: postId, user_id: window.currentUser.id, content: text, parent_comment_id: null
+        });
+        if (error) throw error;
+        const newCount = (this.commentCounts[postId] || 0) + 1;
+        this.commentCounts[postId] = newCount;
+        const badge = document.querySelector(`.comment-btn[data-id="${postId}"] .comment-count`);
+        if (badge) badge.textContent = newCount;
+        showToast('Comment posted!', 'success');
+        close();
+      } catch (e) {
+        console.error('Comment error:', e);
+        showToast('Failed to post comment', 'error');
+      }
+    });
+  },
+
+  handleShare(postId) {
+    const url = `${window.location.origin}/creator-channel.html?id=${window.creatorId}&post=${postId}`;
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Link copied to clipboard!', 'success'))
+      .catch(() => showToast('Share: ' + url, 'info'));
+  },
+
+  handleSmartLinkClick(link) {
+    if (!link) return;
+    if (link.link_type === 'video' && link.target_content_id) window.location.href = `content-detail.html?id=${link.target_content_id}`;
+    else if (link.link_type === 'article' && link.target_content_id) window.location.href = `insights-detail.html?id=${link.target_content_id}`;
+    else if (link.external_url) window.open(link.external_url, '_blank', 'noopener');
+    else showToast('Content coming soon!', 'info');
+  }
+};
+
+// ===== REAL LEADERBOARD — aggregated from reactions + comments + reposts
+// on THIS creator's pulse posts, replacing the comments-only version =====
+async function renderLeaderboardFromPulse(posts) {
+  const board = document.getElementById('leaderboard');
+  if (!board) return;
+
+  const postIds = posts.map(p => p.id);
+  if (postIds.length === 0) {
+    board.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px;">No activity yet</p>';
+    return;
+  }
+
+  try {
+    const [{ data: reactions }, { data: comments }, { data: reposts }] = await Promise.all([
+      supabase.from('pulse_post_reactions').select('user_id').in('post_id', postIds),
+      supabase.from('pulse_post_comments').select('user_id').in('post_id', postIds),
+      supabase.from('pulse_post_reposts').select('user_id').in('post_id', postIds)
+    ]);
+
+    const weights = { reaction: 1, comment: 2, repost: 3 };
+    const scores = {};
+    const tally = (rows, kind) => (rows || []).forEach(r => {
+      if (!r.user_id) return;
+      scores[r.user_id] = (scores[r.user_id] || 0) + weights[kind];
+    });
+    tally(reactions, 'reaction');
+    tally(comments, 'comment');
+    tally(reposts, 'repost');
+
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (sorted.length === 0) {
+      board.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px;">No top voices yet</p>';
+      return;
+    }
+
+    const userIds = sorted.map(([id]) => id);
+    const { data: profiles } = await supabase.from('user_profiles').select('id, full_name, username, avatar_url').in('id', userIds);
+    const profileMap = {};
+    (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+    board.innerHTML = sorted.map(([userId, score], index) => {
+      const profile = profileMap[userId];
+      const name = profile?.full_name || profile?.username || 'User';
+      const avatar = profile?.avatar_url ? fixMediaUrl(profile.avatar_url) : null;
+      return `
+        <div class="leaderboard-row">
+          <span class="leaderboard-rank">${index + 1}</span>
+          <div class="leaderboard-avatar" style="${avatar ? `background-image:url(${avatar});background-size:cover;` : 'background:var(--bg-media);'}"></div>
+          <div>
+            <p class="leaderboard-name">${escapeHtml(name)}</p>
+            <p class="leaderboard-meta">${score} engagement pt${score > 1 ? 's' : ''}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Error loading pulse-based leaderboard:', e);
+    board.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px;">Could not load leaderboard</p>';
+  }
+}
+
 // ===== RENDER COMMUNITY TAB =====
 function renderCommunityTab() {
-renderPinnedPost();
-renderPoll();
-renderFanWall();
-renderLeaderboard();
-}
-
-// ===== RENDER PINNED POST =====
-function renderPinnedPost() {
-const post = document.getElementById('pinned-post');
-if (!post) return;
-
-// Check if there's a pinned comment or post
-const pinnedContent = window.creatorContent.find(c => c.is_pinned === true);
-
-if (!pinnedContent && window.fanComments.length === 0) {
-post.style.display = 'none';
-return;
-}
-
-post.style.display = 'flex';
-
-const creator = document.getElementById('pinned-post-creator');
-if (creator) {
-creator.textContent = window.creatorProfile?.full_name || window.creatorProfile?.username || 'Creator';
-}
-
-const content = document.getElementById('pinned-post-content');
-if (content) {
-if (pinnedContent) {
-content.textContent = `Check out "${pinnedContent.title}" - ${truncateText(pinnedContent.description || 'Featured content from the creator', 100)}`;
-} else if (window.fanComments.length > 0) {
-content.textContent = `"${truncateText(window.fanComments[0].comment_text || 'Fan comment', 100)}"`;
-} else {
-content.textContent = 'Welcome to the community!';
-}
-}
-}
-
-// ===== RENDER POLL =====
-function renderPoll() {
-const pollSection = document.getElementById('poll-section');
-if (!pollSection) return;
-
-// Check if we have poll data
-if (!window.pollData) {
-// Generate sample poll data if none exists
-const contentTypes = ['Series', 'Podcast', 'Shorts', 'Documentary'];
-const typeCounts = {};
-window.creatorContent.forEach(c => {
-const type = c.content_format || c.media_type || 'Other';
-typeCounts[type] = (typeCounts[type] || 0) + 1;
-});
-
-const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
-
-if (sorted.length >= 2) {
-window.pollData = {
-question: `What content should we make next?`,
-options: [
-{ label: `More ${sorted[0][0]}`, votes: Math.floor(Math.random() * 100) + 50 },
-{ label: `More ${sorted[1][0]}`, votes: Math.floor(Math.random() * 50) + 20 }
-],
-totalVotes: 0,
-daysLeft: Math.floor(Math.random() * 5) + 1
-};
-window.pollData.totalVotes = window.pollData.options.reduce((sum, o) => sum + o.votes, 0);
-} else {
-pollSection.style.display = 'none';
-return;
-}
-}
-
-pollSection.style.display = 'block';
-
-const label1 = document.getElementById('poll-option-1-label');
-const pct1 = document.getElementById('poll-option-1-pct');
-const fill1 = document.getElementById('poll-option-1-fill');
-
-const label2 = document.getElementById('poll-option-2-label');
-const pct2 = document.getElementById('poll-option-2-pct');
-const fill2 = document.getElementById('poll-option-2-fill');
-
-const meta = document.getElementById('poll-meta');
-
-if (window.pollData.options.length >= 2) {
-const total = window.pollData.totalVotes || 1;
-const pct1Val = Math.round((window.pollData.options[0].votes / total) * 100);
-const pct2Val = 100 - pct1Val;
-
-if (label1) label1.textContent = window.pollData.options[0].label;
-if (pct1) pct1.textContent = `${pct1Val}%`;
-if (fill1) fill1.style.width = `${pct1Val}%`;
-
-if (label2) label2.textContent = window.pollData.options[1].label;
-if (pct2) pct2.textContent = `${pct2Val}%`;
-if (fill2) fill2.style.width = `${pct2Val}%`;
-}
-
-if (meta) {
-meta.textContent = `${formatNumber(window.pollData.totalVotes)} votes · ${window.pollData.daysLeft} days left`;
-}
-}
-
-// ===== RENDER FAN WALL =====
-async function renderFanWall() {
-const wall = document.getElementById('fan-wall');
-if (!wall) return;
-
-// Get comments from the creator's content
-const contentIds = window.creatorContent.map(c => c.id);
-if (contentIds.length === 0) {
-wall.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px;">No fan comments yet</p>';
-return;
-}
-
-try {
-const { data, error } = await supabase
-.from('comments')
-.select(`
-id,
-comment_text,
-created_at,
-likes_count,
-user_id,
-user_profiles!user_id (
-full_name,
-username,
-avatar_url
-)
-`)
-.in('content_id', contentIds)
-.order('created_at', { ascending: false })
-.limit(5);
-
-if (error) throw error;
-
-window.fanComments = data || [];
-
-if (window.fanComments.length === 0) {
-wall.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px;">Be the first to comment!</p>';
-return;
-}
-
-wall.innerHTML = window.fanComments.map(comment => {
-const name = comment.user_profiles?.full_name || comment.user_profiles?.username || 'Fan';
-const avatar = comment.user_profiles?.avatar_url ? fixMediaUrl(comment.user_profiles.avatar_url) : null;
-const avatarBg = ['#4A1B0C', '#26215C', '#04342C', '#1D4ED8', '#F59E0B'][Math.floor(Math.random() * 5)];
-
-return `
-<div class="fan-post">
-<div class="fan-post__avatar" style="background:${avatarBg};${avatar ? `background-image:url(${avatar});background-size:cover;` : ''}"></div>
-<div class="fan-post__bubble">
-<p class="fan-name">${escapeHtml(name)}</p>
-<p class="fan-comment">${escapeHtml(truncateText(comment.comment_text || '', 100))}</p>
-</div>
-</div>
-`;
-}).join('');
-
-} catch (error) {
-console.error('Error loading fan comments:', error);
-wall.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px;">Could not load comments</p>';
-}
-}
-
-// ===== RENDER LEADERBOARD =====
-async function renderLeaderboard() {
-const board = document.getElementById('leaderboard');
-if (!board) return;
-
-// Get top commenters from the creator's content
-const contentIds = window.creatorContent.map(c => c.id);
-if (contentIds.length === 0) {
-board.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px;">No activity yet</p>';
-return;
-}
-
-try {
-const { data, error } = await supabase
-.from('comments')
-.select(`
-user_id,
-user_profiles!user_id (
-full_name,
-username,
-avatar_url
-)
-`)
-.in('content_id', contentIds);
-
-if (error) throw error;
-
-// Count comments per user
-const userCounts = {};
-(data || []).forEach(comment => {
-if (comment.user_id) {
-userCounts[comment.user_id] = (userCounts[comment.user_id] || 0) + 1;
-}
-});
-
-const sorted = Object.entries(userCounts)
-.sort((a, b) => b[1] - a[1])
-.slice(0, 5);
-
-if (sorted.length === 0) {
-board.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px;">No top voices yet</p>';
-return;
-}
-
-// Get user profiles
-const userIds = sorted.map(([id]) => id);
-const { data: profiles } = await supabase
-.from('user_profiles')
-.select('id, full_name, username, avatar_url')
-.in('id', userIds);
-
-const profileMap = {};
-(profiles || []).forEach(p => {
-profileMap[p.id] = p;
-});
-
-board.innerHTML = sorted.map(([userId, count], index) => {
-const profile = profileMap[userId];
-const name = profile?.full_name || profile?.username || 'User';
-const avatar = profile?.avatar_url ? fixMediaUrl(profile.avatar_url) : null;
-const avatarBg = ['#085041', '#26215C', '#4A1B0C', '#1D4ED8', '#F59E0B'][index % 5];
-
-return `
-<div class="leaderboard-row">
-<span class="leaderboard-rank">${index + 1}</span>
-<div class="leaderboard-avatar" style="background:${avatarBg};${avatar ? `background-image:url(${avatar});background-size:cover;` : ''}"></div>
-<div>
-<p class="leaderboard-name">${escapeHtml(name)}</p>
-<p class="leaderboard-meta">${count} comment${count > 1 ? 's' : ''}</p>
-</div>
-</div>
-`;
-}).join('');
-
-} catch (error) {
-console.error('Error loading leaderboard:', error);
-board.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px;">Could not load leaderboard</p>';
-}
+  ChannelPulse.load();
 }
 
 // ===== RENDER ABOUT TAB =====
@@ -2228,9 +2514,6 @@ updateConnectButton();
 renderHomeTab();
 renderAboutTab();
 
-// Load community data
-await renderCommunityTab();
-
 // Hide loading screen
 const loading = document.getElementById('loading');
 const app = document.getElementById('app');
@@ -2919,6 +3202,7 @@ console.log('   🚀 Using playlist_contents junction table for playlists');
 console.log('   🎨 New design: Home, Community, About tabs');
 console.log('   🎨 Mobile-first responsive layout');
 console.log('   🎨 Banner section kept as is');
+console.log('   🎨 Community tab uses Pulse feed with polls (pulse_post_polls + pulse_poll_votes)');
 
 } catch (error) {
 console.error('❌ Error initializing:', error);
