@@ -554,27 +554,89 @@ Banner preview
     </aside>
   </div>
 </section>
-<!-- ===== ABOUT PANEL ===== -->
-<section class="tab-panel" data-panel="about" hidden role="tabpanel">
-<div class="about-content">
-<div class="about-bio" id="about-bio">
-<p class="about-bio-text">Creator bio will appear here</p>
-<span class="about-joined" id="about-joined">Joined Bantu Stream Connect · March 2023 · Johannesburg, South Africa</span>
-</div>
-<div class="about-stats" id="about-stats">
-<div class="about-stat"><p class="about-stat-number" id="about-total-views">0</p><span class="about-stat-label">Total views</span></div>
-<div class="about-stat"><p class="about-stat-number" id="about-total-uploads">0</p><span class="about-stat-label">Uploads</span></div>
-<div class="about-stat"><p class="about-stat-number streak" id="about-streak">0</p><span class="about-stat-label">Day streak</span></div>
-<div class="about-stat"><p class="about-stat-number" id="about-originals">0</p><span class="about-stat-label">Bantu originals</span></div>
-</div>
-<p class="section-label">What they make</p>
-<div class="content-mix-bar" id="content-mix-bar"></div>
-<div class="content-mix-legend" id="content-mix-legend"></div>
-<div class="section-divider">
-<p class="section-label">The journey</p>
-<div class="journey-timeline" id="journey-timeline"></div>
-</div>
-</div>
+<!-- ===== ABOUT PANEL - UPDATED WITH FULL REAL DATA ===== -->
+<section class="tab-panel" data-panel="about" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+  <div class="about-content">
+
+    <!-- Identity card: bio, mission, badges, joined info, links -->
+    <div class="glass-card about-identity-card" id="about-identity-card">
+      <p class="about-bio-text" id="about-bio-text">Loading profile</p>
+      <p class="about-mission-text" id="about-mission-text" style="display:none;"></p>
+
+      <div class="about-badges" id="about-badges" style="display:none;"></div>
+
+      <div class="about-meta-row">
+        <span class="about-meta-item" id="about-joined-item">
+          <i class="fas fa-calendar"></i> <span id="about-joined-text">Loading</span>
+        </span>
+        <span class="about-meta-item" id="about-location-item" style="display:none;">
+          <i class="fas fa-location-dot"></i> <span id="about-location-text"></span>
+        </span>
+      </div>
+
+      <div class="about-links-row" id="about-links-row" style="display:none;">
+        <a href="#" id="about-website-link" class="about-link-chip" target="_blank" rel="noopener" style="display:none;">
+          <i class="fas fa-globe"></i> <span id="about-website-text"></span>
+        </a>
+        <span class="about-link-chip" id="about-schedule-chip" style="display:none;">
+          <i class="fas fa-clock"></i> <span id="about-schedule-text"></span>
+        </span>
+      </div>
+
+      <div class="about-tags-row" id="about-tags-row" style="display:none;"></div>
+      <div class="about-socials-row" id="about-socials-row" style="display:none;"></div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="about-stats-grid" id="about-stats-grid">
+      <div class="glass-card about-stat-card">
+        <p class="about-stat-number" id="about-total-views">0</p>
+        <span class="about-stat-label">Total views</span>
+      </div>
+      <div class="glass-card about-stat-card">
+        <p class="about-stat-number" id="about-total-uploads">0</p>
+        <span class="about-stat-label">Uploads</span>
+      </div>
+      <div class="glass-card about-stat-card">
+        <p class="about-stat-number streak" id="about-streak">0</p>
+        <span class="about-stat-label">Day streak</span>
+      </div>
+      <div class="glass-card about-stat-card">
+        <p class="about-stat-number" id="about-originals">0</p>
+        <span class="about-stat-label">Bantu originals</span>
+      </div>
+      <div class="glass-card about-stat-card">
+        <p class="about-stat-number" id="about-completion-rate">0</p>
+        <span class="about-stat-label">Avg completion</span>
+      </div>
+      <div class="glass-card about-stat-card">
+        <p class="about-stat-number" id="about-engagement-total">0</p>
+        <span class="about-stat-label">Total engagement</span>
+      </div>
+    </div>
+
+    <!-- Content mix -->
+    <div class="glass-card about-section-card">
+      <p class="section-label">What they make</p>
+      <div class="content-mix-bar" id="content-mix-bar"></div>
+      <div class="content-mix-legend" id="content-mix-legend"></div>
+    </div>
+
+    <!-- Computed insights, entirely data driven -->
+    <div class="glass-card about-section-card" id="about-insights-card" style="display:none;">
+      <p class="section-label">Insights</p>
+      <div class="about-insights-list" id="about-insights-list"></div>
+    </div>
+
+    <!-- Journey timeline, built from real content and view history -->
+    <div class="glass-card about-section-card">
+      <p class="section-label">The journey</p>
+      <div class="journey-timeline" id="journey-timeline">
+        <p class="journey-empty" id="journey-empty" style="display:none;">No milestones yet</p>
+      </div>
+    </div>
+
+  </div>
 </section>
 <!-- FOOTER -->
 <footer class="footer">
