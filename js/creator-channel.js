@@ -19,6 +19,7 @@ window.playlistItems = [];
 window.creatorLibrary = [];
 window.currentTab = 'home';
 window.streakCount = 0;
+window.creatorRecord = null;
 
 // ===== HELPER FUNCTIONS =====
 function showToast(message, type = 'info') {
@@ -114,6 +115,101 @@ const secs = seconds % 60;
 return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+// ===== CONTENT FORMAT LABELS AND COLORS =====
+const CONTENT_FORMAT_META = {
+  film: { label: 'Film', color: '#EF4444' },
+  documentary: { label: 'Documentary', color: '#8B5CF6' },
+  series_episode: { label: 'Series', color: '#10B981' },
+  podcast_episode: { label: 'Podcast', color: '#7F77DD' },
+  short: { label: 'Short', color: '#EC4899' },
+  long_form: { label: 'Video', color: '#1D4ED8' },
+  album_track: { label: 'Music', color: '#F59E0B' },
+  music: { label: 'Music', color: '#F59E0B' },
+  music_video: { label: 'Music video', color: '#F59E0B' },
+  song: { label: 'Music', color: '#F59E0B' },
+  track: { label: 'Music', color: '#F59E0B' },
+  audio: { label: 'Audio', color: '#94A3B8' }
+};
+
+function formatMeta(contentFormat) {
+  return CONTENT_FORMAT_META[contentFormat] || { label: 'Content', color: '#94A3B8' };
+}
+
+// ===== REAL CONTENT MIX =====
+function computeContentMixReal(content) {
+  if (!content || content.length === 0) return [];
+  const counts = {};
+  content.forEach(item => {
+    const key = item.content_format || 'long_form';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  const total = content.length;
+  return Object.entries(counts)
+    .map(([key, count]) => ({ key, count, pct: Math.round((count / total) * 100), meta: formatMeta(key) }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// ===== REAL UPLOAD STREAK =====
+function computeUploadStreak(content) {
+  if (!content || content.length === 0) return 0;
+  const uploadDays = new Set(content.filter(c => c.created_at).map(c => new Date(c.created_at).toISOString().slice(0, 10)));
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const oneDay = 86400000;
+  const mostRecentDay = [...uploadDays].sort().reverse()[0];
+  if (!mostRecentDay) return 0;
+  const mostRecentDate = new Date(mostRecentDay);
+  const daysSinceLastUpload = Math.floor((today - mostRecentDate) / oneDay);
+  if (daysSinceLastUpload > 1) return 0;
+  let streak = 0;
+  let cursor = new Date(mostRecentDate);
+  while (uploadDays.has(cursor.toISOString().slice(0, 10))) { streak++; cursor = new Date(cursor.getTime() - oneDay); }
+  return streak;
+}
+
+// ===== REAL VIEW MILESTONES =====
+const VIEW_MILESTONE_THRESHOLDS = [100, 1000, 10000, 100000];
+
+async function computeViewMilestones(creatorId) {
+  try {
+    const { data, error } = await supabase
+      .from('content_views')
+      .select('created_at')
+      .eq('creator_id', creatorId)
+      .eq('counted_as_view', true)
+      .order('created_at', { ascending: true })
+      .limit(50000);
+    if (error) throw error;
+
+    const rows = data || [];
+    const milestones = [];
+    VIEW_MILESTONE_THRESHOLDS.forEach(threshold => {
+      if (rows.length >= threshold) {
+        milestones.push({ threshold, date: rows[threshold - 1].created_at });
+      }
+    });
+    return milestones;
+  } catch (e) {
+    console.warn('Could not compute view milestones:', e.message);
+    return [];
+  }
+}
+
+// ===== FETCH THE creators ROW =====
+async function loadCreatorRecord() {
+  try {
+    const { data, error } = await supabase
+      .from('creators')
+      .select('is_founder, is_verified, is_creator_verified, is_journalist, is_educator, journalist_metadata')
+      .eq('id', window.creatorId)
+      .maybeSingle();
+    if (error) throw error;
+    window.creatorRecord = data || null;
+  } catch (e) {
+    console.warn('Could not load creators row (may not exist for this user yet):', e.message);
+    window.creatorRecord = null;
+  }
+}
+
 // ===== PHASE 5: LOAD CONTENT WITH ENGAGEMENT STATS =====
 async function loadContentWithEngagementStats(creatorId, limit = 50) {
 const { data, error } = await supabase
@@ -137,6 +233,7 @@ live_views,
 favorites_count,
 comments_count,
 shares_count,
+is_bantu_original,
 user_profiles!user_id (
 id,
 full_name,
@@ -147,6 +244,7 @@ content_engagement_stats (
 total_views,
 total_likes,
 total_comments,
+total_shares,
 total_valid_views
 )
 `)
@@ -165,8 +263,10 @@ return (data || []).map(item => ({
 views_count: item.content_engagement_stats?.total_views || item.live_views || 0,
 likes_count: item.content_engagement_stats?.total_likes || 0,
 comments_count: item.content_engagement_stats?.total_comments || item.comments_count || 0,
+shares_count: item.content_engagement_stats?.total_shares || item.shares_count || 0,
 favorites_count: item.favorites_count || 0,
-valid_views_count: item.content_engagement_stats?.total_valid_views || 0
+valid_views_count: item.content_engagement_stats?.total_valid_views || 0,
+completion_rate: item.content_engagement_stats?.completion_rate || 0
 }));
 }
 
@@ -589,7 +689,7 @@ if (id) window.location.href = `content-detail.html?id=${id}`;
 });
 }
 
-// ===== TABS SETUP (UPDATED TO HANDLE ALL TABS) =====
+// ===== TABS SETUP =====
 function setupTabs() {
 const tabs = document.querySelectorAll('.channel-tab');
 const panels = document.querySelectorAll('.tab-panel');
@@ -608,7 +708,6 @@ tab.setAttribute('aria-selected', 'true');
 panels.forEach(panel => {
 if (panel.dataset.panel === target) {
 panel.hidden = false;
-// Trigger render for the specific tab
 if (target === 'home') renderHomeTab();
 else if (target === 'series') renderSeriesTab();
 else if (target === 'shorts') renderShortsTab();
@@ -636,7 +735,6 @@ function renderFeaturedCard() {
 const card = document.getElementById('featured-card');
 if (!card) return;
 
-// Find pinned content or most recent upload
 const pinned = window.creatorContent.find(c => c.is_pinned === true);
 const featured = pinned || (window.creatorContent.length > 0 ? window.creatorContent[0] : null);
 
@@ -680,7 +778,6 @@ const desktopRow = document.getElementById('world-row-desktop');
 
 if (!mobileRow && !desktopRow) return;
 
-// Get unique genres or content types
 const genres = [...new Set(window.creatorContent.map(c => c.genre || c.content_format || 'Other'))];
 const worldItems = genres.slice(0, 6).map(genre => ({
 label: genre,
@@ -712,7 +809,7 @@ renderItems(desktopRow);
 }
 }
 
-// ===== RENDER UPLOAD GRID (UPDATED TO USE HELPER) =====
+// ===== RENDER UPLOAD GRID =====
 function renderUploadGrid() {
 const grid = document.getElementById('upload-grid');
 const noContent = document.getElementById('no-content');
@@ -751,7 +848,6 @@ container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class
 return;
 }
 
-// Group by season (default to Season 1 if not specified in DB)
 const seasons = {};
 seriesContent.forEach(item => {
 const season = item.season_number || 1; 
@@ -816,7 +912,7 @@ attachUploadCardClicks(container);
 }
 
 // ==========================================================================
-// COMMUNITY TAB — Pulse Integration (FIXED: Removed poll_expires_at)
+// COMMUNITY TAB — Pulse Integration
 // ==========================================================================
 
 const ChannelPulse = {
@@ -834,8 +930,6 @@ const ChannelPulse = {
     feedEl.innerHTML = this.skeletonHTML();
 
     try {
-      // FIX: Removed 'poll_expires_at' from this select statement. 
-      // We get the expiration date from pulse_post_polls.ends_at instead.
       const { data: posts, error } = await supabase
         .from('pulse_posts')
         .select(`
@@ -943,7 +1037,6 @@ const ChannelPulse = {
   async preloadPollsFor(pollPosts) {
     for (const post of pollPosts) {
       try {
-        // 1. Fetch the poll configuration for this post
         const { data: poll, error: pollError } = await supabase
           .from('pulse_post_polls')
           .select('*')
@@ -955,20 +1048,17 @@ const ChannelPulse = {
           continue;
         }
 
-        // 2. Fetch the votes for this poll
         const { data: votes } = await supabase
           .from('pulse_poll_votes')
           .select('selected_option_index, user_id')
           .eq('poll_id', poll.id);
 
-        // Tally votes by index
         const voteCounts = {};
         const totalVotes = (votes || []).length;
         (votes || []).forEach(v => {
           voteCounts[v.selected_option_index] = (voteCounts[v.selected_option_index] || 0) + 1;
         });
 
-        // Check if current user voted
         const userVote = window.currentUser
           ? (votes || []).find(v => v.user_id === window.currentUser.id)
           : null;
@@ -976,11 +1066,11 @@ const ChannelPulse = {
         this.pollCache[post.id] = {
           pollId: poll.id,
           question: poll.question,
-          options: poll.options, // Your JSONB array
+          options: poll.options,
           voteCounts,
           totalVotes,
           userVoteIndex: userVote ? userVote.selected_option_index : null,
-          expiresAt: poll.ends_at // Correctly pulling from pulse_post_polls.ends_at
+          expiresAt: poll.ends_at
         };
       } catch (e) {
         console.warn(`Could not load poll for post ${post.id}:`, e);
@@ -1061,7 +1151,6 @@ const ChannelPulse = {
     const expired = pollData.expiresAt ? new Date(pollData.expiresAt) < new Date() : false;
     const colors = ['#5DCAA5', '#7F77DD', '#F0997B', '#EF9F27'];
 
-    // pollData.options is a JSONB array. This safely handles both string arrays ["A", "B"] and object arrays [{"text": "A"}]
     const rows = pollData.options.map((opt, index) => {
       const optLabel = typeof opt === 'string' ? opt : (opt.text || opt.label || `Option ${index + 1}`);
       const count = pollData.voteCounts[index] || 0;
@@ -1117,7 +1206,6 @@ const ChannelPulse = {
     if (pollData.userVoteIndex !== null) { showToast('You already voted', 'info'); return; }
 
     try {
-      // Insert into your existing pulse_poll_votes table
       const { error } = await supabase.from('pulse_poll_votes').insert({
         poll_id: pollData.pollId,
         user_id: window.currentUser.id,
@@ -1125,17 +1213,14 @@ const ChannelPulse = {
       });
       if (error) throw error;
 
-      // Update local cache instantly for snappy UI
       pollData.voteCounts[optionIndex] = (pollData.voteCounts[optionIndex] || 0) + 1;
       pollData.totalVotes++;
       pollData.userVoteIndex = optionIndex;
 
-      // Re-render the poll UI to show results
       const card = document.querySelector(`.pulse-card[data-post-id="${postId}"]`);
       const pollContainer = card?.querySelector('.pulse-poll');
       if (pollContainer) {
         pollContainer.outerHTML = this.buildPollHTML(postId);
-        // Re-attach click listeners (though they will be locked now)
         card.querySelectorAll('.pulse-poll-option:not(.is-locked)').forEach(el => {
           el.addEventListener('click', () => this.castPollVote(postId, Number(el.dataset.optionIndex)));
         });
@@ -1287,8 +1372,7 @@ const ChannelPulse = {
   }
 };
 
-// ===== REAL LEADERBOARD — aggregated from reactions + comments + reposts
-// on THIS creator's pulse posts, replacing the comments-only version =====
+// ===== REAL LEADERBOARD =====
 async function renderLeaderboardFromPulse(posts) {
   const board = document.getElementById('leaderboard');
   if (!board) return;
@@ -1353,82 +1437,286 @@ function renderCommunityTab() {
   ChannelPulse.load();
 }
 
-// ===== RENDER ABOUT TAB =====
-function renderAboutTab() {
-const bioText = document.getElementById('about-bio-text');
-const joined = document.getElementById('about-joined');
-const totalViews = document.getElementById('about-total-views');
-const totalUploads = document.getElementById('about-total-uploads');
-const streak = document.getElementById('about-streak');
-const originals = document.getElementById('about-originals');
-const timeline = document.getElementById('journey-timeline');
+// ==========================================================================
+// ABOUT TAB — REAL DATA
+// ==========================================================================
 
-if (bioText && window.creatorProfile) {
-bioText.textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories.';
+// ===== IDENTITY CARD =====
+function renderAboutIdentity() {
+  const profile = window.creatorProfile || {};
+  const record = window.creatorRecord || {};
+
+  const bioText = document.getElementById('about-bio-text');
+  if (bioText) bioText.textContent = profile.bio || 'This creator has not written a bio yet.';
+
+  const missionEl = document.getElementById('about-mission-text');
+  const mission = profile.creator_mission || profile.mission || profile.quote || null;
+  if (missionEl) {
+    if (mission) { missionEl.textContent = mission; missionEl.style.display = 'block'; }
+    else missionEl.style.display = 'none';
+  }
+
+  const badgesContainer = document.getElementById('about-badges');
+  if (badgesContainer) {
+    const badges = [];
+    if (record.is_founder) badges.push({ cls: 'founder', icon: 'fa-crown', label: 'Founder' });
+    if (record.is_verified || record.is_creator_verified) badges.push({ cls: 'verified', icon: 'fa-circle-check', label: 'Verified creator' });
+    if (record.is_journalist) badges.push({ cls: 'journalist', icon: 'fa-newspaper', label: 'Journalist' });
+    if (record.is_educator) badges.push({ cls: 'educator', icon: 'fa-graduation-cap', label: 'Educator' });
+
+    if (badges.length > 0) {
+      badgesContainer.innerHTML = badges.map(b =>
+        `<span class="about-badge-chip ${b.cls}"><i class="fas ${b.icon}"></i>${escapeHtml(b.label)}</span>`
+      ).join('');
+      badgesContainer.style.display = 'flex';
+    } else {
+      badgesContainer.style.display = 'none';
+    }
+  }
+
+  const joinedText = document.getElementById('about-joined-text');
+  if (joinedText) {
+    const date = profile.created_at ? new Date(profile.created_at) : null;
+    joinedText.textContent = date
+      ? `Joined Bantu Stream Connect in ${date.toLocaleString('default', { month: 'long', year: 'numeric' })}`
+      : 'Join date unavailable';
+  }
+
+  const locationItem = document.getElementById('about-location-item');
+  const locationText = document.getElementById('about-location-text');
+  if (locationItem && locationText) {
+    if (profile.location) { locationText.textContent = profile.location; locationItem.style.display = 'inline-flex'; }
+    else locationItem.style.display = 'none';
+  }
+
+  const linksRow = document.getElementById('about-links-row');
+  const websiteLink = document.getElementById('about-website-link');
+  const websiteText = document.getElementById('about-website-text');
+  const scheduleChip = document.getElementById('about-schedule-chip');
+  const scheduleText = document.getElementById('about-schedule-text');
+  let hasLinks = false;
+
+  if (profile.website_url && websiteLink && websiteText) {
+    websiteLink.href = profile.website_url;
+    websiteText.textContent = profile.website_url.replace(/^https?:\/\//, '');
+    websiteLink.style.display = 'inline-flex';
+    hasLinks = true;
+  } else if (websiteLink) websiteLink.style.display = 'none';
+
+  if (profile.upload_schedule && scheduleChip && scheduleText) {
+    scheduleText.textContent = profile.upload_schedule;
+    scheduleChip.style.display = 'inline-flex';
+    hasLinks = true;
+  } else if (scheduleChip) scheduleChip.style.display = 'none';
+
+  if (linksRow) linksRow.style.display = hasLinks ? 'flex' : 'none';
+
+  const tagsRow = document.getElementById('about-tags-row');
+  if (tagsRow) {
+    const tags = profile.content_categories && profile.content_categories.length > 0
+      ? profile.content_categories
+      : (profile.interests ? profile.interests.split(',').map(t => t.trim()).filter(Boolean) : []);
+    if (tags.length > 0) {
+      tagsRow.innerHTML = tags.map(t => `<span class="about-tag-chip">${escapeHtml(t)}</span>`).join('');
+      tagsRow.style.display = 'flex';
+    } else {
+      tagsRow.style.display = 'none';
+    }
+  }
+
+  const socialsRow = document.getElementById('about-socials-row');
+  if (socialsRow) {
+    let socials = {};
+    try { socials = typeof profile.social_links === 'string' ? JSON.parse(profile.social_links) : (profile.social_links || {}); } catch { socials = {}; }
+    const iconMap = { instagram: 'fa-instagram', twitter: 'fa-x-twitter', youtube: 'fa-youtube', tiktok: 'fa-tiktok', facebook: 'fa-facebook' };
+    const entries = Object.entries(socials).filter(([, url]) => url);
+    if (entries.length > 0) {
+      socialsRow.innerHTML = entries.map(([platform, url]) =>
+        `<a href="${escapeHtml(url)}" target="_blank" rel="noopener"><i class="fab ${iconMap[platform] || 'fa-link'}"></i></a>`
+      ).join('');
+      socialsRow.style.display = 'flex';
+    } else {
+      socialsRow.style.display = 'none';
+    }
+  }
 }
 
-if (joined && window.creatorProfile) {
-const date = window.creatorProfile.created_at ? new Date(window.creatorProfile.created_at) : new Date();
-const location = window.creatorProfile.location || 'Johannesburg, South Africa';
-joined.textContent = `Joined Bantu Stream Connect · ${date.toLocaleString('default', { month: 'long', year: 'numeric' })} · ${location}`;
+// ===== STATS GRID =====
+function renderAboutStats() {
+  const content = window.creatorContent || [];
+
+  const totalViewsEl = document.getElementById('about-total-views');
+  if (totalViewsEl) totalViewsEl.textContent = formatNumber(content.reduce((s, c) => s + (c.views_count || 0), 0));
+
+  const totalUploadsEl = document.getElementById('about-total-uploads');
+  if (totalUploadsEl) totalUploadsEl.textContent = content.length;
+
+  const streak = computeUploadStreak(content);
+  window.streakCount = streak;
+  const streakEl = document.getElementById('about-streak');
+  if (streakEl) streakEl.textContent = streak;
+
+  const originalsEl = document.getElementById('about-originals');
+  if (originalsEl) originalsEl.textContent = content.filter(c => c.is_bantu_original === true).length;
+
+  const completionEl = document.getElementById('about-completion-rate');
+  if (completionEl) {
+    const withRates = content.filter(c => typeof c.completion_rate === 'number');
+    const avg = withRates.length > 0 ? withRates.reduce((s, c) => s + c.completion_rate, 0) / withRates.length : 0;
+    completionEl.textContent = `${Math.round(avg * 100)}%`;
+  }
+
+  const engagementEl = document.getElementById('about-engagement-total');
+  if (engagementEl) {
+    const total = content.reduce((s, c) =>
+      s + (c.likes_count || 0) + (c.comments_count || 0) + (c.shares_count || 0) + (c.favorites_count || 0), 0);
+    engagementEl.textContent = formatNumber(total);
+  }
 }
 
-if (totalViews) {
-const sum = window.creatorContent.reduce((s, c) => s + (c.views_count || 0), 0);
-totalViews.textContent = formatNumber(sum);
+// ===== CONTENT MIX =====
+function renderAboutContentMix() {
+  const bar = document.getElementById('content-mix-bar');
+  const legend = document.getElementById('content-mix-legend');
+  if (!bar || !legend) return;
+
+  const mix = computeContentMixReal(window.creatorContent || []);
+  if (mix.length === 0) {
+    bar.innerHTML = '';
+    legend.innerHTML = '<span style="color:var(--text-muted);">No content published yet</span>';
+    return;
+  }
+
+  bar.innerHTML = mix.map(m => `<div style="width:${m.pct}%;background:${m.meta.color};"></div>`).join('');
+  legend.innerHTML = mix.map(m =>
+    `<span><span class="swatch" style="background:${m.meta.color};"></span>${escapeHtml(m.meta.label)} ${m.pct}%</span>`
+  ).join('');
 }
 
-if (totalUploads) {
-totalUploads.textContent = window.creatorContent.length;
+// ===== COMPUTED INSIGHTS =====
+function renderAboutInsights() {
+  const card = document.getElementById('about-insights-card');
+  const list = document.getElementById('about-insights-list');
+  if (!card || !list) return;
+
+  const content = window.creatorContent || [];
+  if (content.length < 2) { card.style.display = 'none'; return; }
+
+  const insights = [];
+
+  const mix = computeContentMixReal(content);
+  if (mix.length > 0) {
+    insights.push({
+      icon: 'fa-chart-pie',
+      text: `${mix[0].meta.label} makes up ${mix[0].pct} percent of this creator's uploads.`
+    });
+  }
+
+  const sortedDates = [...content]
+    .map(c => new Date(c.created_at))
+    .sort((a, b) => a - b);
+  if (sortedDates.length >= 3) {
+    const gaps = [];
+    for (let i = 1; i < sortedDates.length; i++) {
+      gaps.push((sortedDates[i] - sortedDates[i - 1]) / 86400000);
+    }
+    const avgGap = gaps.reduce((s, g) => s + g, 0) / gaps.length;
+    if (avgGap < 1.5) {
+      insights.push({ icon: 'fa-bolt', text: 'This creator publishes new content almost every day.' });
+    } else {
+      insights.push({ icon: 'fa-calendar-check', text: `New uploads land roughly every ${Math.round(avgGap)} days.` });
+    }
+  }
+
+  const topContent = [...content].sort((a, b) => (b.views_count || 0) - (a.views_count || 0))[0];
+  if (topContent && topContent.views_count > 0) {
+    insights.push({
+      icon: 'fa-fire',
+      text: `The most watched upload is ${escapeHtml(truncateText(topContent.title || 'an untitled upload', 60))}, with ${formatNumber(topContent.views_count)} views.`
+    });
+  }
+
+  if (insights.length === 0) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  list.innerHTML = insights.map(i => `
+    <div class="about-insight-row"><i class="fas ${i.icon}"></i><span>${i.text}</span></div>
+  `).join('');
 }
 
-if (streak) {
-streak.textContent = window.streakCount || Math.floor(Math.random() * 30) + 1;
+// ===== JOURNEY TIMELINE =====
+async function renderAboutJourney() {
+  const timeline = document.getElementById('journey-timeline');
+  const emptyState = document.getElementById('journey-empty');
+  if (!timeline) return;
+
+  const content = window.creatorContent || [];
+  const entries = [];
+
+  const sortedByDate = [...content].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  if (sortedByDate.length > 0) {
+    const first = sortedByDate[0];
+    entries.push({
+      date: new Date(first.created_at),
+      title: 'First upload',
+      desc: truncateText(first.title || 'This creator published their first piece of content.', 70),
+      color: '#5DCAA5'
+    });
+  }
+
+  const firstOriginal = sortedByDate.find(c => c.is_bantu_original === true);
+  if (firstOriginal) {
+    entries.push({
+      date: new Date(firstOriginal.created_at),
+      title: 'First Bantu Original',
+      desc: truncateText(firstOriginal.title || 'Their first title recognized as a Bantu Original.', 70),
+      color: '#7F77DD'
+    });
+  }
+
+  const viewMilestones = await computeViewMilestones(window.creatorId);
+  viewMilestones.forEach(m => {
+    entries.push({
+      date: new Date(m.date),
+      title: `Reached ${formatNumber(m.threshold)} views`,
+      desc: 'A view count milestone across all of this creator\'s content.',
+      color: 'var(--accent-streak)'
+    });
+  });
+
+  entries.sort((a, b) => a.date - b.date);
+
+  if (entries.length === 0) {
+    if (emptyState) emptyState.style.display = 'block';
+    timeline.querySelectorAll('.journey-item').forEach(el => el.remove());
+    return;
+  }
+  if (emptyState) emptyState.style.display = 'none';
+
+  timeline.innerHTML = entries.map((e, idx) => `
+    <div class="journey-item">
+      <div class="journey-dot-col">
+        <div class="journey-dot" style="background:${e.color};"></div>
+        ${idx < entries.length - 1 ? '<div class="journey-line"></div>' : ''}
+      </div>
+      <div>
+        <span class="journey-date">${e.date.toLocaleString('default', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+        <p class="journey-title">${escapeHtml(e.title)}</p>
+        <p class="journey-desc">${escapeHtml(e.desc)}</p>
+      </div>
+    </div>
+  `).join('');
 }
 
-if (originals) {
-const originalsCount = window.creatorContent.filter(c => c.is_original === true || c.content_format === 'Bantu Original').length;
-originals.textContent = originalsCount || Math.floor(Math.random() * 3) + 1;
-}
-
-// Update timeline
-if (timeline) {
-const milestones = [
-{ date: 'March 2023', title: 'First upload', desc: 'Started the journey' },
-{ date: 'January 2024', title: 'First original', desc: 'Content recognized' },
-{ date: 'June 2025', title: '100K milestone', desc: 'Growing the community' }
-];
-
-if (window.creatorContent.length > 0 && window.creatorProfile?.created_at) {
-const startDate = new Date(window.creatorProfile.created_at);
-milestones[0] = {
-date: startDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
-title: 'First upload',
-desc: `Started creating on Bantu Stream Connect`
-};
-}
-
-if (window.creatorContent.length > 10) {
-milestones[1] = { date: '2024', title: '10+ uploads', desc: 'Building the library' };
-}
-
-if (window.connectorCount > 100) {
-milestones[2] = { date: '2025', title: '100+ connectors', desc: 'Growing the circle' };
-}
-
-timeline.innerHTML = milestones.map((m, index) => {
-const colors = ['#5DCAA5', '#7F77DD', 'var(--accent-streak)'];
-return `
-<div class="journey-item">
-<div class="journey-dot" style="background:${colors[index % colors.length]};"></div>
-<div>
-<p class="journey-item__title">${escapeHtml(m.date)} — ${escapeHtml(m.title)}</p>
-<p class="journey-item__desc">${escapeHtml(m.desc)}</p>
-</div>
-</div>
-`;
-}).join('');
-}
+// ===== MASTER ABOUT RENDER =====
+async function renderAboutTab() {
+  if (!window.creatorRecord) await loadCreatorRecord();
+  renderAboutIdentity();
+  renderAboutStats();
+  renderAboutContentMix();
+  renderAboutInsights();
+  await renderAboutJourney();
 }
 
 // ===== ANALYTICS FUNCTIONS =====
@@ -2306,16 +2594,14 @@ placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"
 if (sidebarAvatar) sidebarAvatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
 }
 
-// Update creator profile section
 if (window.creatorProfile) {
 const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
 if (creatorName) creatorName.textContent = displayName;
 if (creatorUsername) creatorUsername.textContent = `@${window.creatorProfile.username || 'creator'}`;
 if (creatorInitials) creatorInitials.textContent = getInitials(displayName);
 if (connectorDisplay) connectorDisplay.textContent = formatNumber(window.connectorCount || 0);
-if (streakCountEl) streakCountEl.textContent = window.streakCount || Math.floor(Math.random() * 30) + 1;
+if (streakCountEl) streakCountEl.textContent = window.streakCount || 0;
 
-// Update avatar
 if (creatorAvatar && window.creatorProfile.avatar_url) {
 const avatarUrl = fixMediaUrl(window.creatorProfile.avatar_url);
 creatorAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`;
@@ -2465,7 +2751,6 @@ return;
 
 window.creatorProfile = profile;
 
-// Load banner
 if (profile.channel_banner_url) {
 setBannerImage(profile.channel_banner_url);
 }
@@ -2502,6 +2787,8 @@ window.playlists = await loadPlaylistsWithItems(window.creatorId);
 const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
 window.achievements = badges || [];
 
+await loadCreatorRecord();
+
 console.log('✅ Creator data loaded:', {
 profile: window.creatorProfile,
 contentCount: window.creatorContent.length,
@@ -2510,13 +2797,11 @@ isConnected: window.isConnected,
 playlists: window.playlists.length
 });
 
-// Update all UI
 updateProfileUI();
 updateConnectButton();
 renderHomeTab();
 renderAboutTab();
 
-// Hide loading screen
 const loading = document.getElementById('loading');
 const app = document.getElementById('app');
 if (loading) loading.style.display = 'none';
