@@ -743,6 +743,9 @@ card.style.display = 'none';
 return;
 }
 
+const isShort = featured.content_format === 'short';
+card.classList.toggle('featured-card--vertical', isShort);
+
 card.style.display = 'block';
 card.style.backgroundImage = `url(${fixMediaUrl(featured.thumbnail_url || 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&h=450&fit=crop')})`;
 
@@ -767,8 +770,11 @@ meta.textContent = `${formatNumber(featured.views_count || 0)} views · ${format
 }
 
 card.onclick = () => {
-window.location.href = `content-detail.html?id=${featured.id}`;
+window.location.href = isShort
+? `shorts-detail.html?id=${featured.id}`
+: `content-detail.html?id=${featured.id}`;
 };
+card.onkeydown = (e) => { if (e.key === 'Enter') card.onclick(); };
 }
 
 // ===== RENDER WORLD ROW =====
@@ -830,8 +836,54 @@ if (!a.is_pinned && b.is_pinned) return 1;
 return new Date(b.created_at) - new Date(a.created_at);
 }).slice(0, 6);
 
-grid.innerHTML = sorted.map(item => renderUploadCardHTML(item)).join('');
+grid.innerHTML = sorted.map(item => buildUploadCardHTML(item)).join('');
 attachUploadCardClicks(grid);
+}
+
+// ===== REPLACES buildUploadCardHTML() =====
+// Adds a vertical treatment for shorts so a 9:16 thumbnail never gets
+// squashed into the 16:9 box used by everything else on Home. Other
+// content types are completely unchanged.
+function buildUploadCardHTML(item) {
+  const typeKey = normalizeContentType(item);
+  const color = getTypeColor(typeKey);
+  const textColor = getTypeTextColor(typeKey);
+  const label = typeDisplayLabel(typeKey);
+  const originalRibbon = item.is_original ? '<span class="upload-card__badge" style="right:5px;left:auto;background:var(--warm-gold);color:#1a1200;">Original</span>' : '';
+  const isShort = item.content_format === 'short';
+  const thumbClass = isShort ? 'upload-card__thumb upload-card__thumb--vertical' : 'upload-card__thumb';
+
+  return `
+    <div class="upload-card ${isShort ? 'upload-card--vertical' : ''}" data-content-id="${item.id}" tabindex="0" role="link">
+      <div class="${thumbClass}" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop')});">
+        <span class="upload-card__badge" style="background:${color};color:${textColor};">${escapeHtml(label)}</span>
+        ${originalRibbon}
+        ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
+      </div>
+      <p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
+      <p class="upload-card__meta">${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
+    </div>
+  `;
+}
+
+function normalizeContentType(item) {
+  return item.content_format || item.media_type || 'long_form';
+}
+
+function getTypeColor(typeKey) {
+  const meta = CONTENT_FORMAT_META[typeKey];
+  return meta ? meta.color : '#1D4ED8';
+}
+
+function getTypeTextColor(typeKey) {
+  const darkBg = ['#1D4ED8', '#8B5CF6', '#EC4899', '#EF4444'];
+  const color = getTypeColor(typeKey);
+  return darkBg.includes(color) ? 'white' : '#1a1200';
+}
+
+function typeDisplayLabel(typeKey) {
+  const meta = CONTENT_FORMAT_META[typeKey];
+  return meta ? meta.label : typeKey.charAt(0).toUpperCase() + typeKey.slice(1);
 }
 
 // ==========================================================================
@@ -953,22 +1005,59 @@ function getCollectionThumbnail(playlist) {
   return 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=225&fit=crop';
 }
 
-// ===== NEW TAB: RENDER SHORTS =====
+// ===== SHORTS TAB — REAL DATA =====
 function renderShortsTab() {
-const container = document.getElementById('shorts-content');
-if (!container) return;
+  const grid = document.getElementById('shorts-content');
+  const empty = document.getElementById('shorts-empty');
+  const emptyText = document.getElementById('shorts-empty-text');
+  if (!grid) return;
 
-const shortsContent = window.creatorContent.filter(c => 
-c.content_format === 'Short' || c.media_type === 'short' || c.media_type === 'shorts'
-);
+  const shorts = (window.creatorContent || []).filter(c => c.content_format === 'short');
 
-if (shortsContent.length === 0) {
-container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-bolt"></i></div><h3>No Shorts Yet</h3><p>This creator hasn\'t uploaded any shorts.</p></div>';
-return;
+  if (shorts.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (emptyText) {
+      emptyText.textContent = window.isOwner
+        ? 'You have not published any shorts yet'
+        : 'This creator has not published any shorts';
+    }
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const sorted = [...shorts].sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  grid.innerHTML = sorted.map(item => buildShortCardHTML(item)).join('');
+
+  grid.querySelectorAll('.short-card').forEach(card => {
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'link');
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `shorts-detail.html?id=${id}`;
+    });
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') card.click(); });
+  });
 }
 
-container.innerHTML = shortsContent.map(item => renderUploadCardHTML(item)).join('');
-attachUploadCardClicks(container);
+function buildShortCardHTML(item) {
+  const thumbUrl = fixMediaUrl(item.thumbnail_url || '');
+  const plays = formatNumber(item.views_count || 0);
+
+  return `
+    <div class="short-card" data-content-id="${item.id}">
+      <div class="short-card__thumb" style="${thumbUrl ? `background-image:url(${thumbUrl});` : ''}">
+        ${item.is_pinned ? '<i class="fas fa-thumbtack short-card__pin"></i>' : ''}
+        <div class="short-card__plays"><i class="fas fa-play"></i>${plays}</div>
+      </div>
+      <p class="short-card__title">${escapeHtml(item.title || 'Untitled short')}</p>
+    </div>
+  `;
 }
 
 // ===== NEW TAB: RENDER PODCAST =====
