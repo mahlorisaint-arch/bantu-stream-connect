@@ -472,20 +472,23 @@ never Watch Later or Liked Videos.
   </div>
 </section>
 
-<!-- ===== SHORTS PANEL ===== -->
-<section class="tab-panel" data-panel="shorts" hidden role="tabpanel">
-<div class="channel-body">
-<div class="channel-main">
-<p class="section-label">Shorts</p>
-<div class="upload-grid" id="shorts-content"></div>
-</div>
-<aside class="channel-sidebar">
-<div class="sidebar-panel">
-<p class="sidebar-panel-title">About shorts</p>
-<p style="font-size:12px;color:var(--text-secondary);">Quick, snackable content from the creator.</p>
-</div>
-</aside>
-</div>
+<!-- ==========================================================================
+SHORTS TAB — HTML PATCH
+Deliberately minimal: no filter row, no sort dropdown, no stats
+summary, no duplicate reel view. One clean vertical grid.
+========================================================================== -->
+<section class="tab-panel" data-panel="shorts" id="panel-shorts" role="tabpanel" aria-labelledby="tab-shorts" hidden>
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Shorts</p>
+      <div class="shorts-grid" id="shorts-content"></div>
+      <div id="shorts-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fas fa-bolt"></i></div>
+        <h3>No shorts yet</h3>
+        <p id="shorts-empty-text">This creator has not published any shorts</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ===== PODCAST PANEL ===== -->
