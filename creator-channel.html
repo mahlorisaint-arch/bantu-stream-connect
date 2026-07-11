@@ -401,52 +401,121 @@ These were only used by the playlist builder which is now removed.
 </div>
 </div>
 
-<!-- ===== TABS ===== -->
+<!-- ==========================================================================
+TABS BAR — reordered, renamed, Podcast removed
+Order: Home, Series, Film, Music, Community pulse, Shorts, About
+========================================================================== -->
+
 <div class="channel-tabs" id="channel-tabs" role="tablist">
-<button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
-<button class="channel-tab" data-tab="series" role="tab" aria-selected="false">Series</button>
-<button class="channel-tab" data-tab="shorts" role="tab" aria-selected="false">Shorts</button>
-<button class="channel-tab" data-tab="podcast" role="tab" aria-selected="false">Podcast</button>
-<button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community</button>
-<button class="channel-tab" data-tab="about" role="tab" aria-selected="false">About</button>
+  <button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
+  <button class="channel-tab" data-tab="series" role="tab" aria-selected="false">Series</button>
+  <button class="channel-tab" data-tab="film" role="tab" aria-selected="false">Film</button>
+  <button class="channel-tab" data-tab="music" role="tab" aria-selected="false">Music</button>
+  <button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community pulse</button>
+  <button class="channel-tab" data-tab="shorts" role="tab" aria-selected="false">Shorts</button>
+  <button class="channel-tab" data-tab="about" role="tab" aria-selected="false">About</button>
 </div>
 
-<!-- ===== HOME PANEL ===== -->
+<!-- ==========================================================================
+HOME PANEL — reordered into: Featured, Recent uploads, Shorts,
+Playlist, Film, Community pulse, Music. Each preview row below
+"Recent uploads" is a horizontal scroll of up to 8 items with a
+"See all" link that just clicks the corresponding tab button, so
+there's a single source of truth for each tab's real render logic
+— Home never duplicates query logic, it only previews it.
+Sidebar (Creator's world / Top supporter) is untouched.
+========================================================================== -->
+
 <section class="tab-panel" data-panel="home" role="tabpanel">
-<div class="channel-body">
-<div class="channel-main">
-<div class="featured-card" id="featured-card" style="display: none;">
-<span class="featured-badge" id="featured-badge">New</span>
-<span class="featured-duration" id="featured-duration">18:42</span>
-<div class="featured-card__caption">
-<p class="upload-card__title" id="featured-title">Featured Content</p>
-<span class="upload-card__meta" id="featured-meta">0 views · Just now</span>
-</div>
-</div>
-<div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;"></div>
-<p class="section-label">Recent uploads</p>
-<div class="upload-grid" id="upload-grid"></div>
-<div id="no-content" class="empty-state" style="display: none;">
-<div class="empty-icon"><i class="fas fa-video-slash"></i></div>
-<h3>No Uploads Yet</h3>
-<p>This creator hasn't uploaded any content</p>
-</div>
-</div>
-<aside class="channel-sidebar" id="channel-sidebar">
-<div class="sidebar-panel" id="world-panel">
-<p class="sidebar-panel-title">Creator's world</p>
-<div class="world-row" id="world-row-desktop"></div>
-</div>
-<div class="sidebar-panel" id="top-supporter-panel">
-<p class="sidebar-panel-title">Top supporter this week</p>
-<div class="top-supporter" id="top-supporter"></div>
-</div>
-</aside>
-</div>
+  <div class="channel-body">
+    <div class="channel-main">
+
+      <!-- 1. Featured video / New video -->
+      <div class="featured-card" id="featured-card" style="display: none;" tabindex="0" role="link">
+        <span class="featured-badge" id="featured-badge">New</span>
+        <span class="featured-duration" id="featured-duration">18:42</span>
+        <div class="media-hover-play"><i class="fas fa-play"></i></div>
+        <div class="featured-card__caption">
+          <p class="upload-card__title" id="featured-title">Featured Content</p>
+          <span class="upload-card__meta" id="featured-meta">0 views · Just now</span>
+        </div>
+      </div>
+
+      <div class="world-row sidebar-only-mobile" id="world-row-mobile" style="margin-bottom:20px;display:none;"></div>
+
+      <!-- 2. Recent uploads -->
+      <div class="home-section-header">
+        <p class="section-label">Recent uploads</p>
+      </div>
+      <div class="upload-grid" id="upload-grid"></div>
+      <div id="no-content" class="empty-state" style="display: none;">
+        <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
+        <h3>No Uploads Yet</h3>
+        <p>This creator hasn't uploaded any content</p>
+      </div>
+
+      <!-- 3. Shorts preview -->
+      <div class="home-row-section" id="home-shorts-section" style="display:none;">
+        <div class="home-section-header">
+          <p class="section-label">Shorts</p>
+          <button class="home-see-all-btn" data-see-all="shorts">See all</button>
+        </div>
+        <div class="home-preview-row home-preview-row--shorts" id="home-shorts-row"></div>
+      </div>
+
+      <!-- 4. Playlist preview -->
+      <div class="home-row-section" id="home-playlist-section" style="display:none;">
+        <div class="home-section-header">
+          <p class="section-label">Playlists</p>
+          <button class="home-see-all-btn" data-see-all="series">See all</button>
+        </div>
+        <div class="home-preview-row" id="home-playlist-row"></div>
+      </div>
+
+      <!-- 5. Film preview -->
+      <div class="home-row-section" id="home-film-section" style="display:none;">
+        <div class="home-section-header">
+          <p class="section-label">Film</p>
+          <button class="home-see-all-btn" data-see-all="film">See all</button>
+        </div>
+        <div class="home-preview-row" id="home-film-row"></div>
+      </div>
+
+      <!-- 6. Community pulse preview -->
+      <div class="home-row-section" id="home-pulse-section" style="display:none;">
+        <div class="home-section-header">
+          <p class="section-label">Community pulse</p>
+          <button class="home-see-all-btn" data-see-all="community">See all</button>
+        </div>
+        <div id="home-pulse-row"></div>
+      </div>
+
+      <!-- 7. Music preview -->
+      <div class="home-row-section" id="home-music-section" style="display:none;">
+        <div class="home-section-header">
+          <p class="section-label">Music</p>
+          <button class="home-see-all-btn" data-see-all="music">See all</button>
+        </div>
+        <div class="home-preview-row" id="home-music-row"></div>
+      </div>
+
+    </div>
+
+    <aside class="channel-sidebar" id="channel-sidebar">
+      <div class="sidebar-panel" id="world-panel">
+        <p class="sidebar-panel-title">Creator's world</p>
+        <div class="world-row" id="world-row-desktop"></div>
+      </div>
+      <div class="sidebar-panel" id="top-supporter-panel">
+        <p class="sidebar-panel-title">Top supporter this week</p>
+        <div class="top-supporter" id="top-supporter"></div>
+      </div>
+    </aside>
+  </div>
 </section>
 
 <!-- ==========================================================================
-SERIES PANEL — NEW: Playlist gallery
+SERIES PANEL — Playlist gallery
 No playlist builder here — this tab is read only display of the
 creator's published playlists (series, albums, podcasts), the same
 way a YouTube channel's Playlists tab only shows uploaded playlists,
@@ -473,8 +542,41 @@ never Watch Later or Liked Videos.
 </section>
 
 <!-- ==========================================================================
-SHORTS TAB — HTML PATCH
-Deliberately minimal: no filter row, no sort dropdown, no stats
+FILM PANEL — new tab
+========================================================================== -->
+<section class="tab-panel" data-panel="film" id="panel-film" role="tabpanel" aria-labelledby="tab-film" hidden>
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Film</p>
+      <div class="upload-grid" id="film-content"></div>
+      <div id="film-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fas fa-clapperboard"></i></div>
+        <h3>No films yet</h3>
+        <p id="film-empty-text">This creator has not published any films or documentaries</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+MUSIC PANEL — new tab
+========================================================================== -->
+<section class="tab-panel" data-panel="music" id="panel-music" role="tabpanel" aria-labelledby="tab-music" hidden>
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Music</p>
+      <div class="upload-grid" id="music-content"></div>
+      <div id="music-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fas fa-music"></i></div>
+        <h3>No music yet</h3>
+        <p id="music-empty-text">This creator has not published any music</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+SHORTS TAB — Deliberately minimal: no filter row, no sort dropdown, no stats
 summary, no duplicate reel view. One clean vertical grid.
 ========================================================================== -->
 <section class="tab-panel" data-panel="shorts" id="panel-shorts" role="tabpanel" aria-labelledby="tab-shorts" hidden>
@@ -491,23 +593,9 @@ summary, no duplicate reel view. One clean vertical grid.
   </div>
 </section>
 
-<!-- ===== PODCAST PANEL ===== -->
-<section class="tab-panel" data-panel="podcast" hidden role="tabpanel">
-<div class="channel-body">
-<div class="channel-main">
-<p class="section-label">Podcasts</p>
-<div class="upload-grid podcast-grid" id="podcast-content"></div>
-</div>
-<aside class="channel-sidebar">
-<div class="sidebar-panel">
-<p class="sidebar-panel-title">About podcasts</p>
-<p style="font-size:12px;color:var(--text-secondary);">Audio and video episodes from the creator.</p>
-</div>
-</aside>
-</div>
-</section>
-
-<!-- ===== COMMUNITY PANEL - UPDATED WITH PULSE ===== -->
+<!-- ==========================================================================
+COMMUNITY PANEL — Pulse integration
+========================================================================== -->
 <section class="tab-panel" data-panel="community" id="panel-community" role="tabpanel" aria-labelledby="tab-community" hidden>
   <div class="channel-body">
     <div class="channel-main community-main">
@@ -534,7 +622,9 @@ summary, no duplicate reel view. One clean vertical grid.
   </div>
 </section>
 
-<!-- ===== ABOUT PANEL - UPDATED WITH FULL REAL DATA ===== -->
+<!-- ==========================================================================
+ABOUT PANEL — Full real data implementation
+========================================================================== -->
 <section class="tab-panel" data-panel="about" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
   <div class="about-content">
 
