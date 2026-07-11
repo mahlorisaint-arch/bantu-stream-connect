@@ -21,6 +21,10 @@ window.currentTab = 'home';
 window.streakCount = 0;
 window.creatorRecord = null;
 
+// ===== CONTENT FORMAT CONSTANTS =====
+const FILM_FORMATS = ['film', 'documentary'];
+const MUSIC_FORMATS = ['album_track', 'music', 'music_video', 'song', 'track', 'audio'];
+
 // ===== HELPER FUNCTIONS =====
 function showToast(message, type = 'info') {
 const container = document.getElementById('toast-container');
@@ -655,29 +659,48 @@ document.body.style.overflow = 'hidden';
 }
 }
 
-// ===== HELPER FOR UPLOAD CARDS =====
-function renderUploadCardHTML(item, extraClass = '') {
-const type = item.content_format || item.media_type || 'Video';
-const badgeColors = {
-'Short': '#712B13',
-'Podcast': '#26215C',
-'Series': '#04342C',
-'Video': '#1D4ED8',
-'Music': '#EC4899',
-'Film': '#8B5CF6'
-};
-const color = badgeColors[type] || '#1D4ED8';
+// ===== BUILD UPLOAD CARD HTML WITH HOVER PLAY ICON =====
+function buildUploadCardHTML(item) {
+  const typeKey = normalizeContentType(item);
+  const color = getTypeColor(typeKey);
+  const textColor = getTypeTextColor(typeKey);
+  const label = typeDisplayLabel(typeKey);
+  const originalRibbon = item.is_bantu_original ? '<span class="upload-card__badge" style="right:5px;left:auto;background:var(--warm-gold);color:#1a1200;">Original</span>' : '';
+  const isShort = item.content_format === 'short';
+  const thumbClass = isShort ? 'upload-card__thumb upload-card__thumb--vertical' : 'upload-card__thumb';
 
-return `
-<div class="upload-card ${extraClass}" data-content-id="${item.id}">
-<div class="upload-card__thumb" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop')});">
-<span class="upload-card__badge" style="background:${color};color:white;">${escapeHtml(type)}</span>
-${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
-</div>
-<p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
-<p class="upload-card__meta">${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
-</div>
-`;
+  return `
+    <div class="upload-card ${isShort ? 'upload-card--vertical' : ''}" data-content-id="${item.id}" tabindex="0" role="link">
+      <div class="${thumbClass}" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop')});">
+        <span class="upload-card__badge" style="background:${color};color:${textColor};">${escapeHtml(label)}</span>
+        ${originalRibbon}
+        <div class="media-hover-play"><i class="fas fa-play"></i></div>
+        ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
+      </div>
+      <p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
+      <p class="upload-card__meta">${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
+    </div>
+  `;
+}
+
+function normalizeContentType(item) {
+  return item.content_format || item.media_type || 'long_form';
+}
+
+function getTypeColor(typeKey) {
+  const meta = CONTENT_FORMAT_META[typeKey];
+  return meta ? meta.color : '#1D4ED8';
+}
+
+function getTypeTextColor(typeKey) {
+  const darkBg = ['#1D4ED8', '#8B5CF6', '#EC4899', '#EF4444'];
+  const color = getTypeColor(typeKey);
+  return darkBg.includes(color) ? 'white' : '#1a1200';
+}
+
+function typeDisplayLabel(typeKey) {
+  const meta = CONTENT_FORMAT_META[typeKey];
+  return meta ? meta.label : typeKey.charAt(0).toUpperCase() + typeKey.slice(1);
 }
 
 function attachUploadCardClicks(container) {
@@ -689,7 +712,77 @@ if (id) window.location.href = `content-detail.html?id=${id}`;
 });
 }
 
-// ===== TABS SETUP =====
+// ===== BUILD SHORT CARD HTML WITH HOVER PLAY ICON =====
+function buildShortCardHTML(item) {
+  const thumbUrl = fixMediaUrl(item.thumbnail_url || '');
+  const plays = formatNumber(item.views_count || 0);
+
+  return `
+    <div class="short-card" data-content-id="${item.id}">
+      <div class="short-card__thumb" style="${thumbUrl ? `background-image:url(${thumbUrl});` : ''}">
+        ${item.is_pinned ? '<i class="fas fa-thumbtack short-card__pin"></i>' : ''}
+        <div class="media-hover-play"><i class="fas fa-play"></i></div>
+        <div class="short-card__plays"><i class="fas fa-play"></i>${plays}</div>
+      </div>
+      <p class="short-card__title">${escapeHtml(item.title || 'Untitled short')}</p>
+    </div>
+  `;
+}
+
+// ==========================================================================
+// FILM TAB
+// ==========================================================================
+
+function renderFilmTab() {
+  const grid = document.getElementById('film-content');
+  const empty = document.getElementById('film-empty');
+  const emptyText = document.getElementById('film-empty-text');
+  if (!grid) return;
+
+  const films = (window.creatorContent || []).filter(c => FILM_FORMATS.includes(c.content_format));
+
+  if (films.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (emptyText) emptyText.textContent = window.isOwner ? 'You have not published any films yet' : 'This creator has not published any films or documentaries';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const sorted = [...films].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  grid.innerHTML = sorted.map(item => buildUploadCardHTML(item)).join('');
+  attachUploadCardClicks(grid);
+}
+
+// ==========================================================================
+// MUSIC TAB
+// ==========================================================================
+
+function renderMusicTab() {
+  const grid = document.getElementById('music-content');
+  const empty = document.getElementById('music-empty');
+  const emptyText = document.getElementById('music-empty-text');
+  if (!grid) return;
+
+  const music = (window.creatorContent || []).filter(c => MUSIC_FORMATS.includes(c.content_format));
+
+  if (music.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (emptyText) emptyText.textContent = window.isOwner ? 'You have not published any music yet' : 'This creator has not published any music';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const sorted = [...music].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  grid.innerHTML = sorted.map(item => buildUploadCardHTML(item)).join('');
+  attachUploadCardClicks(grid);
+}
+
+// ==========================================================================
+// TABS SETUP
+// ==========================================================================
+
 function setupTabs() {
 const tabs = document.querySelectorAll('.channel-tab');
 const panels = document.querySelectorAll('.tab-panel');
@@ -710,8 +803,9 @@ if (panel.dataset.panel === target) {
 panel.hidden = false;
 if (target === 'home') renderHomeTab();
 else if (target === 'series') renderSeriesTab();
+else if (target === 'film') renderFilmTab();
+else if (target === 'music') renderMusicTab();
 else if (target === 'shorts') renderShortsTab();
-else if (target === 'podcast') renderPodcastTab();
 else if (target === 'community') renderCommunityTab();
 else if (target === 'about') renderAboutTab();
 } else {
@@ -723,11 +817,164 @@ window.currentTab = target;
 });
 }
 
-// ===== RENDER HOME TAB =====
+// ==========================================================================
+// HOME TAB — Renders all seven sections
+// ==========================================================================
+
 function renderHomeTab() {
 renderFeaturedCard();
 renderWorldRow();
 renderUploadGrid();
+renderHomeShortsRow();
+renderHomePlaylistRow();
+renderHomeFilmRow();
+renderHomePulseRow();
+renderHomeMusicRow();
+}
+
+// ===== HOME SHORTS ROW =====
+function renderHomeShortsRow() {
+  const section = document.getElementById('home-shorts-section');
+  const row = document.getElementById('home-shorts-row');
+  if (!section || !row) return;
+
+  const shorts = (window.creatorContent || [])
+    .filter(c => c.content_format === 'short')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 8);
+
+  if (shorts.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  row.innerHTML = shorts.map(item => buildShortCardHTML(item)).join('');
+  row.querySelectorAll('.short-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `shorts-detail.html?id=${id}`;
+    });
+  });
+}
+
+// ===== HOME PLAYLIST ROW =====
+function renderHomePlaylistRow() {
+  const section = document.getElementById('home-playlist-section');
+  const row = document.getElementById('home-playlist-row');
+  if (!section || !row) return;
+
+  const playlists = [...(window.playlists || [])]
+    .sort((a, b) => {
+      if (a.is_featured && !b.is_featured) return -1;
+      if (!a.is_featured && b.is_featured) return 1;
+      return new Date(b.created_at) - new Date(a.created_at);
+    })
+    .slice(0, 8);
+
+  if (playlists.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  row.innerHTML = playlists.map(p => buildCollectionCardHTML(p)).join('');
+  row.querySelectorAll('.collection-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.playlistId;
+      const type = card.dataset.playlistType;
+      window.location.href = `content-detail.html?playlist_id=${id}&type=${type}`;
+    });
+  });
+}
+
+// ===== HOME FILM ROW =====
+function renderHomeFilmRow() {
+  const section = document.getElementById('home-film-section');
+  const row = document.getElementById('home-film-row');
+  if (!section || !row) return;
+
+  const films = (window.creatorContent || [])
+    .filter(c => FILM_FORMATS.includes(c.content_format))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 8);
+
+  if (films.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  row.innerHTML = films.map(item => buildUploadCardHTML(item)).join('');
+  attachUploadCardClicks(row);
+}
+
+// ===== HOME MUSIC ROW =====
+function renderHomeMusicRow() {
+  const section = document.getElementById('home-music-section');
+  const row = document.getElementById('home-music-row');
+  if (!section || !row) return;
+
+  const music = (window.creatorContent || [])
+    .filter(c => MUSIC_FORMATS.includes(c.content_format))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 8);
+
+  if (music.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  row.innerHTML = music.map(item => buildUploadCardHTML(item)).join('');
+  attachUploadCardClicks(row);
+}
+
+// ===== HOME PULSE ROW (non-interactive teaser) =====
+async function renderHomePulseRow() {
+  const section = document.getElementById('home-pulse-section');
+  const row = document.getElementById('home-pulse-row');
+  if (!section || !row) return;
+
+  try {
+    const { data: posts, error } = await supabase
+      .from('pulse_posts')
+      .select(`
+        id, content, created_at,
+        user_profiles!creator_id ( full_name, username, avatar_url )
+      `)
+      .eq('creator_id', window.creatorId)
+      .order('is_pinned', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+
+    if (!posts || posts.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+
+    const post = posts[0];
+    const creator = post.user_profiles || {};
+    const name = creator.full_name || creator.username || 'Creator';
+    const avatar = creator.avatar_url ? fixMediaUrl(creator.avatar_url) : null;
+
+    row.innerHTML = `
+      <div class="home-pulse-teaser">
+        <div class="home-pulse-teaser__header">
+          <div class="home-pulse-teaser__avatar" style="${avatar ? `background-image:url(${avatar});` : ''}"></div>
+          <div>
+            <p class="home-pulse-teaser__name">${escapeHtml(name)}</p>
+            <span class="home-pulse-teaser__time">${formatTimeAgo(post.created_at)}</span>
+          </div>
+        </div>
+        <p class="home-pulse-teaser__content">${escapeHtml(post.content)}</p>
+      </div>
+    `;
+    row.querySelector('.home-pulse-teaser')?.addEventListener('click', () => {
+      document.querySelector('.channel-tab[data-tab="community"]')?.click();
+    });
+  } catch (e) {
+    console.warn('Could not load Home pulse teaser:', e.message);
+    section.style.display = 'none';
+  }
+}
+
+// ===== "SEE ALL" BUTTONS =====
+function setupHomeSeeAllButtons() {
+  document.querySelectorAll('.home-see-all-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.seeAll;
+      document.querySelector(`.channel-tab[data-tab="${target}"]`)?.click();
+    });
+  });
 }
 
 // ===== RENDER FEATURED CARD =====
@@ -838,52 +1085,6 @@ return new Date(b.created_at) - new Date(a.created_at);
 
 grid.innerHTML = sorted.map(item => buildUploadCardHTML(item)).join('');
 attachUploadCardClicks(grid);
-}
-
-// ===== REPLACES buildUploadCardHTML() =====
-// Adds a vertical treatment for shorts so a 9:16 thumbnail never gets
-// squashed into the 16:9 box used by everything else on Home. Other
-// content types are completely unchanged.
-function buildUploadCardHTML(item) {
-  const typeKey = normalizeContentType(item);
-  const color = getTypeColor(typeKey);
-  const textColor = getTypeTextColor(typeKey);
-  const label = typeDisplayLabel(typeKey);
-  const originalRibbon = item.is_original ? '<span class="upload-card__badge" style="right:5px;left:auto;background:var(--warm-gold);color:#1a1200;">Original</span>' : '';
-  const isShort = item.content_format === 'short';
-  const thumbClass = isShort ? 'upload-card__thumb upload-card__thumb--vertical' : 'upload-card__thumb';
-
-  return `
-    <div class="upload-card ${isShort ? 'upload-card--vertical' : ''}" data-content-id="${item.id}" tabindex="0" role="link">
-      <div class="${thumbClass}" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop')});">
-        <span class="upload-card__badge" style="background:${color};color:${textColor};">${escapeHtml(label)}</span>
-        ${originalRibbon}
-        ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
-      </div>
-      <p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
-      <p class="upload-card__meta">${formatNumber(item.views_count || 0)} views · ${formatTimeAgo(item.created_at)}</p>
-    </div>
-  `;
-}
-
-function normalizeContentType(item) {
-  return item.content_format || item.media_type || 'long_form';
-}
-
-function getTypeColor(typeKey) {
-  const meta = CONTENT_FORMAT_META[typeKey];
-  return meta ? meta.color : '#1D4ED8';
-}
-
-function getTypeTextColor(typeKey) {
-  const darkBg = ['#1D4ED8', '#8B5CF6', '#EC4899', '#EF4444'];
-  const color = getTypeColor(typeKey);
-  return darkBg.includes(color) ? 'white' : '#1a1200';
-}
-
-function typeDisplayLabel(typeKey) {
-  const meta = CONTENT_FORMAT_META[typeKey];
-  return meta ? meta.label : typeKey.charAt(0).toUpperCase() + typeKey.slice(1);
 }
 
 // ==========================================================================
@@ -1005,7 +1206,10 @@ function getCollectionThumbnail(playlist) {
   return 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=225&fit=crop';
 }
 
-// ===== SHORTS TAB — REAL DATA =====
+// ==========================================================================
+// SHORTS TAB — REAL DATA
+// ==========================================================================
+
 function renderShortsTab() {
   const grid = document.getElementById('shorts-content');
   const empty = document.getElementById('shorts-empty');
@@ -1043,39 +1247,6 @@ function renderShortsTab() {
     });
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter') card.click(); });
   });
-}
-
-function buildShortCardHTML(item) {
-  const thumbUrl = fixMediaUrl(item.thumbnail_url || '');
-  const plays = formatNumber(item.views_count || 0);
-
-  return `
-    <div class="short-card" data-content-id="${item.id}">
-      <div class="short-card__thumb" style="${thumbUrl ? `background-image:url(${thumbUrl});` : ''}">
-        ${item.is_pinned ? '<i class="fas fa-thumbtack short-card__pin"></i>' : ''}
-        <div class="short-card__plays"><i class="fas fa-play"></i>${plays}</div>
-      </div>
-      <p class="short-card__title">${escapeHtml(item.title || 'Untitled short')}</p>
-    </div>
-  `;
-}
-
-// ===== NEW TAB: RENDER PODCAST =====
-function renderPodcastTab() {
-const container = document.getElementById('podcast-content');
-if (!container) return;
-
-const podcastContent = window.creatorContent.filter(c => 
-c.content_format === 'Podcast' || c.media_type === 'podcast' || c.genre === 'Podcasts'
-);
-
-if (podcastContent.length === 0) {
-container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-podcast"></i></div><h3>No Podcasts Yet</h3><p>This creator hasn\'t uploaded any podcast episodes.</p></div>';
-return;
-}
-
-container.innerHTML = podcastContent.map(item => renderUploadCardHTML(item, 'podcast-card')).join('');
-attachUploadCardClicks(container);
 }
 
 // ==========================================================================
@@ -1978,12 +2149,6 @@ ticks: { color: 'var(--slate-grey)' }
 });
 }
 
-// ==========================================================================
-// PLAYLIST BUILDER FUNCTIONS — REMOVED entirely
-// The playlist builder does not belong on the public channel page.
-// Playlist creation and editing belongs in creator-dashboard.html.
-// ==========================================================================
-
 // ===== BANNER FUNCTIONS =====
 async function handleBannerUpload(file) {
 const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
@@ -2397,6 +2562,8 @@ updateProfileUI();
 updateConnectButton();
 renderHomeTab();
 renderAboutTab();
+
+setupHomeSeeAllButtons();
 
 const loading = document.getElementById('loading');
 const app = document.getElementById('app');
