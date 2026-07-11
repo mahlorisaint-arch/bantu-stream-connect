@@ -935,6 +935,30 @@ font-size: 12px;
 color: var(--text-secondary);
 text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
+
+/* ============================================
+FEATURED CARD - VERTICAL SHORTS TREATMENT
+============================================ */
+.featured-card.featured-card--vertical {
+  height: auto;
+  aspect-ratio: 9 / 16;
+  max-width: 220px;
+  margin: 0 auto var(--space-4);
+}
+@media (min-width: 1200px) {
+  .featured-card.featured-card--vertical {
+    max-width: 260px;
+  }
+}
+.featured-card.featured-card--vertical .featured-card__caption {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  right: var(--space-2);
+  margin-top: 0;
+  padding: 0;
+}
+
 /* ============================================
 SECTION LABEL
 ============================================ */
@@ -1110,6 +1134,19 @@ overflow: hidden;
 .upload-card__meta {
 font-size: 11px;
 color: var(--text-secondary);
+}
+
+/* ============================================
+UPLOAD GRID - VERTICAL SHORTS TREATMENT
+============================================ */
+.upload-card__thumb--vertical {
+  aspect-ratio: 9 / 16;
+  max-width: 65%;
+  margin: 0 auto 6px;
+}
+.upload-card--vertical .upload-card__title,
+.upload-card--vertical .upload-card__meta {
+  text-align: center;
 }
 
 /* ==========================================================================
@@ -2536,4 +2573,76 @@ padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 .sidebar-menu {
 padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
 }
+}
+
+/* ==========================================================================
+SHORTS TAB — CSS
+Deliberately tiny: a vertical grid, a thumbnail, one overlay, a title.
+Nothing else. Aspect ratio is 9:16, never 16:9 — that's the entire
+point of a Short.
+========================================================================== */
+.shorts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (min-width: 480px) { .shorts-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
+@media (min-width: 768px) { .shorts-grid { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 1200px) { .shorts-grid { grid-template-columns: repeat(6, 1fr); } }
+@media (min-width: 1600px) { .shorts-grid { grid-template-columns: repeat(7, 1fr); } }
+
+.short-card {
+  cursor: pointer;
+}
+.short-card:focus-visible { outline: 2px solid var(--warm-gold); outline-offset: 2px; }
+
+.short-card__thumb {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-media);
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.2s ease;
+}
+.short-card:hover .short-card__thumb { transform: scale(1.02); }
+
+.short-card__pin {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: var(--accent-streak);
+  font-size: 12px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.short-card__plays {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 6px 6px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+  font-size: 10px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.short-card__title {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 6px 0 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .shorts-grid { gap: 6px; }
+  .short-card__title { font-size: 10px; }
 }
