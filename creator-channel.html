@@ -132,7 +132,9 @@
 <div class="glow-cycle glow-2"></div>
 <div class="glow-cycle glow-3"></div>
 </div>
+
 <!-- ===== MODALS ===== -->
+
 <!-- Connectors Modal -->
 <div id="connectors-modal" class="modal">
 <div class="modal-content">
@@ -143,6 +145,7 @@
 </div>
 </div>
 </div>
+
 <!-- Analytics Modal -->
 <div id="analytics-modal" class="modal">
 <div class="modal-content" style="max-width:900px;">
@@ -159,6 +162,7 @@
 <div class="charts-container" style="height:250px;margin-bottom:15px;"><canvas id="channel-engagement-chart"></canvas></div>
 </div>
 </div>
+
 <!-- Banner Upload Modal -->
 <div id="banner-upload-modal" class="banner-upload-modal">
 <div class="banner-upload-content">
@@ -192,7 +196,8 @@ Banner preview
 </div>
 </div>
 </div>
-<!-- Edit About Modal - WIRED UP -->
+
+<!-- Edit About Modal -->
 <div id="edit-about-modal" class="modal">
 <div class="modal-content">
 <h2 class="modal-title"><i class="fas fa-edit"></i> Edit About Section</h2>
@@ -232,6 +237,7 @@ Banner preview
 </div>
 </div>
 </div>
+
 <!-- Search Modal -->
 <div id="search-modal" class="search-modal">
 <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
@@ -271,6 +277,7 @@ Banner preview
 </div>
 </div>
 </div>
+
 <!-- Notifications Panel -->
 <div id="notifications-panel" class="modal">
 <div class="modal-content">
@@ -285,73 +292,23 @@ Banner preview
 </div>
 </div>
 </div>
-<!-- Playlist Builder Modal -->
-<div id="playlist-builder-modal" class="modal">
-<div class="modal-content" style="max-width:950px;padding:0;overflow:hidden;">
-<div style="padding:16px 20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;background:var(--card-bg);">
-<h2 class="modal-title" style="margin:0;font-size:18px;text-align:left;"><i class="fas fa-list"></i> <span id="pl-modal-title">Create Playlist</span></h2>
-<button id="close-pl-modal" class="close-search-btn"><i class="fas fa-times"></i></button>
-</div>
-<div class="pl-body" style="display:grid;grid-template-columns:300px 1fr;gap:0;background:var(--deep-navy);height:60vh;">
-<div class="pl-sidebar" style="padding:16px;border-right:1px solid var(--card-border);background:var(--card-bg);overflow-y:auto;">
-<input type="hidden" id="pl-id">
-<div class="form-group"><label class="form-label">Title *</label><input type="text" id="pl-title" class="form-input" placeholder="Playlist name..."></div>
-<div class="form-group"><label class="form-label">Description</label><textarea id="pl-desc" class="form-textarea" style="min-height:60px;"></textarea></div>
-<div class="form-group"><label class="form-label">Type</label><select id="pl-type" class="form-select form-input"><option value="playlist">General</option><option value="series">Series</option><option value="course">Course</option></select></div>
-<div class="form-group"><label class="form-label">Visibility</label><select id="pl-vis" class="form-select form-input"><option value="public">Public</option><option value="private">Private</option></select></div>
-<label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="pl-featured"> <span style="color:var(--soft-white);font-size:13px;">⭐ Feature on channel</span></label>
-</div>
-<div class="pl-main" style="display:flex;flex-direction:column;overflow:hidden;">
-<div class="pl-tabs" style="display:flex;border-bottom:1px solid var(--card-border);background:var(--card-bg);">
-<button class="pl-tab active" data-tab="items" style="flex:1;padding:12px;background:none;border:none;color:var(--soft-white);cursor:pointer;border-bottom:2px solid var(--warm-gold);">Items (<span id="pl-count">0</span>)</button>
-<button class="pl-tab" data-tab="library" style="flex:1;padding:12px;background:none;border:none;color:var(--slate-grey);cursor:pointer;">Library</button>
-</div>
-<div id="pl-items-panel" style="flex:1;overflow-y:auto;padding:12px;">
-<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i><p>Add videos to your playlist</p></div>
-</div>
-<div id="pl-library-panel" style="flex:1;overflow-y:auto;padding:12px;display:none;">
-<input type="text" id="pl-lib-search" class="form-input" placeholder="Search your videos..." style="margin-bottom:12px;">
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-<button class="pl-filter active" data-f="all">All</button>
-<button class="pl-filter" data-f="video">Videos</button>
-<button class="pl-filter" data-f="short">Shorts</button>
-</div>
-<div id="pl-lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;"></div>
-</div>
-</div>
-</div>
-<div style="display:flex;gap:10px;padding:16px 20px;background:var(--card-bg);border-top:1px solid var(--card-border);">
-<button id="pl-save-btn" class="modal-btn close" style="flex:1;"><i class="fas fa-save"></i> Save</button>
-<button id="pl-delete-btn" class="modal-btn cancel" style="flex:1;display:none;"><i class="fas fa-trash"></i> Delete</button>
-</div>
-</div>
-</div>
-<!-- Templates -->
-<template id="pl-item-tmpl">
-<div class="pl-item" draggable="true" style="display:flex;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);border-radius:8px;margin-bottom:8px;cursor:grab;">
-<div style="width:80px;height:45px;border-radius:6px;overflow:hidden;flex-shrink:0;">
-<img class="pl-thumb" style="width:100%;height:100%;object-fit:cover;">
-</div>
-<div style="flex:1;min-width:0;">
-<div class="pl-title" style="font-size:13px;font-weight:600;color:var(--soft-white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-<div class="pl-meta" style="font-size:11px;color:var(--slate-grey);display:flex;gap:8px;margin-top:4px;"></div>
-</div>
-<button class="pl-remove" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;"><i class="fas fa-times"></i></button>
-</div>
-</template>
-<template id="pl-lib-tmpl">
-<div class="pl-lib-card" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;overflow:hidden;cursor:pointer;">
-<div style="height:90px;position:relative;">
-<img class="lb-thumb" style="width:100%;height:100%;object-fit:cover;">
-<button class="lb-add" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:var(--warm-gold);cursor:pointer;"><i class="fas fa-plus"></i></button>
-</div>
-<div style="padding:8px;">
-<div class="lb-title" style="font-size:12px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-<div class="lb-views" style="font-size:10px;color:var(--slate-grey);"></div>
-</div>
-</div>
-</template>
+
+<!-- ==========================================================================
+PLAYLIST BUILDER MODAL — REMOVED entirely
+The playlist builder does not belong on the public channel page.
+Playlist creation and editing belongs in creator-dashboard.html.
+Keeping it here means a visitor could technically reach playlist-editing
+DOM even though the click handlers are gated by ownership checks, which
+is unnecessary surface area on a page anyone can load.
+========================================================================== -->
+
+<!-- ==========================================================================
+TEMPLATES — REMOVED entirely (pl-item-tmpl and pl-lib-tmpl)
+These were only used by the playlist builder which is now removed.
+========================================================================== -->
+
 <div id="app" style="display: none;">
+
 <!-- HEADER -->
 <header class="header">
 <div class="logo" onclick="window.location.href='index.html'">
@@ -403,14 +360,16 @@ Banner preview
 </div>
 </div>
 </header>
+
 <!-- ===== CHANNEL BANNER - KEPT AS IS ===== -->
 <div class="channel-banner" id="channel-banner">
 <button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
 <i class="fas fa-camera"></i> Change Banner
 </button>
 <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
-<div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span>-day upload streak</div>
+<div class="streak-badge" id="streak-badge"> <span id="streak-count">0</span>-day upload streak</div>
 </div>
+
 <!-- ===== CHANNEL PROFILE ===== -->
 <div class="channel-profile">
 <div class="channel-identity">
@@ -441,6 +400,7 @@ Banner preview
 <button id="more-btn" class="action-btn icon-action-btn" title="More"><i class="fas fa-ellipsis-h"></i></button>
 </div>
 </div>
+
 <!-- ===== TABS ===== -->
 <div class="channel-tabs" id="channel-tabs" role="tablist">
 <button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
@@ -450,6 +410,7 @@ Banner preview
 <button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community</button>
 <button class="channel-tab" data-tab="about" role="tab" aria-selected="false">About</button>
 </div>
+
 <!-- ===== HOME PANEL ===== -->
 <section class="tab-panel" data-panel="home" role="tabpanel">
 <div class="channel-body">
@@ -483,22 +444,35 @@ Banner preview
 </aside>
 </div>
 </section>
-<!-- ===== SERIES PANEL - NEW ===== -->
-<section class="tab-panel" data-panel="series" hidden role="tabpanel">
-<div class="channel-body">
-<div class="channel-main">
-<p class="section-label">Series content</p>
-<div id="series-content"></div>
-</div>
-<aside class="channel-sidebar">
-<div class="sidebar-panel">
-<p class="sidebar-panel-title">About series</p>
-<p style="font-size:12px;color:var(--text-secondary);">Series are grouped by season for easy binge-watching.</p>
-</div>
-</aside>
-</div>
+
+<!-- ==========================================================================
+SERIES PANEL — NEW: Playlist gallery
+No playlist builder here — this tab is read only display of the
+creator's published playlists (series, albums, podcasts), the same
+way a YouTube channel's Playlists tab only shows uploaded playlists,
+never Watch Later or Liked Videos.
+========================================================================== -->
+<section class="tab-panel" data-panel="series" id="panel-series" role="tabpanel" aria-labelledby="tab-series" hidden>
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Playlists</p>
+      <div class="collections-grid" id="collections-grid"></div>
+      <div id="collections-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fas fa-layer-group"></i></div>
+        <h3>No playlists yet</h3>
+        <p id="collections-empty-text">This creator has not published any playlists</p>
+      </div>
+    </div>
+    <aside class="channel-sidebar">
+      <div class="sidebar-panel">
+        <p class="sidebar-panel-title">About playlists</p>
+        <p style="font-size:12px;color:var(--text-secondary);">Playlists are collections of content organized by the creator.</p>
+      </div>
+    </aside>
+  </div>
 </section>
-<!-- ===== SHORTS PANEL - NEW ===== -->
+
+<!-- ===== SHORTS PANEL ===== -->
 <section class="tab-panel" data-panel="shorts" hidden role="tabpanel">
 <div class="channel-body">
 <div class="channel-main">
@@ -513,7 +487,8 @@ Banner preview
 </aside>
 </div>
 </section>
-<!-- ===== PODCAST PANEL - NEW ===== -->
+
+<!-- ===== PODCAST PANEL ===== -->
 <section class="tab-panel" data-panel="podcast" hidden role="tabpanel">
 <div class="channel-body">
 <div class="channel-main">
@@ -528,6 +503,7 @@ Banner preview
 </aside>
 </div>
 </section>
+
 <!-- ===== COMMUNITY PANEL - UPDATED WITH PULSE ===== -->
 <section class="tab-panel" data-panel="community" id="panel-community" role="tabpanel" aria-labelledby="tab-community" hidden>
   <div class="channel-body">
@@ -554,6 +530,7 @@ Banner preview
     </aside>
   </div>
 </section>
+
 <!-- ===== ABOUT PANEL - UPDATED WITH FULL REAL DATA ===== -->
 <section class="tab-panel" data-panel="about" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
   <div class="about-content">
@@ -638,6 +615,7 @@ Banner preview
 
   </div>
 </section>
+
 <!-- FOOTER -->
 <footer class="footer">
 <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
@@ -647,6 +625,7 @@ Banner preview
 <a href="support.html">Support</a>
 </div>
 </footer>
+
 <!-- NAVIGATION BUTTON -->
 <div class="navigation-button-container">
 <div class="navigation-button">
@@ -664,9 +643,12 @@ Banner preview
 </div>
 </div>
 </div>
+
 </div>
+
 <div id="toast-container"></div>
 <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+
 <!-- External JavaScript -->
 <script src="js/creator-channel.js"></script>
 </body>
