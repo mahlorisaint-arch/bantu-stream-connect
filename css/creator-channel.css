@@ -43,6 +43,18 @@ COMPLETE MERGED FILE (Existing + New Design + All Fixes + Pulse Bridge)
 --font-base: 14px;
 --font-sm: 13px;
 --font-xs: 11px;
+
+/* ===== SERIES TAB TYPE BADGE COLORS ===== */
+--type-series: #04342C;
+--type-series-text: #5DCAA5;
+--type-music: #4A1B0C;
+--type-music-text: #F0997B;
+--type-podcast: #26215C;
+--type-podcast-text: #7F77DD;
+--type-video: #1D4ED8;
+--type-video-text: #93BBFF;
+--type-other: #3B3B3B;
+--type-other-text: #94A3B8;
 }
 /* Light Theme */
 body.theme-light {
@@ -1099,38 +1111,79 @@ overflow: hidden;
 font-size: 11px;
 color: var(--text-secondary);
 }
-/* ============================================
-SERIES TAB - NEW: Season grouping
-============================================ */
-.series-container {
-display: flex;
-flex-direction: column;
-gap: var(--space-4);
+
+/* ==========================================================================
+SERIES TAB — COLLECTION GRID (NEW)
+Replaces all old .series-container, .series-season, .season-header, etc.
+========================================================================== */
+.collections-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-card);
 }
-.series-season {
-background: var(--bg-panel);
-border-radius: var(--radius-lg);
-padding: var(--space-3);
+@media (min-width: 480px) { .collections-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 768px) { .collections-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1200px) { .collections-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1600px) { .collections-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.collection-card {
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
-.season-header {
-display: flex;
-align-items: center;
-justify-content: space-between;
-margin-bottom: var(--space-3);
+.collection-card:hover { transform: translateY(-4px); }
+.collection-card:focus-visible { outline: 2px solid var(--warm-gold); outline-offset: 2px; }
+
+.collection-thumb-wrapper {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-media);
+  margin-bottom: 8px;
 }
-.season-title {
-font-size: 16px;
-font-weight: 600;
-color: var(--text-primary);
-margin: 0;
+.collection-thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.collection-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,14,23,0.35); opacity: 0; transition: opacity 0.2s ease;
 }
-.season-episode-count {
-font-size: 12px;
-color: var(--text-secondary);
+.collection-card:hover .collection-overlay { opacity: 1; }
+.collection-overlay i { color: var(--text-primary); font-size: 22px; }
+
+.collection-type-badge {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 10px;
+  color: var(--text-primary); display: flex; align-items: center; gap: 4px;
+  text-transform: capitalize;
 }
-/* ============================================
+.collection-type-badge.series { background: var(--type-series); color: var(--type-series-text); }
+.collection-type-badge.album { background: var(--type-music); color: var(--type-music-text); }
+.collection-type-badge.podcast { background: var(--type-podcast); color: var(--type-podcast-text); }
+.collection-type-badge.course { background: var(--type-video); color: var(--type-video-text); }
+.collection-type-badge.playlist { background: var(--type-other); color: var(--type-other-text); }
+
+.collection-featured-ribbon {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 10px;
+  background: var(--warm-gold); color: var(--deep-black);
+  display: flex; align-items: center; gap: 4px;
+}
+
+.collection-count-badge {
+  position: absolute; bottom: 8px; right: 8px;
+  font-size: 10px; color: var(--text-primary); background: rgba(0,0,0,0.65);
+  padding: 2px 7px; border-radius: 8px; display: flex; align-items: center; gap: 4px;
+}
+
+.collection-title {
+  font-size: 13px; font-weight: 500; color: var(--text-primary);
+  margin: 0 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.collection-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px; }
+
+/* ==========================================================================
 PODCAST TAB - NEW: Episode numbering
-============================================ */
+========================================================================== */
 .podcast-card .upload-card__title {
 font-weight: 600;
 color: var(--text-primary);
@@ -2094,12 +2147,27 @@ font-size: 11px !important;
 .upload-card__meta {
 font-size: 10px !important;
 }
-/* Series tab mobile */
-.series-season {
-padding: var(--space-2) !important;
+/* Series tab mobile - Collection grid */
+.collections-grid {
+gap: 10px !important;
 }
-.season-title {
-font-size: 14px !important;
+.collection-title {
+font-size: 12px !important;
+}
+.collection-meta {
+font-size: 10px !important;
+}
+.collection-type-badge {
+font-size: 9px !important;
+padding: 2px 7px !important;
+}
+.collection-count-badge {
+font-size: 9px !important;
+padding: 1px 6px !important;
+}
+.collection-featured-ribbon {
+font-size: 9px !important;
+padding: 2px 7px !important;
 }
 /* About stats mobile */
 .about-content {
@@ -2360,6 +2428,33 @@ gap: 8px !important;
 }
 .upload-card__title {
 font-size: 10px !important;
+}
+/* Series tab small mobile */
+.collections-grid {
+grid-template-columns: 1fr 1fr !important;
+gap: 8px !important;
+}
+.collection-title {
+font-size: 11px !important;
+}
+.collection-meta {
+font-size: 9px !important;
+gap: 4px !important;
+}
+.collection-type-badge {
+font-size: 8px !important;
+padding: 1px 5px !important;
+}
+.collection-count-badge {
+font-size: 8px !important;
+padding: 1px 5px !important;
+}
+.collection-featured-ribbon {
+font-size: 8px !important;
+padding: 1px 5px !important;
+}
+.collection-overlay i {
+font-size: 16px !important;
 }
 /* About small mobile */
 .about-stats-grid {
