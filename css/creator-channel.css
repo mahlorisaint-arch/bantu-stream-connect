@@ -1653,46 +1653,37 @@ background: var(--warm-gold);
 }
 
 /* ============================================
-ABOUT TAB - UPDATED: Full real data implementation
-============================================ */
+ABOUT TAB — v2 (unboxed, professional)
+No glass-card wrappers, no badge chips, no card backgrounds.
+Just typography, whitespace, and a single divider.
+========================================================================== */
 .about-content {
   padding: 16px 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 @media (min-width: 1200px) {
-  .about-content { padding: var(--space-4) var(--space-5); max-width: 900px; gap: var(--space-5); }
+  .about-content { padding: var(--space-4) var(--space-5); max-width: 900px; }
 }
 
-/* Core glass surface, reused by every card in this tab */
-.glass-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  padding: var(--space-4);
+/* A single hairline between major groups — this is the only visual
+   separation in the entire tab. No backgrounds, no borders-as-boxes,
+   no blur. This is what keeps it reading as one page instead of a
+   stack of cards. */
+.about-divider {
+  border-top: 1px solid var(--border-subtle);
 }
 
-/* Identity card */
-.about-identity-card { display: flex; flex-direction: column; gap: 10px; }
+/* ---------- Identity ---------- */
+.about-identity { display: flex; flex-direction: column; gap: 10px; }
 .about-bio-text { font-size: 14px; line-height: 1.7; color: var(--text-primary); margin: 0; }
 .about-mission-text { font-size: 13px; line-height: 1.6; color: var(--text-secondary); font-style: italic; margin: 0; }
 
-.about-badges { display: flex; flex-wrap: wrap; gap: 8px; }
-.about-badge-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px;
-  background: var(--bg-panel); color: var(--text-secondary); border: 1px solid var(--border-subtle);
-}
-.about-badge-chip.founder { color: var(--warm-gold); border-color: rgba(245,158,11,0.35); }
-.about-badge-chip.verified { color: #1DA1F2; border-color: rgba(29,161,242,0.35); }
-.about-badge-chip.journalist { color: #5DCAA5; border-color: rgba(93,202,165,0.35); }
-.about-badge-chip.educator { color: #7F77DD; border-color: rgba(127,119,221,0.35); }
-
 .about-meta-row { display: flex; flex-wrap: wrap; gap: 16px; }
 .about-meta-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.about-meta-item--verified { color: #1DA1F2; }
+.about-meta-item--verified i { color: #1DA1F2; }
 
 .about-links-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .about-link-chip {
@@ -1710,23 +1701,26 @@ ABOUT TAB - UPDATED: Full real data implementation
 .about-socials-row a { color: var(--text-secondary); font-size: 16px; transition: color 0.2s ease; }
 .about-socials-row a:hover { color: var(--warm-gold); }
 
-/* Stats grid */
-.about-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+/* ---------- Stats: plain counts, no card chrome ---------- */
+.about-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
 }
-@media (min-width: 480px) { .about-stats-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 1200px) { .about-stats-grid { grid-template-columns: repeat(6, 1fr); } }
-
-.about-stat-card { text-align: center; padding: 14px 10px; }
-.about-stat-number { font-size: 18px; font-weight: 500; margin: 0 0 4px; color: var(--text-primary); }
+.about-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.about-stat-number { font-size: 18px; font-weight: 500; margin: 0; color: var(--text-primary); }
 .about-stat-number.streak { color: var(--accent-streak); }
-.about-stat-label { font-size: 10px; color: var(--text-secondary); }
+.about-stat-label { font-size: 11px; color: var(--text-secondary); }
 
-/* Section cards (content mix, insights, journey) */
-.about-section-card .section-label { margin: 0 0 12px; }
+@media (max-width: 480px) {
+  .about-stats-row { gap: 20px; }
+}
 
+/* ---------- Content mix / Insights / Journey: plain, no wrapper ---------- */
 .content-mix-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
 .content-mix-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--text-secondary); }
 .content-mix-legend .swatch { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
@@ -1744,6 +1738,21 @@ ABOUT TAB - UPDATED: Full real data implementation
 .journey-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0; }
 .journey-desc { font-size: 12px; color: var(--text-secondary); margin: 2px 0 0; }
 .journey-empty { font-size: 12px; color: var(--text-muted); }
+
+@media (max-width: 768px) {
+  .about-content { padding: 12px 0; gap: var(--space-4); }
+  .about-bio-text { font-size: 13px; }
+  .about-mission-text { font-size: 12px; }
+  .about-stat-number { font-size: 15px; }
+  .about-meta-item { font-size: 11px; }
+  .about-link-chip { font-size: 11px; padding: 4px 10px; }
+  .about-socials-row a { font-size: 14px; }
+  .content-mix-legend { font-size: 10px; gap: 8px; }
+  .about-insight-row { font-size: 12px; }
+  .journey-title { font-size: 12px; }
+  .journey-desc { font-size: 11px; }
+  .journey-date { font-size: 9px; }
+}
 
 /* ============================================
 SECTION DIVIDER
@@ -2352,18 +2361,13 @@ padding: 1px 6px !important;
 font-size: 9px !important;
 padding: 2px 7px !important;
 }
-/* About stats mobile */
+/* About stats mobile - v2 uses .about-stats-row not .about-stats-grid */
 .about-content {
 padding: 12px 0 !important;
+gap: var(--space-4) !important;
 }
-.glass-card {
-padding: var(--space-3) !important;
-}
-.about-stats-grid {
-gap: 8px !important;
-}
-.about-stat-card {
-padding: 10px 8px !important;
+.about-stats-row {
+gap: 20px !important;
 }
 .about-stat-number {
 font-size: 15px !important;
@@ -2373,10 +2377,6 @@ font-size: 13px !important;
 }
 .about-mission-text {
 font-size: 12px !important;
-}
-.about-badge-chip {
-font-size: 10px !important;
-padding: 3px 8px !important;
 }
 .about-meta-item {
 font-size: 11px !important;
@@ -2639,13 +2639,9 @@ padding: 1px 5px !important;
 .collection-overlay i {
 font-size: 16px !important;
 }
-/* About small mobile */
-.about-stats-grid {
-grid-template-columns: repeat(2, 1fr) !important;
-gap: 6px !important;
-}
-.about-stat-card {
-padding: 8px 6px !important;
+/* About small mobile - v2 uses .about-stats-row */
+.about-stats-row {
+gap: 16px !important;
 }
 .about-stat-number {
 font-size: 13px !important;
@@ -2653,7 +2649,7 @@ font-size: 13px !important;
 .about-bio-text {
 font-size: 12px !important;
 }
-.about-identity-card {
+.about-identity {
 gap: 8px !important;
 }
 .about-meta-row {
@@ -2661,10 +2657,6 @@ gap: 10px !important;
 }
 .about-meta-item {
 font-size: 10px !important;
-}
-.about-badge-chip {
-font-size: 9px !important;
-padding: 2px 6px !important;
 }
 .about-socials-row a {
 font-size: 13px !important;
