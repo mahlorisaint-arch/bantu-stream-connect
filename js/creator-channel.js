@@ -2250,6 +2250,34 @@ const modal = document.getElementById('banner-upload-modal');
 if (modal) modal.classList.remove('active');
 }
 
+// ===== FIX 1: CONSOLIDATED BADGE — replaces founder/verified/creator-badge =====
+function renderCreatorStatusBadge() {
+  const badge = document.getElementById('creator-status-badge');
+  const badgeText = document.getElementById('creator-status-badge-text');
+  if (!badge || !badgeText) return;
+
+  const record = window.creatorRecord || {};
+  const isFounder = !!record.is_founder;
+  const isVerified = !!(record.is_verified || record.is_creator_verified);
+
+  if (isFounder) {
+    badge.style.display = 'inline-flex';
+    badge.classList.add('is-founder');
+    badgeText.textContent = 'Verified founder';
+  } else if (isVerified) {
+    badge.style.display = 'inline-flex';
+    badge.classList.remove('is-founder');
+    badgeText.textContent = 'Verified creator';
+  } else {
+    badge.style.display = 'none';
+    badge.classList.remove('is-founder');
+  }
+
+  // The old on-avatar FOUNDER ribbon stays as its own separate signal
+  const founderRibbon = document.getElementById('founder-badge');
+  if (founderRibbon) founderRibbon.style.display = isFounder ? 'block' : 'none';
+}
+
 // ===== PROFILE UPDATE =====
 async function updateProfileUI() {
 const placeholder = document.getElementById('userProfilePlaceholder');
@@ -2358,6 +2386,9 @@ if (creatorAvatar && window.creatorProfile.avatar_url) {
 const avatarUrl = fixMediaUrl(window.creatorProfile.avatar_url);
 creatorAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`;
 }
+
+// FIX 1: Call the consolidated badge renderer
+renderCreatorStatusBadge();
 }
 }
 
@@ -2573,30 +2604,34 @@ if (app) app.style.display = 'block';
 }
 }
 
-// ===== UPDATE CONNECT BUTTON =====
+// ===== FIX 2: UPDATE CONNECT BUTTON — outlined states =====
 function updateConnectButton() {
 const btn = document.getElementById('connect-btn');
 if (!btn) return;
 
+btn.classList.remove('connected', 'is-self');
+
 if (!window.currentUser) {
-btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect';
+btn.innerHTML = '<i class="fas fa-link"></i> Connect';
+btn.disabled = false;
 btn.onclick = handleLoginRequired;
 return;
 }
 
 if (window.currentUser.id === window.creatorId) {
 btn.disabled = true;
+btn.classList.add('is-self');
 btn.innerHTML = '<i class="fas fa-user"></i> You';
 return;
 }
 
+btn.disabled = false;
 if (window.isConnected) {
-btn.innerHTML = 'Connected';
 btn.classList.add('connected');
+btn.innerHTML = '<i class="fas fa-check"></i> Connected';
 btn.onclick = handleDisconnect;
 } else {
-btn.innerHTML = 'Connect';
-btn.classList.remove('connected');
+btn.innerHTML = '<i class="fas fa-link"></i> Connect';
 btn.onclick = handleConnect;
 }
 }
@@ -2658,6 +2693,114 @@ showToast('Disconnected', 'info');
 } catch (error) {
 console.error('Error disconnecting:', error);
 showToast('Failed to disconnect', 'error');
+}
+}
+
+// ===== FIX 3: THREE-DOT MENU — now wired to real dropdown =====
+function setupMoreMenu() {
+const moreBtn = document.getElementById('more-btn');
+const moreMenu = document.getElementById('more-menu');
+if (!moreBtn || !moreMenu) return;
+
+moreBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+if (!window.isOwner) {
+showToast('Only the channel owner can access these options', 'info');
+return;
+}
+moreMenu.classList.toggle('active');
+});
+
+document.addEventListener('click', (e) => {
+if (moreMenu.classList.contains('active') && !moreMenu.contains(e.target) && e.target !== moreBtn) {
+moreMenu.classList.remove('active');
+}
+});
+
+const bannerItem = document.getElementById('more-menu-banner');
+if (bannerItem) {
+bannerItem.addEventListener('click', () => {
+moreMenu.classList.remove('active');
+showBannerUploadModal();
+});
+}
+
+const pollItem = document.getElementById('more-menu-poll');
+if (pollItem) {
+pollItem.addEventListener('click', () => {
+moreMenu.classList.remove('active');
+openCreatePollModal();
+});
+}
+
+const aboutItem = document.getElementById('more-menu-about');
+if (aboutItem) {
+aboutItem.addEventListener('click', () => {
+moreMenu.classList.remove('active');
+openEditAboutModal();
+});
+}
+}
+
+// ===== FIX 4: CREATE POLL — the missing write side of the poll system =====
+function openCreatePollModal() {
+if (!window.isOwner) return;
+document.getElementById('poll-question-input').value = '';
+document.getElementById('poll-option-1-input').value = '';
+document.getElementById('poll-option-2-input').value = '';
+document.getElementById('poll-option-3-input').value = '';
+document.getElementById('poll-option-4-input').value = '';
+document.getElementById('poll-duration-select').value = '3';
+document.getElementById('create-poll-modal').classList.add('active');
+}
+
+async function submitCreatePoll() {
+const question = document.getElementById('poll-question-input').value.trim();
+const options = [
+document.getElementById('poll-option-1-input').value.trim(),
+document.getElementById('poll-option-2-input').value.trim(),
+document.getElementById('poll-option-3-input').value.trim(),
+document.getElementById('poll-option-4-input').value.trim()
+].filter(Boolean);
+const days = parseInt(document.getElementById('poll-duration-select').value, 10);
+
+if (!question) { showToast('Add a question first', 'warning'); return; }
+if (options.length < 2) { showToast('Add at least two options', 'warning'); return; }
+
+try {
+const { data: post, error: postError } = await supabase
+.from('pulse_posts')
+.insert({
+creator_id: window.creatorId,
+content: question,
+post_type: 'poll',
+visibility: 'public',
+is_pinned: false
+})
+.select()
+.single();
+if (postError) throw postError;
+
+const endsAt = new Date(Date.now() + days * 86400000).toISOString();
+
+const { error: pollError } = await supabase
+.from('pulse_post_polls')
+.insert({
+post_id: post.id,
+question,
+options,
+ends_at: endsAt
+});
+if (pollError) throw pollError;
+
+document.getElementById('create-poll-modal').classList.remove('active');
+showToast('Poll posted!', 'success');
+
+// Refresh the Community tab if it's the one currently open
+if (window.currentTab === 'community') ChannelPulse.load();
+} catch (e) {
+console.error('Error creating poll:', e);
+showToast('Could not create the poll — check that pulse_post_polls exists', 'error');
 }
 }
 
@@ -3134,6 +3277,10 @@ if (closeBtn) closeBtn.click();
 showToast('Watch Party coming soon!', 'info');
 });
 }
+
+// FIX 4: Poll modal buttons
+document.getElementById('poll-create-submit-btn')?.addEventListener('click', submitCreatePoll);
+document.getElementById('poll-create-cancel-btn')?.addEventListener('click', () => document.getElementById('create-poll-modal').classList.remove('active'));
 }
 
 // ===== SHOW CONNECTORS MODAL =====
@@ -3228,6 +3375,7 @@ await checkAuth();
 await loadCreatorData();
 
 setupEventListeners();
+setupMoreMenu(); // FIX 3: Wire up the three-dot menu
 
 setTimeout(() => {
 if (loading) loading.style.display = 'none';
