@@ -1776,10 +1776,10 @@ function renderCommunityTab() {
 }
 
 // ==========================================================================
-// ABOUT TAB — REAL DATA
+// ABOUT TAB — REAL DATA (v2: unboxed, professional)
 // ==========================================================================
 
-// ===== IDENTITY CARD =====
+// ===== ABOUT IDENTITY — v2 (no badge chips, verified is plain inline) =====
 function renderAboutIdentity() {
   const profile = window.creatorProfile || {};
   const record = window.creatorRecord || {};
@@ -1792,24 +1792,6 @@ function renderAboutIdentity() {
   if (missionEl) {
     if (mission) { missionEl.textContent = mission; missionEl.style.display = 'block'; }
     else missionEl.style.display = 'none';
-  }
-
-  const badgesContainer = document.getElementById('about-badges');
-  if (badgesContainer) {
-    const badges = [];
-    if (record.is_founder) badges.push({ cls: 'founder', icon: 'fa-crown', label: 'Founder' });
-    if (record.is_verified || record.is_creator_verified) badges.push({ cls: 'verified', icon: 'fa-circle-check', label: 'Verified creator' });
-    if (record.is_journalist) badges.push({ cls: 'journalist', icon: 'fa-newspaper', label: 'Journalist' });
-    if (record.is_educator) badges.push({ cls: 'educator', icon: 'fa-graduation-cap', label: 'Educator' });
-
-    if (badges.length > 0) {
-      badgesContainer.innerHTML = badges.map(b =>
-        `<span class="about-badge-chip ${b.cls}"><i class="fas ${b.icon}"></i>${escapeHtml(b.label)}</span>`
-      ).join('');
-      badgesContainer.style.display = 'flex';
-    } else {
-      badgesContainer.style.display = 'none';
-    }
   }
 
   const joinedText = document.getElementById('about-joined-text');
@@ -1825,6 +1807,12 @@ function renderAboutIdentity() {
   if (locationItem && locationText) {
     if (profile.location) { locationText.textContent = profile.location; locationItem.style.display = 'inline-flex'; }
     else locationItem.style.display = 'none';
+  }
+
+  const verifiedItem = document.getElementById('about-verified-item');
+  if (verifiedItem) {
+    const isVerified = record.is_verified || record.is_creator_verified;
+    verifiedItem.style.display = isVerified ? 'inline-flex' : 'none';
   }
 
   const linksRow = document.getElementById('about-links-row');
@@ -1879,7 +1867,7 @@ function renderAboutIdentity() {
   }
 }
 
-// ===== STATS GRID =====
+// ===== ABOUT STATS — plain counts, no card chrome =====
 function renderAboutStats() {
   const content = window.creatorContent || [];
 
@@ -1912,7 +1900,7 @@ function renderAboutStats() {
   }
 }
 
-// ===== CONTENT MIX =====
+// ===== ABOUT CONTENT MIX =====
 function renderAboutContentMix() {
   const bar = document.getElementById('content-mix-bar');
   const legend = document.getElementById('content-mix-legend');
@@ -1931,14 +1919,19 @@ function renderAboutContentMix() {
   ).join('');
 }
 
-// ===== COMPUTED INSIGHTS =====
+// ===== ABOUT INSIGHTS — v2 (now also toggles divider above) =====
 function renderAboutInsights() {
+  const dividerTop = document.getElementById('about-insights-divider-top');
   const card = document.getElementById('about-insights-card');
   const list = document.getElementById('about-insights-list');
   if (!card || !list) return;
 
   const content = window.creatorContent || [];
-  if (content.length < 2) { card.style.display = 'none'; return; }
+  if (content.length < 2) {
+    card.style.display = 'none';
+    if (dividerTop) dividerTop.style.display = 'none';
+    return;
+  }
 
   const insights = [];
 
@@ -1950,20 +1943,13 @@ function renderAboutInsights() {
     });
   }
 
-  const sortedDates = [...content]
-    .map(c => new Date(c.created_at))
-    .sort((a, b) => a - b);
+  const sortedDates = [...content].map(c => new Date(c.created_at)).sort((a, b) => a - b);
   if (sortedDates.length >= 3) {
     const gaps = [];
-    for (let i = 1; i < sortedDates.length; i++) {
-      gaps.push((sortedDates[i] - sortedDates[i - 1]) / 86400000);
-    }
+    for (let i = 1; i < sortedDates.length; i++) gaps.push((sortedDates[i] - sortedDates[i - 1]) / 86400000);
     const avgGap = gaps.reduce((s, g) => s + g, 0) / gaps.length;
-    if (avgGap < 1.5) {
-      insights.push({ icon: 'fa-bolt', text: 'This creator publishes new content almost every day.' });
-    } else {
-      insights.push({ icon: 'fa-calendar-check', text: `New uploads land roughly every ${Math.round(avgGap)} days.` });
-    }
+    if (avgGap < 1.5) insights.push({ icon: 'fa-bolt', text: 'This creator publishes new content almost every day.' });
+    else insights.push({ icon: 'fa-calendar-check', text: `New uploads land roughly every ${Math.round(avgGap)} days.` });
   }
 
   const topContent = [...content].sort((a, b) => (b.views_count || 0) - (a.views_count || 0))[0];
@@ -1974,15 +1960,20 @@ function renderAboutInsights() {
     });
   }
 
-  if (insights.length === 0) { card.style.display = 'none'; return; }
+  if (insights.length === 0) {
+    card.style.display = 'none';
+    if (dividerTop) dividerTop.style.display = 'none';
+    return;
+  }
 
   card.style.display = 'block';
+  if (dividerTop) dividerTop.style.display = 'block';
   list.innerHTML = insights.map(i => `
     <div class="about-insight-row"><i class="fas ${i.icon}"></i><span>${i.text}</span></div>
   `).join('');
 }
 
-// ===== JOURNEY TIMELINE =====
+// ===== ABOUT JOURNEY =====
 async function renderAboutJourney() {
   const timeline = document.getElementById('journey-timeline');
   const emptyState = document.getElementById('journey-empty');
