@@ -2733,7 +2733,8 @@ playlists: window.playlists.length
 updateProfileUI();
 updateConnectButton();
 renderHomeTab();
-await renderAboutTab(); // FIX: Added await here
+// FIX: Properly await the async renderAboutTab function
+await renderAboutTab();
 
 setupHomeSeeAllButtons();
 
