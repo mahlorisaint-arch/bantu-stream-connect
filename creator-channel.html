@@ -294,6 +294,39 @@ Banner preview
 </div>
 
 <!-- ==========================================================================
+CREATE POLL MODAL — new, matches the Community tab read side
+Backed by pulse_posts (post_type = 'poll') + pulse_post_polls.
+========================================================================== -->
+<div id="create-poll-modal" class="modal">
+  <div class="modal-content">
+    <h2 class="modal-title"><i class="fas fa-square-poll-vertical"></i> Create a poll</h2>
+    <div class="form-group">
+      <label class="form-label">Question</label>
+      <input type="text" class="form-input" id="poll-question-input" placeholder="Who should guest next?">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Options</label>
+      <input type="text" class="form-input" id="poll-option-1-input" placeholder="Option 1" style="margin-bottom:8px;">
+      <input type="text" class="form-input" id="poll-option-2-input" placeholder="Option 2" style="margin-bottom:8px;">
+      <input type="text" class="form-input" id="poll-option-3-input" placeholder="Option 3 (optional)" style="margin-bottom:8px;">
+      <input type="text" class="form-input" id="poll-option-4-input" placeholder="Option 4 (optional)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Poll duration</label>
+      <select class="form-input" id="poll-duration-select">
+        <option value="1">1 day</option>
+        <option value="3" selected>3 days</option>
+        <option value="7">7 days</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button id="poll-create-submit-btn" class="modal-btn close"><i class="fas fa-check"></i> Post poll</button>
+      <button id="poll-create-cancel-btn" class="modal-btn cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
 PLAYLIST BUILDER MODAL — REMOVED entirely
 The playlist builder does not belong on the public channel page.
 Playlist creation and editing belongs in creator-dashboard.html.
@@ -370,35 +403,49 @@ These were only used by the playlist builder which is now removed.
 <div class="streak-badge" id="streak-badge"> <span id="streak-count">0</span>-day upload streak</div>
 </div>
 
-<!-- ===== CHANNEL PROFILE ===== -->
+<!-- ===== CHANNEL PROFILE — HEADER POLISH PATCH ===== -->
+<!-- FIX 1: #verified-badge and #creator-badge are gone, replaced by one #creator-status-badge -->
+<!-- FIX 3: overflow: visible on identity elements handled in CSS -->
+<!-- FIX 5: #more-btn is wrapped in .more-menu-wrapper with a real dropdown -->
 <div class="channel-profile">
-<div class="channel-identity">
-<div class="channel-avatar-container">
-<div class="channel-avatar" id="creator-avatar-container">
-<div class="creator-initials" id="creator-initials">?</div>
-</div>
-<div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
-</div>
-<div>
-<div class="channel-name-row">
-<h1 id="creator-name" class="channel-name">Creator Name</h1>
-<span class="verified-badge" id="verified-badge" style="display: none;"><i class="fas fa-check-circle"></i></span>
-<span class="creator-badge" id="creator-badge">Content Creator</span>
-</div>
-<div class="channel-meta">
-<span id="creator-username">@username</span>
-<span class="meta-divider">·</span>
-<span id="connector-count-display">0</span> in the circle
-<span class="meta-divider">·</span>
-<span id="content-type-display">Series, shorts, podcast</span>
-</div>
-</div>
-</div>
-<div class="channel-actions">
-<button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
-<button id="notify-btn" class="action-btn icon-action-btn" title="Notifications"><i class="fas fa-bell"></i></button>
-<button id="more-btn" class="action-btn icon-action-btn" title="More"><i class="fas fa-ellipsis-h"></i></button>
-</div>
+  <div class="channel-identity">
+    <div class="channel-avatar-container">
+      <div class="channel-avatar" id="creator-avatar-container">
+        <div class="creator-initials" id="creator-initials">?</div>
+      </div>
+      <div id="founder-badge" class="founder-badge" style="display: none;">FOUNDER</div>
+    </div>
+    <div>
+      <div class="channel-name-row">
+        <h1 id="creator-name" class="channel-name">Creator Name</h1>
+        <!-- FIX 1: Consolidated badge replaces verified-badge and creator-badge -->
+        <span class="creator-status-badge" id="creator-status-badge" style="display:none;">
+          <i class="fas fa-circle-check"></i> <span id="creator-status-badge-text">Verified creator</span>
+        </span>
+        <button class="edit-about-trigger" id="edit-about-trigger" style="display:none;" title="Edit about section"><i class="fas fa-pen"></i></button>
+      </div>
+      <div class="channel-meta">
+        <span id="creator-username">@username</span>
+        <span class="meta-divider">·</span>
+        <span id="connector-count-display">0</span> in the circle
+        <span class="meta-divider">·</span>
+        <span id="content-type-display">Series, shorts, podcast</span>
+      </div>
+    </div>
+  </div>
+  <div class="channel-actions">
+    <button id="connect-btn" class="action-btn connect-btn"><i class="fas fa-link"></i><span id="connect-text">Connect</span></button>
+    <button id="notify-btn" class="action-btn icon-action-btn" title="Notifications"><i class="fas fa-bell"></i></button>
+    <!-- FIX 5: Three-dot menu wrapper with real dropdown -->
+    <div class="more-menu-wrapper">
+      <button id="more-btn" class="action-btn icon-action-btn" title="More"><i class="fas fa-ellipsis-h"></i></button>
+      <div class="more-menu" id="more-menu">
+        <button class="more-menu-item" id="more-menu-banner"><i class="fas fa-camera"></i> Customize Channel Banner</button>
+        <button class="more-menu-item" id="more-menu-poll"><i class="fas fa-square-poll-vertical"></i> Create poll</button>
+        <button class="more-menu-item" id="more-menu-about"><i class="fas fa-pen"></i> Edit About Section</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ==========================================================================
