@@ -623,17 +623,17 @@ COMMUNITY PANEL — Pulse integration
 </section>
 
 <!-- ==========================================================================
-ABOUT PANEL — Full real data implementation
+ABOUT PANEL — v2 (unboxed, professional)
+No glass-card wrappers, no badge chips, no card backgrounds.
+Just typography, whitespace, and a single divider.
 ========================================================================== -->
 <section class="tab-panel" data-panel="about" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
   <div class="about-content">
 
-    <!-- Identity card: bio, mission, badges, joined info, links -->
-    <div class="glass-card about-identity-card" id="about-identity-card">
+    <!-- Identity -->
+    <div class="about-identity">
       <p class="about-bio-text" id="about-bio-text">Loading profile</p>
       <p class="about-mission-text" id="about-mission-text" style="display:none;"></p>
-
-      <div class="about-badges" id="about-badges" style="display:none;"></div>
 
       <div class="about-meta-row">
         <span class="about-meta-item" id="about-joined-item">
@@ -641,6 +641,9 @@ ABOUT PANEL — Full real data implementation
         </span>
         <span class="about-meta-item" id="about-location-item" style="display:none;">
           <i class="fas fa-location-dot"></i> <span id="about-location-text"></span>
+        </span>
+        <span class="about-meta-item about-meta-item--verified" id="about-verified-item" style="display:none;">
+          <i class="fas fa-circle-check"></i> Verified creator
         </span>
       </div>
 
@@ -657,49 +660,57 @@ ABOUT PANEL — Full real data implementation
       <div class="about-socials-row" id="about-socials-row" style="display:none;"></div>
     </div>
 
-    <!-- Stats grid -->
-    <div class="about-stats-grid" id="about-stats-grid">
-      <div class="glass-card about-stat-card">
+    <div class="about-divider"></div>
+
+    <!-- Stats — plain counts, not cards -->
+    <div class="about-stats-row" id="about-stats-grid">
+      <div class="about-stat">
         <p class="about-stat-number" id="about-total-views">0</p>
         <span class="about-stat-label">Total views</span>
       </div>
-      <div class="glass-card about-stat-card">
+      <div class="about-stat">
         <p class="about-stat-number" id="about-total-uploads">0</p>
         <span class="about-stat-label">Uploads</span>
       </div>
-      <div class="glass-card about-stat-card">
+      <div class="about-stat">
         <p class="about-stat-number streak" id="about-streak">0</p>
         <span class="about-stat-label">Day streak</span>
       </div>
-      <div class="glass-card about-stat-card">
+      <div class="about-stat">
         <p class="about-stat-number" id="about-originals">0</p>
         <span class="about-stat-label">Bantu originals</span>
       </div>
-      <div class="glass-card about-stat-card">
+      <div class="about-stat">
         <p class="about-stat-number" id="about-completion-rate">0</p>
         <span class="about-stat-label">Avg completion</span>
       </div>
-      <div class="glass-card about-stat-card">
+      <div class="about-stat">
         <p class="about-stat-number" id="about-engagement-total">0</p>
         <span class="about-stat-label">Total engagement</span>
       </div>
     </div>
 
+    <div class="about-divider"></div>
+
     <!-- Content mix -->
-    <div class="glass-card about-section-card">
+    <div>
       <p class="section-label">What they make</p>
       <div class="content-mix-bar" id="content-mix-bar"></div>
       <div class="content-mix-legend" id="content-mix-legend"></div>
     </div>
 
-    <!-- Computed insights, entirely data driven -->
-    <div class="glass-card about-section-card" id="about-insights-card" style="display:none;">
+    <!-- Insights — only present (and only dividers around it) when there's
+         actually something to say -->
+    <div class="about-divider" id="about-insights-divider-top" style="display:none;"></div>
+    <div id="about-insights-card" style="display:none;">
       <p class="section-label">Insights</p>
       <div class="about-insights-list" id="about-insights-list"></div>
     </div>
 
-    <!-- Journey timeline, built from real content and view history -->
-    <div class="glass-card about-section-card">
+    <div class="about-divider"></div>
+
+    <!-- Journey -->
+    <div>
       <p class="section-label">The journey</p>
       <div class="journey-timeline" id="journey-timeline">
         <p class="journey-empty" id="journey-empty" style="display:none;">No milestones yet</p>
