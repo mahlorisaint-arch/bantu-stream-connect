@@ -780,7 +780,32 @@ function renderMusicTab() {
 }
 
 // ==========================================================================
-// TABS SETUP
+// VIDEOS TAB — NEW (Fix C)
+// ==========================================================================
+
+function renderVideosTab() {
+  const grid = document.getElementById('videos-content');
+  const empty = document.getElementById('videos-empty');
+  const emptyText = document.getElementById('videos-empty-text');
+  if (!grid) return;
+
+  const videos = (window.creatorContent || []).filter(c => c.content_format === 'long_form');
+
+  if (videos.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (emptyText) emptyText.textContent = window.isOwner ? 'You have not published any videos yet' : 'This creator has not published any videos';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const sorted = [...videos].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  grid.innerHTML = sorted.map(item => buildUploadCardHTML(item)).join('');
+  attachUploadCardClicks(grid);
+}
+
+// ==========================================================================
+// TABS SETUP — UPDATED with videos entry (Fix C)
 // ==========================================================================
 
 function setupTabs() {
@@ -803,6 +828,7 @@ if (panel.dataset.panel === target) {
 panel.hidden = false;
 if (target === 'home') renderHomeTab();
 else if (target === 'series') renderSeriesTab();
+else if (target === 'videos') renderVideosTab();
 else if (target === 'film') renderFilmTab();
 else if (target === 'music') renderMusicTab();
 else if (target === 'shorts') renderShortsTab();
@@ -2699,7 +2725,7 @@ showToast('Failed to disconnect', 'error');
 }
 }
 
-// ===== FIX 3: THREE-DOT MENU — NOW FIXED WITH FRESH OWNERSHIP CHECK =====
+// ===== FIX 3: THREE-DOT MENU — SELF-CONTAINED MODAL OPENING (Fix A) =====
 function setupMoreMenu() {
 const moreBtn = document.getElementById('more-btn');
 const moreMenu = document.getElementById('more-menu');
@@ -2727,14 +2753,18 @@ moreMenu.classList.remove('active');
 }
 });
 
+// BANNER ITEM — self-contained direct modal opening
 const bannerItem = document.getElementById('more-menu-banner');
 if (bannerItem) {
 bannerItem.addEventListener('click', () => {
 moreMenu.classList.remove('active');
-showBannerUploadModal();
+const modal = document.getElementById('banner-upload-modal');
+if (!modal) { console.error('banner-upload-modal not found in DOM'); return; }
+modal.classList.add('active');
 });
 }
 
+// POLL ITEM
 const pollItem = document.getElementById('more-menu-poll');
 if (pollItem) {
 pollItem.addEventListener('click', () => {
@@ -2743,11 +2773,27 @@ openCreatePollModal();
 });
 }
 
+// ABOUT ITEM — self-contained direct modal opening with inline population
 const aboutItem = document.getElementById('more-menu-about');
 if (aboutItem) {
 aboutItem.addEventListener('click', () => {
 moreMenu.classList.remove('active');
-openEditAboutModal();
+const modal = document.getElementById('edit-about-modal');
+if (!modal) { console.error('edit-about-modal not found in DOM'); return; }
+
+// Populate the form fresh, inline, rather than depending on a
+// separate function reference that may have drifted.
+const profile = window.creatorProfile || {};
+const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+setVal('edit-quote', profile.creator_quote || profile.quote || '');
+setVal('edit-mission', profile.creator_mission || profile.mission || '');
+setVal('edit-location', profile.location || '');
+setVal('edit-website', profile.website_url || '');
+setVal('edit-schedule', profile.upload_schedule || '');
+setVal('edit-tags', (profile.tags || profile.content_categories || []).join(', '));
+setVal('edit-social', profile.social_links ? JSON.stringify(profile.social_links) : '');
+
+modal.classList.add('active');
 });
 }
 }
@@ -3385,7 +3431,7 @@ await checkAuth();
 await loadCreatorData();
 
 setupEventListeners();
-setupMoreMenu(); // FIX 3: Wire up the three-dot menu
+setupMoreMenu(); // FIX 3: Wire up the three-dot menu with self-contained modal opening
 
 setTimeout(() => {
 if (loading) loading.style.display = 'none';
@@ -3399,6 +3445,7 @@ console.log('   🎨 New design: Home, Community, About tabs');
 console.log('   🎨 Mobile-first responsive layout');
 console.log('   🎨 Banner section kept as is');
 console.log('   🎨 Community tab uses Pulse feed with polls (pulse_post_polls + pulse_poll_votes)');
+console.log('   🎨 Videos tab added after Series (Fix C)');
 
 } catch (error) {
 console.error('❌ Error initializing:', error);
