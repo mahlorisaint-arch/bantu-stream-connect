@@ -678,7 +678,7 @@ height: 96px;
 }
 .creator-initials { font-size: 40px; }
 }
-/* FOUNDER BADGE - Now toggles properly */
+/* FOUNDER BADGE - Responsive scaling */
 .founder-badge {
 position: absolute;
 bottom: -4px;
@@ -693,6 +693,26 @@ box-shadow: 0 4px 15px rgba(245,158,11,0.4);
 z-index: 2;
 white-space: nowrap;
 }
+/* ===== FIX 2: Founder badge scaling at smaller avatar sizes ===== */
+@media (max-width: 768px) {
+  .founder-badge {
+    font-size: 7px;
+    padding: 2px 6px;
+    bottom: -3px;
+    right: -3px;
+    border-radius: 9px;
+  }
+}
+@media (max-width: 480px) {
+  .founder-badge {
+    font-size: 6px;
+    padding: 1px 5px;
+    bottom: -2px;
+    right: -2px;
+    letter-spacing: 0.2px;
+  }
+}
+
 /* ===== FIX 1: CONSOLIDATED VERIFIED/FOUNDER BADGE ===== */
 .creator-status-badge {
   display: inline-flex;
@@ -1003,19 +1023,27 @@ padding: 1px 6px;
 border-radius: 3px;
 z-index: 2;
 }
-.featured-card__caption {
-display: block;
-margin-top: var(--space-2);
-padding: 0 10px 10px;
+/* ===== FIX 3: Featured card caption - overlay treatment default at all sizes ===== */
+.featured-card {
+  background-size: cover;
+  background-position: center;
 }
-@media (min-width: 1200px) {
-.featured-card__caption {
-position: absolute;
-bottom: var(--space-2);
-left: var(--space-2);
-margin-top: 0;
-padding: 0;
+.featured-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 65%;
+  background: linear-gradient(to top, rgba(7,17,31,0.85), transparent);
+  pointer-events: none;
 }
+.featured-card__caption {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  right: var(--space-2);
+  margin-top: 0;
+  padding: 0;
+  z-index: 2;
 }
 .featured-card__caption .upload-card__title {
 font-size: 16px;
