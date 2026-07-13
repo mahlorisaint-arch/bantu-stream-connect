@@ -447,13 +447,14 @@ These were only used by the playlist builder which is now removed.
 </div>
 
 <!-- ==========================================================================
-TABS BAR — reordered, renamed, Podcast removed
-Order: Home, Series, Film, Music, Community pulse, Shorts, About
+TABS BAR — with Videos added after Series (Fix C)
+Order: Home, Series, Videos, Film, Music, Community pulse, Shorts, About
 ========================================================================== -->
 
 <div class="channel-tabs" id="channel-tabs" role="tablist">
   <button class="channel-tab is-active" data-tab="home" role="tab" aria-selected="true">Home</button>
   <button class="channel-tab" data-tab="series" role="tab" aria-selected="false">Series</button>
+  <button class="channel-tab" data-tab="videos" role="tab" aria-selected="false">Videos</button>
   <button class="channel-tab" data-tab="film" role="tab" aria-selected="false">Film</button>
   <button class="channel-tab" data-tab="music" role="tab" aria-selected="false">Music</button>
   <button class="channel-tab" data-tab="community" role="tab" aria-selected="false">Community pulse</button>
@@ -583,6 +584,26 @@ never Watch Later or Liked Videos.
         <p style="font-size:12px;color:var(--text-secondary);">Playlists are collections of content organized by the creator.</p>
       </div>
     </aside>
+  </div>
+</section>
+
+<!-- ==========================================================================
+VIDEOS PANEL — new tab (Fix C)
+Shows general/long-form uploads (content_format = 'long_form') —
+the catch-all video content that isn't specifically a Film, a Short,
+or part of a Series playlist.
+========================================================================== -->
+<section class="tab-panel" data-panel="videos" id="panel-videos" role="tabpanel" aria-labelledby="tab-videos" hidden>
+  <div class="channel-body">
+    <div class="channel-main">
+      <p class="section-label">Videos</p>
+      <div class="upload-grid" id="videos-content"></div>
+      <div id="videos-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fas fa-video"></i></div>
+        <h3>No videos yet</h3>
+        <p id="videos-empty-text">This creator has not published any videos</p>
+      </div>
+    </div>
   </div>
 </section>
 
