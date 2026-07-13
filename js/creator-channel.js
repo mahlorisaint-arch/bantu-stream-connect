@@ -2293,6 +2293,9 @@ const creatorUsername = document.getElementById('creator-username');
 const connectorDisplay = document.getElementById('connector-count-display');
 const streakCountEl = document.getElementById('streak-count');
 
+// FIX: Set window.isOwner here so other owner-only buttons work
+window.isOwner = !!(window.currentUser && window.currentUser.id === window.creatorId);
+
 if (!placeholder || !nameEl) return;
 
 placeholder.innerHTML = '';
@@ -2696,7 +2699,7 @@ showToast('Failed to disconnect', 'error');
 }
 }
 
-// ===== FIX 3: THREE-DOT MENU — now wired to real dropdown =====
+// ===== FIX 3: THREE-DOT MENU — NOW FIXED WITH FRESH OWNERSHIP CHECK =====
 function setupMoreMenu() {
 const moreBtn = document.getElementById('more-btn');
 const moreMenu = document.getElementById('more-menu');
@@ -2704,7 +2707,14 @@ if (!moreBtn || !moreMenu) return;
 
 moreBtn.addEventListener('click', (e) => {
 e.stopPropagation();
-if (!window.isOwner) {
+
+// Compute ownership fresh at click time — never stale
+const isOwnerNow = !!(window.currentUser && window.creatorId && window.currentUser.id === window.creatorId);
+// Keep the cached flag in sync too, since other code reads
+// window.isOwner elsewhere (edit-about trigger, banner button, etc.)
+window.isOwner = isOwnerNow;
+
+if (!isOwnerNow) {
 showToast('Only the channel owner can access these options', 'info');
 return;
 }
