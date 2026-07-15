@@ -1,1343 +1,413 @@
-/* ==========================================================================
-   BANTU STREAM CONNECT — MUSIC DISCOVERY PAGE
-   Implements: Sonic DNA, Mystery Portal, Worlds, Social Strip
-   ========================================================================== */
-
-/* ===== MUSIC-SPECIFIC VARIABLES ===== */
-:root {
-  --portal-cyan: #34E7FF;
-  --portal-violet: #A855F7;
-  --portal-gold: #F59E0B;
-  --portal-glow-soft: rgba(52, 231, 255, 0.15);
-  --portal-glow-strong: rgba(52, 231, 255, 0.4);
-  --dna-gradient-start: #34E7FF;
-  --dna-gradient-mid: #A855F7;
-  --dna-gradient-end: #F59E0B;
-}
-
-/* ===== MAIN LAYOUT ===== */
-.music-main {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 24px 20px 120px;
-}
-
-@media (min-width: 768px) {
-  .music-main {
-    padding: 32px 32px 120px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .music-main {
-    padding: 40px 64px 120px;
-  }
-}
-
-/* ===== SECTION HEADER ===== */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--soft-white);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
-.section-title i {
-  color: var(--warm-gold);
-  font-size: 16px;
-}
-
-.section-see-all {
-  font-size: 12px;
-  color: var(--slate-grey);
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 16px;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.section-see-all:hover {
-  color: var(--warm-gold);
-  border-color: rgba(245, 158, 11, 0.3);
-  background: rgba(245, 158, 11, 0.05);
-}
-
-@media (min-width: 768px) {
-  .section-title { font-size: 20px; }
-  .section-title i { font-size: 18px; }
-}
-
-/* ==========================================================================
-   SONIC DNA BAR
-   ========================================================================== */
-.sonic-dna-section {
-  background: linear-gradient(135deg, rgba(52, 231, 255, 0.08), rgba(168, 85, 247, 0.08));
-  border: 1px solid rgba(52, 231, 255, 0.15);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 32px;
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
-}
-
-.sonic-dna-section::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(52, 231, 255, 0.1), transparent 70%);
-  pointer-events: none;
-}
-
-.sonic-dna-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 16px;
-  position: relative;
-  z-index: 2;
-}
-
-.sonic-dna-title-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.sonic-dna-badge {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 20px;
-  flex-shrink: 0;
-  box-shadow: 0 4px 20px rgba(52, 231, 255, 0.3);
-  animation: dnaBadgePulse 3s ease-in-out infinite;
-}
-
-@keyframes dnaBadgePulse {
-  0%, 100% { box-shadow: 0 4px 20px rgba(52, 231, 255, 0.3); }
-  50% { box-shadow: 0 4px 30px rgba(52, 231, 255, 0.6); }
-}
-
-.sonic-dna-archetype {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 2px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet), var(--portal-gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  letter-spacing: 0.5px;
-}
-
-.sonic-dna-subtitle {
-  font-size: 12px;
-  color: var(--slate-grey);
-  margin: 0;
-}
-
-.sonic-dna-streak {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(239, 159, 39, 0.15);
-  border: 1px solid rgba(239, 159, 39, 0.3);
-  color: #EF9F27;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.sonic-dna-streak:hover {
-  background: rgba(239, 159, 39, 0.25);
-  transform: translateY(-1px);
-}
-
-.sonic-dna-streak i {
-  animation: flameFlicker 1.5s ease-in-out infinite;
-}
-
-@keyframes flameFlicker {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15) rotate(-5deg); }
-}
-
-.streak-label {
-  font-weight: 400;
-  opacity: 0.8;
-  font-size: 11px;
-}
-
-/* DNA Bars */
-.sonic-dna-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
-  z-index: 2;
-}
-
-.dna-bar-item {
-  display: grid;
-  grid-template-columns: 100px 1fr 50px;
-  align-items: center;
-  gap: 12px;
-}
-
-.dna-bar-label {
-  font-size: 12px;
-  color: var(--soft-white);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dna-bar-track {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-.dna-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--portal-cyan), var(--portal-violet));
-  box-shadow: 0 0 10px rgba(52, 231, 255, 0.5);
-  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-}
-
-.dna-bar-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: dnaShimmer 2s ease-in-out infinite;
-}
-
-@keyframes dnaShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.dna-bar-value {
-  font-size: 12px;
-  color: var(--slate-grey);
-  text-align: right;
-  font-weight: 600;
-  font-family: 'Orbitron', sans-serif;
-}
-
-@media (max-width: 480px) {
-  .sonic-dna-section { padding: 16px; }
-  .sonic-dna-archetype { font-size: 16px; }
-  .sonic-dna-badge { width: 40px; height: 40px; font-size: 16px; }
-  .dna-bar-item { grid-template-columns: 80px 1fr 40px; gap: 8px; }
-  .dna-bar-label { font-size: 11px; }
-  .sonic-dna-streak { padding: 6px 10px; font-size: 11px; }
-}
-
-/* ==========================================================================
-   CONTINUE LISTENING
-   ========================================================================== */
-.continue-listening-section {
-  margin-bottom: 32px;
-}
-
-.continue-listening-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-@media (min-width: 768px) {
-  .continue-listening-row {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 20px;
-  }
-}
-
-.continue-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  position: relative;
-}
-
-.continue-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--warm-gold);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-}
-
-.continue-card-artwork {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-media);
-  overflow: hidden;
-}
-
-.continue-card-artwork img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.continue-card:hover .continue-card-artwork img {
-  transform: scale(1.05);
-}
-
-.continue-card-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.continue-card-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--warm-gold), var(--portal-cyan));
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
-}
-
-.continue-card-play {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(7, 17, 31, 0.4);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.continue-card:hover .continue-card-play {
-  opacity: 1;
-}
-
-.continue-card-play i {
-  font-size: 32px;
-  color: var(--portal-cyan);
-  text-shadow: 0 0 20px rgba(52, 231, 255, 0.8);
-}
-
-.continue-card-info {
-  padding: 12px;
-}
-
-.continue-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--soft-white);
-  margin: 0 0 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.continue-card-meta {
-  font-size: 11px;
-  color: var(--slate-grey);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.continue-card-meta i {
-  color: var(--warm-gold);
-  font-size: 10px;
-}
-
-/* ==========================================================================
-   MYSTERY PORTAL
-   ========================================================================== */
-.portal-section {
-  margin-bottom: 40px;
-}
-
-.portal-timer {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--slate-grey);
-  font-family: 'Orbitron', sans-serif;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 6px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.portal-timer i {
-  color: var(--portal-cyan);
-}
-
-.portal-card {
-  position: relative;
-  height: 280px;
-  border-radius: 24px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  background: linear-gradient(135deg, #0a1929, #1a0a2e);
-  border: 1px solid rgba(52, 231, 255, 0.2);
-}
-
-@media (min-width: 768px) {
-  .portal-card { height: 340px; }
-}
-
-@media (min-width: 1200px) {
-  .portal-card { height: 380px; }
-}
-
-.portal-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(52, 231, 255, 0.5);
-  box-shadow: 0 20px 60px rgba(52, 231, 255, 0.25);
-}
-
-.portal-card-artwork {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.portal-card-blur {
-  position: absolute;
-  inset: -20%;
-  background: radial-gradient(circle at 30% 40%, rgba(52, 231, 255, 0.4), transparent 50%),
-              radial-gradient(circle at 70% 60%, rgba(168, 85, 247, 0.4), transparent 50%),
-              radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.3), transparent 50%);
-  filter: blur(40px);
-  animation: portalFloat 8s ease-in-out infinite;
-}
-
-@keyframes portalFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(5%, -5%) scale(1.05); }
-  66% { transform: translate(-5%, 5%) scale(0.95); }
-}
-
-.portal-card-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.6) 100%);
-}
-
-.portal-card-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.portal-particle {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  background: var(--portal-cyan);
-  border-radius: 50%;
-  box-shadow: 0 0 8px var(--portal-cyan);
-  animation: particleFloat 6s linear infinite;
-  opacity: 0.6;
-}
-
-@keyframes particleFloat {
-  0% { transform: translateY(100%) translateX(0); opacity: 0; }
-  10% { opacity: 0.8; }
-  90% { opacity: 0.8; }
-  100% { transform: translateY(-100%) translateX(20px); opacity: 0; }
-}
-
-.portal-card-content {
-  position: absolute;
-  inset: 0;
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  z-index: 2;
-}
-
-.portal-card-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(52, 231, 255, 0.15);
-  border: 1px solid rgba(52, 231, 255, 0.3);
-  color: var(--portal-cyan);
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 11px;
-  font-weight: 600;
-  width: fit-content;
-  margin-bottom: 12px;
-  backdrop-filter: blur(10px);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.portal-card-badge i {
-  animation: sparkle 2s ease-in-out infinite;
-}
-
-@keyframes sparkle {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  50% { transform: scale(1.2) rotate(180deg); }
-}
-
-.portal-card-note {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
-  font-weight: 600;
-  color: white;
-  margin: 0 0 8px;
-  line-height: 1.3;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-  letter-spacing: 0.3px;
-}
-
-@media (min-width: 768px) {
-  .portal-card-note { font-size: 28px; }
-}
-
-.portal-card-cta {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.portal-card-cta::after {
-  content: '→';
-  transition: transform 0.2s ease;
-}
-
-.portal-card:hover .portal-card-cta::after {
-  transform: translateX(4px);
-}
-
-.portal-card-shimmer {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: portalShimmer 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes portalShimmer {
-  0%, 100% { transform: translateX(-100%); }
-  50% { transform: translateX(100%); }
-}
-
-/* ==========================================================================
-   WORLDS GRID
-   ========================================================================== */
-.worlds-section {
-  margin-bottom: 40px;
-}
-
-.worlds-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-
-@media (min-width: 600px) {
-  .worlds-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
-}
-
-@media (min-width: 900px) {
-  .worlds-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-@media (min-width: 1200px) {
-  .worlds-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; }
-}
-
-.world-card {
-  position: relative;
-  aspect-ratio: 1 / 1.1;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  background: var(--bg-media);
-  border: 1px solid var(--card-border);
-}
-
-.world-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  border-color: var(--warm-gold);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-}
-
-.world-card-artwork {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transition: transform 0.5s ease;
-}
-
-.world-card:hover .world-card-artwork {
-  transform: scale(1.08);
-}
-
-.world-card-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(7, 17, 31, 0.95) 0%, rgba(7, 17, 31, 0.4) 50%, transparent 100%);
-}
-
-.world-card-content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 14px;
-  z-index: 2;
-}
-
-.world-card-name {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-  margin: 0 0 6px;
-  letter-spacing: 0.3px;
-  line-height: 1.2;
-}
-
-@media (min-width: 768px) {
-  .world-card-name { font-size: 16px; }
-}
-
-.world-card-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.world-card-progress-bar {
-  flex: 1;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.world-card-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--warm-gold), var(--portal-cyan));
-  border-radius: 2px;
-  transition: width 0.8s ease;
-}
-
-.world-card-progress-text {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.7);
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-}
-
-.world-card-meta {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.world-card-lock {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--warm-gold);
-  font-size: 12px;
-  z-index: 3;
-}
-
-.world-card-lock.unlocked {
-  background: rgba(52, 231, 255, 0.2);
-  border-color: var(--portal-cyan);
-  color: var(--portal-cyan);
-  box-shadow: 0 0 15px rgba(52, 231, 255, 0.4);
-}
-
-/* ==========================================================================
-   SOCIAL STRIP
-   ========================================================================== */
-.social-strip-section {
-  margin-bottom: 40px;
-}
-
-.live-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: #EF4444;
-  border-radius: 50%;
-  margin-left: 6px;
-  animation: livePulse 1.5s ease-in-out infinite;
-  box-shadow: 0 0 8px #EF4444;
-}
-
-@keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
-
-.social-strip-row {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--warm-gold) transparent;
-}
-
-.social-strip-row::-webkit-scrollbar {
-  height: 4px;
-}
-
-.social-strip-row::-webkit-scrollbar-thumb {
-  background: var(--warm-gold);
-  border-radius: 2px;
-}
-
-.social-strip-item {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  padding: 10px 14px;
-  border-radius: 40px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 200px;
-}
-
-.social-strip-item:hover {
-  border-color: var(--warm-gold);
-  background: rgba(245, 158, 11, 0.05);
-  transform: translateY(-2px);
-}
-
-.social-strip-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 12px;
-  flex-shrink: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-.social-strip-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.social-strip-avatar::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 10px;
-  height: 10px;
-  background: #10B981;
-  border: 2px solid var(--deep-black);
-  border-radius: 50%;
-}
-
-.social-strip-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.social-strip-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--soft-white);
-  margin: 0 0 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.social-strip-track {
-  font-size: 11px;
-  color: var(--slate-grey);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ==========================================================================
-   TRENDING GRID
-   ========================================================================== */
-.trending-section {
-  margin-bottom: 40px;
-}
-
-.trending-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-@media (min-width: 768px) {
-  .trending-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-}
-
-.trending-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.trending-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--warm-gold);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-}
-
-.trending-card-artwork {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-media);
-  overflow: hidden;
-}
-
-.trending-card-artwork img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.trending-card:hover .trending-card-artwork img {
-  transform: scale(1.05);
-}
-
-.trending-card-rank {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--warm-gold);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.trending-card-play {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(7, 17, 31, 0.4);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.trending-card:hover .trending-card-play {
-  opacity: 1;
-}
-
-.trending-card-play i {
-  font-size: 32px;
-  color: var(--portal-cyan);
-  text-shadow: 0 0 20px rgba(52, 231, 255, 0.8);
-}
-
-.trending-card-info {
-  padding: 12px;
-}
-
-.trending-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--soft-white);
-  margin: 0 0 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trending-card-artist {
-  font-size: 11px;
-  color: var(--slate-grey);
-  margin: 0 0 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trending-card-stats {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  color: var(--slate-grey);
-}
-
-.trending-card-stats span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.trending-card-stats i {
-  color: var(--warm-gold);
-  font-size: 10px;
-}
-
-/* ==========================================================================
-   PORTAL REVEAL MODAL
-   ========================================================================== */
-.portal-reveal-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.portal-reveal-modal.active {
-  display: flex;
-  animation: portalRevealIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes portalRevealIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.portal-reveal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(5, 7, 12, 0.92);
-  backdrop-filter: blur(30px);
-}
-
-.portal-reveal-content {
-  position: relative;
-  width: 100%;
-  max-width: 500px;
-  background: linear-gradient(135deg, rgba(10, 25, 41, 0.95), rgba(26, 10, 46, 0.95));
-  border: 1px solid rgba(52, 231, 255, 0.3);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 30px 80px rgba(52, 231, 255, 0.3);
-  animation: portalRevealScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes portalRevealScale {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.portal-reveal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  transition: all 0.2s ease;
-}
-
-.portal-reveal-close:hover {
-  background: rgba(239, 68, 68, 0.8);
-  transform: rotate(90deg);
-}
-
-.portal-reveal-artwork {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-media);
-  overflow: hidden;
-}
-
-.portal-reveal-artwork img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.portal-reveal-artwork-blur {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
-  transition: opacity 0.6s ease;
-}
-
-.portal-reveal-modal.revealed .portal-reveal-artwork-blur {
-  opacity: 0;
-}
-
-.portal-reveal-info {
-  padding: 24px;
-}
-
-.portal-reveal-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(52, 231, 255, 0.15);
-  border: 1px solid rgba(52, 231, 255, 0.3);
-  color: var(--portal-cyan);
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 10px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.portal-reveal-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 24px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 6px;
-  line-height: 1.2;
-}
-
-.portal-reveal-artist {
-  font-size: 14px;
-  color: var(--slate-grey);
-  margin: 0 0 12px;
-}
-
-.portal-reveal-note {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 16px;
-  line-height: 1.5;
-  font-style: italic;
-  padding-left: 12px;
-  border-left: 2px solid var(--portal-cyan);
-}
-
-.portal-reveal-dna-match {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--portal-cyan);
-  margin-bottom: 20px;
-  padding: 8px 12px;
-  background: rgba(52, 231, 255, 0.08);
-  border-radius: 8px;
-  border: 1px solid rgba(52, 231, 255, 0.15);
-}
-
-.portal-reveal-dna-match i {
-  font-size: 12px;
-}
-
-.portal-reveal-play-btn {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
-  border: none;
-  border-radius: 14px;
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.2s ease;
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.5px;
-  box-shadow: 0 8px 25px rgba(52, 231, 255, 0.3);
-}
-
-.portal-reveal-play-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 35px rgba(52, 231, 255, 0.5);
-}
-
-.portal-reveal-play-btn i {
-  font-size: 14px;
-}
-
-/* ==========================================================================
-   UNLOCK CELEBRATION
-   ========================================================================== */
-.unlock-celebration {
-  position: fixed;
-  inset: 0;
-  z-index: 10001;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.unlock-celebration.active {
-  display: flex;
-  animation: unlockIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes unlockIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.unlock-celebration-content {
-  background: linear-gradient(135deg, rgba(10, 25, 41, 0.98), rgba(26, 10, 46, 0.98));
-  border: 2px solid var(--portal-cyan);
-  border-radius: 20px;
-  padding: 32px 40px;
-  text-align: center;
-  box-shadow: 0 30px 80px rgba(52, 231, 255, 0.4);
-  pointer-events: auto;
-  animation: unlockBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes unlockBounce {
-  0% { transform: scale(0.5); }
-  60% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-.unlock-celebration-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 28px;
-  box-shadow: 0 0 40px rgba(52, 231, 255, 0.6);
-  animation: iconPulse 1s ease-in-out infinite;
-}
-
-@keyframes iconPulse {
-  0%, 100% { box-shadow: 0 0 40px rgba(52, 231, 255, 0.6); }
-  50% { box-shadow: 0 0 60px rgba(52, 231, 255, 0.9); }
-}
-
-.unlock-celebration-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 6px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.unlock-celebration-subtitle {
-  font-size: 13px;
-  color: var(--slate-grey);
-  margin: 0 0 20px;
-}
-
-.unlock-celebration-btn {
-  padding: 10px 24px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
-  border: none;
-  border-radius: 20px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-
-.unlock-celebration-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(52, 231, 255, 0.4);
-}
-
-/* ==========================================================================
-   EMPTY STATES
-   ========================================================================== */
-.music-empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--slate-grey);
-  background: var(--card-bg);
-  border: 1px dashed var(--card-border);
-  border-radius: 16px;
-}
-
-.music-empty-state i {
-  font-size: 40px;
-  color: var(--warm-gold);
-  opacity: 0.4;
-  margin-bottom: 12px;
-}
-
-.music-empty-state h4 {
-  font-size: 16px;
-  color: var(--soft-white);
-  margin: 0 0 6px;
-}
-
-.music-empty-state p {
-  font-size: 13px;
-  margin: 0;
-}
-
-/* ==========================================================================
-   LOADING SKELETONS
-   ========================================================================== */
-.skeleton {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.5s ease-in-out infinite;
-  border-radius: 8px;
-}
-
-@keyframes skeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ==========================================================================
-   THEME SUPPORT
-   ========================================================================== */
-body.theme-light .sonic-dna-section {
-  background: linear-gradient(135deg, rgba(52, 231, 255, 0.1), rgba(168, 85, 247, 0.1));
-  border-color: rgba(52, 231, 255, 0.2);
-}
-
-body.theme-light .portal-card {
-  background: linear-gradient(135deg, #e0f2fe, #f3e8ff);
-}
-
-body.theme-light .portal-card-note {
-  color: #0F172A;
-  text-shadow: none;
-}
-
-body.theme-high-contrast .sonic-dna-section {
-  border-color: #FFFFFF;
-}
-
-body.theme-high-contrast .portal-card {
-  border-color: #FFFFFF;
-}
-
-body.theme-high-contrast .portal-card-note {
-  color: #FFFFFF;
-}
-
-/* ==========================================================================
-   MOBILE OPTIMIZATIONS
-   ========================================================================== */
-@media (max-width: 480px) {
-  .music-main { padding: 16px 12px 100px; }
-  .section-title { font-size: 16px; }
-  .portal-card { height: 240px; }
-  .portal-card-content { padding: 20px; }
-  .portal-card-note { font-size: 18px; }
-  .worlds-grid { gap: 10px; }
-  .world-card-name { font-size: 12px; }
-  .continue-listening-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .trending-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .social-strip-item { min-width: 180px; padding: 8px 12px; }
-}
-
-@media (max-width: 360px) {
-  .sonic-dna-archetype { font-size: 14px; }
-  .portal-card-note { font-size: 16px; }
-  .world-card-name { font-size: 11px; }
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Music Discovery - Bantu Stream Connect</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Shared Components CSS -->
+<link rel="stylesheet" href="../css/shared-components.css">
+
+<!-- Music Page CSS -->
+<link rel="stylesheet" href="../css/music/music.css">
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY & MENU -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+  <div class="sidebar-header">
+    <div class="sidebar-logo" onclick="window.location.href='../index.html'">
+      <div class="logo-icon">
+        <img src="../assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+      </div>
+      <span class="sidebar-logo-text">BSC</span>
+    </div>
+    <button class="sidebar-close" id="sidebar-close">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="sidebar-profile" id="sidebar-profile">
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
+      <i class="fas fa-user"></i>
+    </div>
+    <div class="sidebar-profile-info">
+      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+    </div>
+    <i class="fas fa-chevron-right"></i>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-item">
+      <i class="fas fa-home"></i><span>Home</span>
+    </a>
+    <a href="../explore-screen.html" class="sidebar-nav-item">
+      <i class="fas fa-compass"></i><span>Explore</span>
+    </a>
+    <a href="../category/music.html" class="sidebar-nav-item active" data-category="music">
+      <i class="fas fa-music"></i><span>Music</span>
+    </a>
+    <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
+      <i class="fas fa-history"></i><span>Watch History</span>
+    </a>
+    <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
+      <i class="fas fa-bell"></i><span>Notifications</span>
+      <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
+    </a>
+    <a href="../creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+      <i class="fas fa-plus-circle"></i><span>Create</span>
+    </a>
+    <a href="../manage-profiles.html" class="sidebar-nav-item">
+      <i class="fas fa-user-cog"></i><span>Manage Profiles</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+      <span><i class="fas fa-palette"></i> Theme</span>
+      <i class="fas fa-chevron-right"></i>
+    </div>
+    <div class="sidebar-scale-control">
+      <div class="scale-control-row">
+        <span><i class="fas fa-text-height"></i> UI Size</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button>
+          <span class="scale-value" id="sidebar-scale-value">100%</span>
+          <button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div class="scale-control-row">
+        <button class="scale-btn" id="sidebar-scale-reset">
+          <i class="fas fa-undo"></i> Reset to Default
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- THEME SELECTOR -->
+<div id="theme-selector" class="theme-selector">
+  <button class="theme-option" data-theme="dark">
+    <i class="fas fa-moon"></i> Dark
+  </button>
+  <button class="theme-option" data-theme="light">
+    <i class="fas fa-sun"></i> Light
+  </button>
+  <button class="theme-option" data-theme="high-contrast">
+    <i class="fas fa-eye"></i> High Contrast
+  </button>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="loading" class="loading-screen">
+  <div class="spinner"></div>
+  <div id="loading-text">Tuning into your frequency...</div>
+</div>
+
+<!-- ANIMATED BACKGROUND -->
+<div class="animated-bg">
+  <div class="glow-cycle glow-1"></div>
+  <div class="glow-cycle glow-2"></div>
+  <div class="glow-cycle glow-3"></div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<!-- Search Modal -->
+<div id="search-modal" class="search-modal">
+  <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
+    <div class="search-modal-header">
+      <div class="search-input-container">
+        <i class="search-icon fas fa-search"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search tracks, artists, worlds..." autocomplete="off">
+      </div>
+      <button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="search-filters">
+      <div class="filter-group">
+        <label class="filter-label">World</label>
+        <select id="category-filter" class="filter-select">
+          <option value="">All Worlds</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Sort By</label>
+        <select id="sort-filter" class="filter-select">
+          <option value="newest">Newest First</option>
+          <option value="popular">Most Popular</option>
+          <option value="trending">Trending</option>
+        </select>
+      </div>
+    </div>
+    <div class="search-results">
+      <div id="search-results-grid" class="search-results-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications Panel -->
+<div id="notifications-panel" class="modal">
+  <div class="modal-content">
+    <div class="notifications-header">
+      <h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; margin: 0; color: var(--soft-white);">Notifications</h2>
+      <button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="notifications-list" id="notifications-list"></div>
+    <div class="notifications-footer">
+      <button id="mark-all-read" class="modal-btn close" style="flex: 1;">Mark all as read</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PORTAL REVEAL MODAL ===== -->
+<div id="portal-reveal-modal" class="portal-reveal-modal">
+  <div class="portal-reveal-overlay"></div>
+  <div class="portal-reveal-content">
+    <button class="portal-reveal-close" id="portal-reveal-close">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="portal-reveal-artwork" id="portal-reveal-artwork">
+      <div class="portal-reveal-artwork-blur"></div>
+    </div>
+    <div class="portal-reveal-info">
+      <div class="portal-reveal-badge" id="portal-reveal-badge">
+        <i class="fas fa-sparkles"></i> Today's Portal Drop
+      </div>
+      <h2 class="portal-reveal-title" id="portal-reveal-title">Loading...</h2>
+      <p class="portal-reveal-artist" id="portal-reveal-artist"></p>
+      <p class="portal-reveal-note" id="portal-reveal-note"></p>
+      <div class="portal-reveal-dna-match" id="portal-reveal-dna-match"></div>
+      <button class="portal-reveal-play-btn" id="portal-reveal-play-btn">
+        <i class="fas fa-play"></i>
+        <span>Play Now</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WORLD UNLOCK CELEBRATION ===== -->
+<div id="unlock-celebration" class="unlock-celebration">
+  <div class="unlock-celebration-content">
+    <div class="unlock-celebration-icon">
+      <i class="fas fa-lock-open"></i>
+    </div>
+    <h3 class="unlock-celebration-title" id="unlock-celebration-title">World Unlocked</h3>
+    <p class="unlock-celebration-subtitle" id="unlock-celebration-subtitle">Yours now</p>
+    <button class="unlock-celebration-btn" id="unlock-celebration-btn">Explore</button>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app" style="display: none;">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo" onclick="window.location.href='../index.html'">
+      <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="logo-icon">
+        <img src="../assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+      </div>
+      <div class="logo-text">BSC</div>
+    </div>
+    <div class="header-actions">
+      <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+        <i class="fas fa-microphone"></i>
+      </button>
+      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+        <i class="fas fa-search"></i>
+      </button>
+      <button id="notifications-btn" class="icon-btn" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+      </button>
+      <div class="profile-switcher">
+        <button id="current-profile-btn" class="profile-btn" title="Profile">
+          <div class="profile-placeholder" id="userProfilePlaceholder">
+            <i class="fas fa-user"></i>
+          </div>
+          <span class="profile-name" id="current-profile-name">Guest</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="profile-dropdown" id="profile-dropdown">
+          <div class="profile-dropdown-header">
+            <h4>Switch Profile</h4>
+          </div>
+          <div class="profile-list" id="profile-list"></div>
+          <div class="profile-dropdown-footer">
+            <button class="text-btn" id="manage-profiles-btn">
+              <i class="fas fa-user-cog"></i> Manage Profiles
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="rsa-badge" title="Proudly South African">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>RSA</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MUSIC DISCOVERY MAIN ===== -->
+  <main class="music-main">
+
+    <!-- ===== SONIC DNA BAR ===== -->
+    <section class="sonic-dna-section" id="sonic-dna-section">
+      <div class="sonic-dna-header">
+        <div class="sonic-dna-title-row">
+          <div class="sonic-dna-badge" id="sonic-dna-badge">
+            <i class="fas fa-fingerprint"></i>
+          </div>
+          <div>
+            <h2 class="sonic-dna-archetype" id="sonic-dna-archetype">Loading your sound...</h2>
+            <p class="sonic-dna-subtitle">Your living taste profile</p>
+          </div>
+        </div>
+        <button class="sonic-dna-streak" id="sonic-dna-streak" title="Your listening streak">
+          <i class="fas fa-fire"></i>
+          <span id="streak-count">0</span>
+          <span class="streak-label">day streak</span>
+        </button>
+      </div>
+      <div class="sonic-dna-bars" id="sonic-dna-bars">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- ===== CONTINUE LISTENING ===== -->
+    <section class="continue-listening-section" id="continue-listening-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-headphones"></i>
+          Pick up where you left off
+        </h3>
+      </div>
+      <div class="continue-listening-row" id="continue-listening-row">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- ===== TODAY'S PORTAL ===== -->
+    <section class="portal-section" id="portal-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-portal-enter"></i>
+          Today's Portal
+        </h3>
+        <span class="portal-timer" id="portal-timer">
+          <i class="fas fa-clock"></i>
+          <span id="portal-countdown">--:--:--</span>
+        </span>
+      </div>
+      <div class="portal-card" id="portal-card" tabindex="0" role="button" aria-label="Open today's mystery drop">
+        <div class="portal-card-artwork" id="portal-card-artwork">
+          <div class="portal-card-blur"></div>
+          <div class="portal-card-glow"></div>
+          <div class="portal-card-particles" id="portal-card-particles"></div>
+        </div>
+        <div class="portal-card-content">
+          <div class="portal-card-badge">
+            <i class="fas fa-sparkles"></i>
+            <span>Chosen for you</span>
+          </div>
+          <h4 class="portal-card-note" id="portal-card-note">Loading today's drop...</h4>
+          <p class="portal-card-cta">Tap to reveal</p>
+        </div>
+        <div class="portal-card-shimmer"></div>
+      </div>
+    </section>
+
+    <!-- ===== WORLDS TO EXPLORE ===== -->
+    <section class="worlds-section" id="worlds-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-globe"></i>
+          Worlds to explore
+        </h3>
+        <a href="#" class="section-see-all" id="worlds-see-all">See all worlds</a>
+      </div>
+      <div class="worlds-grid" id="worlds-grid">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- ===== LIVE SOCIAL STRIP ===== -->
+    <section class="social-strip-section" id="social-strip-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-users"></i>
+          Listening now
+          <span class="live-dot"></span>
+        </h3>
+      </div>
+      <div class="social-strip-row" id="social-strip-row">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- ===== TRENDING IN YOUR WORLDS ===== -->
+    <section class="trending-section" id="trending-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-chart-line"></i>
+          Trending in your worlds
+        </h3>
+      </div>
+      <div class="trending-grid" id="trending-grid">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p>
+    <div class="footer-links">
+      <a href="../privacy-policy.html">Privacy Policy</a>
+      <a href="../terms-of-service.html">Terms of Service</a>
+      <a href="../support.html">Support</a>
+    </div>
+  </footer>
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="navigation-button-container">
+    <div class="navigation-button">
+      <div class="nav-icon" id="nav-home-btn" title="Home">
+        <i class="fas fa-home"></i>
+      </div>
+      <div class="nav-icon" id="nav-history-btn" title="Watch History">
+        <i class="fas fa-history"></i>
+      </div>
+      <div class="nav-icon" id="nav-create-btn" title="Create Content">
+        <i class="fas fa-plus-circle"></i>
+      </div>
+      <div class="nav-icon" id="nav-menu-btn" title="Menu">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+
+<!-- Shared Components JS -->
+<script src="../js/shared-components.js"></script>
+
+<!-- Music Page JS -->
+<script src="../js/music/music.js"></script>
+
+</body>
+</html>
