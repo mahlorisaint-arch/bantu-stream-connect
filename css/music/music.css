@@ -841,7 +841,7 @@
   border-left: 3px solid var(--portal-cyan);
 }
 
-/* Weekly find (blurred mystery) */
+/* Weekly find (blurred mystery) - FIX #3 */
 .world-weekly-find {
   position: relative;
   height: 140px;
