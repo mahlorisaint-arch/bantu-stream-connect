@@ -142,7 +142,7 @@
     }
   }
 
-  // ===== SONIC DNA QUIZ (FIX #2) =====
+  // ===== SONIC DNA QUIZ (UPDATED WITH SQL FUNCTION) =====
   const SonicQuiz = {
     currentStep: 0,
     totalSteps: 6,
@@ -272,13 +272,17 @@
       }
     },
 
+    // UPDATED: Calls SQL function to get real archetype
     async renderReveal() {
-      // Calculate archetype based on selections
-      const archetype = this.calculateArchetype();
-      const archetypeData = ARCHETYPES[archetype] || ARCHETYPES['Border Blur'];
+      // Save to database first to get the real archetype from SQL
+      const archetype = await this.saveSonicDNAAndGetArchetype();
+      
+      // Fallback in case SQL fails
+      const finalArchetype = archetype || this.calculateArchetype();
+      const archetypeData = ARCHETYPES[finalArchetype] || ARCHETYPES['Border Blur'];
 
       // Update UI
-      document.getElementById('sonic-quiz-archetype-name').textContent = archetype;
+      document.getElementById('sonic-quiz-archetype-name').textContent = finalArchetype;
       document.getElementById('sonic-quiz-archetype-desc').textContent = archetypeData.desc;
 
       // Render breakdown
@@ -296,9 +300,59 @@
           </div>
         `;
       }).join('');
+    },
 
-      // Save to database
-      await this.saveSonicDNA(archetype, topGenres);
+    // UPDATED: New function that calls SQL resolve_archetype
+    async saveSonicDNAAndGetArchetype() {
+      if (!window.currentUser) return null;
+
+      const topGenres = this.selections.slice(0, 4);
+      const sonicDNA = {
+        top_genres: topGenres.map((g, idx) => ({
+          id: g.id,
+          name: g.name,
+          weight: Math.max(0.3, 0.9 - (idx * 0.15))
+        })),
+        mood_weights: {
+          nocturnal: 0.5,
+          energetic: 0.5,
+          spiritual: 0.5
+        },
+        discovery_tolerance: 0.5,
+        last_updated: new Date().toISOString()
+      };
+
+      try {
+        // 1. Save the DNA
+        await supabase
+          .from('user_profiles')
+          .update({ sonic_dna: sonicDNA })
+          .eq('id', window.currentUser.id);
+
+        // 2. Call the SQL function to get the real archetype
+        const { data: resolvedArchetype, error } = await supabase
+          .rpc('resolve_archetype', { dna: sonicDNA });
+
+        if (error) throw error;
+
+        // 3. Update the profile with the resolved archetype
+        await supabase
+          .from('user_profiles')
+          .update({ 
+            sonic_dna: { ...sonicDNA, archetype: resolvedArchetype },
+            top_genre_id: topGenres[0]?.id || null
+          })
+          .eq('id', window.currentUser.id);
+
+        window.sonicDNA = { ...sonicDNA, archetype: resolvedArchetype };
+        showToast('Your Sonic DNA has been revealed!', 'success');
+        return resolvedArchetype;
+
+      } catch (e) {
+        console.error('Error saving Sonic DNA:', e);
+        showToast('Could not save your Sonic DNA', 'error');
+        return null;
+      }
     },
 
     calculateArchetype() {
@@ -313,42 +367,6 @@
       if (topGenre === 'Hip-Hop') return 'Underground Pulse';
 
       return 'Sound Nomad';
-    },
-
-    async saveSonicDNA(archetype, topGenres) {
-      if (!window.currentUser) return;
-
-      const sonicDNA = {
-        archetype: archetype,
-        top_genres: topGenres.map((g, idx) => ({
-          id: g.id,
-          name: g.name,
-          weight: Math.max(0.3, 0.9 - (idx * 0.15))
-        })),
-        mood_weights: {
-          nocturnal: archetype === 'Night Voyager' ? 0.8 : 0.3,
-          energetic: archetype === 'Heat Chaser' ? 0.8 : 0.3,
-          spiritual: archetype === 'Soul Carrier' ? 0.8 : 0.3
-        },
-        discovery_tolerance: archetype === 'Sound Nomad' ? 0.8 : 0.4,
-        last_updated: new Date().toISOString()
-      };
-
-      try {
-        await supabase
-          .from('user_profiles')
-          .update({
-            sonic_dna: sonicDNA,
-            top_genre_id: topGenres[0]?.id || null
-          })
-          .eq('id', window.currentUser.id);
-
-        window.sonicDNA = sonicDNA;
-        showToast('Your Sonic DNA has been revealed!', 'success');
-      } catch (e) {
-        console.error('Error saving Sonic DNA:', e);
-        showToast('Could not save your Sonic DNA', 'error');
-      }
     }
   };
 
@@ -498,7 +516,7 @@
     return meta[contentFormat] || { label: 'Content', color: '#1D4ED8' };
   }
 
-  // ===== MYSTERY PORTAL (FIX #4) =====
+  // ===== MYSTERY PORTAL =====
   async function loadPortalDrop() {
     const noteEl = document.getElementById('portal-card-note');
     const countdownEl = document.getElementById('portal-countdown');
@@ -556,7 +574,6 @@
     const closeBtn = document.getElementById('portal-reveal-close');
     const playBtn = document.getElementById('portal-reveal-play-btn');
 
-    // FIX #4: Ensure click handler is attached
     portalCard.onclick = () => {
       // Populate modal
       document.getElementById('portal-reveal-artwork').innerHTML = `
@@ -623,7 +640,105 @@
     }
   }
 
-  // ===== WORLDS (FIX #3: In-page exploration) =====
+  // ===== STREAK COUNTER (NEW) =====
+  async function computeAndRenderStreak() {
+    const streakEl = document.getElementById('streak-count');
+    if (!streakEl || !window.currentUser) {
+      if (streakEl) streakEl.textContent = '0';
+      return;
+    }
+
+    try {
+      // Get all completed tracks ordered by date
+      const { data } = await supabase
+        .from('watch_progress')
+        .select('completed_at')
+        .eq('user_id', window.currentUser.id)
+        .eq('is_completed', true)
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false });
+
+      if (!data || data.length === 0) {
+        streakEl.textContent = '0';
+        return;
+      }
+
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (let i = 0; i < data.length; i++) {
+        const date = new Date(data[i].completed_at);
+        date.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+        
+        // If it's today or yesterday (and we're starting the count), or exactly the next day in the sequence
+        if (diffDays === streak || (diffDays === streak + 1 && streak === 0)) {
+          streak++;
+        } else if (diffDays > streak) {
+          break; // Streak broken
+        }
+      }
+      
+      streakEl.textContent = streak;
+    } catch (e) {
+      console.error('Streak error:', e);
+      streakEl.textContent = '0';
+    }
+  }
+
+  // ===== WORLDS (FIXED: Breadcrumb, Navigation, Real Gating) =====
+
+  // FIXED: When clicking a world from the main grid (Resets breadcrumb)
+  function openWorldDetail(worldId, worldName) {
+    window.currentWorldId = worldId;
+    window.currentWorldView = 'detail';
+    window.worldBreadcrumb = [{ id: worldId, name: worldName }]; // Reset for top-level
+    
+    showWorldDetailUI();
+    loadWorldDetails(worldId);
+  }
+
+  // NEW: When clicking a sub-world from within a world detail (Appends to breadcrumb)
+  function openSubWorld(worldId, worldName) {
+    window.currentWorldId = worldId;
+    window.worldBreadcrumb.push({ id: worldId, name: worldName });
+    
+    renderBreadcrumb();
+    loadWorldDetails(worldId);
+  }
+
+  // FIXED: Truncate instead of reset to preserve ancestors
+  function navigateToBreadcrumbLevel(level) {
+    if (level === 0) {
+      closeWorldDetail();
+      return;
+    }
+    // Truncate the breadcrumb to the selected level
+    window.worldBreadcrumb = window.worldBreadcrumb.slice(0, level + 1);
+    renderBreadcrumb();
+    loadWorldDetails(window.worldBreadcrumb[level].id);
+  }
+
+  function showWorldDetailUI() {
+    document.getElementById('worlds-view-grid').style.display = 'none';
+    document.getElementById('worlds-view-detail').style.display = 'block';
+    document.getElementById('worlds-back-btn').style.display = 'flex';
+    document.getElementById('worlds-breadcrumb').style.display = 'flex';
+  }
+
+  function closeWorldDetail() {
+    window.currentWorldView = 'grid';
+    window.currentWorldId = null;
+    window.worldBreadcrumb = [];
+
+    document.getElementById('worlds-view-grid').style.display = 'block';
+    document.getElementById('worlds-view-detail').style.display = 'none';
+    document.getElementById('worlds-back-btn').style.display = 'none';
+    document.getElementById('worlds-breadcrumb').style.display = 'none';
+    document.getElementById('worlds-section-title').textContent = 'Worlds to explore';
+  }
+
   async function loadWorlds() {
     const grid = document.getElementById('worlds-grid');
 
@@ -713,26 +828,6 @@
     });
   }
 
-  // FIX #3: Open world detail in-page (not separate page)
-  async function openWorldDetail(worldId, worldName) {
-    window.currentWorldId = worldId;
-    window.currentWorldView = 'detail';
-    window.worldBreadcrumb = [{ id: worldId, name: worldName }];
-
-    // Hide grid, show detail view
-    document.getElementById('worlds-view-grid').style.display = 'none';
-    document.getElementById('worlds-view-detail').style.display = 'block';
-    document.getElementById('worlds-back-btn').style.display = 'flex';
-    document.getElementById('worlds-breadcrumb').style.display = 'flex';
-    document.getElementById('worlds-section-title').textContent = worldName;
-
-    // Update breadcrumb
-    renderBreadcrumb();
-
-    // Load world details
-    await loadWorldDetails(worldId);
-  }
-
   function renderBreadcrumb() {
     const breadcrumb = document.getElementById('worlds-breadcrumb');
     breadcrumb.innerHTML = window.worldBreadcrumb.map((item, idx) => {
@@ -750,19 +845,6 @@
         navigateToBreadcrumbLevel(level);
       });
     });
-  }
-
-  function navigateToBreadcrumbLevel(level) {
-    if (level === 0) {
-      // Back to worlds grid
-      closeWorldDetail();
-    } else {
-      // Navigate to specific level (future: load sub-world)
-      const target = window.worldBreadcrumb[level];
-      if (target) {
-        openWorldDetail(target.id, target.name);
-      }
-    }
   }
 
   async function loadWorldDetails(worldId) {
@@ -790,13 +872,20 @@
       // Load tracks
       await loadWorldTracks(worldId);
 
+      // Setup weekly find
+      setupWeeklyFind(worldId);
+
     } catch (e) {
       console.error('World details error:', e);
     }
   }
 
+  // FIXED: loadSubWorlds with REAL unlock gating
   async function loadSubWorlds(parentWorldId) {
     const grid = document.getElementById('world-detail-subworlds');
+    // Get the parent's progress to check the real unlocked_subworlds array
+    const parentProgress = window.worldProgress[parentWorldId];
+    const unlockedSubworlds = parentProgress?.unlocked_subworlds || [];
 
     try {
       const { data: subWorlds } = await supabase
@@ -814,15 +903,17 @@
       const subWorldColors = ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#EF4444'];
 
       grid.innerHTML = subWorlds.map((world, idx) => {
-        const progress = window.worldProgress[world.id];
-        const pct = progress ? Math.round(progress.exploration_percentage || 0) : 0;
-        const tracksListened = progress ? progress.tracks_listened : 0;
+        const childProgress = window.worldProgress[world.id];
+        const pct = childProgress ? Math.round(childProgress.exploration_percentage || 0) : 0;
+        const tracksListened = childProgress ? childProgress.tracks_listened : 0;
         const color = subWorldColors[idx % subWorldColors.length];
         const threshold = world.unlock_threshold_tracks || 5;
-        const isLocked = pct === 0 && !progress;
+        
+        // REAL UNLOCK GATING: Check if this specific child ID is in the parent's unlocked array
+        const isLocked = !unlockedSubworlds.includes(world.id);
 
         return `
-          <div class="world-card" data-world-id="${world.id}" data-world-name="${escapeHtml(world.name)}">
+          <div class="world-card ${isLocked ? 'is-locked' : ''}" data-world-id="${world.id}" data-world-name="${escapeHtml(world.name)}">
             <div class="world-card-artwork" style="background: linear-gradient(135deg, ${color}40, ${color}80);"></div>
             <div class="world-card-overlay"></div>
             <div class="world-card-lock ${isLocked ? '' : 'unlocked'}">
@@ -832,24 +923,28 @@
               <h4 class="world-card-name">${escapeHtml(world.name)}</h4>
               <div class="world-card-progress">
                 <div class="world-card-progress-bar">
-                  <div class="world-card-progress-fill" style="width: ${pct}%;"></div>
+                  <div class="world-card-progress-fill" style="width: ${isLocked ? 0 : pct}%;"></div>
                 </div>
-                <span class="world-card-progress-text">${pct}%</span>
+                <span class="world-card-progress-text">${isLocked ? 'Locked' : pct + '%'}</span>
               </div>
-              <p class="world-card-meta">${tracksListened}/${threshold} tracks</p>
+              <p class="world-card-meta">${isLocked ? `${tracksListened}/${threshold} tracks to unlock` : `${tracksListened} tracks explored`}</p>
             </div>
           </div>
         `;
       }).join('');
 
-      // Attach click handlers
+      // Attach click handlers with REAL gating
       grid.querySelectorAll('.world-card').forEach(card => {
         card.addEventListener('click', () => {
           const id = card.dataset.worldId;
           const name = card.dataset.worldName;
-          window.worldBreadcrumb.push({ id, name });
-          renderBreadcrumb();
-          loadWorldDetails(id);
+          
+          if (card.classList.contains('is-locked')) {
+            showToast(`Explore more tracks in this world to unlock ${name}`, 'warning');
+            return; // BLOCK NAVIGATION
+          }
+          
+          openSubWorld(id, name);
         });
       });
 
@@ -917,16 +1012,30 @@
     }
   }
 
-  function closeWorldDetail() {
-    window.currentWorldView = 'grid';
-    window.currentWorldId = null;
-    window.worldBreadcrumb = [];
+  // NEW: Setup "This Week's Find"
+  function setupWeeklyFind(worldId) {
+    const weeklyFind = document.getElementById('world-weekly-find');
+    if (!weeklyFind) return;
 
-    document.getElementById('worlds-view-grid').style.display = 'block';
-    document.getElementById('worlds-view-detail').style.display = 'none';
-    document.getElementById('worlds-back-btn').style.display = 'none';
-    document.getElementById('worlds-breadcrumb').style.display = 'none';
-    document.getElementById('worlds-section-title').textContent = 'Worlds to explore';
+    weeklyFind.onclick = async () => {
+      showToast('Revealing this week\'s hidden find...', 'info');
+      
+      // Fetch a random track from this world
+      const { data: tracks } = await supabase
+        .from('Content')
+        .select('id')
+        .eq('primary_genre_id', worldId)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (tracks && tracks.length > 0) {
+        const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+        window.location.href = `../content-detail.html?id=${randomTrack.id}`;
+      } else {
+        showToast('No hidden finds in this world yet', 'warning');
+      }
+    };
   }
 
   // ===== SOCIAL STRIP =====
@@ -1069,7 +1178,7 @@
 
   // ===== SETUP EVENT LISTENERS =====
   function setupEventListeners() {
-    // Sonic DNA section click (FIX #2)
+    // Sonic DNA section click
     const dnaSection = document.getElementById('sonic-dna-section');
     const dnaCta = document.getElementById('sonic-dna-cta');
 
@@ -1098,7 +1207,7 @@
       loadTrending();
     });
 
-    // Worlds back button (FIX #3)
+    // Worlds back button
     const worldsBackBtn = document.getElementById('worlds-back-btn');
     if (worldsBackBtn) {
       worldsBackBtn.addEventListener('click', closeWorldDetail);
@@ -1128,6 +1237,9 @@
       // Render Sonic DNA
       renderSonicDNA();
       createPortalParticles();
+      
+      // NEW: Compute streak
+      await computeAndRenderStreak();
 
       // Setup event listeners
       setupEventListeners();
@@ -1153,6 +1265,7 @@
         loadPortalDrop();
         loadWorlds();
         loadSocialStrip();
+        computeAndRenderStreak();
       });
     } else if (event === 'SIGNED_OUT') {
       window.currentUser = null;
