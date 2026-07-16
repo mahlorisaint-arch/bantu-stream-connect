@@ -285,6 +285,7 @@
             <p class="sonic-dna-subtitle" id="sonic-dna-subtitle">Your living taste profile</p>
           </div>
         </div>
+        <!-- FIX #6: Streak uses warm-gold (premium moment) -->
         <button class="sonic-dna-streak" id="sonic-dna-streak" title="Your listening streak">
           <i class="fas fa-fire"></i>
           <span id="streak-count">0</span>
@@ -294,6 +295,7 @@
       <div class="sonic-dna-bars" id="sonic-dna-bars">
         <!-- Dynamically populated -->
       </div>
+      <!-- FIX #2: CTA button for quiz -->
       <button class="sonic-dna-cta" id="sonic-dna-cta">
         <i class="fas fa-arrow-right"></i>
         <span id="sonic-dna-cta-text">Take the 30-second quiz</span>
@@ -359,7 +361,7 @@
       
       <!-- Breadcrumb for nested exploration -->
       <div class="worlds-breadcrumb" id="worlds-breadcrumb" style="display:none;">
-        <span class="breadcrumb-item" data-level="surface">Surface</span>
+        <span class="breadcrumb-item" data-level="0">Surface</span>
       </div>
 
       <!-- Worlds Grid (default view) -->
@@ -385,7 +387,7 @@
           </div>
         </div>
 
-        <!-- Sub-worlds grid -->
+        <!-- Sub-worlds grid with REAL unlock gating -->
         <div class="world-detail-subsection">
           <h4 class="world-detail-subsection-title">Sub-worlds</h4>
           <div class="worlds-grid" id="world-detail-subworlds">
@@ -393,7 +395,7 @@
           </div>
         </div>
 
-        <!-- This week's find (blurred mystery) -->
+        <!-- This week's find (blurred mystery) - FIX #3: Now wired up -->
         <div class="world-detail-subsection">
           <h4 class="world-detail-subsection-title">This week's find</h4>
           <div class="world-weekly-find" id="world-weekly-find">
