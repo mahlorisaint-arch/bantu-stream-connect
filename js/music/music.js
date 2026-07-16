@@ -13,9 +13,48 @@
   window.portalDrop = null;
   window.worlds = [];
   window.worldProgress = {};
+  window.currentWorldView = 'grid'; // 'grid' or 'detail'
+  window.currentWorldId = null;
+  window.worldBreadcrumb = [];
 
-  // ===== MUSIC FORMAT CONSTANTS =====
+  // ===== CONTENT FORMAT CONSTANTS =====
   const MUSIC_FORMATS = ['album_track', 'music', 'music_video', 'song', 'track', 'audio'];
+
+  // ===== ARCHETYPE DEFINITIONS =====
+  const ARCHETYPES = {
+    'Sound Nomad': {
+      desc: 'You chase sounds that move after dark.',
+      color: '#34E7FF'
+    },
+    'Night Voyager': {
+      desc: 'You chase sounds that move after dark.',
+      color: '#8B5CF6'
+    },
+    'Heat Chaser': {
+      desc: 'You live for the peak, the drop, the moment.',
+      color: '#EF4444'
+    },
+    'Soul Carrier': {
+      desc: 'You carry the old sounds forward.',
+      color: '#10B981'
+    },
+    'Underground Pulse': {
+      desc: 'You dig deeper than the surface.',
+      color: '#EC4899'
+    },
+    'Root Seeker': {
+      desc: 'You find your home in one sound.',
+      color: '#F59E0B'
+    },
+    'Golden Root': {
+      desc: 'You honor the classics.',
+      color: '#F97316'
+    },
+    'Border Blur': {
+      desc: 'You move between worlds.',
+      color: '#06B6D4'
+    }
+  };
 
   // ===== HELPER FUNCTIONS =====
   function showToast(message, type = 'info') {
@@ -63,7 +102,7 @@
   }
 
   function fixMediaUrl(url) {
-    if (!url) return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop';
+    if (!url) return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
     if (url.startsWith('http')) return url;
     return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
   }
@@ -103,26 +142,243 @@
     }
   }
 
+  // ===== SONIC DNA QUIZ (FIX #2) =====
+  const SonicQuiz = {
+    currentStep: 0,
+    totalSteps: 6,
+    selections: [],
+    quizGenres: [],
+
+    async init() {
+      // Load quiz genres from database
+      const { data } = await supabase
+        .from('genres')
+        .select('*')
+        .eq('is_featured_in_onboarding', true)
+        .is('parent_genre_id', null)
+        .order('onboarding_sort_order', { ascending: true })
+        .limit(8);
+
+      if (data && data.length >= 6) {
+        this.quizGenres = data.slice(0, 6);
+      } else {
+        // Fallback genres
+        this.quizGenres = [
+          { id: '1', name: 'Amapiano', description: 'Log drums, deep house, Pretoria nights' },
+          { id: '2', name: 'Afrobeat', description: 'West African grooves, Fela Kuti legacy' },
+          { id: '3', name: 'Highlife', description: 'Ghanaian guitar, palm wine melodies' },
+          { id: '4', name: 'Hip-Hop', description: 'Beats, bars, and culture' },
+          { id: '5', name: 'Soul', description: 'Smooth vocals, timeless emotion' },
+          { id: '6', name: 'Gospel', description: 'Spiritual, uplifting, powerful' }
+        ];
+      }
+    },
+
+    open() {
+      const modal = document.getElementById('sonic-quiz-modal');
+      if (!modal) return;
+      modal.classList.add('active');
+      this.reset();
+      this.showStep('intro');
+    },
+
+    close() {
+      const modal = document.getElementById('sonic-quiz-modal');
+      if (modal) modal.classList.remove('active');
+    },
+
+    reset() {
+      this.currentStep = 0;
+      this.selections = [];
+    },
+
+    showStep(step) {
+      document.querySelectorAll('.sonic-quiz-step').forEach(el => {
+        el.style.display = el.dataset.step === step ? 'block' : 'none';
+      });
+
+      if (step === 'quiz') {
+        this.renderQuizCard();
+      } else if (step === 'reveal') {
+        this.renderReveal();
+      }
+    },
+
+    renderQuizCard() {
+      const container = document.getElementById('sonic-quiz-card-container');
+      const dotsContainer = document.getElementById('sonic-quiz-dots');
+      const progressFill = document.getElementById('sonic-quiz-progress-fill');
+
+      if (!container) return;
+
+      const genre = this.quizGenres[this.currentStep];
+      if (!genre) {
+        this.showStep('reveal');
+        return;
+      }
+
+      // Render dots
+      dotsContainer.innerHTML = this.quizGenres.map((_, idx) => {
+        let className = 'sonic-quiz-dot';
+        if (idx < this.currentStep) className += ' done';
+        if (idx === this.currentStep) className += ' active';
+        return `<div class="${className}"></div>`;
+      }).join('');
+
+      // Update progress bar
+      progressFill.style.width = `${((this.currentStep + 1) / this.totalSteps) * 100}%`;
+
+      // Render card
+      const colors = ['#1D4ED8', '#F59E0B', '#EC4899', '#10B981', '#8B5CF6', '#EF4444'];
+      const color = genre.onboarding_card_color || colors[this.currentStep % colors.length];
+
+      container.innerHTML = `
+        <div class="sonic-quiz-card" style="background: linear-gradient(135deg, ${color}40, ${color}80);">
+          <div class="sonic-quiz-card-overlay"></div>
+          <div class="sonic-quiz-card-content">
+            <h3 class="sonic-quiz-card-name">${escapeHtml(genre.name)}</h3>
+            <p class="sonic-quiz-card-desc">${escapeHtml(genre.description || 'Explore this sound')}</p>
+          </div>
+          <div class="sonic-quiz-card-cta">
+            <i class="fas fa-heart"></i>
+            <span>Into it</span>
+          </div>
+        </div>
+      `;
+
+      // Attach click handler
+      container.querySelector('.sonic-quiz-card').addEventListener('click', () => {
+        this.selectGenre(genre.id, genre.name);
+      });
+    },
+
+    selectGenre(genreId, genreName) {
+      this.selections.push({ id: genreId, name: genreName });
+      this.currentStep++;
+
+      if (this.currentStep >= this.totalSteps) {
+        this.showStep('reveal');
+      } else {
+        this.renderQuizCard();
+      }
+    },
+
+    skipCard() {
+      this.currentStep++;
+      if (this.currentStep >= this.totalSteps) {
+        this.showStep('reveal');
+      } else {
+        this.renderQuizCard();
+      }
+    },
+
+    async renderReveal() {
+      // Calculate archetype based on selections
+      const archetype = this.calculateArchetype();
+      const archetypeData = ARCHETYPES[archetype] || ARCHETYPES['Border Blur'];
+
+      // Update UI
+      document.getElementById('sonic-quiz-archetype-name').textContent = archetype;
+      document.getElementById('sonic-quiz-archetype-desc').textContent = archetypeData.desc;
+
+      // Render breakdown
+      const breakdown = document.getElementById('sonic-quiz-breakdown');
+      const topGenres = this.selections.slice(0, 4);
+      breakdown.innerHTML = topGenres.map((g, idx) => {
+        const weight = Math.max(0.3, 0.9 - (idx * 0.15));
+        return `
+          <div class="sonic-quiz-breakdown-item">
+            <span class="sonic-quiz-breakdown-label">${escapeHtml(g.name)}</span>
+            <div class="sonic-quiz-breakdown-bar">
+              <div class="sonic-quiz-breakdown-fill" style="width: ${weight * 100}%;"></div>
+            </div>
+            <span class="sonic-quiz-breakdown-value">${Math.round(weight * 100)}%</span>
+          </div>
+        `;
+      }).join('');
+
+      // Save to database
+      await this.saveSonicDNA(archetype, topGenres);
+    },
+
+    calculateArchetype() {
+      if (this.selections.length === 0) return 'Border Blur';
+
+      const topGenre = this.selections[0]?.name || '';
+
+      if (['Amapiano', 'Gqom'].includes(topGenre)) return 'Night Voyager';
+      if (['Afrobeat', 'Afrofusion'].includes(topGenre)) return 'Heat Chaser';
+      if (['Soul', 'Gospel'].includes(topGenre)) return 'Soul Carrier';
+      if (topGenre === 'Highlife') return 'Golden Root';
+      if (topGenre === 'Hip-Hop') return 'Underground Pulse';
+
+      return 'Sound Nomad';
+    },
+
+    async saveSonicDNA(archetype, topGenres) {
+      if (!window.currentUser) return;
+
+      const sonicDNA = {
+        archetype: archetype,
+        top_genres: topGenres.map((g, idx) => ({
+          id: g.id,
+          name: g.name,
+          weight: Math.max(0.3, 0.9 - (idx * 0.15))
+        })),
+        mood_weights: {
+          nocturnal: archetype === 'Night Voyager' ? 0.8 : 0.3,
+          energetic: archetype === 'Heat Chaser' ? 0.8 : 0.3,
+          spiritual: archetype === 'Soul Carrier' ? 0.8 : 0.3
+        },
+        discovery_tolerance: archetype === 'Sound Nomad' ? 0.8 : 0.4,
+        last_updated: new Date().toISOString()
+      };
+
+      try {
+        await supabase
+          .from('user_profiles')
+          .update({
+            sonic_dna: sonicDNA,
+            top_genre_id: topGenres[0]?.id || null
+          })
+          .eq('id', window.currentUser.id);
+
+        window.sonicDNA = sonicDNA;
+        showToast('Your Sonic DNA has been revealed!', 'success');
+      } catch (e) {
+        console.error('Error saving Sonic DNA:', e);
+        showToast('Could not save your Sonic DNA', 'error');
+      }
+    }
+  };
+
   // ===== SONIC DNA RENDERING =====
   function renderSonicDNA() {
     const archetypeEl = document.getElementById('sonic-dna-archetype');
+    const subtitleEl = document.getElementById('sonic-dna-subtitle');
     const barsEl = document.getElementById('sonic-dna-bars');
-    const streakEl = document.getElementById('streak-count');
+    const ctaEl = document.getElementById('sonic-dna-cta');
+    const ctaTextEl = document.getElementById('sonic-dna-cta-text');
+    const sectionEl = document.getElementById('sonic-dna-section');
 
     if (!window.sonicDNA || !window.sonicDNA.archetype) {
+      // No DNA yet - show quiz CTA
       archetypeEl.textContent = 'Discover your sound';
-      barsEl.innerHTML = `
-        <div class="music-empty-state" style="grid-column: 1/-1;">
-          <i class="fas fa-fingerprint"></i>
-          <h4>Take the 30-second taste quiz</h4>
-          <p>Unlock your personal Sonic DNA archetype</p>
-        </div>
-      `;
+      subtitleEl.textContent = 'Take the 30-second taste quiz';
+      barsEl.innerHTML = '';
+      ctaTextEl.textContent = 'Take the 30-second quiz';
+      ctaEl.style.display = 'flex';
+
+      // Hide section click (only CTA button works)
+      sectionEl.style.cursor = 'default';
       return;
     }
 
     const dna = window.sonicDNA;
     archetypeEl.textContent = dna.archetype || 'Sound Explorer';
+    subtitleEl.textContent = 'Your living taste profile';
+    ctaTextEl.textContent = 'Retake quiz';
+    ctaEl.style.display = 'flex';
 
     // Render top genre bars
     const topGenres = dna.top_genres || [];
@@ -193,22 +449,24 @@
         const content = item.Content;
         const progress = content.duration ? Math.min(100, Math.round((item.last_position / content.duration) * 100)) : 0;
         const creator = content.user_profiles?.full_name || content.user_profiles?.username || 'Artist';
+        const meta = formatMeta(content.content_format);
+
         return `
           <div class="continue-card" data-content-id="${content.id}">
             <div class="continue-card-artwork">
               <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}" loading="lazy">
+              <span class="continue-card-badge" style="background: ${meta.color};">${escapeHtml(meta.label)}</span>
+              ${content.duration ? `<span class="continue-card-duration">${formatDuration(content.duration)}</span>` : ''}
               <div class="continue-card-progress">
                 <div class="continue-card-progress-fill" style="width: ${progress}%;"></div>
               </div>
               <div class="continue-card-play"><i class="fas fa-play"></i></div>
             </div>
-            <div class="continue-card-info">
-              <p class="continue-card-title">${escapeHtml(content.title)}</p>
-              <p class="continue-card-meta">
-                <i class="fas fa-user"></i>
-                ${escapeHtml(creator)}
-              </p>
-            </div>
+            <p class="continue-card-title">${escapeHtml(content.title)}</p>
+            <p class="continue-card-meta">
+              <i class="fas fa-user"></i>
+              ${escapeHtml(creator)}
+            </p>
           </div>
         `;
       }).join('');
@@ -226,10 +484,25 @@
     }
   }
 
-  // ===== MYSTERY PORTAL =====
+  function formatMeta(contentFormat) {
+    const meta = {
+      film: { label: 'Film', color: '#EF4444' },
+      documentary: { label: 'Documentary', color: '#8B5CF6' },
+      album_track: { label: 'Music', color: '#F59E0B' },
+      music: { label: 'Music', color: '#F59E0B' },
+      music_video: { label: 'Music video', color: '#F59E0B' },
+      song: { label: 'Music', color: '#F59E0B' },
+      track: { label: 'Music', color: '#F59E0B' },
+      audio: { label: 'Audio', color: '#94A3B8' }
+    };
+    return meta[contentFormat] || { label: 'Content', color: '#1D4ED8' };
+  }
+
+  // ===== MYSTERY PORTAL (FIX #4) =====
   async function loadPortalDrop() {
     const noteEl = document.getElementById('portal-card-note');
     const countdownEl = document.getElementById('portal-countdown');
+    const portalCard = document.getElementById('portal-card');
 
     if (!window.currentUser) {
       noteEl.textContent = 'Sign in to receive your daily drop';
@@ -283,7 +556,8 @@
     const closeBtn = document.getElementById('portal-reveal-close');
     const playBtn = document.getElementById('portal-reveal-play-btn');
 
-    portalCard.addEventListener('click', () => {
+    // FIX #4: Ensure click handler is attached
+    portalCard.onclick = () => {
       // Populate modal
       document.getElementById('portal-reveal-artwork').innerHTML = `
         <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}">
@@ -301,22 +575,22 @@
 
       modal.classList.add('active');
       setTimeout(() => modal.classList.add('revealed'), 300);
-    });
+    };
 
-    closeBtn.addEventListener('click', () => {
+    closeBtn.onclick = () => {
       modal.classList.remove('active', 'revealed');
-    });
+    };
 
-    playBtn.addEventListener('click', () => {
+    playBtn.onclick = () => {
       window.location.href = `../content-detail.html?id=${content.id}`;
-    });
+    };
 
     // Close on overlay click
-    modal.addEventListener('click', (e) => {
+    modal.onclick = (e) => {
       if (e.target === modal || e.target.classList.contains('portal-reveal-overlay')) {
         modal.classList.remove('active', 'revealed');
       }
-    });
+    };
   }
 
   function startPortalCountdown(el) {
@@ -349,7 +623,7 @@
     }
   }
 
-  // ===== WORLDS =====
+  // ===== WORLDS (FIX #3: In-page exploration) =====
   async function loadWorlds() {
     const grid = document.getElementById('worlds-grid');
 
@@ -408,12 +682,9 @@
       const color = worldColors[idx % worldColors.length];
       const isLocked = pct === 0 && !progress;
 
-      // Generate a gradient background based on world name
-      const bgGradient = `linear-gradient(135deg, ${color}40, ${color}80)`;
-
       return `
         <div class="world-card" data-world-id="${world.id}" data-world-name="${escapeHtml(world.name)}">
-          <div class="world-card-artwork" style="background: ${bgGradient};"></div>
+          <div class="world-card-artwork" style="background: linear-gradient(135deg, ${color}40, ${color}80);"></div>
           <div class="world-card-overlay"></div>
           <div class="world-card-lock ${isLocked ? '' : 'unlocked'}">
             <i class="fas ${isLocked ? 'fa-lock' : 'fa-check'}"></i>
@@ -437,9 +708,225 @@
       card.addEventListener('click', () => {
         const id = card.dataset.worldId;
         const name = card.dataset.worldName;
-        window.location.href = `world-detail.html?id=${id}&name=${encodeURIComponent(name)}`;
+        openWorldDetail(id, name);
       });
     });
+  }
+
+  // FIX #3: Open world detail in-page (not separate page)
+  async function openWorldDetail(worldId, worldName) {
+    window.currentWorldId = worldId;
+    window.currentWorldView = 'detail';
+    window.worldBreadcrumb = [{ id: worldId, name: worldName }];
+
+    // Hide grid, show detail view
+    document.getElementById('worlds-view-grid').style.display = 'none';
+    document.getElementById('worlds-view-detail').style.display = 'block';
+    document.getElementById('worlds-back-btn').style.display = 'flex';
+    document.getElementById('worlds-breadcrumb').style.display = 'flex';
+    document.getElementById('worlds-section-title').textContent = worldName;
+
+    // Update breadcrumb
+    renderBreadcrumb();
+
+    // Load world details
+    await loadWorldDetails(worldId);
+  }
+
+  function renderBreadcrumb() {
+    const breadcrumb = document.getElementById('worlds-breadcrumb');
+    breadcrumb.innerHTML = window.worldBreadcrumb.map((item, idx) => {
+      const isLast = idx === window.worldBreadcrumb.length - 1;
+      return `
+        <span class="breadcrumb-item ${isLast ? 'active' : ''}" data-level="${idx}">${escapeHtml(item.name)}</span>
+        ${!isLast ? '<span class="breadcrumb-separator">/</span>' : ''}
+      `;
+    }).join('');
+
+    // Attach click handlers
+    breadcrumb.querySelectorAll('.breadcrumb-item:not(.active)').forEach(item => {
+      item.addEventListener('click', () => {
+        const level = parseInt(item.dataset.level);
+        navigateToBreadcrumbLevel(level);
+      });
+    });
+  }
+
+  function navigateToBreadcrumbLevel(level) {
+    if (level === 0) {
+      // Back to worlds grid
+      closeWorldDetail();
+    } else {
+      // Navigate to specific level (future: load sub-world)
+      const target = window.worldBreadcrumb[level];
+      if (target) {
+        openWorldDetail(target.id, target.name);
+      }
+    }
+  }
+
+  async function loadWorldDetails(worldId) {
+    try {
+      // Load world info
+      const { data: worldData } = await supabase
+        .from('genres')
+        .select('*')
+        .eq('id', worldId)
+        .single();
+
+      if (worldData) {
+        document.getElementById('world-detail-name').textContent = worldData.name;
+        document.getElementById('world-detail-description').textContent = worldData.description || '';
+
+        const progress = window.worldProgress[worldId];
+        const pct = progress ? Math.round(progress.exploration_percentage || 0) : 0;
+        document.getElementById('world-detail-progress-fill').style.width = `${pct}%`;
+        document.getElementById('world-detail-progress-text').textContent = `${pct}%`;
+      }
+
+      // Load sub-worlds
+      await loadSubWorlds(worldId);
+
+      // Load tracks
+      await loadWorldTracks(worldId);
+
+    } catch (e) {
+      console.error('World details error:', e);
+    }
+  }
+
+  async function loadSubWorlds(parentWorldId) {
+    const grid = document.getElementById('world-detail-subworlds');
+
+    try {
+      const { data: subWorlds } = await supabase
+        .from('genres')
+        .select('*')
+        .eq('parent_genre_id', parentWorldId)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (!subWorlds || subWorlds.length === 0) {
+        grid.innerHTML = '<p style="color: var(--slate-grey); font-size: 12px;">No sub-worlds yet</p>';
+        return;
+      }
+
+      const subWorldColors = ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#EF4444'];
+
+      grid.innerHTML = subWorlds.map((world, idx) => {
+        const progress = window.worldProgress[world.id];
+        const pct = progress ? Math.round(progress.exploration_percentage || 0) : 0;
+        const tracksListened = progress ? progress.tracks_listened : 0;
+        const color = subWorldColors[idx % subWorldColors.length];
+        const threshold = world.unlock_threshold_tracks || 5;
+        const isLocked = pct === 0 && !progress;
+
+        return `
+          <div class="world-card" data-world-id="${world.id}" data-world-name="${escapeHtml(world.name)}">
+            <div class="world-card-artwork" style="background: linear-gradient(135deg, ${color}40, ${color}80);"></div>
+            <div class="world-card-overlay"></div>
+            <div class="world-card-lock ${isLocked ? '' : 'unlocked'}">
+              <i class="fas ${isLocked ? 'fa-lock' : 'fa-check'}"></i>
+            </div>
+            <div class="world-card-content">
+              <h4 class="world-card-name">${escapeHtml(world.name)}</h4>
+              <div class="world-card-progress">
+                <div class="world-card-progress-bar">
+                  <div class="world-card-progress-fill" style="width: ${pct}%;"></div>
+                </div>
+                <span class="world-card-progress-text">${pct}%</span>
+              </div>
+              <p class="world-card-meta">${tracksListened}/${threshold} tracks</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach click handlers
+      grid.querySelectorAll('.world-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.dataset.worldId;
+          const name = card.dataset.worldName;
+          window.worldBreadcrumb.push({ id, name });
+          renderBreadcrumb();
+          loadWorldDetails(id);
+        });
+      });
+
+    } catch (e) {
+      console.error('Sub-worlds error:', e);
+      grid.innerHTML = '<p style="color: var(--slate-grey); font-size: 12px;">Could not load sub-worlds</p>';
+    }
+  }
+
+  async function loadWorldTracks(worldId) {
+    const list = document.getElementById('world-track-list');
+
+    try {
+      const { data: tracks } = await supabase
+        .from('Content')
+        .select(`
+          id,
+          title,
+          duration,
+          content_format,
+          user_profiles!user_id (full_name, username),
+          content_engagement_stats (total_views)
+        `)
+        .eq('primary_genre_id', worldId)
+        .eq('status', 'published')
+        .in('content_format', MUSIC_FORMATS)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!tracks || tracks.length === 0) {
+        list.innerHTML = '<p style="color: var(--slate-grey); font-size: 12px; padding: 20px; text-align: center;">No tracks in this world yet</p>';
+        return;
+      }
+
+      list.innerHTML = tracks.map((track, idx) => {
+        const creator = track.user_profiles?.full_name || track.user_profiles?.username || 'Unknown Artist';
+        const views = track.content_engagement_stats?.total_views || 0;
+
+        return `
+          <div class="world-track-item" data-content-id="${track.id}">
+            <span class="world-track-number">${idx + 1}</span>
+            <div class="world-track-info">
+              <p class="world-track-title">${escapeHtml(track.title)}</p>
+              <p class="world-track-artist">${escapeHtml(creator)} · ${formatNumber(views)} views</p>
+            </div>
+            <span class="world-track-duration">${formatDuration(track.duration)}</span>
+            <div class="world-track-play">
+              <i class="fas fa-play"></i>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach click handlers
+      list.querySelectorAll('.world-track-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const id = item.dataset.contentId;
+          if (id) window.location.href = `../content-detail.html?id=${id}`;
+        });
+      });
+
+    } catch (e) {
+      console.error('Tracks error:', e);
+      list.innerHTML = '<p style="color: var(--slate-grey); font-size: 12px; padding: 20px; text-align: center;">Could not load tracks</p>';
+    }
+  }
+
+  function closeWorldDetail() {
+    window.currentWorldView = 'grid';
+    window.currentWorldId = null;
+    window.worldBreadcrumb = [];
+
+    document.getElementById('worlds-view-grid').style.display = 'block';
+    document.getElementById('worlds-view-detail').style.display = 'none';
+    document.getElementById('worlds-back-btn').style.display = 'none';
+    document.getElementById('worlds-breadcrumb').style.display = 'none';
+    document.getElementById('worlds-section-title').textContent = 'Worlds to explore';
   }
 
   // ===== SOCIAL STRIP =====
@@ -448,7 +935,6 @@
     const section = document.getElementById('social-strip-section');
 
     try {
-      // Get recent watch activity from other users
       const { data, error } = await supabase
         .from('watch_progress')
         .select(`
@@ -462,9 +948,9 @@
           ),
           user_profiles!user_id (full_name, username, avatar_url)
         `)
-        .eq('Content.content_format', 'track')
+        .in('Content.content_format', MUSIC_FORMATS)
         .neq('user_id', window.currentUser?.id || '00000000-0000-0000-0000-000000000000')
-        .gte('updated_at', new Date(Date.now() - 3600000).toISOString()) // Last hour
+        .gte('updated_at', new Date(Date.now() - 3600000).toISOString())
         .order('updated_at', { ascending: false })
         .limit(8);
 
@@ -479,7 +965,6 @@
       row.innerHTML = data.map(item => {
         const user = item.user_profiles;
         const content = item.Content;
-        const creator = content.user_profiles;
         const name = user?.full_name || user?.username || 'Listener';
         const avatar = user?.avatar_url ? fixMediaUrl(user.avatar_url) : null;
         const trackTitle = content.title || 'a track';
@@ -497,7 +982,6 @@
         `;
       }).join('');
 
-      // Click handlers
       row.querySelectorAll('.social-strip-item').forEach(item => {
         item.addEventListener('click', () => {
           const id = item.dataset.contentId;
@@ -510,12 +994,11 @@
     }
   }
 
-  // ===== TRENDING IN YOUR WORLDS =====
+  // ===== TRENDING =====
   async function loadTrending() {
     const grid = document.getElementById('trending-grid');
 
     try {
-      // Get user's top genres
       const topGenres = window.sonicDNA?.top_genres?.slice(0, 3).map(g => g.id) || [];
 
       let query = supabase
@@ -526,7 +1009,6 @@
           thumbnail_url,
           duration,
           content_format,
-          genre,
           user_profiles!user_id (full_name, username),
           content_engagement_stats (total_views, total_likes)
         `)
@@ -552,20 +1034,22 @@
         const views = item.content_engagement_stats?.total_views || 0;
         const likes = item.content_engagement_stats?.total_likes || 0;
         const creator = item.user_profiles?.full_name || item.user_profiles?.username || 'Artist';
+        const meta = formatMeta(item.content_format);
+
         return `
           <div class="trending-card" data-content-id="${item.id}">
             <div class="trending-card-artwork">
               <img src="${fixMediaUrl(item.thumbnail_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
+              <span class="trending-card-badge" style="background: ${meta.color};">${escapeHtml(meta.label)}</span>
+              ${item.duration ? `<span class="trending-card-duration">${formatDuration(item.duration)}</span>` : ''}
               <div class="trending-card-rank">${idx + 1}</div>
               <div class="trending-card-play"><i class="fas fa-play"></i></div>
             </div>
-            <div class="trending-card-info">
-              <p class="trending-card-title">${escapeHtml(item.title)}</p>
-              <p class="trending-card-artist">${escapeHtml(creator)}</p>
-              <div class="trending-card-stats">
-                <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-                <span><i class="fas fa-heart"></i> ${formatNumber(likes)}</span>
-              </div>
+            <p class="trending-card-title">${escapeHtml(item.title)}</p>
+            <p class="trending-card-artist">${escapeHtml(creator)}</p>
+            <div class="trending-card-stats">
+              <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+              <span><i class="fas fa-heart"></i> ${formatNumber(likes)}</span>
             </div>
           </div>
         `;
@@ -583,187 +1067,41 @@
     }
   }
 
-  // ===== SIDEBAR SETUP =====
-  function setupSidebar() {
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebarClose = document.getElementById('sidebar-close');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    const sidebarMenu = document.getElementById('sidebar-menu');
+  // ===== SETUP EVENT LISTENERS =====
+  function setupEventListeners() {
+    // Sonic DNA section click (FIX #2)
+    const dnaSection = document.getElementById('sonic-dna-section');
+    const dnaCta = document.getElementById('sonic-dna-cta');
 
-    if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
-
-    menuToggle.addEventListener('click', () => {
-      sidebarMenu.classList.add('active');
-      sidebarOverlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
-
-    const closeSidebar = () => {
-      sidebarMenu.classList.remove('active');
-      sidebarOverlay.classList.remove('active');
-      document.body.style.overflow = '';
-    };
-
-    sidebarClose.addEventListener('click', closeSidebar);
-    sidebarOverlay.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
-    });
-  }
-
-  // ===== NAVIGATION =====
-  function setupNavigation() {
-    const navHome = document.getElementById('nav-home-btn');
-    const navHistory = document.getElementById('nav-history-btn');
-    const navCreate = document.getElementById('nav-create-btn');
-    const navMenu = document.getElementById('nav-menu-btn');
-
-    if (navHome) navHome.addEventListener('click', () => window.location.href = '../index.html');
-    if (navHistory) navHistory.addEventListener('click', () => {
-      if (window.currentUser) window.location.href = '../watch-history.html';
-      else window.location.href = `../login.html?redirect=music.html`;
-    });
-    if (navCreate) navCreate.addEventListener('click', () => {
-      if (window.currentUser) window.location.href = '../creator-upload.html';
-      else window.location.href = `../login.html?redirect=music.html`;
-    });
-    if (navMenu) navMenu.addEventListener('click', () => {
-      document.getElementById('sidebar-menu')?.classList.add('active');
-      document.getElementById('sidebar-overlay')?.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
-  }
-
-  // ===== SEARCH =====
-  function setupSearch() {
-    const searchBtn = document.getElementById('search-btn');
-    const searchModal = document.getElementById('search-modal');
-    const closeBtn = document.getElementById('close-search-btn');
-    const searchInput = document.getElementById('search-input');
-
-    if (searchBtn && searchModal) {
-      searchBtn.addEventListener('click', () => {
-        searchModal.classList.add('active');
-        setTimeout(() => searchInput?.focus(), 100);
-      });
-    }
-    if (closeBtn && searchModal) {
-      closeBtn.addEventListener('click', () => searchModal.classList.remove('active'));
-    }
-    if (searchModal) {
-      searchModal.addEventListener('click', (e) => {
-        if (e.target === searchModal) searchModal.classList.remove('active');
+    if (dnaCta) {
+      dnaCta.addEventListener('click', (e) => {
+        e.stopPropagation();
+        SonicQuiz.open();
       });
     }
 
-    // Populate world filter
-    const categoryFilter = document.getElementById('category-filter');
-    if (categoryFilter && window.worlds.length > 0) {
-      window.worlds.forEach(world => {
-        const opt = document.createElement('option');
-        opt.value = world.name;
-        opt.textContent = world.name;
-        categoryFilter.appendChild(opt);
-      });
-    }
-  }
+    // Quiz modal
+    const quizClose = document.getElementById('sonic-quiz-close');
+    const quizStart = document.getElementById('sonic-quiz-start');
+    const quizSkip = document.getElementById('sonic-quiz-skip');
+    const quizDone = document.getElementById('sonic-quiz-done');
+    const quizOverlay = document.querySelector('.sonic-quiz-overlay');
 
-  // ===== NOTIFICATIONS =====
-  function setupNotifications() {
-    const btn = document.getElementById('notifications-btn');
-    const panel = document.getElementById('notifications-panel');
-    const closeBtn = document.getElementById('close-notifications');
+    if (quizClose) quizClose.addEventListener('click', () => SonicQuiz.close());
+    if (quizOverlay) quizOverlay.addEventListener('click', () => SonicQuiz.close());
+    if (quizStart) quizStart.addEventListener('click', () => SonicQuiz.showStep('quiz'));
+    if (quizSkip) quizSkip.addEventListener('click', () => SonicQuiz.skipCard());
+    if (quizDone) quizDone.addEventListener('click', () => {
+      SonicQuiz.close();
+      renderSonicDNA();
+      loadPortalDrop();
+      loadTrending();
+    });
 
-    if (btn && panel) {
-      btn.addEventListener('click', () => {
-        panel.classList.add('active');
-        loadNotifications();
-      });
-    }
-    if (closeBtn && panel) {
-      closeBtn.addEventListener('click', () => panel.classList.remove('active'));
-    }
-    if (panel) {
-      panel.addEventListener('click', (e) => {
-        if (e.target === panel) panel.classList.remove('active');
-      });
-    }
-  }
-
-  async function loadNotifications() {
-    if (!window.currentUser) return;
-    try {
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', window.currentUser.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      const list = document.getElementById('notifications-list');
-      if (!list) return;
-
-      if (!data || data.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:40px;opacity:0.3;"></i><p>No notifications yet</p></div>';
-        return;
-      }
-
-      list.innerHTML = data.map(n => `
-        <div style="padding:15px;border-bottom:1px solid var(--card-border);${n.is_read ? 'opacity:0.7;' : 'background:rgba(245,158,11,0.05);'}">
-          <div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div>
-          <div style="font-size:13px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div>
-          <div style="font-size:11px;color:var(--warm-gold);">${formatTimeAgo(n.created_at)}</div>
-        </div>
-      `).join('');
-
-      const unread = data.filter(n => !n.is_read).length;
-      const badge = document.getElementById('notification-count');
-      if (badge) {
-        badge.textContent = unread > 99 ? '99+' : unread;
-        badge.style.display = unread > 0 ? 'flex' : 'none';
-      }
-    } catch (e) {
-      console.error('Notifications error:', e);
-    }
-  }
-
-  // ===== PROFILE =====
-  async function updateProfileUI() {
-    const placeholder = document.getElementById('userProfilePlaceholder');
-    const nameEl = document.getElementById('current-profile-name');
-    const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
-    const sidebarName = document.getElementById('sidebar-profile-name');
-    const sidebarEmail = document.getElementById('sidebar-profile-email');
-
-    if (!placeholder || !nameEl) return;
-
-    if (window.currentUser && window.userProfile) {
-      const displayName = window.userProfile.full_name || window.userProfile.username || 'User';
-      nameEl.textContent = displayName;
-      if (sidebarName) sidebarName.textContent = displayName;
-      if (sidebarEmail) sidebarEmail.textContent = window.currentUser.email || '';
-
-      placeholder.innerHTML = '';
-      if (window.userProfile.avatar_url) {
-        const img = document.createElement('img');
-        img.src = fixMediaUrl(window.userProfile.avatar_url);
-        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-        placeholder.appendChild(img);
-        if (sidebarAvatar) {
-          const img2 = img.cloneNode(true);
-          sidebarAvatar.innerHTML = '';
-          sidebarAvatar.appendChild(img2);
-        }
-      } else {
-        const initial = displayName.charAt(0).toUpperCase();
-        placeholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initial}</div>`;
-        if (sidebarAvatar) sidebarAvatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initial}</span>`;
-      }
-    } else {
-      nameEl.textContent = 'Guest';
-      if (sidebarName) sidebarName.textContent = 'Guest';
-      if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
-      placeholder.innerHTML = '<i class="fas fa-user"></i>';
+    // Worlds back button (FIX #3)
+    const worldsBackBtn = document.getElementById('worlds-back-btn');
+    if (worldsBackBtn) {
+      worldsBackBtn.addEventListener('click', closeWorldDetail);
     }
   }
 
@@ -773,10 +1111,10 @@
     const app = document.getElementById('app');
 
     try {
-      setupSidebar();
-      setupNavigation();
       await checkAuth();
-      await updateProfileUI();
+
+      // Initialize quiz
+      await SonicQuiz.init();
 
       // Load all sections in parallel
       await Promise.all([
@@ -787,11 +1125,12 @@
         loadTrending()
       ]);
 
-      // Render Sonic DNA after profile is loaded
+      // Render Sonic DNA
       renderSonicDNA();
       createPortalParticles();
-      setupSearch();
-      setupNotifications();
+
+      // Setup event listeners
+      setupEventListeners();
 
       if (loading) loading.style.display = 'none';
       if (app) app.style.display = 'block';
@@ -809,7 +1148,6 @@
     if (event === 'SIGNED_IN') {
       window.currentUser = session.user;
       loadUserProfile().then(() => {
-        updateProfileUI();
         renderSonicDNA();
         loadContinueListening();
         loadPortalDrop();
@@ -820,7 +1158,6 @@
       window.currentUser = null;
       window.userProfile = null;
       window.sonicDNA = null;
-      updateProfileUI();
       location.reload();
     }
   });
