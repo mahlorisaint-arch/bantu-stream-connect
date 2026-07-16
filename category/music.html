@@ -19,6 +19,9 @@
 <!-- Shared Components CSS -->
 <link rel="stylesheet" href="../css/shared-components.css">
 
+<!-- Modals CSS (FIX #1: This was missing - contains notifications panel, search modal, etc.) -->
+<link rel="stylesheet" href="../css/content-detail/modals.css">
+
 <!-- Music Page CSS -->
 <link rel="stylesheet" href="../css/music/music.css">
 </head>
@@ -121,54 +124,63 @@
   <div class="glow-cycle glow-3"></div>
 </div>
 
-<!-- ===== MODALS ===== -->
-<!-- Search Modal -->
-<div id="search-modal" class="search-modal">
-  <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
-    <div class="search-modal-header">
-      <div class="search-input-container">
-        <i class="search-icon fas fa-search"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Search tracks, artists, worlds..." autocomplete="off">
+<!-- ===== SONIC DNA QUIZ MODAL (FIX #2) ===== -->
+<div id="sonic-quiz-modal" class="sonic-quiz-modal">
+  <div class="sonic-quiz-overlay"></div>
+  <div class="sonic-quiz-content">
+    <button class="sonic-quiz-close" id="sonic-quiz-close">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <!-- Quiz Intro -->
+    <div class="sonic-quiz-step" data-step="intro">
+      <div class="sonic-quiz-icon">
+        <i class="fas fa-fingerprint"></i>
       </div>
-      <button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
+      <h2 class="sonic-quiz-title">Discover your Sonic DNA</h2>
+      <p class="sonic-quiz-subtitle">30 seconds. 6 taps. Your sound identity revealed.</p>
+      <button class="sonic-quiz-start-btn" id="sonic-quiz-start">
+        <i class="fas fa-play"></i>
+        <span>Begin</span>
+      </button>
     </div>
-    <div class="search-filters">
-      <div class="filter-group">
-        <label class="filter-label">World</label>
-        <select id="category-filter" class="filter-select">
-          <option value="">All Worlds</option>
-        </select>
+
+    <!-- Quiz Cards -->
+    <div class="sonic-quiz-step" data-step="quiz" style="display:none;">
+      <div class="sonic-quiz-progress">
+        <div class="sonic-quiz-progress-dots" id="sonic-quiz-dots"></div>
+        <div class="sonic-quiz-progress-bar">
+          <div class="sonic-quiz-progress-fill" id="sonic-quiz-progress-fill"></div>
+        </div>
       </div>
-      <div class="filter-group">
-        <label class="filter-label">Sort By</label>
-        <select id="sort-filter" class="filter-select">
-          <option value="newest">Newest First</option>
-          <option value="popular">Most Popular</option>
-          <option value="trending">Trending</option>
-        </select>
+      <div class="sonic-quiz-card-container" id="sonic-quiz-card-container">
+        <!-- Cards injected dynamically -->
+      </div>
+      <div class="sonic-quiz-actions">
+        <button class="sonic-quiz-skip-btn" id="sonic-quiz-skip">
+          <i class="fas fa-forward"></i> Skip
+        </button>
       </div>
     </div>
-    <div class="search-results">
-      <div id="search-results-grid" class="search-results-grid"></div>
+
+    <!-- Archetype Reveal -->
+    <div class="sonic-quiz-step" data-step="reveal" style="display:none;">
+      <div class="sonic-quiz-reveal-badge" id="sonic-quiz-archetype-badge">
+        <i class="fas fa-fingerprint"></i>
+      </div>
+      <h2 class="sonic-quiz-archetype-name" id="sonic-quiz-archetype-name">Night Voyager</h2>
+      <p class="sonic-quiz-archetype-desc" id="sonic-quiz-archetype-desc">You chase sounds that move after dark.</p>
+      <div class="sonic-quiz-breakdown" id="sonic-quiz-breakdown">
+        <!-- Breakdown bars injected -->
+      </div>
+      <button class="sonic-quiz-done-btn" id="sonic-quiz-done">
+        <i class="fas fa-check"></i> Enter your world
+      </button>
     </div>
   </div>
 </div>
 
-<!-- Notifications Panel -->
-<div id="notifications-panel" class="modal">
-  <div class="modal-content">
-    <div class="notifications-header">
-      <h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; margin: 0; color: var(--soft-white);">Notifications</h2>
-      <button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="notifications-list" id="notifications-list"></div>
-    <div class="notifications-footer">
-      <button id="mark-all-read" class="modal-btn close" style="flex: 1;">Mark all as read</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== PORTAL REVEAL MODAL ===== -->
+<!-- ===== PORTAL REVEAL MODAL (FIX #4) ===== -->
 <div id="portal-reveal-modal" class="portal-reveal-modal">
   <div class="portal-reveal-overlay"></div>
   <div class="portal-reveal-content">
@@ -179,7 +191,7 @@
       <div class="portal-reveal-artwork-blur"></div>
     </div>
     <div class="portal-reveal-info">
-      <div class="portal-reveal-badge" id="portal-reveal-badge">
+      <div class="portal-reveal-badge">
         <i class="fas fa-sparkles"></i> Today's Portal Drop
       </div>
       <h2 class="portal-reveal-title" id="portal-reveal-title">Loading...</h2>
@@ -261,7 +273,7 @@
   <!-- ===== MUSIC DISCOVERY MAIN ===== -->
   <main class="music-main">
 
-    <!-- ===== SONIC DNA BAR ===== -->
+    <!-- ===== SONIC DNA BAR (FIX #2: Now tappable) ===== -->
     <section class="sonic-dna-section" id="sonic-dna-section">
       <div class="sonic-dna-header">
         <div class="sonic-dna-title-row">
@@ -270,7 +282,7 @@
           </div>
           <div>
             <h2 class="sonic-dna-archetype" id="sonic-dna-archetype">Loading your sound...</h2>
-            <p class="sonic-dna-subtitle">Your living taste profile</p>
+            <p class="sonic-dna-subtitle" id="sonic-dna-subtitle">Your living taste profile</p>
           </div>
         </div>
         <button class="sonic-dna-streak" id="sonic-dna-streak" title="Your listening streak">
@@ -282,6 +294,10 @@
       <div class="sonic-dna-bars" id="sonic-dna-bars">
         <!-- Dynamically populated -->
       </div>
+      <button class="sonic-dna-cta" id="sonic-dna-cta">
+        <i class="fas fa-arrow-right"></i>
+        <span id="sonic-dna-cta-text">Take the 30-second quiz</span>
+      </button>
     </section>
 
     <!-- ===== CONTINUE LISTENING ===== -->
@@ -297,7 +313,7 @@
       </div>
     </section>
 
-    <!-- ===== TODAY'S PORTAL ===== -->
+    <!-- ===== TODAY'S PORTAL (FIX #4: Click now works) ===== -->
     <section class="portal-section" id="portal-section">
       <div class="section-header">
         <h3 class="section-title">
@@ -327,17 +343,75 @@
       </div>
     </section>
 
-    <!-- ===== WORLDS TO EXPLORE ===== -->
+    <!-- ===== WORLDS TO EXPLORE (FIX #3: In-page tabs, no separate page) ===== -->
     <section class="worlds-section" id="worlds-section">
       <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-globe"></i>
-          Worlds to explore
+          <span id="worlds-section-title">Worlds to explore</span>
         </h3>
-        <a href="#" class="section-see-all" id="worlds-see-all">See all worlds</a>
+        <!-- Back button appears when exploring a world -->
+        <button class="worlds-back-btn" id="worlds-back-btn" style="display:none;">
+          <i class="fas fa-arrow-left"></i>
+          <span>Back to worlds</span>
+        </button>
       </div>
-      <div class="worlds-grid" id="worlds-grid">
-        <!-- Dynamically populated -->
+      
+      <!-- Breadcrumb for nested exploration -->
+      <div class="worlds-breadcrumb" id="worlds-breadcrumb" style="display:none;">
+        <span class="breadcrumb-item" data-level="surface">Surface</span>
+      </div>
+
+      <!-- Worlds Grid (default view) -->
+      <div class="worlds-view" id="worlds-view-grid">
+        <div class="worlds-grid" id="worlds-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- World Detail View (in-page, replaces grid when exploring) -->
+      <div class="worlds-view" id="worlds-view-detail" style="display:none;">
+        <div class="world-detail-header" id="world-detail-header">
+          <div class="world-detail-artwork" id="world-detail-artwork"></div>
+          <div class="world-detail-info">
+            <h2 class="world-detail-name" id="world-detail-name">World Name</h2>
+            <div class="world-detail-progress">
+              <div class="world-detail-progress-bar">
+                <div class="world-detail-progress-fill" id="world-detail-progress-fill"></div>
+              </div>
+              <span class="world-detail-progress-text" id="world-detail-progress-text">0%</span>
+            </div>
+            <p class="world-detail-description" id="world-detail-description"></p>
+          </div>
+        </div>
+
+        <!-- Sub-worlds grid -->
+        <div class="world-detail-subsection">
+          <h4 class="world-detail-subsection-title">Sub-worlds</h4>
+          <div class="worlds-grid" id="world-detail-subworlds">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- This week's find (blurred mystery) -->
+        <div class="world-detail-subsection">
+          <h4 class="world-detail-subsection-title">This week's find</h4>
+          <div class="world-weekly-find" id="world-weekly-find">
+            <div class="world-weekly-find-blur"></div>
+            <div class="world-weekly-find-content">
+              <i class="fas fa-sparkles"></i>
+              <span>Tap to reveal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Track list (deliberately plain) -->
+        <div class="world-detail-subsection">
+          <h4 class="world-detail-subsection-title">Tracks</h4>
+          <div class="world-track-list" id="world-track-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
       </div>
     </section>
 
@@ -398,6 +472,46 @@
     </div>
   </div>
 
+</div>
+
+<!-- Notifications Panel (uses modals.css) -->
+<div id="notifications-panel" class="notifications-panel">
+  <div class="notifications-header">
+    <h2>Notifications <span id="notifications-header-count"></span></h2>
+    <button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notification-tabs-container">
+    <button class="notification-tab active" data-tab="all">All</button>
+    <button class="notification-tab" data-tab="unread">Unread</button>
+  </div>
+  <div class="notifications-list" id="notifications-list"></div>
+  <div class="notifications-footer">
+    <button id="mark-all-read" class="text-btn">Mark all as read</button>
+  </div>
+</div>
+
+<!-- Search Modal (uses modals.css) -->
+<div id="search-modal">
+  <div class="search-modal-overlay"></div>
+  <div class="search-modal-content">
+    <div class="search-modal-header">
+      <div class="search-input-wrapper">
+        <input type="text" id="search-input" placeholder="Search tracks, artists, worlds..." autocomplete="off">
+        <button id="voice-search-modal-btn" class="voice-search-modal-btn">
+          <i class="fas fa-microphone"></i>
+        </button>
+      </div>
+      <button id="close-search-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="search-filter-pills-bar">
+      <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All Worlds</button>
+      <button class="search-filter-pill" data-filter-group="category" data-filter-value="Amapiano">Amapiano</button>
+      <button class="search-filter-pill" data-filter-group="category" data-filter-value="Afrobeat">Afrobeat</button>
+      <button class="search-filter-pill" data-filter-group="sort" data-filter-value="newest">Newest</button>
+      <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">Popular</button>
+    </div>
+    <div id="search-results-grid"></div>
+  </div>
 </div>
 
 <div id="toast-container"></div>
