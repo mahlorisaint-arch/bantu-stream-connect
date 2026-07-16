@@ -1,18 +1,15 @@
 /* ==========================================================================
    BANTU STREAM CONNECT — MUSIC DISCOVERY PAGE
-   Implements: Sonic DNA, Mystery Portal, Worlds, Social Strip
+   FIX #6: Brand-cyan primary, warm-gold reserved for premium moments
+   FIX #5: Music cards use 16:9 aspect ratio (like creator-channel upload-card)
    ========================================================================== */
 
-/* ===== MUSIC-SPECIFIC VARIABLES ===== */
 :root {
   --portal-cyan: #34E7FF;
   --portal-violet: #A855F7;
-  --portal-gold: #F59E0B;
+  --portal-gold: #F59E0B; /* Only for premium moments: streak, archetype, unlocks */
   --portal-glow-soft: rgba(52, 231, 255, 0.15);
   --portal-glow-strong: rgba(52, 231, 255, 0.4);
-  --dna-gradient-start: #34E7FF;
-  --dna-gradient-mid: #A855F7;
-  --dna-gradient-end: #F59E0B;
 }
 
 /* ===== MAIN LAYOUT ===== */
@@ -22,17 +19,8 @@
   padding: 24px 20px 120px;
 }
 
-@media (min-width: 768px) {
-  .music-main {
-    padding: 32px 32px 120px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .music-main {
-    padding: 40px 64px 120px;
-  }
-}
+@media (min-width: 768px) { .music-main { padding: 32px 32px 120px; } }
+@media (min-width: 1200px) { .music-main { padding: 40px 64px 120px; } }
 
 /* ===== SECTION HEADER ===== */
 .section-header {
@@ -40,6 +28,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .section-title {
@@ -55,24 +45,8 @@
 }
 
 .section-title i {
-  color: var(--warm-gold);
+  color: var(--portal-cyan); /* FIX #6: Cyan, not gold */
   font-size: 16px;
-}
-
-.section-see-all {
-  font-size: 12px;
-  color: var(--slate-grey);
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 16px;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.section-see-all:hover {
-  color: var(--warm-gold);
-  border-color: rgba(245, 158, 11, 0.3);
-  background: rgba(245, 158, 11, 0.05);
 }
 
 @media (min-width: 768px) {
@@ -81,7 +55,7 @@
 }
 
 /* ==========================================================================
-   SONIC DNA BAR
+   SONIC DNA BAR (FIX #2: Now tappable with CTA)
    ========================================================================== */
 .sonic-dna-section {
   background: linear-gradient(135deg, rgba(52, 231, 255, 0.08), rgba(168, 85, 247, 0.08));
@@ -92,6 +66,13 @@
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
+  cursor: pointer; /* FIX #2: Tappable */
+  transition: all 0.3s ease;
+}
+
+.sonic-dna-section:hover {
+  border-color: rgba(52, 231, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .sonic-dna-section::before {
@@ -147,7 +128,7 @@
   font-size: 20px;
   font-weight: 700;
   margin: 0 0 2px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet), var(--portal-gold));
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -160,6 +141,7 @@
   margin: 0;
 }
 
+/* FIX #6: Streak uses warm-gold (premium moment) */
 .sonic-dna-streak {
   display: flex;
   align-items: center;
@@ -181,9 +163,7 @@
   transform: translateY(-1px);
 }
 
-.sonic-dna-streak i {
-  animation: flameFlicker 1.5s ease-in-out infinite;
-}
+.sonic-dna-streak i { animation: flameFlicker 1.5s ease-in-out infinite; }
 
 @keyframes flameFlicker {
   0%, 100% { transform: scale(1); }
@@ -203,6 +183,7 @@
   gap: 10px;
   position: relative;
   z-index: 2;
+  margin-bottom: 12px;
 }
 
 .dna-bar-item {
@@ -241,10 +222,7 @@
 .dna-bar-fill::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   animation: dnaShimmer 2s ease-in-out infinite;
 }
@@ -262,6 +240,35 @@
   font-family: 'Orbitron', sans-serif;
 }
 
+/* FIX #2: CTA button for quiz */
+.sonic-dna-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  background: rgba(52, 231, 255, 0.1);
+  border: 1px solid rgba(52, 231, 255, 0.2);
+  border-radius: 10px;
+  color: var(--portal-cyan);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
+  font-family: inherit;
+}
+
+.sonic-dna-cta:hover {
+  background: rgba(52, 231, 255, 0.18);
+  border-color: var(--portal-cyan);
+}
+
+.sonic-dna-cta i { transition: transform 0.2s ease; }
+.sonic-dna-cta:hover i { transform: translateX(4px); }
+
 @media (max-width: 480px) {
   .sonic-dna-section { padding: 16px; }
   .sonic-dna-archetype { font-size: 16px; }
@@ -273,45 +280,43 @@
 
 /* ==========================================================================
    CONTINUE LISTENING
+   FIX #5: Uses 16:9 aspect ratio like creator-channel upload-card
    ========================================================================== */
-.continue-listening-section {
-  margin-bottom: 32px;
-}
+.continue-listening-section { margin-bottom: 32px; }
 
 .continue-listening-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
 }
 
 @media (min-width: 768px) {
   .continue-listening-row {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 20px;
   }
 }
 
+/* FIX #5: Music card style matching creator-channel upload-card */
 .continue-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  position: relative;
+  transition: transform 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
-.continue-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--warm-gold);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-}
+.continue-card:hover { transform: translateY(-4px); }
 
 .continue-card-artwork {
   position: relative;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-media);
+  background: var(--bg-media, #1a2033);
+  border-radius: 6px;
+  aspect-ratio: 16 / 9; /* FIX #5: 16:9, not 1:1 */
+  margin-bottom: 6px;
   overflow: hidden;
+  background-size: cover;
+  background-position: center;
 }
 
 .continue-card-artwork img {
@@ -321,8 +326,29 @@
   transition: transform 0.5s ease;
 }
 
-.continue-card:hover .continue-card-artwork img {
-  transform: scale(1.05);
+.continue-card:hover .continue-card-artwork img { transform: scale(1.05); }
+
+.continue-card-badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  background: var(--portal-cyan);
+  color: #0a0e17;
+}
+
+.continue-card-duration {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  font-size: 10px;
+  color: white;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 
 .continue-card-progress {
@@ -336,8 +362,8 @@
 
 .continue-card-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--warm-gold), var(--portal-cyan));
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  background: var(--portal-cyan);
+  box-shadow: 0 0 8px rgba(52, 231, 255, 0.5);
 }
 
 .continue-card-play {
@@ -346,33 +372,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(7, 17, 31, 0.4);
+  background: rgba(7, 17, 31, 0.25);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.continue-card:hover .continue-card-play {
-  opacity: 1;
-}
+.continue-card:hover .continue-card-play { opacity: 1; }
 
 .continue-card-play i {
-  font-size: 32px;
+  font-size: 22px;
   color: var(--portal-cyan);
-  text-shadow: 0 0 20px rgba(52, 231, 255, 0.8);
-}
-
-.continue-card-info {
-  padding: 12px;
+  text-shadow: 0 0 3px var(--portal-cyan), 0 0 8px var(--portal-cyan), 0 0 18px rgba(0, 200, 255, 0.75);
 }
 
 .continue-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--soft-white);
-  margin: 0 0 4px;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0 0 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--soft-white);
 }
 
 .continue-card-meta {
@@ -383,17 +405,10 @@
   gap: 6px;
 }
 
-.continue-card-meta i {
-  color: var(--warm-gold);
-  font-size: 10px;
-}
-
 /* ==========================================================================
-   MYSTERY PORTAL
+   MYSTERY PORTAL (FIX #4: Click now works)
    ========================================================================== */
-.portal-section {
-  margin-bottom: 40px;
-}
+.portal-section { margin-bottom: 40px; }
 
 .portal-timer {
   display: flex;
@@ -408,9 +423,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.portal-timer i {
-  color: var(--portal-cyan);
-}
+.portal-timer i { color: var(--portal-cyan); }
 
 .portal-card {
   position: relative;
@@ -423,13 +436,8 @@
   border: 1px solid rgba(52, 231, 255, 0.2);
 }
 
-@media (min-width: 768px) {
-  .portal-card { height: 340px; }
-}
-
-@media (min-width: 1200px) {
-  .portal-card { height: 380px; }
-}
+@media (min-width: 768px) { .portal-card { height: 340px; } }
+@media (min-width: 1200px) { .portal-card { height: 380px; } }
 
 .portal-card:hover {
   transform: translateY(-4px);
@@ -448,7 +456,7 @@
   inset: -20%;
   background: radial-gradient(circle at 30% 40%, rgba(52, 231, 255, 0.4), transparent 50%),
               radial-gradient(circle at 70% 60%, rgba(168, 85, 247, 0.4), transparent 50%),
-              radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.3), transparent 50%);
+              radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.2), transparent 50%);
   filter: blur(40px);
   animation: portalFloat 8s ease-in-out infinite;
 }
@@ -517,9 +525,7 @@
   text-transform: uppercase;
 }
 
-.portal-card-badge i {
-  animation: sparkle 2s ease-in-out infinite;
-}
+.portal-card-badge i { animation: sparkle 2s ease-in-out infinite; }
 
 @keyframes sparkle {
   0%, 100% { transform: scale(1) rotate(0deg); }
@@ -534,12 +540,9 @@
   margin: 0 0 8px;
   line-height: 1.3;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
-  letter-spacing: 0.3px;
 }
 
-@media (min-width: 768px) {
-  .portal-card-note { font-size: 28px; }
-}
+@media (min-width: 768px) { .portal-card-note { font-size: 28px; } }
 
 .portal-card-cta {
   font-size: 13px;
@@ -555,9 +558,7 @@
   transition: transform 0.2s ease;
 }
 
-.portal-card:hover .portal-card-cta::after {
-  transform: translateX(4px);
-}
+.portal-card:hover .portal-card-cta::after { transform: translateX(4px); }
 
 .portal-card-shimmer {
   position: absolute;
@@ -574,10 +575,59 @@
 }
 
 /* ==========================================================================
-   WORLDS GRID
+   WORLDS SECTION (FIX #3: In-page tab exploration)
    ========================================================================== */
-.worlds-section {
-  margin-bottom: 40px;
+.worlds-section { margin-bottom: 40px; }
+
+.worlds-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(52, 231, 255, 0.1);
+  border: 1px solid rgba(52, 231, 255, 0.25);
+  border-radius: 20px;
+  color: var(--portal-cyan);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.worlds-back-btn:hover {
+  background: rgba(52, 231, 255, 0.2);
+  border-color: var(--portal-cyan);
+}
+
+.worlds-back-btn i { transition: transform 0.2s ease; }
+.worlds-back-btn:hover i { transform: translateX(-3px); }
+
+.worlds-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--slate-grey);
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-item:hover { color: var(--portal-cyan); }
+
+.breadcrumb-item.active { color: var(--soft-white); font-weight: 500; }
+
+.breadcrumb-separator {
+  color: var(--slate-grey);
+  opacity: 0.5;
 }
 
 .worlds-grid {
@@ -586,17 +636,9 @@
   gap: 14px;
 }
 
-@media (min-width: 600px) {
-  .worlds-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
-}
-
-@media (min-width: 900px) {
-  .worlds-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-@media (min-width: 1200px) {
-  .worlds-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; }
-}
+@media (min-width: 600px) { .worlds-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+@media (min-width: 900px) { .worlds-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1200px) { .worlds-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; } }
 
 .world-card {
   position: relative;
@@ -605,13 +647,13 @@
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  background: var(--bg-media);
-  border: 1px solid var(--card-border);
+  background: var(--bg-media, #1a2033);
+  border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
 }
 
 .world-card:hover {
   transform: translateY(-6px) scale(1.02);
-  border-color: var(--warm-gold);
+  border-color: var(--portal-cyan);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
@@ -623,9 +665,7 @@
   transition: transform 0.5s ease;
 }
 
-.world-card:hover .world-card-artwork {
-  transform: scale(1.08);
-}
+.world-card:hover .world-card-artwork { transform: scale(1.08); }
 
 .world-card-overlay {
   position: absolute;
@@ -652,9 +692,7 @@
   line-height: 1.2;
 }
 
-@media (min-width: 768px) {
-  .world-card-name { font-size: 16px; }
-}
+@media (min-width: 768px) { .world-card-name { font-size: 16px; } }
 
 .world-card-progress {
   display: flex;
@@ -673,7 +711,7 @@
 
 .world-card-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--warm-gold), var(--portal-cyan));
+  background: linear-gradient(90deg, var(--portal-cyan), var(--portal-violet));
   border-radius: 2px;
   transition: width 0.8s ease;
 }
@@ -703,7 +741,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--warm-gold);
+  color: var(--slate-grey);
   font-size: 12px;
   z-index: 3;
 }
@@ -715,12 +753,209 @@
   box-shadow: 0 0 15px rgba(52, 231, 255, 0.4);
 }
 
+/* ===== WORLD DETAIL VIEW (in-page exploration) ===== */
+.world-detail-header {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
+  border-radius: 16px;
+}
+
+.world-detail-artwork {
+  width: 120px;
+  height: 120px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  box-shadow: 0 8px 25px rgba(52, 231, 255, 0.3);
+}
+
+@media (min-width: 768px) {
+  .world-detail-artwork { width: 160px; height: 160px; }
+}
+
+.world-detail-info { flex: 1; min-width: 0; }
+
+.world-detail-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0 0 10px;
+}
+
+@media (min-width: 768px) { .world-detail-name { font-size: 28px; } }
+
+.world-detail-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.world-detail-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.world-detail-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--portal-cyan), var(--portal-violet));
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+.world-detail-progress-text {
+  font-size: 13px;
+  color: var(--portal-cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  min-width: 40px;
+}
+
+.world-detail-description {
+  font-size: 13px;
+  color: var(--slate-grey);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.world-detail-subsection {
+  margin-bottom: 28px;
+}
+
+.world-detail-subsection-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soft-white);
+  margin: 0 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--portal-cyan);
+}
+
+/* Weekly find (blurred mystery) */
+.world-weekly-find {
+  position: relative;
+  height: 140px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0a1929, #1a0a2e);
+  border: 1px solid rgba(52, 231, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.world-weekly-find:hover {
+  border-color: var(--portal-cyan);
+  transform: translateY(-2px);
+}
+
+.world-weekly-find-blur {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 50% 50%, rgba(52, 231, 255, 0.3), transparent 60%);
+  filter: blur(30px);
+  animation: portalFloat 8s ease-in-out infinite;
+}
+
+.world-weekly-find-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--portal-cyan);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.world-weekly-find-content i { animation: sparkle 2s ease-in-out infinite; }
+
+/* Track list (deliberately plain) */
+.world-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.world-track-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.world-track-item:hover { background: rgba(255, 255, 255, 0.04); }
+
+.world-track-number {
+  font-size: 12px;
+  color: var(--slate-grey);
+  font-family: 'Orbitron', sans-serif;
+  text-align: center;
+}
+
+.world-track-info { min-width: 0; }
+
+.world-track-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--soft-white);
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.world-track-artist {
+  font-size: 11px;
+  color: var(--slate-grey);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.world-track-duration {
+  font-size: 11px;
+  color: var(--slate-grey);
+  font-family: 'Orbitron', sans-serif;
+}
+
+.world-track-play {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(52, 231, 255, 0.1);
+  border: 1px solid rgba(52, 231, 255, 0.2);
+  color: var(--portal-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.world-track-item:hover .world-track-play { opacity: 1; }
+
 /* ==========================================================================
    SOCIAL STRIP
    ========================================================================== */
-.social-strip-section {
-  margin-bottom: 40px;
-}
+.social-strip-section { margin-bottom: 40px; }
 
 .live-dot {
   display: inline-block;
@@ -744,17 +979,11 @@
   overflow-x: auto;
   padding-bottom: 8px;
   scrollbar-width: thin;
-  scrollbar-color: var(--warm-gold) transparent;
+  scrollbar-color: var(--portal-cyan) transparent;
 }
 
-.social-strip-row::-webkit-scrollbar {
-  height: 4px;
-}
-
-.social-strip-row::-webkit-scrollbar-thumb {
-  background: var(--warm-gold);
-  border-radius: 2px;
-}
+.social-strip-row::-webkit-scrollbar { height: 4px; }
+.social-strip-row::-webkit-scrollbar-thumb { background: var(--portal-cyan); border-radius: 2px; }
 
 .social-strip-item {
   flex-shrink: 0;
@@ -771,8 +1000,8 @@
 }
 
 .social-strip-item:hover {
-  border-color: var(--warm-gold);
-  background: rgba(245, 158, 11, 0.05);
+  border-color: var(--portal-cyan);
+  background: rgba(52, 231, 255, 0.05);
   transform: translateY(-2px);
 }
 
@@ -780,7 +1009,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,10 +1039,7 @@
   border-radius: 50%;
 }
 
-.social-strip-info {
-  flex: 1;
-  min-width: 0;
-}
+.social-strip-info { flex: 1; min-width: 0; }
 
 .social-strip-name {
   font-size: 12px;
@@ -835,41 +1061,37 @@
 
 /* ==========================================================================
    TRENDING GRID
+   FIX #5: Uses 16:9 aspect ratio
    ========================================================================== */
-.trending-section {
-  margin-bottom: 40px;
-}
+.trending-section { margin-bottom: 40px; }
 
 .trending-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
 }
 
 @media (min-width: 768px) {
-  .trending-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+  .trending-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 }
 
 .trending-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
-.trending-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--warm-gold);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-}
+.trending-card:hover { transform: translateY(-4px); }
 
 .trending-card-artwork {
   position: relative;
-  aspect-ratio: 1 / 1;
-  background: var(--bg-media);
+  aspect-ratio: 16 / 9; /* FIX #5: 16:9 */
+  background: var(--bg-media, #1a2033);
+  border-radius: 6px;
   overflow: hidden;
+  margin-bottom: 6px;
 }
 
 .trending-card-artwork img {
@@ -879,9 +1101,7 @@
   transition: transform 0.5s ease;
 }
 
-.trending-card:hover .trending-card-artwork img {
-  transform: scale(1.05);
-}
+.trending-card:hover .trending-card-artwork img { transform: scale(1.05); }
 
 .trending-card-rank {
   position: absolute;
@@ -896,7 +1116,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--warm-gold);
+  color: var(--portal-cyan);
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
   font-weight: 700;
@@ -908,33 +1128,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(7, 17, 31, 0.4);
+  background: rgba(7, 17, 31, 0.25);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.trending-card:hover .trending-card-play {
-  opacity: 1;
-}
+.trending-card:hover .trending-card-play { opacity: 1; }
 
 .trending-card-play i {
-  font-size: 32px;
+  font-size: 22px;
   color: var(--portal-cyan);
-  text-shadow: 0 0 20px rgba(52, 231, 255, 0.8);
-}
-
-.trending-card-info {
-  padding: 12px;
+  text-shadow: 0 0 3px var(--portal-cyan), 0 0 8px var(--portal-cyan), 0 0 18px rgba(0, 200, 255, 0.75);
 }
 
 .trending-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--soft-white);
-  margin: 0 0 4px;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0 0 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--soft-white);
 }
 
 .trending-card-artist {
@@ -960,9 +1176,374 @@
   gap: 4px;
 }
 
-.trending-card-stats i {
-  color: var(--warm-gold);
-  font-size: 10px;
+.trending-card-stats i { color: var(--portal-cyan); font-size: 10px; }
+
+/* ==========================================================================
+   SONIC DNA QUIZ MODAL
+   ========================================================================== */
+.sonic-quiz-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.sonic-quiz-modal.active {
+  display: flex;
+  animation: quizIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes quizIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sonic-quiz-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 12, 0.92);
+  backdrop-filter: blur(30px);
+}
+
+.sonic-quiz-content {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  background: linear-gradient(135deg, rgba(10, 25, 41, 0.98), rgba(26, 10, 46, 0.98));
+  border: 1px solid rgba(52, 231, 255, 0.3);
+  border-radius: 24px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(52, 231, 255, 0.3);
+  animation: quizScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes quizScale {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.sonic-quiz-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.sonic-quiz-close:hover {
+  background: rgba(239, 68, 68, 0.8);
+  transform: rotate(90deg);
+}
+
+.sonic-quiz-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 32px;
+  box-shadow: 0 0 40px rgba(52, 231, 255, 0.5);
+  animation: dnaBadgePulse 3s ease-in-out infinite;
+}
+
+.sonic-quiz-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 10px;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sonic-quiz-subtitle {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin: 0 0 30px;
+}
+
+.sonic-quiz-start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  border: none;
+  border-radius: 30px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 25px rgba(52, 231, 255, 0.3);
+}
+
+.sonic-quiz-start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(52, 231, 255, 0.5);
+}
+
+/* Quiz progress */
+.sonic-quiz-progress {
+  margin-bottom: 24px;
+}
+
+.sonic-quiz-progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sonic-quiz-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.sonic-quiz-dot.active {
+  background: var(--portal-cyan);
+  box-shadow: 0 0 10px var(--portal-cyan);
+}
+
+.sonic-quiz-dot.done {
+  background: var(--portal-violet);
+}
+
+.sonic-quiz-progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sonic-quiz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--portal-cyan), var(--portal-violet));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* Quiz card */
+.sonic-quiz-card {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 320px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid transparent;
+}
+
+.sonic-quiz-card:hover {
+  transform: scale(1.02);
+  border-color: var(--portal-cyan);
+}
+
+.sonic-quiz-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+}
+
+.sonic-quiz-card-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  text-align: left;
+}
+
+.sonic-quiz-card-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 6px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.sonic-quiz-card-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sonic-quiz-card-cta {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(52, 231, 255, 0.2);
+  border: 1px solid var(--portal-cyan);
+  color: var(--portal-cyan);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sonic-quiz-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.sonic-quiz-skip-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--slate-grey);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+}
+
+.sonic-quiz-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--soft-white);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Reveal */
+.sonic-quiz-reveal-badge {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 40px;
+  box-shadow: 0 0 60px rgba(52, 231, 255, 0.6);
+  animation: revealPulse 2s ease-in-out infinite;
+}
+
+@keyframes revealPulse {
+  0%, 100% { box-shadow: 0 0 60px rgba(52, 231, 255, 0.6); transform: scale(1); }
+  50% { box-shadow: 0 0 80px rgba(52, 231, 255, 0.9); transform: scale(1.05); }
+}
+
+.sonic-quiz-archetype-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet), #F59E0B);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
+}
+
+.sonic-quiz-archetype-desc {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.sonic-quiz-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.sonic-quiz-breakdown-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.sonic-quiz-breakdown-label { color: var(--soft-white); }
+
+.sonic-quiz-breakdown-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sonic-quiz-breakdown-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--portal-cyan), var(--portal-violet));
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+.sonic-quiz-breakdown-value {
+  color: var(--portal-cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  text-align: right;
+}
+
+.sonic-quiz-done-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  border: none;
+  border-radius: 30px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 25px rgba(52, 231, 255, 0.3);
+}
+
+.sonic-quiz-done-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(52, 231, 255, 0.5);
 }
 
 /* ==========================================================================
@@ -1056,13 +1637,9 @@
   transition: opacity 0.6s ease;
 }
 
-.portal-reveal-modal.revealed .portal-reveal-artwork-blur {
-  opacity: 0;
-}
+.portal-reveal-modal.revealed .portal-reveal-artwork-blur { opacity: 0; }
 
-.portal-reveal-info {
-  padding: 24px;
-}
+.portal-reveal-info { padding: 24px; }
 
 .portal-reveal-badge {
   display: inline-flex;
@@ -1118,10 +1695,6 @@
   border: 1px solid rgba(52, 231, 255, 0.15);
 }
 
-.portal-reveal-dna-match i {
-  font-size: 12px;
-}
-
 .portal-reveal-play-btn {
   width: 100%;
   padding: 14px;
@@ -1145,10 +1718,6 @@
 .portal-reveal-play-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 35px rgba(52, 231, 255, 0.5);
-}
-
-.portal-reveal-play-btn i {
-  font-size: 14px;
 }
 
 /* ==========================================================================
@@ -1203,21 +1772,14 @@
   color: white;
   font-size: 28px;
   box-shadow: 0 0 40px rgba(52, 231, 255, 0.6);
-  animation: iconPulse 1s ease-in-out infinite;
-}
-
-@keyframes iconPulse {
-  0%, 100% { box-shadow: 0 0 40px rgba(52, 231, 255, 0.6); }
-  50% { box-shadow: 0 0 60px rgba(52, 231, 255, 0.9); }
 }
 
 .unlock-celebration-title {
   font-family: 'Orbitron', sans-serif;
   font-size: 22px;
   font-weight: 700;
-  color: white;
   margin: 0 0 6px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-gold));
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1260,7 +1822,7 @@
 
 .music-empty-state i {
   font-size: 40px;
-  color: var(--warm-gold);
+  color: var(--portal-cyan);
   opacity: 0.4;
   margin-bottom: 12px;
 }
@@ -1271,54 +1833,7 @@
   margin: 0 0 6px;
 }
 
-.music-empty-state p {
-  font-size: 13px;
-  margin: 0;
-}
-
-/* ==========================================================================
-   LOADING SKELETONS
-   ========================================================================== */
-.skeleton {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.5s ease-in-out infinite;
-  border-radius: 8px;
-}
-
-@keyframes skeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ==========================================================================
-   THEME SUPPORT
-   ========================================================================== */
-body.theme-light .sonic-dna-section {
-  background: linear-gradient(135deg, rgba(52, 231, 255, 0.1), rgba(168, 85, 247, 0.1));
-  border-color: rgba(52, 231, 255, 0.2);
-}
-
-body.theme-light .portal-card {
-  background: linear-gradient(135deg, #e0f2fe, #f3e8ff);
-}
-
-body.theme-light .portal-card-note {
-  color: #0F172A;
-  text-shadow: none;
-}
-
-body.theme-high-contrast .sonic-dna-section {
-  border-color: #FFFFFF;
-}
-
-body.theme-high-contrast .portal-card {
-  border-color: #FFFFFF;
-}
-
-body.theme-high-contrast .portal-card-note {
-  color: #FFFFFF;
-}
+.music-empty-state p { font-size: 13px; margin: 0; }
 
 /* ==========================================================================
    MOBILE OPTIMIZATIONS
@@ -1334,6 +1849,8 @@ body.theme-high-contrast .portal-card-note {
   .continue-listening-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .trending-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .social-strip-item { min-width: 180px; padding: 8px 12px; }
+  .sonic-quiz-archetype-name { font-size: 24px; }
+  .sonic-quiz-card-name { font-size: 16px; }
 }
 
 @media (max-width: 360px) {
