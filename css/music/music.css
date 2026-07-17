@@ -728,6 +728,7 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* SECTION 7 FIX: Top-level worlds show status indicator, not lock */
 .world-card-lock {
   position: absolute;
   top: 12px;
@@ -751,6 +752,23 @@
   border-color: var(--portal-cyan);
   color: var(--portal-cyan);
   box-shadow: 0 0 15px rgba(52, 231, 255, 0.4);
+}
+
+/* Sub-worlds use lock icon for real gating */
+.world-card.is-locked .world-card-lock {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #EF4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.world-card.is-locked .world-card-progress-fill {
+  background: #EF4444;
+  opacity: 0.3;
+}
+
+.world-card.is-locked .world-card-progress-text {
+  color: #EF4444;
 }
 
 /* ===== WORLD DETAIL VIEW (in-page exploration) ===== */
@@ -1721,19 +1739,19 @@
 }
 
 /* ==========================================================================
-   UNLOCK CELEBRATION
+   UNLOCK CELEBRATION MODAL (SECTION 5)
    ========================================================================== */
-.unlock-celebration {
+.unlock-celebration-modal {
   position: fixed;
   inset: 0;
   z-index: 10001;
   display: none;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  padding: 20px;
 }
 
-.unlock-celebration.active {
+.unlock-celebration-modal.active {
   display: flex;
   animation: unlockIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1743,15 +1761,25 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+.unlock-celebration-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 12, 0.92);
+  backdrop-filter: blur(30px);
+}
+
 .unlock-celebration-content {
+  position: relative;
   background: linear-gradient(135deg, rgba(10, 25, 41, 0.98), rgba(26, 10, 46, 0.98));
   border: 2px solid var(--portal-cyan);
   border-radius: 20px;
-  padding: 32px 40px;
+  padding: 40px 32px;
   text-align: center;
   box-shadow: 0 30px 80px rgba(52, 231, 255, 0.4);
   pointer-events: auto;
   animation: unlockBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 420px;
+  width: 100%;
 }
 
 @keyframes unlockBounce {
@@ -1761,51 +1789,206 @@
 }
 
 .unlock-celebration-icon {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   margin: 0 auto 16px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  background: linear-gradient(135deg, var(--portal-gold), #F97316);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 28px;
-  box-shadow: 0 0 40px rgba(52, 231, 255, 0.6);
+  font-size: 32px;
+  box-shadow: 0 0 50px rgba(245, 158, 11, 0.5);
+  animation: celebrationPulse 2s ease-in-out infinite;
+}
+
+@keyframes celebrationPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 50px rgba(245, 158, 11, 0.5); }
+  50% { transform: scale(1.08); box-shadow: 0 0 70px rgba(245, 158, 11, 0.8); }
 }
 
 .unlock-celebration-title {
   font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  margin: 0 0 6px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--portal-gold), #F97316);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  letter-spacing: 0.5px;
 }
 
 .unlock-celebration-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--slate-grey);
-  margin: 0 0 20px;
+  margin: 0 0 24px;
 }
 
 .unlock-celebration-btn {
-  padding: 10px 24px;
-  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  padding: 12px 32px;
+  background: linear-gradient(135deg, var(--portal-gold), #F97316);
   border: none;
-  border-radius: 20px;
+  border-radius: 24px;
   color: white;
   font-weight: 600;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  font-family: 'Orbitron', sans-serif;
   transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
 }
 
 .unlock-celebration-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(52, 231, 255, 0.4);
+  box-shadow: 0 12px 35px rgba(245, 158, 11, 0.5);
+}
+
+/* ==========================================================================
+   WEEKLY FIND REVEAL MODAL (SECTION 8)
+   ========================================================================== */
+.weekly-find-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.weekly-find-reveal.active {
+  display: flex;
+  animation: weeklyRevealIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes weeklyRevealIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.weekly-find-reveal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 12, 0.92);
+  backdrop-filter: blur(30px);
+}
+
+.weekly-find-reveal-content {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(135deg, rgba(10, 25, 41, 0.98), rgba(26, 10, 46, 0.98));
+  border: 1px solid rgba(52, 231, 255, 0.3);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(52, 231, 255, 0.3);
+  animation: weeklyRevealScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes weeklyRevealScale {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.weekly-find-reveal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.weekly-find-reveal-close:hover {
+  background: rgba(239, 68, 68, 0.8);
+  transform: rotate(90deg);
+}
+
+.weekly-find-reveal-artwork {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-media);
+  overflow: hidden;
+}
+
+.weekly-find-reveal-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.weekly-find-reveal-artwork-blur {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.weekly-find-reveal-content > *:not(.weekly-find-reveal-artwork):not(.weekly-find-reveal-close) {
+  padding: 0 24px;
+}
+
+.weekly-find-reveal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin: 16px 24px 4px;
+  line-height: 1.2;
+}
+
+.weekly-find-reveal-artist {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin: 0 24px 8px;
+}
+
+.weekly-find-reveal-note {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 24px 16px;
+  line-height: 1.5;
+  font-style: italic;
+  padding-left: 12px;
+  border-left: 2px solid var(--portal-gold);
+}
+
+.weekly-find-reveal-play-btn {
+  width: calc(100% - 48px);
+  margin: 0 24px 24px;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--portal-cyan), var(--portal-violet));
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 25px rgba(52, 231, 255, 0.3);
+}
+
+.weekly-find-reveal-play-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(52, 231, 255, 0.5);
 }
 
 /* ==========================================================================
@@ -1851,6 +2034,8 @@
   .social-strip-item { min-width: 180px; padding: 8px 12px; }
   .sonic-quiz-archetype-name { font-size: 24px; }
   .sonic-quiz-card-name { font-size: 16px; }
+  .unlock-celebration-content { padding: 28px 20px; }
+  .unlock-celebration-title { font-size: 20px; }
 }
 
 @media (max-width: 360px) {
