@@ -60,6 +60,18 @@
     }
   };
 
+  // ===== GENRE MOODS LOOKUP TABLE (Section 2) =====
+  const GENRE_MOODS = {
+    'Amapiano':  { nocturnal: 0.8, energetic: 0.4, spiritual: 0.2 },
+    'Gqom':      { nocturnal: 0.7, energetic: 0.5, spiritual: 0.1 },
+    'Afrobeat':  { nocturnal: 0.3, energetic: 0.8, spiritual: 0.2 },
+    'Afrofusion':{ nocturnal: 0.4, energetic: 0.7, spiritual: 0.3 },
+    'Highlife':  { nocturnal: 0.2, energetic: 0.5, spiritual: 0.3 },
+    'Soul':      { nocturnal: 0.4, energetic: 0.2, spiritual: 0.7 },
+    'Gospel':    { nocturnal: 0.1, energetic: 0.3, spiritual: 0.9 },
+    'Hip-Hop':   { nocturnal: 0.5, energetic: 0.6, spiritual: 0.2 }
+  };
+
   // ===== HELPER FUNCTIONS =====
   function showToast(message, type = 'info') {
     if (window.showToast) return window.showToast(message, type);
@@ -146,7 +158,7 @@
     }
   }
 
-  // ===== SONIC DNA QUIZ (UPDATED WITH SQL FUNCTION) =====
+  // ===== SONIC DNA QUIZ (UPDATED WITH SECTION 2 & 3 FIXES) =====
   const SonicQuiz = {
     currentStep: 0,
     totalSteps: 6,
@@ -154,7 +166,7 @@
     quizGenres: [],
 
     async init() {
-      // Load quiz genres from database
+      // Load quiz genres from database (SECTION 3 FIX)
       const { data } = await supabase
         .from('genres')
         .select('*')
@@ -165,16 +177,22 @@
 
       if (data && data.length >= 6) {
         this.quizGenres = data.slice(0, 6);
-      } else {
-        // ✅ FIX: Use valid dummy UUIDs for fallback genres to prevent casting errors
-        this.quizGenres = [
-          { id: '00000000-0000-0000-0000-000000000001', name: 'Amapiano', description: 'Log drums, deep house, Pretoria nights' },
-          { id: '00000000-0000-0000-0000-000000000002', name: 'Afrobeat', description: 'West African grooves, Fela Kuti legacy' },
-          { id: '00000000-0000-0000-0000-000000000003', name: 'Highlife', description: 'Ghanaian guitar, palm wine melodies' },
-          { id: '00000000-0000-0000-0000-000000000004', name: 'Hip-Hop', description: 'Beats, bars, and culture' },
-          { id: '00000000-0000-0000-0000-000000000005', name: 'Soul', description: 'Smooth vocals, timeless emotion' },
-          { id: '00000000-0000-0000-0000-000000000006', name: 'Gospel', description: 'Spiritual, uplifting, powerful' }
-        ];
+        return;
+      }
+
+      // ✅ SECTION 3 FIX: Fallback fetch real genres by name instead of inventing fake UUIDs
+      const fallbackNames = ['Amapiano', 'Afrobeat', 'Highlife', 'Hip-Hop', 'Soul', 'Gospel'];
+      const { data: realGenres } = await supabase
+        .from('genres')
+        .select('*')
+        .in('name', fallbackNames);
+
+      this.quizGenres = fallbackNames
+        .map(name => realGenres?.find(g => g.name === name))
+        .filter(Boolean);
+
+      if (this.quizGenres.length < 6) {
+        console.warn(`Only ${this.quizGenres.length} fallback genres found in DB — seed the genres table.`);
       }
     },
 
@@ -276,7 +294,7 @@
       }
     },
 
-    // UPDATED: Calls SQL function to get real archetype
+    // SECTION 2 FIX: Derive real mood weights from genre selections
     async renderReveal() {
       // Save to database first to get the real archetype from SQL
       const archetype = await this.saveSonicDNAAndGetArchetype();
@@ -306,23 +324,43 @@
       }).join('');
     },
 
-    // UPDATED: New function that calls SQL resolve_archetype
+    // SECTION 2 FIX: Calculate real mood weights from genre selections
     async saveSonicDNAAndGetArchetype() {
       if (!window.currentUser) return null;
 
       const topGenres = this.selections.slice(0, 4);
+      
+      // SECTION 2: Derive mood weights from genres instead of hardcoding 0.5
+      const moodTotals = { nocturnal: 0, energetic: 0, spiritual: 0 };
+      let weightSum = 0;
+
+      topGenres.forEach((g, idx) => {
+        const weight = Math.max(0.3, 0.9 - (idx * 0.15));
+        const moods = GENRE_MOODS[g.name] || { nocturnal: 0.4, energetic: 0.4, spiritual: 0.4 };
+        moodTotals.nocturnal += moods.nocturnal * weight;
+        moodTotals.energetic += moods.energetic * weight;
+        moodTotals.spiritual += moods.spiritual * weight;
+        weightSum += weight;
+      });
+
+      const mood_weights = {
+        nocturnal: +(moodTotals.nocturnal / weightSum).toFixed(2),
+        energetic: +(moodTotals.energetic / weightSum).toFixed(2),
+        spiritual: +(moodTotals.spiritual / weightSum).toFixed(2)
+      };
+
+      // discovery_tolerance: how spread out the picks are
+      const uniqueTopWeight = topGenres[0] ? Math.max(0.3, 0.9 - 0) : 0.5;
+      const discovery_tolerance = +(1 - uniqueTopWeight + 0.3).toFixed(2);
+
       const sonicDNA = {
         top_genres: topGenres.map((g, idx) => ({
           id: g.id,
           name: g.name,
           weight: Math.max(0.3, 0.9 - (idx * 0.15))
         })),
-        mood_weights: {
-          nocturnal: 0.5,
-          energetic: 0.5,
-          spiritual: 0.5
-        },
-        discovery_tolerance: 0.5,
+        mood_weights: mood_weights,
+        discovery_tolerance: discovery_tolerance,
         last_updated: new Date().toISOString()
       };
 
@@ -644,7 +682,7 @@
     }
   }
 
-  // ===== STREAK COUNTER =====
+  // ===== STREAK COUNTER (SECTION 4 FIX - Fixed streak calculation) =====
   async function computeAndRenderStreak() {
     const streakEl = document.getElementById('streak-count');
     if (!streakEl || !window.currentUser) {
@@ -667,20 +705,28 @@
         return;
       }
 
+      // SECTION 4 FIX: Proper streak calculation
       let streak = 0;
+      let expectedDiff = null;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      for (let i = 0; i < data.length; i++) {
-        const date = new Date(data[i].completed_at);
+      for (const row of data) {
+        const date = new Date(row.completed_at);
         date.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-        
-        // If it's today or yesterday (and we're starting the count), or exactly the next day in the sequence
-        if (diffDays === streak || (diffDays === streak + 1 && streak === 0)) {
+        const diffDays = Math.floor((today - date) / 86400000);
+
+        if (expectedDiff === null) {
+          if (diffDays > 1) break; // most recent listen older than yesterday — no active streak
+          expectedDiff = diffDays;
+          streak = 1;
+        } else if (diffDays === expectedDiff) {
+          continue; // same day as already-counted record, skip duplicates
+        } else if (diffDays === expectedDiff + 1) {
           streak++;
-        } else if (diffDays > streak) {
-          break; // Streak broken
+          expectedDiff = diffDays;
+        } else {
+          break; // gap in the streak
         }
       }
       
@@ -790,6 +836,7 @@
     }
   }
 
+  // SECTION 7 FIX: Top-level worlds shouldn't show a lock at all
   function renderWorlds() {
     const grid = document.getElementById('worlds-grid');
     const worldColors = ['#1D4ED8', '#F59E0B', '#EC4899', '#10B981', '#8B5CF6', '#EF4444', '#06B6D4', '#F97316'];
@@ -799,14 +846,16 @@
       const pct = progress ? Math.round(progress.exploration_percentage || 0) : 0;
       const tracksListened = progress ? progress.tracks_listened : 0;
       const color = worldColors[idx % worldColors.length];
-      const isLocked = pct === 0 && !progress;
+
+      // SECTION 7 FIX: Top-level worlds show status indicator, not lock
+      const statusIcon = !progress ? 'fa-circle' : (pct >= 100 ? 'fa-check' : 'fa-play');
 
       return `
         <div class="world-card" data-world-id="${world.id}" data-world-name="${escapeHtml(world.name)}">
           <div class="world-card-artwork" style="background: linear-gradient(135deg, ${color}40, ${color}80);"></div>
           <div class="world-card-overlay"></div>
-          <div class="world-card-lock ${isLocked ? '' : 'unlocked'}">
-            <i class="fas ${isLocked ? 'fa-lock' : 'fa-check'}"></i>
+          <div class="world-card-lock unlocked">
+            <i class="fas ${statusIcon}"></i>
           </div>
           <div class="world-card-content">
             <h4 class="world-card-name">${escapeHtml(world.name)}</h4>
@@ -1016,7 +1065,7 @@
     }
   }
 
-  // Setup "This Week's Find"
+  // Setup "This Week's Find" (SECTION 8 - Add reveal modal instead of direct redirect)
   function setupWeeklyFind(worldId) {
     const weeklyFind = document.getElementById('world-weekly-find');
     if (!weeklyFind) return;
@@ -1027,7 +1076,7 @@
       // Fetch a random track from this world
       const { data: tracks } = await supabase
         .from('Content')
-        .select('id')
+        .select('id, title, thumbnail_url, user_profiles!user_id (full_name, username)')
         .eq('primary_genre_id', worldId)
         .eq('status', 'published')
         .order('created_at', { ascending: false })
@@ -1035,20 +1084,62 @@
 
       if (tracks && tracks.length > 0) {
         const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-        window.location.href = `../content-detail.html?id=${randomTrack.id}`;
+        
+        // SECTION 8: Use reveal modal instead of direct redirect
+        showWeeklyFindReveal(randomTrack);
       } else {
         showToast('No hidden finds in this world yet', 'warning');
       }
     };
   }
 
-  // ===== SOCIAL STRIP (FIXED: Uses content_views instead of watch_progress) =====
+  // SECTION 8: Weekly find reveal modal
+  function showWeeklyFindReveal(track) {
+    const modal = document.createElement('div');
+    modal.className = 'weekly-find-reveal';
+    modal.innerHTML = `
+      <div class="weekly-find-reveal-overlay"></div>
+      <div class="weekly-find-reveal-content">
+        <button class="weekly-find-reveal-close"><i class="fas fa-times"></i></button>
+        <div class="weekly-find-reveal-artwork">
+          <img src="${fixMediaUrl(track.thumbnail_url)}" alt="${escapeHtml(track.title)}">
+          <div class="weekly-find-reveal-artwork-blur"></div>
+        </div>
+        <h3 class="weekly-find-reveal-title">${escapeHtml(track.title)}</h3>
+        <p class="weekly-find-reveal-artist">${escapeHtml(track.user_profiles?.full_name || track.user_profiles?.username || 'Unknown Artist')}</p>
+        <p class="weekly-find-reveal-note">✨ This week's hidden gem</p>
+        <button class="weekly-find-reveal-play-btn">Listen Now</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show with animation
+    setTimeout(() => modal.classList.add('active'), 10);
+
+    // Close handlers
+    modal.querySelector('.weekly-find-reveal-close').onclick = () => {
+      modal.classList.remove('active');
+      setTimeout(() => modal.remove(), 300);
+    };
+
+    modal.querySelector('.weekly-find-reveal-overlay').onclick = () => {
+      modal.classList.remove('active');
+      setTimeout(() => modal.remove(), 300);
+    };
+
+    modal.querySelector('.weekly-find-reveal-play-btn').onclick = () => {
+      window.location.href = `../content-detail.html?id=${track.id}`;
+    };
+  }
+
+  // ===== SOCIAL STRIP (SECTION 6 FIX - content_views verification) =====
   async function loadSocialStrip() {
     const row = document.getElementById('social-strip-row');
     const section = document.getElementById('social-strip-section');
 
     try {
-      // ✅ FIX: Use content_views and viewer_id, which correctly references user_profiles
+      // SECTION 6: Try content_views first, fallback to client-side join if it fails
       const { data, error } = await supabase
         .from('content_views')
         .select(`
@@ -1068,7 +1159,12 @@
         .order('updated_at', { ascending: false })
         .limit(8);
 
-      if (error) throw error;
+      if (error) {
+        // SECTION 6 FIX: Fallback to client-side join if content_views doesn't exist
+        console.warn('content_views table may not exist, using fallback:', error);
+        await loadSocialStripFallback();
+        return;
+      }
 
       if (!data || data.length === 0) {
         section.style.display = 'none';
@@ -1104,8 +1200,149 @@
       });
     } catch (e) {
       console.error('Social strip error:', e);
+      // SECTION 6 FALLBACK: Use watch_progress instead
+      await loadSocialStripFallback();
+    }
+  }
+
+  // SECTION 6 FALLBACK: Client-side join version
+  async function loadSocialStripFallback() {
+    const row = document.getElementById('social-strip-row');
+    const section = document.getElementById('social-strip-section');
+
+    try {
+      const { data: activity, error } = await supabase
+        .from('watch_progress')
+        .select('user_id, content_id, updated_at')
+        .neq('user_id', window.currentUser?.id || '00000000-0000-0000-0000-000000000000')
+        .gte('updated_at', new Date(Date.now() - 3600000).toISOString())
+        .order('updated_at', { ascending: false })
+        .limit(8);
+
+      if (error) throw error;
+      if (!activity || activity.length === 0) { 
+        section.style.display = 'none'; 
+        return; 
+      }
+
+      const userIds = [...new Set(activity.map(a => a.user_id))];
+      const contentIds = [...new Set(activity.map(a => a.content_id))];
+
+      const [{ data: profiles }, { data: contents }] = await Promise.all([
+        supabase.from('user_profiles').select('id, full_name, username, avatar_url').in('id', userIds),
+        supabase.from('Content').select('id, title, content_format').in('id', contentIds).in('content_format', MUSIC_FORMATS)
+      ]);
+
+      const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+      const contentMap = Object.fromEntries((contents || []).map(c => [c.id, c]));
+
+      const items = activity.filter(a => contentMap[a.content_id]);
+
+      if (items.length === 0) { 
+        section.style.display = 'none'; 
+        return; 
+      }
+
+      section.style.display = 'block';
+      row.innerHTML = items.map(item => {
+        const user = profileMap[item.user_id];
+        const content = contentMap[item.content_id];
+        const name = user?.full_name || user?.username || 'Listener';
+        const avatar = user?.avatar_url ? fixMediaUrl(user.avatar_url) : null;
+
+        return `
+          <div class="social-strip-item" data-content-id="${content.id}">
+            <div class="social-strip-avatar">
+              ${avatar ? `<img src="${avatar}" alt="${escapeHtml(name)}">` : getInitials(name)}
+            </div>
+            <div class="social-strip-info">
+              <p class="social-strip-name">${escapeHtml(name)}</p>
+              <p class="social-strip-track">Listening to ${escapeHtml(content.title)}</p>
+            </div>
+          </div>`;
+      }).join('');
+
+      row.querySelectorAll('.social-strip-item').forEach(item => {
+        item.addEventListener('click', () => {
+          window.location.href = `../content-detail.html?id=${item.dataset.contentId}`;
+        });
+      });
+    } catch (e) {
+      console.error('Social strip fallback error:', e);
       section.style.display = 'none';
     }
+  }
+
+  // ===== SECTION 5: PENDING UNLOCK CELEBRATION CHECK =====
+  async function checkPendingUnlockCelebration() {
+    if (!window.currentUser) return;
+
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', window.currentUser.id)
+        .eq('type', 'world_unlock')
+        .eq('is_read', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!data || data.length === 0) return;
+
+      const notif = data[0];
+      showUnlockCelebration(notif.metadata?.unlocked_genre_name || notif.title, notif.metadata?.unlocked_genre_id);
+
+      await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
+    } catch (e) {
+      console.error('Pending celebration check error:', e);
+    }
+  }
+
+  // SECTION 5: Show unlock celebration modal
+  function showUnlockCelebration(genreName, genreId) {
+    // Check if modal exists, create if not
+    let modal = document.getElementById('unlock-celebration');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'unlock-celebration';
+      modal.className = 'unlock-celebration-modal';
+      modal.innerHTML = `
+        <div class="unlock-celebration-overlay"></div>
+        <div class="unlock-celebration-content">
+          <div class="unlock-celebration-icon">🎉</div>
+          <h2 id="unlock-celebration-title">World Unlocked!</h2>
+          <p id="unlock-celebration-subtitle">Yours now</p>
+          <button id="unlock-celebration-btn">Explore</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    // Update content
+    document.getElementById('unlock-celebration-title').textContent = `${genreName} unlocked`;
+    document.getElementById('unlock-celebration-subtitle').textContent = 'Yours now';
+    
+    // Show modal
+    modal.classList.add('active');
+
+    // Handle close
+    document.getElementById('unlock-celebration-btn').onclick = () => {
+      modal.classList.remove('active');
+      if (genreId) {
+        // Navigate to the world
+        const world = window.worlds.find(w => w.id === genreId);
+        if (world) {
+          openWorldDetail(genreId, world.name);
+        }
+      }
+    };
+
+    // Close on outside click
+    modal.onclick = (e) => {
+      if (e.target === modal || e.target.classList.contains('unlock-celebration-overlay')) {
+        modal.classList.remove('active');
+      }
+    };
   }
 
   // ===== TRENDING =====
@@ -1239,11 +1476,14 @@
         loadTrending()
       ]);
 
+      // SECTION 5: Check for pending unlock celebrations after worlds load
+      await checkPendingUnlockCelebration();
+
       // Render Sonic DNA
       renderSonicDNA();
       createPortalParticles();
       
-      // Compute streak
+      // Compute streak (SECTION 4 FIX)
       await computeAndRenderStreak();
 
       // Setup event listeners
