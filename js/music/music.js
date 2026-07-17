@@ -6,6 +6,10 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // ✅ FIX: Expose to shared-components.js
+  window.supabaseClient = supabase;
+  window.supabaseAuth = supabase;
+
   // ===== GLOBAL STATE =====
   window.currentUser = null;
   window.userProfile = null;
@@ -162,14 +166,14 @@
       if (data && data.length >= 6) {
         this.quizGenres = data.slice(0, 6);
       } else {
-        // Fallback genres
+        // ✅ FIX: Use valid dummy UUIDs for fallback genres to prevent casting errors
         this.quizGenres = [
-          { id: '1', name: 'Amapiano', description: 'Log drums, deep house, Pretoria nights' },
-          { id: '2', name: 'Afrobeat', description: 'West African grooves, Fela Kuti legacy' },
-          { id: '3', name: 'Highlife', description: 'Ghanaian guitar, palm wine melodies' },
-          { id: '4', name: 'Hip-Hop', description: 'Beats, bars, and culture' },
-          { id: '5', name: 'Soul', description: 'Smooth vocals, timeless emotion' },
-          { id: '6', name: 'Gospel', description: 'Spiritual, uplifting, powerful' }
+          { id: '00000000-0000-0000-0000-000000000001', name: 'Amapiano', description: 'Log drums, deep house, Pretoria nights' },
+          { id: '00000000-0000-0000-0000-000000000002', name: 'Afrobeat', description: 'West African grooves, Fela Kuti legacy' },
+          { id: '00000000-0000-0000-0000-000000000003', name: 'Highlife', description: 'Ghanaian guitar, palm wine melodies' },
+          { id: '00000000-0000-0000-0000-000000000004', name: 'Hip-Hop', description: 'Beats, bars, and culture' },
+          { id: '00000000-0000-0000-0000-000000000005', name: 'Soul', description: 'Smooth vocals, timeless emotion' },
+          { id: '00000000-0000-0000-0000-000000000006', name: 'Gospel', description: 'Spiritual, uplifting, powerful' }
         ];
       }
     },
@@ -640,7 +644,7 @@
     }
   }
 
-  // ===== STREAK COUNTER (NEW) =====
+  // ===== STREAK COUNTER =====
   async function computeAndRenderStreak() {
     const streakEl = document.getElementById('streak-count');
     if (!streakEl || !window.currentUser) {
@@ -1012,7 +1016,7 @@
     }
   }
 
-  // NEW: Setup "This Week's Find"
+  // Setup "This Week's Find"
   function setupWeeklyFind(worldId) {
     const weeklyFind = document.getElementById('world-weekly-find');
     if (!weeklyFind) return;
@@ -1038,27 +1042,28 @@
     };
   }
 
-  // ===== SOCIAL STRIP =====
+  // ===== SOCIAL STRIP (FIXED: Uses content_views instead of watch_progress) =====
   async function loadSocialStrip() {
     const row = document.getElementById('social-strip-row');
     const section = document.getElementById('social-strip-section');
 
     try {
+      // ✅ FIX: Use content_views and viewer_id, which correctly references user_profiles
       const { data, error } = await supabase
-        .from('watch_progress')
+        .from('content_views')
         .select(`
-          user_id,
+          viewer_id,
           updated_at,
           Content!inner (
             id,
             title,
             content_format,
-            user_profiles!user_id (full_name, username, avatar_url)
+            user_profiles!user_id (full_name, username)
           ),
-          user_profiles!user_id (full_name, username, avatar_url)
+          user_profiles!viewer_id (full_name, username, avatar_url)
         `)
         .in('Content.content_format', MUSIC_FORMATS)
-        .neq('user_id', window.currentUser?.id || '00000000-0000-0000-0000-000000000000')
+        .neq('viewer_id', window.currentUser?.id || '00000000-0000-0000-0000-000000000000')
         .gte('updated_at', new Date(Date.now() - 3600000).toISOString())
         .order('updated_at', { ascending: false })
         .limit(8);
@@ -1072,7 +1077,7 @@
 
       section.style.display = 'block';
       row.innerHTML = data.map(item => {
-        const user = item.user_profiles;
+        const user = item.user_profiles; // This is the viewer's profile
         const content = item.Content;
         const name = user?.full_name || user?.username || 'Listener';
         const avatar = user?.avatar_url ? fixMediaUrl(user.avatar_url) : null;
@@ -1238,7 +1243,7 @@
       renderSonicDNA();
       createPortalParticles();
       
-      // NEW: Compute streak
+      // Compute streak
       await computeAndRenderStreak();
 
       // Setup event listeners
