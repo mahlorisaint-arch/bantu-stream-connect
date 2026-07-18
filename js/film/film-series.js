@@ -71,7 +71,7 @@
   // ===== BUILD CARD HTML =====
   function buildStandardCardHTML(item, isTop10 = false, rank = 0) {
     const meta = formatMeta(item.content_format);
-    const isLeavingSoon = Math.random() > 0.85; // Simulated for demo
+    const isLeavingSoon = Math.random() > 0.85;
     const leavingSoonBadge = isLeavingSoon ? `<span class="upload-card__badge leaving-soon">Leaving soon</span>` : '';
     
     if (isTop10) {
@@ -119,7 +119,6 @@
     const overlay = document.getElementById('detail-overlay');
     if (!overlay) return;
 
-    // In production, fetch full content details here. Simulating for UI demo.
     const mockContent = {
       id: contentId,
       title: "Isibaya Rising",
@@ -156,7 +155,6 @@
     container.innerHTML = `
       <button class="detail-close-btn" onclick="window.closeInPageDetail()"><i class="fas fa-times"></i></button>
       
-      <!-- HERO SECTION -->
       <div class="detail-hero">
         <div class="detail-hero-video">
           <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}" style="width:100%;height:100%;object-fit:cover;">
@@ -182,7 +180,6 @@
         </div>
       </div>
 
-      <!-- DYNAMIC CONTENT BASED ON FORMAT -->
       <div class="detail-body">
         ${isSeries ? renderSeriesBody(content) : renderFilmBody(content)}
       </div>
@@ -280,8 +277,9 @@
         container.innerHTML = data.map((item, idx) => buildStandardCardHTML(item, true, idx + 1)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { console.error('Top 10 error:', e); }
- a>
+    } catch (e) { 
+      console.error('Top 10 error:', e); 
+    }
   }
 
   async function loadMoodRows() {
@@ -293,7 +291,9 @@
         container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { console.error('Mood rows error:', e); }
+    } catch (e) { 
+      console.error('Mood rows error:', e); 
+    }
   }
 
   async function loadQuickBites() {
@@ -305,7 +305,9 @@
         container.innerHTML = data.map(item => buildShortCardHTML(item)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { console.error('Quick bites error:', e); }
+    } catch (e) { 
+      console.error('Quick bites error:', e); 
+    }
   }
 
   async function loadRecommended() {
@@ -317,7 +319,9 @@
         container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { console.error('Recommended error:', e); }
+    } catch (e) { 
+      console.error('Recommended error:', e); 
+    }
   }
 
   function attachCardClicks(container) {
@@ -337,9 +341,6 @@
         chips.forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         currentFilter = chip.dataset.filter;
-        
-        // In production, this would re-fetch data with the new filter.
-        // For now, we simulate a refresh.
         loadMoodRows();
         loadQuickBites();
       });
@@ -361,7 +362,9 @@
         
         document.getElementById('hero-play-btn').onclick = () => window.openInPageDetail(item.id);
       }
-    } catch (e) { console.error('Hero error:', e); }
+    } catch (e) { 
+      console.error('Hero error:', e); 
+    }
   }
 
   // ===== INITIALIZATION =====
@@ -370,12 +373,10 @@
     const app = document.getElementById('app');
 
     try {
-      // Ensure shared components are ready
       if (window.initSharedComponents) {
         await window.initSharedComponents();
       }
 
-      // Load all data in parallel
       await Promise.all([
         loadHero(),
         loadTop10(),
@@ -386,7 +387,6 @@
 
       setupFilterChips();
 
-      // Setup close button for detail overlay
       const closeDetailBtn = document.getElementById('detail-close-btn');
       if (closeDetailBtn) {
         closeDetailBtn.addEventListener('click', window.closeInPageDetail);
