@@ -3,24 +3,19 @@
 
   // ===== SUPABASE CONFIGURATION =====
   const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78YEKUMh_Fi-7P_ccs_U';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   
-  // Expose to shared components to prevent "undefined" errors
   window.supabaseClient = supabase;
   window.supabaseAuth = supabase;
 
-  // ===== GLOBAL STATE =====
   window.currentUser = null;
   let currentFilter = 'all';
 
-  // ===== CONTENT FORMAT CONSTANTS =====
   const SERIES_FORMATS = ['series_episode'];
   const FILM_FORMATS = ['film', 'documentary'];
   const SHORT_FORMATS = ['short'];
-  const ALL_FORMATS = [...SERIES_FORMATS, ...FILM_FORMATS, ...SHORT_FORMATS, 'long_form'];
 
-  // ===== HELPER FUNCTIONS =====
   function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -68,10 +63,9 @@
     return CONTENT_FORMAT_META[contentFormat] || { label: 'Content', color: '#94A3B8' };
   }
 
-  // ===== BUILD CARD HTML =====
   function buildStandardCardHTML(item, isTop10 = false, rank = 0) {
     const meta = formatMeta(item.content_format);
-    const isLeavingSoon = Math.random() > 0.85;
+    const isLeavingSoon = Math.random() > 0.85; 
     const leavingSoonBadge = isLeavingSoon ? `<span class="upload-card__badge leaving-soon">Leaving soon</span>` : '';
     
     if (isTop10) {
@@ -96,7 +90,7 @@
         </div>
         <p class="upload-card__title">${escapeHtml(item.title)}</p>
         <p class="upload-card__meta">
-          <i class="fas fa-eye"></i> ${formatNumber(item.total_views || 0)} views
+          <i class="fas fa-eye"></i> ${formatNumber(item.content_engagement_stats?.total_views || 0)} views
         </p>
       </div>
     `;
@@ -107,34 +101,83 @@
       <div class="short-card" data-content-id="${item.id}" tabindex="0" role="link">
         <div class="short-card__thumb" style="background-image: url(${fixMediaUrl(item.thumbnail_url)});">
           <div class="media-hover-play"><i class="fas fa-play"></i></div>
-          <div class="short-card__plays"><i class="fas fa-play"></i> ${formatNumber(item.total_views || 0)}</div>
+          <div class="short-card__plays"><i class="fas fa-play"></i> ${formatNumber(item.content_engagement_stats?.total_views || 0)}</div>
         </div>
         <p class="short-card__title">${escapeHtml(item.title)}</p>
       </div>
     `;
   }
 
-  // ===== IN-PAGE DETAIL OVERLAY (Screen within a Screen) =====
-  window.openInPageDetail = function(contentId) {
+  // ===== REAL DATA: IN-PAGE DETAIL OVERLAY =====
+  window.openInPageDetail = async function(contentId) {
     const overlay = document.getElementById('detail-overlay');
     if (!overlay) return;
 
-    const mockContent = {
-      id: contentId,
-      title: "Isibaya Rising",
-      content_format: "series_episode", 
-      duration: 2700,
-      description: "Thandi is seconds from learning who struck the match, and the answer is sitting across her own dinner table...",
-      thumbnail_url: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=1200&h=600&fit=crop",
-      genre: "Telenovela",
-      language: "isiZulu, English subs",
-      total_views: 12400,
-      is_bantu_original: true
-    };
-
-    renderDetailOverlay(mockContent);
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+    
+    const container = document.getElementById('detail-overlay-content');
+    container.innerHTML = '<div class="detail-loading"><div class="spinner"></div><p>Loading details...</p></div>';
+
+    try {
+      // 1. Fetch main content with engagement stats and creator info
+      const { data: content, error: contentError } = await supabase
+        .from('Content')
+        .select(`
+          id, title, description, thumbnail_url, content_format, genre, language, duration,
+          is_bantu_original, content_metadata, chapters,
+          user_profiles!user_id (full_name, username, avatar_url),
+          content_engagement_stats (total_views, total_likes)
+        `)
+        .eq('id', contentId)
+        .single();
+
+      if (contentError || !content) throw new Error('Content not found');
+
+      // 2. Fetch Series/Playlist info if applicable
+      let seriesInfo = null;
+      let relatedEpisodes = [];
+      if (content.content_format === 'series_episode') {
+        const { data: pc } = await supabase
+          .from('playlist_contents')
+          .select(`
+            playlist_id, season_number, track_number,
+            creator_playlists!playlist_id (name, description, series_metadata)
+          `)
+          .eq('content_id', contentId)
+          .maybeSingle();
+        
+        if (pc) {
+          seriesInfo = pc;
+          const { data: episodes } = await supabase
+            .from('playlist_contents')
+            .select(`content_id, track_number, Content!inner (id, title, thumbnail_url, duration, content_format)`)
+            .eq('playlist_id', pc.playlist_id)
+            .order('track_number', { ascending: true })
+            .limit(5);
+          relatedEpisodes = episodes || [];
+        }
+      }
+
+      // 3. Fetch World Content (Behind the lens, family web, etc.)
+      const { data: worldData } = await supabase
+        .from('world_content')
+        .select('id, world_type, title, description, media_url')
+        .eq('content_id', contentId);
+
+      renderDetailOverlay(content, seriesInfo, relatedEpisodes, worldData);
+
+    } catch (e) {
+      console.error('Detail overlay error:', e);
+      const container = document.getElementById('detail-overlay-content');
+      container.innerHTML = `
+        <div class="detail-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Failed to load content details.</p>
+          <button onclick="window.closeInPageDetail()" class="btn-secondary">Close</button>
+        </div>
+      `;
+    }
   };
 
   window.closeInPageDetail = function() {
@@ -145,19 +188,20 @@
     }
   };
 
-  function renderDetailOverlay(content) {
+  function renderDetailOverlay(content, seriesInfo, relatedEpisodes, worldData) {
     const container = document.getElementById('detail-overlay-content');
     if (!container) return;
 
     const isSeries = content.content_format === 'series_episode';
     const meta = formatMeta(content.content_format);
+    const creatorName = content.user_profiles?.full_name || content.user_profiles?.username || 'Unknown Creator';
 
     container.innerHTML = `
       <button class="detail-close-btn" onclick="window.closeInPageDetail()"><i class="fas fa-times"></i></button>
       
       <div class="detail-hero">
         <div class="detail-hero-video">
-          <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}" style="width:100%;height:100%;object-fit:cover;">
+          <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}">
           <div class="hero-gradient"></div>
         </div>
         <div class="detail-hero-content">
@@ -166,14 +210,16 @@
           <div class="detail-meta">
             <span>${content.genre || meta.label}</span>
             <span class="meta-divider">·</span>
-            <span>${isSeries ? 'Season 3' : formatDurationLong(content.duration)}</span>
+            <span>${isSeries && seriesInfo ? `Season ${seriesInfo.season_number || 1}` : formatDurationLong(content.duration)}</span>
             <span class="meta-divider">·</span>
             <span>${content.language || 'English'}</span>
+            <span class="meta-divider">·</span>
+            <span><i class="fas fa-eye"></i> ${formatNumber(content.content_engagement_stats?.total_views || 0)}</span>
           </div>
-          <p class="detail-description">${escapeHtml(content.description)}</p>
+          <p class="detail-description">${escapeHtml(content.description || 'No description available.')}</p>
           <div class="detail-actions">
             <button class="btn-primary btn-glow" onclick="window.location.href='../content-detail.html?id=${content.id}'">
-              <i class="fas fa-play"></i> ${isSeries ? 'Resume S3 E12' : 'Play Now'}
+              <i class="fas fa-play"></i> ${isSeries ? `Resume S${seriesInfo?.season_number || 1} E${seriesInfo?.track_number || 1}` : 'Play Now'}
             </button>
             <button class="btn-secondary"><i class="fas fa-plus"></i> My List</button>
           </div>
@@ -181,147 +227,182 @@
       </div>
 
       <div class="detail-body">
-        ${isSeries ? renderSeriesBody(content) : renderFilmBody(content)}
+        ${isSeries ? renderSeriesBody(content, seriesInfo, relatedEpisodes, worldData) : renderFilmBody(content, worldData)}
       </div>
     `;
   }
 
-  function renderSeriesBody(content) {
+  function renderSeriesBody(content, seriesInfo, relatedEpisodes, worldData) {
+    const episodesHtml = relatedEpisodes.length > 0 
+      ? relatedEpisodes.map((ep, idx) => {
+          const c = ep.Content;
+          const isCurrent = c.id === content.id;
+          return `
+            <div class="episode-card ${isCurrent ? 'watched' : ''}" data-content-id="${c.id}" onclick="window.location.href='../content-detail.html?id=${c.id}'">
+              <div class="ep-thumb">
+                <img src="${fixMediaUrl(c.thumbnail_url)}" alt="${escapeHtml(c.title)}">
+                ${isCurrent ? '<div class="ep-check"><i class="fas fa-check-circle"></i></div>' : ''}
+                <div class="ep-play-overlay"><i class="fas fa-play"></i></div>
+              </div>
+              <div class="ep-info">
+                <span class="ep-number">E${ep.track_number || (idx + 1)}</span>
+                <h4>${escapeHtml(c.title)}</h4>
+                <span class="ep-duration">${formatDuration(c.duration)}</span>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : '<p style="color:var(--slate-grey);font-size:13px;">No additional episodes found.</p>';
+
+    const worldHtml = (worldData && worldData.length > 0)
+      ? worldData.map(w => `
+          <div class="world-card" onclick="window.location.href='../content-detail.html?id=${content.id}&world=${w.world_type}'">
+            <div class="world-card-icon"><i class="fas fa-${getWorldIcon(w.world_type)}"></i></div>
+            <h4>${escapeHtml(w.title)}</h4>
+            <p>${escapeHtml(w.description)}</p>
+          </div>
+        `).join('')
+      : '<p style="color:var(--slate-grey);font-size:13px;">No deep-dive content available yet.</p>';
+
     return `
       <div class="detail-section">
-        <h3 class="section-title">Up Next</h3>
-        <div class="episode-rail">
-          <div class="episode-card watched">
-            <div class="ep-thumb"><img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=300&h=170&fit=crop"><div class="ep-check"><i class="fas fa-check-circle"></i></div></div>
-            <div class="ep-info"><span class="ep-number">E12</span><h4>The Shebeen Fire</h4><span class="ep-duration">42m</span></div>
-          </div>
-          <div class="episode-card curiosity-gap">
-            <div class="ep-thumb blurred"><img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=300&h=170&fit=crop"><div class="ep-play-overlay"><i class="fas fa-eye"></i> Tap to Unblur</div></div>
-            <div class="ep-info"><span class="ep-number">E13</span><h4>The Reveal</h4><span class="ep-duration">44m</span></div>
-          </div>
-          <div class="episode-card locked">
-            <div class="ep-thumb"><img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=300&h=170&fit=crop" style="filter:grayscale(100%) brightness(0.4)"><div class="ep-lock"><i class="fas fa-lock"></i></div></div>
-            <div class="ep-info"><span class="ep-number">E14</span><h4>Locked Scene</h4><span class="ep-lock-text">Watch 2 more to unlock</span></div>
-          </div>
-        </div>
+        <h3 class="section-title">Up Next in ${escapeHtml(seriesInfo?.creator_playlists?.name || 'this series')}</h3>
+        <div class="episode-rail">${episodesHtml}</div>
       </div>
 
       <div class="detail-section">
         <h3 class="section-title"><i class="fas fa-globe-africa"></i> The World of ${escapeHtml(content.title)}</h3>
-        <div class="world-grid">
-          <div class="world-card"><div class="world-card-icon"><i class="fas fa-project-diagram"></i></div><h4>Family Web</h4><p>Explore the tangled loyalties.</p></div>
-          <div class="world-card"><div class="world-card-icon"><i class="fas fa-hourglass-half"></i></div><h4>Full Timeline</h4><p>From the first match to the fire.</p></div>
-          <div class="world-card"><div class="world-card-icon"><i class="fas fa-map-marker-alt"></i></div><h4>Filmed Here</h4><p>Find the real Soweto locations.</p></div>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <h3 class="section-title">Fans are asking</h3>
-        <div class="pulse-card live-poll">
-          <p class="poll-question">Should Thandi forgive Sipho?</p>
-          <div class="poll-options">
-            <div class="poll-option"><span>Yes, family is everything</span><div class="poll-bar"><div class="poll-fill" style="width:68%"></div></div><span class="poll-pct">68%</span></div>
-            <div class="poll-option"><span>No, he betrayed her</span><div class="poll-bar"><div class="poll-fill" style="width:32%"></div></div><span class="poll-pct">32%</span></div>
-          </div>
-        </div>
+        <div class="world-grid">${worldHtml}</div>
       </div>
     `;
   }
 
-  function renderFilmBody(content) {
+  function renderFilmBody(content, worldData) {
+    // Parse chapters from content_metadata or chapters column
+    const chapters = content.chapters && content.chapters.length > 0 
+      ? content.chapters 
+      : (content.content_metadata?.chapters || []);
+    
+    const chaptersHtml = chapters.length > 0
+      ? chapters.map((ch, idx) => `
+          <div class="episode-card" onclick="window.location.href='../content-detail.html?id=${content.id}&t=${ch.start_time || 0}'">
+            <div class="ep-thumb">
+              <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(ch.title || `Chapter ${idx + 1}`)}">
+              <div class="ep-play-overlay"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="ep-info">
+              <span class="ep-number">Ch ${idx + 1}</span>
+              <h4>${escapeHtml(ch.title || `Chapter ${idx + 1}`)}</h4>
+              <span class="ep-duration">${ch.start_time ? formatDuration(ch.start_time) : ''}</span>
+            </div>
+          </div>
+        `).join('')
+      : '<p style="color:var(--slate-grey);font-size:13px;">No chapters defined.</p>';
+
+    const worldHtml = (worldData && worldData.length > 0)
+      ? worldData.map(w => `
+          <div class="world-card" onclick="window.location.href='../content-detail.html?id=${content.id}&world=${w.world_type}'">
+            <div class="world-card-icon"><i class="fas fa-${getWorldIcon(w.world_type)}"></i></div>
+            <h4>${escapeHtml(w.title)}</h4>
+            <p>${escapeHtml(w.description)}</p>
+          </div>
+        `).join('')
+      : '<p style="color:var(--slate-grey);font-size:13px;">No behind-the-scenes content available yet.</p>';
+
     return `
       <div class="detail-section">
         <h3 class="section-title">Chapters</h3>
-        <div class="episode-rail">
-          <div class="episode-card watched">
-            <div class="ep-thumb"><img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=170&fit=crop"><div class="ep-check"><i class="fas fa-check-circle"></i></div></div>
-            <div class="ep-info"><span class="ep-number">Ch 5</span><h4>The Departure</h4><span class="ep-duration">22m</span></div>
-          </div>
-          <div class="episode-card">
-            <div class="ep-thumb"><img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=170&fit=crop"></div>
-            <div class="ep-info"><span class="ep-number">Ch 6</span><h4>The Homecoming</h4><span class="ep-duration">28m</span></div>
-          </div>
-          <div class="episode-card curiosity-gap">
-            <div class="ep-thumb blurred"><img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=170&fit=crop"><div class="ep-play-overlay"><i class="fas fa-eye"></i> Deleted Scene</div></div>
-            <div class="ep-info"><span class="ep-number">Bonus</span><h4>Deleted Scene</h4><span class="ep-duration">5m</span></div>
-          </div>
-        </div>
+        <div class="episode-rail">${chaptersHtml}</div>
       </div>
 
       <div class="detail-section">
         <h3 class="section-title"><i class="fas fa-film"></i> Behind the Lens</h3>
-        <div class="world-grid">
-          <div class="world-card"><div class="world-card-icon"><i class="fas fa-video"></i></div><h4>Making Of</h4><p>Go behind the scenes of the Free State shoot.</p></div>
-          <div class="world-card"><div class="world-card-icon"><i class="fas fa-map-marker-alt"></i></div><h4>Filmed Here</h4><p>Real locations from the 1994 era.</p></div>
-          <div class="world-card"><div class="world-card-icon"><i class="fas fa-user-tie"></i></div><h4>Director's Cut</h4><p>Extended scenes not in the theatrical release.</p></div>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <h3 class="section-title">If this moved you, try</h3>
-        <div class="episode-rail">
-          <div class="episode-card"><div class="ep-thumb"><img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300&h=170&fit=crop"></div><div class="ep-info"><h4>Dust and Gold</h4><span class="ep-duration">1h 54m</span></div></div>
-          <div class="episode-card"><div class="ep-thumb"><img src="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=300&h=170&fit=crop"></div><div class="ep-info"><h4>Roots of the Veld</h4><span class="ep-duration">2h 10m</span></div></div>
-        </div>
+        <div class="world-grid">${worldHtml}</div>
       </div>
     `;
   }
 
-  // ===== DATA LOADING =====
+  function getWorldIcon(type) {
+    const icons = {
+      'family_web': 'project-diagram',
+      'timeline': 'hourglass-half',
+      'filmed_here': 'map-marker-alt',
+      'making_of': 'video',
+      'directors_cut': 'user-tie',
+      'deleted_scene': 'film'
+    };
+    return icons[type] || 'info-circle';
+  }
+
+  // ===== REAL DATA LOADING =====
   async function loadTop10() {
     const container = document.getElementById('top10-row');
     if (!container) return;
     try {
-      const { data } = await supabase.from('Content').select('id, title, thumbnail_url, content_format, total_views').eq('status', 'published').order('total_views', { ascending: false }).limit(10);
+      const { data } = await supabase
+        .from('Content')
+        .select(`id, title, thumbnail_url, content_format, content_engagement_stats(total_views)`)
+        .eq('status', 'published')
+        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' })
+        .limit(10);
+      
       if (data && data.length > 0) {
         container.innerHTML = data.map((item, idx) => buildStandardCardHTML(item, true, idx + 1)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { 
-      console.error('Top 10 error:', e); 
-    }
+    } catch (e) { console.error('Top 10 error:', e); }
   }
 
   async function loadMoodRows() {
     const container = document.getElementById('family-grid');
     if (!container) return;
     try {
-      const { data } = await supabase.from('Content').select('id, title, thumbnail_url, content_format, duration, total_views').eq('status', 'published').limit(10);
+      const { data } = await supabase
+        .from('Content')
+        .select(`id, title, thumbnail_url, content_format, duration, content_engagement_stats(total_views)`)
+        .eq('status', 'published')
+        .limit(10);
+      
       if (data && data.length > 0) {
         container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { 
-      console.error('Mood rows error:', e); 
-    }
+    } catch (e) { console.error('Mood rows error:', e); }
   }
 
   async function loadQuickBites() {
     const container = document.getElementById('quickbites-row');
     if (!container) return;
     try {
-      const { data } = await supabase.from('Content').select('id, title, thumbnail_url, content_format, total_views').eq('content_format', 'short').eq('status', 'published').limit(8);
+      const { data } = await supabase
+        .from('Content')
+        .select(`id, title, thumbnail_url, content_format, content_engagement_stats(total_views)`)
+        .eq('content_format', 'short')
+        .eq('status', 'published')
+        .limit(8);
+      
       if (data && data.length > 0) {
         container.innerHTML = data.map(item => buildShortCardHTML(item)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { 
-      console.error('Quick bites error:', e); 
-    }
+    } catch (e) { console.error('Quick bites error:', e); }
   }
 
   async function loadRecommended() {
     const container = document.getElementById('recommended-row');
     if (!container) return;
     try {
-      const { data } = await supabase.from('Content').select('id, title, thumbnail_url, content_format, duration, total_views').eq('status', 'published').limit(8);
+      const { data } = await supabase
+        .from('Content')
+        .select(`id, title, thumbnail_url, content_format, duration, content_engagement_stats(total_views)`)
+        .eq('status', 'published')
+        .limit(8);
+      
       if (data && data.length > 0) {
         container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
         attachCardClicks(container);
       }
-    } catch (e) { 
-      console.error('Recommended error:', e); 
-    }
+    } catch (e) { console.error('Recommended error:', e); }
   }
 
   function attachCardClicks(container) {
@@ -333,7 +414,6 @@
     });
   }
 
-  // ===== FILTER CHIPS =====
   function setupFilterChips() {
     const chips = document.querySelectorAll('.filter-chip');
     chips.forEach(chip => {
@@ -347,10 +427,15 @@
     });
   }
 
-  // ===== HERO SECTION =====
   async function loadHero() {
     try {
-      const { data } = await supabase.from('Content').select('id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, total_views').eq('status', 'published').order('total_views', { ascending: false }).limit(1);
+      const { data } = await supabase
+        .from('Content')
+        .select(`id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, content_engagement_stats(total_views)`)
+        .eq('status', 'published')
+        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' })
+        .limit(1);
+      
       if (data && data.length > 0) {
         const item = data[0];
         document.getElementById('hero-title').textContent = item.title;
@@ -361,13 +446,11 @@
         if (item.is_bantu_original) document.getElementById('hero-bantu-original').style.display = 'inline-flex';
         
         document.getElementById('hero-play-btn').onclick = () => window.openInPageDetail(item.id);
+        document.getElementById('hero-info-btn').onclick = () => window.openInPageDetail(item.id);
       }
-    } catch (e) { 
-      console.error('Hero error:', e); 
-    }
+    } catch (e) { console.error('Hero error:', e); }
   }
 
-  // ===== INITIALIZATION =====
   async function initialize() {
     const loading = document.getElementById('loading');
     const app = document.getElementById('app');
@@ -387,15 +470,10 @@
 
       setupFilterChips();
 
-      const closeDetailBtn = document.getElementById('detail-close-btn');
-      if (closeDetailBtn) {
-        closeDetailBtn.addEventListener('click', window.closeInPageDetail);
-      }
-
       if (loading) loading.style.display = 'none';
       if (app) app.style.display = 'block';
 
-      console.log('✅ Film/Series browse screen initialized successfully');
+      console.log('✅ Film/Series browse screen initialized with REAL DATA');
     } catch (e) {
       console.error('Initialization error:', e);
       if (loading) loading.style.display = 'none';
@@ -403,7 +481,6 @@
     }
   }
 
-  // ===== START =====
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
   } else {
