@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>Film & Series - Bantu Stream Connect</title>
+<title>Movies - Bantu Stream Connect</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
 
 <link rel="stylesheet" href="../css/shared-components.css">
 <link rel="stylesheet" href="../css/content-detail/modals.css">
-<link rel="stylesheet" href="../css/film/film-series.css">
+<link rel="stylesheet" href="../css/film/movies.css">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
   <nav class="sidebar-nav">
     <a href="../index.html" class="sidebar-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
     <a href="../explore-screen.html" class="sidebar-nav-item"><i class="fas fa-compass"></i><span>Explore</span></a>
-    <a href="../category/film-series.html" class="sidebar-nav-item active"><i class="fas fa-film"></i><span>Film & Series</span></a>
+    <a href="../category/movies.html" class="sidebar-nav-item active"><i class="fas fa-film"></i><span>Movies</span></a>
     <a href="../category/music.html" class="sidebar-nav-item"><i class="fas fa-music"></i><span>Music</span></a>
     <a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
     <a href="#" class="sidebar-nav-item" id="sidebar-notifications"><i class="fas fa-bell"></i><span>Notifications</span><span class="badge" id="sidebar-notification-count" style="display: none;">0</span></a>
@@ -113,7 +113,7 @@
     </div>
   </header>
 
-  <main class="film-series-main">
+  <main class="movies-main">
     <!-- HERO SECTION -->
     <section class="hero-section" id="hero-section">
       <div class="hero-video-container">
@@ -125,7 +125,6 @@
       <div class="hero-content">
         <div class="hero-badges">
           <span class="badge-premium" id="hero-bantu-original" style="display: none;"><i class="fas fa-crown"></i> Bantu Original</span>
-          <span class="badge-match" id="hero-match">96% Match</span>
         </div>
         <h1 class="hero-title" id="hero-title">Loading featured title...</h1>
         <div class="hero-meta">
@@ -228,7 +227,7 @@
 
     <!-- ROW 5: RECOMMENDED -->
     <section class="content-row-section" id="row-recommended">
-      <div class="row-header"><h3 class="row-title">Because you finished <span id="recommended-context">a great show</span></h3></div>
+      <div class="row-header"><h3 class="row-title">More to explore</h3></div>
       <div class="row-scroll-container">
         <div class="row-scroll" id="recommended-row">
           <!-- Skeleton loaders rendered immediately -->
@@ -300,6 +299,6 @@
 <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 
 <script src="../js/shared-components.js"></script>
-<script src="../js/film/film-series.js"></script>
+<script src="../js/film/movies.js"></script>
 </body>
 </html>

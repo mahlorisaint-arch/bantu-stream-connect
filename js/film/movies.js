@@ -708,7 +708,7 @@
 
       if (loading) loading.style.display = 'none';
 
-      console.log('✅ Film/Series browse screen initialized with REAL DATA');
+      console.log('✅ Movies browse screen initialized with real data');
     } catch (e) {
       console.error('Initialization error:', e);
       if (loading) loading.style.display = 'none';
