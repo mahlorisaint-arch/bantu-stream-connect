@@ -16,6 +16,13 @@
   const FILM_FORMATS = ['film', 'documentary'];
   const SHORT_FORMATS = ['short'];
 
+  // ===== HOVER PREVIEW STATE =====
+  const HOVER_DELAY = 500;
+  const hoverTimers = new WeakMap();
+
+  // ===== FOCUS RETURN STATE =====
+  let lastFocusedCard = null;
+
   function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -63,10 +70,20 @@
     return CONTENT_FORMAT_META[contentFormat] || { label: 'Content', color: '#94A3B8' };
   }
 
+  // ===== DETERMINISTIC "LEAVING SOON" =====
+  function getLeavingSoonInfo(leavingAt) {
+    if (!leavingAt) return null;
+    const daysLeft = Math.ceil((new Date(leavingAt) - Date.now()) / 86400000);
+    if (daysLeft < 0 || daysLeft > 14) return null;
+    return { daysLeft };
+  }
+
   function buildStandardCardHTML(item, isTop10 = false, rank = 0) {
     const meta = formatMeta(item.content_format);
-    const isLeavingSoon = Math.random() > 0.85; 
-    const leavingSoonBadge = isLeavingSoon ? `<span class="upload-card__badge leaving-soon">Leaving soon</span>` : '';
+    const leaving = getLeavingSoonInfo(item.leaving_at);
+    const leavingBadge = leaving
+      ? `<span class="upload-card__badge leaving-soon">Leaving in ${leaving.daysLeft}d</span>`
+      : '';
     
     if (isTop10) {
       return `
@@ -83,7 +100,7 @@
     return `
       <div class="upload-card" data-content-id="${item.id}" tabindex="0" role="link">
         <div class="upload-card__thumb" style="background-image: url(${fixMediaUrl(item.thumbnail_url)});">
-          ${leavingSoonBadge}
+          ${leavingBadge}
           <span class="upload-card__badge" style="background: ${meta.color}; color: white;">${meta.label}</span>
           ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
           <div class="media-hover-play"><i class="fas fa-play"></i></div>
@@ -97,9 +114,15 @@
   }
 
   function buildShortCardHTML(item) {
+    const leaving = getLeavingSoonInfo(item.leaving_at);
+    const leavingBadge = leaving
+      ? `<span class="upload-card__badge leaving-soon">Leaving in ${leaving.daysLeft}d</span>`
+      : '';
+
     return `
       <div class="short-card" data-content-id="${item.id}" tabindex="0" role="link">
         <div class="short-card__thumb" style="background-image: url(${fixMediaUrl(item.thumbnail_url)});">
+          ${leavingBadge}
           <div class="media-hover-play"><i class="fas fa-play"></i></div>
           <div class="short-card__plays"><i class="fas fa-play"></i> ${formatNumber(item.content_engagement_stats?.total_views || 0)}</div>
         </div>
@@ -108,10 +131,53 @@
     `;
   }
 
+  // ===== HOVER PREVIEW FUNCTIONS =====
+  function attachHoverPreview(cardEl, item) {
+    if (!item.preview_clip_url) return;
+    if (window.matchMedia('(hover: none)').matches) return;
+
+    const thumb = cardEl.querySelector('.upload-card__thumb, .short-card__thumb, .top10-thumb');
+    if (!thumb) return;
+
+    cardEl.addEventListener('mouseenter', () => {
+      const timer = setTimeout(() => startPreview(thumb, item), HOVER_DELAY);
+      hoverTimers.set(cardEl, timer);
+    });
+
+    cardEl.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimers.get(cardEl));
+      stopPreview(thumb);
+    });
+  }
+
+  function startPreview(thumb, item) {
+    if (thumb.querySelector('video')) return;
+    const video = document.createElement('video');
+    video.src = fixMediaUrl(item.preview_clip_url);
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.className = 'card-preview-video';
+    thumb.appendChild(video);
+    requestAnimationFrame(() => {
+      video.classList.add('active');
+      video.play().catch(() => {});
+    });
+  }
+
+  function stopPreview(thumb) {
+    const video = thumb.querySelector('video');
+    if (!video) return;
+    video.pause();
+    video.remove();
+  }
+
   // ===== REAL DATA: IN-PAGE DETAIL OVERLAY =====
   window.openInPageDetail = async function(contentId) {
     const overlay = document.getElementById('detail-overlay');
     if (!overlay) return;
+
+    lastFocusedCard = document.activeElement;
 
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -125,7 +191,7 @@
         .from('Content')
         .select(`
           id, title, description, thumbnail_url, content_format, genre, language, duration,
-          is_bantu_original, content_metadata, chapters,
+          is_bantu_original, content_metadata, chapters, leaving_at,
           user_profiles!user_id (full_name, username, avatar_url),
           content_engagement_stats (total_views, total_likes)
         `)
@@ -151,7 +217,7 @@
           seriesInfo = pc;
           const { data: episodes } = await supabase
             .from('playlist_contents')
-            .select(`content_id, track_number, Content!inner (id, title, thumbnail_url, duration, content_format)`)
+            .select(`content_id, track_number, Content!inner (id, title, thumbnail_url, duration, content_format, leaving_at, preview_clip_url)`)
             .eq('playlist_id', pc.playlist_id)
             .order('track_number', { ascending: true })
             .limit(5);
@@ -186,6 +252,7 @@
       overlay.classList.remove('active');
       document.body.style.overflow = '';
     }
+    lastFocusedCard?.focus();
   };
 
   function renderDetailOverlay(content, seriesInfo, relatedEpisodes, worldData) {
@@ -195,6 +262,7 @@
     const isSeries = content.content_format === 'series_episode';
     const meta = formatMeta(content.content_format);
     const creatorName = content.user_profiles?.full_name || content.user_profiles?.username || 'Unknown Creator';
+    const leaving = getLeavingSoonInfo(content.leaving_at);
 
     container.innerHTML = `
       <button class="detail-close-btn" onclick="window.closeInPageDetail()"><i class="fas fa-times"></i></button>
@@ -206,6 +274,7 @@
         </div>
         <div class="detail-hero-content">
           ${content.is_bantu_original ? '<span class="badge-premium"><i class="fas fa-crown"></i> Bantu Original</span>' : ''}
+          ${leaving ? `<span class="badge-leaving"><i class="fas fa-clock"></i> Leaving in ${leaving.daysLeft} days</span>` : ''}
           <h1 class="detail-title">${escapeHtml(content.title)}</h1>
           <div class="detail-meta">
             <span>${content.genre || meta.label}</span>
@@ -221,7 +290,9 @@
             <button class="btn-primary btn-glow" onclick="window.location.href='../content-detail.html?id=${content.id}'">
               <i class="fas fa-play"></i> ${isSeries ? `Resume S${seriesInfo?.season_number || 1} E${seriesInfo?.track_number || 1}` : 'Play Now'}
             </button>
-            <button class="btn-secondary"><i class="fas fa-plus"></i> My List</button>
+            <button class="btn-secondary btn-favorite" id="favorite-btn" onclick="window.toggleFavorite(${content.id}, this)">
+              <i class="fas fa-heart"></i> <span class="fav-label">Favorite</span>
+            </button>
           </div>
         </div>
       </div>
@@ -230,6 +301,18 @@
         ${isSeries ? renderSeriesBody(content, seriesInfo, relatedEpisodes, worldData) : renderFilmBody(content, worldData)}
       </div>
     `;
+
+    // Check initial favorite status
+    if (window.currentUser) {
+      checkFavoriteStatus(content.id).then(isFav => {
+        const btn = document.getElementById('favorite-btn');
+        if (btn && isFav) {
+          btn.classList.add('favorited');
+          const label = btn.querySelector('.fav-label');
+          if (label) label.textContent = 'Favorited';
+        }
+      });
+    }
   }
 
   function renderSeriesBody(content, seriesInfo, relatedEpisodes, worldData) {
@@ -237,12 +320,17 @@
       ? relatedEpisodes.map((ep, idx) => {
           const c = ep.Content;
           const isCurrent = c.id === content.id;
+          const leaving = getLeavingSoonInfo(c.leaving_at);
+          const leavingBadge = leaving
+            ? `<span class="ep-leaving-badge">Leaving in ${leaving.daysLeft}d</span>`
+            : '';
           return `
             <div class="episode-card ${isCurrent ? 'watched' : ''}" data-content-id="${c.id}" onclick="window.location.href='../content-detail.html?id=${c.id}'">
               <div class="ep-thumb">
                 <img src="${fixMediaUrl(c.thumbnail_url)}" alt="${escapeHtml(c.title)}">
                 ${isCurrent ? '<div class="ep-check"><i class="fas fa-check-circle"></i></div>' : ''}
                 <div class="ep-play-overlay"><i class="fas fa-play"></i></div>
+                ${leavingBadge}
               </div>
               <div class="ep-info">
                 <span class="ep-number">E${ep.track_number || (idx + 1)}</span>
@@ -334,6 +422,60 @@
     return icons[type] || 'info-circle';
   }
 
+  // ===== FAVORITES FUNCTIONS =====
+  async function checkFavoriteStatus(contentId) {
+    if (!window.currentUser) return false;
+    try {
+      const { data } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', window.currentUser.id)
+        .eq('content_id', contentId)
+        .maybeSingle();
+      return !!data;
+    } catch (e) {
+      console.error('Check favorite error:', e);
+      return false;
+    }
+  }
+
+  window.toggleFavorite = async function(contentId, btnEl) {
+    if (!window.currentUser) {
+      window.openAuthModal?.();
+      return;
+    }
+    const isFav = btnEl.classList.contains('favorited');
+    btnEl.classList.toggle('favorited');
+    btnEl.classList.add('fav-pop');
+    setTimeout(() => btnEl.classList.remove('fav-pop'), 400);
+
+    const label = btnEl.querySelector('.fav-label');
+    if (label) {
+      label.textContent = isFav ? 'Favorite' : 'Favorited';
+    }
+
+    try {
+      if (isFav) {
+        await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', window.currentUser.id)
+          .eq('content_id', contentId);
+      } else {
+        await supabase
+          .from('favorites')
+          .insert({ user_id: window.currentUser.id, content_id: contentId });
+      }
+    } catch (e) {
+      console.error('Toggle favorite error:', e);
+      // Revert on error
+      btnEl.classList.toggle('favorited');
+      if (label) {
+        label.textContent = isFav ? 'Favorited' : 'Favorite';
+      }
+    }
+  };
+
   // ===== REAL DATA LOADING =====
   async function loadTop10() {
     const container = document.getElementById('top10-row');
@@ -341,51 +483,74 @@
     try {
       const { data } = await supabase
         .from('Content')
-        .select(`id, title, thumbnail_url, content_format, content_engagement_stats(total_views)`)
+        .select(`id, title, thumbnail_url, content_format, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
         .eq('status', 'published')
         .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' })
         .limit(10);
       
       if (data && data.length > 0) {
         container.innerHTML = data.map((item, idx) => buildStandardCardHTML(item, true, idx + 1)).join('');
-        attachCardClicks(container);
+        attachCardClicks(container, data);
       }
-    } catch (e) { console.error('Top 10 error:', e); }
+    } catch (e) {
+      console.error('Top 10 error:', e);
+      container.innerHTML = `<button class="row-retry" onclick="loadTop10()">Couldn't load — tap to retry</button>`;
+    }
   }
 
   async function loadMoodRows() {
     const container = document.getElementById('family-grid');
     if (!container) return;
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('Content')
-        .select(`id, title, thumbnail_url, content_format, duration, content_engagement_stats(total_views)`)
-        .eq('status', 'published')
-        .limit(10);
+        .select(`id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
+        .eq('status', 'published');
+
+      if (currentFilter === 'telenovela') {
+        query = query.contains('sa_genres', ['telenovela']);
+      } else if (currentFilter !== 'all') {
+        query = query.eq('content_format', currentFilter);
+      }
+
+      const { data } = await query.limit(10);
       
       if (data && data.length > 0) {
         container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
-        attachCardClicks(container);
+        attachCardClicks(container, data);
       }
-    } catch (e) { console.error('Mood rows error:', e); }
+    } catch (e) {
+      console.error('Mood rows error:', e);
+      container.innerHTML = `<button class="row-retry" onclick="loadMoodRows()">Couldn't load — tap to retry</button>`;
+    }
   }
 
   async function loadQuickBites() {
     const container = document.getElementById('quickbites-row');
     if (!container) return;
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('Content')
-        .select(`id, title, thumbnail_url, content_format, content_engagement_stats(total_views)`)
+        .select(`id, title, thumbnail_url, content_format, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
         .eq('content_format', 'short')
-        .eq('status', 'published')
-        .limit(8);
+        .eq('status', 'published');
+
+      if (currentFilter === 'telenovela') {
+        query = query.contains('sa_genres', ['telenovela']);
+      } else if (currentFilter !== 'all') {
+        query = query.eq('content_format', currentFilter);
+      }
+
+      const { data } = await query.limit(8);
       
       if (data && data.length > 0) {
         container.innerHTML = data.map(item => buildShortCardHTML(item)).join('');
-        attachCardClicks(container);
+        attachCardClicks(container, data);
       }
-    } catch (e) { console.error('Quick bites error:', e); }
+    } catch (e) {
+      console.error('Quick bites error:', e);
+      container.innerHTML = `<button class="row-retry" onclick="loadQuickBites()">Couldn't load — tap to retry</button>`;
+    }
   }
 
   async function loadRecommended() {
@@ -394,23 +559,91 @@
     try {
       const { data } = await supabase
         .from('Content')
-        .select(`id, title, thumbnail_url, content_format, duration, content_engagement_stats(total_views)`)
+        .select(`id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
         .eq('status', 'published')
         .limit(8);
       
       if (data && data.length > 0) {
         container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
-        attachCardClicks(container);
+        attachCardClicks(container, data);
       }
-    } catch (e) { console.error('Recommended error:', e); }
+    } catch (e) {
+      console.error('Recommended error:', e);
+      container.innerHTML = `<button class="row-retry" onclick="loadRecommended()">Couldn't load — tap to retry</button>`;
+    }
   }
 
-  function attachCardClicks(container) {
+  // ===== CONTINUE WATCHING =====
+  async function loadContinueWatching() {
+    if (!window.currentUser) return;
+    const container = document.getElementById('continue-row');
+    if (!container) return;
+
+    try {
+      const { data } = await supabase
+        .from('watch_progress')
+        .select(`
+          last_position,
+          updated_at,
+          Content!inner(
+            id,
+            title,
+            thumbnail_url,
+            duration,
+            content_format,
+            leaving_at,
+            preview_clip_url,
+            content_engagement_stats(total_views)
+          )
+        `)
+        .eq('user_id', window.currentUser.id)
+        .eq('is_completed', false)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (!data?.length) {
+        document.getElementById('row-continue')?.remove();
+        return;
+      }
+
+      container.innerHTML = data.map(w => {
+        const pct = w.Content.duration ? Math.min(100, Math.round((w.last_position / w.Content.duration) * 100)) : 0;
+        const leaving = getLeavingSoonInfo(w.Content.leaving_at);
+        const leavingBadge = leaving
+          ? `<span class="upload-card__badge leaving-soon">Leaving in ${leaving.daysLeft}d</span>`
+          : '';
+        return `
+          <div class="upload-card" data-content-id="${w.Content.id}" tabindex="0" role="link">
+            <div class="upload-card__thumb" style="background-image:url(${fixMediaUrl(w.Content.thumbnail_url)});">
+              ${leavingBadge}
+              <div class="media-hover-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <p class="upload-card__title">${escapeHtml(w.Content.title)}</p>
+          </div>
+        `;
+      }).join('');
+      attachCardClicks(container, data.map(w => w.Content));
+    } catch (e) {
+      console.error('Continue watching error:', e);
+    }
+  }
+
+  function attachCardClicks(container, items = []) {
     container.querySelectorAll('[data-content-id]').forEach(card => {
-      card.addEventListener('click', () => {
+      const activate = () => {
         const id = card.dataset.contentId;
         if (id) window.openInPageDetail(id);
+      };
+      card.addEventListener('click', activate);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activate();
+        }
       });
+      const item = items.find(i => String(i.id) === card.dataset.contentId);
+      if (item) attachHoverPreview(card, item);
     });
   }
 
@@ -431,7 +664,7 @@
     try {
       const { data } = await supabase
         .from('Content')
-        .select(`id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, content_engagement_stats(total_views)`)
+        .select(`id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, leaving_at, content_engagement_stats(total_views)`)
         .eq('status', 'published')
         .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' })
         .limit(1);
@@ -460,18 +693,20 @@
         await window.initSharedComponents();
       }
 
-      await Promise.all([
-        loadHero(),
-        loadTop10(),
-        loadMoodRows(),
-        loadQuickBites(),
-        loadRecommended()
-      ]);
+      // Show app shell immediately with skeletons
+      if (app) app.style.display = 'block';
+
+      // Fire independently, not Promise.all
+      loadHero();
+      loadTop10();
+      loadMoodRows();
+      loadQuickBites();
+      loadRecommended();
+      loadContinueWatching();
 
       setupFilterChips();
 
       if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
 
       console.log('✅ Film/Series browse screen initialized with REAL DATA');
     } catch (e) {
