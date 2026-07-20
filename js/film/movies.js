@@ -52,6 +52,8 @@
 
   function fixMediaUrl(url) {
     if (!url) return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=225&fit=crop';
+    if (typeof url !== 'string') return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=225&fit=crop';
+    url = url.trim().replace(/^`+|`+$/g, '').replace(/^"+|"+$/g, '').replace(/^'+|'+$/g, '');
     if (url.startsWith('http')) return url;
     return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
   }
@@ -70,11 +72,11 @@
   }
 
   function getCreatorName(item) {
-    return item?.user_profiles?.full_name || item?.user_profiles?.username || 'Unknown Creator';
+    return item?.creator_display_name || item?.creator || item?.user_profiles?.full_name || item?.user_profiles?.username || 'Unknown Creator';
   }
 
   function getViewCount(item) {
-    return item?.content_engagement_stats?.total_views || 0;
+    return item?.content_engagement_stats?.total_views || item?.live_views || 0;
   }
 
   function formatViewsLabel(item) {
@@ -124,6 +126,12 @@
     if (item?.content_format === 'film') score += 100000;
     if (item?.content_format === 'documentary') score += 50000;
     if (item?.content_format === 'series_episode') score += 25000;
+    score += (item?.favorites_count || 0) * 100;
+    score += (item?.shares_count || 0) * 75;
+    score += (item?.comments_count || 0) * 20;
+    if (item?.created_at) {
+      score += Math.floor(new Date(item.created_at).getTime() / 86400000);
+    }
     return score;
   }
 
@@ -216,6 +224,46 @@
     const section = document.getElementById(sectionId);
     if (!section) return;
     section.style.display = shouldShow ? displayValue : 'none';
+  }
+
+  function renderRowEmptyState(container, message) {
+    if (!container) return;
+    container.innerHTML = `<div class="row-empty">${escapeHtml(message)}</div>`;
+  }
+
+  function renderHeroFallback() {
+    featuredContentId = null;
+    setSectionVisibility('hero-section', true, 'flex');
+    const posterImage = document.getElementById('hero-poster-image');
+    const videoEl = document.getElementById('hero-video');
+    const frameEl = document.getElementById('hero-video-frame');
+    if (posterImage) {
+      posterImage.src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=600&fit=crop';
+      posterImage.style.display = 'block';
+    }
+    if (videoEl) {
+      videoEl.pause();
+      videoEl.removeAttribute('src');
+      videoEl.style.display = 'none';
+      videoEl.load();
+    }
+    if (frameEl) {
+      frameEl.src = '';
+      frameEl.style.display = 'none';
+    }
+    document.getElementById('hero-title').textContent = 'Movies worth exploring';
+    document.getElementById('hero-description').textContent = 'Fresh films, documentaries, and series episodes will appear here as soon as they are ready to watch.';
+    document.getElementById('hero-genre').textContent = 'Film & Series';
+    document.getElementById('hero-duration').textContent = 'Updated daily';
+    document.getElementById('hero-language').textContent = 'South Africa';
+    document.getElementById('hero-creator').textContent = 'Curated from BSC creators';
+    document.getElementById('hero-views').textContent = 'New titles loading';
+    document.getElementById('hero-feature-badge').textContent = "Tonight's Spotlight";
+    document.getElementById('hero-bantu-original').style.display = 'none';
+    document.getElementById('hero-leaving-badge').style.display = 'none';
+    document.getElementById('hero-leaving-badge').textContent = '';
+    document.getElementById('hero-play-btn').onclick = () => window.scrollTo({ top: document.getElementById('row-top10')?.offsetTop || 0, behavior: 'smooth' });
+    document.getElementById('hero-info-btn').onclick = () => window.scrollTo({ top: document.getElementById('row-family')?.offsetTop || 0, behavior: 'smooth' });
   }
 
   function buildStandardCardHTML(item, isTop10 = false, rank = 0) {
@@ -340,7 +388,7 @@
         .from('Content')
         .select(`
           id, title, description, thumbnail_url, content_format, genre, language, duration,
-          is_bantu_original, content_metadata, chapters, leaving_at,
+          is_bantu_original, content_metadata, chapters, leaving_at, creator_display_name, creator,
           streaming_provider, provider_video_id,
           user_profiles!user_id (full_name, username, avatar_url),
           content_engagement_stats (total_views, total_likes)
@@ -636,13 +684,14 @@
       let query = supabase
         .from('Content')
         .select(`
-          id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url,
-          streaming_provider, provider_video_id,
-          user_profiles!user_id(full_name, username),
-          content_engagement_stats(total_views)
+          id, created_at, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url,
+          creator, creator_display_name, favorites_count, shares_count, comments_count, live_views,
+          streaming_provider, provider_video_id
         `)
         .eq('status', 'published')
-        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' });
+        .order('favorites_count', { ascending: false })
+        .order('shares_count', { ascending: false })
+        .order('created_at', { ascending: false });
 
       query = applyCurrentFilter(query);
 
@@ -656,13 +705,14 @@
         attachCardClicks(container, topItems);
       } else {
         topContentIds = [];
-        setSectionVisibility('row-top10', false);
+        setSectionVisibility('row-top10', true);
+        renderRowEmptyState(container, 'Top movies will appear here as soon as published titles are ready.');
       }
     } catch (e) {
       console.error('Top 10 error:', e);
       topContentIds = [];
       setSectionVisibility('row-top10', true);
-      container.innerHTML = `<button class="row-retry" onclick="loadTop10()">Couldn't load — tap to retry</button>`;
+      renderRowEmptyState(container, 'Top movies are temporarily unavailable. Refresh to try again.');
     }
   }
 
@@ -673,13 +723,12 @@
       let query = supabase
         .from('Content')
         .select(`
-          id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url,
-          streaming_provider, provider_video_id, sa_genres,
-          user_profiles!user_id(full_name, username),
-          content_engagement_stats(total_views)
+          id, created_at, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url,
+          creator, creator_display_name, favorites_count, shares_count, comments_count, live_views,
+          streaming_provider, provider_video_id, sa_genres
         `)
         .eq('status', 'published')
-        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' });
+        .order('created_at', { ascending: false });
 
       query = applyCurrentFilter(query);
 
@@ -691,12 +740,13 @@
         container.innerHTML = moodItems.map(item => buildStandardCardHTML(item)).join('');
         attachCardClicks(container, moodItems);
       } else {
-        setSectionVisibility('row-family', false);
+        setSectionVisibility('row-family', true);
+        renderRowEmptyState(container, 'More titles will appear here as your movie library grows.');
       }
     } catch (e) {
       console.error('Mood rows error:', e);
       setSectionVisibility('row-family', true);
-      container.innerHTML = `<button class="row-retry" onclick="loadMoodRows()">Couldn't load — tap to retry</button>`;
+      renderRowEmptyState(container, 'More titles are temporarily unavailable. Refresh to try again.');
     }
   }
 
@@ -722,12 +772,16 @@
             duration,
             content_format,
             sa_genres,
+            creator,
+            creator_display_name,
+            favorites_count,
+            shares_count,
+            comments_count,
+            live_views,
             leaving_at,
             preview_clip_url,
             streaming_provider,
-            provider_video_id,
-            user_profiles!user_id(full_name, username),
-            content_engagement_stats(total_views)
+            provider_video_id
           )
         `)
         .eq('user_id', window.currentUser.id)
@@ -817,13 +871,14 @@
       let query = supabase
         .from('Content')
         .select(`
-          id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, leaving_at, sa_genres,
-          preview_clip_url, streaming_provider, provider_video_id,
-          user_profiles!user_id(full_name, username),
-          content_engagement_stats(total_views)
+          id, created_at, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, leaving_at, sa_genres,
+          creator, creator_display_name, favorites_count, shares_count, comments_count, live_views,
+          preview_clip_url, streaming_provider, provider_video_id
         `)
         .eq('status', 'published')
-        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' });
+        .order('is_bantu_original', { ascending: false })
+        .order('favorites_count', { ascending: false })
+        .order('created_at', { ascending: false });
 
       query = applyCurrentFilter(query);
 
@@ -832,8 +887,7 @@
       if (data && data.length > 0) {
         const item = selectFeaturedItem(data.filter(matchesCurrentFilter));
         if (!item) {
-          setSectionVisibility('hero-section', false);
-          featuredContentId = null;
+          renderHeroFallback();
           return;
         }
 
@@ -864,13 +918,11 @@
         };
         document.getElementById('hero-info-btn').onclick = () => window.openInPageDetail(item.id);
       } else if (heroSection) {
-        featuredContentId = null;
-        setSectionVisibility('hero-section', false);
+        renderHeroFallback();
       }
     } catch (e) {
       console.error('Hero error:', e);
-      featuredContentId = null;
-      setSectionVisibility('hero-section', true, 'flex');
+      renderHeroFallback();
     }
   }
 
