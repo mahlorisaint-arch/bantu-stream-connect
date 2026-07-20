@@ -153,6 +153,20 @@
 @media (min-width: 600px) { .content-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
 @media (min-width: 900px) { .content-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 1200px) { .content-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; } }
+.row-empty {
+  width: 100%;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--slate-grey);
+  font-size: 14px;
+  text-align: center;
+}
 
 /* ===== RETRY BUTTON ===== */
 .row-retry {
