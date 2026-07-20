@@ -83,13 +83,19 @@
     return `${formatNumber(getViewCount(item))} views`;
   }
 
+  const MOVIES_CONTENT_FORMATS = ['film', 'documentary', 'series_episode'];
+
   function matchesCurrentFilter(item) {
     if (!item) return false;
+    if (!MOVIES_CONTENT_FORMATS.includes(item.content_format)) return false;
     if (currentFilter === 'all') return true;
     if (currentFilter === 'telenovela') {
       return Array.isArray(item.sa_genres) && item.sa_genres.includes('telenovela');
     }
-    return item.content_format === currentFilter;
+    if (currentFilter === 'series') return item.content_format === 'series_episode';
+    if (currentFilter === 'film') return item.content_format === 'film';
+    if (currentFilter === 'documentary') return item.content_format === 'documentary';
+    return false;
   }
 
   function hasHeroVideo(item) {
@@ -209,13 +215,15 @@
   }
 
   function applyCurrentFilter(query) {
+    query = query.in('content_format', MOVIES_CONTENT_FORMATS);
+
     if (currentFilter === 'telenovela') {
       return query.contains('sa_genres', ['telenovela']);
     }
 
-    if (currentFilter !== 'all') {
-      return query.eq('content_format', currentFilter);
-    }
+    if (currentFilter === 'series') return query.eq('content_format', 'series_episode');
+    if (currentFilter === 'film') return query.eq('content_format', 'film');
+    if (currentFilter === 'documentary') return query.eq('content_format', 'documentary');
 
     return query;
   }
@@ -278,8 +286,8 @@
     if (isTop10) {
       return `
         <div class="top10-card" data-content-id="${item.id}" tabindex="0" role="link">
-          <div class="top10-number">${rank}</div>
           <div class="top10-thumb">
+            <span class="top10-stamp"><i class="fas fa-bolt"></i> Heat</span>
             <img src="${posterUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
           </div>
           <p class="top10-title">${escapeHtml(item.title)}</p>
@@ -701,7 +709,7 @@
       if (topItems.length > 0) {
         topContentIds = topItems.map(item => item.id);
         setSectionVisibility('row-top10', true);
-        container.innerHTML = topItems.map((item, idx) => buildStandardCardHTML(item, true, idx + 1)).join('');
+        container.innerHTML = topItems.map(item => buildStandardCardHTML(item, true)).join('');
         attachCardClicks(container, topItems);
       } else {
         topContentIds = [];
