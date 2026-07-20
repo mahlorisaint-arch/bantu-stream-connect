@@ -69,7 +69,7 @@
 
 <div id="loading" class="loading-screen">
   <div class="spinner"></div>
-  <div id="loading-text">Curating your world...</div>
+  <div id="loading-text">Loading your next watch...</div>
 </div>
 
 <div class="animated-bg">
@@ -117,14 +117,16 @@
     <!-- HERO SECTION -->
     <section class="hero-section" id="hero-section">
       <div class="hero-video-container">
-        <video id="hero-video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=600&fit=crop">
-          <source src="" type="video/mp4">
-        </video>
+        <img id="hero-poster-image" class="hero-poster-image" src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=600&fit=crop" alt="Featured movie backdrop">
+        <video id="hero-video" class="hero-video-element" autoplay muted loop playsinline preload="metadata"></video>
+        <iframe id="hero-video-frame" class="hero-video-frame" title="Featured movie preview" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         <div class="hero-gradient"></div>
       </div>
       <div class="hero-content">
         <div class="hero-badges">
+          <span class="badge-feature" id="hero-feature-badge">Featured Tonight</span>
           <span class="badge-premium" id="hero-bantu-original" style="display: none;"><i class="fas fa-crown"></i> Bantu Original</span>
+          <span class="badge-leaving" id="hero-leaving-badge" style="display: none;"></span>
         </div>
         <h1 class="hero-title" id="hero-title">Loading featured title...</h1>
         <div class="hero-meta">
@@ -134,7 +136,12 @@
           <span class="meta-divider">·</span>
           <span id="hero-language">Sesotho, English subs</span>
         </div>
-        <p class="hero-description" id="hero-description">A gripping story of family, loyalty, and survival.</p>
+        <div class="hero-supporting-meta">
+          <span id="hero-creator">By a standout creator</span>
+          <span class="meta-divider">·</span>
+          <span id="hero-views">0 views</span>
+        </div>
+        <p class="hero-description" id="hero-description">A story worth settling into tonight.</p>
         <div class="hero-actions">
           <button class="btn-primary btn-glow" id="hero-play-btn"><i class="fas fa-play"></i> Play Now</button>
           <button class="btn-secondary" id="hero-info-btn"><i class="fas fa-info-circle"></i> More Info</button>
@@ -149,7 +156,6 @@
         <button class="filter-chip" data-filter="telenovela">Telenovelas</button>
         <button class="filter-chip" data-filter="film">Films</button>
         <button class="filter-chip" data-filter="documentary">Docs</button>
-        <button class="filter-chip" data-filter="short">Short Films</button>
       </div>
     </section>
 
@@ -173,7 +179,10 @@
 
     <!-- ROW 2: TOP 10 IN MZANSI -->
     <section class="content-row-section" id="row-top10">
-      <div class="row-header"><h3 class="row-title"><i class="fas fa-fire" style="color: var(--warm-gold);"></i> Top 10 in Mzansi Today</h3></div>
+      <div class="row-header">
+        <h3 class="row-title"><i class="fas fa-fire" style="color: var(--warm-gold);"></i> Top 10 in Mzansi Today</h3>
+        <span class="row-subtitle">The titles South Africa is pressing play on right now</span>
+      </div>
       <div class="row-scroll-container">
         <div class="row-scroll" id="top10-row">
           <!-- Skeleton loaders rendered immediately -->
@@ -186,11 +195,11 @@
       </div>
     </section>
 
-    <!-- ROW 3: SUNDAY FAMILY FAVOURITES -->
+    <!-- ROW 3: MORE TO EXPLORE -->
     <section class="content-row-section" id="row-family">
       <div class="row-header">
-        <h3 class="row-title">Sunday Family Favourites</h3>
-        <span class="row-subtitle">Films, soapies and docs, mixed for the whole house</span>
+        <h3 class="row-title">More to explore</h3>
+        <span class="row-subtitle">One strong pick should open the door to the next one</span>
       </div>
       <div class="content-grid" id="family-grid">
         <!-- Skeleton loaders rendered immediately -->
@@ -207,41 +216,6 @@
       </div>
     </section>
 
-    <!-- ROW 4: QUICK BITES -->
-    <section class="content-row-section" id="row-quickbites">
-      <div class="row-header"><h3 class="row-title">Quick Bites · Under 20 min</h3></div>
-      <div class="row-scroll-container">
-        <div class="row-scroll shorts-scroll" id="quickbites-row">
-          <!-- Skeleton loaders rendered immediately -->
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-          <div class="skeleton-short-card skel-shimmer"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ROW 5: RECOMMENDED -->
-    <section class="content-row-section" id="row-recommended">
-      <div class="row-header"><h3 class="row-title">More to explore</h3></div>
-      <div class="row-scroll-container">
-        <div class="row-scroll" id="recommended-row">
-          <!-- Skeleton loaders rendered immediately -->
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-          <div class="skeleton-card skel-shimmer"></div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
