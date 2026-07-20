@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BANTU STREAM CONNECT — FILM & SERIES BROWSE SCREEN
+   BANTU STREAM CONNECT — MOVIES BROWSE SCREEN
    ========================================================================== */
 :root {
   --brand-cyan-core: #34E7FF;
@@ -12,7 +12,7 @@
   --card-border: rgba(148, 163, 184, 0.2);
 }
 
-.film-series-main { max-width: 1600px; margin: 0 auto; padding-bottom: 120px; }
+.movies-main { max-width: 1600px; margin: 0 auto; padding-bottom: 120px; }
 
 /* ===== HERO SECTION ===== */
 .hero-section {
@@ -39,11 +39,6 @@
   background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4);
   color: var(--warm-gold); padding: 4px 10px; border-radius: 6px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-}
-.badge-match {
-  display: inline-flex; align-items: center;
-  background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #10B981; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
 }
 .hero-title {
   font-family: 'Orbitron', sans-serif; font-size: 36px; font-weight: 700;
