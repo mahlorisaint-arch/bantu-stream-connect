@@ -219,19 +219,30 @@
   transition: width 0.3s ease;
 }
 
-/* ===== TOP 10 NUMBERED CARDS ===== */
+/* ===== MZANSI HEAT CARDS ===== */
 .top10-card { 
   flex-shrink: 0; width: 160px; position: relative; cursor: pointer; transition: transform 0.3s ease; 
 }
 .top10-card:hover { transform: scale(1.05); z-index: 10; }
-.top10-number {
-  position: absolute; bottom: -10px; left: -15px; font-family: 'Orbitron', sans-serif;
-  font-size: 72px; font-weight: 800; color: transparent; -webkit-text-stroke: 2px var(--warm-gold);
-  line-height: 1; z-index: 2; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
-}
 .top10-thumb {
   position: relative; width: 160px; height: 240px; border-radius: 8px; overflow: hidden;
   background: var(--card-bg); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+.top10-stamp {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: var(--warm-gold);
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 3;
 }
 .top10-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
 .top10-card:hover .top10-thumb img { transform: scale(1.1); }
@@ -450,7 +461,6 @@
   .top10-card { width: 130px; }
   .top10-thumb { width: 130px; height: 195px; }
   .skeleton-top10-card { width: 130px; height: 195px; }
-  .top10-number { font-size: 56px; left: -10px; }
   .content-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .detail-hero { height: 50vh; min-height: 300px; }
   .detail-title { font-size: 24px; }
