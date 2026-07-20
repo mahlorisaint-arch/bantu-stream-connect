@@ -12,16 +12,14 @@
   window.currentUser = null;
   let currentFilter = 'all';
 
-  const SERIES_FORMATS = ['series_episode'];
-  const FILM_FORMATS = ['film', 'documentary'];
-  const SHORT_FORMATS = ['short'];
-
   // ===== HOVER PREVIEW STATE =====
   const HOVER_DELAY = 500;
   const hoverTimers = new WeakMap();
 
   // ===== FOCUS RETURN STATE =====
   let lastFocusedCard = null;
+  let featuredContentId = null;
+  let topContentIds = [];
 
   function escapeHtml(text) {
     if (!text) return '';
@@ -58,6 +56,130 @@
     return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
   }
 
+  function getCloudflareThumbnailUrl(providerVideoId, height = 720) {
+    if (!providerVideoId) return '';
+    return `https://videodelivery.net/${providerVideoId}/thumbnails/thumbnail.jpg?time=5s&height=${height}`;
+  }
+
+  function getPosterUrl(item, height = 720) {
+    if (item?.thumbnail_url) return fixMediaUrl(item.thumbnail_url);
+    if (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id) {
+      return getCloudflareThumbnailUrl(item.provider_video_id, height);
+    }
+    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=600&fit=crop';
+  }
+
+  function getCreatorName(item) {
+    return item?.user_profiles?.full_name || item?.user_profiles?.username || 'Unknown Creator';
+  }
+
+  function getViewCount(item) {
+    return item?.content_engagement_stats?.total_views || 0;
+  }
+
+  function formatViewsLabel(item) {
+    return `${formatNumber(getViewCount(item))} views`;
+  }
+
+  function matchesCurrentFilter(item) {
+    if (!item) return false;
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'telenovela') {
+      return Array.isArray(item.sa_genres) && item.sa_genres.includes('telenovela');
+    }
+    return item.content_format === currentFilter;
+  }
+
+  function hasHeroVideo(item) {
+    return !!(item?.preview_clip_url || (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id));
+  }
+
+  function getPreviewUrl(item) {
+    if (!item) return '';
+    if (item.preview_clip_url) return fixMediaUrl(item.preview_clip_url);
+    if (item.streaming_provider === 'cloudflare_stream' && item.provider_video_id) {
+      const params = new URLSearchParams({
+        autoplay: 'true',
+        muted: 'true',
+        loop: 'true',
+        controls: 'false',
+        preload: 'true',
+        poster: getCloudflareThumbnailUrl(item.provider_video_id, 480)
+      });
+      return `https://iframe.videodelivery.net/${item.provider_video_id}?${params.toString()}`;
+    }
+    return '';
+  }
+
+  function getHeroFeatureLabel(item) {
+    if (item?.is_bantu_original) return 'Bantu Original Spotlight';
+    if (getViewCount(item) > 0) return 'Top in Mzansi';
+    return "Tonight's Spotlight";
+  }
+
+  function getHeroScore(item) {
+    let score = getViewCount(item);
+    if (item?.is_bantu_original) score += 100000000;
+    if (hasHeroVideo(item)) score += 1000000;
+    if (item?.content_format === 'film') score += 100000;
+    if (item?.content_format === 'documentary') score += 50000;
+    if (item?.content_format === 'series_episode') score += 25000;
+    return score;
+  }
+
+  function selectFeaturedItem(items) {
+    if (!items?.length) return null;
+    return [...items].sort((a, b) => getHeroScore(b) - getHeroScore(a))[0];
+  }
+
+  function applyCardExclusions(items, exclusions = []) {
+    if (!items?.length) return [];
+    const exclusionSet = new Set(exclusions.filter(Boolean).map(String));
+    return items.filter(item => !exclusionSet.has(String(item.id)));
+  }
+
+  function configureHeroMedia(item) {
+    const posterImage = document.getElementById('hero-poster-image');
+    const videoEl = document.getElementById('hero-video');
+    const frameEl = document.getElementById('hero-video-frame');
+    if (!posterImage || !videoEl || !frameEl) return;
+
+    const posterUrl = getPosterUrl(item);
+    posterImage.src = posterUrl;
+    posterImage.style.display = 'block';
+
+    videoEl.pause();
+    videoEl.removeAttribute('src');
+    videoEl.style.display = 'none';
+    videoEl.load();
+
+    frameEl.src = '';
+    frameEl.style.display = 'none';
+
+    if (item?.preview_clip_url) {
+      videoEl.poster = posterUrl;
+      videoEl.src = fixMediaUrl(item.preview_clip_url);
+      videoEl.style.display = 'block';
+      videoEl.play().catch(() => {
+        videoEl.style.display = 'none';
+      });
+      return;
+    }
+
+    if (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id) {
+      const params = new URLSearchParams({
+        autoplay: 'true',
+        muted: 'true',
+        loop: 'true',
+        controls: 'false',
+        preload: 'true',
+        poster: getCloudflareThumbnailUrl(item.provider_video_id, 720)
+      });
+      frameEl.src = `https://iframe.videodelivery.net/${item.provider_video_id}?${params.toString()}`;
+      frameEl.style.display = 'block';
+    }
+  }
+
   const CONTENT_FORMAT_META = {
     film: { label: 'Film', color: '#EF4444' },
     documentary: { label: 'Documentary', color: '#8B5CF6' },
@@ -78,65 +200,71 @@
     return { daysLeft };
   }
 
+  function applyCurrentFilter(query) {
+    if (currentFilter === 'telenovela') {
+      return query.contains('sa_genres', ['telenovela']);
+    }
+
+    if (currentFilter !== 'all') {
+      return query.eq('content_format', currentFilter);
+    }
+
+    return query;
+  }
+
+  function setSectionVisibility(sectionId, shouldShow, displayValue = '') {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    section.style.display = shouldShow ? displayValue : 'none';
+  }
+
   function buildStandardCardHTML(item, isTop10 = false, rank = 0) {
     const meta = formatMeta(item.content_format);
     const leaving = getLeavingSoonInfo(item.leaving_at);
     const leavingBadge = leaving
       ? `<span class="upload-card__badge leaving-soon">Leaving in ${leaving.daysLeft}d</span>`
       : '';
+    const creatorName = getCreatorName(item);
+    const posterUrl = getPosterUrl(item, 400);
     
     if (isTop10) {
       return `
         <div class="top10-card" data-content-id="${item.id}" tabindex="0" role="link">
           <div class="top10-number">${rank}</div>
           <div class="top10-thumb">
-            <img src="${fixMediaUrl(item.thumbnail_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
+            <img src="${posterUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
           </div>
           <p class="top10-title">${escapeHtml(item.title)}</p>
+          <p class="top10-meta">${escapeHtml(creatorName)}</p>
         </div>
       `;
     }
 
     return `
       <div class="upload-card" data-content-id="${item.id}" tabindex="0" role="link">
-        <div class="upload-card__thumb" style="background-image: url(${fixMediaUrl(item.thumbnail_url)});">
+        <div class="upload-card__thumb" style="background-image: url(${posterUrl});">
           ${leavingBadge}
           <span class="upload-card__badge" style="background: ${meta.color}; color: white;">${meta.label}</span>
           ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
           <div class="media-hover-play"><i class="fas fa-play"></i></div>
         </div>
         <p class="upload-card__title">${escapeHtml(item.title)}</p>
+        <p class="upload-card__byline">${escapeHtml(creatorName)}</p>
         <p class="upload-card__meta">
-          <i class="fas fa-eye"></i> ${formatNumber(item.content_engagement_stats?.total_views || 0)} views
+          <span>${item.duration ? formatDurationLong(item.duration) : meta.label}</span>
+          <span class="meta-divider">·</span>
+          <span><i class="fas fa-eye"></i> ${formatViewsLabel(item)}</span>
         </p>
-      </div>
-    `;
-  }
-
-  function buildShortCardHTML(item) {
-    const leaving = getLeavingSoonInfo(item.leaving_at);
-    const leavingBadge = leaving
-      ? `<span class="upload-card__badge leaving-soon">Leaving in ${leaving.daysLeft}d</span>`
-      : '';
-
-    return `
-      <div class="short-card" data-content-id="${item.id}" tabindex="0" role="link">
-        <div class="short-card__thumb" style="background-image: url(${fixMediaUrl(item.thumbnail_url)});">
-          ${leavingBadge}
-          <div class="media-hover-play"><i class="fas fa-play"></i></div>
-          <div class="short-card__plays"><i class="fas fa-play"></i> ${formatNumber(item.content_engagement_stats?.total_views || 0)}</div>
-        </div>
-        <p class="short-card__title">${escapeHtml(item.title)}</p>
       </div>
     `;
   }
 
   // ===== HOVER PREVIEW FUNCTIONS =====
   function attachHoverPreview(cardEl, item) {
-    if (!item.preview_clip_url) return;
+    if (!getPreviewUrl(item)) return;
     if (window.matchMedia('(hover: none)').matches) return;
 
-    const thumb = cardEl.querySelector('.upload-card__thumb, .short-card__thumb, .top10-thumb');
+    const thumb = cardEl.querySelector('.upload-card__thumb, .top10-thumb');
     if (!thumb) return;
 
     cardEl.addEventListener('mouseenter', () => {
@@ -151,9 +279,24 @@
   }
 
   function startPreview(thumb, item) {
-    if (thumb.querySelector('video')) return;
+    if (thumb.querySelector('video, iframe')) return;
+
+    if (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id && !item?.preview_clip_url) {
+      const frame = document.createElement('iframe');
+      frame.src = getPreviewUrl(item);
+      frame.className = 'card-preview-frame';
+      frame.title = `${item.title || 'Content'} preview`;
+      frame.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      thumb.appendChild(frame);
+      requestAnimationFrame(() => {
+        frame.classList.add('active');
+      });
+      return;
+    }
+
     const video = document.createElement('video');
-    video.src = fixMediaUrl(item.preview_clip_url);
+    video.src = getPreviewUrl(item);
     video.muted = true;
     video.loop = true;
     video.playsInline = true;
@@ -167,9 +310,15 @@
 
   function stopPreview(thumb) {
     const video = thumb.querySelector('video');
-    if (!video) return;
-    video.pause();
-    video.remove();
+    if (video) {
+      video.pause();
+      video.remove();
+    }
+
+    const frame = thumb.querySelector('iframe');
+    if (frame) {
+      frame.remove();
+    }
   }
 
   // ===== REAL DATA: IN-PAGE DETAIL OVERLAY =====
@@ -192,6 +341,7 @@
         .select(`
           id, title, description, thumbnail_url, content_format, genre, language, duration,
           is_bantu_original, content_metadata, chapters, leaving_at,
+          streaming_provider, provider_video_id,
           user_profiles!user_id (full_name, username, avatar_url),
           content_engagement_stats (total_views, total_likes)
         `)
@@ -217,7 +367,7 @@
           seriesInfo = pc;
           const { data: episodes } = await supabase
             .from('playlist_contents')
-            .select(`content_id, track_number, Content!inner (id, title, thumbnail_url, duration, content_format, leaving_at, preview_clip_url)`)
+            .select(`content_id, track_number, Content!inner (id, title, thumbnail_url, duration, content_format, leaving_at, preview_clip_url, streaming_provider, provider_video_id)`)
             .eq('playlist_id', pc.playlist_id)
             .order('track_number', { ascending: true })
             .limit(5);
@@ -269,7 +419,7 @@
       
       <div class="detail-hero">
         <div class="detail-hero-video">
-          <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}">
+          <img src="${getPosterUrl(content)}" alt="${escapeHtml(content.title)}">
           <div class="hero-gradient"></div>
         </div>
         <div class="detail-hero-content">
@@ -282,6 +432,8 @@
             <span>${isSeries && seriesInfo ? `Season ${seriesInfo.season_number || 1}` : formatDurationLong(content.duration)}</span>
             <span class="meta-divider">·</span>
             <span>${content.language || 'English'}</span>
+            <span class="meta-divider">·</span>
+            <span>${escapeHtml(creatorName)}</span>
             <span class="meta-divider">·</span>
             <span><i class="fas fa-eye"></i> ${formatNumber(content.content_engagement_stats?.total_views || 0)}</span>
           </div>
@@ -327,7 +479,7 @@
           return `
             <div class="episode-card ${isCurrent ? 'watched' : ''}" data-content-id="${c.id}" onclick="window.location.href='../content-detail.html?id=${c.id}'">
               <div class="ep-thumb">
-                <img src="${fixMediaUrl(c.thumbnail_url)}" alt="${escapeHtml(c.title)}">
+                <img src="${getPosterUrl(c, 400)}" alt="${escapeHtml(c.title)}">
                 ${isCurrent ? '<div class="ep-check"><i class="fas fa-check-circle"></i></div>' : ''}
                 <div class="ep-play-overlay"><i class="fas fa-play"></i></div>
                 ${leavingBadge}
@@ -375,7 +527,7 @@
       ? chapters.map((ch, idx) => `
           <div class="episode-card" onclick="window.location.href='../content-detail.html?id=${content.id}&t=${ch.start_time || 0}'">
             <div class="ep-thumb">
-              <img src="${fixMediaUrl(content.thumbnail_url)}" alt="${escapeHtml(ch.title || `Chapter ${idx + 1}`)}">
+              <img src="${getPosterUrl(content, 400)}" alt="${escapeHtml(ch.title || `Chapter ${idx + 1}`)}">
               <div class="ep-play-overlay"><i class="fas fa-play"></i></div>
             </div>
             <div class="ep-info">
@@ -481,19 +633,35 @@
     const container = document.getElementById('top10-row');
     if (!container) return;
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('Content')
-        .select(`id, title, thumbnail_url, content_format, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
+        .select(`
+          id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url,
+          streaming_provider, provider_video_id,
+          user_profiles!user_id(full_name, username),
+          content_engagement_stats(total_views)
+        `)
         .eq('status', 'published')
-        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' })
-        .limit(10);
+        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' });
+
+      query = applyCurrentFilter(query);
+
+      const { data } = await query.limit(14);
+      const topItems = applyCardExclusions(data || [], [featuredContentId]).slice(0, 10);
       
-      if (data && data.length > 0) {
-        container.innerHTML = data.map((item, idx) => buildStandardCardHTML(item, true, idx + 1)).join('');
-        attachCardClicks(container, data);
+      if (topItems.length > 0) {
+        topContentIds = topItems.map(item => item.id);
+        setSectionVisibility('row-top10', true);
+        container.innerHTML = topItems.map((item, idx) => buildStandardCardHTML(item, true, idx + 1)).join('');
+        attachCardClicks(container, topItems);
+      } else {
+        topContentIds = [];
+        setSectionVisibility('row-top10', false);
       }
     } catch (e) {
       console.error('Top 10 error:', e);
+      topContentIds = [];
+      setSectionVisibility('row-top10', true);
       container.innerHTML = `<button class="row-retry" onclick="loadTop10()">Couldn't load — tap to retry</button>`;
     }
   }
@@ -504,78 +672,40 @@
     try {
       let query = supabase
         .from('Content')
-        .select(`id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
-        .eq('status', 'published');
+        .select(`
+          id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url,
+          streaming_provider, provider_video_id, sa_genres,
+          user_profiles!user_id(full_name, username),
+          content_engagement_stats(total_views)
+        `)
+        .eq('status', 'published')
+        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' });
 
-      if (currentFilter === 'telenovela') {
-        query = query.contains('sa_genres', ['telenovela']);
-      } else if (currentFilter !== 'all') {
-        query = query.eq('content_format', currentFilter);
-      }
+      query = applyCurrentFilter(query);
 
-      const { data } = await query.limit(10);
+      const { data } = await query.limit(24);
+      const moodItems = applyCardExclusions(data || [], [featuredContentId, ...topContentIds]).slice(0, 10);
       
-      if (data && data.length > 0) {
-        container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
-        attachCardClicks(container, data);
+      if (moodItems.length > 0) {
+        setSectionVisibility('row-family', true);
+        container.innerHTML = moodItems.map(item => buildStandardCardHTML(item)).join('');
+        attachCardClicks(container, moodItems);
+      } else {
+        setSectionVisibility('row-family', false);
       }
     } catch (e) {
       console.error('Mood rows error:', e);
+      setSectionVisibility('row-family', true);
       container.innerHTML = `<button class="row-retry" onclick="loadMoodRows()">Couldn't load — tap to retry</button>`;
-    }
-  }
-
-  async function loadQuickBites() {
-    const container = document.getElementById('quickbites-row');
-    if (!container) return;
-    try {
-      let query = supabase
-        .from('Content')
-        .select(`id, title, thumbnail_url, content_format, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
-        .eq('content_format', 'short')
-        .eq('status', 'published');
-
-      if (currentFilter === 'telenovela') {
-        query = query.contains('sa_genres', ['telenovela']);
-      } else if (currentFilter !== 'all') {
-        query = query.eq('content_format', currentFilter);
-      }
-
-      const { data } = await query.limit(8);
-      
-      if (data && data.length > 0) {
-        container.innerHTML = data.map(item => buildShortCardHTML(item)).join('');
-        attachCardClicks(container, data);
-      }
-    } catch (e) {
-      console.error('Quick bites error:', e);
-      container.innerHTML = `<button class="row-retry" onclick="loadQuickBites()">Couldn't load — tap to retry</button>`;
-    }
-  }
-
-  async function loadRecommended() {
-    const container = document.getElementById('recommended-row');
-    if (!container) return;
-    try {
-      const { data } = await supabase
-        .from('Content')
-        .select(`id, title, thumbnail_url, content_format, duration, leaving_at, preview_clip_url, content_engagement_stats(total_views)`)
-        .eq('status', 'published')
-        .limit(8);
-      
-      if (data && data.length > 0) {
-        container.innerHTML = data.map(item => buildStandardCardHTML(item)).join('');
-        attachCardClicks(container, data);
-      }
-    } catch (e) {
-      console.error('Recommended error:', e);
-      container.innerHTML = `<button class="row-retry" onclick="loadRecommended()">Couldn't load — tap to retry</button>`;
     }
   }
 
   // ===== CONTINUE WATCHING =====
   async function loadContinueWatching() {
-    if (!window.currentUser) return;
+    if (!window.currentUser) {
+      setSectionVisibility('row-continue', false);
+      return;
+    }
     const container = document.getElementById('continue-row');
     if (!container) return;
 
@@ -591,8 +721,12 @@
             thumbnail_url,
             duration,
             content_format,
+            sa_genres,
             leaving_at,
             preview_clip_url,
+            streaming_provider,
+            provider_video_id,
+            user_profiles!user_id(full_name, username),
             content_engagement_stats(total_views)
           )
         `)
@@ -601,31 +735,42 @@
         .order('updated_at', { ascending: false })
         .limit(10);
 
-      if (!data?.length) {
-        document.getElementById('row-continue')?.remove();
+      const filteredItems = (data || []).filter(w => matchesCurrentFilter(w.Content));
+
+      if (!filteredItems.length) {
+        setSectionVisibility('row-continue', false);
         return;
       }
 
-      container.innerHTML = data.map(w => {
+      setSectionVisibility('row-continue', true);
+      container.innerHTML = filteredItems.map(w => {
         const pct = w.Content.duration ? Math.min(100, Math.round((w.last_position / w.Content.duration) * 100)) : 0;
+        const remainingSeconds = w.Content.duration ? Math.max(0, w.Content.duration - w.last_position) : 0;
         const leaving = getLeavingSoonInfo(w.Content.leaving_at);
         const leavingBadge = leaving
           ? `<span class="upload-card__badge leaving-soon">Leaving in ${leaving.daysLeft}d</span>`
           : '';
         return `
           <div class="upload-card" data-content-id="${w.Content.id}" tabindex="0" role="link">
-            <div class="upload-card__thumb" style="background-image:url(${fixMediaUrl(w.Content.thumbnail_url)});">
+            <div class="upload-card__thumb" style="background-image:url(${getPosterUrl(w.Content, 400)});">
               ${leavingBadge}
               <div class="media-hover-play"><i class="fas fa-play"></i></div>
             </div>
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
             <p class="upload-card__title">${escapeHtml(w.Content.title)}</p>
+            <p class="upload-card__byline">${escapeHtml(getCreatorName(w.Content))}</p>
+            <p class="upload-card__meta">
+              <span>${remainingSeconds ? `${formatDurationLong(remainingSeconds)} left` : 'Resume now'}</span>
+              <span class="meta-divider">·</span>
+              <span>${formatViewsLabel(w.Content)}</span>
+            </p>
           </div>
         `;
       }).join('');
-      attachCardClicks(container, data.map(w => w.Content));
+      attachCardClicks(container, filteredItems.map(w => w.Content));
     } catch (e) {
       console.error('Continue watching error:', e);
+      setSectionVisibility('row-continue', false);
     }
   }
 
@@ -647,41 +792,86 @@
     });
   }
 
+  async function refreshBrowseContent() {
+    await loadHero();
+    await loadTop10();
+    await loadMoodRows();
+    await loadContinueWatching();
+  }
+
   function setupFilterChips() {
     const chips = document.querySelectorAll('.filter-chip');
     chips.forEach(chip => {
-      chip.addEventListener('click', () => {
+      chip.addEventListener('click', async () => {
         chips.forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         currentFilter = chip.dataset.filter;
-        loadMoodRows();
-        loadQuickBites();
+        await refreshBrowseContent();
       });
     });
   }
 
   async function loadHero() {
+    const heroSection = document.getElementById('hero-section');
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('Content')
-        .select(`id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, leaving_at, content_engagement_stats(total_views)`)
+        .select(`
+          id, title, description, thumbnail_url, content_format, genre, language, is_bantu_original, duration, leaving_at, sa_genres,
+          preview_clip_url, streaming_provider, provider_video_id,
+          user_profiles!user_id(full_name, username),
+          content_engagement_stats(total_views)
+        `)
         .eq('status', 'published')
-        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' })
-        .limit(1);
+        .order('content_engagement_stats.total_views', { ascending: false, referencedTable: 'content_engagement_stats' });
+
+      query = applyCurrentFilter(query);
+
+      const { data } = await query.limit(12);
       
       if (data && data.length > 0) {
-        const item = data[0];
+        const item = selectFeaturedItem(data.filter(matchesCurrentFilter));
+        if (!item) {
+          setSectionVisibility('hero-section', false);
+          featuredContentId = null;
+          return;
+        }
+
+        featuredContentId = item.id;
+        setSectionVisibility('hero-section', true, 'flex');
+        configureHeroMedia(item);
         document.getElementById('hero-title').textContent = item.title;
-        document.getElementById('hero-description').textContent = item.description || 'A gripping story of family, loyalty, and survival.';
+        document.getElementById('hero-description').textContent = item.description || 'A story worth settling into tonight.';
         document.getElementById('hero-genre').textContent = item.genre || 'Drama';
         document.getElementById('hero-duration').textContent = item.duration ? formatDurationLong(item.duration) : '1h 54m';
         document.getElementById('hero-language').textContent = item.language || 'isiZulu, English subs';
-        if (item.is_bantu_original) document.getElementById('hero-bantu-original').style.display = 'inline-flex';
+        document.getElementById('hero-creator').textContent = `By ${getCreatorName(item)}`;
+        document.getElementById('hero-views').textContent = formatViewsLabel(item);
+        document.getElementById('hero-feature-badge').textContent = getHeroFeatureLabel(item);
+        document.getElementById('hero-bantu-original').style.display = item.is_bantu_original ? 'inline-flex' : 'none';
+        const leaving = getLeavingSoonInfo(item.leaving_at);
+        const leavingBadge = document.getElementById('hero-leaving-badge');
+        if (leaving) {
+          leavingBadge.style.display = 'inline-flex';
+          leavingBadge.innerHTML = `<i class="fas fa-clock"></i> Leaving in ${leaving.daysLeft}d`;
+        } else {
+          leavingBadge.style.display = 'none';
+          leavingBadge.textContent = '';
+        }
         
-        document.getElementById('hero-play-btn').onclick = () => window.openInPageDetail(item.id);
+        document.getElementById('hero-play-btn').onclick = () => {
+          window.location.href = `../content-detail.html?id=${item.id}`;
+        };
         document.getElementById('hero-info-btn').onclick = () => window.openInPageDetail(item.id);
+      } else if (heroSection) {
+        featuredContentId = null;
+        setSectionVisibility('hero-section', false);
       }
-    } catch (e) { console.error('Hero error:', e); }
+    } catch (e) {
+      console.error('Hero error:', e);
+      featuredContentId = null;
+      setSectionVisibility('hero-section', true, 'flex');
+    }
   }
 
   async function initialize() {
@@ -696,13 +886,7 @@
       // Show app shell immediately with skeletons
       if (app) app.style.display = 'block';
 
-      // Fire independently, not Promise.all
-      loadHero();
-      loadTop10();
-      loadMoodRows();
-      loadQuickBites();
-      loadRecommended();
-      loadContinueWatching();
+      await refreshBrowseContent();
 
       setupFilterChips();
 
