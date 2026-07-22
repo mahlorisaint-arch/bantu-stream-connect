@@ -1350,23 +1350,40 @@ function populateCityFilter() {
 // ==========================================
 // INIT PAGE
 // ==========================================
+// Best-effort: know who's logged in so Connect buttons can render pre-checked.
+// Isolated in its own try/catch so any failure here (auth not ready yet, a
+// shared-components.js hiccup, etc.) can never block the actual page content.
+async function loadConnectionState() {
+    try {
+        const user = await getCurrentUser?.() || window.currentUser;
+        if (user && user.id) {
+            connectedIds = await fetchConnectedIds(user.id);
+        }
+    } catch (e) {
+        console.warn('Could not load connection state (non-fatal):', e);
+    }
+}
+
 async function init() {
     await initSupabase();
     populateCityFilter();
     initDynamicMap();
-    const user = await getCurrentUser?.() || window.currentUser;
-    if (user && user.id) {
-        connectedIds = await fetchConnectedIds(user.id);
-    }
-    await loadHeroWithRealContent();
+
+    // Content first: hero + grid must render even if the connection-state
+    // lookup above is slow, errors, or getCurrentUser isn't available yet.
+    await Promise.all([
+        loadConnectionState(),
+        loadHeroWithRealContent()
+    ]);
     await loadFeaturedCreators();
+
     document.querySelectorAll('.intent-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); loadFeaturedCreators(); }));
     document.getElementById('cityFilter').addEventListener('change', applyFilters);
     document.getElementById('craftFilter').addEventListener('change', applyFilters);
     document.getElementById('energyFilter').addEventListener('change', applyFilters);
     document.getElementById('sortFilter').addEventListener('change', applyFilters);
 }
-init();
+init().catch(e => console.error('Discover Creators init failed:', e));
 </script>
 </body>
 </html>
