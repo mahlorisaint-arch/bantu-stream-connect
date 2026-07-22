@@ -711,45 +711,157 @@ body {
     to { transform: translateX(0); opacity: 1; }
 }
 
-/* Responsive */
+/* Responsive — matches the platform's standard 480/768/1200/1600px tiers
+   (see creator-channel.css and movies.css) rather than a single ad-hoc
+   breakpoint, so type/card scale feels consistent moving between pages. */
+
+/* Tablet and down */
 @media (max-width: 768px) {
     .discover-container {
         padding: 16px;
         margin-top: 70px;
     }
-    
-    .hero-title {
-        font-size: 24px;
+
+    .hero-section {
+        height: auto;
+        min-height: 360px;
     }
-    
+
+    .hero-creator-avatar {
+        width: 56px;
+        height: 56px;
+    }
+
+    .hero-title {
+        font-size: 20px;
+    }
+
+    .hero-description {
+        font-size: 13px;
+    }
+
     .hero-content {
         padding: 24px;
     }
-    
+
+    .section-title {
+        font-size: 16px;
+    }
+
     .creator-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
-    
+
+    .card-media {
+        height: 160px;
+    }
+
+    .creator-avatar {
+        width: 40px;
+        height: 40px;
+    }
+
+    .radar-map {
+        min-height: 400px;
+        padding: 16px;
+    }
+
+    .map-container {
+        height: 340px;
+    }
+
+    .city-name {
+        font-size: 20px;
+    }
+
+    .city-panel {
+        padding: 18px;
+    }
+
     .filters-bar {
         flex-direction: column;
     }
-    
+
     .filter-group {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .intent-switcher {
         width: 100%;
         overflow-x: auto;
     }
-    
+
     .hero-stats {
         gap: 16px;
     }
-    
+
     .hero-stat-value {
         font-size: 20px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 18px;
+    }
+
+    .hero-creator-avatar {
+        width: 48px;
+        height: 48px;
+        border-width: 2px;
+    }
+
+    .hero-badge, .hero-creator-badges {
+        font-size: 10px;
+    }
+
+    .hero-stat-value {
+        font-size: 16px;
+    }
+
+    .card-media {
+        height: 140px;
+    }
+
+    .creator-name {
+        font-size: 14px;
+    }
+
+    .city-name {
+        font-size: 18px;
+    }
+
+    .radar-map {
+        min-height: 340px;
+    }
+
+    .map-container {
+        height: 280px;
+    }
+}
+
+/* Large desktop — scale type up rather than leaving it flat, matching
+   movies.css's hero-title (36px -> 48px) and creator-channel.css's
+   channel-name (18px -> 24px) growing on bigger screens. */
+@media (min-width: 1200px) {
+    .hero-title {
+        font-size: 36px;
+    }
+
+    .hero-creator-avatar {
+        width: 84px;
+        height: 84px;
+    }
+
+    .section-title {
+        font-size: 20px;
+    }
+
+    .creator-grid {
+        gap: 28px;
     }
 }
 </style>
@@ -939,13 +1051,13 @@ body {
             <span class="filter-label"><i class="fas fa-tag"></i> Craft</span>
             <select id="craftFilter" class="filter-select">
                 <option value="">All Crafts</option>
-                <option value="Music Producer">🎵 Music Producer</option>
-                <option value="Filmmaker">🎬 Filmmaker</option>
-                <option value="Street Artist">🎨 Street Artist</option>
-                <option value="Athlete">⚽ Athlete</option>
-                <option value="Cinematographer">📸 Cinematographer</option>
-                <option value="Podcaster">🎙️ Podcaster</option>
-                <option value="Dancer">💃 Dancer</option>
+                <option value="Music Producer">Music Producer</option>
+                <option value="Filmmaker">Filmmaker</option>
+                <option value="Street Artist">Street Artist</option>
+                <option value="Athlete">Athlete</option>
+                <option value="Cinematographer">Cinematographer</option>
+                <option value="Podcaster">Podcaster</option>
+                <option value="Dancer">Dancer</option>
             </select>
         </div>
         
@@ -953,10 +1065,10 @@ body {
             <span class="filter-label"><i class="fas fa-bolt"></i> Energy</span>
             <select id="energyFilter" class="filter-select">
                 <option value="">All Vibes</option>
-                <option value="Chill">😌 Chill</option>
-                <option value="Hype">🔥 Hype</option>
-                <option value="Soulful">💜 Soulful</option>
-                <option value="Intense">⚡ Intense</option>
+                <option value="Chill">Chill</option>
+                <option value="Hype">Hype</option>
+                <option value="Soulful">Soulful</option>
+                <option value="Intense">Intense</option>
             </select>
         </div>
         
@@ -1161,6 +1273,11 @@ async function loadHeroWithRealContent() {
             heroVideoEl.style.display = '';
         }
 
+        // Whole hero spotlights one creator — clicking it should behave like clicking their card.
+        const heroSectionEl = document.getElementById('heroSection');
+        heroSectionEl.style.cursor = 'pointer';
+        heroSectionEl.onclick = () => { window.location.href = `creator-channel.html?id=${hero.user_id}`; };
+
         document.getElementById('heroTitle').innerHTML = `${escapeHtml(hero.full_name || hero.username)} — ${escapeHtml(hero.primary_craft || 'Creator')}`;
         document.getElementById('heroDescription').innerHTML = hero.bio || 'Creative professional making an impact in South Africa\'s creative industry';
         document.getElementById('heroStats').innerHTML = `
@@ -1304,13 +1421,13 @@ async function loadFeaturedCreators() {
 function attachCardEvents() {
     document.querySelectorAll('.connect-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleConnect(btn.dataset.creatorId); }));
     document.querySelectorAll('.collab-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleCollabRequest(btn.dataset.creatorId); }));
-    document.querySelectorAll('.creator-card').forEach(card => card.addEventListener('click', () => window.location.href = `/creator/${card.dataset.creatorId}`));
+    document.querySelectorAll('.creator-card').forEach(card => card.addEventListener('click', () => window.location.href = `creator-channel.html?id=${card.dataset.creatorId}`));
 }
 
 function renderCreatorCard(creator) {
     const pulseScore = Math.round(creator.final_pulse_score || 0);
     const momentumPercent = Math.min((creator.momentum_score || 0) / 10, 100);
-    let trendIcon = creator.trend_stage === 'rising' ? '🔥' : (creator.trend_stage === 'peak' ? '⚡' : '📈');
+    const trendIcon = creator.trend_stage === 'rising' ? '<i class="fas fa-fire"></i>' : (creator.trend_stage === 'peak' ? '<i class="fas fa-bolt"></i>' : '<i class="fas fa-arrow-trend-up"></i>');
     const locationText = creator.city ? `${creator.city}` : '';
     return `
         <div class="creator-card" data-creator-id="${creator.user_id}">
@@ -1410,14 +1527,14 @@ async function showCityPanel(cityName) {
             const activeCount = count ?? data.length;
             panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div style="margin-bottom:20px; background:rgba(255,215,0,0.1); padding:12px; border-radius:16px;"><i class="fas fa-chart-line"></i> City Pulse: ${activeCount} active creator${activeCount === 1 ? '' : 's'}</div><div class="creator-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${data.map(c => renderCompactCreatorCard(c)).join('')}</div>`;
         } else {
-            panel.innerHTML = `<div class="city-panel-header"><div class="city-name">${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><p style="text-align:center;padding:40px;">✨ Emerging creative hub — more creators arriving soon!</p>`;
+            panel.innerHTML = `<div class="city-panel-header"><div class="city-name">${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><p style="text-align:center;padding:40px;">Emerging creative hub — more creators arriving soon!</p>`;
         }
     } catch(e) { panel.innerHTML = `<div class="city-panel-header"><div class="city-name">${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><p style="text-align:center;padding:40px;">Loading error, but the city is buzzing!</p>`; }
 }
 
 function renderCompactCreatorCard(creator) {
     const fallback = goldAvatarFallback(creator.full_name || creator.username);
-    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || fallback}" onerror="this.onerror=null;this.src='${fallback}';" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}${renderBadgeHtml(creator.is_founder, creator.is_verified)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
+    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='creator-channel.html?id=${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || fallback}" onerror="this.onerror=null;this.src='${fallback}';" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}${renderBadgeHtml(creator.is_founder, creator.is_verified)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
 }
 
 // ==========================================
