@@ -384,10 +384,17 @@ body {
 
 /* Creator Card */
 .creator-card {
+    /* css/home-feed.css defines a grouped selector
+       `.content-card, .short-card, .creator-card { opacity: 0; transform: translateY(20px); }`
+       as a scroll-reveal-on-load animation for the home feed's own cards. It only ever gets
+       undone by that page's IntersectionObserver JS (not loaded here), so without this
+       override every card on this page would be permanently invisible. */
+    opacity: 1;
+    transform: none;
     background: linear-gradient(135deg, #14141e 0%, #1a1a24 100%);
     border-radius: var(--card-radius);
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
     cursor: pointer;
     border: 1px solid var(--card-border);
     position: relative;
