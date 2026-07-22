@@ -377,7 +377,11 @@ async function loadContent() {
     if (shortsContainer) shortsContainer.innerHTML = renderShorts(shorts);
 
     let html = '';
-    if (featured) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div><div class="featured-trend-card" data-content-id="${featured.id}">${featured.is_live ? '<span class="live-badge"><i class="fas fa-circle"></i> LIVE</span>' : ''}<div class="featured-bg" style="background-image:url('${buildThumbnailUrl(featured.thumbnail_url)}')"></div><div class="featured-overlay"><h2 class="featured-title">${escapeHtml(featured.title)}</h2><div class="featured-creator">@${escapeHtml(featured.user_profiles?.username||'Creator')} · ${formatTimeAgo(featured.created_at)}</div><div class="featured-stats"><span><i class="fas fa-eye"></i> ${formatNumber(featured.real_views)} views</span></div><button class="watch-now-btn">WATCH NOW <i class="fas fa-play"></i></button></div></div></section>`;
+    if (featured) {
+        // Audio content gets "Listen Now" instead of "Watch Now" — same redirect either way.
+        const watchLabel = featured.media_type === 'audio' ? 'LISTEN NOW' : 'WATCH NOW';
+        html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div><div class="featured-trend-card" data-content-id="${featured.id}">${featured.is_live ? '<span class="live-badge"><i class="fas fa-circle"></i> LIVE</span>' : ''}<div class="featured-bg" style="background-image:url('${buildThumbnailUrl(featured.thumbnail_url)}')"></div><div class="featured-overlay"><h2 class="featured-title">${escapeHtml(featured.title)}</h2><div class="featured-creator">@${escapeHtml(featured.user_profiles?.username||'Creator')} · ${formatTimeAgo(featured.created_at)}</div><div class="featured-stats"><span><i class="fas fa-eye"></i> ${formatNumber(featured.real_views)} views</span></div><button class="watch-now-btn">${watchLabel} <i class="fas fa-play"></i></button></div></div></section>`;
+    }
     if (communityGems.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2></div><div class="content-grid">${renderCards(communityGems)}</div></section>`;
 
     document.getElementById('trending-sections').innerHTML = html;

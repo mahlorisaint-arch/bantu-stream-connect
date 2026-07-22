@@ -61,9 +61,13 @@
 }
 .see-all-btn:hover { background: rgba(255, 255, 255, 0.12); }
 
-/* ===== FEATURED "THE PULSE" CARD ===== */
+/* ===== FEATURED "THE PULSE" CARD =====
+   16:9 via aspect-ratio (not a fixed height) — a fixed height on a full-width
+   laptop layout doesn't match a 16:9 thumbnail's real proportions, so
+   background-size:cover was aggressively cropping it. aspect-ratio scales
+   correctly at every viewport width without needing per-breakpoint overrides. */
 .featured-trend-card {
-  position: relative; border-radius: 20px; overflow: hidden; height: 420px; cursor: pointer;
+  position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 16 / 9; cursor: pointer;
   background: var(--card-bg); border: 1px solid var(--card-border);
 }
 .featured-bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: transform 0.5s ease; }
@@ -82,25 +86,32 @@
 .featured-title { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 700; margin: 0 0 10px; line-height: 1.2; color: var(--soft-white); }
 .featured-creator { font-size: 14px; color: var(--warm-gold); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .featured-stats { display: flex; gap: 20px; font-size: 13px; color: rgba(248,250,252,0.8); margin-bottom: 20px; }
-.watch-now-btn {
-  padding: 12px 28px; background: var(--soft-white); color: var(--deep-black); border: none;
-  border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 14px;
+
+/* Watch Now / Listen Now / Explore All — transparent glassmorphic, glowing
+   with --bantu-blue (the platform's actual blue brand token), not a solid fill. */
+.watch-now-btn, .explore-btn {
+  padding: 12px 28px; background: rgba(29, 78, 216, 0.15); backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); color: var(--soft-white); border: 1px solid rgba(29, 78, 216, 0.5);
+  border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.25s ease; font-size: 14px;
   display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+  box-shadow: 0 0 20px rgba(29, 78, 216, 0.4), 0 0 40px rgba(29, 78, 216, 0.15);
 }
-.watch-now-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.watch-now-btn:hover, .explore-btn:hover {
+  background: rgba(29, 78, 216, 0.25); transform: translateY(-2px);
+  box-shadow: 0 0 28px rgba(29, 78, 216, 0.6), 0 0 56px rgba(29, 78, 216, 0.25);
+}
 
 /* ===== STANDARD 16:9 CARDS — same class names/shape/behavior as
    movies.css's .upload-card, redefined here since this page doesn't
-   load movies.css ===== */
-.content-row-scroll { display: flex; gap: 16px; overflow-x: auto; scroll-behavior: smooth; scrollbar-width: none; padding-bottom: 8px; }
-.content-row-scroll::-webkit-scrollbar { display: none; }
+   load movies.css. Only ever rendered inside .content-grid on this page
+   (no horizontal-scroll upload-card row exists here), so it's sized to
+   fill its grid cell rather than a fixed flex-basis. ===== */
 .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 @media (min-width: 600px) { .content-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
 @media (min-width: 900px) { .content-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 1200px) { .content-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; } }
 
-.upload-card { flex: 0 0 260px; cursor: pointer; transition: transform 0.2s ease; display: block; }
-.content-grid .upload-card { flex: none; }
+.upload-card { cursor: pointer; transition: transform 0.2s ease; display: block; }
 .upload-card:hover { transform: translateY(-4px); }
 .upload-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; border-radius: 8px; }
 .upload-card__thumb {
@@ -158,14 +169,11 @@
 .progress-track { height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; margin: 8px 0; }
 .progress-fill { height: 100%; background: var(--warm-gold); transition: width 0.3s ease; }
 
-/* ===== EXPLORE ALL CTA ===== */
+/* ===== EXPLORE ALL CTA =====
+   .explore-btn's actual styling is consolidated with .watch-now-btn above
+   (glassmorphic blue-glow) — this just adds its Orbitron heading treatment. */
 .explore-all-section { text-align: center; padding: 40px 20px; }
-.explore-btn {
-  padding: 14px 36px; background: var(--soft-white); color: var(--deep-black); border: none;
-  border-radius: 8px; font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 10px;
-}
-.explore-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.explore-btn { font-family: 'Orbitron', sans-serif; font-weight: 700; }
 
 /* ===== INFINITE SCROLL LOADER ===== */
 .infinite-scroll-loader { display: none; text-align: center; padding: 30px; }
@@ -176,21 +184,30 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== RESPONSIVE — matches movies.css's real breakpoint values (768px/480px;
-   no 360px tier exists in either creator-channel.css or movies.css) ===== */
+   no 360px tier exists in either creator-channel.css or movies.css).
+
+   Horizontal-scroll rows are replaced with wrapping grids/flex-wrap at
+   tablet and below: fixed-width cards inside an overflow-x:auto row read
+   as "cut off" at the viewport edge on touch devices instead of a clean
+   swipe, which is what was making the page feel unstable. Wrapping lets
+   every card sit fully on-screen with no scroll affordance needed. ===== */
 @media (max-width: 768px) {
   .trending-main { padding: 16px 16px 100px; }
   .section-title { font-size: 16px; }
-  .featured-trend-card { height: 320px; }
   .featured-title { font-size: 22px; }
   .featured-overlay { padding: 20px; }
-  .upload-card { flex: 0 0 220px; }
-  .shorts-card { flex: 0 0 140px; }
+
+  .filter-container { flex-wrap: wrap; overflow-x: visible; }
+
   .content-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  .shorts-scroll {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    overflow-x: visible; padding-bottom: 0;
+  }
+  .shorts-card { flex: none; width: 100%; }
 }
 @media (max-width: 480px) {
-  .featured-trend-card { height: 280px; }
   .featured-title { font-size: 18px; }
   .featured-stats { font-size: 12px; gap: 12px; }
-  .upload-card { flex: 0 0 180px; }
-  .shorts-card { flex: 0 0 120px; }
 }
