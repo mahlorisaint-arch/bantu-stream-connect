@@ -1,0 +1,196 @@
+/* ==========================================================================
+   BANTU STREAM CONNECT — TRENDING SCREEN
+   Page-specific styles only. Design tokens (colors, fonts, card radius,
+   spacing, breakpoints) come from shared-components.css; this file only
+   adds what's genuinely unique to this page, following the same card
+   patterns as css/film/movies.css (16:9 upload-card thumbnails, hover
+   play overlay, badge styling) so cards look identical in shape and
+   behavior to Movies' cards.
+   ========================================================================== */
+:root {
+  /* This cyan accent set isn't defined in shared-components.css — copied
+     verbatim from creator-channel.css's :root (the primary design
+     reference for this pass), not invented. */
+  --brand-cyan-core: #34E7FF;
+  --brand-cyan-main: #16D6FF;
+  --brand-cyan-outer: #00C8FF;
+  --brand-cyan-bloom: rgba(125, 239, 255, 0.25);
+  --brand-cyan-deep: rgba(0, 153, 255, 0.15);
+  --brand-glow-stack:
+    0 0 3px var(--brand-cyan-core),
+    0 0 8px var(--brand-cyan-main),
+    0 0 18px var(--brand-cyan-outer),
+    0 0 35px rgba(0, 200, 255, 0.75),
+    0 0 70px rgba(0, 200, 255, 0.35);
+}
+
+.trending-main { max-width: 1600px; margin: 0 auto; padding: 20px 20px 120px; }
+
+/* ===== USER STREAK ===== */
+.user-streak {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 6px 14px; border-radius: 30px; color: var(--warm-gold);
+  font-size: 13px; font-weight: 600; margin-bottom: 15px; cursor: pointer;
+}
+.user-streak i { animation: flame-flicker 1s infinite; }
+@keyframes flame-flicker { 0%, 100% { text-shadow: 0 0 2px var(--warm-gold); } 50% { text-shadow: 0 0 8px #f97316; } }
+
+/* ===== FILTER CHIPS — same pattern as movies.css's .filter-chip (white
+   active state, not gold — matches the reference exactly) ===== */
+.filter-section { padding: 0 0 20px; }
+.filter-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.filter-container::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0; padding: 8px 18px; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px;
+  color: var(--slate-grey); font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.25s ease; white-space: nowrap;
+}
+.filter-chip:hover { background: rgba(255, 255, 255, 0.12); color: var(--soft-white); }
+.filter-chip.active { background: var(--soft-white); color: var(--deep-black); border-color: var(--soft-white); font-weight: 600; }
+
+/* ===== SECTION HEADERS ===== */
+.section { margin-bottom: 48px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+.section-title { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin: 0; color: var(--soft-white); }
+.section-icon { color: var(--warm-gold); }
+.see-all-btn {
+  padding: 8px 18px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px; color: var(--soft-white); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+}
+.see-all-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* ===== FEATURED "THE PULSE" CARD ===== */
+.featured-trend-card {
+  position: relative; border-radius: 20px; overflow: hidden; height: 420px; cursor: pointer;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+}
+.featured-bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: transform 0.5s ease; }
+.featured-trend-card:hover .featured-bg { transform: scale(1.05); }
+.featured-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
+  background: linear-gradient(to top, var(--deep-black) 0%, rgba(10,14,18,0.75) 45%, transparent 100%);
+  padding: 32px;
+}
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 6px 14px;
+  background: rgba(239, 68, 68, 0.95); border-radius: 20px; color: white; font-weight: 700;
+  font-size: 12px; margin-bottom: 14px; animation: pulse-red 1.5s infinite;
+}
+@keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+.featured-title { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 700; margin: 0 0 10px; line-height: 1.2; color: var(--soft-white); }
+.featured-creator { font-size: 14px; color: var(--warm-gold); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.featured-stats { display: flex; gap: 20px; font-size: 13px; color: rgba(248,250,252,0.8); margin-bottom: 20px; }
+.watch-now-btn {
+  padding: 12px 28px; background: var(--soft-white); color: var(--deep-black); border: none;
+  border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 14px;
+  display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+}
+.watch-now-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+
+/* ===== STANDARD 16:9 CARDS — same class names/shape/behavior as
+   movies.css's .upload-card, redefined here since this page doesn't
+   load movies.css ===== */
+.content-row-scroll { display: flex; gap: 16px; overflow-x: auto; scroll-behavior: smooth; scrollbar-width: none; padding-bottom: 8px; }
+.content-row-scroll::-webkit-scrollbar { display: none; }
+.content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (min-width: 600px) { .content-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+@media (min-width: 900px) { .content-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1200px) { .content-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; } }
+
+.upload-card { flex: 0 0 260px; cursor: pointer; transition: transform 0.2s ease; display: block; }
+.content-grid .upload-card { flex: none; }
+.upload-card:hover { transform: translateY(-4px); }
+.upload-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; border-radius: 8px; }
+.upload-card__thumb {
+  position: relative; background: var(--card-bg); border-radius: 8px; aspect-ratio: 16 / 9;
+  margin-bottom: 8px; overflow: hidden; background-size: cover; background-position: center;
+}
+.upload-card__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+.upload-card:hover .upload-card__thumb img { transform: scale(1.05); }
+.upload-card__badge {
+  position: absolute; top: 6px; left: 6px; font-size: 10px; padding: 2px 8px;
+  border-radius: 4px; font-weight: 600; z-index: 3; color: white;
+}
+.upload-card__badge.live { background: rgba(239,68,68,0.95); }
+.upload-card__badge.new { background: var(--success-color); }
+.upload-card__duration {
+  position: absolute; bottom: 6px; right: 6px; font-size: 11px; color: white;
+  background: rgba(0,0,0,0.75); padding: 2px 6px; border-radius: 4px; font-weight: 500;
+}
+.upload-card__title {
+  font-size: 13px; font-weight: 500; line-height: 1.4; margin: 0 0 4px; color: var(--soft-white);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.upload-card__byline { font-size: 12px; color: rgba(248,250,252,0.72); margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upload-card__meta { font-size: 11px; color: var(--slate-grey); display: flex; align-items: center; gap: 6px; }
+
+/* Hover-play overlay — not defined in shared-components.css. Copied from
+   creator-channel.css's .media-hover-play (the one working definition of
+   this pattern in the codebase — movies.html's own cards reference this
+   same class but it isn't actually styled anywhere movies.html loads,
+   a pre-existing gap there) rather than inventing new styling. */
+.media-hover-play {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s ease; z-index: 2;
+}
+.upload-card:hover .media-hover-play, .shorts-card:hover .media-hover-play { opacity: 1; }
+.media-hover-play i { font-size: 22px; color: var(--brand-cyan-core); text-shadow: var(--brand-glow-stack); }
+.shorts-card .media-hover-play i { font-size: 18px; }
+
+/* ===== SHORTS ROW (vertical 9:16 variant of the same card family) ===== */
+.shorts-scroll { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; }
+.shorts-scroll::-webkit-scrollbar { display: none; }
+.shorts-card { flex: 0 0 170px; cursor: pointer; transition: transform 0.2s ease; }
+.shorts-card:hover { transform: translateY(-4px); }
+.shorts-card .upload-card__thumb { aspect-ratio: 9 / 16; }
+
+/* ===== CONTINUE WATCHING ===== */
+.continue-watching-bar {
+  background: var(--card-bg); border: 1px solid var(--card-border); backdrop-filter: blur(12px);
+  border-radius: 16px; margin-bottom: 30px; padding: 16px 20px; display: flex; align-items: center;
+  gap: 20px; flex-wrap: wrap; cursor: pointer; transition: all 0.2s ease;
+}
+.continue-watching-bar:hover { border-color: var(--warm-gold); }
+.continue-thumbnail { width: 120px; height: 68px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.progress-container { flex: 1; min-width: 200px; }
+.progress-track { height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+.progress-fill { height: 100%; background: var(--warm-gold); transition: width 0.3s ease; }
+
+/* ===== EXPLORE ALL CTA ===== */
+.explore-all-section { text-align: center; padding: 40px 20px; }
+.explore-btn {
+  padding: 14px 36px; background: var(--soft-white); color: var(--deep-black); border: none;
+  border-radius: 8px; font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 10px;
+}
+.explore-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+
+/* ===== INFINITE SCROLL LOADER ===== */
+.infinite-scroll-loader { display: none; text-align: center; padding: 30px; }
+.infinite-spinner {
+  width: 32px; height: 32px; margin: 0 auto 10px; border: 3px solid rgba(245,158,11,0.2);
+  border-top-color: var(--warm-gold); border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== RESPONSIVE — matches movies.css's real breakpoint values (768px/480px;
+   no 360px tier exists in either creator-channel.css or movies.css) ===== */
+@media (max-width: 768px) {
+  .trending-main { padding: 16px 16px 100px; }
+  .section-title { font-size: 16px; }
+  .featured-trend-card { height: 320px; }
+  .featured-title { font-size: 22px; }
+  .featured-overlay { padding: 20px; }
+  .upload-card { flex: 0 0 220px; }
+  .shorts-card { flex: 0 0 140px; }
+  .content-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+@media (max-width: 480px) {
+  .featured-trend-card { height: 280px; }
+  .featured-title { font-size: 18px; }
+  .featured-stats { font-size: 12px; gap: 12px; }
+  .upload-card { flex: 0 0 180px; }
+  .shorts-card { flex: 0 0 120px; }
+}
