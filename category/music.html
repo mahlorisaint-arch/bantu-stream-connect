@@ -19,63 +19,144 @@
 <!-- Shared Components CSS -->
 <link rel="stylesheet" href="../css/shared-components.css">
 
-<!-- Modals CSS (FIX #1: This was missing - contains notifications panel, search modal, etc.) -->
-<link rel="stylesheet" href="../css/content-detail/modals.css">
-
 <!-- Music Page CSS -->
 <link rel="stylesheet" href="../css/music/music.css">
 </head>
 <body>
 
-<!-- SIDEBAR OVERLAY & MENU -->
+<!-- ===== HEADER ===== -->
+<header class="header" id="site-header">
+  <div class="logo" onclick="window.location.href='../index.html'">
+    <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="logo-icon">
+      <img src="../assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+    </div>
+    <div class="logo-text">BSC</div>
+  </div>
+  <div class="header-actions">
+    <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+      <i class="fas fa-search"></i>
+      <span class="search-shortcut">⌘K</span>
+    </button>
+    <button id="notifications-btn" class="icon-btn" title="Notifications">
+      <i class="fas fa-bell"></i>
+      <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+    </button>
+    <div class="profile-switcher">
+      <button id="current-profile-btn" class="profile-btn">
+        <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
+        <span class="profile-name" id="current-profile-name">Guest</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="profile-dropdown" id="profile-dropdown">
+        <div class="profile-dropdown-header"><h4>Switch Profile</h4></div>
+        <div class="profile-list" id="profile-list"></div>
+        <div class="profile-dropdown-footer">
+          <button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button>
+        </div>
+      </div>
+    </div>
+    <div class="rsa-badge" title="Proudly South African">
+      <i class="fas fa-map-marker-alt"></i>
+      <span>RSA</span>
+    </div>
+  </div>
+</header>
+
+<!-- ===== SIDEBAR OVERLAY & MENU ===== -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
   <div class="sidebar-header">
     <div class="sidebar-logo" onclick="window.location.href='../index.html'">
-      <div class="logo-icon">
-        <img src="../assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-      </div>
+      <div class="logo-icon"><img src="../assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
       <span class="sidebar-logo-text">BSC</span>
     </div>
-    <button class="sidebar-close" id="sidebar-close">
-      <i class="fas fa-times"></i>
-    </button>
+    <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
   </div>
+
   <div class="sidebar-profile" id="sidebar-profile">
-    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
-      <i class="fas fa-user"></i>
-    </div>
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
     <div class="sidebar-profile-info">
       <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
       <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
     </div>
     <i class="fas fa-chevron-right"></i>
   </div>
+
   <nav class="sidebar-nav">
-    <a href="../index.html" class="sidebar-nav-item">
-      <i class="fas fa-home"></i><span>Home</span>
-    </a>
-    <a href="../explore-screen.html" class="sidebar-nav-item">
-      <i class="fas fa-compass"></i><span>Explore</span>
-    </a>
-    <a href="../category/music.html" class="sidebar-nav-item active" data-category="music">
-      <i class="fas fa-music"></i><span>Music</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
-      <i class="fas fa-history"></i><span>Watch History</span>
-    </a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-      <i class="fas fa-bell"></i><span>Notifications</span>
-      <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-    </a>
-    <a href="../creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-      <i class="fas fa-plus-circle"></i><span>Create</span>
-    </a>
-    <a href="../manage-profiles.html" class="sidebar-nav-item">
-      <i class="fas fa-user-cog"></i><span>Manage Profiles</span>
-    </a>
+
+    <!-- MAIN -->
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header">
+        <span>MAIN</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="../explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+        <a href="../trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+        <a href="../discover-creator.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="sidebar-section" data-section-id="categories">
+      <div class="sidebar-section-header">
+        <span>CATEGORIES</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="movies.html" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+        <a href="music.html" class="sidebar-nav-item active" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+      </div>
+    </div>
+
+    <!-- YOU -->
+    <div class="sidebar-section" data-section-id="you">
+      <div class="sidebar-section-header">
+        <span>YOU</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../my-space.html" class="sidebar-nav-item" data-page="my-space"><i class="fas fa-layer-group"></i><span>My Space</span></a>
+        <a href="../watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+      </div>
+    </div>
+
+    <!-- CREATOR (hidden until checkAndShowCreatorSection confirms published content) -->
+    <div class="sidebar-section creator-only" data-section-id="creator" style="display: none;">
+      <div class="sidebar-section-header">
+        <span>CREATOR</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+        <a href="../creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="sidebar-section" data-section-id="account">
+      <div class="sidebar-section-header">
+        <span>ACCOUNT</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+        <a href="../manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+      </div>
+    </div>
+
   </nav>
+
   <div class="sidebar-footer">
+    <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+      <label class="toggle-switch"><input type="checkbox" id="creatorModeSwitch"><span class="toggle-slider"></span></label>
+      <span class="toggle-label">Creator Mode</span>
+    </div>
     <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
       <span><i class="fas fa-palette"></i> Theme</span>
       <i class="fas fa-chevron-right"></i>
@@ -90,9 +171,7 @@
         </div>
       </div>
       <div class="scale-control-row">
-        <button class="scale-btn" id="sidebar-scale-reset">
-          <i class="fas fa-undo"></i> Reset to Default
-        </button>
+        <button class="scale-btn" id="sidebar-scale-reset"><i class="fas fa-undo"></i> Reset to Default</button>
       </div>
     </div>
   </div>
@@ -124,7 +203,7 @@
   <div class="glow-cycle glow-3"></div>
 </div>
 
-<!-- ===== SONIC DNA QUIZ MODAL (FIX #2) ===== -->
+<!-- ===== SONIC DNA QUIZ MODAL ===== -->
 <div id="sonic-quiz-modal" class="sonic-quiz-modal">
   <div class="sonic-quiz-overlay"></div>
   <div class="sonic-quiz-content">
@@ -180,7 +259,7 @@
   </div>
 </div>
 
-<!-- ===== PORTAL REVEAL MODAL (FIX #4) ===== -->
+<!-- ===== PORTAL REVEAL MODAL ===== -->
 <div id="portal-reveal-modal" class="portal-reveal-modal">
   <div class="portal-reveal-overlay"></div>
   <div class="portal-reveal-content">
@@ -206,7 +285,7 @@
   </div>
 </div>
 
-<!-- ===== WORLD UNLOCK CELEBRATION MODAL (SECTION 5) ===== -->
+<!-- ===== WORLD UNLOCK CELEBRATION MODAL ===== -->
 <div id="unlock-celebration" class="unlock-celebration-modal">
   <div class="unlock-celebration-overlay"></div>
   <div class="unlock-celebration-content">
@@ -222,59 +301,10 @@
 <!-- ===== MAIN APP ===== -->
 <div id="app" style="display: none;">
 
-  <!-- HEADER -->
-  <header class="header">
-    <div class="logo" onclick="window.location.href='../index.html'">
-      <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
-        <i class="fas fa-bars"></i>
-      </button>
-      <div class="logo-icon">
-        <img src="../assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-      </div>
-      <div class="logo-text">BSC</div>
-    </div>
-    <div class="header-actions">
-      <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-        <i class="fas fa-microphone"></i>
-      </button>
-      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
-        <i class="fas fa-search"></i>
-      </button>
-      <button id="notifications-btn" class="icon-btn" title="Notifications">
-        <i class="fas fa-bell"></i>
-        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-      </button>
-      <div class="profile-switcher">
-        <button id="current-profile-btn" class="profile-btn" title="Profile">
-          <div class="profile-placeholder" id="userProfilePlaceholder">
-            <i class="fas fa-user"></i>
-          </div>
-          <span class="profile-name" id="current-profile-name">Guest</span>
-          <i class="fas fa-chevron-down"></i>
-        </button>
-        <div class="profile-dropdown" id="profile-dropdown">
-          <div class="profile-dropdown-header">
-            <h4>Switch Profile</h4>
-          </div>
-          <div class="profile-list" id="profile-list"></div>
-          <div class="profile-dropdown-footer">
-            <button class="text-btn" id="manage-profiles-btn">
-              <i class="fas fa-user-cog"></i> Manage Profiles
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="rsa-badge" title="Proudly South African">
-        <i class="fas fa-map-marker-alt"></i>
-        <span>RSA</span>
-      </div>
-    </div>
-  </header>
-
   <!-- ===== MUSIC DISCOVERY MAIN ===== -->
   <main class="music-main">
 
-    <!-- ===== SONIC DNA BAR (FIX #2: Now tappable) ===== -->
+    <!-- ===== SONIC DNA BAR ===== -->
     <section class="sonic-dna-section" id="sonic-dna-section">
       <div class="sonic-dna-header">
         <div class="sonic-dna-title-row">
@@ -286,7 +316,6 @@
             <p class="sonic-dna-subtitle" id="sonic-dna-subtitle">Your living taste profile</p>
           </div>
         </div>
-        <!-- FIX #6: Streak uses warm-gold (premium moment) -->
         <button class="sonic-dna-streak" id="sonic-dna-streak" title="Your listening streak">
           <i class="fas fa-fire"></i>
           <span id="streak-count">0</span>
@@ -296,7 +325,6 @@
       <div class="sonic-dna-bars" id="sonic-dna-bars">
         <!-- Dynamically populated -->
       </div>
-      <!-- FIX #2: CTA button for quiz -->
       <button class="sonic-dna-cta" id="sonic-dna-cta">
         <i class="fas fa-arrow-right"></i>
         <span id="sonic-dna-cta-text">Take the 30-second quiz</span>
@@ -316,7 +344,7 @@
       </div>
     </section>
 
-    <!-- ===== TODAY'S PORTAL (FIX #4: Click now works) ===== -->
+    <!-- ===== TODAY'S PORTAL ===== -->
     <section class="portal-section" id="portal-section">
       <div class="section-header">
         <h3 class="section-title">
@@ -346,14 +374,13 @@
       </div>
     </section>
 
-    <!-- ===== WORLDS TO EXPLORE (FIX #3: In-page tabs, no separate page) ===== -->
+    <!-- ===== WORLDS TO EXPLORE ===== -->
     <section class="worlds-section" id="worlds-section">
       <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-globe"></i>
           <span id="worlds-section-title">Worlds to explore</span>
         </h3>
-        <!-- Back button appears when exploring a world -->
         <button class="worlds-back-btn" id="worlds-back-btn" style="display:none;">
           <i class="fas fa-arrow-left"></i>
           <span>Back to worlds</span>
@@ -396,7 +423,7 @@
           </div>
         </div>
 
-        <!-- This week's find (blurred mystery) - FIX #3: Now wired up -->
+        <!-- This week's find (blurred mystery) -->
         <div class="world-detail-subsection">
           <h4 class="world-detail-subsection-title">This week's find</h4>
           <div class="world-weekly-find" id="world-weekly-find">
@@ -447,7 +474,7 @@
 
   </main>
 
-  <!-- FOOTER -->
+  <!-- ===== FOOTER ===== -->
   <footer class="footer">
     <p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p>
     <div class="footer-links">
@@ -457,27 +484,9 @@
     </div>
   </footer>
 
-  <!-- BOTTOM NAVIGATION -->
-  <div class="navigation-button-container">
-    <div class="navigation-button">
-      <div class="nav-icon" id="nav-home-btn" title="Home">
-        <i class="fas fa-home"></i>
-      </div>
-      <div class="nav-icon" id="nav-history-btn" title="Watch History">
-        <i class="fas fa-history"></i>
-      </div>
-      <div class="nav-icon" id="nav-create-btn" title="Create Content">
-        <i class="fas fa-plus-circle"></i>
-      </div>
-      <div class="nav-icon" id="nav-menu-btn" title="Menu">
-        <i class="fas fa-bars"></i>
-      </div>
-    </div>
-  </div>
-
 </div>
 
-<!-- Notifications Panel (uses modals.css) -->
+<!-- Notifications Panel -->
 <div id="notifications-panel" class="notifications-panel">
   <div class="notifications-header">
     <h2>Notifications <span id="notifications-header-count"></span></h2>
@@ -490,10 +499,11 @@
   <div class="notifications-list" id="notifications-list"></div>
   <div class="notifications-footer">
     <button id="mark-all-read" class="text-btn">Mark all as read</button>
+    <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
   </div>
 </div>
 
-<!-- Search Modal (uses modals.css) -->
+<!-- Search Modal -->
 <div id="search-modal">
   <div class="search-modal-overlay"></div>
   <div class="search-modal-content">
