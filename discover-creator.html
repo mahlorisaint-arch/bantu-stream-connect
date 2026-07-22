@@ -85,6 +85,18 @@ body {
     padding: 48px;
 }
 
+.hero-creator-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--warm-gold);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+    margin-bottom: 16px;
+    background: var(--card-bg);
+    display: block;
+}
+
 .hero-badge {
     display: inline-block;
     background: rgba(255, 215, 0, 0.9);
@@ -844,6 +856,7 @@ body {
         <video class="hero-video" id="heroVideo" autoplay muted loop></video>
         <div class="hero-overlay"></div>
         <div class="hero-content" id="heroContent">
+            <img class="hero-creator-avatar" id="heroCreatorAvatar" src="" alt="">
             <div class="hero-badge">
                 <i class="fas fa-crown"></i> Featured Creator
             </div>
@@ -1062,7 +1075,16 @@ async function loadHeroWithRealContent() {
         const seed = getRotationSeed();
         const heroIndex = seed % eligibleCreators.length;
         const hero = eligibleCreators[heroIndex];
-        
+
+        // Override the materialized view's possibly stale avatar with the live one.
+        const freshAvatars = await fetchFreshAvatars([hero.user_id]);
+        const heroAvatarUrl = freshAvatars.get(hero.user_id) || hero.avatar_url;
+        const heroName = hero.full_name || hero.username || 'Creator';
+        const heroAvatarEl = document.getElementById('heroCreatorAvatar');
+        heroAvatarEl.alt = escapeHtml(heroName);
+        heroAvatarEl.onerror = function () { this.onerror = null; this.src = goldAvatarFallback(heroName); };
+        heroAvatarEl.src = heroAvatarUrl || goldAvatarFallback(heroName);
+
         document.getElementById('heroTitle').innerHTML = `${escapeHtml(hero.full_name || hero.username)} — ${escapeHtml(hero.primary_craft || 'Creator')}`;
         document.getElementById('heroDescription').innerHTML = hero.bio || 'Creative professional making an impact in South Africa\'s creative industry';
         document.getElementById('heroStats').innerHTML = `
@@ -1105,6 +1127,26 @@ function initSupabase() {
     });
 }
 
+// mv_discover_feed is a materialized view — its avatar_url is a stale snapshot
+// (can be months old) and often points at a since-replaced file. Always pull
+// the live avatar straight from user_profiles instead of trusting the snapshot.
+async function fetchFreshAvatars(userIds) {
+    const ids = [...new Set((userIds || []).filter(Boolean))];
+    if (!ids.length || !supabaseClient) return new Map();
+    try {
+        const { data, error } = await supabaseClient.from('user_profiles').select('id, avatar_url').in('id', ids);
+        if (error) throw error;
+        return new Map((data || []).map(p => [p.id, p.avatar_url]));
+    } catch (e) {
+        console.warn('Could not fetch fresh avatars (non-fatal, falls back to mv_discover_feed snapshot):', e);
+        return new Map();
+    }
+}
+
+function goldAvatarFallback(name) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Creator')}&background=F59E0B&color=0A0E12&bold=true`;
+}
+
 // Which of the current user's connections are already in this creator list
 async function fetchConnectedIds(userId) {
     if (!userId) return new Set();
@@ -1130,11 +1172,16 @@ async function loadFeaturedCreators() {
         allCreatorsData = creators || [];
         const featured = selectFeaturedCreators(allCreatorsData);
         document.getElementById('resultCount').innerText = `${featured.length} featured creators (rotating every 2 days)`;
-        
+
         if (!featured.length) {
             grid.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No creators match filters. Try resetting.</p></div>';
             return;
         }
+
+        // Override each card's possibly stale mv_discover_feed avatar with the live one.
+        const freshAvatars = await fetchFreshAvatars(featured.map(c => c.user_id));
+        featured.forEach(c => { if (freshAvatars.has(c.user_id)) c.avatar_url = freshAvatars.get(c.user_id); });
+
         grid.innerHTML = featured.map(creator => renderCreatorCard(creator)).join('');
         attachCardEvents();
     } catch (error) {
@@ -1157,13 +1204,13 @@ function renderCreatorCard(creator) {
     return `
         <div class="creator-card" data-creator-id="${creator.user_id}">
             <div class="card-media">
-                <img class="card-thumbnail" src="${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}">
+                <img class="card-thumbnail" src="${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}" onerror="this.onerror=null;this.src='https://picsum.photos/400/200?random=${creator.user_id}';">
                 <div class="pulse-badge"><i class="fas fa-chart-line"></i> ${pulseScore}</div>
                 <div class="trend-badge">${trendIcon} ${escapeHtml(creator.trend_label || 'Active')}</div>
             </div>
             <div class="card-info">
                 <div class="creator-header">
-                    <img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(creator.full_name || creator.username)}">
+                    <img class="creator-avatar" src="${creator.avatar_url || goldAvatarFallback(creator.full_name || creator.username)}" onerror="this.onerror=null;this.src='${goldAvatarFallback(creator.full_name || creator.username)}';">
                     <div class="creator-details">
                         <div class="creator-name">${escapeHtml(creator.full_name || creator.username)}${creator.is_verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</div>
                         <div class="creator-craft"><i class="fas fa-tag"></i> ${escapeHtml(creator.primary_craft || 'Creator')} ${locationText ? `<span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locationText)}</span>` : ''}</div>
@@ -1240,6 +1287,8 @@ async function showCityPanel(cityName) {
         const { data, error, count } = await supabaseClient.from('mv_discover_feed').select('*', { count: 'exact' }).eq('city', cityName).order('final_pulse_score', { ascending: false }).limit(8);
         if (error) throw error;
         if (data && data.length) {
+            const freshAvatars = await fetchFreshAvatars(data.map(c => c.user_id));
+            data.forEach(c => { if (freshAvatars.has(c.user_id)) c.avatar_url = freshAvatars.get(c.user_id); });
             const activeCount = count ?? data.length;
             panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div style="margin-bottom:20px; background:rgba(255,215,0,0.1); padding:12px; border-radius:16px;"><i class="fas fa-chart-line"></i> City Pulse: ${activeCount} active creator${activeCount === 1 ? '' : 's'}</div><div class="creator-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${data.map(c => renderCompactCreatorCard(c)).join('')}</div>`;
         } else {
@@ -1249,7 +1298,8 @@ async function showCityPanel(cityName) {
 }
 
 function renderCompactCreatorCard(creator) {
-    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || 'https://ui-avatars.com/api/?name='+encodeURIComponent(creator.full_name)}" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
+    const fallback = goldAvatarFallback(creator.full_name || creator.username);
+    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || fallback}" onerror="this.onerror=null;this.src='${fallback}';" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
 }
 
 // ==========================================
