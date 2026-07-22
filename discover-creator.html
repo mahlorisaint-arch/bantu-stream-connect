@@ -75,6 +75,18 @@ body {
     z-index: 1;
 }
 
+/* The creator's own channel_banner_url, when set, takes priority over the
+   generic content-preview video/thumbnail — same idea as creator-channel.html's
+   #channel-banner: it's the creator's own chosen visual identity. */
+.hero-banner-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+    display: none;
+}
+
 .hero-content {
     position: relative;
     z-index: 2;
@@ -496,10 +508,25 @@ body {
     gap: 6px;
 }
 
+/* Matches creator-channel.css's .creator-status-badge treatment */
 .verified-badge {
-    color: var(--warm-gold);
+    color: #1DA1F2;
     font-size: 14px;
 }
+.verified-badge.is-founder {
+    color: #F7C948;
+    text-shadow: 0 0 6px rgba(247, 201, 72, 0.5);
+}
+.hero-creator-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.hero-creator-badges.founder { color: #F7C948; text-shadow: 0 0 6px rgba(247, 201, 72, 0.5); }
+.hero-creator-badges.verified { color: #1DA1F2; }
 
 .creator-craft {
     font-size: var(--font-xs);
@@ -854,12 +881,14 @@ body {
     <!-- Hero Section with Real Creator Content -->
     <div class="hero-section" id="heroSection">
         <video class="hero-video" id="heroVideo" autoplay muted loop></video>
+        <div class="hero-banner-layer" id="heroBannerLayer"></div>
         <div class="hero-overlay"></div>
         <div class="hero-content" id="heroContent">
             <img class="hero-creator-avatar" id="heroCreatorAvatar" src="" alt="">
             <div class="hero-badge">
                 <i class="fas fa-crown"></i> Featured Creator
             </div>
+            <div class="hero-creator-badges" id="heroCreatorBadges" style="display:none;"></div>
             <div class="hero-title" id="heroTitle">Loading...</div>
             <div class="hero-description" id="heroDescription"></div>
             <div class="hero-stats" id="heroStats"></div>
@@ -1076,14 +1105,47 @@ async function loadHeroWithRealContent() {
         const heroIndex = seed % eligibleCreators.length;
         const hero = eligibleCreators[heroIndex];
 
-        // Override the materialized view's possibly stale avatar with the live one.
-        const freshAvatars = await fetchFreshAvatars([hero.user_id]);
-        const heroAvatarUrl = freshAvatars.get(hero.user_id) || hero.avatar_url;
+        // Override the materialized view's possibly stale avatar/banner/verification with live data.
+        const [freshProfiles, creatorStatus] = await Promise.all([
+            fetchFreshProfiles([hero.user_id]),
+            fetchCreatorStatus([hero.user_id])
+        ]);
+        const heroProfile = freshProfiles.get(hero.user_id);
+        const heroAvatarUrl = heroProfile?.avatarUrl || hero.avatar_url;
+        const heroBannerUrl = heroProfile?.bannerUrl;
+        const heroStatus = creatorStatus.get(hero.user_id) || { isFounder: false, isVerified: false };
         const heroName = hero.full_name || hero.username || 'Creator';
+
         const heroAvatarEl = document.getElementById('heroCreatorAvatar');
         heroAvatarEl.alt = escapeHtml(heroName);
         heroAvatarEl.onerror = function () { this.onerror = null; this.src = goldAvatarFallback(heroName); };
         heroAvatarEl.src = heroAvatarUrl || goldAvatarFallback(heroName);
+
+        const heroBadgesEl = document.getElementById('heroCreatorBadges');
+        if (heroStatus.isFounder) {
+            heroBadgesEl.innerHTML = '<i class="fas fa-circle-check"></i> Verified founder';
+            heroBadgesEl.className = 'hero-creator-badges founder';
+            heroBadgesEl.style.display = 'inline-flex';
+        } else if (heroStatus.isVerified) {
+            heroBadgesEl.innerHTML = '<i class="fas fa-circle-check"></i> Verified creator';
+            heroBadgesEl.className = 'hero-creator-badges verified';
+            heroBadgesEl.style.display = 'inline-flex';
+        } else {
+            heroBadgesEl.style.display = 'none';
+        }
+
+        // Creator's own channel banner takes priority over the generic content preview —
+        // it's their chosen visual identity, same idea as creator-channel.html's #channel-banner.
+        const bannerLayerEl = document.getElementById('heroBannerLayer');
+        const heroVideoEl = document.getElementById('heroVideo');
+        if (heroBannerUrl) {
+            bannerLayerEl.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%), url('${heroBannerUrl.replace(/'/g, "\\'")}')`;
+            bannerLayerEl.style.display = 'block';
+            heroVideoEl.style.display = 'none';
+        } else {
+            bannerLayerEl.style.display = 'none';
+            heroVideoEl.style.display = '';
+        }
 
         document.getElementById('heroTitle').innerHTML = `${escapeHtml(hero.full_name || hero.username)} — ${escapeHtml(hero.primary_craft || 'Creator')}`;
         document.getElementById('heroDescription').innerHTML = hero.bio || 'Creative professional making an impact in South Africa\'s creative industry';
@@ -1093,18 +1155,20 @@ async function loadHeroWithRealContent() {
             <div class="hero-stat"><div class="hero-stat-value">${Math.round(hero.final_pulse_score || 0)}</div><div class="hero-stat-label">Pulse Score</div></div>
         `;
         
-        // Use real content thumbnail/video from latest_content_preview.
+        // Use real content thumbnail/video from latest_content_preview — only when there's
+        // no channel banner taking priority (banner is hidden behind the video otherwise).
         // No stock/unrelated video fallback — if there's no real clip, we just show a static image.
-        let heroMediaUrl = hero.latest_content_preview?.thumbnail_url || hero.latest_content_preview?.video_url || 'https://picsum.photos/1920/1080?random=hero';
-        const videoElement = document.getElementById('heroVideo');
-        if (heroMediaUrl && (heroMediaUrl.endsWith('.mp4') || heroMediaUrl.includes('video'))) {
-            videoElement.src = heroMediaUrl;
-            videoElement.poster = hero.latest_content_preview?.thumbnail_url || '';
-        } else {
-            videoElement.removeAttribute('src');
-            videoElement.poster = heroMediaUrl;
+        if (!heroBannerUrl) {
+            let heroMediaUrl = hero.latest_content_preview?.thumbnail_url || hero.latest_content_preview?.video_url || 'https://picsum.photos/1920/1080?random=hero';
+            if (heroMediaUrl && (heroMediaUrl.endsWith('.mp4') || heroMediaUrl.includes('video'))) {
+                heroVideoEl.src = heroMediaUrl;
+                heroVideoEl.poster = hero.latest_content_preview?.thumbnail_url || '';
+            } else {
+                heroVideoEl.removeAttribute('src');
+                heroVideoEl.poster = heroMediaUrl;
+            }
+            heroVideoEl.load();
         }
-        videoElement.load();
     } catch (error) {
         console.error('Hero error:', error);
     }
@@ -1128,23 +1192,48 @@ function initSupabase() {
 }
 
 // mv_discover_feed is a materialized view — its avatar_url is a stale snapshot
-// (can be months old) and often points at a since-replaced file. Always pull
-// the live avatar straight from user_profiles instead of trusting the snapshot.
-async function fetchFreshAvatars(userIds) {
+// (can be months old) and often points at a since-replaced file, and it doesn't
+// carry channel_banner_url at all. Always pull both straight from user_profiles.
+async function fetchFreshProfiles(userIds) {
     const ids = [...new Set((userIds || []).filter(Boolean))];
     if (!ids.length || !supabaseClient) return new Map();
     try {
-        const { data, error } = await supabaseClient.from('user_profiles').select('id, avatar_url').in('id', ids);
+        const { data, error } = await supabaseClient.from('user_profiles').select('id, avatar_url, channel_banner_url').in('id', ids);
         if (error) throw error;
-        return new Map((data || []).map(p => [p.id, p.avatar_url]));
+        return new Map((data || []).map(p => [p.id, { avatarUrl: p.avatar_url, bannerUrl: p.channel_banner_url }]));
     } catch (e) {
-        console.warn('Could not fetch fresh avatars (non-fatal, falls back to mv_discover_feed snapshot):', e);
+        console.warn('Could not fetch fresh profile data (non-fatal, falls back to mv_discover_feed snapshot):', e);
+        return new Map();
+    }
+}
+
+// Verified/founder status lives on the `creators` table, same source
+// creator-channel.html uses (checks is_verified OR is_creator_verified) —
+// mv_discover_feed's own is_verified field is a separate, unreliable snapshot.
+async function fetchCreatorStatus(userIds) {
+    const ids = [...new Set((userIds || []).filter(Boolean))];
+    if (!ids.length || !supabaseClient) return new Map();
+    try {
+        const { data, error } = await supabaseClient.from('creators').select('id, is_founder, is_verified, is_creator_verified').in('id', ids);
+        if (error) throw error;
+        return new Map((data || []).map(c => [c.id, {
+            isFounder: !!c.is_founder,
+            isVerified: !!(c.is_verified || c.is_creator_verified)
+        }]));
+    } catch (e) {
+        console.warn('Could not fetch creator verification status (non-fatal):', e);
         return new Map();
     }
 }
 
 function goldAvatarFallback(name) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Creator')}&background=F59E0B&color=0A0E12&bold=true`;
+}
+
+function renderBadgeHtml(isFounder, isVerified) {
+    if (isFounder) return '<i class="fas fa-circle-check verified-badge is-founder" title="Verified founder"></i>';
+    if (isVerified) return '<i class="fas fa-circle-check verified-badge" title="Verified creator"></i>';
+    return '';
 }
 
 // Which of the current user's connections are already in this creator list
@@ -1178,9 +1267,16 @@ async function loadFeaturedCreators() {
             return;
         }
 
-        // Override each card's possibly stale mv_discover_feed avatar with the live one.
-        const freshAvatars = await fetchFreshAvatars(featured.map(c => c.user_id));
-        featured.forEach(c => { if (freshAvatars.has(c.user_id)) c.avatar_url = freshAvatars.get(c.user_id); });
+        // Override each card's possibly stale mv_discover_feed avatar/verification with live data.
+        const ids = featured.map(c => c.user_id);
+        const [freshProfiles, creatorStatus] = await Promise.all([fetchFreshProfiles(ids), fetchCreatorStatus(ids)]);
+        featured.forEach(c => {
+            const p = freshProfiles.get(c.user_id);
+            if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
+            const status = creatorStatus.get(c.user_id);
+            c.is_founder = status?.isFounder || false;
+            c.is_verified = status?.isVerified || false;
+        });
 
         grid.innerHTML = featured.map(creator => renderCreatorCard(creator)).join('');
         attachCardEvents();
@@ -1212,7 +1308,7 @@ function renderCreatorCard(creator) {
                 <div class="creator-header">
                     <img class="creator-avatar" src="${creator.avatar_url || goldAvatarFallback(creator.full_name || creator.username)}" onerror="this.onerror=null;this.src='${goldAvatarFallback(creator.full_name || creator.username)}';">
                     <div class="creator-details">
-                        <div class="creator-name">${escapeHtml(creator.full_name || creator.username)}${creator.is_verified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}</div>
+                        <div class="creator-name">${escapeHtml(creator.full_name || creator.username)}${renderBadgeHtml(creator.is_founder, creator.is_verified)}</div>
                         <div class="creator-craft"><i class="fas fa-tag"></i> ${escapeHtml(creator.primary_craft || 'Creator')} ${locationText ? `<span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locationText)}</span>` : ''}</div>
                     </div>
                 </div>
@@ -1287,8 +1383,15 @@ async function showCityPanel(cityName) {
         const { data, error, count } = await supabaseClient.from('mv_discover_feed').select('*', { count: 'exact' }).eq('city', cityName).order('final_pulse_score', { ascending: false }).limit(8);
         if (error) throw error;
         if (data && data.length) {
-            const freshAvatars = await fetchFreshAvatars(data.map(c => c.user_id));
-            data.forEach(c => { if (freshAvatars.has(c.user_id)) c.avatar_url = freshAvatars.get(c.user_id); });
+            const ids = data.map(c => c.user_id);
+            const [freshProfiles, creatorStatus] = await Promise.all([fetchFreshProfiles(ids), fetchCreatorStatus(ids)]);
+            data.forEach(c => {
+                const p = freshProfiles.get(c.user_id);
+                if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
+                const status = creatorStatus.get(c.user_id);
+                c.is_founder = status?.isFounder || false;
+                c.is_verified = status?.isVerified || false;
+            });
             const activeCount = count ?? data.length;
             panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div style="margin-bottom:20px; background:rgba(255,215,0,0.1); padding:12px; border-radius:16px;"><i class="fas fa-chart-line"></i> City Pulse: ${activeCount} active creator${activeCount === 1 ? '' : 's'}</div><div class="creator-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${data.map(c => renderCompactCreatorCard(c)).join('')}</div>`;
         } else {
@@ -1299,7 +1402,7 @@ async function showCityPanel(cityName) {
 
 function renderCompactCreatorCard(creator) {
     const fallback = goldAvatarFallback(creator.full_name || creator.username);
-    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || fallback}" onerror="this.onerror=null;this.src='${fallback}';" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
+    return `<div class="creator-card" style="cursor:pointer;" onclick="window.location.href='/creator/${creator.user_id}'"><div class="card-info"><div class="creator-header"><img class="creator-avatar" src="${creator.avatar_url || fallback}" onerror="this.onerror=null;this.src='${fallback}';" style="width:40px;height:40px;"><div><div class="creator-name">${escapeHtml(creator.full_name)}${renderBadgeHtml(creator.is_founder, creator.is_verified)}</div><div class="creator-craft">${escapeHtml(creator.primary_craft)}</div></div></div></div></div>`;
 }
 
 // ==========================================
