@@ -110,13 +110,20 @@ body {
 }
 
 .hero-badge {
-    display: inline-block;
-    background: rgba(255, 215, 0, 0.9);
-    color: var(--deep-black);
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: var(--font-xs);
+    /* Translucent-gold-bg + gold-border + gold-text, matching movies.css's
+       .badge-premium/.badge-leaving "premium" treatment — not a solid fill. */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: var(--warm-gold);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     margin-bottom: 16px;
     width: fit-content;
 }
@@ -239,8 +246,10 @@ body {
 }
 
 .section-title {
-    font-size: var(--font-xl);
-    font-weight: 700;
+    /* Matches creator-channel.css/.row-title and movies.css/.row-title:
+       18px / 600 weight, not var(--font-xl)/700. */
+    font-size: 18px;
+    font-weight: 600;
     font-family: 'Orbitron', sans-serif;
 }
 
@@ -587,10 +596,13 @@ body {
     margin-top: 12px;
 }
 
+/* Outlined, not filled — matches creator-channel.css's explicit
+   "CONNECT / CONNECTED / YOU BUTTON — OUTLINED, NOT FILLED" treatment,
+   including its 6px radius (not a pill) for action buttons. */
 .connect-btn, .collab-btn {
     flex: 1;
     padding: 10px;
-    border-radius: 12px;
+    border-radius: 6px;
     font-weight: 600;
     font-size: var(--font-xs);
     cursor: pointer;
@@ -603,36 +615,38 @@ body {
 }
 
 .connect-btn {
-    background: var(--warm-gold);
-    border: none;
-    color: var(--deep-black);
+    background: transparent;
+    border: 1.5px solid var(--warm-gold);
+    color: var(--warm-gold);
 }
 
 .connect-btn:hover {
-    background: #ffed4a;
-    transform: scale(1.02);
+    background: rgba(245, 158, 11, 0.08);
+    transform: translateY(-1px);
 }
 
 .connect-btn.connected {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid var(--success-color);
+    background: transparent;
+    border: 1.5px solid var(--success-color);
     color: var(--success-color);
 }
 
 .connect-btn.connected:hover {
-    background: rgba(239,68,68,0.15);
+    background: rgba(239,68,68,0.08);
     border-color: var(--error-color);
     color: var(--error-color);
 }
 
 .collab-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid var(--card-border);
-    color: white;
+    background: transparent;
+    border: 1.5px solid var(--card-border);
+    color: var(--soft-white);
 }
 
 .collab-btn:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    border-color: var(--slate-grey);
+    transform: translateY(-1px);
 }
 
 /* Loading & Empty States */
@@ -1273,6 +1287,7 @@ async function loadFeaturedCreators() {
         featured.forEach(c => {
             const p = freshProfiles.get(c.user_id);
             if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
+            if (p?.bannerUrl) c.channel_banner_url = p.bannerUrl;
             const status = creatorStatus.get(c.user_id);
             c.is_founder = status?.isFounder || false;
             c.is_verified = status?.isVerified || false;
@@ -1300,7 +1315,7 @@ function renderCreatorCard(creator) {
     return `
         <div class="creator-card" data-creator-id="${creator.user_id}">
             <div class="card-media">
-                <img class="card-thumbnail" src="${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}" onerror="this.onerror=null;this.src='https://picsum.photos/400/200?random=${creator.user_id}';">
+                <img class="card-thumbnail" src="${creator.channel_banner_url || creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}" onerror="this.onerror=null;this.src='${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}';">
                 <div class="pulse-badge"><i class="fas fa-chart-line"></i> ${pulseScore}</div>
                 <div class="trend-badge">${trendIcon} ${escapeHtml(creator.trend_label || 'Active')}</div>
             </div>
