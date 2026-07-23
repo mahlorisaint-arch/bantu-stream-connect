@@ -1,5 +1,13 @@
 // js/watch-history.js — Watch History Page Logic
 // Bantu Stream Connect — Shows all watched content with filters
+//
+// Wrapped in an IIFE (matching movies.js/music.js/creator-channel.js) so
+// this file's own SUPABASE_URL const doesn't collide with the identically-
+// named const the inline <script> in watch-history.html declares in global
+// scope - that collision was a duplicate `const` redeclaration, which is a
+// parse-time SyntaxError, so the whole file failed to load at all.
+(function() {
+'use strict';
 
 console.log('📜 Watch History initializing...');
 
@@ -419,3 +427,5 @@ function showToast(message, type = 'info') {
 // Export for global access
 window.loadWatchHistory = loadWatchHistory;
 window.applyFilters = applyFilters;
+
+})();
