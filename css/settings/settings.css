@@ -1,0 +1,147 @@
+/* ==========================================================================
+   BANTU STREAM CONNECT — SETTINGS SCREEN
+   Page-specific styles only. Header/sidebar/footer/loading-screen/toast/
+   theme-selector all come from shared-components.css. Card pattern matches
+   css/watch-history/watch-history.css's/css/my-space/my-space.css's real
+   .empty-state/.stat-card glassmorphic card treatment.
+   ========================================================================== */
+
+.settings-main { max-width: 900px; margin: 0 auto; padding: 0 5% 120px; }
+
+/* ===== ANIMATED BACKGROUND (same pattern as movies.css/music.css/watch-history.css/my-space.css) ===== */
+.animated-bg {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
+  pointer-events: none;
+}
+.glow-cycle {
+  position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.1;
+  animation: float 8s infinite ease-in-out;
+}
+.glow-1 { width: 400px; height: 400px; background: var(--bantu-blue); top: 10%; left: 5%; }
+.glow-2 { width: 300px; height: 300px; background: var(--warm-gold); top: 60%; right: 10%; animation-delay: 2s; }
+.glow-3 { width: 350px; height: 350px; background: var(--success-color); bottom: 10%; left: 20%; animation-delay: 4s; }
+@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
+
+/* ===== PAGE HEADER ===== */
+.page-header { text-align: center; padding: 40px 0 16px; }
+.page-header h1 {
+  font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 700;
+  background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin: 0 0 8px; display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.page-header h1 i { color: var(--warm-gold); -webkit-text-fill-color: var(--warm-gold); }
+.page-subtitle { color: var(--slate-grey); font-size: 14px; }
+
+/* ===== SETTINGS CARD ===== */
+.settings-card {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+  padding: 24px; margin-bottom: 20px; backdrop-filter: blur(10px);
+}
+.settings-card-title {
+  font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 600;
+  color: var(--soft-white); display: flex; align-items: center; gap: 10px;
+  margin: 0 0 20px; letter-spacing: 0.5px;
+}
+.settings-card-title i { color: var(--warm-gold); }
+.settings-card-title.danger { color: var(--error-color); }
+.settings-card-title.danger i { color: var(--error-color); }
+.settings-card.danger-card { border-color: rgba(239, 68, 68, 0.35); }
+
+.settings-subsection-title {
+  font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 600;
+  color: var(--soft-white); margin: 0 0 16px;
+}
+
+.settings-divider { height: 1px; background: var(--card-border); margin: 24px 0; }
+
+/* ===== FIELDS ===== */
+.settings-field { margin-bottom: 16px; }
+.settings-field label {
+  display: block; font-size: 12px; color: var(--slate-grey); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.settings-input {
+  width: 100%; padding: 10px 14px; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border); border-radius: 8px; color: var(--soft-white);
+  font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s ease;
+}
+.settings-input:focus { border-color: var(--bantu-blue); }
+.settings-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.settings-save-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue)); color: white;
+  border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: transform 0.2s ease; font-family: 'Inter', sans-serif; text-decoration: none;
+}
+.settings-save-btn:hover { transform: translateY(-2px); }
+
+/* ===== TOGGLE ROWS ===== */
+.settings-toggle-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 0; border-bottom: 1px solid var(--card-border);
+}
+.settings-toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+.settings-toggle-info h3 { font-size: 14px; color: var(--soft-white); margin: 0 0 3px; font-weight: 600; }
+.settings-toggle-info p { font-size: 12px; color: var(--slate-grey); margin: 0; }
+
+.toggle-switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--slate-grey); transition: 0.3s; border-radius: 24px;
+}
+.toggle-slider:before {
+  position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background-color: white; transition: 0.3s; border-radius: 50%;
+}
+input:checked + .toggle-slider { background-color: var(--warm-gold); }
+input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+/* ===== CONTENT PREFERENCE CHIPS ===== */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.pref-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border);
+  color: var(--slate-grey); cursor: pointer; transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+.pref-chip:hover { border-color: var(--warm-gold); color: var(--soft-white); }
+.pref-chip.is-selected {
+  background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.5); color: var(--warm-gold);
+}
+
+/* ===== APPEARANCE ===== */
+.settings-appearance-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.settings-appearance-row p { font-size: 13px; color: var(--slate-grey); margin: 0; }
+
+/* ===== DANGER ZONE ===== */
+.settings-danger-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 8px 0;
+}
+.settings-danger-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+  background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px; color: var(--error-color); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s ease; font-family: 'Inter', sans-serif; text-decoration: none; white-space: nowrap;
+}
+.settings-danger-btn:hover { background: rgba(239, 68, 68, 0.25); }
+
+/* ===== RESPONSIVE — breakpoints match Creator Channel/Movies/Music/Watch History/My Space (768/480) ===== */
+@media (max-width: 768px) {
+  .page-header { padding: 24px 0 12px; }
+  .page-header h1 { font-size: 24px; }
+  .settings-card { padding: 18px; }
+  .settings-danger-row, .settings-appearance-row { flex-direction: column; align-items: flex-start; }
+  .settings-danger-btn { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .settings-main { padding: 0 4% 100px; }
+  .page-header h1 { font-size: 20px; }
+  .settings-card-title { font-size: 16px; }
+}
