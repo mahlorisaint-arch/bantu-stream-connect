@@ -171,9 +171,10 @@
 }
 .playlist-card {
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
-  overflow: hidden; transition: transform 0.2s ease;
+  overflow: hidden; transition: transform 0.2s ease; cursor: pointer;
 }
-.playlist-card:hover { transform: translateY(-4px); }
+.playlist-card:hover, .playlist-card:focus-visible { transform: translateY(-4px); }
+.playlist-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; }
 .playlist-card-thumb {
   position: relative; aspect-ratio: 16 / 9; background: var(--bg-media, #1a2033);
   background-size: cover; background-position: center;

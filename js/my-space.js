@@ -242,51 +242,86 @@ function attachCardActivation(grid, resumable) {
 // (playlist_id -> playlists.id, content_id -> Content.id). The similarly-
 // named `playlist_contents` table was checked and rejected — its playlist_id
 // FKs to creator_playlists, not playlists.
-// Display-only in this pass: no create/edit flow, no click-through into a
-// playlist's contents yet (there's no playlist-detail screen to link to).
+// Thumbnail is always the first item's Content.thumbnail_url (by lowest
+// `position`), computed live on every load rather than read from a stored
+// custom_thumbnail_url column — the column is unused/empty on every real row,
+// so deriving it from actual playlist contents means it "self-updates" as
+// items are added/reordered instead of going stale.
+// Clicking a card opens content-detail.html's playlist mode, same as
+// creator-channel.js's collection cards (?playlist_id=...&type=...), but
+// with type=user_playlist so content-detail.js knows to read from
+// playlist_items/playlists instead of playlist_contents/creator_playlists
+// (see loadUserPlaylistMode() in js/content-detail.js).
 // ==========================================================================
 async function loadPlaylists() {
     try {
         const { data: playlists, error } = await window.supabaseClient
             .from('playlists')
-            .select('id, name, description, custom_thumbnail_url, total_duration, play_count, updated_at')
+            .select('id, name, description, total_duration, play_count, updated_at')
             .eq('user_id', currentUser.id)
             .order('updated_at', { ascending: false });
 
         if (error) throw error;
 
-        const itemCounts = await fetchPlaylistItemCounts((playlists || []).map(p => p.id));
-        renderPlaylists(playlists || [], itemCounts);
+        const playlistIds = (playlists || []).map(p => p.id);
+        const { counts, firstContentId } = await fetchPlaylistItemsMeta(playlistIds);
+        const thumbnails = await fetchContentThumbnails([...new Set(firstContentId.values())]);
+
+        renderPlaylists(playlists || [], counts, firstContentId, thumbnails);
     } catch (error) {
         console.error('❌ Failed to load Playlists:', error);
         showToast('Failed to load Playlists', 'error');
     }
 }
 
-// Batch-fetch item counts per playlist from the real junction table and
-// count client-side (same batch-fetch-and-merge pattern used platform-wide
-// for content_engagement_stats).
-async function fetchPlaylistItemCounts(playlistIds) {
+// Batch-fetch item counts + first-item content_id per playlist from the real
+// junction table (same batch-fetch-and-merge pattern used platform-wide for
+// content_engagement_stats). Rows are pre-ordered by position ascending, so
+// the first row seen per playlist_id is genuinely the first item.
+async function fetchPlaylistItemsMeta(playlistIds) {
     const counts = new Map();
-    if (!playlistIds.length) return counts;
+    const firstContentId = new Map();
+    if (!playlistIds.length) return { counts, firstContentId };
 
     const { data, error } = await window.supabaseClient
         .from('playlist_items')
-        .select('playlist_id')
-        .in('playlist_id', playlistIds);
+        .select('playlist_id, content_id, position')
+        .in('playlist_id', playlistIds)
+        .order('position', { ascending: true });
 
     if (error) {
-        console.warn('Could not load playlist item counts (non-fatal):', error);
-        return counts;
+        console.warn('Could not load playlist items (non-fatal):', error);
+        return { counts, firstContentId };
     }
 
     (data || []).forEach(row => {
         counts.set(row.playlist_id, (counts.get(row.playlist_id) || 0) + 1);
+        if (!firstContentId.has(row.playlist_id)) {
+            firstContentId.set(row.playlist_id, row.content_id);
+        }
     });
-    return counts;
+    return { counts, firstContentId };
 }
 
-function renderPlaylists(playlists, itemCounts) {
+async function fetchContentThumbnails(contentIds) {
+    const thumbs = new Map();
+    if (!contentIds.length) return thumbs;
+
+    const { data, error } = await window.supabaseClient
+        .from('Content')
+        .select('id, thumbnail_url')
+        .in('id', contentIds);
+
+    if (error) {
+        console.warn('Could not load playlist thumbnails (non-fatal):', error);
+        return thumbs;
+    }
+
+    (data || []).forEach(row => thumbs.set(row.id, row.thumbnail_url));
+    return thumbs;
+}
+
+function renderPlaylists(playlists, counts, firstContentId, thumbnails) {
     const grid = document.getElementById('playlistsGrid');
     const empty = document.getElementById('playlistsEmpty');
     document.getElementById('playlistsCount').textContent = `${playlists.length} item${playlists.length !== 1 ? 's' : ''}`;
@@ -301,11 +336,13 @@ function renderPlaylists(playlists, itemCounts) {
     empty.style.display = 'none';
 
     grid.innerHTML = playlists.map(playlist => {
-        const count = itemCounts.get(playlist.id) || 0;
-        const thumb = playlist.custom_thumbnail_url ? fixMediaUrl(playlist.custom_thumbnail_url) : '';
+        const count = counts.get(playlist.id) || 0;
+        const firstId = firstContentId.get(playlist.id);
+        const rawThumb = firstId ? thumbnails.get(firstId) : null;
+        const thumb = rawThumb ? fixMediaUrl(rawThumb) : '';
 
         return `
-            <div class="playlist-card">
+            <div class="playlist-card" data-playlist-id="${playlist.id}" tabindex="0" role="link" aria-label="${escapeHtml(playlist.name || 'Untitled Playlist')}">
                 <div class="playlist-card-thumb" ${thumb ? `style="background-image: url(${thumb});"` : ''}>
                     ${!thumb ? `<div class="playlist-icon-placeholder"><i class="fas fa-list"></i></div>` : ''}
                     <span class="playlist-card-count"><i class="fas fa-layer-group"></i> ${count} item${count !== 1 ? 's' : ''}</span>
@@ -317,6 +354,20 @@ function renderPlaylists(playlists, itemCounts) {
             </div>
         `;
     }).join('');
+
+    grid.querySelectorAll('.playlist-card').forEach(card => {
+        const activate = () => {
+            const playlistId = card.dataset.playlistId;
+            window.location.href = `content-detail.html?playlist_id=${playlistId}&type=user_playlist`;
+        };
+        card.addEventListener('click', activate);
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                activate();
+            }
+        });
+    });
 }
 
 // ==========================================================================

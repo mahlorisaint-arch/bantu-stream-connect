@@ -881,9 +881,18 @@ window.WatchSessionManager = WatchSessionManager;
 // PLAYLIST LOADING FUNCTIONS
 // ============================================
 async function loadPlaylistMode(playlistId, playlistType) {
+    // My Space's Saved > Playlists cards link here with type=user_playlist.
+    // Those IDs come from the user's own `playlists` table, whose items live
+    // in `playlist_items` — a completely different table pair from the
+    // creator system this function otherwise assumes (`creator_playlists` /
+    // `playlist_contents`). Branch out before any of that creator-only
+    // querying runs, or a user playlist ID would just come back empty.
+    if (playlistType === 'user_playlist') {
+        return await loadUserPlaylistMode(playlistId);
+    }
     try {
         if (typeof showLoading === 'function') showLoading('Loading playlist...');
-        
+
         const { data: playlistItems, error } = await window.supabaseClient
             .from('playlist_contents')
             .select(`
@@ -1070,8 +1079,107 @@ async function loadPlaylistModeTwoQueryFallback(playlistId, playlistType) {
             await loadContentIntoPlayer(window.currentPlaylistItems[0]);
         }
     }
-    
+
     if (typeof hideLoading === 'function') hideLoading();
+}
+
+// ============================================
+// USER PLAYLIST MODE (playlists / playlist_items — the user's own saved
+// collections, as opposed to a creator's creator_playlists / playlist_contents)
+// ============================================
+async function loadUserPlaylistMode(playlistId) {
+    try {
+        if (typeof showLoading === 'function') showLoading('Loading playlist...');
+
+        const { data: itemRows, error: itemsError } = await window.supabaseClient
+            .from('playlist_items')
+            .select('playlist_id, content_id, position')
+            .eq('playlist_id', playlistId)
+            .order('position', { ascending: true });
+
+        if (itemsError) throw itemsError;
+        if (!itemRows || itemRows.length === 0) {
+            throw new Error('Playlist has no content');
+        }
+
+        const contentIds = itemRows.map(row => row.content_id).filter(Boolean);
+        const { data: contentRows, error: contentError } = await window.supabaseClient
+            .from('Content')
+            .select('*, streaming_provider, provider_video_id')
+            .in('id', contentIds)
+            .eq('status', 'published');
+
+        if (contentError) throw contentError;
+
+        const contentMap = new Map();
+        contentRows?.forEach(content => contentMap.set(String(content.id), content));
+
+        const normalizedItems = itemRows
+            .map(row => {
+                const content = contentMap.get(String(row.content_id));
+                if (!content) return null;
+                return {
+                    ...content,
+                    streaming_provider: content.streaming_provider || null,
+                    provider_video_id: content.provider_video_id || null,
+                    playlist_relation: { sort_index: row.position }
+                };
+            })
+            .filter(Boolean);
+
+        if (normalizedItems.length === 0) {
+            throw new Error('No valid published content items in playlist');
+        }
+
+        window.currentPlaylistItems = normalizedItems;
+
+        window.dispatchEvent(new CustomEvent('playlistLoaded', {
+            detail: { playlistId: playlistId, itemCount: window.currentPlaylistItems.length }
+        }));
+
+        window.currentPlaylistIndex = 0;
+        if (typeof resetPlaylistCompletionLock === 'function') resetPlaylistCompletionLock();
+
+        const { data: playlistMeta, error: metaError } = await window.supabaseClient
+            .from('playlists')
+            .select(`
+                *,
+                user_profiles!user_id (
+                    username,
+                    full_name,
+                    avatar_url
+                )
+            `)
+            .eq('id', playlistId)
+            .maybeSingle();
+
+        if (!metaError && playlistMeta) {
+            window.currentPlaylist = {
+                ...playlistMeta,
+                creator_name: playlistMeta.user_profiles?.full_name || playlistMeta.user_profiles?.username || 'You',
+                creator_username: playlistMeta.user_profiles?.username || '',
+                creator_avatar: playlistMeta.user_profiles?.avatar_url || null
+            };
+        }
+
+        if (typeof renderAlbumTracks === 'function') {
+            renderAlbumTracks(window.currentPlaylistItems);
+        }
+
+        if (window.currentPlaylistItems.length > 0) {
+            await setCurrentContent(window.currentPlaylistItems[0], 0);
+            if (typeof loadContentIntoPlayer === 'function') {
+                await loadContentIntoPlayer(window.currentPlaylistItems[0]);
+            }
+        }
+
+        if (typeof hideLoading === 'function') hideLoading();
+
+    } catch (error) {
+        console.error('❌ User playlist mode failed:', error);
+        if (typeof hideLoading === 'function') hideLoading();
+        if (typeof showToast === 'function') showToast('Could not load playlist', 'error');
+    }
 }
 
 // ============================================
