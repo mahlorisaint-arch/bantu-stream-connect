@@ -4,6 +4,12 @@ const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Expose for shared-components.js. Unconditional overwrite: shared-components.js's
+// own top-level fallback can stub window.supabaseClient with the raw window.supabase
+// SDK namespace (no .from()/.auth) if it runs before a real client exists here.
+window.supabaseClient = supabase;
+window.supabaseAuth = supabase;
+
 // ===== GLOBAL STATE =====
 window.currentUser = null;
 window.notifications = [];
@@ -391,272 +397,6 @@ return playlistsData.map(playlist => ({
 playlist_contents: itemsByPlaylist[playlist.id] || [],
 item_count: itemsByPlaylist[playlist.id]?.length || 0
 }));
-}
-
-// ===== THEME SYSTEM =====
-function initThemeSystem() {
-console.log('🎨 Initializing theme system...');
-const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
-const themeSelector = document.getElementById('theme-selector');
-
-if (!sidebarThemeToggle || !themeSelector) {
-console.warn('Theme elements not found');
-return;
-}
-
-const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-applyTheme(savedTheme);
-
-const newToggle = sidebarThemeToggle.cloneNode(true);
-sidebarThemeToggle.parentNode.replaceChild(newToggle, sidebarThemeToggle);
-
-newToggle.addEventListener('click', function(e) {
-e.preventDefault();
-e.stopPropagation();
-themeSelector.classList.toggle('active');
-});
-
-const themeOptions = document.querySelectorAll('.theme-option');
-themeOptions.forEach(option => {
-const newOption = option.cloneNode(true);
-option.parentNode.replaceChild(newOption, option);
-
-newOption.addEventListener('click', function(e) {
-e.preventDefault();
-e.stopPropagation();
-const theme = this.dataset.theme;
-applyTheme(theme);
-themeSelector.classList.remove('active');
-});
-});
-
-document.addEventListener('click', function(e) {
-if (themeSelector.classList.contains('active') &&
-!themeSelector.contains(e.target) &&
-e.target !== newToggle &&
-!newToggle.contains(e.target)) {
-themeSelector.classList.remove('active');
-}
-});
-}
-
-function applyTheme(theme) {
-if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
-theme = 'dark';
-}
-
-document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-document.body.classList.add(`theme-${theme}`);
-document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-document.documentElement.classList.add(`theme-${theme}`);
-
-const root = document.documentElement;
-
-if (theme === 'light') {
-root.style.setProperty('--deep-black', '#F8FAFC');
-root.style.setProperty('--deep-navy', '#E2E8F0');
-root.style.setProperty('--soft-white', '#0F172A');
-root.style.setProperty('--slate-grey', '#475569');
-root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.85)');
-root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
-root.style.setProperty('--bantu-blue', '#1D4ED8');
-root.style.setProperty('--warm-gold', '#F59E0B');
-} else if (theme === 'high-contrast') {
-root.style.setProperty('--deep-black', '#000000');
-root.style.setProperty('--deep-navy', '#050505');
-root.style.setProperty('--soft-white', '#FFFFFF');
-root.style.setProperty('--slate-grey', '#CCCCCC');
-root.style.setProperty('--bantu-blue', '#FFD700');
-root.style.setProperty('--warm-gold', '#00FFFF');
-root.style.setProperty('--card-bg', '#0A0A0A');
-root.style.setProperty('--card-border', '#FFFFFF');
-} else {
-root.style.setProperty('--deep-black', '#0A0E12');
-root.style.setProperty('--deep-navy', '#0F172A');
-root.style.setProperty('--soft-white', '#F8FAFC');
-root.style.setProperty('--slate-grey', '#94A3B8');
-root.style.setProperty('--bantu-blue', '#1D4ED8');
-root.style.setProperty('--warm-gold', '#F59E0B');
-root.style.setProperty('--card-bg', 'rgba(15, 23, 42, 0.6)');
-root.style.setProperty('--card-border', 'rgba(148, 163, 184, 0.2)');
-}
-
-localStorage.setItem('bantu_theme', theme);
-
-document.querySelectorAll('.theme-option').forEach(option => {
-if (option.dataset.theme === theme) {
-option.classList.add('active');
-} else {
-option.classList.remove('active');
-}
-});
-}
-
-// ===== UI SCALE CONTROLS =====
-class UIScaleController {
-constructor() {
-this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-this.minScale = 0.8;
-this.maxScale = 1.4;
-this.step = 0.1;
-}
-
-init() {
-this.applyScale();
-this.setupEventListeners();
-}
-
-setupEventListeners() {
-document.addEventListener('scaleChanged', (e) => {
-this.updateScaleDisplay(e.detail.scale);
-});
-}
-
-applyScale() {
-document.documentElement.style.setProperty('--ui-scale', this.scale);
-localStorage.setItem('bantu_ui_scale', this.scale.toString());
-document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale: this.scale } }));
-}
-
-increase() {
-if (this.scale < this.maxScale) {
-this.scale = Math.min(this.maxScale, this.scale + this.step);
-this.applyScale();
-}
-}
-
-decrease() {
-if (this.scale > this.minScale) {
-this.scale = Math.max(this.minScale, this.scale - this.step);
-this.applyScale();
-}
-}
-
-reset() {
-this.scale = 1;
-this.applyScale();
-}
-
-getScale() { return this.scale; }
-
-updateScaleDisplay(scale) {
-const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
-displays.forEach(el => {
-if (el) el.textContent = Math.round(scale * 100) + '%';
-});
-}
-}
-
-function setupScaleControls() {
-const decreaseBtn = document.getElementById('sidebar-scale-decrease');
-const increaseBtn = document.getElementById('sidebar-scale-increase');
-const resetBtn = document.getElementById('sidebar-scale-reset');
-
-if (decreaseBtn) {
-decreaseBtn.addEventListener('click', () => {
-if (window.uiScaleController) window.uiScaleController.decrease();
-});
-}
-
-if (increaseBtn) {
-increaseBtn.addEventListener('click', () => {
-if (window.uiScaleController) window.uiScaleController.increase();
-});
-}
-
-if (resetBtn) {
-resetBtn.addEventListener('click', () => {
-if (window.uiScaleController) window.uiScaleController.reset();
-});
-}
-}
-
-// ===== SIDEBAR SETUP =====
-function setupSidebar() {
-const menuToggle = document.getElementById('menu-toggle');
-const sidebarClose = document.getElementById('sidebar-close');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-const sidebarMenu = document.getElementById('sidebar-menu');
-
-if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
-
-const openSidebar = () => {
-sidebarMenu.classList.add('active');
-sidebarOverlay.classList.add('active');
-document.body.style.overflow = 'hidden';
-};
-
-const closeSidebar = () => {
-sidebarMenu.classList.remove('active');
-sidebarOverlay.classList.remove('active');
-document.body.style.overflow = '';
-};
-
-menuToggle.addEventListener('click', (e) => {
-e.preventDefault();
-e.stopPropagation();
-openSidebar();
-});
-
-sidebarClose.addEventListener('click', closeSidebar);
-sidebarOverlay.addEventListener('click', closeSidebar);
-
-document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) closeSidebar();
-});
-}
-
-// ===== NAVIGATION BUTTONS =====
-function setupNavigationButtons() {
-const navHome = document.getElementById('nav-home-btn');
-if (navHome) {
-navHome.addEventListener('click', (e) => {
-e.preventDefault();
-window.location.href = 'index.html';
-});
-}
-
-const navHistory = document.getElementById('nav-history-btn');
-if (navHistory) {
-navHistory.addEventListener('click', async (e) => {
-e.preventDefault();
-if (!window.currentUser) {
-showToast('Please sign in to view watch history', 'warning');
-window.location.href = `login.html?redirect=watch-history.html`;
-return;
-}
-window.location.href = 'watch-history.html';
-});
-}
-
-const navCreate = document.getElementById('nav-create-btn');
-if (navCreate) {
-navCreate.addEventListener('click', async (e) => {
-e.preventDefault();
-const { data } = await supabase.auth.getSession();
-if (data?.session) {
-window.location.href = 'creator-upload.html';
-} else {
-showToast('Please sign in to create content', 'warning');
-window.location.href = `login.html?redirect=creator-upload.html`;
-}
-});
-}
-
-const navMenu = document.getElementById('nav-menu-btn');
-if (navMenu) {
-navMenu.addEventListener('click', (e) => {
-e.preventDefault();
-e.stopPropagation();
-const sidebarMenu = document.getElementById('sidebar-menu');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-if (sidebarMenu && sidebarOverlay) {
-sidebarMenu.classList.add('active');
-sidebarOverlay.classList.add('active');
-document.body.style.overflow = 'hidden';
-}
-});
-}
 }
 
 // ===== BUILD UPLOAD CARD HTML WITH HOVER PLAY ICON =====
@@ -2818,6 +2558,19 @@ setVal('edit-social', profile.social_links ? JSON.stringify(profile.social_links
 modal.classList.add('active');
 });
 }
+
+// ANALYTICS ITEM — header no longer has its own analytics-btn (canonical
+// header doesn't have one), so this is now the only entry point
+const analyticsItem = document.getElementById('more-menu-analytics');
+if (analyticsItem) {
+analyticsItem.addEventListener('click', () => {
+moreMenu.classList.remove('active');
+const modal = document.getElementById('analytics-modal');
+if (!modal) { console.error('analytics-modal not found in DOM'); return; }
+modal.classList.add('active');
+loadChannelAnalytics();
+});
+}
 }
 
 // ===== FIX 4: CREATE POLL — the missing write side of the poll system =====
@@ -2882,109 +2635,10 @@ showToast('Could not create the poll — check that pulse_post_polls exists', 'e
 }
 }
 
-// ===== SEARCH =====
-async function searchContent(query, category = '', sortBy = 'newest') {
-try {
-let qb = supabase.from('Content')
-.select(`
-*,
-user_profiles!user_id(*),
-live_views,
-favorites_count,
-content_engagement_stats (
-total_views,
-total_likes,
-total_comments
-)
-`)
-.ilike('title', `%${query}%`)
-.eq('status', 'published');
-
-if (category) qb = qb.eq('genre', category);
-
-const { data, error } = await qb.limit(50);
-if (error) throw error;
-
-const enriched = (data || []).map(item => ({
-...item,
-views_count: item.content_engagement_stats?.total_views || item.live_views || 0,
-likes_count: item.content_engagement_stats?.total_likes || 0,
-comments_count: item.content_engagement_stats?.total_comments || item.comments_count || 0,
-favorites_count: item.favorites_count || 0
-}));
-
-if (sortBy === 'popular') enriched.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-else if (sortBy === 'trending') enriched.sort((a, b) => ((b.views_count || 0) + ((b.likes_count || 0) * 2)) - ((a.views_count || 0) + ((a.likes_count || 0) * 2)));
-else enriched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-return enriched;
-
-} catch (error) {
-console.error('Search error:', error);
-return [];
-}
-}
-
-function renderSearchResults(results) {
-const grid = document.getElementById('search-results-grid');
-if (!grid) return;
-
-if (!results || results.length === 0) {
-grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No results found. Try different keywords.</div>';
-return;
-}
-
-grid.innerHTML = results.map(item => {
-const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy"><div class="thumbnail-overlay"></div><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div></div><div class="card-content"><h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3><div class="card-meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span></div></div></div>`;
-}).join('');
-
-grid.querySelectorAll('.content-card').forEach(card => {
-card.addEventListener('click', () => {
-const id = card.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
-}
-
 // ===== SETUP EVENT LISTENERS =====
 function setupEventListeners() {
-// Profile button
-const profileBtn = document.getElementById('profile-btn');
-if (profileBtn) {
-profileBtn.addEventListener('click', async () => {
-const { data } = await supabase.auth.getSession();
-data?.session ? window.location.href = 'profile.html' : window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-});
-}
-
-const currentProfileBtn = document.getElementById('current-profile-btn');
-if (currentProfileBtn) {
-currentProfileBtn.addEventListener('click', async (e) => {
-e.stopPropagation();
-const dropdown = document.getElementById('profile-dropdown');
-if (dropdown) dropdown.classList.toggle('active');
-});
-}
-
-const manageProfilesBtn = document.getElementById('manage-profiles-btn');
-if (manageProfilesBtn) {
-manageProfilesBtn.addEventListener('click', () => {
-window.location.href = 'manage-profiles.html';
-});
-}
-
-document.addEventListener('click', (e) => {
-const profileBtnEl = document.getElementById('profile-btn');
-const profileDropdown = document.getElementById('profile-dropdown');
-const currentProfileBtnEl = document.getElementById('current-profile-btn');
-
-if (profileDropdown && profileBtnEl && currentProfileBtnEl) {
-if (!profileBtnEl.contains(e.target) && !profileDropdown.contains(e.target) && !currentProfileBtnEl.contains(e.target)) {
-profileDropdown.classList.remove('active');
-}
-}
-});
+// Profile button, profile dropdown, and manage-profiles-btn are now owned by
+// shared-components.js (same ids, same behavior, platform-wide).
 
 // Banner edit
 const bannerEditBtn = document.getElementById('banner-edit-btn');
@@ -3103,131 +2757,13 @@ showToast('Please select or enter an image first', 'warning');
 const bannerCancel = document.getElementById('banner-cancel');
 if (bannerCancel) bannerCancel.addEventListener('click', hideBannerUploadModal);
 
-// Search
-const searchBtn = document.getElementById('search-btn');
-const closeSearchBtn = document.getElementById('close-search-btn');
-const searchModal = document.getElementById('search-modal');
+// Search modal and Notifications panel (open/close/mark-all-read) are now
+// owned by shared-components.js's setupSearchModal()/setupNotifications()
+// (same ids, real data, platform-wide) - creator-channel.css's own copies
+// targeted the old bespoke search-modal markup, which no longer exists.
 
-if (searchBtn) {
-searchBtn.addEventListener('click', () => {
-if (searchModal) searchModal.classList.add('active');
-setTimeout(() => document.getElementById('search-input')?.focus(), 300);
-});
-}
-
-if (closeSearchBtn) {
-closeSearchBtn.addEventListener('click', () => {
-if (searchModal) searchModal.classList.remove('active');
-const searchInputEl = document.getElementById('search-input');
-const searchResultsGrid = document.getElementById('search-results-grid');
-if (searchInputEl) searchInputEl.value = '';
-if (searchResultsGrid) searchResultsGrid.innerHTML = '';
-});
-}
-
-if (searchModal) {
-searchModal.addEventListener('click', e => {
-if (e.target === searchModal) {
-searchModal.classList.remove('active');
-const searchInputEl = document.getElementById('search-input');
-const searchResultsGrid = document.getElementById('search-results-grid');
-if (searchInputEl) searchInputEl.value = '';
-if (searchResultsGrid) searchResultsGrid.innerHTML = '';
-}
-});
-}
-
-const searchInputElement = document.getElementById('search-input');
-if (searchInputElement) {
-let timeout;
-searchInputElement.addEventListener('input', e => {
-clearTimeout(timeout);
-timeout = setTimeout(async () => {
-const query = e.target.value.trim();
-if (query.length < 2) {
-const resultsGrid = document.getElementById('search-results-grid');
-if (resultsGrid) resultsGrid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">Start typing to search...</div>';
-return;
-}
-
-const resultsGrid = document.getElementById('search-results-grid');
-if (resultsGrid) {
-resultsGrid.innerHTML = `<div style="text-align:center;padding:40px;"><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin:0 auto 15px;"></div><div style="color:var(--slate-grey);">Searching...</div></div>`;
-}
-
-const categoryFilter = document.getElementById('category-filter')?.value;
-const sortFilter = document.getElementById('sort-filter')?.value;
-const results = await searchContent(query, categoryFilter, sortFilter);
-renderSearchResults(results);
-}, 300);
-});
-}
-
-const categoryFilter = document.getElementById('category-filter');
-const sortFilter = document.getElementById('sort-filter');
-
-if (categoryFilter) {
-categoryFilter.addEventListener('change', () => {
-if (searchInputElement && searchInputElement.value.trim().length >= 2) {
-searchInputElement.dispatchEvent(new Event('input'));
-}
-});
-}
-
-if (sortFilter) {
-sortFilter.addEventListener('change', () => {
-if (searchInputElement && searchInputElement.value.trim().length >= 2) {
-searchInputElement.dispatchEvent(new Event('input'));
-}
-});
-}
-
-// Notifications
-const notificationsBtn = document.getElementById('notifications-btn');
-if (notificationsBtn) {
-notificationsBtn.addEventListener('click', () => {
-const panel = document.getElementById('notifications-panel');
-if (panel) panel.classList.add('active');
-renderNotifications();
-});
-}
-
-const closeNotifications = document.getElementById('close-notifications');
-if (closeNotifications) {
-closeNotifications.addEventListener('click', () => {
-const panel = document.getElementById('notifications-panel');
-if (panel) panel.classList.remove('active');
-});
-}
-
-const notificationsPanel = document.getElementById('notifications-panel');
-if (notificationsPanel) {
-notificationsPanel.addEventListener('click', e => {
-if (e.target === notificationsPanel) notificationsPanel.classList.remove('active');
-});
-}
-
-const markAllRead = document.getElementById('mark-all-read');
-if (markAllRead) {
-markAllRead.addEventListener('click', async () => {
-if (!window.currentUser) return;
-try {
-const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
-if (error) throw error;
-
-window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
-renderNotifications();
-updateNotificationBadge(0);
-showToast('All notifications marked as read', 'success');
-
-} catch (error) {
-console.error('Error marking all as read:', error);
-showToast('Failed to mark notifications as read', 'error');
-}
-});
-}
-
-// Analytics
+// Analytics - reachable via the more-menu now (header no longer has its own
+// analytics-btn, matching the canonical header)
 initAnalyticsModal();
 
 // Connectors
@@ -3251,110 +2787,12 @@ if (e.target === connectorsModal) connectorsModal.classList.remove('active');
 });
 }
 
-// Voice search
-const voiceSearchBtn = document.getElementById('voice-search-btn');
-if (voiceSearchBtn) {
-voiceSearchBtn.addEventListener('click', () => {
-showToast('Voice search coming soon!', 'info');
-});
-}
-
-// Sidebar nav items
-const sidebarCreate = document.getElementById('sidebar-create');
-if (sidebarCreate) {
-sidebarCreate.addEventListener('click', async (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-
-const { data } = await supabase.auth.getSession();
-if (!data?.session) {
-showToast('Please sign in to upload content', 'warning');
-window.location.href = `login.html?redirect=creator-upload.html`;
-} else {
-window.location.href = 'creator-upload.html';
-}
-});
-}
-
-const sidebarDashboard = document.getElementById('sidebar-dashboard');
-if (sidebarDashboard) {
-sidebarDashboard.addEventListener('click', async (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-
-const { data } = await supabase.auth.getSession();
-if (!data?.session) {
-showToast('Please sign in to access dashboard', 'warning');
-window.location.href = `login.html?redirect=creator-dashboard.html`;
-} else {
-window.location.href = 'creator-dashboard.html';
-}
-});
-}
-
-const sidebarWatchHistory = document.getElementById('sidebar-watch-history');
-if (sidebarWatchHistory) {
-sidebarWatchHistory.addEventListener('click', (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-
-if (!window.currentUser) {
-showToast('Please sign in to view watch history', 'warning');
-window.location.href = `login.html?redirect=watch-history.html`;
-return;
-}
-window.location.href = 'watch-history.html';
-});
-}
-
-const sidebarAnalytics = document.getElementById('sidebar-analytics');
-if (sidebarAnalytics) {
-sidebarAnalytics.addEventListener('click', (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-
-const modal = document.getElementById('analytics-modal');
-if (modal) modal.classList.add('active');
-loadChannelAnalytics();
-});
-}
-
-const sidebarNotifications = document.getElementById('sidebar-notifications');
-if (sidebarNotifications) {
-sidebarNotifications.addEventListener('click', (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-
-const panel = document.getElementById('notifications-panel');
-if (panel) panel.classList.add('active');
-renderNotifications();
-});
-}
-
-const sidebarBadges = document.getElementById('sidebar-badges');
-if (sidebarBadges) {
-sidebarBadges.addEventListener('click', (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-showToast('Badges coming soon!', 'info');
-});
-}
-
-const sidebarWatchParty = document.getElementById('sidebar-watch-party');
-if (sidebarWatchParty) {
-sidebarWatchParty.addEventListener('click', (e) => {
-e.preventDefault();
-const closeBtn = document.getElementById('sidebar-close');
-if (closeBtn) closeBtn.click();
-showToast('Watch Party coming soon!', 'info');
-});
-}
+// Sidebar Dashboard/Create/Watch History are now plain <a href> links in the
+// canonical sidebar (shared-components.js also gates the CREATOR section's
+// visibility via checkAndShowCreatorSection) - no click-time auth gate here
+// anymore, matching how every other migrated screen behaves. The old
+// Analytics/Notifications/Badges/Watch Party sidebar items don't exist in
+// the canonical sidebar at all.
 
 // FIX 4: Poll modal buttons
 document.getElementById('poll-create-submit-btn')?.addEventListener('click', submitCreatePoll);
@@ -3439,14 +2877,10 @@ if (app) app.style.display = 'none';
 
 window.loadingText = document.getElementById('loading-text');
 
-initThemeSystem();
-window.uiScaleController = new UIScaleController();
-window.uiScaleController.init();
-setupScaleControls();
+// Theme, UI scale, and sidebar open/close are now initialized by
+// shared-components.js's own DOMContentLoaded handler (initSharedComponents).
 
 fixMobileHorizontalScroll();
-setupSidebar();
-setupNavigationButtons();
 setupTabs();
 
 await checkAuth();

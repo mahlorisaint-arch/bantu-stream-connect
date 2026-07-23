@@ -69,8 +69,9 @@ COMPLETE MERGED FILE (Existing + New Design + All Fixes + Pulse Bridge + Brand G
   0 0 35px rgba(0, 200, 255, 0.75),
   0 0 70px rgba(0, 200, 255, 0.35);
 }
-/* Light Theme */
-body.theme-light {
+/* Light Theme - matches html.theme-light (shared-components.js sets the
+   theme class on <html>, not <body>) */
+html.theme-light {
 --deep-black: #F8FAFC;
 --deep-navy: #E2E8F0;
 --soft-white: #0F172A;
@@ -86,8 +87,8 @@ body.theme-light {
 --text-muted: #94A3B8;
 background: #F1F5F9;
 }
-/* High Contrast Theme */
-body.theme-high-contrast {
+/* High Contrast Theme - matches html.theme-high-contrast */
+html.theme-high-contrast {
 --deep-black: #000000;
 --deep-navy: #050505;
 --soft-white: #FFFFFF;
@@ -205,58 +206,8 @@ height: auto !important;
 overflow-x: hidden !important;
 }
 /* ============================================
-THEME SELECTOR
+THEME SELECTOR — now owned by shared-components.css
 ============================================ */
-.theme-selector {
-position: fixed;
-top: 80px;
-right: 20px;
-background: var(--card-bg);
-border: 1px solid var(--card-border);
-border-radius: 12px;
-padding: 8px;
-z-index: 1000;
-display: none;
-flex-direction: column;
-gap: 6px;
-backdrop-filter: blur(15px);
-box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-min-width: 160px;
-}
-.theme-selector.active {
-display: flex !important;
-animation: fadeIn 0.2s ease;
-}
-@keyframes fadeIn {
-from { opacity: 0; transform: translateY(-10px); }
-to { opacity: 1; transform: translateY(0); }
-}
-.theme-option {
-background: none;
-border: 1px solid transparent;
-color: var(--soft-white);
-padding: 10px 14px;
-border-radius: 8px;
-cursor: pointer;
-display: flex;
-align-items: center;
-gap: 10px;
-transition: all 0.2s;
-font-size: 14px;
-width: 100%;
-text-align: left;
-}
-.theme-option:hover {
-background: rgba(255,255,255,0.1);
-}
-.theme-option.active {
-background: rgba(29,78,216,0.2);
-border-color: var(--bantu-blue);
-color: var(--bantu-blue);
-}
-.theme-option i {
-width: 20px;
-}
 /* ============================================
 ANALYTICS STYLES
 ============================================ */
@@ -272,19 +223,8 @@ PLAYLIST BUILDER STYLES
 .pl-item.drag-over { border-color: var(--warm-gold); background: rgba(245,158,11,0.1); }
 .pl-lib-card:hover { transform: translateY(-2px); border-color: var(--warm-gold); transition: 0.2s; }
 /* ============================================
-LOADING SCREEN
+LOADING SCREEN — now owned by shared-components.css
 ============================================ */
-.loading-screen {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-background: var(--deep-black); display: flex; flex-direction: column;
-align-items: center; justify-content: center; z-index: 1000;
-}
-.spinner {
-width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1);
-border-radius: 50%; border-top-color: var(--warm-gold);
-animation: spin 1s linear infinite; margin-bottom: 20px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
 /* ============================================
 ANIMATED BACKGROUND - FIXED: Added pointer-events: none
 ============================================ */
@@ -301,229 +241,9 @@ animation: float 8s infinite ease-in-out;
 .glow-3 { width: 350px; height: 350px; background: #8B5CF6; bottom: 10%; left: 20%; animation-delay: 4s; }
 @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
 /* ============================================
-SIDEBAR MENU
+SIDEBAR MENU & HEADER — now owned by shared-components.css
+(sectioned sidebar, glass header, profile dropdown, rsa-badge, etc.)
 ============================================ */
-.sidebar-overlay {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
-z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease;
-}
-.sidebar-overlay.active { opacity: 1; visibility: visible; }
-.sidebar-menu {
-position: fixed; top: 0; left: -20rem; width: 18rem; height: 100vh;
-background: var(--card-bg); backdrop-filter: blur(20px);
-border-right: 1px solid var(--card-border); z-index: 1001;
-transition: left 0.3s ease; display: flex; flex-direction: column;
-overflow: hidden; padding: 1.25rem;
-}
-.sidebar-menu.active { left: 0; }
-.sidebar-header {
-display: flex; align-items: center; justify-content: space-between;
-padding-bottom: 1.25rem; border-bottom: 1px solid var(--card-border);
-margin-bottom: 1.25rem; flex-shrink: 0;
-}
-.sidebar-logo { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
-.sidebar-logo-text {
-font-family: 'Orbitron', sans-serif; font-size: 1.125rem; font-weight: 700;
-background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
--webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.sidebar-close {
-width: 2.25rem; height: 2.25rem; border-radius: 50%;
-background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
-color: var(--soft-white); cursor: pointer; transition: all 0.3s ease;
-}
-.sidebar-close:hover { background: var(--error-color); }
-.sidebar-profile {
-display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem;
-background: rgba(255, 255, 255, 0.05); border-radius: 0.75rem;
-margin-bottom: 1.25rem; cursor: pointer; transition: background 0.3s ease;
-flex-shrink: 0; min-width: 0;
-}
-.sidebar-profile:hover { background: rgba(255, 255, 255, 0.1); }
-.sidebar-profile-avatar {
-width: 2.75rem; height: 2.75rem; border-radius: 50%;
-background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-display: flex; align-items: center; justify-content: center;
-color: white; font-weight: 600; overflow: hidden; flex-shrink: 0;
-}
-.sidebar-profile-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.sidebar-profile-info { flex: 1; min-width: 0; overflow: hidden; }
-.sidebar-profile-name {
-font-size: 1rem; font-weight: 600; color: var(--soft-white);
-white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.sidebar-profile-email {
-font-size: 0.75rem; color: var(--slate-grey);
-white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.sidebar-nav {
-flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px;
-display: flex; flex-direction: column; gap: 0.5rem;
-}
-.sidebar-nav::-webkit-scrollbar { width: 6px; }
-.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-.sidebar-nav::-webkit-scrollbar-thumb { background: var(--warm-gold); border-radius: 3px; }
-.sidebar-nav-item {
-display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem;
-border-radius: 0.75rem; color: var(--soft-white); text-decoration: none;
-font-size: 1rem; transition: all 0.3s ease; cursor: pointer; white-space: nowrap;
-}
-.sidebar-nav-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(0.25rem); }
-.sidebar-nav-item.active { background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); }
-.sidebar-nav-item i { width: 1.25rem; text-align: center; font-size: 1.25rem; flex-shrink: 0; }
-.sidebar-nav-item .badge {
-margin-left: auto; background: var(--error-color); color: white;
-font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 0.625rem; flex-shrink: 0;
-}
-.sidebar-footer {
-flex-shrink: 0; margin-top: auto; padding-top: 1.25rem;
-border-top: 1px solid var(--card-border);
-padding-bottom: max(1rem, env(safe-area-inset-bottom));
-}
-.sidebar-theme-toggle {
-display: flex; align-items: center; justify-content: space-between;
-padding: 0.75rem; background: rgba(255, 255, 255, 0.05);
-border-radius: 0.75rem; cursor: pointer; transition: background 0.3s ease;
-margin-bottom: 0.75rem;
-}
-.sidebar-theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
-.sidebar-scale-control {
-padding: 0.75rem; background: rgba(255, 255, 255, 0.05);
-border-radius: 0.75rem; display: flex; flex-direction: column;
-gap: 0.5rem; min-width: 0;
-}
-.scale-control-row {
-display: flex; align-items: center; justify-content: space-between;
-margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;
-}
-.scale-control-row:last-child { margin-bottom: 0; }
-.scale-btn {
-width: 2rem; height: 2rem; border-radius: 50%;
-background: rgba(255, 255, 255, 0.1); border: none;
-color: var(--soft-white); cursor: pointer;
-display: flex; align-items: center; justify-content: center;
-transition: all 0.3s ease; flex-shrink: 0; font-size: 0.875rem; padding: 0; white-space: nowrap;
-}
-.scale-control-row:last-child .scale-btn {
-width: 100%; border-radius: 0.5rem; justify-content: center;
-gap: 0.5rem; font-size: 0.8rem; padding: 0.5rem; height: auto; min-height: 2.5rem;
-}
-.scale-value {
-font-size: 0.875rem; color: var(--soft-white); min-width: 3rem;
-text-align: center; font-weight: 600; white-space: nowrap;
-}
-/* ============================================
-HEADER
-============================================ */
-.header {
-background: rgba(10,14,18,0.9); backdrop-filter: blur(20px);
-padding: 0.75rem 1.5rem; position: sticky; top: 0; z-index: 100;
-border-bottom: 1px solid var(--card-border); display: flex;
-justify-content: space-between; align-items: center; min-height: 3.75rem;
-width: 100%; max-width: 100vw; overflow: visible;
-}
-body.theme-light .header { background: rgba(255, 255, 255, 0.9); }
-.logo { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; flex-shrink: 0; }
-.menu-toggle {
-width: 2.375rem; height: 2.375rem; border-radius: 50%;
-background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-color: var(--soft-white); display: flex; align-items: center;
-justify-content: center; cursor: pointer; transition: all 0.3s ease;
-font-size: 1.5rem; margin-right: 0.5rem; border: none;
-}
-.menu-toggle:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-0.125rem); }
-.logo-icon {
-width: 2.5rem; height: 2.5rem; border-radius: 0.625rem;
-display: flex; align-items: center; justify-content: center;
-background: transparent; border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.logo-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.625rem; }
-.logo-text {
-font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.125rem;
-background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
--webkit-background-clip: text; background-clip: text; color: transparent;
-white-space: nowrap;
-}
-.header-actions {
-display: flex; gap: 0.625rem; align-items: center; flex-wrap: wrap;
-justify-content: flex-end; flex-shrink: 0;
-}
-.icon-btn {
-width: 2.375rem; height: 2.375rem; border-radius: 50%;
-background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-color: var(--soft-white); display: flex; align-items: center;
-justify-content: center; cursor: pointer; transition: all 0.3s ease;
-position: relative; font-size: 1.25rem; flex-shrink: 0;
-}
-.icon-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-0.125rem); }
-.notification-badge {
-position: absolute; top: -0.3125rem; right: -0.3125rem;
-background: var(--error-color); color: white; font-size: 0.625rem;
-font-weight: bold; width: 1.125rem; height: 1.125rem; border-radius: 50%;
-display: flex; align-items: center; justify-content: center;
-border: 2px solid var(--deep-black);
-}
-.profile-switcher { position: relative; }
-.profile-btn {
-background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
-border-radius: 2.5rem; padding: 0.3125rem 1rem 0.3125rem 0.3125rem;
-display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
-transition: all 0.3s ease; height: 2.75rem; white-space: nowrap;
-}
-.profile-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--warm-gold); }
-.profile-placeholder {
-width: 2.25rem; height: 2.25rem; border-radius: 50%;
-background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-display: flex; align-items: center; justify-content: center;
-color: white; font-size: 0.875rem; overflow: hidden; flex-shrink: 0;
-}
-.profile-placeholder img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.profile-name {
-color: var(--soft-white); font-size: 0.875rem; font-weight: 500;
-white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block;
-}
-.profile-btn i { color: var(--slate-grey); font-size: 0.75rem; }
-.profile-dropdown {
-position: absolute; top: 3.75rem; right: 0; width: 15.625rem;
-background: var(--card-bg); backdrop-filter: blur(20px);
-border: 1px solid var(--card-border); border-radius: 0.75rem;
-opacity: 0; visibility: hidden; transform: translateY(-0.625rem);
-transition: all 0.3s ease; z-index: 1000;
-}
-.profile-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); }
-.profile-dropdown-header { padding: 15px; border-bottom: 1px solid var(--card-border); }
-.profile-dropdown-header h4 { font-size: 14px; color: var(--soft-white); margin: 0; }
-.profile-list { max-height: 300px; overflow-y: auto; padding: 10px; }
-.profile-item {
-display: flex; align-items: center; gap: 10px; padding: 10px;
-border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
-}
-.profile-item:hover { background: rgba(255, 255, 255, 0.1); }
-.profile-item.active { background: rgba(29, 78, 216, 0.2); border: 1px solid var(--bantu-blue); }
-.profile-avatar-small {
-width: 36px; height: 36px; border-radius: 50%;
-background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
-}
-.profile-avatar-small img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.profile-initials { color: white; font-weight: bold; font-size: 14px; }
-.profile-item .profile-name { flex: 1; font-size: 14px; }
-.profile-item i { color: var(--success-color); }
-.profile-dropdown-footer { padding: 15px; border-top: 1px solid var(--card-border); }
-.text-btn {
-background: none; border: none; color: var(--warm-gold); cursor: pointer;
-font-size: 14px; transition: all 0.3s ease; width: 100%;
-text-align: left; padding: 8px; border-radius: 6px;
-}
-.text-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--soft-white); }
-.rsa-badge {
-display: flex; align-items: center; gap: 0.25rem;
-background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
-padding: 0.375rem 0.75rem; border-radius: 1.875rem;
-color: white; font-size: 0.75rem; font-weight: 600;
-margin-left: 0.5rem; flex-shrink: 0; white-space: nowrap;
-}
 /* ============================================
 CHANNEL BANNER - KEPT EXACTLY AS IS
 ============================================ */
@@ -1991,71 +1711,9 @@ transition: all 0.2s ease;
 border-color: var(--warm-gold); transform: translateY(-3px);
 }
 /* ============================================
-FOOTER
+FOOTER, BOTTOM NAVIGATION BAR, BACK TO TOP — now owned by shared-components.css
+(the bottom navigation-button-container is removed entirely platform-wide)
 ============================================ */
-.footer {
-background: var(--card-bg); border-top: 1px solid var(--card-border); padding: 30px 20px;
-margin-top: 50px; backdrop-filter: blur(10px); position: relative; z-index: 2;
-}
-.footer p { text-align: center; color: var(--slate-grey); margin-bottom: 15px; font-size: 14px; }
-.footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-.footer-links a { color: var(--slate-grey); text-decoration: none; transition: color 0.3s ease; font-size: 14px; }
-.footer-links a:hover { color: var(--warm-gold); }
-/* ============================================
-NAVIGATION BUTTON - FIXED CENTERED
-============================================ */
-.navigation-button-container {
-position: fixed !important;
-bottom: 1rem !important;
-left: 0 !important;
-right: 0 !important;
-width: 100% !important;
-display: flex !important;
-justify-content: center !important;
-align-items: center !important;
-z-index: 999 !important;
-pointer-events: none !important;
-padding: 0 !important;
-}
-.navigation-button {
-display: flex !important;
-justify-content: space-evenly !important;
-align-items: center !important;
-background: rgba(15, 23, 42, 0.95) !important;
-backdrop-filter: blur(12px) !important;
-border-radius: 60px !important;
-padding: 0.5rem 1rem !important;
-gap: 0.75rem !important;
-width: auto !important;
-min-width: auto !important;
-pointer-events: auto !important;
-border: 1px solid rgba(148, 163, 184, 0.25) !important;
-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
-}
-.nav-icon {
-width: 48px; height: 48px; border-radius: 50%;
-background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-color: var(--soft-white); display: flex; align-items: center; justify-content: center;
-cursor: pointer; transition: all 0.3s ease; font-size: 20px; flex-shrink: 0;
-position: relative;
-}
-.nav-icon:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
-.nav-notification-badge {
-position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white;
-font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%;
-display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);
-}
-/* ============================================
-BACK TO TOP
-============================================ */
-.back-to-top {
-position: fixed; bottom: 100px; right: 30px; width: 50px; height: 50px;
-border-radius: 50%; background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
-border: none; color: white; font-size: 20px; cursor: pointer; display: none;
-align-items: center; justify-content: center; z-index: 100;
-transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-.back-to-top:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4); }
 /* ============================================
 MODALS (EXISTING)
 ============================================ */
@@ -2097,36 +1755,15 @@ outline: none; border-color: var(--warm-gold); box-shadow: 0 0 0 3px rgba(245, 1
 }
 .form-textarea { min-height: 100px; resize: vertical; font-family: 'Inter', sans-serif; }
 /* ============================================
-SEARCH MODAL
+SEARCH MODAL — now owned by shared-components.css. .close-search-btn is kept
+since the Analytics modal's close button still uses this class.
 ============================================ */
-.search-modal {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95);
-display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(10px);
-}
-.search-modal.active { display: flex; }
-.search-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--card-border); width: 100%; }
-.search-input-container { position: relative; width: 100%; max-width: 600px; }
-.search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--slate-grey); font-size: 18px; }
-.search-input {
-width: 100%; padding: 15px 15px 15px 45px; border-radius: 12px; border: 1px solid var(--card-border);
-background: var(--card-bg); color: var(--soft-white); font-size: 16px; backdrop-filter: blur(10px);
-}
-.search-input:focus { outline: none; border-color: var(--warm-gold); }
 .close-search-btn {
 background: none; border: none; color: var(--soft-white); font-size: 24px;
 cursor: pointer; width: 40px; height: 40px; border-radius: 50%;
 display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;
 }
 .close-search-btn:hover { background: rgba(255, 255, 255, 0.1); transform: rotate(90deg); }
-.search-filters { display: flex; gap: 15px; margin-bottom: 20px; width: 100%; max-width: 600px; }
-.filter-group { flex: 1; }
-.filter-label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); }
-.filter-select {
-width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border);
-background: var(--card-bg); color: var(--soft-white); font-size: 14px;
-}
-.search-results { width: 100%; max-width: 800px; max-height: 70vh; overflow-y: auto; }
-.search-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
 /* ============================================
 BANNER UPLOAD MODAL
 ============================================ */
@@ -2215,15 +1852,14 @@ cursor: pointer; transition: all 0.3s ease;
 }
 .banner-cancel-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--soft-white); }
 /* ============================================
-NOTIFICATIONS PANEL
+NOTIFICATIONS PANEL — now owned by shared-components.css
 ============================================ */
-.notifications-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.notifications-list { max-height: 60vh; overflow-y: auto; }
-.notifications-footer { display: flex; gap: 15px; margin-top: 20px; }
 /* ============================================
-TOAST
+TOAST — #toast-container positioning now owned by shared-components.css;
+.toast/.toast.error/.success/.warning stay here since creator-channel.js's
+showToast() generates class="toast <type>" (space-separated), which is a
+different naming convention than shared's .toast-error/.toast-success.
 ============================================ */
-#toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
 .toast {
 padding: 15px 25px; border-radius: 12px; color: var(--soft-white); font-weight: 500;
 animation: slideIn 0.3s ease; max-width: 300px; backdrop-filter: blur(10px);
@@ -2373,26 +2009,8 @@ BRAND GLOW SYSTEM — UNIVERSAL HOVER PLAY BUTTON + HOME PREVIEW ROWS
 /* ============================================
 RESPONSIVE MOBILE FIXES
 ============================================ */
-/* 1. Hide profile and unnecessary icons on mobile phones */
+/* 1. Header/sidebar responsive behavior now owned by shared-components.css */
 @media (max-width: 768px) {
-.profile-switcher {
-display: none !important;
-}
-.rsa-badge {
-display: none !important;
-}
-.header {
-padding: 0.5rem 1rem !important;
-min-height: 3rem !important;
-}
-.header-actions {
-gap: 0.35rem !important;
-}
-.icon-btn {
-width: 2rem !important;
-height: 2rem !important;
-font-size: 1rem !important;
-}
 /* Banner mobile */
 .channel-banner {
 height: 160px !important;
@@ -2543,20 +2161,6 @@ font-size: 11px !important;
 .journey-date {
 font-size: 9px !important;
 }
-/* Navigation button */
-.navigation-button-container {
-bottom: 0.75rem !important;
-padding: 0 0.5rem !important;
-}
-.navigation-button {
-gap: 0.5rem !important;
-padding: 0.375rem 0.875rem !important;
-}
-.nav-icon {
-width: 2.5rem !important;
-height: 2.5rem !important;
-font-size: 1rem !important;
-}
 /* Modals */
 .modal-content {
 width: 95% !important;
@@ -2565,18 +2169,6 @@ max-height: 85vh !important;
 }
 .modal-title {
 font-size: 1.125rem !important;
-}
-.search-modal > div {
-width: 95% !important;
-padding: 1rem !important;
-}
-.search-filters {
-flex-direction: column !important;
-gap: 0.5rem !important;
-}
-.search-results-grid {
-grid-template-columns: repeat(2, 1fr) !important;
-gap: 0.5rem !important;
 }
 /* Playlist builder */
 #playlist-builder-modal .pl-body {
@@ -2601,29 +2193,6 @@ left: auto !important;
 max-width: 280px !important;
 padding: 0.625rem 1rem !important;
 font-size: 0.75rem !important;
-}
-/* Theme selector */
-.theme-selector {
-top: 3.5rem !important;
-right: 0.5rem !important;
-min-width: 140px !important;
-}
-.theme-option {
-padding: 0.5rem 0.75rem !important;
-font-size: 0.75rem !important;
-}
-/* Sidebar */
-.sidebar-menu {
-width: 85% !important;
-max-width: 280px !important;
-left: -85% !important;
-}
-.sidebar-menu.active {
-left: 0 !important;
-}
-.sidebar-nav-item {
-padding: 0.625rem 0.875rem !important;
-font-size: 0.875rem !important;
 }
 /* World row mobile */
 .world-row {
@@ -2663,44 +2232,7 @@ padding: 6px 8px !important;
 padding: 8px 10px !important;
 }
 }
-/* Hide voice search on very small screens */
 @media (max-width: 480px) {
-#voice-search-btn {
-display: none !important;
-}
-.navigation-button-container {
-bottom: 0.5rem !important;
-}
-.navigation-button {
-gap: 0.35rem !important;
-padding: 0.3rem 0.7rem !important;
-}
-.nav-icon {
-width: 2.25rem !important;
-height: 2.25rem !important;
-font-size: 0.875rem !important;
-}
-.logo-text {
-font-size: 0.75rem !important;
-max-width: 80px !important;
-white-space: nowrap !important;
-overflow: hidden !important;
-text-overflow: ellipsis !important;
-}
-.logo-icon {
-width: 1.75rem !important;
-height: 1.75rem !important;
-}
-.icon-btn {
-width: 1.75rem !important;
-height: 1.75rem !important;
-font-size: 0.75rem !important;
-}
-.menu-toggle {
-width: 1.75rem !important;
-height: 1.75rem !important;
-font-size: 0.875rem !important;
-}
 .channel-banner {
 height: 120px !important;
 padding: 0 12px 12px !important;
@@ -2840,12 +2372,6 @@ padding: 0.625rem 1rem !important;
 padding-left: max(16px, env(safe-area-inset-left));
 padding-right: max(16px, env(safe-area-inset-right));
 padding-bottom: max(100px, env(safe-area-inset-bottom));
-}
-.navigation-button-container {
-padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-}
-.sidebar-menu {
-padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
 }
 }
 
