@@ -19,11 +19,17 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- Base Styles -->
+  <!-- Base Styles — base.css/components.css are still needed here for the
+       Schedule Report modal (.modal-overlay/.modal-body/.modal-footer) and
+       generic .btn/.btn-primary/.btn-secondary buttons used throughout this
+       page; only .header/.logo/.spinner are superseded, and shared-
+       components.css (linked after) wins that cascade for the canonical
+       header/sidebar markup below. -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/creator-analytics.css">
-  
+  <link rel="stylesheet" href="css/shared-components.css">
+
   <style>
     /* ULTIMATE FIX: Force display with highest specificity */
     html, body {
@@ -139,6 +145,119 @@
   </style>
 </head>
 <body>
+
+<!-- SIDEBAR OVERLAY & MENU (canonical v4.0 sectioned sidebar, copied verbatim
+     from my-space.html; no CREATOR-section item points to this Analytics
+     page specifically, so nothing is marked active) -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+  <div class="sidebar-header">
+    <div class="sidebar-logo" onclick="window.location.href='index.html'">
+      <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+      <span class="sidebar-logo-text">BSC</span>
+    </div>
+    <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sidebar-profile" id="sidebar-profile">
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+    <div class="sidebar-profile-info">
+      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+    </div>
+    <i class="fas fa-chevron-right"></i>
+  </div>
+  <nav class="sidebar-nav">
+
+    <!-- MAIN -->
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header">
+        <span>MAIN</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+        <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+        <a href="discover-creator.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="sidebar-section" data-section-id="categories">
+      <div class="sidebar-section-header">
+        <span>CATEGORIES</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="category/movies.html" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+        <a href="category/music.html" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+      </div>
+    </div>
+
+    <!-- YOU -->
+    <div class="sidebar-section" data-section-id="you">
+      <div class="sidebar-section-header">
+        <span>YOU</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="my-space.html" class="sidebar-nav-item" data-page="my-space"><i class="fas fa-layer-group"></i><span>My Space</span></a>
+        <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+      </div>
+    </div>
+
+    <!-- CREATOR (hidden until checkAndShowCreatorSection confirms published content) -->
+    <div class="sidebar-section creator-only" data-section-id="creator" style="display: none;">
+      <div class="sidebar-section-header">
+        <span>CREATOR</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+        <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="sidebar-section" data-section-id="account">
+      <div class="sidebar-section-header">
+        <span>ACCOUNT</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+        <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+      </div>
+    </div>
+
+  </nav>
+  <div class="sidebar-footer">
+    <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+      <label class="toggle-switch"><input type="checkbox" id="creatorModeSwitch"><span class="toggle-slider"></span></label>
+      <span class="toggle-label">Creator Mode</span>
+    </div>
+    <div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
+    <div class="sidebar-scale-control">
+      <div class="scale-control-row">
+        <span><i class="fas fa-text-height"></i> UI Size</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button>
+          <span class="scale-value" id="sidebar-scale-value">100%</span>
+          <button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div class="scale-control-row"><button class="scale-btn" id="sidebar-scale-reset"><i class="fas fa-undo"></i> Reset</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="theme-selector" class="theme-selector">
+  <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+  <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+  <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
   <!-- Loading Screen (hidden by default) -->
   <div id="analytics-loading">
     <div class="spinner"></div>
@@ -158,18 +277,33 @@
   <!-- Main Content (visible by default) -->
   <div id="analytics-content">
 
-    <!-- Header -->
-    <header class="header">
-      <div class="logo" onclick="window.location.href='creator-dashboard.html'" style="cursor: pointer;">
-        <div class="logo-icon">
-          <i class="fas fa-chart-line" style="color: var(--warm-gold);"></i>
-        </div>
-        <div class="logo-text">ANALYTICS</div>
+    <!-- Header (canonical shared-components.css classes, so it picks up
+         shared-components.css's .header/.logo rules loaded after base.css) -->
+    <header class="header" id="site-header">
+      <div class="logo" onclick="window.location.href='index.html'">
+        <button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+        <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+        <div class="logo-text">BSC</div>
       </div>
       <div class="header-actions">
         <button id="back-to-dashboard" class="btn btn-secondary">
           <i class="fas fa-arrow-left"></i> Back to Dashboard
         </button>
+        <button id="search-btn" class="icon-btn search-btn"><i class="fas fa-search"></i></button>
+        <button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display: none;">0</span></button>
+        <div class="profile-switcher">
+          <button id="current-profile-btn" class="profile-btn">
+            <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
+            <span class="profile-name" id="current-profile-name">Guest</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="profile-dropdown" id="profile-dropdown">
+            <div class="profile-dropdown-header"><h4>Switch Profile</h4></div>
+            <div class="profile-list" id="profile-list"></div>
+            <div class="profile-dropdown-footer"><button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button></div>
+          </div>
+        </div>
+        <div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
       </div>
     </header>
 
@@ -276,10 +410,6 @@
           <h4><i class="fas fa-heart"></i> Engagement Breakdown</h4>
           <canvas id="engagementChart"></canvas>
         </div>
-        <div class="chart-card">
-          <h4><i class="fas fa-chart-bar"></i> Retention Rate</h4>
-          <canvas id="retentionChart"></canvas>
-        </div>
       </section>
 
       <!-- Top Content Table -->
@@ -327,29 +457,12 @@
         </div>
         
         <div class="audience-grid">
-          <!-- Top Locations -->
-          <div class="audience-card">
-            <h4><i class="fas fa-map-marker-alt"></i> Top Locations</h4>
-            <div id="locationsList" class="locations-list">
-              <div class="loading-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Loading locations...</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Device Breakdown -->
-          <div class="audience-card">
-            <h4><i class="fas fa-laptop"></i> Device Breakdown</h4>
-            <canvas id="deviceChart"></canvas>
-          </div>
-          
-          <!-- Traffic Sources -->
-          <div class="audience-card">
-            <h4><i class="fas fa-share-alt"></i> Traffic Sources</h4>
-            <canvas id="trafficChart"></canvas>
-          </div>
-          
+          <!-- Top Locations/Device Breakdown/Traffic Sources cards removed
+               entirely — their real queries needed columns that don't exist
+               (user_profiles.country/city, a referrer column), and Device
+               Breakdown silently substituted fake numbers on any failure
+               with no visual distinction from real data. -->
+
           <!-- Peak Viewing Times -->
           <div class="audience-card">
             <h4><i class="fas fa-clock"></i> Peak Viewing Times</h4>
@@ -387,13 +500,54 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+      <p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p>
+      <div class="footer-links">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="support.html">Support</a>
+      </div>
     </footer>
 
   </div>
 
+  <div id="search-modal">
+    <div class="search-modal-overlay"></div>
+    <div class="search-modal-content">
+      <div class="search-modal-header">
+        <div class="search-input-wrapper">
+          <input type="text" id="search-input" placeholder="Search videos, creators, hashtags..." autocomplete="off">
+          <button id="voice-search-modal-btn" class="voice-search-modal-btn"><i class="fas fa-microphone"></i></button>
+        </div>
+        <button id="close-search-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="search-filter-pills-bar">
+        <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
+        <button class="search-filter-pill" data-filter-group="sort" data-filter-value="newest">Newest</button>
+        <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">Popular</button>
+      </div>
+      <div id="search-results-grid"></div>
+    </div>
+  </div>
+
+  <div id="notifications-panel" class="notifications-panel">
+    <div class="notifications-header">
+      <h2>Notifications <span id="notifications-header-count"></span></h2>
+      <button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="notification-tabs-container">
+      <button class="notification-tab active" data-tab="all">All</button>
+      <button class="notification-tab" data-tab="unread">Unread</button>
+    </div>
+    <div class="notifications-list" id="notifications-list"></div>
+    <div class="notifications-footer">
+      <button id="mark-all-read" class="text-btn">Mark all as read</button>
+      <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+    </div>
+  </div>
+
   <!-- Toast Container -->
-  <div id="toast-container"></div>
+  <div id="toast-container" class="toast-container"></div>
+  <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 
   <!-- ============================================ -->
   <!-- ✅ 5F: SCHEDULE REPORT MODAL -->
@@ -477,18 +631,26 @@
   <!-- SCRIPTS - CRITICAL ORDER -->
   <!-- ============================================ -->
   
-  <!-- 1. Supabase Helper (MUST load first) -->
-  <script src="js/supabase-helper.js"></script>
-  
-  <!-- 2. Auth Helper -->
-  <script src="js/auth-helper.js"></script>
-  
+  <!-- js/supabase-helper.js and js/auth-helper.js removed: checkAuthAndInitialize()
+       and initializeAnalyticsManager() in js/creator-analytics-page.js both already
+       fall back to window.supabaseClient (set below, matching every other
+       shared-components.js page) when window.AuthHelper/window.SupabaseHelper
+       aren't present, and no other function in either analytics JS file
+       depends on them (escapeHtml/formatNumber/formatWatchTime are all
+       defined locally there). -->
+  <script src="js/shared-components.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+
   <!-- 3. Creator Analytics Module (Phase 5 Complete) -->
   <script src="js/creator-analytics.js"></script>
-  
+
   <!-- 4. Analytics Page Controller (Phase 5 Complete) -->
   <script src="js/creator-analytics-page.js"></script>
-  
+
   <!-- 5. Emergency display fix (runs immediately) -->
   <script>
     (function() {

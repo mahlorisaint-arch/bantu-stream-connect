@@ -482,10 +482,14 @@
   border-color: var(--warm-gold);
 }
 
+/* Only Peak Viewing Times remains after removing Top Locations/Device
+   Breakdown/Traffic Sources — capped so the lone card doesn't stretch
+   full-bleed edge-to-edge on wide screens. */
 .audience-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 20px;
+  max-width: 500px;
 }
 
 .audience-card {
@@ -523,69 +527,8 @@
   width: 100% !important;
 }
 
-/* Locations List */
-.locations-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-.locations-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.locations-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.locations-list::-webkit-scrollbar-thumb {
-  background: var(--warm-gold);
-  border-radius: 4px;
-}
-
-.location-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  transition: all 0.2s ease;
-}
-
-.location-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateX(3px);
-}
-
-.location-name {
-  color: var(--soft-white);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.location-name i {
-  color: var(--warm-gold);
-  font-size: 14px;
-  width: 20px;
-}
-
-.location-percent {
-  color: var(--warm-gold);
-  font-weight: 700;
-  font-size: 16px;
-  background: rgba(255, 179, 71, 0.1);
-  padding: 4px 12px;
-  border-radius: 20px;
-  min-width: 50px;
-  text-align: center;
-}
+/* .locations-list/.location-item/.location-name/.location-percent removed —
+   only used by the deleted Top Locations card. */
 
 /* Peak Times Info */
 .peak-times-info {
@@ -1150,10 +1093,11 @@
   .charts-grid {
     grid-template-columns: 1fr;
   }
-  
-  .audience-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+
+  /* audience-grid's own repeat(2, 1fr) override removed — with only Peak
+     Viewing Times left, forcing 2 columns just left an empty half-width gap
+     next to the single card. The base rule's auto-fit + max-width already
+     displays it cleanly at every width. */
 }
 
 @media (max-width: 768px) {
@@ -1277,16 +1221,7 @@
   .table-btn {
     width: 100%;
   }
-  
-  .location-item {
-    padding: 8px;
-  }
-  
-  .location-percent {
-    font-size: 14px;
-    padding: 2px 8px;
-  }
-  
+
   .report-actions {
     flex-direction: column;
     width: 100%;

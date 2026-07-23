@@ -56,7 +56,6 @@
       viewsChart: document.getElementById('viewsChart'),
       watchTimeChart: document.getElementById('watchTimeChart'),
       engagementChart: document.getElementById('engagementChart'),
-      retentionChart: document.getElementById('retentionChart'),
       // Top content table
       topContentBody: document.getElementById('topContentBody'),
       // Controls
@@ -72,11 +71,10 @@
       applyCustomDate: document.getElementById('applyCustomDate'),
       resetDateFilter: document.getElementById('resetDateFilter'),
       clearAllFilters: document.getElementById('clearAllFilters'),
-      // ✅ 5E: Audience Insights elements
+      // ✅ 5E: Audience Insights elements (locationsList/deviceChart/
+      // trafficChart removed along with Top Locations/Device Breakdown/
+      // Traffic Sources — Peak Viewing Times is the only real one left)
       audienceTimeRange: document.getElementById('audienceTimeRange'),
-      locationsList: document.getElementById('locationsList'),
-      deviceChart: document.getElementById('deviceChart'),
-      trafficChart: document.getElementById('trafficChart'),
       peakTimesInfo: document.getElementById('peakTimesInfo'),
       peakHoursChart: document.getElementById('peakHoursChart'),
       // ✅ 5F: Scheduled reports elements
@@ -399,9 +397,8 @@
     
     const totalViews = summary.total_views || summary.totalViews || 0;
     const totalWatchTime = summary.total_watch_time || summary.totalWatchTime || 0;
-    const uniqueViewers = summary.unique_viewers || summary.uniqueViewers || 
-                         Math.round(totalViews * 0.7) || 0;
-    const avgCompletion = summary.avg_completion_rate || summary.avgCompletionRate || 
+    const uniqueViewers = summary.unique_viewers || summary.uniqueViewers || 0;
+    const avgCompletion = summary.avg_completion_rate || summary.avgCompletionRate ||
                          summary.engagement_percentage || 0;
     
     if (dom.totalViews) dom.totalViews.textContent = formatNumber(totalViews);
@@ -437,12 +434,10 @@
     if (charts.views) charts.views.destroy();
     if (charts.watchTime) charts.watchTime.destroy();
     if (charts.engagement) charts.engagement.destroy();
-    if (charts.retention) charts.retention.destroy();
-    
+
     renderViewsChart(dashboardData.content);
     renderWatchTimeChart(dashboardData.content);
     renderEngagementChart(dashboardData.summary);
-    renderRetentionChart();
   }
 
   function renderViewsChart(content) {
@@ -450,15 +445,16 @@
     if (!ctx || typeof Chart === 'undefined') return;
     
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    let data = (content || []).slice(0, 7).map(function(c) {
+    const data = (content || []).slice(0, 7).map(function(c) {
       const analytics = c.analytics || c;
       return analytics.totalViews || analytics.views || 0;
     });
-    
-    if (data.length === 0) {
-      data = [12, 19, 15, 22, 18, 25, 30];
+
+    if (data.length === 0 || data.every(v => v === 0)) {
+      ctx.parentNode.innerHTML = '<div class="empty-message"><i class="fas fa-chart-line"></i><p>No data yet — upload content to see this chart</p></div>';
+      return;
     }
-    
+
     charts.views = new Chart(ctx, {
       type: 'line',
       data: {
@@ -497,23 +493,20 @@
     const ctx = dom.watchTimeChart;
     if (!ctx || typeof Chart === 'undefined') return;
     
-    let labels = (content || []).slice(0, 7).map(function(_, i) {
+    const labels = (content || []).slice(0, 7).map(function(_, i) {
       return `Day ${i + 1}`;
     });
-    
-    if (labels.length === 0) {
-      labels = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
-    }
-    
-    let data = (content || []).slice(0, 7).map(function(c) {
+
+    const data = (content || []).slice(0, 7).map(function(c) {
       const analytics = c.analytics || c;
       return Math.round((analytics.totalWatchTime || 0) / 3600 * 10) / 10;
     });
-    
-    if (data.length === 0) {
-      data = [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30];
+
+    if (data.length === 0 || data.every(v => v === 0)) {
+      ctx.parentNode.innerHTML = '<div class="empty-message"><i class="fas fa-chart-line"></i><p>No data yet — upload content to see this chart</p></div>';
+      return;
     }
-    
+
     charts.watchTime = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -555,77 +548,30 @@
   function renderEngagementChart(summary) {
     const ctx = dom.engagementChart;
     if (!ctx || typeof Chart === 'undefined') return;
-    
+    if (charts.engagement) charts.engagement.destroy();
+
+    const likes = summary?.total_likes || 0;
+    const comments = summary?.total_comments || 0;
+    const shares = summary?.total_shares || 0;
+
+    if (likes === 0 && comments === 0 && shares === 0) {
+      ctx.parentNode.innerHTML = '<div class="empty-message"><i class="fas fa-heart"></i><p>No engagement data yet</p></div>';
+      return;
+    }
+
     charts.engagement = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Likes', 'Comments', 'Shares'],
-        datasets: [{
-          data: [65, 25, 10],
-          backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
-          borderWidth: 0
-        }]
+        datasets: [{ data: [likes, comments, shares], backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'], borderWidth: 0 }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { 
-            position: 'bottom', 
-            labels: { color: '#F8FAFC' } 
-          }
-        }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#F8FAFC' } } } }
     });
   }
 
-  function renderRetentionChart() {
-    const ctx = dom.retentionChart;
-    if (!ctx || typeof Chart === 'undefined') return;
-    
-    const retentionData = [100, 85, 72, 60, 48, 38, 30, 24, 18, 14, 10];
-    
-    charts.retention = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
-        datasets: [{
-          label: 'Retention %',
-          data: retentionData,
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
-          tension: 0.3,
-          fill: true,
-          pointRadius: 3,
-          pointBackgroundColor: '#F59E0B'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          x: { 
-            grid: { display: false }, 
-            ticks: { color: 'var(--slate-grey)' } 
-          },
-          y: { 
-            beginAtZero: true, 
-            max: 100, 
-            grid: { color: 'rgba(255,255,255,0.1)' }, 
-            ticks: { 
-              color: 'var(--slate-grey)', 
-              callback: function(value) {
-                return value + '%';
-              }
-            } 
-          }
-        }
-      }
-    });
-  }
+  // renderRetentionChart() removed entirely — it plotted a hardcoded
+  // [100, 85, 72, 60, ...] array unconditionally, with no query behind it
+  // at all.
 
   // ============================================
   // ✅ TOP CONTENT TABLE - FIXED WITH FALLBACK
@@ -836,151 +782,30 @@
   // ============================================
   async function loadAudienceInsights() {
     if (!analyticsManager) return;
-    
+
     const timeRange = dom.audienceTimeRange?.value || '30days';
-    
-    if (!dom.locationsList && !dom.deviceChart && !dom.trafficChart) {
+
+    if (!dom.peakTimesInfo) {
       console.log('📊 Audience insights section not found in DOM, skipping');
       return;
     }
-    
+
     console.log('📊 Loading audience insights for range:', timeRange);
-    
+
     try {
-      const [locations, devices, traffic, peakTimes] = await Promise.all([
-        analyticsManager.getAudienceLocations(timeRange),
-        analyticsManager.getDeviceBreakdown(timeRange),
-        analyticsManager.getTrafficSources(timeRange),
-        analyticsManager.getPeakViewingTimes(timeRange)
-      ]);
-      
-      renderLocations(locations);
-      renderDeviceChart(devices);
-      renderTrafficChart(traffic);
+      const peakTimes = await analyticsManager.getPeakViewingTimes(timeRange);
       renderPeakTimes(peakTimes);
-      
+
       console.log('✅ Audience insights loaded');
     } catch (error) {
       console.error('❌ Error loading audience insights:', error);
     }
   }
 
-  function renderLocations(locations) {
-    const container = dom.locationsList;
-    if (!container) return;
-    
-    if (!locations || locations.length === 0) {
-      container.innerHTML = `
-        <div class="empty-message">
-          <i class="fas fa-map-marker-alt"></i>
-          <p>No location data available yet</p>
-        </div>
-      `;
-      return;
-    }
-    
-    container.innerHTML = locations.map(loc => `
-      <div class="location-item">
-        <span class="location-name">
-          <i class="fas fa-flag"></i> ${escapeHtml(loc.country)}
-        </span>
-        <span class="location-percent">${loc.percentage}%</span>
-      </div>
-    `).join('');
-  }
-
-  function renderDeviceChart(devices) {
-    const ctx = dom.deviceChart;
-    if (!ctx || typeof Chart === 'undefined') return;
-    
-    if (charts.device) charts.device.destroy();
-    
-    if (!devices || devices.length === 0) {
-      ctx.parentNode.innerHTML = '<div class="empty-message">No device data available</div>';
-      return;
-    }
-    
-    const colors = {
-      Mobile: '#1D4ED8',
-      Desktop: '#F59E0B',
-      Tablet: '#10B981',
-      Other: '#6B7280'
-    };
-    
-    charts.device = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: devices.map(d => d.device),
-        datasets: [{
-          data: devices.map(d => d.percentage),
-          backgroundColor: devices.map(d => colors[d.device] || '#6B7280'),
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#F8FAFC' }
-          }
-        }
-      }
-    });
-  }
-
-  function renderTrafficChart(traffic) {
-    const ctx = dom.trafficChart;
-    if (!ctx || typeof Chart === 'undefined') return;
-    
-    if (charts.traffic) charts.traffic.destroy();
-    
-    if (!traffic || traffic.length === 0) {
-      ctx.parentNode.innerHTML = '<div class="empty-message">No traffic data available</div>';
-      return;
-    }
-    
-    const colors = {
-      Direct: '#1D4ED8',
-      Search: '#F59E0B',
-      Social: '#10B981',
-      Referral: '#8B5CF6',
-      Other: '#6B7280'
-    };
-    
-    charts.traffic = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: traffic.map(t => t.source),
-        datasets: [{
-          label: '%',
-          data: traffic.map(t => t.percentage),
-          backgroundColor: traffic.map(t => colors[t.source] || '#6B7280'),
-          borderWidth: 0
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            ticks: { color: '#94A3B8', callback: v => v + '%' }
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color: '#F8FAFC' }
-          }
-        }
-      }
-    });
-  }
+  // renderLocations()/renderDeviceChart()/renderTrafficChart() removed along
+  // with getAudienceLocations()/getDeviceBreakdown()/getTrafficSources() in
+  // js/creator-analytics.js (Top Locations, Device Breakdown, Traffic
+  // Sources). renderPeakTimes() below is untouched — real data.
 
   function renderPeakTimes(peakTimes) {
     const container = dom.peakTimesInfo;

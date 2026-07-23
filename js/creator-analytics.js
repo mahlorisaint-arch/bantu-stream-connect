@@ -536,10 +536,15 @@ class CreatorAnalytics {
     const dateFilter = this._getDateFilter(timeRange, activeFilters.customDateRange);
     const contentTypeFilter = this._getContentTypeFilter(activeFilters.contentType);
 
-    // Get all content for this creator with filters
+    // Get all content for this creator with filters.
+    // views_count/likes_count are NOT real columns on Content (confirmed via
+    // the live schema — only comments_count/shares_count exist there), so
+    // selecting them here made this whole query throw on every call. Removed;
+    // likes/comments/shares are now sourced from content_engagement_stats
+    // below, the same platform-wide convention used everywhere else.
     let contentQuery = this.supabase
       .from('Content')
-      .select('id, duration, views_count, likes_count, comments_count, media_type')
+      .select('id, duration, media_type')
       .eq('user_id', this.userId);
     
     if (contentTypeFilter) {
@@ -582,11 +587,19 @@ class CreatorAnalytics {
     // Calculate metrics
     const totalViews = viewsData.length;
     const uniqueViewers = new Set(viewsData.map(v => v.viewer_id)).size;
-    
-    // Calculate total likes and comments from content table
-    const totalLikes = content.reduce((sum, c) => sum + (c.likes_count || 0), 0);
-    const totalComments = content.reduce((sum, c) => sum + (c.comments_count || 0), 0);
-    
+
+    // Real likes/comments/shares from content_engagement_stats.
+    const { data: statsData, error: statsError } = await this.supabase
+      .from('content_engagement_stats')
+      .select('total_likes, total_comments, total_shares')
+      .in('content_id', contentIds);
+
+    if (statsError) throw statsError;
+
+    const totalLikes = (statsData || []).reduce((sum, s) => sum + (s.total_likes || 0), 0);
+    const totalComments = (statsData || []).reduce((sum, s) => sum + (s.total_comments || 0), 0);
+    const totalShares = (statsData || []).reduce((sum, s) => sum + (s.total_shares || 0), 0);
+
     // Get total connectors
     const { count: connectorsCount, error: connectorsError } = await this.supabase
       .from('connectors')
@@ -624,6 +637,7 @@ class CreatorAnalytics {
       unique_viewers: uniqueViewers,
       total_likes: totalLikes,
       total_comments: totalComments,
+      total_shares: totalShares,
       total_connectors: connectorsCount || 0,
       total_earnings: totalEarnings,
       engagement_percentage: Math.round(engagementPercentage * 100) / 100,
@@ -633,228 +647,15 @@ class CreatorAnalytics {
     };
   }
 
-  // ============================================
-  // ✅ 5E: GET AUDIENCE LOCATIONS - RETURN FALLBACK IMMEDIATELY
-  // ============================================
-  async getAudienceLocations(timeRange = '30days') {
-    if (!this.userId) throw new Error('User not authenticated');
-    
-    return this._queueRequest('locations_' + timeRange, async () => {
-      try {
-        // Columns don't exist - return fallback
-        console.log('ℹ️ Using fallback location data');
-        return this._getFallbackLocations();
-        
-        // The code below is commented out because columns don't exist
-        /*
-        const dateFilter = this._getDateFilter(timeRange);
-        const { data: content, error: contentError } = await this.supabase
-          .from('Content')
-          .select('id')
-          .eq('user_id', this.userId);
-        
-        if (contentError || !content?.length) return this._getFallbackLocations();
-        const contentIds = content.map(c => c.id);
-        
-        // Try to fetch locations (may fail if columns don't exist)
-        try {
-          const { data: views } = await this.supabase
-            .from('content_views')
-            .select('viewer_id')
-            .in('content_id', contentIds)
-            .gte('created_at', dateFilter.start);
-          
-          const viewerIds = [...new Set(views?.map(v => v.viewer_id).filter(Boolean) || [])];
-          if (viewerIds.length === 0) return this._getFallbackLocations();
-          
-          // Try to fetch profiles with country/city
-          const { data: profiles, error: profilesError } = await this.supabase
-            .from('user_profiles')
-            .select('country, city')
-            .in('id', viewerIds);
-          
-          if (profilesError || !profiles?.length) {
-            throw new Error('Location columns not available');
-          }
-          
-          // Count by country
-          const countryCount = {};
-          profiles.forEach(p => {
-            const country = p.country || 'Unknown';
-            countryCount[country] = (countryCount[country] || 0) + 1;
-          });
-          
-          const total = profiles.length;
-          return Object.entries(countryCount)
-            .map(([country, count]) => ({
-              country,
-              count,
-              percentage: Math.round((count / total) * 100)
-            }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
-            
-        } catch (locationError) {
-          console.log('ℹ️ Using fallback location data:', locationError.message);
-          return this._getFallbackLocations();
-        }
-        */
-      } catch (error) {
-        console.error('❌ Error in getAudienceLocations:', error);
-        return this._getFallbackLocations();
-      }
-    });
-  }
-  
-  _getFallbackLocations() {
-    // Fallback data for when location columns don't exist
-    return [
-      { country: 'South Africa', count: 70, percentage: 70 },
-      { country: 'Nigeria', count: 15, percentage: 15 },
-      { country: 'Kenya', count: 10, percentage: 10 },
-      { country: 'Other', count: 5, percentage: 5 }
-    ];
-  }
-
-  // ============================================
-  // ✅ 5E: GET DEVICE BREAKDOWN
-  // ============================================
-  async getDeviceBreakdown(timeRange = '30days') {
-    if (!this.userId) throw new Error('User not authenticated');
-    
-    return this._queueRequest('devices_' + timeRange, async () => {
-      try {
-        const dateFilter = this._getDateFilter(timeRange);
-        const { data: content } = await this.supabase
-          .from('Content')
-          .select('id')
-          .eq('user_id', this.userId);
-        
-        if (!content?.length) return this._getFallbackDevices();
-        const contentIds = content.map(c => c.id);
-        
-        // Try to fetch device_type (may not exist)
-        try {
-          const { data: views } = await this.supabase
-            .from('content_views')
-            .select('device_type')
-            .in('content_id', contentIds)
-            .gte('created_at', dateFilter.start);
-          
-          if (!views?.length) throw new Error('No device data');
-          
-          const deviceCount = { mobile: 0, desktop: 0, tablet: 0, other: 0 };
-          views.forEach(v => {
-            const device = (v.device_type || 'desktop').toLowerCase();
-            if (deviceCount[device] !== undefined) {
-              deviceCount[device]++;
-            } else {
-              deviceCount.other++;
-            }
-          });
-          
-          const total = views.length;
-          return Object.entries(deviceCount)
-            .filter(([_, count]) => count > 0)
-            .map(([device, count]) => ({
-              device: device.charAt(0).toUpperCase() + device.slice(1),
-              count,
-              percentage: Math.round((count / total) * 100)
-            }))
-            .sort((a, b) => b.count - a.count);
-            
-        } catch (deviceError) {
-          console.log('ℹ️ Using fallback device data:', deviceError.message);
-          return this._getFallbackDevices();
-        }
-      } catch (error) {
-        console.error('❌ Error fetching device breakdown:', error);
-        return this._getFallbackDevices();
-      }
-    });
-  }
-  
-  _getFallbackDevices() {
-    return [
-      { device: 'Mobile', count: 65, percentage: 65 },
-      { device: 'Desktop', count: 30, percentage: 30 },
-      { device: 'Tablet', count: 5, percentage: 5 }
-    ];
-  }
-
-  // ============================================
-  // ✅ 5E: GET TRAFFIC SOURCES - RETURN FALLBACK IMMEDIATELY
-  // ============================================
-  async getTrafficSources(timeRange = '30days') {
-    if (!this.userId) throw new Error('User not authenticated');
-    
-    return this._queueRequest('traffic_' + timeRange, async () => {
-      try {
-        // Column doesn't exist - return fallback
-        console.log('ℹ️ Using fallback traffic data');
-        return this._getFallbackTraffic();
-        
-        // The code below is commented out because referrer column doesn't exist
-        /*
-        const dateFilter = this._getDateFilter(timeRange);
-        const { data: content } = await this.supabase
-          .from('Content')
-          .select('id')
-          .eq('user_id', this.userId);
-        
-        if (!content?.length) return this._getFallbackTraffic();
-        const contentIds = content.map(c => c.id);
-        
-        try {
-          const { data: views } = await this.supabase
-            .from('content_views')
-            .select('referrer')
-            .in('content_id', contentIds)
-            .gte('created_at', dateFilter.start);
-          
-          if (!views?.length) throw new Error('No referrer data');
-          
-          // Categorize traffic sources
-          const sourceCount = { direct: 0, search: 0, social: 0, referral: 0 };
-          views.forEach(v => {
-            const ref = (v.referrer || '').toLowerCase();
-            if (!ref || ref === 'direct') sourceCount.direct++;
-            else if (ref.includes('google') || ref.includes('bing')) sourceCount.search++;
-            else if (ref.includes('facebook') || ref.includes('twitter') || ref.includes('instagram')) sourceCount.social++;
-            else sourceCount.referral++;
-          });
-          
-          const total = views.length;
-          return Object.entries(sourceCount)
-            .filter(([_, count]) => count > 0)
-            .map(([source, count]) => ({
-              source: source.charAt(0).toUpperCase() + source.slice(1),
-              count,
-              percentage: Math.round((count / total) * 100)
-            }))
-            .sort((a, b) => b.count - a.count);
-            
-        } catch (trafficError) {
-          console.log('ℹ️ Using fallback traffic data:', trafficError.message);
-          return this._getFallbackTraffic();
-        }
-        */
-      } catch (error) {
-        console.error('❌ Error in getTrafficSources:', error);
-        return this._getFallbackTraffic();
-      }
-    });
-  }
-  
-  _getFallbackTraffic() {
-    return [
-      { source: 'Direct', count: 45, percentage: 45 },
-      { source: 'Search', count: 30, percentage: 30 },
-      { source: 'Social', count: 18, percentage: 18 },
-      { source: 'Referral', count: 7, percentage: 7 }
-    ];
-  }
-
+  // getAudienceLocations()/_getFallbackLocations(), getDeviceBreakdown()/
+  // _getFallbackDevices(), and getTrafficSources()/_getFallbackTraffic() were
+  // removed entirely (Top Locations, Device Breakdown, Traffic Sources).
+  // Locations and Traffic both had their real queries fully commented out
+  // and unconditionally returned fake fallback numbers; Device Breakdown did
+  // attempt a real query on content_views.device_type but silently
+  // substituted the same kind of fake numbers on any failure with no visual
+  // distinction from real data. getPeakViewingTimes() below is untouched -
+  // it genuinely queries real content_views.created_at timestamps.
   // ============================================
   // ✅ 5E: GET PEAK VIEWING TIMES
   // ============================================
@@ -1107,6 +908,7 @@ class CreatorAnalytics {
         rows.push(['Avg. Completion Rate (%)', summary?.avg_completion_rate || 0]);
         rows.push(['Total Likes', summary?.total_likes || 0]);
         rows.push(['Total Comments', summary?.total_comments || 0]);
+        rows.push(['Total Shares', summary?.total_shares || 0]);
         rows.push(['Engagement Rate (%)', summary?.engagement_percentage || 0]);
         rows.push(['Total Earnings (ZAR)', summary?.total_earnings?.toFixed(2) || '0.00']);
         rows.push(['Total Connectors', summary?.total_connectors || 0]);
@@ -1154,48 +956,14 @@ class CreatorAnalytics {
           rows.push([]); // Empty row
         }
         
-        // Section: Audience Insights
-        rows.push(['=== AUDIENCE INSIGHTS ===']);
-        
-        // Traffic Sources
-        try {
-          const traffic = await this.getTrafficSources(timeRange);
-          if (traffic && traffic.length > 0) {
-            rows.push(['--- Traffic Sources ---']);
-            rows.push(['Source', 'Count', 'Percentage']);
-            traffic.forEach(t => rows.push([t.source, t.count, t.percentage + '%']));
-            rows.push([]);
-          }
-        } catch (e) {
-          console.warn('Could not fetch traffic sources for export:', e);
-        }
-        
-        // Device Breakdown
-        try {
-          const devices = await this.getDeviceBreakdown(timeRange);
-          if (devices && devices.length > 0) {
-            rows.push(['--- Device Breakdown ---']);
-            rows.push(['Device', 'Count', 'Percentage']);
-            devices.forEach(d => rows.push([d.device, d.count, d.percentage + '%']));
-            rows.push([]);
-          }
-        } catch (e) {
-          console.warn('Could not fetch device data for export:', e);
-        }
-        
-        // Locations
-        try {
-          const locations = await this.getAudienceLocations(timeRange);
-          if (locations && locations.length > 0) {
-            rows.push(['--- Top Locations ---']);
-            rows.push(['Country', 'Count', 'Percentage']);
-            locations.forEach(l => rows.push([l.country, l.count, l.percentage + '%']));
-            rows.push([]);
-          }
-        } catch (e) {
-          console.warn('Could not fetch location data for export:', e);
-        }
-        
+        // The "=== AUDIENCE INSIGHTS ===" export section (Traffic Sources/
+        // Device Breakdown/Top Locations) was removed here too — it called
+        // getTrafficSources()/getDeviceBreakdown()/getAudienceLocations(),
+        // all deleted above. Each call was try/caught, so this wasn't a
+        // crash, just silently-skipped fake data on every export; removing
+        // the dead calls avoids the console warnings and matches these
+        // features being fully removed everywhere else.
+
         // Convert rows to CSV string
         const csv = this._convertToCSV(rows);
         
@@ -1282,6 +1050,7 @@ class CreatorAnalytics {
       unique_viewers: 0,
       total_likes: 0,
       total_comments: 0,
+      total_shares: 0,
       total_connectors: 0,
       total_earnings: 0,
       engagement_percentage: 0,
