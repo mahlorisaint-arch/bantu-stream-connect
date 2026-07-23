@@ -1,60 +1,119 @@
 /* ============================================
-   BANTU STREAM CONNECT - EXPLORE CSS v3.0
-   Discovery Worlds Architecture
+   BANTU STREAM CONNECT - EXPLORE CSS v5.0
+   Discovery Worlds - "I don't know what I want, surprise me"
+   Design tokens come from shared-components.css; only the extra
+   accent colors used by Discovery Worlds/mood tags are defined here.
    ============================================ */
 
 :root {
-  /* Colors */
-  --deep-black: #0A0E12;
-  --deep-navy: #0F172A;
-  --soft-white: #F8FAFC;
-  --slate-grey: #94A3B8;
-  --bantu-blue: #1D4ED8;
-  --warm-gold: #F59E0B;
   --bantu-purple: #8B5CF6;
   --bantu-pink: #EC4899;
   --bantu-cyan: #06B6D4;
-  --bantu-green: #10B981;
-  --error-red: #EF4444;
-  
-  /* Glows */
+
   --gold-glow: 0 0 20px rgba(245, 158, 11, 0.3);
   --blue-glow: 0 0 20px rgba(29, 78, 216, 0.3);
   --purple-glow: 0 0 20px rgba(139, 92, 246, 0.3);
-  
-  /* Spacing */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
-  --spacing-3xl: 4rem;
-  
-  /* Typography */
-  --font-xs: 0.75rem;
-  --font-sm: 0.875rem;
-  --font-base: 1rem;
-  --font-lg: 1.125rem;
-  --font-xl: 1.25rem;
-  --font-2xl: 1.5rem;
-  --font-3xl: 1.875rem;
-  --font-4xl: 2.25rem;
-  --font-5xl: 3rem;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
 }
 
 body {
   font-family: 'Inter', sans-serif;
-  background: var(--deep-black);
-  color: var(--soft-white);
+}
+
+html, body {
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+  max-width: 100%;
+}
+
+/* ============================================
+   LOADING / APP BOOT STATE
+   ============================================ */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--deep-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.5s ease;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  border-top-color: var(--warm-gold);
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loading-text {
+  color: var(--slate-grey);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#app {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+#app.visible {
+  opacity: 1;
+}
+
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--card-bg);
+  border-radius: 16px;
+  margin: 40px auto;
+  max-width: 500px;
+}
+
+.error-message i {
+  font-size: 48px;
+  color: var(--error-color);
+  margin-bottom: 20px;
+}
+
+.error-message h3 {
+  color: var(--soft-white);
+  margin-bottom: 10px;
+}
+
+.error-message p {
+  color: var(--slate-grey);
+  margin-bottom: 20px;
+}
+
+.error-message button {
+  background: var(--bantu-blue);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.error-message button:hover {
+  background: var(--warm-gold);
+  transform: translateY(-2px);
 }
 
 /* ============================================
@@ -88,7 +147,7 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.3;
+  opacity: 0.2;
 }
 
 .glow-1 { width: 500px; height: 500px; background: var(--bantu-blue); top: -20%; left: -10%; }
@@ -101,196 +160,16 @@ body {
 }
 
 /* ============================================
-   HEADER
-   ============================================ */
-.discovery-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-xl);
-  background: rgba(10, 14, 18, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-}
-
-.menu-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  color: var(--soft-white);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.menu-btn:hover {
-  background: var(--warm-gold);
-  border-color: var(--warm-gold);
-  transform: scale(1.05);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  cursor: pointer;
-}
-
-.logo-icon {
-  width: 35px;
-  height: 35px;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-icon i {
-  font-size: 18px;
-  color: white;
-}
-
-.logo-text {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: var(--font-lg);
-  background: linear-gradient(135deg, var(--soft-white), var(--bantu-blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Live Energy Bar */
-.header-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.live-energy-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.05);
-  padding: var(--spacing-xs) var(--spacing-lg);
-  border-radius: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.live-pulse {
-  width: 10px;
-  height: 10px;
-  background: var(--error-red);
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
-
-.energy-text {
-  font-size: var(--font-sm);
-  color: var(--soft-white);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.icon-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  color: var(--soft-white);
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-.icon-btn .badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--error-red);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-menu {
-  position: relative;
-}
-
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) var(--spacing-xs);
-  border-radius: 40px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.profile-btn:hover {
-  border-color: var(--warm-gold);
-}
-
-.profile-avatar {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-sm);
-}
-
-.profile-name {
-  font-size: var(--font-sm);
-  color: var(--soft-white);
-}
-
-/* ============================================
    CINEMATIC HERO
    ============================================ */
 .cinematic-hero {
   position: relative;
-  min-height: 80vh;
+  min-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-3xl) var(--spacing-xl);
+  padding: 4rem 2rem;
   overflow: hidden;
 }
 
@@ -302,10 +181,10 @@ body {
 
 .hero-headline {
   font-family: 'Orbitron', sans-serif;
-  font-size: var(--font-5xl);
+  font-size: 3rem;
   font-weight: 800;
   line-height: 1.2;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 1.5rem;
 }
 
 .gradient-text {
@@ -315,12 +194,12 @@ body {
 }
 
 .hero-rotating-text {
-  font-size: var(--font-xl);
+  font-size: 1.25rem;
   color: var(--slate-grey);
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: 2rem;
   display: flex;
   justify-content: center;
-  gap: var(--spacing-sm);
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -337,33 +216,27 @@ body {
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-actions {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .hero-action {
-  padding: var(--spacing-md) var(--spacing-2xl);
+  padding: 1rem 2rem;
   border-radius: 50px;
-  font-size: var(--font-base);
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0.5rem;
 }
 
 .hero-action.primary {
@@ -406,10 +279,10 @@ body {
   overflow: hidden;
   white-space: nowrap;
   background: rgba(0, 0, 0, 0.3);
-  padding: var(--spacing-sm) 0;
+  padding: 0.5rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: 3rem;
 }
 
 .ticker-content {
@@ -419,13 +292,9 @@ body {
 
 .ticker-content span {
   display: inline-block;
-  margin: 0 var(--spacing-lg);
+  margin: 0 1.5rem;
   color: var(--slate-grey);
-  font-size: var(--font-sm);
-}
-
-.ticker-content span i {
-  margin-right: var(--spacing-xs);
+  font-size: 0.875rem;
 }
 
 @keyframes ticker {
@@ -437,7 +306,7 @@ body {
    DISCOVERY SECTIONS
    ============================================ */
 .discovery-section {
-  padding: var(--spacing-2xl) var(--spacing-xl);
+  padding: 3rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -446,18 +315,18 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 2rem;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: 1rem;
 }
 
 .section-title {
   font-family: 'Orbitron', sans-serif;
-  font-size: var(--font-2xl);
+  font-size: 1.5rem;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0.5rem;
 }
 
 .section-title i {
@@ -466,13 +335,13 @@ body {
 
 .section-subtitle {
   color: var(--slate-grey);
-  margin-top: var(--спасing-xs);
+  margin-top: 0.25rem;
 }
 
 .section-view-all {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: 0.5rem 1.5rem;
   border-radius: 30px;
   color: var(--soft-white);
   cursor: pointer;
@@ -490,7 +359,7 @@ body {
 .worlds-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--spacing-xl);
+  gap: 2rem;
 }
 
 .world-card {
@@ -500,6 +369,7 @@ body {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   height: 280px;
+  min-width: 0;
 }
 
 .world-card-bg {
@@ -533,7 +403,7 @@ body {
   position: relative;
   z-index: 1;
   font-size: 48px;
-  margin: var(--spacing-xl) 0 0 var(--spacing-xl);
+  margin: 2rem 0 0 2rem;
   color: white;
 }
 
@@ -542,27 +412,27 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: var(--spacing-lg);
+  padding: 1.5rem;
   background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
   z-index: 1;
 }
 
 .world-name {
-  font-size: var(--font-xl);
+  font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 0.25rem;
 }
 
 .world-desc {
-  font-size: var(--font-sm);
+  font-size: 0.875rem;
   color: var(--slate-grey);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 0.5rem;
 }
 
 .world-genres {
   display: flex;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-sm);
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -571,6 +441,7 @@ body {
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .world-stats {
@@ -579,19 +450,8 @@ body {
   align-items: center;
 }
 
-.active-count {
-  font-size: var(--font-xs);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.active-count i {
-  font-size: 8px;
-}
-
 .explore-world-btn {
-  font-size: var(--font-sm);
+  font-size: 0.875rem;
   color: var(--warm-gold);
   background: none;
   border: none;
@@ -607,7 +467,7 @@ body {
 .skeleton-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
+  gap: 1.5rem;
 }
 
 .skeleton-world-card {
@@ -618,33 +478,8 @@ body {
   border-radius: 24px;
 }
 
-.skeleton-creator-card {
-  height: 100px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 16px;
-  margin-bottom: var(--spacing-sm);
-}
-
-.skeleton-live-card {
-  height: 300px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 20px;
-}
-
 .skeleton-cultural-card {
   height: 200px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 20px;
-}
-
-.skeleton-editorial-card {
-  height: 250px;
   background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -658,10 +493,85 @@ body {
 
 .empty-state, .error-state {
   text-align: center;
-  padding: var(--spacing-3xl);
+  padding: 4rem;
   color: var(--slate-grey);
   background: rgba(255,255,255,0.03);
   border-radius: 20px;
+  grid-column: 1 / -1;
 }
 
-/* Continue in next message for remaining CSS... */
+/* ============================================
+   RESPONSIVE - breakpoints match creator-channel.css
+   (480px / 768px / 1200px / 1600px)
+   ============================================ */
+@media (max-width: 1200px) {
+  .worlds-container {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-headline {
+    font-size: 2rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .discovery-section {
+    padding: 2rem 1rem;
+  }
+
+  .worlds-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+  }
+
+  .world-name {
+    font-size: 1.1rem;
+  }
+
+  .world-desc {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-headline {
+    font-size: 1.6rem;
+  }
+
+  .cinematic-hero {
+    padding: 2.5rem 1rem;
+    min-height: 60vh;
+  }
+
+  .discovery-section {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .world-card {
+    height: 240px;
+  }
+
+  .world-icon {
+    margin: 1.25rem 0 0 1.25rem;
+    font-size: 36px;
+  }
+
+  .ticker-content span {
+    font-size: 0.8rem;
+    margin: 0 1rem;
+  }
+}
