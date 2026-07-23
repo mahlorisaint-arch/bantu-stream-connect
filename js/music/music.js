@@ -27,7 +27,7 @@
   // ===== ARCHETYPE DEFINITIONS =====
   const ARCHETYPES = {
     'Sound Nomad': {
-      desc: 'You chase sounds that move after dark.',
+      desc: 'You never stay in one lane — always chasing the next sound.',
       color: '#34E7FF'
     },
     'Night Voyager': {
@@ -43,33 +43,40 @@
       color: '#10B981'
     },
     'Underground Pulse': {
-      desc: 'You dig deeper than the surface.',
+      desc: 'You dig deeper than the surface, past what everyone else is playing.',
       color: '#EC4899'
     },
     'Root Seeker': {
-      desc: 'You find your home in one sound.',
+      desc: 'You find your home in one sound and stay there.',
       color: '#F59E0B'
     },
     'Golden Root': {
-      desc: 'You honor the classics.',
+      desc: 'You honor the classics — the sound that raised you.',
       color: '#F97316'
     },
     'Border Blur': {
-      desc: 'You move between worlds.',
+      desc: 'You move between worlds, never quite settled in one.',
       color: '#06B6D4'
     }
   };
 
   // ===== GENRE MOODS LOOKUP TABLE (Section 2) =====
+  // Keyed on the real genre names seeded in the `genres` table (verified
+  // against the live DB - the old keys like 'Afrobeat'/'Highlife'/'Soul'/
+  // 'Hip-Hop' don't exist there at all, which silently flattened every
+  // mood score to the 0.4/0.4/0.4 generic fallback for real users).
   const GENRE_MOODS = {
-    'Amapiano':  { nocturnal: 0.8, energetic: 0.4, spiritual: 0.2 },
-    'Gqom':      { nocturnal: 0.7, energetic: 0.5, spiritual: 0.1 },
-    'Afrobeat':  { nocturnal: 0.3, energetic: 0.8, spiritual: 0.2 },
-    'Afrofusion':{ nocturnal: 0.4, energetic: 0.7, spiritual: 0.3 },
-    'Highlife':  { nocturnal: 0.2, energetic: 0.5, spiritual: 0.3 },
-    'Soul':      { nocturnal: 0.4, energetic: 0.2, spiritual: 0.7 },
-    'Gospel':    { nocturnal: 0.1, energetic: 0.3, spiritual: 0.9 },
-    'Hip-Hop':   { nocturnal: 0.5, energetic: 0.6, spiritual: 0.2 }
+    'Amapiano':     { nocturnal: 0.8, energetic: 0.4, spiritual: 0.2 },
+    'Gqom':         { nocturnal: 0.7, energetic: 0.5, spiritual: 0.1 },
+    'Afro House':   { nocturnal: 0.5, energetic: 0.6, spiritual: 0.4 },
+    'Hip Hop (SA)': { nocturnal: 0.5, energetic: 0.7, spiritual: 0.15 },
+    'Gospel':       { nocturnal: 0.1, energetic: 0.3, spiritual: 0.9 },
+    'Jazz (SA)':    { nocturnal: 0.4, energetic: 0.2, spiritual: 0.7 },
+    'Kwaito':       { nocturnal: 0.6, energetic: 0.5, spiritual: 0.2 },
+    'House (SA)':   { nocturnal: 0.6, energetic: 0.6, spiritual: 0.3 },
+    'SA R&B':       { nocturnal: 0.5, energetic: 0.3, spiritual: 0.4 },
+    'Maskandi':     { nocturnal: 0.2, energetic: 0.3, spiritual: 0.6 },
+    'Mbaqanga':     { nocturnal: 0.2, energetic: 0.5, spiritual: 0.4 }
   };
 
   // ===== HELPER FUNCTIONS =====
@@ -181,7 +188,8 @@
       }
 
       // ✅ SECTION 3 FIX: Fallback fetch real genres by name instead of inventing fake UUIDs
-      const fallbackNames = ['Amapiano', 'Afrobeat', 'Highlife', 'Hip-Hop', 'Soul', 'Gospel'];
+      // (names verified against the live genres table - the old list only matched 2 of 6)
+      const fallbackNames = ['Amapiano', 'Gqom', 'Afro House', 'Hip Hop (SA)', 'Gospel', 'Jazz (SA)'];
       const { data: realGenres } = await supabase
         .from('genres')
         .select('*')
@@ -403,10 +411,9 @@
       const topGenre = this.selections[0]?.name || '';
 
       if (['Amapiano', 'Gqom'].includes(topGenre)) return 'Night Voyager';
-      if (['Afrobeat', 'Afrofusion'].includes(topGenre)) return 'Heat Chaser';
-      if (['Soul', 'Gospel'].includes(topGenre)) return 'Soul Carrier';
-      if (topGenre === 'Highlife') return 'Golden Root';
-      if (topGenre === 'Hip-Hop') return 'Underground Pulse';
+      if (['Afro House', 'Hip Hop (SA)'].includes(topGenre)) return 'Heat Chaser';
+      if (['Jazz (SA)', 'Gospel'].includes(topGenre)) return 'Soul Carrier';
+      if (topGenre === 'Maskandi') return 'Golden Root';
 
       return 'Sound Nomad';
     }
