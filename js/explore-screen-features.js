@@ -427,6 +427,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     modal.className = 'world-expanded-modal';
 
     let contentItems = [];
+    let itemKind = 'content';
 
     switch (worldConfig.id) {
       case 'film':
@@ -439,9 +440,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         break;
       case 'creator':
         contentItems = await window.fetchers.fetchFeaturedCreators(10);
+        itemKind = 'creator';
         break;
       case 'culture':
         contentItems = await window.fetchers.getContentByType('culture', 10);
+        if (contentItems.length === 0) {
+          contentItems = await window.fetchers.fetchCulturalMovements(10);
+          itemKind = 'movement';
+        }
         break;
       default:
         contentItems = await window.fetchers.getContentByType('video', 10);
@@ -463,7 +469,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           ${worldConfig.categories.map(cat => `<span class="category-chip">${cat}</span>`).join('')}
         </div>
         <div class="content-grid">
-          ${hasContent ? contentItems.slice(0, 10).map(item => renderContentItem(item, worldConfig.id)).join('') : '<div class="empty-state">Nothing here yet — check back soon.</div>'}
+          ${hasContent ? contentItems.slice(0, 10).map(item => itemKind === 'movement' ? renderMovementCard(item) : renderContentItem(item, itemKind)).join('') : '<div class="empty-state">Nothing here yet — check back soon.</div>'}
         </div>
         <div class="expanded-modal-footer">
           <button class="view-all-btn" data-redirect="${worldConfig.redirectUrl}" style="background: linear-gradient(135deg, ${worldConfig.color}, ${worldConfig.color}80);">
@@ -488,6 +494,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.body.style.overflow = '';
       }
     });
+
+    if (itemKind === 'movement') {
+      modal.querySelectorAll('.movement-card').forEach(card => {
+        card.addEventListener('click', () => {
+          modal.remove();
+          document.body.style.overflow = '';
+          document.getElementById('culturalHub')?.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+    }
 
     const viewAllBtn = modal.querySelector('.view-all-btn');
     if (viewAllBtn) {
@@ -531,6 +547,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             <span><i class="fas fa-heart"></i> ${window.formatNumber(item.real_likes || 0)}</span>
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  function renderMovementCard(movement) {
+    return `
+      <div class="content-card creator-card movement-card">
+        <div class="content-card-avatar"><i class="fas fa-compass"></i></div>
+        <h4>${window.escapeHtml(movement.name)}</h4>
+        <p>${movement.description ? window.escapeHtml(movement.description.substring(0, 80)) : `Explore the ${window.escapeHtml(movement.name)} movement`}</p>
       </div>
     `;
   }
