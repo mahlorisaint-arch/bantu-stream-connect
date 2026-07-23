@@ -649,109 +649,78 @@
     async function loadDashboardData() {
         try {
             setLoading(true, 'Loading dashboard data...');
-            
-            let analyticsData = null;
-            let content = [];
-            
-            if (analyticsManager) {
-                try {
-                    const dashboardResult = await analyticsManager.getDashboardData('30days');
-                    if (dashboardResult && !dashboardResult.error) {
-                        analyticsData = {
-                            total_uploads: dashboardResult.summary.totalUploads,
-                            total_views: dashboardResult.summary.totalViews,
-                            total_earnings: dashboardResult.summary.totalEarnings,
-                            total_connectors: dashboardResult.summary.totalConnectors,
-                            engagement_percentage: dashboardResult.summary.engagementPercentage,
-                            is_eligible_for_monetization: dashboardResult.summary.isEligibleForMonetization
-                        };
-                        content = dashboardResult.content || [];
-                        console.log('✅ Analytics data loaded via analytics manager');
-                    }
-                } catch (analyticsError) {
-                    console.warn('Analytics manager failed, falling back:', analyticsError);
-                }
-            }
-            
-            if (!analyticsData) {
-                try {
-                    const { data, error } = await window.supabaseClient
-                        .from('Content')
-                        .select('*, user_profiles!user_id(*)')
-                        .eq('user_id', currentUser.id)
-                        .eq('status', 'published')
-                        .order('created_at', { ascending: false })
-                        .limit(50);
-                    
-                    if (error) throw error;
-                    
-                    content = data || [];
 
-                    let totalViewsCount = 0;
+            // Single, consistent source of truth for these stats. This used
+            // to branch through analyticsManager.getDashboardData('30days')
+            // first (a 30-day-windowed view count, uploads count with no
+            // status filter) and only fall back to a second, differently-
+            // scoped direct query (lifetime views, published-only uploads)
+            // if that failed - so the same stat card could show two
+            // different numbers depending on which path happened to run.
+            // Always computing directly here removes that inconsistency.
+            //
+            // No status filter on Content: "Total Uploads" now matches what
+            // my-uploads.html counts (all of a creator's content, published
+            // or draft) - the upload-card renderer below already branches on
+            // Published/Draft status, but could never actually show a draft
+            // before since the old query excluded them.
+            const { data, error } = await window.supabaseClient
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false });
 
-                    for (const item of content) {
-                        const { count } = await window.supabaseClient
-                            .from('content_views')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('content_id', item.id);
+            if (error) throw error;
 
-                        const viewsCount = count || 0;
-                        totalViewsCount += viewsCount;
-                        item.real_views = viewsCount;
-                    }
+            const content = data || [];
+            const contentIds = content.map(item => item.id);
 
-                    const { count: connectorsCount } = await window.supabaseClient
-                        .from('connectors')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('connected_id', currentUser.id)
-                        .eq('connection_type', 'creator');
+            // Real views from content_engagement_stats - not content_views,
+            // which is RLS-blocked for this kind of read (same convention
+            // used platform-wide for views/likes/comments).
+            const { data: statsData } = contentIds.length
+                ? await window.supabaseClient
+                    .from('content_engagement_stats')
+                    .select('content_id, total_views')
+                    .in('content_id', contentIds)
+                : { data: [] };
 
-                    // Real earnings from creator_earnings, not a fabricated
-                    // views * 0.01 estimate (matches creator-analytics.js's
-                    // _calculateSummary(), the working reference pattern).
-                    const { data: earningsData } = await window.supabaseClient
-                        .from('creator_earnings')
-                        .select('amount')
-                        .eq('creator_id', currentUser.id);
-                    const totalEarningsAmount = (earningsData || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+            const viewsMap = {};
+            (statsData || []).forEach(row => { viewsMap[row.content_id] = row.total_views || 0; });
 
-                    analyticsData = {
-                        total_uploads: content.length || 0,
-                        total_views: totalViewsCount,
-                        total_earnings: totalEarningsAmount,
-                        total_connectors: connectorsCount || 0,
-                        engagement_percentage: content.length > 0 ? (totalViewsCount / content.length) : 0,
-                        is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
-                    };
-                } catch (error) {
-                    console.error('Error loading data:', error);
-                    throw error;
-                }
-            }
-            
-            if (content.length === 0 && analyticsData.total_uploads > 0) {
-                const { data: contentData, error: contentError } = await window.supabaseClient
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('user_id', currentUser.id)
-                    .eq('status', 'published')
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                
-                if (!contentError && contentData) {
-                    content = contentData;
-                    for (const item of content) {
-                        if (!item.real_views) {
-                            const { count } = await window.supabaseClient
-                                .from('content_views')
-                                .select('*', { count: 'exact', head: true })
-                                .eq('content_id', item.id);
-                            item.real_views = count || 0;
-                        }
-                    }
-                }
-            }
-            
+            let totalViewsCount = 0;
+            content.forEach(item => {
+                item.real_views = viewsMap[item.id] || 0;
+                totalViewsCount += item.real_views;
+            });
+
+            const { count: connectorsCount } = await window.supabaseClient
+                .from('connectors')
+                .select('*', { count: 'exact', head: true })
+                .eq('connected_id', currentUser.id)
+                .eq('connection_type', 'creator');
+
+            // Real earnings from creator_earnings, not a fabricated
+            // views * 0.01 estimate (matches creator-analytics.js's
+            // _calculateSummary(), the working reference pattern). The
+            // Earnings stat card is hidden for now, but this is still
+            // computed in case it's needed elsewhere (e.g. monetization
+            // eligibility messaging).
+            const { data: earningsData } = await window.supabaseClient
+                .from('creator_earnings')
+                .select('amount')
+                .eq('creator_id', currentUser.id);
+            const totalEarningsAmount = (earningsData || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+
+            const analyticsData = {
+                total_uploads: content.length || 0,
+                total_views: totalViewsCount,
+                total_earnings: totalEarningsAmount,
+                total_connectors: connectorsCount || 0,
+                engagement_percentage: content.length > 0 ? (totalViewsCount / content.length) : 0,
+                is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
+            };
+
             const { data: userProfile } = await window.supabaseClient
                 .from('user_profiles')
                 .select('*')
@@ -816,7 +785,7 @@
             creatorAvatar.src = avatarUrl;
         }
         
-        const connectors = dashboardData.analytics.total_connectors || 10;
+        const connectors = dashboardData.analytics.total_connectors || 0;
         if (connectorCount) {
             connectorCount.textContent = `${formatNumber(connectors)} Connector${connectors !== 1 ? 's' : ''}`;
         }
