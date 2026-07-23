@@ -1,0 +1,211 @@
+/* ==========================================================================
+   BANTU STREAM CONNECT — WATCH HISTORY SCREEN
+   Page-specific styles only. Header/sidebar/footer/loading-screen/toast/
+   theme-selector all come from shared-components.css. Card shapes, badge
+   styling, and section-header pattern mirror css/music/music.css's real
+   .continue-card / .section-header exactly (history-card-* class names are
+   a 1:1 rename of continue-card-*).
+   ========================================================================== */
+
+.watch-history-main { max-width: 1600px; margin: 0 auto; padding: 0 5% 120px; }
+
+/* ===== ANIMATED BACKGROUND (same pattern as movies.css/music.css) ===== */
+.animated-bg {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
+  pointer-events: none;
+}
+.glow-cycle {
+  position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.1;
+  animation: float 8s infinite ease-in-out;
+}
+.glow-1 { width: 400px; height: 400px; background: var(--bantu-blue); top: 10%; left: 5%; }
+.glow-2 { width: 300px; height: 300px; background: var(--warm-gold); top: 60%; right: 10%; animation-delay: 2s; }
+.glow-3 { width: 350px; height: 350px; background: var(--success-color); bottom: 10%; left: 20%; animation-delay: 4s; }
+@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
+
+/* ===== PAGE HEADER ===== */
+.page-header { text-align: center; padding: 40px 0 16px; }
+.page-header h1 {
+  font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 700;
+  background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin: 0 0 8px; display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.page-header h1 i { color: var(--warm-gold); -webkit-text-fill-color: var(--warm-gold); }
+.page-subtitle { color: var(--slate-grey); font-size: 14px; }
+
+/* ===== STATS SUMMARY ===== */
+.history-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+  padding: 20px; display: flex; align-items: center; gap: 14px; backdrop-filter: blur(10px);
+}
+.stat-card i { font-size: 22px; color: var(--warm-gold); width: 32px; text-align: center; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--soft-white); }
+.stat-label { font-size: 12px; color: var(--slate-grey); }
+
+/* ===== FILTERS BAR ===== */
+.filters-bar {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+  padding: 16px; margin-bottom: 32px; backdrop-filter: blur(10px);
+}
+.filter-group { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+.filter-group label {
+  font-size: 11px; color: var(--slate-grey); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.filter-select {
+  padding: 8px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border);
+  border-radius: 8px; color: var(--soft-white); font-size: 13px; font-family: 'Inter', sans-serif;
+  cursor: pointer; outline: none; transition: border-color 0.2s ease;
+}
+.filter-select:focus { border-color: var(--brand-cyan-core); }
+.filter-select option { background: var(--deep-navy); color: var(--soft-white); }
+.clear-history-btn {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s ease; font-family: 'Inter', sans-serif;
+}
+.clear-history-btn:hover { background: rgba(239, 68, 68, 0.25); }
+
+/* ===== SECTION HEADER (matches css/music/music.css exactly) ===== */
+.history-section { margin-bottom: 40px; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+}
+.section-title {
+  font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 600;
+  color: var(--soft-white); display: flex; align-items: center; gap: 10px;
+  margin: 0; letter-spacing: 0.5px;
+}
+.section-title i { color: var(--warm-gold); }
+@media (min-width: 768px) { .section-title { font-size: 20px; } }
+.history-count {
+  font-size: 13px; color: var(--slate-grey); background: rgba(255, 255, 255, 0.06);
+  padding: 4px 12px; border-radius: 20px;
+}
+
+/* ===== HISTORY GRID + CARDS
+   1:1 rename of css/music/music.css's real .continue-card pattern:
+   continue-card -> history-card, continue-card-artwork -> history-card-thumb,
+   etc. Same 16:9 thumbnail, same badge/duration/progress/play positions. ===== */
+.history-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;
+}
+@media (min-width: 768px) {
+  .history-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+}
+
+.history-card {
+  cursor: pointer; transition: transform 0.2s ease; color: inherit; display: block;
+}
+.history-card:hover, .history-card:focus-visible { transform: translateY(-4px); }
+.history-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; border-radius: 8px; }
+
+.history-card-thumb {
+  position: relative; background: var(--bg-media, #1a2033); border-radius: 6px;
+  aspect-ratio: 16 / 9; margin-bottom: 6px; overflow: hidden;
+  background-size: cover; background-position: center;
+}
+.history-card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+.history-card:hover .history-card-thumb img { transform: scale(1.05); }
+
+.history-card-badge {
+  position: absolute; top: 5px; left: 5px; font-size: 9px; padding: 2px 8px;
+  border-radius: 3px; font-weight: 600; color: white; display: inline-flex;
+  align-items: center; gap: 4px; z-index: 3;
+}
+.history-card-badge.is-completed { background: var(--success-color); }
+.history-card-badge.is-progress { background: var(--brand-cyan-core); }
+
+.history-card-duration {
+  position: absolute; bottom: 5px; right: 5px; font-size: 10px; color: white;
+  background: rgba(0, 0, 0, 0.7); padding: 1px 6px; border-radius: 3px;
+}
+
+.history-card-progress {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(0, 0, 0, 0.5);
+}
+.history-card-progress-fill {
+  height: 100%; background: var(--brand-cyan-core); box-shadow: 0 0 8px rgba(29, 78, 216, 0.5);
+  transition: width 0.3s ease;
+}
+
+.history-card-play {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(7, 17, 31, 0.25); opacity: 0; transition: opacity 0.2s ease;
+}
+.history-card:hover .history-card-play, .history-card:focus-visible .history-card-play { opacity: 1; }
+.history-card-play i {
+  font-size: 22px; color: var(--brand-cyan-core);
+  text-shadow: 0 0 3px var(--brand-cyan-core), 0 0 8px var(--brand-cyan-core), 0 0 18px rgba(29, 78, 216, 0.75);
+}
+
+.history-card-title {
+  font-size: 12px; font-weight: 500; line-height: 1.4; margin: 0 0 3px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  color: var(--soft-white);
+}
+.history-card-byline {
+  font-size: 11px; color: var(--slate-grey); margin: 0 0 3px;
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.history-card-meta {
+  font-size: 11px; color: var(--slate-grey); display: flex; align-items: center;
+  gap: 6px; flex-wrap: wrap; margin: 0;
+}
+.history-card-meta .meta-divider { color: rgba(148, 163, 184, 0.4); }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center; padding: 64px 20px; color: var(--slate-grey);
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+  backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center;
+}
+.empty-state i { font-size: 48px; color: var(--slate-grey); margin-bottom: 16px; }
+.empty-state h3 { color: var(--soft-white); margin: 0 0 8px; font-size: 18px; }
+.empty-state p { margin: 0 0 20px; }
+.empty-state-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px;
+  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue)); color: white;
+  border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;
+  transition: transform 0.2s ease;
+}
+.empty-state-btn:hover { transform: translateY(-2px); }
+
+/* ===== RESPONSIVE — breakpoints match Creator Channel/Movies/Music (768/480) ===== */
+@media (max-width: 768px) {
+  .page-header { padding: 24px 0 12px; }
+  .page-header h1 { font-size: 24px; }
+  .filters-bar { flex-direction: column; align-items: stretch; }
+  .filter-group { min-width: 100%; }
+  .clear-history-btn { margin-left: 0; justify-content: center; }
+  .history-stats { grid-template-columns: 1fr; gap: 12px; }
+  .history-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .watch-history-main { padding: 0 4% 100px; }
+  .page-header h1 { font-size: 20px; }
+  .filters-bar { padding: 12px; }
+  .filter-select { font-size: 12px; padding: 6px 10px; }
+  .history-grid { gap: 8px; }
+  .history-card-title { font-size: 11px; }
+  .history-card-meta { font-size: 10px; }
+}
+
+/* Music's own 360px tier only nudges a few specific tight-fitting text
+   elements (sonic-dna-archetype, portal-card-note, etc.) - it isn't a
+   generic layout tier. Same spirit here: small text-size nudges only. */
+@media (max-width: 360px) {
+  .page-header h1 { font-size: 18px; }
+  .stat-value { font-size: 16px; }
+  .history-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+}
