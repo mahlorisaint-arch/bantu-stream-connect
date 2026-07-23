@@ -844,6 +844,11 @@ transition: all 0.2s ease;
 background: rgba(255,255,255,0.05);
 border-color: var(--text-secondary);
 }
+.channel-actions .icon-action-btn.active {
+background: rgba(245, 158, 11, 0.15);
+border-color: var(--warm-gold);
+color: var(--warm-gold);
+}
 
 /* ===== FIX 5: THREE-DOT DROPDOWN MENU ===== */
 .more-menu-wrapper { position: relative; }

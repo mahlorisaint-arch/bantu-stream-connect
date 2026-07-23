@@ -32,6 +32,24 @@
   flex-wrap: wrap;
 }
 
+.section-see-all {
+  background: none;
+  border: none;
+  color: var(--slate-grey);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.section-see-all:hover {
+  color: var(--portal-cyan);
+}
+
 .section-title {
   font-family: 'Orbitron', sans-serif;
   font-size: 18px;

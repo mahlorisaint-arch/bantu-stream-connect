@@ -2569,6 +2569,7 @@ setBannerImage(profile.channel_banner_url);
 
 if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
 window.creatorContent = await loadContentWithEngagementStats(window.creatorId, 50);
+window.streakCount = computeUploadStreak(window.creatorContent);
 
 const { count: connectorCount, error: countError } = await supabase
 .from('connectors')
@@ -2611,6 +2612,7 @@ playlists: window.playlists.length
 
 updateProfileUI();
 updateConnectButton();
+setupNotifyButton();
 renderHomeTab();
 renderAboutTab();
 
@@ -2663,6 +2665,26 @@ btn.onclick = handleDisconnect;
 btn.innerHTML = '<i class="fas fa-link"></i> Connect';
 btn.onclick = handleConnect;
 }
+}
+
+// ===== NOTIFY BUTTON — real localStorage-persisted upload notification toggle =====
+function setupNotifyButton() {
+const btn = document.getElementById('notify-btn');
+if (!btn || !window.creatorId) return;
+
+const storageKey = `notify_creator_${window.creatorId}`;
+const isActive = localStorage.getItem(storageKey) === 'true';
+btn.classList.toggle('active', isActive);
+
+btn.onclick = () => {
+const nowActive = !btn.classList.contains('active');
+btn.classList.toggle('active', nowActive);
+localStorage.setItem(storageKey, String(nowActive));
+showToast(
+nowActive ? "You'll be notified about new uploads from this creator" : 'Notifications turned off',
+nowActive ? 'success' : 'info'
+);
+};
 }
 
 function handleLoginRequired() {

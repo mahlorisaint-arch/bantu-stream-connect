@@ -116,6 +116,50 @@ body {
 }
 
 /* ============================================ */
+/* LOADING SCREEN - platform-wide boot state, used by every screen's
+   <div id="loading" class="loading-screen"><div class="spinner"></div>
+   <div id="loading-text">...</div></div> pattern */
+/* ============================================ */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--deep-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  gap: 20px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(245, 158, 11, 0.15);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spinLoading 0.9s linear infinite;
+}
+
+@keyframes spinLoading {
+  to { transform: rotate(360deg); }
+}
+
+#loading-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--slate-grey);
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+html.theme-light .loading-screen { background: var(--deep-black); }
+html.theme-high-contrast .spinner { border-top-color: #FFD700; }
+
+/* ============================================ */
 /* TOAST NOTIFICATIONS */
 /* ============================================ */
 #toast-container {
