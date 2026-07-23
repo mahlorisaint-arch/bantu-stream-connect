@@ -17,7 +17,8 @@
 </head>
 <body>
 
-<!-- SIDEBAR OVERLAY & MENU -->
+<!-- SIDEBAR OVERLAY & MENU (canonical v4.0 sectioned sidebar, copied verbatim
+     from category/music.html) -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
   <div class="sidebar-header">
@@ -36,16 +37,76 @@
     <i class="fas fa-chevron-right"></i>
   </div>
   <nav class="sidebar-nav">
-    <a href="../index.html" class="sidebar-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
-    <a href="../explore-screen.html" class="sidebar-nav-item"><i class="fas fa-compass"></i><span>Explore</span></a>
-    <a href="../category/movies.html" class="sidebar-nav-item active"><i class="fas fa-film"></i><span>Movies</span></a>
-    <a href="../category/music.html" class="sidebar-nav-item"><i class="fas fa-music"></i><span>Music</span></a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
-    <a href="#" class="sidebar-nav-item" id="sidebar-notifications"><i class="fas fa-bell"></i><span>Notifications</span><span class="badge" id="sidebar-notification-count" style="display: none;">0</span></a>
-    <a href="../creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
-    <a href="../manage-profiles.html" class="sidebar-nav-item"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+
+    <!-- MAIN -->
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header">
+        <span>MAIN</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="../explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+        <a href="../trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+        <a href="../discover-creator.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="sidebar-section" data-section-id="categories">
+      <div class="sidebar-section-header">
+        <span>CATEGORIES</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="movies.html" class="sidebar-nav-item active" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+        <a href="music.html" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+      </div>
+    </div>
+
+    <!-- YOU -->
+    <div class="sidebar-section" data-section-id="you">
+      <div class="sidebar-section-header">
+        <span>YOU</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../my-space.html" class="sidebar-nav-item" data-page="my-space"><i class="fas fa-layer-group"></i><span>My Space</span></a>
+        <a href="../watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+      </div>
+    </div>
+
+    <!-- CREATOR (hidden until checkAndShowCreatorSection confirms published content) -->
+    <div class="sidebar-section creator-only" data-section-id="creator" style="display: none;">
+      <div class="sidebar-section-header">
+        <span>CREATOR</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+        <a href="../creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="sidebar-section" data-section-id="account">
+      <div class="sidebar-section-header">
+        <span>ACCOUNT</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="../settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+        <a href="../manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+      </div>
+    </div>
+
   </nav>
   <div class="sidebar-footer">
+    <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+      <label class="toggle-switch"><input type="checkbox" id="creatorModeSwitch"><span class="toggle-slider"></span></label>
+      <span class="toggle-label">Creator Mode</span>
+    </div>
     <div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
     <div class="sidebar-scale-control">
       <div class="scale-control-row">
@@ -87,16 +148,15 @@
 
 <!-- ===== MAIN APP ===== -->
 <div id="app" style="display: none;">
-  <header class="header">
+  <header class="header" id="site-header">
     <div class="logo" onclick="window.location.href='../index.html'">
-      <button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+      <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu"><i class="fas fa-bars"></i></button>
       <div class="logo-icon"><img src="../assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
       <div class="logo-text">BSC</div>
     </div>
     <div class="header-actions">
-      <button id="voice-search-btn" class="icon-btn"><i class="fas fa-microphone"></i></button>
-      <button id="search-btn" class="icon-btn search-btn"><i class="fas fa-search"></i></button>
-      <button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display: none;">0</span></button>
+      <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)"><i class="fas fa-search"></i></button>
+      <button id="notifications-btn" class="icon-btn" title="Notifications"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display: none;">0</span></button>
       <div class="profile-switcher">
         <button id="current-profile-btn" class="profile-btn">
           <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
@@ -157,6 +217,7 @@
         <button class="filter-chip" data-filter="series">Series</button>
         <button class="filter-chip" data-filter="film">Films</button>
         <button class="filter-chip" data-filter="documentary">Docs</button>
+        <button class="filter-chip" data-filter="podcast">Podcasts</button>
       </div>
     </section>
 
@@ -228,14 +289,6 @@
     </div>
   </footer>
 
-  <div class="navigation-button-container">
-    <div class="navigation-button">
-      <div class="nav-icon" id="nav-home-btn"><i class="fas fa-home"></i></div>
-      <div class="nav-icon" id="nav-history-btn"><i class="fas fa-history"></i></div>
-      <div class="nav-icon" id="nav-create-btn"><i class="fas fa-plus-circle"></i></div>
-      <div class="nav-icon" id="nav-menu-btn"><i class="fas fa-bars"></i></div>
-    </div>
-  </div>
 </div>
 
 <div id="notifications-panel" class="notifications-panel">

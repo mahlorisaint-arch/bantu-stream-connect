@@ -83,7 +83,7 @@
     return `${formatNumber(getViewCount(item))} views`;
   }
 
-  const MOVIES_CONTENT_FORMATS = ['film', 'documentary', 'series_episode'];
+  const MOVIES_CONTENT_FORMATS = ['film', 'documentary', 'series_episode', 'podcast_episode'];
 
   function matchesCurrentFilter(item) {
     if (!item) return false;
@@ -95,6 +95,7 @@
     if (currentFilter === 'series') return item.content_format === 'series_episode';
     if (currentFilter === 'film') return item.content_format === 'film';
     if (currentFilter === 'documentary') return item.content_format === 'documentary';
+    if (currentFilter === 'podcast') return item.content_format === 'podcast_episode';
     return false;
   }
 
@@ -198,6 +199,7 @@
     film: { label: 'Film', color: '#EF4444' },
     documentary: { label: 'Documentary', color: '#8B5CF6' },
     series_episode: { label: 'Series', color: '#10B981' },
+    podcast_episode: { label: 'Podcast', color: '#7F77DD' },
     short: { label: 'Short', color: '#EC4899' },
     long_form: { label: 'Video', color: '#1D4ED8' }
   };
@@ -224,6 +226,7 @@
     if (currentFilter === 'series') return query.eq('content_format', 'series_episode');
     if (currentFilter === 'film') return query.eq('content_format', 'film');
     if (currentFilter === 'documentary') return query.eq('content_format', 'documentary');
+    if (currentFilter === 'podcast') return query.eq('content_format', 'podcast_episode');
 
     return query;
   }
