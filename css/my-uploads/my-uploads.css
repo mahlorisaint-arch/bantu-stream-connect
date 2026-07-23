@@ -105,6 +105,137 @@
   color: var(--warm-gold);
 }
 
+/* My Playlists (creator_playlists) — card shape matches the platform-wide
+   playlist-card pattern (css/my-space/my-space.css's .playlist-card). */
+.playlists-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.section-title i {
+  color: var(--warm-gold);
+}
+
+.playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.playlist-card {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.playlist-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.playlist-card-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--deep-navy);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playlist-card-thumb .playlist-icon-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(29, 78, 216, 0.18);
+  border: 1px solid rgba(29, 78, 216, 0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playlist-card-thumb .playlist-icon-placeholder i {
+  font-size: 16px;
+  color: var(--bantu-blue);
+}
+
+.playlist-card-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  color: white;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.playlist-card-body {
+  padding: 12px;
+}
+
+.playlist-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft-white);
+  margin: 0 0 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-card-meta {
+  font-size: 11px;
+  color: var(--slate-grey);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.playlist-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.playlist-card:hover .playlist-delete-btn {
+  opacity: 1;
+}
+
+.playlist-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: var(--error-color);
+}
+
 /* Search and Filter Section */
 .search-filter-section {
   margin-bottom: 30px;
@@ -691,7 +822,8 @@
   transition: width 0.3s ease;
 }
 
-/* Creator Summary Card */
+/* Creator Summary Card — 3 columns now that Earnings is hidden (no real
+   payout flow exists yet, consistent with creator-dashboard.html). */
 .creator-summary {
   background: linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(245, 158, 11, 0.1));
   border: 1px solid var(--card-border);
@@ -700,7 +832,7 @@
   margin-bottom: 30px;
   backdrop-filter: blur(10px);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 

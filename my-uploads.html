@@ -200,11 +200,15 @@
         <div class="summary-value" id="totalComments">0</div>
         <div class="summary-sub">all time</div>
       </div>
-      <div class="summary-item">
-        <div class="summary-label">Total Earnings</div>
-        <div class="summary-value" id="totalEarnings">R0.00</div>
-        <div class="summary-sub" id="monetizationStatus">not monetized</div>
-      </div>
+      <!-- Total Earnings hidden for now — no real payout flow exists yet. -->
+    </div>
+
+    <!-- My Playlists Section (creator_playlists — a creator's own upload
+         organization, e.g. albums/series/podcast seasons. Separate system
+         from the user's personal `playlists` used on my-space.html.) -->
+    <div id="playlistsSection" class="playlists-section" style="display: none;">
+      <h2 class="section-title"><i class="fas fa-list"></i> My Playlists</h2>
+      <div id="playlistsGrid" class="playlists-grid"></div>
     </div>
 
     <!-- Search and Filter Section -->
@@ -264,7 +268,7 @@
       <div class="modal-icon">
         <i class="fas fa-exclamation-triangle" style="color: var(--error-color);"></i>
       </div>
-      <div class="modal-title">Delete Content</div>
+      <div class="modal-title" id="deleteModalTitle">Delete Content</div>
       <button class="modal-close" id="closeDeleteModal">
         <i class="fas fa-times"></i>
       </button>
@@ -275,7 +279,7 @@
       </p>
       <div class="modal-note">
         <i class="fas fa-info-circle"></i>
-        This action cannot be undone. The content will be removed from all feeds and your dashboard.
+        <span id="deleteModalNote">This action cannot be undone. The content will be removed from all feeds and your dashboard.</span>
       </div>
     </div>
     <div class="modal-actions">
@@ -513,14 +517,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const retryBtn = document.getElementById('retryBtn');
   const backToDashboardBtn = document.getElementById('backToDashboardBtn');
   const creatorSummary = document.getElementById('creatorSummary');
-  
+
   // Creator Summary Elements
   const totalViews = document.getElementById('totalViews');
   const totalLikes = document.getElementById('totalLikes');
   const totalComments = document.getElementById('totalComments');
-  const totalEarnings = document.getElementById('totalEarnings');
-  const monetizationStatus = document.getElementById('monetizationStatus');
-  
+
+  // My Playlists Elements (creator_playlists)
+  const playlistsSection = document.getElementById('playlistsSection');
+  const playlistsGrid = document.getElementById('playlistsGrid');
+
   // Modal Elements
   const deleteModal = document.getElementById('deleteModal');
   const closeDeleteModal = document.getElementById('closeDeleteModal');
@@ -552,11 +558,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   let filteredContent = [];
   let selectedFilter = 'all';
   let currentDeleteId = null;
+  let currentDeleteType = 'content'; // 'content' | 'playlist'
   let currentInsightsContent = null;
   let currentEditContent = null;
   let isLoading = true;
   let notifications = [];
   let creatorAnalytics = null;
+  let creatorPlaylists = [];
   
   // Filter options matching Flutter app
   const filterOptions = [
@@ -930,46 +938,172 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // ✅ LOAD CREATOR ANALYTICS SUMMARY
-  async function loadCreatorAnalytics() {
-    try {
-      if (!currentUser) return null;
-      
-      // Query the materialized view for creator analytics
-      const { data, error } = await window.supabaseClient
-        .from('creator_analytics_summary')
-        .select('*')
-        .eq('creator_id', currentUser.id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      
-      creatorAnalytics = data || null;
-      
-      // Update creator summary section
-      if (creatorAnalytics) {
-        creatorSummary.style.display = 'grid';
-        
-        totalViews.textContent = formatNumber(creatorAnalytics.total_views || 0);
-        totalLikes.textContent = formatNumber(creatorAnalytics.total_likes || 0);
-        totalComments.textContent = formatNumber(creatorAnalytics.total_comments || 0);
-        totalEarnings.textContent = formatCurrency(creatorAnalytics.total_earnings || 0);
-        
-        monetizationStatus.innerHTML = creatorAnalytics.is_eligible_for_monetization 
-          ? '<span class="monetization-badge"><i class="fas fa-check-circle"></i> Monetization Eligible</span>'
-          : '<span class="monetization-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color);"><i class="fas fa-info-circle"></i> Not Eligible</span>';
-      } else {
-        creatorSummary.style.display = 'none';
-      }
-      
-      return creatorAnalytics;
-    } catch (error) {
-      console.error('Error loading creator analytics:', error);
+  // ✅ CREATOR SUMMARY TOTALS
+  // This used to query a `creator_analytics_summary` materialized view, but
+  // that view's real columns are only `creator_id`/`aggregate_views`/
+  // `aggregate_likes` (confirmed via the live schema) — it has no
+  // total_views/total_likes/total_comments/total_earnings columns at all,
+  // so every read of those here was always undefined and always displayed
+  // as 0. The view also joins on Content.creator_id, which doesn't reliably
+  // match Content.user_id (the column this page's own content query uses)
+  // for every row, and materialized views don't auto-refresh. Instead of
+  // querying it, this now just sums the real per-item stats already fetched
+  // by loadUserContent() (via fetchEngagementStatsMap(), the same
+  // content_engagement_stats source used everywhere on the platform) - live,
+  // no extra round-trip, no stale-view risk.
+  function updateCreatorSummary() {
+    if (!allContent.length) {
+      creatorAnalytics = null;
       creatorSummary.style.display = 'none';
-      return null;
+      return;
+    }
+
+    const totals = allContent.reduce((acc, item) => {
+      acc.total_views += item.real_views || 0;
+      acc.total_likes += item.real_likes || 0;
+      acc.total_comments += item.real_comments || 0;
+      return acc;
+    }, { total_views: 0, total_likes: 0, total_comments: 0 });
+
+    creatorAnalytics = totals;
+
+    creatorSummary.style.display = 'grid';
+    totalViews.textContent = formatNumber(totals.total_views);
+    totalLikes.textContent = formatNumber(totals.total_likes);
+    totalComments.textContent = formatNumber(totals.total_comments);
+  }
+
+  // ✅ MY PLAYLISTS (creator_playlists — a creator's own upload organization:
+  // albums, mixtapes, series seasons, podcast seasons. NEVER the user's
+  // personal `playlists` table used on my-space.html — different system,
+  // different ownership column (creator_id here, not user_id).)
+  async function loadCreatorPlaylists() {
+    try {
+      if (!currentUser) return;
+
+      const { data: playlists, error } = await window.supabaseClient
+        .from('creator_playlists')
+        .select('id, name, description, playlist_type, custom_thumbnail_url, total_duration, play_count')
+        .eq('creator_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const playlistIds = (playlists || []).map(p => p.id);
+      const { counts, firstContentId } = await fetchCreatorPlaylistItemsMeta(playlistIds);
+      const missingThumbIds = (playlists || [])
+        .filter(p => !p.custom_thumbnail_url && firstContentId[p.id])
+        .map(p => firstContentId[p.id]);
+      const thumbnails = await fetchContentThumbnails([...new Set(missingThumbIds)]);
+
+      creatorPlaylists = playlists || [];
+      renderCreatorPlaylists(creatorPlaylists, counts, firstContentId, thumbnails);
+    } catch (error) {
+      console.error('Error loading creator playlists:', error);
+      if (playlistsSection) playlistsSection.style.display = 'none';
     }
   }
-  
+
+  // Batch-fetch item counts + first-item content_id per playlist from the
+  // real junction table (same batch-fetch-and-merge pattern used everywhere
+  // on this platform for content_engagement_stats/playlist item counts).
+  async function fetchCreatorPlaylistItemsMeta(playlistIds) {
+    const counts = {};
+    const firstContentId = {};
+    if (!playlistIds.length) return { counts, firstContentId };
+
+    const { data, error } = await window.supabaseClient
+      .from('creator_playlist_items')
+      .select('playlist_id, content_id, position')
+      .in('playlist_id', playlistIds)
+      .order('position', { ascending: true });
+
+    if (error) {
+      console.error('Creator playlist items error:', error);
+      return { counts, firstContentId };
+    }
+
+    (data || []).forEach(row => {
+      counts[row.playlist_id] = (counts[row.playlist_id] || 0) + 1;
+      if (!(row.playlist_id in firstContentId)) {
+        firstContentId[row.playlist_id] = row.content_id;
+      }
+    });
+    return { counts, firstContentId };
+  }
+
+  async function fetchContentThumbnails(contentIds) {
+    const thumbs = {};
+    if (!contentIds.length) return thumbs;
+
+    const { data, error } = await window.supabaseClient
+      .from('Content')
+      .select('id, thumbnail_url')
+      .in('id', contentIds);
+
+    if (error) {
+      console.error('Content thumbnails error:', error);
+      return thumbs;
+    }
+
+    (data || []).forEach(row => { thumbs[row.id] = row.thumbnail_url; });
+    return thumbs;
+  }
+
+  function renderCreatorPlaylists(playlists, counts, firstContentId, thumbnails) {
+    if (!playlistsSection || !playlistsGrid) return;
+
+    if (!playlists.length) {
+      playlistsSection.style.display = 'none';
+      return;
+    }
+    playlistsSection.style.display = 'block';
+
+    playlistsGrid.innerHTML = playlists.map(playlist => {
+      const count = counts[playlist.id] || 0;
+      // custom_thumbnail_url first (creator_playlists rows genuinely have
+      // these set, unlike the user `playlists` table), falling back to the
+      // first item's Content.thumbnail_url — same priority order as
+      // creator-channel.js's getCollectionThumbnail().
+      let rawThumb = playlist.custom_thumbnail_url;
+      if (!rawThumb) {
+        const firstId = firstContentId[playlist.id];
+        rawThumb = firstId ? thumbnails[firstId] : null;
+      }
+      const thumb = rawThumb
+        ? (rawThumb.startsWith('http') ? rawThumb : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${rawThumb.replace(/^\/+/, '')}`)
+        : '';
+      const safeName = escapeHtml(playlist.name || 'Untitled Playlist');
+
+      return `
+        <div class="playlist-card" data-playlist-id="${playlist.id}">
+          <div class="playlist-card-thumb" ${thumb ? `style="background-image:url('${thumb}');"` : ''}>
+            ${!thumb ? `<div class="playlist-icon-placeholder"><i class="fas fa-list"></i></div>` : ''}
+            <span class="playlist-card-count"><i class="fas fa-layer-group"></i> ${count} item${count !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="playlist-card-body">
+            <p class="playlist-card-title" title="${safeName}">${safeName}</p>
+            <p class="playlist-card-meta">${escapeHtml(playlist.playlist_type || 'playlist')}</p>
+          </div>
+          <button type="button" class="playlist-delete-btn" onclick="window.deletePlaylist('${playlist.id}', '${safeName.replace(/'/g, "\\'")}')" title="Delete playlist">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Opens the shared delete-confirmation modal in "playlist" mode.
+  function deletePlaylist(playlistId, playlistName) {
+    currentDeleteId = playlistId;
+    currentDeleteType = 'playlist';
+    deleteContentTitle.textContent = playlistName;
+    document.getElementById('deleteModalTitle').textContent = 'Delete Playlist';
+    document.getElementById('deleteModalNote').textContent = 'This action cannot be undone. The playlist and its item order will be permanently removed (the content itself stays on the platform).';
+    deleteModal.style.display = 'flex';
+  }
+
+
   // ✅ BATCHED ENGAGEMENT STATS — replaces the old getContentRealCounts()
   // N+1 pattern (one round-trip per content item) which also queried
   // `likes`/`comments` tables that don't exist in this schema. A single
@@ -1014,9 +1148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('No authenticated user');
       }
 
-      // First load creator analytics
-      await loadCreatorAnalytics();
-
       const { data: content, error: contentError } = await window.supabaseClient
         .from('Content')
         .select('*, user_profiles!user_id(*)')
@@ -1052,9 +1183,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       allContent = enrichedContent;
       filteredContent = [...allContent];
-      
+
       console.log(`✅ Loaded ${allContent.length} content items with real counts`);
-      
+
+      // Creator summary totals computed from the same real, already-fetched
+      // engagement stats above — see updateCreatorSummary() for why this
+      // replaced a broken materialized-view query.
+      updateCreatorSummary();
+
       // Render UI
       renderFilterChips();
       filterContent(selectedFilter);
@@ -1414,35 +1550,72 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ DELETE CONTENT
   function deleteContent(contentId, contentTitle) {
     currentDeleteId = contentId;
+    currentDeleteType = 'content';
     deleteContentTitle.textContent = contentTitle;
+    document.getElementById('deleteModalTitle').textContent = 'Delete Content';
+    document.getElementById('deleteModalNote').textContent = 'This action cannot be undone. The content will be removed from all feeds and your dashboard.';
     deleteModal.style.display = 'flex';
   }
-  
-  // ✅ CONFIRM DELETE
+
+  // ✅ CONFIRM DELETE — shared by both Content and Playlist deletion,
+  // branching on currentDeleteType (set by deleteContent()/deletePlaylist()).
   async function handleConfirmDelete() {
     if (!currentDeleteId) return;
-    
+
+    if (currentDeleteType === 'playlist') {
+      try {
+        showToast('Deleting playlist...', 'info');
+
+        const { error } = await window.supabaseClient
+          .from('creator_playlists')
+          .delete()
+          .eq('id', currentDeleteId)
+          .eq('creator_id', currentUser.id);
+
+        if (error) throw error;
+
+        // creator_playlist_items and playlist_contents both CASCADE-delete
+        // on creator_playlists.id (confirmed via the live schema), so the
+        // junction rows are already gone server-side — just refresh the list.
+        await loadCreatorPlaylists();
+
+        deleteModal.style.display = 'none';
+        currentDeleteId = null;
+
+        showToast('Playlist deleted successfully', 'success');
+      } catch (error) {
+        console.error('Error deleting playlist:', error);
+        // friend_watch_activity.watch_party_id -> creator_playlists.id has
+        // NO ACTION (not CASCADE), so a playlist still referenced by a
+        // watch party fails with a real FK violation (23503) instead of
+        // silently deleting - surface that distinctly.
+        const isInUse = error?.code === '23503';
+        showToast(isInUse ? 'Could not delete — this playlist is linked to a watch party' : 'Failed to delete playlist', 'error');
+      }
+      return;
+    }
+
     try {
       // Show loading toast
       showToast('Deleting content...', 'info');
-      
+
       const { error } = await window.supabaseClient
         .from('Content')
         .delete()
         .eq('id', currentDeleteId);
-      
+
       if (error) throw error;
-      
+
       // Remove from local arrays
       allContent = allContent.filter(c => c.id !== currentDeleteId);
       filterContent(selectedFilter);
-      
-      // Reload analytics after deletion
-      await loadCreatorAnalytics();
-      
+
+      // Refresh creator summary totals after deletion
+      updateCreatorSummary();
+
       deleteModal.style.display = 'none';
       currentDeleteId = null;
-      
+
       showToast('Content deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting content:', error);
@@ -1761,7 +1934,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load user content
     await loadUserContent();
-    
+
+    // Load creator's own playlists (creator_playlists)
+    await loadCreatorPlaylists();
+
     // Load notifications
     await loadNotifications();
     
@@ -1780,6 +1956,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.showContentInsights = showContentInsights;
   window.viewContent = viewContent;
   window.deleteContent = deleteContent;
+  window.deletePlaylist = deletePlaylist;
   
   // Start initialization
   await initializePage();
