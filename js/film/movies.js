@@ -83,6 +83,32 @@
     return `${formatNumber(getViewCount(item))} views`;
   }
 
+  // ===== ENGAGEMENT STATS ENRICHMENT =====
+  // The list queries below (loadTop10/loadMoodRows/loadHero/loadContinueWatching)
+  // don't embed content_engagement_stats in their .select(), unlike the single-item
+  // detail overlay query which does - so getViewCount() always fell through to
+  // live_views (0 for non-live content), showing "0 views" everywhere. Batch-fetch
+  // and merge real totals, same pattern used on Trending/Explore/Music.
+  async function enrichWithEngagementStats(items) {
+    if (!items || items.length === 0) return items;
+    const ids = items.map(i => i.id).filter(Boolean);
+    if (ids.length === 0) return items;
+    try {
+      const { data } = await supabase
+        .from('content_engagement_stats')
+        .select('content_id, total_views, total_likes')
+        .in('content_id', ids);
+      const statsMap = new Map((data || []).map(row => [row.content_id, row]));
+      return items.map(item => ({
+        ...item,
+        content_engagement_stats: statsMap.get(item.id) || { total_views: 0, total_likes: 0 }
+      }));
+    } catch (e) {
+      console.error('Error enriching engagement stats:', e);
+      return items;
+    }
+  }
+
   const MOVIES_CONTENT_FORMATS = ['film', 'documentary', 'series_episode', 'podcast_episode'];
 
   function matchesCurrentFilter(item) {
@@ -707,7 +733,8 @@
       query = applyCurrentFilter(query);
 
       const { data } = await query.limit(14);
-      const topItems = applyCardExclusions(data || [], [featuredContentId]).slice(0, 10);
+      const enrichedData = await enrichWithEngagementStats(data || []);
+      const topItems = applyCardExclusions(enrichedData, [featuredContentId]).slice(0, 10);
       
       if (topItems.length > 0) {
         topContentIds = topItems.map(item => item.id);
@@ -744,7 +771,8 @@
       query = applyCurrentFilter(query);
 
       const { data } = await query.limit(24);
-      const moodItems = applyCardExclusions(data || [], [featuredContentId, ...topContentIds]).slice(0, 10);
+      const enrichedData = await enrichWithEngagementStats(data || []);
+      const moodItems = applyCardExclusions(enrichedData, [featuredContentId, ...topContentIds]).slice(0, 10);
       
       if (moodItems.length > 0) {
         setSectionVisibility('row-family', true);
@@ -806,6 +834,9 @@
         setSectionVisibility('row-continue', false);
         return;
       }
+
+      const enrichedContent = await enrichWithEngagementStats(filteredItems.map(w => w.Content));
+      filteredItems.forEach((w, idx) => { w.Content = enrichedContent[idx]; });
 
       setSectionVisibility('row-continue', true);
       container.innerHTML = filteredItems.map(w => {
@@ -894,9 +925,10 @@
       query = applyCurrentFilter(query);
 
       const { data } = await query.limit(12);
-      
-      if (data && data.length > 0) {
-        const item = selectFeaturedItem(data.filter(matchesCurrentFilter));
+      const enrichedData = await enrichWithEngagementStats(data || []);
+
+      if (enrichedData.length > 0) {
+        const item = selectFeaturedItem(enrichedData.filter(matchesCurrentFilter));
         if (!item) {
           renderHeroFallback();
           return;

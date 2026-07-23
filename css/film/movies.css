@@ -1,15 +1,12 @@
 /* ==========================================================================
    BANTU STREAM CONNECT — MOVIES BROWSE SCREEN
    ========================================================================== */
+/* deep-black/soft-white/slate-grey/warm-gold/card-bg/card-border all come
+   from shared-components.css (verified identical values) - only the page's
+   own accent token lives here, now pointing at the real platform blue
+   instead of a page-local bright cyan (matches Explore/Music/creator-channel). */
 :root {
-  --brand-cyan-core: #34E7FF;
-  --brand-cyan-main: #16D6FF;
-  --warm-gold: #F59E0B;
-  --deep-black: #0A0E12;
-  --soft-white: #F8FAFC;
-  --slate-grey: #94A3B8;
-  --card-bg: rgba(15, 23, 42, 0.6);
-  --card-border: rgba(148, 163, 184, 0.2);
+  --brand-cyan-core: var(--bantu-blue);
 }
 
 .movies-main { max-width: 1600px; margin: 0 auto; padding-bottom: 120px; }
@@ -48,7 +45,7 @@
 .hero-badges { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .badge-feature {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(52, 231, 255, 0.12); border: 1px solid rgba(52, 231, 255, 0.35);
+  background: rgba(29, 78, 216, 0.15); border: 1px solid rgba(29, 78, 216, 0.35);
   color: var(--brand-cyan-core); padding: 4px 10px; border-radius: 6px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
 }
@@ -88,10 +85,10 @@
   font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
 }
 .btn-primary.btn-glow {
-  background: linear-gradient(135deg, var(--brand-cyan-main), var(--brand-cyan-core));
-  color: var(--deep-black); box-shadow: 0 4px 20px rgba(52, 231, 255, 0.3);
+  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+  color: white; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
 }
-.btn-primary.btn-glow:hover { box-shadow: 0 6px 30px rgba(52, 231, 255, 0.5); transform: translateY(-2px); }
+.btn-primary.btn-glow:hover { box-shadow: 0 6px 30px rgba(245, 158, 11, 0.5); transform: translateY(-2px); }
 .btn-secondary {
   display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px;
   background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
@@ -149,10 +146,11 @@
 .row-scroll-container { position: relative; }
 .row-scroll { display: flex; gap: 14px; overflow-x: auto; scroll-behavior: smooth; scrollbar-width: none; padding-bottom: 8px; }
 .row-scroll::-webkit-scrollbar { display: none; }
+/* Breakpoints match creator-channel.css's real .upload-grid tiers
+   (768px/1600px), not invented 600/900/1200px ones. */
 .content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-@media (min-width: 600px) { .content-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
-@media (min-width: 900px) { .content-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 1200px) { .content-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; } }
+@media (min-width: 768px) { .content-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1600px) { .content-grid { grid-template-columns: repeat(4, 1fr); } }
 .row-empty {
   width: 100%;
   min-height: 140px;
@@ -250,13 +248,18 @@
 .top10-meta { font-size: 11px; color: var(--slate-grey); margin: 4px 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== STANDARD 16:9 CARDS ===== */
-.upload-card { 
-  cursor: pointer; transition: transform 0.2s ease; text-decoration: none; color: inherit; display: block; 
+.upload-card {
+  cursor: pointer; transition: transform 0.2s ease; text-decoration: none; color: inherit; display: block;
+  min-width: 0;
 }
 .upload-card:hover { transform: translateY(-4px); }
+/* Continue Watching uses .row-scroll (flex, horizontal scroll) - without an
+   explicit width, cards had no sizing basis at all. Same width creator-channel.css
+   uses for its own .home-preview-row .upload-card. */
+.row-scroll .upload-card { flex-shrink: 0; width: 200px; }
 .upload-card__thumb {
-  position: relative; background: #1a2033; border-radius: 8px; aspect-ratio: 16 / 9;
-  margin-bottom: 8px; overflow: hidden; background-size: cover; background-position: center;
+  position: relative; background: #1a2033; border-radius: 6px; aspect-ratio: 16 / 9;
+  margin-bottom: 6px; overflow: hidden; background-size: cover; background-position: center;
 }
 .upload-card__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
 .upload-card:hover .upload-card__thumb img { transform: scale(1.05); }
@@ -429,7 +432,7 @@
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
   padding: 20px; cursor: pointer; transition: all 0.3s ease;
 }
-.world-card:hover { border-color: var(--brand-cyan-core); box-shadow: 0 0 20px rgba(52, 231, 255, 0.15); transform: translateY(-4px); }
+.world-card:hover { border-color: var(--brand-cyan-core); box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); transform: translateY(-4px); }
 .world-card-icon { font-size: 24px; color: var(--brand-cyan-core); margin-bottom: 12px; }
 .world-card h4 { font-size: 15px; color: var(--soft-white); margin: 0 0 6px; font-weight: 600; }
 .world-card p { font-size: 12px; color: var(--slate-grey); margin: 0; line-height: 1.4; }
@@ -466,6 +469,9 @@
   .detail-title { font-size: 24px; }
   .episode-card { width: 180px; }
   .badge-leaving { font-size: 9px; padding: 3px 8px; }
+  /* Card text sizing matches creator-channel.css's real .upload-card__title/meta tiers */
+  .upload-card__title { font-size: 11px; }
+  .upload-card__meta { font-size: 10px; }
 }
 
 @media (max-width: 480px) {
@@ -478,4 +484,7 @@
   .detail-actions .btn-secondary,
   .detail-actions .btn-favorite { width: 100%; justify-content: center; }
   .episode-card { width: 160px; }
+  .content-grid { gap: 8px; }
+  .upload-card__title { font-size: 10px; }
+  .row-scroll .upload-card { width: 160px; }
 }
