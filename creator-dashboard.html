@@ -4,22 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Creator Dashboard - Bantu Stream Connect</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Supabase JS SDK -->
+
+    <!-- Supabase JS SDK (no defer — must be ready before shared-components.js's
+         top-level fallback runs, otherwise it can grab a broken stub client) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Custom CSS -->
+
+    <link rel="stylesheet" href="css/shared-components.css">
     <link rel="stylesheet" href="css/creator-dashboard.css">
 </head>
 <body>
+
+<!-- SIDEBAR OVERLAY & MENU (canonical v4.0 sectioned sidebar, copied verbatim
+     from my-space.html; no CREATOR-section item points here specifically,
+     so nothing is marked active) -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+  <div class="sidebar-header">
+    <div class="sidebar-logo" onclick="window.location.href='index.html'">
+      <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+      <span class="sidebar-logo-text">BSC</span>
+    </div>
+    <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sidebar-profile" id="sidebar-profile">
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+    <div class="sidebar-profile-info">
+      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+    </div>
+    <i class="fas fa-chevron-right"></i>
+  </div>
+  <nav class="sidebar-nav">
+
+    <!-- MAIN -->
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header">
+        <span>MAIN</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+        <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+        <a href="discover-creator.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="sidebar-section" data-section-id="categories">
+      <div class="sidebar-section-header">
+        <span>CATEGORIES</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="category/movies.html" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+        <a href="category/music.html" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+      </div>
+    </div>
+
+    <!-- YOU -->
+    <div class="sidebar-section" data-section-id="you">
+      <div class="sidebar-section-header">
+        <span>YOU</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="my-space.html" class="sidebar-nav-item" data-page="my-space"><i class="fas fa-layer-group"></i><span>My Space</span></a>
+        <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+      </div>
+    </div>
+
+    <!-- CREATOR (hidden until checkAndShowCreatorSection confirms published content) -->
+    <div class="sidebar-section creator-only" data-section-id="creator" style="display: none;">
+      <div class="sidebar-section-header">
+        <span>CREATOR</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="creator-dashboard.html" class="sidebar-nav-item active" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+        <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="sidebar-section" data-section-id="account">
+      <div class="sidebar-section-header">
+        <span>ACCOUNT</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+        <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+      </div>
+    </div>
+
+  </nav>
+  <div class="sidebar-footer">
+    <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+      <label class="toggle-switch"><input type="checkbox" id="creatorModeSwitch"><span class="toggle-slider"></span></label>
+      <span class="toggle-label">Creator Mode</span>
+    </div>
+    <div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
+    <div class="sidebar-scale-control">
+      <div class="scale-control-row">
+        <span><i class="fas fa-text-height"></i> UI Size</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button>
+          <span class="scale-value" id="sidebar-scale-value">100%</span>
+          <button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div class="scale-control-row"><button class="scale-btn" id="sidebar-scale-reset"><i class="fas fa-undo"></i> Reset</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="theme-selector" class="theme-selector">
+  <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+  <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+  <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
     <!-- Loading Screen -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
@@ -31,44 +145,33 @@
         <div class="glow-cycle glow-1"></div>
         <div class="glow-cycle glow-2"></div>
         <div class="glow-cycle glow-3"></div>
-        <div class="glow-cycle glow-4"></div>
     </div>
 
     <!-- Main App (hidden until loaded) -->
     <div id="app" style="display: none;">
         <!-- Header -->
-        <header class="header">
+        <header class="header" id="site-header">
             <div class="logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-                        <defs>
-                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#1D4ED8"/>
-                                <stop offset="1" stop-color="#F59E0B"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <div class="logo-text">BANTU STREAM CONNECT</div>
+                <button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+                <div class="logo-text">BSC</div>
             </div>
             <div class="header-actions">
-                <button id="search-btn" class="icon-btn search-btn" title="Search">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </button>
-                <button id="notifications-btn" class="icon-btn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-                </button>
-                <button id="profile-btn" class="profile-btn" title="Profile">
-                    <div class="profile-placeholder" id="userProfilePlaceholder">
-                        <i class="fas fa-user"></i>
+                <button id="search-btn" class="icon-btn search-btn"><i class="fas fa-search"></i></button>
+                <button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span class="notification-badge" id="notification-count" style="display: none;">0</span></button>
+                <div class="profile-switcher">
+                    <button id="current-profile-btn" class="profile-btn">
+                        <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
+                        <span class="profile-name" id="current-profile-name">Guest</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div class="profile-dropdown-header"><h4>Switch Profile</h4></div>
+                        <div class="profile-list" id="profile-list"></div>
+                        <div class="profile-dropdown-footer"><button class="text-btn" id="manage-profiles-btn"><i class="fas fa-user-cog"></i> Manage Profiles</button></div>
                     </div>
-                </button>
+                </div>
+                <div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
             </div>
         </header>
 
@@ -136,7 +239,7 @@
             <section class="dashboard-section">
                 <div class="section-header">
                     <h2 class="section-title">My Uploads</h2>
-                    <a href="https://bantustreamconnect.com/my-uploads" class="see-all-btn">
+                    <a href="my-uploads.html" class="see-all-btn">
                         See All
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -176,9 +279,10 @@
                         <div class="action-icon"><i class="fas fa-chart-line"></i></div>
                         <div class="action-title">View Analytics</div>
                     </div>
-                    <div class="action-card payout-action" id="payoutRequest">
+                    <div class="action-card payout-action is-disabled" id="payoutRequest" disabled title="Payout requests aren't available yet">
                         <div class="action-icon"><i class="fas fa-wallet"></i></div>
                         <div class="action-title">Payout Request</div>
+                        <span class="action-card-badge">Coming soon</span>
                     </div>
                 </div>
             </section>
@@ -195,13 +299,14 @@
             </section>
         </main>
 
-        <!-- Global Navigation -->
-        <nav class="global-nav">
-            <a href="index.html" class="nav-item"><i class="fas fa-home"></i> Home</a>
-            <a href="trending_screen.html" class="nav-item"><i class="fas fa-fire"></i> Trending</a>
-            <a href="content-library.html" class="nav-item"><i class="fas fa-th-large"></i> Library</a>
-            <a href="creator-dashboard.html" class="nav-item active"><i class="fas fa-user"></i> Creator</a>
-        </nav>
+        <footer class="footer">
+          <p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p>
+          <div class="footer-links">
+            <a href="privacy-policy.html">Privacy Policy</a>
+            <a href="terms-of-service.html">Terms of Service</a>
+            <a href="support.html">Support</a>
+          </div>
+        </footer>
     </div>
 
     <!-- Error State -->
@@ -226,28 +331,9 @@
         </div>
     </div>
 
-    <!-- Payout Modal -->
-    <div id="payoutModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-icon"><i class="fas fa-wallet"></i></div>
-                <div class="modal-title">Payout Request</div>
-                <button class="modal-close" id="closePayoutModal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div style="color: var(--slate-grey); font-size: 14px; margin-bottom: 10px;">Available Balance:</div>
-                <div id="payoutAmount" class="payout-amount">R0.00</div>
-                <div class="modal-note">
-                    Minimum payout amount: R100.00<br><br>
-                    Your earnings will be processed within 3-5 business days.
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" id="cancelPayout">Cancel</button>
-                <button class="modal-btn primary" id="requestPayout">Request Payout</button>
-            </div>
-        </div>
-    </div>
+    <!-- Payout Modal removed: Payout Request is disabled entirely for this
+         pass (see the payoutRequest quick-action card), no real payout
+         processing exists yet. -->
 
     <!-- JOURNALIST APPLICATION MODAL -->
     <div id="journalistModal" class="modal-overlay">
@@ -313,68 +399,63 @@
         </div>
     </div>
 
-    <!-- Search Modal -->
-    <div id="search-modal" class="modal-overlay">
-        <div style="width:90%;max-width:800px;background:var(--card-bg);border-radius:20px;padding:30px;backdrop-filter:blur(10px);">
-            <div class="search-modal-header">
-                <div class="search-input-container">
-                    <i class="search-icon fas fa-search"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-                </div>
-                <button id="close-search-btn" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="search-filters">
-                <div class="filter-group">
-                    <label class="filter-label">Category</label>
-                    <select id="category-filter" class="filter-select">
-                        <option value="">All Categories</option>
-                        <option value="Music">Music</option>
-                        <option value="STEM">STEM</option>
-                        <option value="Culture">Culture</option>
-                        <option value="News">News</option>
-                        <option value="Sports">Sports</option>
-                        <option value="Movies">Movies</option>
-                        <option value="Documentaries">Documentaries</option>
-                        <option value="Podcasts">Podcasts</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Sort By</label>
-                    <select id="sort-filter" class="filter-select">
-                        <option value="newest">Newest First</option>
-                        <option value="popular">Most Popular</option>
-                        <option value="trending">Trending</option>
-                    </select>
-                </div>
-            </div>
-            <div class="search-results">
-                <div id="search-results-grid" class="search-results-grid"></div>
-            </div>
+    <!-- Search Modal + Notifications Panel: canonical shared-components.css/js
+         markup, copied verbatim from my-space.html. These replace the old
+         bespoke versions above (which used #category-filter/#sort-filter
+         selects and inline-styled markup) — shared-components.js's own
+         setupSearchModal()/setupNotifications() own these unconditionally on
+         every page that loads it, so this page can no longer keep a
+         competing local implementation without double-wiring the same
+         elements (see js/creator-dashboard.js for what was removed there). -->
+    <div id="search-modal">
+      <div class="search-modal-overlay"></div>
+      <div class="search-modal-content">
+        <div class="search-modal-header">
+          <div class="search-input-wrapper">
+            <input type="text" id="search-input" placeholder="Search videos, creators, hashtags..." autocomplete="off">
+            <button id="voice-search-modal-btn" class="voice-search-modal-btn"><i class="fas fa-microphone"></i></button>
+          </div>
+          <button id="close-search-btn"><i class="fas fa-times"></i></button>
         </div>
+        <div class="search-filter-pills-bar">
+          <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
+          <button class="search-filter-pill" data-filter-group="sort" data-filter-value="newest">Newest</button>
+          <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">Popular</button>
+        </div>
+        <div id="search-results-grid"></div>
+      </div>
     </div>
 
-    <!-- Notifications Panel -->
-    <div id="notifications-panel" class="modal-overlay" style="display:none;justify-content:flex-end;">
-        <div style="width:400px;height:100%;background:var(--card-bg);border-left:1px solid var(--card-border);box-shadow:-5px 0 25px rgba(0,0,0,0.3);backdrop-filter:blur(10px);">
-            <div class="notifications-header" style="padding:20px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center">
-                <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;margin:0;color:var(--soft-white)">Notifications</h2>
-                <button id="close-notifications" class="modal-close"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="notifications-list" id="notifications-list" style="max-height:calc(100vh-150px);overflow-y:auto;padding:20px"></div>
-            <div class="notifications-footer" style="padding:20px;border-top:1px solid var(--card-border);display:flex;gap:15px">
-                <button id="mark-all-read" class="modal-btn secondary" style="flex:1">Mark all as read</button>
-                <button id="notification-settings" class="modal-btn secondary" style="flex:1">Settings</button>
-            </div>
-        </div>
+    <div id="notifications-panel" class="notifications-panel">
+      <div class="notifications-header">
+        <h2>Notifications <span id="notifications-header-count"></span></h2>
+        <button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="notification-tabs-container">
+        <button class="notification-tab active" data-tab="all">All</button>
+        <button class="notification-tab" data-tab="unread">Unread</button>
+      </div>
+      <div class="notifications-list" id="notifications-list"></div>
+      <div class="notifications-footer">
+        <button id="mark-all-read" class="text-btn">Mark all as read</button>
+        <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+      </div>
     </div>
 
     <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <div id="toast-container" class="toast-container"></div>
+    <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 
     <!-- Scripts -->
+    <script src="js/shared-components.js"></script>
+    <script>
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
     <script src="js/creator-analytics.js"></script>
     <script src="js/creator-dashboard.js"></script>
-    
+
     <script>
     (function() {
         console.log('🔍 Diagnostic Check');
@@ -383,21 +464,10 @@
         } else {
             console.error('❌ CreatorAnalytics module: NOT LOADED');
         }
-        
-        // Document upload handler
-        const uploadDocument = document.getElementById('uploadDocument');
-        const documentFile = document.getElementById('documentFile');
-        const documentUrlDisplay = document.getElementById('documentUrlDisplay');
-        
-        if (uploadDocument && documentFile) {
-            uploadDocument.addEventListener('click', () => documentFile.click());
-            documentFile.addEventListener('change', (e) => {
-                if (e.target.files[0] && documentUrlDisplay) {
-                    documentUrlDisplay.textContent = `Selected: ${e.target.files[0].name}`;
-                    documentUrlDisplay.style.color = 'var(--success-color)';
-                }
-            });
-        }
+
+        // Document upload handler consolidated into setupJournalistVerification()
+        // in js/creator-dashboard.js (Part 3 bug fix) — this used to be a
+        // second, competing listener on the same #uploadDocument element.
     })();
     </script>
 </body>

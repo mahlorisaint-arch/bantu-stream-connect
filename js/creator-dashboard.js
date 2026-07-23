@@ -26,9 +26,11 @@
     const errorState = document.getElementById('errorState');
     const errorTitle = document.getElementById('errorTitle');
     const errorMessage = document.getElementById('errorMessage');
-    const profileBtn = document.getElementById('profile-btn');
-    const notificationsBtn = document.getElementById('notifications-btn');
-    const searchBtn = document.getElementById('search-btn');
+    // Renamed to match the canonical header's #current-profile-btn (Part 5
+    // migration) — only used below as an existence guard before updating
+    // #userProfilePlaceholder, not for click handling (shared-components.js's
+    // own setupProfileDropdown() already owns this button's click behavior).
+    const profileBtn = document.getElementById('current-profile-btn');
 
     // User Info Elements
     const creatorAvatar = document.getElementById('creatorAvatar');
@@ -49,27 +51,17 @@
     const uploadContentBtn = document.getElementById('uploadContentBtn');
     const quickUpload = document.getElementById('quickUpload');
     const viewAnalytics = document.getElementById('viewAnalytics');
-    const payoutRequest = document.getElementById('payoutRequest');
+    // Payout Request is disabled entirely (see setupEventListeners) — no
+    // element reference or click wiring needed here.
     const retryBtn = document.getElementById('retryBtn');
     const reloginBtn = document.getElementById('reloginBtn');
 
-    // Modal Elements
-    const payoutModal = document.getElementById('payoutModal');
-    const closePayoutModal = document.getElementById('closePayoutModal');
-    const payoutAmount = document.getElementById('payoutAmount');
-    const cancelPayout = document.getElementById('cancelPayout');
-    const requestPayout = document.getElementById('requestPayout');
-
-    // Search Modal Elements
-    const searchModal = document.getElementById('search-modal');
-    const closeSearchBtn = document.getElementById('close-search-btn');
-    const searchInput = document.getElementById('search-input');
-
-    // Notifications Panel Elements
-    const notificationsPanel = document.getElementById('notifications-panel');
-    const closeNotifications = document.getElementById('close-notifications');
-    const markAllReadBtn = document.getElementById('mark-all-read');
-    const notificationsList = document.getElementById('notifications-list');
+    // Search modal and notifications panel are now fully owned by
+    // shared-components.js's own setupSearchModal()/setupNotifications()
+    // (loaded platform-wide for the sidebar) — this page no longer keeps
+    // local element references or a competing implementation for either,
+    // since both would otherwise double-wire the same #search-btn/
+    // #notifications-btn/#search-input/#notifications-list elements.
 
     // Journalist Verification Elements
     const journalistVerificationContainer = document.getElementById('journalist-verification-container');
@@ -223,18 +215,6 @@
         if (!text) return '';
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
-    }
-
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
     }
 
     // ============================================
@@ -587,12 +567,21 @@
             addPortfolioLink.addEventListener('click', addPortfolioLinkField);
         }
         
-        if (uploadDocumentBtn) {
-            uploadDocumentBtn.addEventListener('click', () => {
+        // Bug fix: this referenced an undeclared `uploadDocumentBtn` (no such
+        // element exists — the real one is `uploadDocument`, already declared
+        // above). Since this file runs 'use strict', that threw an uncaught
+        // ReferenceError every time setupJournalistVerification() ran, which
+        // silently aborted the rest of initializeDashboard() (setupSearchModal,
+        // setupNotificationsPanel, setupEventListeners never ran). A duplicate
+        // handler in creator-dashboard.html's inline script was silently
+        // papering over the missing click wiring; that duplicate is removed
+        // now that this is the one real handler.
+        if (uploadDocument) {
+            uploadDocument.addEventListener('click', () => {
                 documentFile.click();
             });
         }
-        
+
         if (documentFile) {
             documentFile.addEventListener('change', (e) => {
                 if (e.target.files[0]) {
@@ -697,33 +686,40 @@
                     if (error) throw error;
                     
                     content = data || [];
-                    
+
                     let totalViewsCount = 0;
-                    let totalEarningsAmount = 0;
-                    
+
                     for (const item of content) {
                         const { count } = await window.supabaseClient
                             .from('content_views')
                             .select('*', { count: 'exact', head: true })
                             .eq('content_id', item.id);
-                        
+
                         const viewsCount = count || 0;
                         totalViewsCount += viewsCount;
-                        totalEarningsAmount += viewsCount * 0.01;
                         item.real_views = viewsCount;
                     }
-                    
+
                     const { count: connectorsCount } = await window.supabaseClient
                         .from('connectors')
                         .select('*', { count: 'exact', head: true })
                         .eq('connected_id', currentUser.id)
                         .eq('connection_type', 'creator');
-                    
+
+                    // Real earnings from creator_earnings, not a fabricated
+                    // views * 0.01 estimate (matches creator-analytics.js's
+                    // _calculateSummary(), the working reference pattern).
+                    const { data: earningsData } = await window.supabaseClient
+                        .from('creator_earnings')
+                        .select('amount')
+                        .eq('creator_id', currentUser.id);
+                    const totalEarningsAmount = (earningsData || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+
                     analyticsData = {
                         total_uploads: content.length || 0,
                         total_views: totalViewsCount,
                         total_earnings: totalEarningsAmount,
-                        total_connectors: connectorsCount || Math.max(10, Math.floor(totalViewsCount / 100)),
+                        total_connectors: connectorsCount || 0,
                         engagement_percentage: content.length > 0 ? (totalViewsCount / content.length) : 0,
                         is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
                     };
@@ -1068,391 +1064,27 @@
         }
     }
 
-    async function loadNotifications() {
-        try {
-            if (!currentUser) {
-                updateNotificationBadge(0);
-                return;
-            }
-            
-            const { data, error } = await window.supabaseClient
-                .from('notifications')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false })
-                .limit(20);
-            
-            if (error) throw error;
-            
-            notifications = data || [];
-            const unreadCount = notifications.filter(n => !n.is_read).length;
-            updateNotificationBadge(unreadCount);
-            renderNotifications();
-        } catch (error) {
-            console.error('Error loading notifications:', error);
-            updateNotificationBadge(0);
-        }
-    }
-
-    function updateNotificationBadge(count = null) {
-        const badge = document.getElementById('notification-count');
-        if (!badge) return;
-        
-        if (count === null) {
-            count = notifications.filter(n => !n.is_read).length;
-        }
-        
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-
-    function renderNotifications() {
-        if (!notificationsList) return;
-        
-        if (!currentUser) {
-            notificationsList.innerHTML = `
-                <div style="text-align:center;padding:40px 20px;color:var(--slate-grey)">
-                    <i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5"></i>
-                    <p>Sign in to see notifications</p>
-                </div>
-            `;
-            return;
-        }
-        
-        if (!notifications || notifications.length === 0) {
-            notificationsList.innerHTML = `
-                <div style="text-align:center;padding:40px 20px;color:var(--slate-grey)">
-                    <i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3"></i>
-                    <p>No notifications yet</p>
-                </div>
-            `;
-            return;
-        }
-        
-        notificationsList.innerHTML = notifications.map(notification => `
-            <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}" data-content-id="${notification.content_id || ''}" style="padding:15px;border-bottom:1px solid var(--card-border);display:flex;gap:12px;position:relative;cursor:pointer">
-                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <i class="${getNotificationIcon(notification.type)}" style="color:white"></i>
-                </div>
-                <div style="flex:1">
-                    <h4 style="font-weight:600;margin-bottom:5px;color:var(--soft-white)">${escapeHtml(notification.title)}</h4>
-                    <p style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;line-height:1.4">${escapeHtml(notification.message)}</p>
-                    <span style="font-size:12px;color:var(--warm-gold)">${formatNotificationTime(notification.created_at)}</span>
-                </div>
-                ${!notification.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);position:absolute;top:15px;right:15px"></div>' : ''}
-            </div>
-        `).join('');
-        
-        notificationsList.querySelectorAll('.notification-item').forEach(item => {
-            item.addEventListener('click', async () => {
-                const id = item.dataset.id;
-                await markNotificationAsRead(id);
-                if (item.dataset.contentId) {
-                    window.location.href = `content-detail.html?id=${item.dataset.contentId}`;
-                }
-                if (notificationsPanel) notificationsPanel.style.display = 'none';
-            });
-        });
-    }
-
-    async function markNotificationAsRead(notificationId) {
-        try {
-            const { error } = await window.supabaseClient
-                .from('notifications')
-                .update({ is_read: true })
-                .eq('id', notificationId);
-            
-            if (error) throw error;
-            
-            const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-            if (item) {
-                item.classList.remove('unread');
-                item.classList.add('read');
-                const dot = item.querySelector('div[style*="background:var(--warm-gold)"]');
-                if (dot) dot.remove();
-            }
-            
-            await loadNotifications();
-            await updateNotificationsSummary();
-        } catch (error) {
-            console.error('Error marking notification as read:', error);
-        }
-    }
-
-    async function markAllNotificationsAsRead() {
-        try {
-            if (!currentUser) return;
-            
-            const { error } = await window.supabaseClient
-                .from('notifications')
-                .update({ is_read: true })
-                .eq('user_id', currentUser.id)
-                .eq('is_read', false);
-            
-            if (error) throw error;
-            
-            document.querySelectorAll('.notification-item.unread').forEach(item => {
-                item.classList.remove('unread');
-                item.classList.add('read');
-                const dot = item.querySelector('div[style*="background:var(--warm-gold)"]');
-                if (dot) dot.remove();
-            });
-            
-            await loadNotifications();
-            await updateNotificationsSummary();
-            showToast('All notifications marked as read', 'success');
-        } catch (error) {
-            console.error('Error marking all notifications as read:', error);
-            showToast('Failed to mark notifications as read', 'error');
-        }
-    }
-
-    async function searchContent(query, category = '', sortBy = 'newest') {
-        try {
-            let queryBuilder = window.supabaseClient
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .ilike('title', `%${query}%`)
-                .eq('status', 'published');
-            
-            if (category) {
-                queryBuilder = queryBuilder.eq('genre', category);
-            }
-            
-            if (sortBy === 'newest') {
-                queryBuilder = queryBuilder.order('created_at', { ascending: false });
-            }
-            
-            const { data, error } = await queryBuilder.limit(50);
-            
-            if (error) throw error;
-            
-            const enriched = await Promise.all(
-                (data || []).map(async (item) => {
-                    const { count } = await window.supabaseClient
-                        .from('content_views')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', item.id);
-                    
-                    const viewsCount = count || 0;
-                    
-                    return {
-                        ...item,
-                        real_views: viewsCount || 0
-                    };
-                })
-            );
-            
-            if (sortBy === 'popular') {
-                enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
-            } else if (sortBy === 'trending') {
-                enriched.sort((a, b) => {
-                    const aScore = (a.real_views || 0) + ((a.likes_count || 0) * 2);
-                    const bScore = (b.real_views || 0) + ((b.likes_count || 0) * 2);
-                    return bScore - aScore;
-                });
-            }
-            
-            return enriched;
-        } catch (error) {
-            console.error('Search error:', error);
-            return [];
-        }
-    }
-
-    function renderSearchResults(results) {
-        const grid = document.getElementById('search-results-grid');
-        if (!grid) return;
-        
-        if (!results || results.length === 0) {
-            grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey)">No results found. Try different keywords.</div>';
-            return;
-        }
-        
-        grid.innerHTML = results.map(item => {
-            const creator = item.user_profiles?.full_name || 
-                            item.user_profiles?.username || 
-                            item.creator || 
-                            'Creator';
-            const creatorId = item.user_profiles?.id || item.user_id;
-            const thumbnailUrl = item.thumbnail_url 
-                ? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`
-                : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-            
-            return `
-                <div class="content-card" data-content-id="${item.id}" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;overflow:hidden;transition:all 0.3s ease;cursor:pointer;text-decoration:none;color:inherit;backdrop-filter:blur(10px);position:relative">
-                    <div class="card-thumbnail" style="position:relative;height:140px;overflow:hidden">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(item.title)}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
-                             style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease">
-                        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom,transparent 50%,rgba(0,0,0,0.5) 100%)"></div>
-                        <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s ease">
-                            <div style="width:50px;height:50px;background:rgba(245,158,11,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--deep-black);font-size:1.5rem;transform:scale(0.8);transition:all 0.3s ease">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content" style="padding:15px">
-                        <h3 class="card-title" style="font-size:16px;font-weight:600;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px;color:var(--soft-white);line-height:1.4">${truncateText(escapeHtml(item.title), 45)}</h3>
-                        <button class="creator-btn" style="background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:var(--soft-white);border:none;padding:8px 15px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all 0.3s ease;border:1px solid rgba(255,255,255,0.1);margin-top:8px"
-                                onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
-                            <i class="fas fa-user"></i>
-                            ${truncateText(escapeHtml(creator), 15)}
-                        </button>
-                        <div style="display:flex;gap:15px;margin-top:8px;font-size:12px;color:var(--slate-grey)">
-                            <div style="display:flex;align-items:center;gap:4px">
-                                <i class="fas fa-eye" style="color:var(--bantu-blue);font-size:12px"></i>
-                                ${formatNumber(item.real_views || item.views_count || 0)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        grid.querySelectorAll('.content-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.creator-btn')) return;
-                const id = card.dataset.contentId;
-                if (id) window.location.href = `content-detail.html?id=${id}`;
-            });
-            
-            card.addEventListener('mouseenter', () => {
-                card.style.transform = 'translateY(-8px)';
-                card.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
-                card.style.borderColor = 'rgba(245,158,11,0.3)';
-                const img = card.querySelector('.card-thumbnail img');
-                if (img) img.style.transform = 'scale(1.05)';
-                const overlay = card.querySelector('.card-thumbnail div:last-child');
-                if (overlay) overlay.style.opacity = '1';
-                const playBtn = card.querySelector('.card-thumbnail div:last-child div');
-                if (playBtn) playBtn.style.transform = 'scale(1)';
-            });
-            
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(0)';
-                card.style.boxShadow = 'none';
-                card.style.borderColor = 'var(--card-border)';
-                const img = card.querySelector('.card-thumbnail img');
-                if (img) img.style.transform = 'scale(1)';
-                const overlay = card.querySelector('.card-thumbnail div:last-child');
-                if (overlay) overlay.style.opacity = '0';
-                const playBtn = card.querySelector('.card-thumbnail div:last-child div');
-                if (playBtn) playBtn.style.transform = 'scale(0.8)';
-            });
-        });
-    }
-
-    function setupSearchModal() {
-        if (!searchBtn || !searchModal || !closeSearchBtn) return;
-        
-        searchBtn.addEventListener('click', () => {
-            searchModal.style.display = 'flex';
-            setTimeout(() => {
-                if (searchInput) searchInput.focus();
-            }, 300);
-        });
-        
-        closeSearchBtn.addEventListener('click', () => {
-            searchModal.style.display = 'none';
-            if (searchInput) searchInput.value = '';
-            const grid = document.getElementById('search-results-grid');
-            if (grid) grid.innerHTML = '';
-        });
-        
-        searchModal.addEventListener('click', (e) => {
-            if (e.target === searchModal) {
-                searchModal.style.display = 'none';
-                if (searchInput) searchInput.value = '';
-                const grid = document.getElementById('search-results-grid');
-                if (grid) grid.innerHTML = '';
-            }
-        });
-        
-        if (searchInput) {
-            searchInput.addEventListener('input', debounce(async (e) => {
-                const query = e.target.value.trim();
-                const category = document.getElementById('category-filter')?.value;
-                const sortBy = document.getElementById('sort-filter')?.value;
-                const resultsGrid = document.getElementById('search-results-grid');
-                
-                if (!resultsGrid) return;
-                
-                if (query.length < 2) {
-                    resultsGrid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey)">Start typing to search...</div>';
-                    return;
-                }
-                
-                resultsGrid.innerHTML = `
-                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--slate-grey)">
-                        <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin-bottom:15px"></div>
-                        <div>Searching...</div>
-                    </div>
-                `;
-                
-                const results = await searchContent(query, category, sortBy);
-                renderSearchResults(results);
-            }, 300));
-        }
-        
-        const categoryFilter = document.getElementById('category-filter');
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', () => {
-                if (searchInput && searchInput.value.trim().length >= 2) {
-                    searchInput.dispatchEvent(new Event('input'));
-                }
-            });
-        }
-        
-        const sortFilter = document.getElementById('sort-filter');
-        if (sortFilter) {
-            sortFilter.addEventListener('change', () => {
-                if (searchInput && searchInput.value.trim().length >= 2) {
-                    searchInput.dispatchEvent(new Event('input'));
-                }
-            });
-        }
-    }
-
-    function setupNotificationsPanel() {
-        if (!notificationsBtn || !notificationsPanel || !closeNotifications) return;
-        
-        notificationsBtn.addEventListener('click', () => {
-            notificationsPanel.style.display = 'flex';
-            loadNotifications();
-        });
-        
-        closeNotifications.addEventListener('click', () => {
-            notificationsPanel.style.display = 'none';
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (notificationsPanel.style.display === 'flex' &&
-                !notificationsPanel.contains(e.target) &&
-                !notificationsBtn.contains(e.target)) {
-                notificationsPanel.style.display = 'none';
-            }
-        });
-        
-        if (markAllReadBtn) {
-            markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
-        }
-    }
+    // loadNotifications/updateNotificationBadge/renderNotifications/
+    // markNotificationAsRead/markAllNotificationsAsRead/searchContent/
+    // renderSearchResults/setupSearchModal/setupNotificationsPanel all
+    // removed: shared-components.js (loaded platform-wide for the sidebar)
+    // already owns the real #search-modal and #notifications-panel via its
+    // own setupSearchModal()/setupNotifications()/renderNotificationsList()/
+    // markAllNotificationsAsRead()/updateNotificationBadge(). Keeping these
+    // local duplicates would have double-wired the same #search-btn/
+    // #notifications-btn/#search-input/#notifications-list elements once
+    // shared-components.js was added. getNotificationIcon()/
+    // formatNotificationTime() are kept - updateNotificationsSummary() (the
+    // dashboard's own "Messages & Notifications" section) still uses them.
 
     function setupEventListeners() {
-        if (profileBtn) {
-            profileBtn.addEventListener('click', async () => {
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
-                if (session) {
-                    window.location.href = 'profile.html';
-                } else {
-                    window.location.href = 'login.html?redirect=creator-dashboard.html';
-                }
-            });
-        }
-        
+        // profileBtn's own click-to-navigate handler removed: it targeted a
+        // #profile-btn id that no longer exists after the Part 5 header
+        // migration, and it conflicted with shared-components.js's
+        // setupProfileDropdown(), which already owns #current-profile-btn's
+        // click behavior (opens the profile-switcher dropdown, not a
+        // navigate-away — and 'profile.html' isn't a real page in this repo).
+
         if (uploadContentBtn) {
             uploadContentBtn.addEventListener('click', () => {
                 window.location.href = 'creator-upload.html';
@@ -1471,40 +1103,13 @@
             });
         }
         
-        if (payoutRequest) {
-            payoutRequest.addEventListener('click', () => {
-                if (dashboardData && dashboardData.analytics) {
-                    const earnings = dashboardData.analytics.total_earnings || 0;
-                    if (payoutAmount) payoutAmount.textContent = formatCurrency(earnings);
-                    if (payoutModal) payoutModal.style.display = 'flex';
-                }
-            });
-        }
-        
-        if (closePayoutModal) {
-            closePayoutModal.addEventListener('click', () => {
-                if (payoutModal) payoutModal.style.display = 'none';
-            });
-        }
-        
-        if (cancelPayout) {
-            cancelPayout.addEventListener('click', () => {
-                if (payoutModal) payoutModal.style.display = 'none';
-            });
-        }
-        
-        if (requestPayout) {
-            requestPayout.addEventListener('click', () => {
-                const earnings = dashboardData?.analytics?.total_earnings || 0;
-                if (earnings < 100) {
-                    showToast(`Minimum payout amount is R100.00. Current balance: ${formatCurrency(earnings)}`, 'error');
-                    return;
-                }
-                showToast(`Payout request submitted for ${formatCurrency(earnings)}`, 'success');
-                if (payoutModal) payoutModal.style.display = 'none';
-            });
-        }
-        
+        // Payout Request is disabled entirely for this pass (no real payout
+        // processing exists) — the quick-action card is rendered as a
+        // disabled, non-clickable card in creator-dashboard.html, and the
+        // payout modal / requestPayout flow (which only ever showed a fake
+        // "payout request submitted" toast, with no real Supabase write) has
+        // been removed along with its modal markup.
+
         if (retryBtn) {
             retryBtn.addEventListener('click', () => {
                 if (errorState) errorState.style.display = 'none';
@@ -1519,21 +1124,6 @@
             });
         }
         
-        if (payoutModal) {
-            payoutModal.addEventListener('click', (e) => {
-                if (e.target === payoutModal) {
-                    payoutModal.style.display = 'none';
-                }
-            });
-        }
-        
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (item.classList.contains('active')) {
-                    e.preventDefault();
-                }
-            });
-        });
     }
 
     async function initializeDashboard() {
@@ -1546,9 +1136,7 @@
         await loadDashboardData();
         await updateNotificationsSummary();
         await setupJournalistVerification();
-        
-        setupSearchModal();
-        setupNotificationsPanel();
+
         setupEventListeners();
         
         console.log('✅ Creator Dashboard initialized successfully');
@@ -1566,7 +1154,8 @@
         if (event === 'SIGNED_IN' && session?.user) {
             currentUser = session.user;
             loadUserProfilePicture(currentUser);
-            loadNotifications();
+            // Notification badge refresh on sign-in is now handled by
+            // shared-components.js's own auth listener.
             updateNotificationsSummary();
             loadJournalistStatus();
             showToast('Welcome back!', 'success');
@@ -1576,7 +1165,6 @@
             if (placeholder) {
                 placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
             }
-            updateNotificationBadge(0);
             const summaryEl = document.getElementById('notificationsSummary');
             if (summaryEl) {
                 summaryEl.textContent = 'Sign in to see your notifications';
