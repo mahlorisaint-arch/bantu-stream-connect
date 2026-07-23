@@ -116,25 +116,46 @@
 .history-card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
 .history-card:hover .history-card-thumb img { transform: scale(1.05); }
 
+/* Badges: transparent glassmorphic, highlighted by their own color rather
+   than solid-filled - same pattern used for content-type badges on Movies. */
 .history-card-badge {
-  position: absolute; top: 5px; left: 5px; font-size: 9px; padding: 2px 8px;
-  border-radius: 3px; font-weight: 600; color: white; display: inline-flex;
+  position: absolute; top: 5px; left: 5px; font-size: 9px; padding: 3px 9px;
+  border-radius: 20px; font-weight: 600; display: inline-flex;
   align-items: center; gap: 4px; z-index: 3;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.history-card-badge.is-completed { background: var(--success-color); }
-.history-card-badge.is-progress { background: var(--brand-cyan-core); }
+.history-card-badge.is-completed {
+  background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45);
+  color: var(--success-color);
+}
+.history-card-badge.is-progress {
+  background: rgba(29, 78, 216, 0.18); border: 1px solid rgba(29, 78, 216, 0.45);
+  color: var(--brand-cyan-core);
+}
 
 .history-card-duration {
-  position: absolute; bottom: 5px; right: 5px; font-size: 10px; color: white;
+  position: absolute; bottom: 9px; right: 5px; font-size: 10px; color: white;
   background: rgba(0, 0, 0, 0.7); padding: 1px 6px; border-radius: 3px;
 }
 
+/* Progress bar: glowing transparent glassmorphic line along the bottom edge
+   of every card, not just in-progress ones - completed cards show a full,
+   still-glowing bar rather than nothing. */
 .history-card-progress {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(0, 0, 0, 0.5);
+  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  z-index: 3;
 }
 .history-card-progress-fill {
-  height: 100%; background: var(--brand-cyan-core); box-shadow: 0 0 8px rgba(29, 78, 216, 0.5);
+  height: 100%;
+  background: rgba(29, 78, 216, 0.55);
+  box-shadow: 0 0 6px rgba(29, 78, 216, 0.9), 0 0 14px rgba(29, 78, 216, 0.6), 0 0 24px rgba(29, 78, 216, 0.35);
   transition: width 0.3s ease;
+}
+.history-card-badge.is-completed ~ .history-card-progress .history-card-progress-fill {
+  background: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.9), 0 0 14px rgba(16, 185, 129, 0.6), 0 0 24px rgba(16, 185, 129, 0.35);
 }
 
 .history-card-play {
