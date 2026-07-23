@@ -263,11 +263,35 @@
 }
 .upload-card__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
 .upload-card:hover .upload-card__thumb img { transform: scale(1.05); }
+
+/* ===== HOVER PLAY ICON =====
+   This class was referenced in the card markup (movies.js) but never
+   actually styled anywhere movies.html loads - a pre-existing gap. Matches
+   trending.css's real, working .media-hover-play pattern: centered overlay,
+   brand-blue icon with a glow instead of a plain white play triangle. */
+.media-hover-play {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease; z-index: 2;
+}
+.upload-card:hover .media-hover-play { opacity: 1; }
+.media-hover-play i {
+  font-size: 22px; color: var(--brand-cyan-core);
+  text-shadow: 0 0 8px rgba(29, 78, 216, 0.9), 0 0 20px rgba(29, 78, 216, 0.6), 0 0 36px rgba(29, 78, 216, 0.35);
+}
+
+/* ===== BADGES - transparent glassmorphic, tinted by the badge's own color
+   (not solid-filled), matching .badge-premium/.badge-feature/.top10-stamp
+   which already use this pattern elsewhere on this page. Per-content-type
+   tint (film=red, documentary=purple, etc.) is computed in movies.js since
+   the color is dynamic per item. ===== */
 .upload-card__badge {
   position: absolute; top: 6px; left: 6px; font-size: 10px; padding: 2px 8px;
   border-radius: 4px; font-weight: 600; z-index: 3;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.upload-card__badge.leaving-soon { background: rgba(245, 158, 11, 0.9); color: var(--deep-black); }
+.upload-card__badge.leaving-soon {
+  background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.45); color: var(--warm-gold);
+}
 .upload-card__duration {
   position: absolute; bottom: 6px; right: 6px; font-size: 11px; color: white;
   background: rgba(0, 0, 0, 0.75); padding: 2px 6px; border-radius: 4px; font-weight: 500;
@@ -328,8 +352,10 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  background: rgba(245, 158, 11, 0.9);
-  color: var(--deep-black);
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: var(--warm-gold);
   font-size: 9px;
   padding: 2px 6px;
   border-radius: 4px;

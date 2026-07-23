@@ -230,6 +230,17 @@
     long_form: { label: 'Video', color: '#1D4ED8' }
   };
 
+  // Glassmorphic badge tint: translucent background + border in the badge's
+  // own color, solid color text - not a solid fill. Matches .badge-premium/
+  // .badge-feature/.top10-stamp, which already use this pattern.
+  function hexToRgba(hex, alpha) {
+    const clean = (hex || '').replace('#', '');
+    const r = parseInt(clean.substring(0, 2), 16) || 0;
+    const g = parseInt(clean.substring(2, 4), 16) || 0;
+    const b = parseInt(clean.substring(4, 6), 16) || 0;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   function formatMeta(contentFormat) {
     return CONTENT_FORMAT_META[contentFormat] || { label: 'Content', color: '#94A3B8' };
   }
@@ -329,7 +340,7 @@
       <div class="upload-card" data-content-id="${item.id}" tabindex="0" role="link">
         <div class="upload-card__thumb" style="background-image: url(${posterUrl});">
           ${leavingBadge}
-          <span class="upload-card__badge" style="background: ${meta.color}; color: white;">${meta.label}</span>
+          <span class="upload-card__badge" style="background: ${hexToRgba(meta.color, 0.18)}; border: 1px solid ${hexToRgba(meta.color, 0.45)}; color: ${meta.color};">${meta.label}</span>
           ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
           <div class="media-hover-play"><i class="fas fa-play"></i></div>
         </div>
