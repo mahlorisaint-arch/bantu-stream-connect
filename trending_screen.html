@@ -261,10 +261,15 @@ function buildThumbnailUrl(path) { const fallback = 'https://images.unsplash.com
 // DATA FETCHING
 // ==========================================
 
-// Batched — one Content page query + two batched follow-up queries (metrics,
-// view counts) instead of the old N+1 pattern that ran up to 80 separate
-// queries per load (a content_views count + a content_metrics_realtime
-// lookup per item).
+// Batched — one Content page query + two batched follow-up queries instead
+// of the old N+1 pattern that ran up to 80 separate queries per load.
+//
+// Views/likes come from content_engagement_stats, not Content.views_count
+// (that column doesn't exist on Content at all — confirmed via a direct
+// query, it errors) or a per-row content_views count (that table's RLS
+// returns empty to anon reads, confirmed the same way). content_engagement_
+// stats is the real, anon-readable aggregate with total_views/total_likes
+// per content_id.
 async function fetchContent(offset = 0, limit = 50, genre = null) {
     try {
         let query = window.supabaseClient
@@ -281,23 +286,23 @@ async function fetchContent(offset = 0, limit = 50, genre = null) {
         const ids = (data || []).map(item => item.id);
         if (ids.length === 0) return [];
 
-        const [{ data: metricsData }, { data: viewsData }] = await Promise.all([
+        const [{ data: metricsData }, { data: engagementData }] = await Promise.all([
             window.supabaseClient.from('content_metrics_realtime')
                 .select('content_id, momentum_score, velocity_score').in('content_id', ids),
-            window.supabaseClient.from('content_views')
-                .select('content_id').in('content_id', ids)
+            window.supabaseClient.from('content_engagement_stats')
+                .select('content_id, total_views, total_likes').in('content_id', ids)
         ]);
 
         const metricsMap = new Map((metricsData || []).map(m => [m.content_id, m]));
-        const viewCounts = new Map();
-        (viewsData || []).forEach(v => viewCounts.set(v.content_id, (viewCounts.get(v.content_id) || 0) + 1));
+        const engagementMap = new Map((engagementData || []).map(e => [e.content_id, e]));
 
         return data.map(item => {
             const metrics = metricsMap.get(item.id) || {};
-            const views = item.views_count || viewCounts.get(item.id) || 0;
+            const engagement = engagementMap.get(item.id) || {};
             return {
                 ...item,
-                real_views: views,
+                real_views: engagement.total_views || 0,
+                real_likes: engagement.total_likes || 0,
                 real_momentum: metrics.momentum_score || 0,
                 real_velocity: metrics.velocity_score || 0,
                 is_new: isContentNew(item.created_at),
@@ -344,7 +349,7 @@ function renderCards(items) {
             </div>
             <p class="upload-card__title">${escapeHtml(item.title)}</p>
             <p class="upload-card__byline">@${escapeHtml(item.user_profiles?.username || 'Creator')} · ${formatTimeAgo(item.created_at)}</p>
-            <p class="upload-card__meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</span><span class="meta-divider">·</span><span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span></p>
+            <p class="upload-card__meta"><span><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</span><span class="meta-divider">·</span><span><i class="fas fa-heart"></i> ${formatNumber(item.real_likes)}</span></p>
         </div>
     `).join('');
 }
@@ -371,7 +376,7 @@ async function loadContent() {
 
     const featured = [...contentData].sort((a,b)=>(b.real_momentum||b.real_views||0)-(a.real_momentum||a.real_views||0))[0];
     const shorts = contentData.filter(c => (c.duration||0)<60 || c.content_format==='short').slice(0,15);
-    const communityGems = [...contentData].sort((a,b)=>((b.real_momentum||0)+(b.real_views||0)+(b.likes_count||0)*2)-((a.real_momentum||0)+(a.real_views||0)+(a.likes_count||0)*2)).slice(0,12);
+    const communityGems = [...contentData].sort((a,b)=>((b.real_momentum||0)+(b.real_views||0)+(b.real_likes||0)*2)-((a.real_momentum||0)+(a.real_views||0)+(a.real_likes||0)*2)).slice(0,12);
 
     const shortsContainer = document.getElementById('shorts-scroll');
     if (shortsContainer) shortsContainer.innerHTML = renderShorts(shorts);

@@ -112,7 +112,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
    load movies.css. Only ever rendered inside .content-grid on this page
    (no horizontal-scroll upload-card row exists here), so it's sized to
    fill its grid cell rather than a fixed flex-basis. ===== */
-.content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.content-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; max-width: 100%; }
 /* 2->3 columns at 768px, not 600px — matches creator-channel.css's
    .upload-grid exactly. At 600px the 3rd column was leaving cards too
    narrow through the whole phone-landscape/small-tablet range. */
@@ -120,7 +120,15 @@ html, body { overflow-x: hidden; max-width: 100%; }
 @media (min-width: 900px) { .content-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 1200px) { .content-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; } }
 
-.upload-card { cursor: pointer; transition: transform 0.2s ease; display: block; }
+/* min-width:0 is the fix, not decoration: .upload-card is a CSS Grid item,
+   and grid items default to min-width:auto — their content's own natural
+   size, not the grid track's width. .upload-card__byline below uses
+   white-space:nowrap (needed for its ellipsis truncation), so a long
+   "@username · time ago" string's full unwrapped width was being counted
+   as this card's minimum width, forcing the whole grid column — and with
+   it the page — wider than the screen on mobile/tablet. min-width:0 lets
+   the grid track's width win instead, so the ellipsis actually applies. */
+.upload-card { cursor: pointer; transition: transform 0.2s ease; display: block; min-width: 0; }
 .upload-card:hover { transform: translateY(-4px); }
 .upload-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; border-radius: 8px; }
 .upload-card__thumb {
