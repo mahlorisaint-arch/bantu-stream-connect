@@ -187,12 +187,23 @@
 
 .cultural-card:hover {
   transform: translateY(-4px);
-  border-color: var(--cultural-color, var(--warm-gold));
+  border-color: var(--bantu-blue);
 }
 
 .cultural-card i {
-  font-size: 40px;
-  color: var(--cultural-color, var(--warm-gold));
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border-radius: 50%;
+  color: var(--bantu-blue);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow: 0 0 16px rgba(29, 78, 216, 0.35);
   margin-bottom: 1rem;
 }
 
@@ -209,7 +220,7 @@
 .explore-cultural-btn {
   background: transparent;
   border: none;
-  color: var(--cultural-color, var(--warm-gold));
+  color: var(--bantu-blue);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -285,8 +296,11 @@
   transition: all 0.3s ease;
 }
 
-.close-modal-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.close-modal-btn:hover,
+.close-modal-btn:active,
+.close-modal-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error-color);
 }
 
 .expanded-modal-content {
@@ -305,14 +319,24 @@
 
 .category-chip {
   background: rgba(255,255,255,0.05);
+  border: 1px solid transparent;
   padding: 8px 20px;
   border-radius: 30px;
   cursor: pointer;
   transition: all 0.3s ease;
+  user-select: none;
 }
 
 .category-chip:hover {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(29, 78, 216, 0.15);
+  border-color: var(--bantu-blue);
+}
+
+.category-chip.active {
+  background: rgba(29, 78, 216, 0.2);
+  border: 1px solid var(--bantu-blue);
+  color: var(--soft-white);
+  box-shadow: 0 0 14px rgba(29, 78, 216, 0.4);
 }
 
 .content-grid {
@@ -409,6 +433,14 @@
 .creator-card p {
   font-size: 13px;
   color: var(--slate-grey);
+}
+
+.movement-detail-description {
+  color: var(--slate-grey);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 700px;
 }
 
 .expanded-modal-footer {

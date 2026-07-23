@@ -282,7 +282,19 @@ html, body {
 }
 
 .section-title i {
-  color: var(--warm-gold);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 50%;
+  color: var(--bantu-blue);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow: 0 0 12px rgba(29, 78, 216, 0.35);
 }
 
 .section-subtitle {
@@ -355,9 +367,20 @@ html, body {
 .world-icon {
   position: relative;
   z-index: 1;
-  font-size: 48px;
-  margin: 2rem 0 0 2rem;
-  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 1.5rem 0 0 1.5rem;
+  border-radius: 50%;
+  font-size: 26px;
+  color: var(--soft-white);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(29, 78, 216, 0.4);
+  box-shadow: 0 0 18px rgba(29, 78, 216, 0.45);
 }
 
 .world-info {
@@ -405,7 +428,7 @@ html, body {
 
 .explore-world-btn {
   font-size: 0.875rem;
-  color: var(--warm-gold);
+  color: var(--bantu-blue);
   background: none;
   border: none;
   cursor: pointer;
@@ -518,8 +541,10 @@ html, body {
   }
 
   .world-icon {
-    margin: 1.25rem 0 0 1.25rem;
-    font-size: 36px;
+    width: 52px;
+    height: 52px;
+    margin: 1.1rem 0 0 1.1rem;
+    font-size: 20px;
   }
 
   .ticker-content span {

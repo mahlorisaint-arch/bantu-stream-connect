@@ -357,12 +357,54 @@ document.addEventListener('DOMContentLoaded', async function() {
       name: 'Culture World',
       tagline: 'Heritage, traditions, and futures',
       icon: 'fa-drumstick-bite',
-      color: '#F59E0B',
-      gradient: 'linear-gradient(135deg, #2e1a0f, #2e241a)',
+      color: '#10B981',
+      gradient: 'linear-gradient(135deg, #0f2e1a, #1a2e24)',
       categories: ['Fashion', 'Languages', 'Traditions', 'Our History'],
       redirectUrl: '#culturalHub'
     }
   ];
+
+  // Keyword matching for Film/Music/Culture category chips - checked against
+  // genre, genres[], sa_genres[], tags[] and title (real Content columns).
+  // Creator World chips use real structured fields instead (see matchesCreatorChip).
+  const CHIP_KEYWORDS = {
+    film: {
+      'Soapies & Telenovelas': ['soapie', 'soap opera', 'telenovela'],
+      'African Futurism (Sci-Fi)': ['futurism', 'sci-fi', 'scifi', 'science fiction'],
+      'Township Dramas': ['township'],
+      'SA Romantic Comedy': ['romantic comedy', 'rom-com', 'romcom']
+    },
+    music: {
+      'Amapiano': ['amapiano'],
+      'Afro House': ['afro house', 'afrohouse'],
+      'Hip-Hop (SA)': ['hip-hop', 'hip hop', 'hiphop'],
+      'Gqom': ['gqom']
+    },
+    culture: {
+      'Fashion': ['fashion'],
+      'Languages': ['language'],
+      'Traditions': ['tradition'],
+      'Our History': ['history']
+    }
+  };
+
+  function matchesContentChip(item, keywords) {
+    const haystack = [
+      item.genre,
+      ...(item.genres || []),
+      ...(item.sa_genres || []),
+      ...(item.tags || []),
+      item.title
+    ].filter(Boolean).join(' ').toLowerCase();
+    return keywords.some(k => haystack.includes(k));
+  }
+
+  function matchesCreatorChip(item, chip) {
+    if (chip === 'Rising Stars') return item.trend_stage === 'rising';
+    if (chip === 'Verified') return !!item.is_verified;
+    if (chip === 'Trending') return (item.velocity_score || 0) > 0 || (item.pulse_score || 0) > 0;
+    return true;
+  }
 
   async function renderDiscoveryWorlds() {
     if (!worldsContainer) return;
@@ -426,34 +468,40 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modal = document.createElement('div');
     modal.className = 'world-expanded-modal';
 
-    let contentItems = [];
+    let allItems = [];
     let itemKind = 'content';
+    const POOL_LIMIT = 24;
 
     switch (worldConfig.id) {
       case 'film':
-        contentItems = await window.fetchers.getContentByType('movie', 10);
-        if (contentItems.length === 0) contentItems = await window.fetchers.getContentByType('video', 10);
+        allItems = await window.fetchers.getContentByType('movie', POOL_LIMIT);
+        if (allItems.length === 0) allItems = await window.fetchers.getContentByType('video', POOL_LIMIT);
         break;
       case 'music':
-        contentItems = await window.fetchers.getContentByType('music', 10);
-        if (contentItems.length === 0) contentItems = await window.fetchers.getContentByType('audio', 10);
+        allItems = await window.fetchers.getContentByType('music', POOL_LIMIT);
+        if (allItems.length === 0) allItems = await window.fetchers.getContentByType('audio', POOL_LIMIT);
         break;
       case 'creator':
-        contentItems = await window.fetchers.fetchFeaturedCreators(10);
+        allItems = await window.fetchers.fetchFeaturedCreators(20);
         itemKind = 'creator';
         break;
       case 'culture':
-        contentItems = await window.fetchers.getContentByType('culture', 10);
-        if (contentItems.length === 0) {
-          contentItems = await window.fetchers.fetchCulturalMovements(10);
+        allItems = await window.fetchers.getContentByType('culture', POOL_LIMIT);
+        if (allItems.length === 0) {
+          allItems = await window.fetchers.fetchCulturalMovements(POOL_LIMIT);
           itemKind = 'movement';
         }
         break;
       default:
-        contentItems = await window.fetchers.getContentByType('video', 10);
+        allItems = await window.fetchers.getContentByType('video', POOL_LIMIT);
     }
 
-    const hasContent = contentItems && contentItems.length > 0;
+    function renderGrid(items) {
+      if (!items || items.length === 0) {
+        return '<div class="empty-state">Nothing here yet — check back soon.</div>';
+      }
+      return items.slice(0, 10).map(item => itemKind === 'movement' ? renderMovementCard(item) : renderContentItem(item, itemKind)).join('');
+    }
 
     modal.innerHTML = `
       <div class="expanded-modal-header">
@@ -466,11 +514,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       </div>
       <div class="expanded-modal-content">
         <div class="content-categories">
-          ${worldConfig.categories.map(cat => `<span class="category-chip">${cat}</span>`).join('')}
+          ${worldConfig.categories.map(cat => `<span class="category-chip" data-chip="${window.escapeHtml(cat)}">${cat}</span>`).join('')}
         </div>
-        <div class="content-grid">
-          ${hasContent ? contentItems.slice(0, 10).map(item => itemKind === 'movement' ? renderMovementCard(item) : renderContentItem(item, itemKind)).join('') : '<div class="empty-state">Nothing here yet — check back soon.</div>'}
-        </div>
+        <div class="content-grid">${renderGrid(allItems)}</div>
         <div class="expanded-modal-footer">
           <button class="view-all-btn" data-redirect="${worldConfig.redirectUrl}" style="background: linear-gradient(135deg, ${worldConfig.color}, ${worldConfig.color}80);">
             View All <i class="fas fa-arrow-right"></i>
@@ -481,6 +527,49 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
+
+    const gridEl = modal.querySelector('.content-grid');
+
+    function bindMovementClicks() {
+      if (itemKind !== 'movement') return;
+      gridEl.querySelectorAll('.movement-card').forEach(card => {
+        card.addEventListener('click', () => {
+          modal.remove();
+          document.body.style.overflow = '';
+          document.getElementById('culturalHub')?.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+    }
+    bindMovementClicks();
+
+    // Category chips filter the already-fetched pool client-side, since
+    // Film/Music/Culture chips key off real genre/genres/sa_genres/tags text
+    // and Creator chips key off real trend_stage/velocity/is_verified fields.
+    // Clicking an active chip again clears the filter.
+    modal.querySelectorAll('.category-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const isActive = chip.classList.contains('active');
+        modal.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+
+        if (isActive) {
+          gridEl.innerHTML = renderGrid(allItems);
+          bindMovementClicks();
+          return;
+        }
+
+        chip.classList.add('active');
+        const label = chip.dataset.chip;
+        let filtered;
+        if (worldConfig.id === 'creator') {
+          filtered = allItems.filter(item => matchesCreatorChip(item, label));
+        } else {
+          const keywords = (CHIP_KEYWORDS[worldConfig.id] || {})[label] || [];
+          filtered = allItems.filter(item => matchesContentChip(item, keywords));
+        }
+        gridEl.innerHTML = renderGrid(filtered);
+        bindMovementClicks();
+      });
+    });
 
     const closeBtn = modal.querySelector('.close-modal-btn');
     closeBtn.addEventListener('click', () => {
@@ -494,16 +583,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.body.style.overflow = '';
       }
     });
-
-    if (itemKind === 'movement') {
-      modal.querySelectorAll('.movement-card').forEach(card => {
-        card.addEventListener('click', () => {
-          modal.remove();
-          document.body.style.overflow = '';
-          document.getElementById('culturalHub')?.scrollIntoView({ behavior: 'smooth' });
-        });
-      });
-    }
 
     const viewAllBtn = modal.querySelector('.view-all-btn');
     if (viewAllBtn) {
@@ -573,16 +652,78 @@ document.addEventListener('DOMContentLoaded', async function() {
         culturalContainer.innerHTML = '<div class="empty-state">Nothing here yet — check back soon.</div>';
         return;
       }
-      const culturalFeatures = movements.map(m => ({
-        title: m.name,
-        description: m.description || `Explore the ${m.name} movement`,
-        icon: 'fa-compass',
-        color: '#F59E0B'
-      }));
-      culturalContainer.innerHTML = culturalFeatures.map(f => `<div class="cultural-card" style="--cultural-color: ${f.color}"><div class="cultural-card-inner"><i class="fas ${f.icon}"></i><h3>${window.escapeHtml(f.title)}</h3><p>${window.escapeHtml(f.description)}</p><button class="explore-cultural-btn">Explore <i class="fas fa-arrow-right"></i></button></div></div>`).join('');
+      culturalContainer.innerHTML = movements.map((m, i) => `
+        <div class="cultural-card" data-movement-index="${i}">
+          <div class="cultural-card-inner">
+            <i class="fas fa-compass"></i>
+            <h3>${window.escapeHtml(m.name)}</h3>
+            <p>${window.escapeHtml(m.description || `Explore the ${m.name} movement`)}</p>
+            <button class="explore-cultural-btn" type="button">Explore <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+      `).join('');
+
+      culturalContainer.querySelectorAll('.cultural-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const movement = movements[Number(card.dataset.movementIndex)];
+          if (movement) showMovementDetail(movement);
+        });
+      });
     } catch (error) {
       culturalContainer.innerHTML = '<div class="error-state">Failed to load cultural content</div>';
     }
+  }
+
+  function showMovementDetail(movement) {
+    const modal = document.createElement('div');
+    modal.className = 'world-expanded-modal';
+
+    const eraText = movement.era_start
+      ? `${movement.era_start}${movement.era_end ? ' – ' + movement.era_end : ' – present'}`
+      : '';
+    const placeText = [movement.city, movement.region].filter(Boolean).join(', ');
+
+    modal.innerHTML = `
+      <div class="expanded-modal-header">
+        <div>
+          <i class="fas fa-compass" style="color: var(--bantu-blue);"></i>
+          <span class="expanded-modal-title">${window.escapeHtml(movement.name)}</span>
+        </div>
+        <button class="close-modal-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="expanded-modal-content movement-detail-content">
+        ${movement.description ? `<p class="movement-detail-description">${window.escapeHtml(movement.description)}</p>` : ''}
+        <div class="content-categories">
+          ${eraText ? `<span class="category-chip"><i class="fas fa-clock"></i> ${window.escapeHtml(eraText)}</span>` : ''}
+          ${placeText ? `<span class="category-chip"><i class="fas fa-map-marker-alt"></i> ${window.escapeHtml(placeText)}</span>` : ''}
+        </div>
+        <div class="expanded-modal-footer">
+          <button class="view-all-btn" id="movementHubBtn" style="background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));">
+            See Culture World <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+
+    modal.querySelector('.close-modal-btn').addEventListener('click', () => {
+      modal.remove();
+      document.body.style.overflow = '';
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+      }
+    });
+    modal.querySelector('#movementHubBtn').addEventListener('click', () => {
+      modal.remove();
+      document.body.style.overflow = '';
+      const cultureWorld = discoveryWorlds.find(w => w.id === 'culture');
+      if (cultureWorld) showWorldExpandedContent(cultureWorld);
+    });
   }
 
   // ============================================

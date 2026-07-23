@@ -94,9 +94,10 @@ async function fetchFeaturedCreators(limit = 12) {
 
       if (profileError) throw profileError;
 
-      window.appState.cachedData.set(cacheKey, { data: profiles || [], timestamp: Date.now() });
-      window.appState.featuredCreators = profiles || [];
-      return profiles || [];
+      const withVerification = await enrichWithVerification(profiles || []);
+      window.appState.cachedData.set(cacheKey, { data: withVerification, timestamp: Date.now() });
+      window.appState.featuredCreators = withVerification;
+      return withVerification;
     }
 
     // Get creator details
@@ -120,13 +121,45 @@ async function fetchFeaturedCreators(limit = 12) {
       global_rank: pulse.global_rank
     })).filter(item => item.id);
 
-    window.appState.cachedData.set(cacheKey, { data: enriched, timestamp: Date.now() });
-    window.appState.featuredCreators = enriched;
-    return enriched;
+    const withVerification = await enrichWithVerification(enriched);
+    window.appState.cachedData.set(cacheKey, { data: withVerification, timestamp: Date.now() });
+    window.appState.featuredCreators = withVerification;
+    return withVerification;
 
   } catch (error) {
     console.error('Error fetching featured creators:', error);
     return [];
+  }
+}
+
+/**
+ * Enrich creator/profile items with real verification status from the
+ * `creators` table (is_verified / is_creator_verified / is_founder) - the
+ * authoritative source, not any snapshot field on a materialized view.
+ */
+async function enrichWithVerification(items) {
+  if (!items || items.length === 0) return items;
+  const ids = items.map(item => item.id).filter(Boolean);
+  if (ids.length === 0) return items;
+
+  try {
+    const { data: creatorRows } = await window.supabaseClient
+      .from('creators')
+      .select('id, is_verified, is_creator_verified, is_founder')
+      .in('id', ids);
+
+    const creatorMap = new Map((creatorRows || []).map(c => [c.id, c]));
+    return items.map(item => {
+      const c = creatorMap.get(item.id) || {};
+      return {
+        ...item,
+        is_verified: !!(c.is_verified || c.is_creator_verified),
+        is_founder: !!c.is_founder
+      };
+    });
+  } catch (error) {
+    console.error('Error enriching verification status:', error);
+    return items.map(item => ({ ...item, is_verified: false, is_founder: false }));
   }
 }
 
@@ -163,7 +196,9 @@ async function fetchCulturalMovements(limit = 6) {
 }
 
 /**
- * Get content by world/type, enriched with real engagement counts
+ * Get content by world/type, enriched with real engagement counts.
+ * content_type is matched case-insensitively - real rows use inconsistent
+ * casing ("movie" vs "Music"), and a plain .eq() silently misses those.
  */
 async function getContentByType(contentType, limit = 10) {
   try {
@@ -178,6 +213,8 @@ async function getContentByType(contentType, limit = 10) {
         thumbnail_url,
         creator_display_name,
         genre,
+        genres,
+        sa_genres,
         created_at,
         duration,
         content_type,
@@ -185,7 +222,7 @@ async function getContentByType(contentType, limit = 10) {
         tags
       `)
       .eq('status', 'published')
-      .eq('content_type', contentType)
+      .ilike('content_type', contentType)
       .order('created_at', { ascending: false })
       .limit(limit);
 
