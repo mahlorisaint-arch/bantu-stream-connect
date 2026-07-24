@@ -9,15 +9,17 @@ display: none;
 }
 #news-fields.active { display: block; }
 .news-fields-title {
+font-family: 'Orbitron', sans-serif;
 font-size: 18px;
 font-weight: 600;
 margin-bottom: 20px;
-color: var(--warm-gold);
+color: var(--soft-white);
 display: flex;
 align-items: center;
 gap: 10px;
+letter-spacing: 0.5px;
 }
-.news-fields-title i { font-size: 20px; }
+.news-fields-title i { font-size: 18px; color: var(--warm-gold); }
 #news-fields .form-group { margin-bottom: 20px; }
 #article-body {
 min-height: 200px;

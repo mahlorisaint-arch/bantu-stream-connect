@@ -2,8 +2,8 @@
 .movie-classification-section {
 margin: 20px 0;
 padding: 20px;
-background: rgba(139, 92, 246, 0.1);
-border: 1px solid var(--movie-purple);
+background: rgba(29, 78, 216, 0.1);
+border: 1px solid var(--bantu-blue);
 border-radius: 12px;
 display: none;
 }
@@ -69,7 +69,7 @@ height: 20px;
 accent-color: var(--warm-gold);
 }
 .bantu-original-toggle .badge {
-background: linear-gradient(135deg, var(--movie-purple), var(--movie-pink));
+background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
 color: white;
 padding: 2px 8px;
 border-radius: 12px;

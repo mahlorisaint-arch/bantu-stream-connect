@@ -24,7 +24,22 @@
 
 <!-- Core CSS -->
 <link rel="stylesheet" href="css/shared-components.css">
-<link rel="stylesheet" href="css/creator-upload/modals.css">
+<!-- css/creator-upload/modals.css removed entirely: it was a ~1800-line
+     copy-pasted duplicate of content-detail.html's own modal system
+     (playlist-modal, "premium glassmorphic search matrix", trending-mini-
+     grid — none of which exist on this page), loading right after
+     shared-components.css and winning the cascade for #search-modal/
+     .notifications-panel/.theme-selector/.search-filter-pill with its own
+     invented breakpoints (900px/550px instead of the real 480/768/1200/
+     1600px ones) and its own theme-variant overrides. That's why this
+     page's header/sidebar/search/notifications looked different from every
+     other screen. Its .analytics-modal section didn't even match this
+     page's real markup (.analytics-grid/.analytics-card vs the real
+     .analytics-stats-grid/.analytics-stat-card) — shared-components.css
+     already has the correct, matching analytics-modal system used
+     everywhere else. Confirmed nothing here (.modal-overlay/.modal-
+     container/.modal-close/playlist-modal) is referenced anywhere in this
+     page's actual HTML before deleting. -->
 
 <!-- Creator Upload CSS Files -->
 <link rel="stylesheet" href="css/creator-upload.css">
@@ -90,7 +105,7 @@
     <!-- ============================================ -->
     <!-- HEADER - MATCHES INDEX.HTML -->
     <!-- ============================================ -->
-    <header class="header">
+    <header class="header" id="site-header">
         <div class="logo" onclick="window.location.href='index.html'">
             <button class="menu-toggle" id="menu-toggle" title="Open Menu">
                 <i class="fas fa-bars"></i>
@@ -101,13 +116,9 @@
                      onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2265%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22%3EB%3C/text%3E%3C/svg%3E'"
                      style="width: 100%; height: 100%; object-fit: contain;">
             </div>
-            <div class="logo-text">BANTU STREAM CONNECT</div>
+            <div class="logo-text">BSC</div>
         </div>
         <div class="header-actions">
-            <button id="back-btn" class="icon-btn" title="Go Back"><i class="fas fa-arrow-left"></i></button>
-            <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
-            <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
-            
             <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
     <i class="fas fa-search"></i>
     <span class="search-shortcut">⌘K</span>

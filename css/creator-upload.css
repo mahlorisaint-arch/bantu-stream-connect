@@ -98,7 +98,7 @@ margin-bottom: 8px;
 display: block;
 margin-bottom: 8px;
 font-size: 13px;
-color: #F59E0B;
+color: var(--warm-gold);
 }
 .tag-group {
 display: flex;
@@ -109,20 +109,20 @@ gap: 8px;
 padding: 6px 14px;
 border-radius: 20px;
 background: rgba(255,255,255,0.1);
-border: 1px solid rgba(148,163,184,0.3);
-color: #F8FAFC;
+border: 1px solid var(--card-border);
+color: var(--soft-white);
 font-size: 12px;
 cursor: pointer;
 transition: all 0.2s ease;
 }
 .tag-btn:hover {
 background: rgba(245,158,11,0.2);
-border-color: #F59E0B;
+border-color: var(--warm-gold);
 }
 .tag-btn.selected {
-background: #F59E0B;
-color: #0A0E12;
-border-color: #F59E0B;
+background: var(--warm-gold);
+color: var(--deep-black);
+border-color: var(--warm-gold);
 }
 
 /* Responsive Styles */

@@ -9,12 +9,14 @@ display: none;
 }
 .dynamic-fields-container.active { display: block; }
 .dynamic-fields-title {
+font-family: 'Orbitron', sans-serif;
 font-size: 18px;
 font-weight: 600;
 margin-bottom: 20px;
-color: var(--warm-gold);
+color: var(--soft-white);
 display: flex;
 align-items: center;
 gap: 10px;
+letter-spacing: 0.5px;
 }
-.dynamic-fields-title i { font-size: 20px; }
+.dynamic-fields-title i { font-size: 18px; color: var(--warm-gold); }
