@@ -15,10 +15,11 @@
   --player-accent-glow: rgba(0, 229, 255, 0.25);
   background: var(--deep-navy);
   border: none;
-  border-radius: 0;
+  border-radius: 16px;
+  overflow: hidden;
   padding: 0;
   margin: 0 0 20px 0;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35), 0 0 20px rgba(0, 229, 255, 0.15), inset 0 0 0 1px rgba(0, 229, 255, 0.3);
   animation: slideDown 0.3s ease;
   display: none;
   position: relative;
@@ -302,12 +303,13 @@
   top: 0;
   left: 0;
   right: 0;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
   z-index: 15;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
   pointer-events: none;
 }
 
@@ -323,8 +325,8 @@
 }
 
 .player-logo img {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4));
 }
@@ -342,7 +344,7 @@
 .player-top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .player-top-bar .quality-indicator {
@@ -353,22 +355,23 @@
   opacity: 1;
   pointer-events: auto;
   animation: none;
-  background: rgba(0, 0, 0, 0.55) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
   color: var(--soft-white);
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.5px;
+  border: none !important;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.3px;
   padding: 6px 8px 6px 14px !important;
   border-radius: 24px !important;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .quality-tier-pill {
   background: var(--player-accent);
   color: var(--deep-black);
+  font-family: 'Inter', sans-serif;
   font-weight: 800;
   font-size: 11px;
   padding: 3px 10px;
@@ -376,13 +379,14 @@
   letter-spacing: 0.5px;
 }
 
-/* Rounded-square utility buttons (top bar Cast/CC/More) — distinct from
-   the fully circular bottom-bar transport buttons. */
-.top-btn {
-  width: 32px !important;
-  height: 32px !important;
-  font-size: 13px !important;
-  border-radius: 10px !important;
+/* Top bar Cast/CC/More — perfect circles with a filled dark background,
+   distinct from the bottom bar's transparent icon-only buttons. */
+.player-top-bar .control-btn.top-btn {
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 15px !important;
+  border-radius: 50% !important;
+  border: none !important;
 }
 
 /* ============================================ */
@@ -393,8 +397,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(15, 15, 15, 0.95), rgba(15, 15, 15, 0.6), transparent);
-  padding: 20px 20px 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+  padding: 20px 24px 16px;
   z-index: 10 !important;
   transition: opacity 0.3s ease, transform 0.3s ease;
   opacity: 0;
@@ -468,6 +472,23 @@
   transform: scale(0.95);
 }
 
+/* Bottom bar icons (everything except Play) sit transparently on the
+   gradient — no individual circle chrome, unlike the top bar's filled
+   circular buttons. Play keeps its own ring treatment below. */
+.enhanced-video-controls .controls-bar .control-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.enhanced-video-controls .controls-bar .control-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Skip 10s buttons (rewind/forward) */
 .enhanced-video-controls .skip-btn {
   width: 40px;
@@ -504,14 +525,14 @@
   box-shadow: 0 8px 40px var(--player-accent-glow), 0 0 40px var(--player-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
-/* Larger, ring-outline variant matching the reference — dark fill, thin
-   cyan ring, cyan icon, instead of the smaller filled-glow default above. */
+/* Larger, ring-outline variant matching the reference — dark/transparent
+   fill, thin glowing cyan ring, WHITE icon (only the ring is cyan). */
 .enhanced-video-controls .play-pause-btn.play-pause-large {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   background: rgba(0, 229, 255, 0.06) !important;
   border: 2px solid var(--player-accent) !important;
-  color: var(--player-accent) !important;
+  color: #FFFFFF !important;
   font-size: 18px;
   box-shadow: 0 0 24px var(--player-accent-glow) !important;
 }
@@ -525,10 +546,10 @@
 /* Current time / duration — plain text flanking the progress bar, no pill */
 .enhanced-video-controls .current-time,
 .enhanced-video-controls .duration {
-  font-family: 'Orbitron', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   color: var(--soft-white);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.2px;
   flex-shrink: 0;
   min-width: 40px;
   text-align: center;
@@ -541,7 +562,7 @@
   flex: 1;
   min-width: 60px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   border-radius: 4px;
@@ -588,7 +609,7 @@
   /* The "filled" look — there's no separate .progress-fill overlay element
      in the live DOM, so this gradient (kept in sync with --progress by
      _updateProgressBar() in video-player.js) IS the fill. */
-  background: linear-gradient(to right, var(--player-accent) var(--progress, 0%), rgba(255, 255, 255, 0.15) var(--progress, 0%));
+  background: linear-gradient(to right, var(--player-accent) var(--progress, 0%), rgba(255, 255, 255, 0.25) var(--progress, 0%));
   border-radius: 4px;
   cursor: pointer;
   margin: 0;
@@ -1288,9 +1309,19 @@ input:checked + .toggle-slider:before {
 /* ============================================ */
 /* RESPONSIVE ADJUSTMENTS */
 /* ============================================ */
+
+/* Tablet and below: smaller frame radius per spec (16px laptop / 12px
+   mobile+tablet) */
+@media (max-width: 768px) {
+  .inline-player {
+    border-radius: 12px;
+  }
+}
+
 @media (max-width: 768px) {
   .player-top-bar {
     padding: 10px 12px;
+    min-height: 52px;
   }
 
   .player-logo img {
@@ -1298,80 +1329,88 @@ input:checked + .toggle-slider:before {
     height: 22px;
   }
 
+  /* Wordmark collapses to a single line at tablet width rather than
+     staying 3-line-stacked — the <br> tags are hidden but a literal
+     space before "STREAM"/"CONNECT" in the markup keeps word spacing. */
   .player-logo span {
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.5px;
   }
 
-  .player-top-actions {
-    gap: 6px;
+  .player-logo span br {
+    display: none;
   }
 
-  .top-btn {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 11px !important;
+  .player-top-actions {
+    gap: 8px;
+  }
+
+  .player-top-bar .control-btn.top-btn {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
   }
 
   .player-top-bar .quality-indicator {
+    font-size: 11px;
+    padding: 5px 6px 5px 12px !important;
+  }
+
+  .quality-tier-pill {
     font-size: 10px;
-    padding: 3px 8px;
+    padding: 2px 8px;
   }
 
   .enhanced-video-controls {
-    padding: 10px 10px 8px !important;
+    padding: 14px 14px 10px !important;
     opacity: 1;
     transform: translateY(0);
   }
 
   .enhanced-video-controls .controls-bar {
     padding: 6px 10px !important;
-    gap: 6px !important;
+    gap: 10px !important;
     border-radius: 30px !important;
   }
 
-  .enhanced-video-controls .control-btn {
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 12px !important;
-    min-width: 30px !important;
-    min-height: 30px !important;
-  }
-
-  .enhanced-video-controls .play-pause-btn {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
-    min-height: 34px !important;
+  /* Every control stays visible at this breakpoint per spec — only
+     sizes/gaps shrink, nothing is hidden yet. */
+  .enhanced-video-controls .controls-bar .control-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
   }
 
   .enhanced-video-controls .play-pause-btn.play-pause-large {
-    width: 42px !important;
-    height: 42px !important;
-    min-width: 42px !important;
-    min-height: 42px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 
   .enhanced-video-controls .skip-btn {
-    width: 32px !important;
+    width: 34px !important;
   }
 
   .enhanced-video-controls .skip-btn span {
-    font-size: 6px !important;
+    font-size: 7px !important;
   }
 
   .enhanced-video-controls .current-time,
   .enhanced-video-controls .duration {
-    font-size: 10px !important;
-    min-width: 30px !important;
+    font-size: 11px !important;
+    min-width: 32px !important;
   }
 
   .enhanced-video-controls .progress-container {
     margin: 0 4px !important;
   }
 
-  .enhanced-video-controls .volume-group .volume-bar {
-    width: 40px !important;
+  .enhanced-video-controls .volume-group:hover .volume-bar,
+  .enhanced-video-controls .volume-group:focus-within .volume-bar {
+    width: 44px;
   }
 
   .settings-menu {
@@ -1388,7 +1427,6 @@ input:checked + .toggle-slider:before {
     padding: 5px 6px !important;
   }
 
-  .quality-indicator,
   .hls-badge,
   .data-saver-badge {
     font-size: 10px !important;
@@ -1429,8 +1467,62 @@ input:checked + .toggle-slider:before {
 }
 
 @media (max-width: 480px) {
+  /* Logo: icon only, wordmark dropped entirely to reclaim width */
   .player-logo span {
     display: none;
+  }
+
+  .player-top-bar {
+    padding: 8px 10px;
+    min-height: 46px;
+  }
+
+  .player-top-actions {
+    gap: 6px;
+  }
+
+  /* Cast/CC/More all stay — shrunk visually, but padded back out to a
+     real touch target via an invisible expanded hit area rather than
+     shrinking the actual tappable zone below ~40px. */
+  .player-top-bar .control-btn.top-btn {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  .player-top-bar .control-btn.top-btn::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+  }
+
+  .player-top-bar .quality-indicator {
+    font-size: 10px;
+    padding: 4px 5px 4px 10px !important;
+  }
+
+  .quality-tier-pill {
+    font-size: 9px;
+    padding: 2px 7px;
+  }
+
+  .enhanced-video-controls .controls-bar {
+    gap: 6px !important;
+  }
+
+  /* Core row (play, skip-10, seek, times, fullscreen) stays full-size —
+     the non-negotiable controls per spec. Secondary icons shrink instead
+     of disappearing, so settings/quality stay one tap away, not buried. */
+  .enhanced-video-controls .play-pause-btn.play-pause-large {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    font-size: 15px;
+  }
+
+  .enhanced-video-controls .skip-btn {
+    width: 32px !important;
   }
 
   .enhanced-video-controls .current-time,
@@ -1443,11 +1535,14 @@ input:checked + .toggle-slider:before {
     display: none;
   }
 
-  /* Least-essential icons — declutter the bar rather than let it overflow */
-  #previousTrackBtn,
-  #audioToggleBtn,
-  #castBtnBottom {
-    display: none !important;
+  /* Secondary icons — audio toggle, second cast, settings gear — shrink
+     rather than hide, so nothing gets buried behind an extra tap. */
+  .enhanced-video-controls .controls-bar .control-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
   }
 
   .settings-menu {
