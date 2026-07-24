@@ -1754,16 +1754,30 @@
     
     _createControls() {
       if (!this.container) return;
-      
+
       const existingControls = this.container.querySelector('.enhanced-video-controls');
-      if (existingControls) existingControls.remove();
-      
+      if (existingControls) {
+        // The page's own hand-built controls markup (content-detail.html)
+        // is the single source of truth for this player's design — reuse
+        // it instead of deleting it and injecting a second, different
+        // template via _getControlsHTML(). That dual-template setup was
+        // the actual reason a redesign of the static markup never showed
+        // up: this method silently discarded it on every load.
+        this.controls = existingControls;
+        this._cacheControlElements();
+        this._setupSettingsMenu();
+        this._setupSkipButtons();
+        console.log('✅ Reusing existing controls markup (not regenerating)');
+        return;
+      }
+
+      // Fallback only — no hand-built markup found on this page.
       this.controls = document.createElement('div');
       this.controls.className = 'enhanced-video-controls';
       this.controls.setAttribute('role', 'toolbar');
       this.controls.setAttribute('aria-label', 'Video player controls');
       this.controls.innerHTML = this._getControlsHTML();
-      
+
       Object.assign(this.controls.style, {
         position: 'absolute',
         bottom: '0',
@@ -1776,7 +1790,7 @@
         opacity: '0',
         pointerEvents: 'auto'
       });
-      
+
       this.container.appendChild(this.controls);
       this._cacheControlElements();
       this._setupSettingsMenu();
@@ -1997,8 +2011,11 @@
         prevTrackBtn: this.controls.querySelector('.prev-track-btn'),
         nextTrackBtn: this.controls.querySelector('.next-track-btn'),
         playOverlay: document.getElementById('initialPlayOverlay'),
-        bufferingIndicator: this.controls.querySelector('.buffering-indicator'),
-        errorOverlay: this.controls.querySelector('.error-overlay')
+        // Siblings of .enhanced-video-controls in the real markup (both
+        // need to span the full video, not just the bottom control strip),
+        // not nested inside it — look them up from the container.
+        bufferingIndicator: this.container.querySelector('.buffering-indicator'),
+        errorOverlay: this.container.querySelector('.error-overlay')
       };
     }
     
@@ -4101,30 +4118,22 @@
   console.log('   🚀 Ready for production deployment with Guard Clause Propagation Trap Fix');
 
   // ============================================
-  // PLAYER TOP-BAR CONTROLS (Cast / Captions / More)
-  // .player-top-bar lives outside .enhanced-video-controls, so unlike the
-  // bottom controls bar it is NOT rebuilt by _createControls() — wiring it
-  // once at DOMContentLoaded is safe. The "more options" button still looks
-  // up .settings-btn fresh at click time (not cached here), since THAT
-  // element gets destroyed and replaced by _createControls() ~500ms after
-  // load and a stale reference would click a detached, invisible node.
+  // TOP-BAR + BOTTOM-BAR STUB CONTROLS (Cast / Captions / Audio / More)
+  // Safe to wire once at DOMContentLoaded: _createControls() now reuses the
+  // static .enhanced-video-controls element in place instead of destroying
+  // and rebuilding it, so nothing here goes stale/detached later.
   // ============================================
   document.addEventListener('DOMContentLoaded', () => {
-    const castBtn = document.getElementById('castBtn');
-    const captionsBtn = document.getElementById('captionsBtn');
-    const moreOptionsBtn = document.getElementById('moreOptionsBtn');
-
     const comingSoon = (label) => {
       if (typeof showToast === 'function') showToast(`${label} — coming soon`, 'info');
     };
 
-    if (castBtn) {
-      castBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        comingSoon('Cast');
-      });
-    }
+    ['castBtnTop', 'castBtnBottom'].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); comingSoon('Cast'); });
+    });
 
+    const captionsBtn = document.getElementById('captionsBtn');
     if (captionsBtn) {
       captionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -4132,8 +4141,17 @@
       });
     }
 
+    const audioToggleBtn = document.getElementById('audioToggleBtn');
+    if (audioToggleBtn) {
+      audioToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        comingSoon('Audio settings');
+      });
+    }
+
     // "More options" reuses the existing settings menu rather than
     // inventing a second, redundant popover.
+    const moreOptionsBtn = document.getElementById('moreOptionsBtn');
     if (moreOptionsBtn) {
       moreOptionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();

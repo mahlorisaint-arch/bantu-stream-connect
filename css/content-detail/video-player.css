@@ -319,21 +319,22 @@
 .player-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .player-logo img {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
   filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4));
 }
 
 .player-logo span {
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  line-height: 1.25;
   color: var(--soft-white);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
@@ -346,27 +347,42 @@
 
 .player-top-bar .quality-indicator {
   position: static;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   opacity: 1;
   pointer-events: auto;
   animation: none;
   background: rgba(0, 0, 0, 0.55) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  color: var(--player-accent);
-  border: 1px solid var(--player-accent-dim) !important;
+  color: var(--soft-white);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+  padding: 6px 8px 6px 14px !important;
+  border-radius: 24px !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quality-tier-pill {
+  background: var(--player-accent);
+  color: var(--deep-black);
+  font-weight: 800;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 16px;
   letter-spacing: 0.5px;
 }
 
-.player-top-bar .quality-indicator.auto {
-  color: var(--soft-white);
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
+/* Rounded-square utility buttons (top bar Cast/CC/More) — distinct from
+   the fully circular bottom-bar transport buttons. */
 .top-btn {
   width: 32px !important;
   height: 32px !important;
   font-size: 13px !important;
+  border-radius: 10px !important;
 }
 
 /* ============================================ */
@@ -468,7 +484,7 @@
   font-family: 'Orbitron', sans-serif;
 }
 
-/* Play/Pause button — larger, glowing accent */
+/* Play/Pause button */
 .enhanced-video-controls .play-pause-btn {
   width: 42px;
   height: 42px;
@@ -488,21 +504,34 @@
   box-shadow: 0 8px 40px var(--player-accent-glow), 0 0 40px var(--player-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
-/* Time display */
-.enhanced-video-controls .time-display {
+/* Larger, ring-outline variant matching the reference — dark fill, thin
+   cyan ring, cyan icon, instead of the smaller filled-glow default above. */
+.enhanced-video-controls .play-pause-btn.play-pause-large {
+  width: 54px;
+  height: 54px;
+  background: rgba(0, 229, 255, 0.06) !important;
+  border: 2px solid var(--player-accent) !important;
+  color: var(--player-accent) !important;
+  font-size: 18px;
+  box-shadow: 0 0 24px var(--player-accent-glow) !important;
+}
+
+.enhanced-video-controls .play-pause-btn.play-pause-large:hover {
+  background: rgba(0, 229, 255, 0.16) !important;
+  transform: scale(1.08);
+  box-shadow: 0 0 34px var(--player-accent-glow) !important;
+}
+
+/* Current time / duration — plain text flanking the progress bar, no pill */
+.enhanced-video-controls .current-time,
+.enhanced-video-controls .duration {
   font-family: 'Orbitron', monospace;
   font-size: 13px;
   color: var(--soft-white);
-  min-width: 100px;
-  text-align: center;
   letter-spacing: 0.5px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 4px 8px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
+  min-width: 40px;
+  text-align: center;
 }
 
 /* ============================================ */
@@ -660,8 +689,9 @@
 }
 
 .enhanced-video-controls .volume-bar {
-  width: 80px;
+  width: 0;
   height: 4px;
+  opacity: 0;
   -webkit-appearance: none;
   appearance: none;
   background: rgba(255, 255, 255, 0.15) !important;
@@ -669,9 +699,17 @@
   -webkit-backdrop-filter: blur(4px) !important;
   border-radius: 4px;
   cursor: pointer;
-  transition: width 0.2s ease;
+  transition: width 0.2s ease, opacity 0.2s ease;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Icon-only by default, matching the reference — the slider reveals on
+   hover/focus instead of taking up permanent space in the bar. */
+.enhanced-video-controls .volume-group:hover .volume-bar,
+.enhanced-video-controls .volume-group:focus-within .volume-bar {
+  width: 70px;
+  opacity: 1;
 }
 
 .enhanced-video-controls .volume-bar::-webkit-slider-thumb {
@@ -1307,6 +1345,13 @@ input:checked + .toggle-slider:before {
     min-height: 34px !important;
   }
 
+  .enhanced-video-controls .play-pause-btn.play-pause-large {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+  }
+
   .enhanced-video-controls .skip-btn {
     width: 32px !important;
   }
@@ -1315,10 +1360,10 @@ input:checked + .toggle-slider:before {
     font-size: 6px !important;
   }
 
-  .enhanced-video-controls .time-display {
+  .enhanced-video-controls .current-time,
+  .enhanced-video-controls .duration {
     font-size: 10px !important;
-    min-width: 70px !important;
-    padding: 3px 6px !important;
+    min-width: 30px !important;
   }
 
   .enhanced-video-controls .progress-container {
@@ -1388,13 +1433,21 @@ input:checked + .toggle-slider:before {
     display: none;
   }
 
-  .enhanced-video-controls .time-display {
-    min-width: 56px !important;
+  .enhanced-video-controls .current-time,
+  .enhanced-video-controls .duration {
+    min-width: 26px !important;
     font-size: 9px !important;
   }
 
   .enhanced-video-controls .volume-group .volume-bar {
     display: none;
+  }
+
+  /* Least-essential icons — declutter the bar rather than let it overflow */
+  #previousTrackBtn,
+  #audioToggleBtn,
+  #castBtnBottom {
+    display: none !important;
   }
 
   .settings-menu {

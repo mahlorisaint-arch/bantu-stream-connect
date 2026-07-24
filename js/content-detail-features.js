@@ -784,20 +784,29 @@ function setupNavButtonScrollAnimation() {
 // SHARED COMPONENTS: Quality & Network Indicators
 // ============================================
 function updateQualityIndicator(quality) {
-    // Lives in the persistent top-bar now (matches the reference design),
-    // not a transient corner flash — no auto-hide timer.
+    // Lives in the persistent top-bar now (matches the reference design):
+    // a main pill ("1080P") plus a separate cyan tier chip ("FHD"), not a
+    // transient corner flash — no auto-hide timer.
     const indicator = document.getElementById('qualityBadge');
+    const mainEl = document.getElementById('qualityBadgeMain');
+    const tierEl = document.getElementById('qualityBadgeTier');
     const dataSaverBadge = document.getElementById('dataSaverBadge');
-    if (!indicator) return;
+    if (!indicator || !mainEl) return;
 
     const normalized = (quality || 'auto').toLowerCase();
     const height = parseInt(normalized, 10);
-    let label = 'AUTO';
+
     if (!isNaN(height)) {
-        const tier = height >= 1080 ? 'FHD' : height >= 720 ? 'HD' : 'SD';
-        label = `${height}P ${tier}`;
+        mainEl.textContent = `${height}P`;
+        if (tierEl) {
+            const tier = height >= 1080 ? 'FHD' : height >= 720 ? 'HD' : 'SD';
+            tierEl.textContent = tier;
+            tierEl.style.display = 'inline-block';
+        }
+    } else {
+        mainEl.textContent = 'AUTO';
+        if (tierEl) tierEl.style.display = 'none';
     }
-    indicator.textContent = label;
 
     indicator.classList.remove('auto', 'hd');
     if (normalized === 'auto') {

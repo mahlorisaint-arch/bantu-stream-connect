@@ -430,10 +430,10 @@
             <div class="video-container enhanced-video-player" id="bantuVideoContainer">
                 <video id="inlineVideoPlayer" playsinline webkit-playsinline></video>
                 <div class="player-top-bar">
-                    <div class="player-logo"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"><span>BANTU STREAM CONNECT</span></div>
+                    <div class="player-logo"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"><span>BANTU<br>STREAM<br>CONNECT</span></div>
                     <div class="player-top-actions">
-                        <div class="quality-indicator" id="qualityBadge">AUTO</div>
-                        <button class="control-btn top-btn" id="castBtn" title="Cast"><i class="fas fa-tv"></i></button>
+                        <div class="quality-indicator" id="qualityBadge"><span id="qualityBadgeMain">AUTO</span><span id="qualityBadgeTier" class="quality-tier-pill" style="display:none">FHD</span></div>
+                        <button class="control-btn top-btn" id="castBtnTop" title="Cast"><i class="fas fa-tv"></i></button>
                         <button class="control-btn top-btn" id="captionsBtn" title="Captions"><i class="fas fa-closed-captioning"></i></button>
                         <button class="control-btn top-btn" id="moreOptionsBtn" title="More options"><i class="fas fa-ellipsis-vertical"></i></button>
                     </div>
@@ -446,24 +446,31 @@
                     <div class="bantu-logo-spinner"><div class="bantu-logo"><i class="fas fa-film"></i></div><div class="bantu-brand-text">BANTU STREAM CONNECT</div></div>
                     <p class="loading-text">Ready to play...</p>
                 </div>
-                <!-- This whole .enhanced-video-controls block is replaced at runtime by
-                     EnhancedVideoPlayer._createControls()/_getControlsHTML() in
-                     js/video-player.js (it deletes and rebuilds this element on every
-                     page load). It's kept here matching that real template 1:1 as a
-                     no-JS/pre-hydration fallback — edit _getControlsHTML(), not just
-                     this markup, or changes here will never actually be seen. -->
+                <!-- This is the real, permanent player markup — EnhancedVideoPlayer
+                     (js/video-player.js, _createControls()) now REUSES this element
+                     in place rather than deleting/regenerating it, so this file is
+                     the single source of truth for the player's design. Class names
+                     below (.play-pause-btn, .prev-track-btn, .volume-group, etc.) are
+                     load-bearing — _cacheControlElements() looks them up by these
+                     exact names. -->
                 <div class="enhanced-video-controls">
                     <div class="controls-bar">
-                        <button class="control-btn play-pause-btn"><i class="fas fa-play"></i></button>
+                        <button class="control-btn play-pause-btn play-pause-large" title="Play/Pause"><i class="fas fa-play"></i></button>
+                        <button class="control-btn prev-track-btn" id="previousTrackBtn" title="Previous"><i class="fas fa-backward-step"></i></button>
                         <button class="control-btn skip-btn" id="rewind10Btn" title="Back 10 seconds"><i class="fas fa-rotate-left"></i><span>10</span></button>
                         <button class="control-btn skip-btn" id="forward10Btn" title="Forward 10 seconds"><i class="fas fa-rotate-right"></i><span>10</span></button>
-                        <div class="time-display"><span class="current-time">0:00</span><span> / </span><span class="duration">0:00</span></div>
-                        <div class="progress-container"><input type="range" class="progress-bar" min="0" max="100" value="0"></div>
-                        <div class="volume-group"><button class="control-btn volume-btn"><i class="fas fa-volume-up"></i></button><input type="range" class="volume-bar" min="0" max="100" value="100"></div>
-                        <button class="control-btn" id="previousTrackBtn" style="display:none"><i class="fas fa-step-backward"></i></button>
-                        <button class="control-btn" id="nextTrackBtn" style="display:none"><i class="fas fa-step-forward"></i></button>
-                        <button class="control-btn settings-btn"><i class="fas fa-cog"></i></button>
-                        <button class="control-btn fullscreen-btn"><i class="fas fa-expand"></i></button>
+                        <button class="control-btn next-track-btn" id="nextTrackBtn" title="Next" style="display:none"><i class="fas fa-forward-step"></i></button>
+                        <div class="volume-group">
+                            <button class="control-btn volume-btn" title="Mute/Unmute"><i class="fas fa-volume-up"></i></button>
+                            <input type="range" class="volume-bar" min="0" max="100" value="100">
+                        </div>
+                        <span class="current-time">0:00</span>
+                        <div class="progress-container"><input type="range" class="progress-bar" min="0" max="100" value="0"><div class="progress-buffer"></div></div>
+                        <span class="duration">0:00</span>
+                        <button class="control-btn" id="audioToggleBtn" title="Audio settings"><i class="fas fa-sliders"></i></button>
+                        <button class="control-btn" id="castBtnBottom" title="Cast"><i class="fas fa-tv"></i></button>
+                        <button class="control-btn settings-btn" title="Settings"><i class="fas fa-cog"></i></button>
+                        <button class="control-btn fullscreen-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
                     </div>
                     <div class="settings-menu">
                         <div class="settings-section"><h4>Quality</h4><div class="quality-options" id="qualityOptions"><button class="quality-option active" data-quality="auto">Auto</button><button class="quality-option" data-quality="1080p">1080p</button><button class="quality-option" data-quality="720p">720p</button><button class="quality-option" data-quality="480p">480p</button><button class="quality-option" data-quality="360p">360p</button></div></div>
