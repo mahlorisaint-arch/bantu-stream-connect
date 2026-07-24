@@ -1767,6 +1767,7 @@
         this._cacheControlElements();
         this._setupSettingsMenu();
         this._setupSkipButtons();
+        this._setupCenterControls();
         console.log('✅ Reusing existing controls markup (not regenerating)');
         return;
       }
@@ -1804,20 +1805,55 @@
       const rewindBtn = this.controls.querySelector('#rewind10Btn');
       const forwardBtn = this.controls.querySelector('#forward10Btn');
 
+      // Reuses the same seekRelative()/seek() the keyboard shortcuts and the
+      // mobile/tablet double-tap gesture use — one seeking implementation,
+      // not three separate clamping copies.
       if (rewindBtn) {
         rewindBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          if (this.video) this.video.currentTime = Math.max(0, this.video.currentTime - 10);
+          this.seekRelative(-10);
         });
       }
 
       if (forwardBtn) {
         forwardBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          if (!this.video) return;
-          const dur = this.video.duration;
-          const target = this.video.currentTime + 10;
-          this.video.currentTime = Number.isFinite(dur) ? Math.min(dur, target) : target;
+          this.seekRelative(10);
+        });
+      }
+    }
+
+    // Mobile/tablet center transport (play/prev/next) — replaces the
+    // bottom-bar play button at ≤768px (see CSS). Prev/Next visibility is
+    // driven by queue-manager.js alongside the bottom bar's own
+    // previousTrackBtn/nextTrackBtn (same hasQueue rule, both sets of
+    // buttons toggle together).
+    _setupCenterControls() {
+      if (!this.container) return;
+      const playBtn = this.container.querySelector('#centerPlayBtn');
+      const prevBtn = this.container.querySelector('#centerPrevBtn');
+      const nextBtn = this.container.querySelector('#centerNextBtn');
+
+      if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.togglePlay();
+        });
+      }
+
+      // Forward to the real (hidden on mobile/tablet) bottom-bar buttons
+      // rather than duplicating queue-manager.js's navigation logic here.
+      if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById('previousTrackBtn')?.click();
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById('nextTrackBtn')?.click();
         });
       }
     }
@@ -2019,47 +2055,130 @@
       };
     }
     
+    // Row summary labels ("Quality — 1080p FHD") — keyed by the
+    // .settings-accordion-row[data-row] value, mapped to the id of its
+    // .settings-row-value span in content-detail.html.
+    static SETTINGS_ROW_VALUE_IDS = {
+      quality: 'qualityRowValue',
+      datasaver: 'dataSaverRowValue',
+      speed: 'speedRowValue'
+    };
+
+    _qualityRowLabel(quality) {
+      if (!quality || quality === 'auto') return 'Auto';
+      const height = parseInt(quality, 10);
+      if (isNaN(height)) return quality;
+      const tier = height >= 1080 ? 'FHD' : height >= 720 ? 'HD' : 'SD';
+      return `${quality} ${tier}`;
+    }
+
+    _updateSettingsRowValue(rowKey, text) {
+      const id = EnhancedVideoPlayer.SETTINGS_ROW_VALUE_IDS[rowKey];
+      const el = id ? document.getElementById(id) : null;
+      if (el) el.textContent = text;
+    }
+
+    _collapseSettingsRow(rowKey) {
+      const row = this.controls ? this.controls.querySelector(`.settings-accordion-row[data-row="${rowKey}"]`) : null;
+      if (!row) return;
+      row.classList.remove('expanded');
+      const header = row.querySelector('.settings-row-header');
+      if (header) header.setAttribute('aria-expanded', 'false');
+    }
+
+    _collapseAllSettingsRows() {
+      if (!this.controls) return;
+      this.controls.querySelectorAll('.settings-accordion-row').forEach(row => {
+        row.classList.remove('expanded');
+        const header = row.querySelector('.settings-row-header');
+        if (header) header.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    _refreshSettingsSummaries() {
+      if (!this.controls) return;
+      const activeQuality = this.controls.querySelector('.quality-option.active');
+      this._updateSettingsRowValue('quality', this._qualityRowLabel(activeQuality ? activeQuality.dataset.quality : 'auto'));
+
+      const activeSpeed = this.controls.querySelector('.speed-option.active');
+      this._updateSettingsRowValue('speed', `${activeSpeed ? activeSpeed.dataset.speed : '1'}x`);
+
+      const dataSaverToggle = document.getElementById('dataSaverToggle');
+      if (dataSaverToggle) {
+        this._updateSettingsRowValue('datasaver', dataSaverToggle.checked ? 'On' : 'Off');
+      }
+    }
+
     _setupSettingsMenu() {
       if (!this._controlsCache || !this._controlsCache.settingsBtn || !this._controlsCache.settingsMenu) return;
-      
+
       const { settingsBtn, settingsMenu } = this._controlsCache;
       let isOpen = false;
-      
+
+      const openMenu = () => {
+        isOpen = true;
+        settingsMenu.style.display = 'block';
+        settingsBtn.setAttribute('aria-expanded', 'true');
+        settingsMenu.setAttribute('aria-hidden', 'false');
+        // Always reopens fully collapsed — no remembered expanded row.
+        this._collapseAllSettingsRows();
+        // Re-sync from streamingManager on every open (not just once at
+        // setup) — it may not be initialized yet the first time
+        // _setupSettingsMenu() runs, but will be by the time a user
+        // actually opens this menu.
+        const dataSaverToggle = document.getElementById('dataSaverToggle');
+        if (dataSaverToggle && window.streamingManager && typeof window.streamingManager.isDataSaverEnabled === 'function') {
+          dataSaverToggle.checked = window.streamingManager.isDataSaverEnabled();
+        }
+        this._refreshSettingsSummaries();
+      };
+
+      const closeMenu = () => {
+        isOpen = false;
+        settingsMenu.style.display = 'none';
+        settingsBtn.setAttribute('aria-expanded', 'false');
+        settingsMenu.setAttribute('aria-hidden', 'true');
+      };
+
       settingsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        
-        isOpen = !isOpen;
-        settingsMenu.style.display = isOpen ? 'block' : 'none';
-        if (settingsBtn) {
-          settingsBtn.setAttribute('aria-expanded', isOpen);
-        }
-        if (settingsMenu) {
-          settingsMenu.setAttribute('aria-hidden', !isOpen);
-        }
-        
+        if (isOpen) { closeMenu(); } else { openMenu(); }
         console.log(`⚙️ Settings menu ${isOpen ? 'opened' : 'closed'}`);
         this._emit('settings:toggled', { isOpen });
       });
-      
+
       document.addEventListener('click', (e) => {
-        if (isOpen && settingsMenu && settingsBtn && 
-            !settingsMenu.contains(e.target) && 
+        if (isOpen && settingsMenu && settingsBtn &&
+            !settingsMenu.contains(e.target) &&
             !settingsBtn.contains(e.target)) {
-          isOpen = false;
-          settingsMenu.style.display = 'none';
-          settingsBtn.setAttribute('aria-expanded', 'false');
-          settingsMenu.setAttribute('aria-hidden', 'true');
+          closeMenu();
         }
       });
-      
+
+      // Accordion row headers — expanding one collapses whichever other
+      // row was open. Clicking an already-open row's header collapses it.
+      settingsMenu.querySelectorAll('.settings-row-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const row = header.closest('.settings-accordion-row');
+          if (!row) return;
+          const wasExpanded = row.classList.contains('expanded');
+          this._collapseAllSettingsRows();
+          if (!wasExpanded) {
+            row.classList.add('expanded');
+            header.setAttribute('aria-expanded', 'true');
+          }
+        });
+      });
+
       if (this._controlsCache.qualityOptions) {
         this._controlsCache.qualityOptions.forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const quality = e.currentTarget.dataset.quality;
             this.setQuality(quality);
-            
+
             if (this._controlsCache.qualityOptions) {
               this._controlsCache.qualityOptions.forEach(b => {
                 b.classList.remove('active');
@@ -2068,21 +2187,26 @@
             }
             e.currentTarget.classList.add('active');
             e.currentTarget.setAttribute('aria-checked', 'true');
-            
-            isOpen = false;
-            if (settingsMenu) settingsMenu.style.display = 'none';
-            if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'false');
+
+            // Applies immediately, then collapses just this row back to its
+            // summary — the whole menu stays open (unlike the old behavior,
+            // which closed the entire menu on any selection).
+            this._updateSettingsRowValue('quality', this._qualityRowLabel(quality));
+            this._collapseSettingsRow('quality');
           });
         });
       }
-      
+
       if (this._controlsCache.speedOptions) {
         this._controlsCache.speedOptions.forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const rate = parseFloat(e.currentTarget.dataset.rate);
+            // .speed-option's real markup attribute is data-speed, not
+            // data-rate — reading dataset.rate here always produced NaN,
+            // so playback-rate selection has never actually worked.
+            const rate = parseFloat(e.currentTarget.dataset.speed);
             this.setPlaybackRate(rate);
-            
+
             if (this._controlsCache.speedOptions) {
               this._controlsCache.speedOptions.forEach(b => {
                 b.classList.remove('active');
@@ -2091,24 +2215,35 @@
             }
             e.currentTarget.classList.add('active');
             e.currentTarget.setAttribute('aria-checked', 'true');
-            
-            isOpen = false;
-            if (settingsMenu) settingsMenu.style.display = 'none';
-            if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'false');
+
+            this._updateSettingsRowValue('speed', `${rate}x`);
+            this._collapseSettingsRow('speed');
           });
         });
       }
-      
+
       const dataSaverToggle = document.getElementById('dataSaverToggle');
       if (dataSaverToggle) {
+        // StreamingManager already owns real data-saver behavior (forces
+        // 360p / restores auto, persisted to localStorage) — reuse it
+        // rather than inventing new state or binding to the unrelated
+        // user_profiles.hd_only column (that's "always prefer HD", the
+        // opposite intent, and Settings' own concern, not the player's).
+        if (window.streamingManager && typeof window.streamingManager.isDataSaverEnabled === 'function') {
+          dataSaverToggle.checked = window.streamingManager.isDataSaverEnabled();
+        }
         dataSaverToggle.addEventListener('change', (e) => {
           const enabled = e.target.checked;
           console.log(`💾 Data saver: ${enabled ? 'enabled' : 'disabled'}`);
           this._emit('settings:data-saver', { enabled });
-          
-          if (enabled && this.currentQuality !== '360p') {
+
+          if (window.streamingManager && typeof window.streamingManager.toggleDataSaver === 'function') {
+            window.streamingManager.toggleDataSaver(enabled);
+          } else if (enabled && this.currentQuality !== '360p') {
             this.setQuality('360p');
           }
+
+          this._updateSettingsRowValue('datasaver', enabled ? 'On' : 'Off');
         });
       }
     }
@@ -2488,8 +2623,59 @@
     
     _handleVideoClick(event) {
       if (event.target.closest('.enhanced-video-controls')) return;
+
+      // Mobile/tablet (≤768px, matching the CSS breakpoint the skip-10
+      // buttons disappear at): disambiguate single-tap (play/pause) from
+      // double-tap (skip ±10s in the left/right third) by briefly holding
+      // the single-tap action — a second tap within the window cancels it.
+      if (window.innerWidth <= 768 && this.video) {
+        const now = Date.now();
+        const rect = this.video.getBoundingClientRect();
+        const clientX = typeof event.clientX === 'number' && event.clientX !== 0
+          ? event.clientX
+          : (event.changedTouches && event.changedTouches[0] ? event.changedTouches[0].clientX : rect.left + rect.width / 2);
+        const relX = clientX - rect.left;
+        const third = rect.width / 3;
+
+        if (this._lastTapTime && (now - this._lastTapTime) < 300) {
+          clearTimeout(this._pendingTapTimeout);
+          this._lastTapTime = 0;
+          if (relX < third) {
+            this.seekRelative(-10);
+            this._showSkipFlash('back');
+          } else if (relX > third * 2) {
+            this.seekRelative(10);
+            this._showSkipFlash('forward');
+          }
+          // Middle third: no double-tap gesture is defined there, so the
+          // pending single-tap play/pause below has already been cancelled
+          // — do nothing extra, matching "don't change single-tap behavior"
+          // (a middle-third double-tap just resolves to no-op, not a
+          // second toggle).
+          this._showControls();
+          return;
+        }
+
+        this._lastTapTime = now;
+        this._pendingTapTimeout = setTimeout(() => {
+          this._lastTapTime = 0;
+          this.togglePlay();
+          this._showControls();
+        }, 300);
+        return;
+      }
+
       this.togglePlay();
       this._showControls();
+    }
+
+    _showSkipFlash(direction) {
+      if (!this.container) return;
+      const flash = document.createElement('div');
+      flash.className = `skip-flash skip-flash-${direction}`;
+      flash.innerHTML = `<i class="fas fa-rotate-${direction === 'back' ? 'left' : 'right'}"></i><span>${direction === 'back' ? '-10' : '+10'}</span>`;
+      this.container.appendChild(flash);
+      setTimeout(() => flash.remove(), 650);
     }
     
     _handleKeyboard(event) {
@@ -2768,25 +2954,43 @@
         this.controls.style.opacity = '1';
         this.controls.style.pointerEvents = 'auto';
       }
+      const centerControls = this.container ? this.container.querySelector('.player-center-controls') : null;
+      if (centerControls) {
+        centerControls.style.opacity = '1';
+        centerControls.style.pointerEvents = 'auto';
+      }
     }
-    
+
     _hideControls() {
       if (this.controls && this.isPlaying && !this._isMobile) {
         this.controls.style.opacity = '0';
         this.controls.style.pointerEvents = 'none';
       }
+      const centerControls = this.container ? this.container.querySelector('.player-center-controls') : null;
+      if (centerControls && this.isPlaying && !this._isMobile) {
+        centerControls.style.opacity = '0';
+        centerControls.style.pointerEvents = 'none';
+      }
     }
     
     _updatePlayButton(isPlaying) {
-      const btn = this._controlsCache ? this._controlsCache.playPauseBtn : null;
-      if (!btn) return;
-      
-      const icon = btn.querySelector('i');
-      if (icon) {
-        icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
-      }
-      btn.setAttribute('title', isPlaying ? 'Pause' : 'Play');
-      btn.setAttribute('aria-label', isPlaying ? 'Pause video' : 'Play video');
+      // Two independent play/pause buttons exist now — the bottom-bar one
+      // (laptop/desktop) and the center overlay one (mobile/tablet, only
+      // one is visible at a time via CSS, but both must stay in sync since
+      // either can be the one the user actually interacts with). The old
+      // _controlsCache.playPauseBtn is a single cached node, so update both
+      // by class directly rather than relying on that cache.
+      const btns = this.container
+        ? this.container.querySelectorAll('.play-pause-btn, .center-play-pause')
+        : [];
+      btns.forEach(btn => {
+        const icon = btn.querySelector('i');
+        if (icon) {
+          icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        }
+        btn.setAttribute('title', isPlaying ? 'Pause' : 'Play');
+        btn.setAttribute('aria-label', isPlaying ? 'Pause video' : 'Play video');
+      });
     }
     
     _updateTimeDisplay() {

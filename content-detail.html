@@ -472,11 +472,53 @@
                         <button class="control-btn settings-btn" title="Settings"><i class="fas fa-cog"></i></button>
                         <button class="control-btn fullscreen-btn" title="Fullscreen"><i class="fas fa-expand"></i></button>
                     </div>
+                    <!-- Accordion: one row open at a time, always reset to fully
+                         collapsed on menu open (js/video-player.js _setupSettingsMenu). -->
                     <div class="settings-menu">
-                        <div class="settings-section"><h4>Quality</h4><div class="quality-options" id="qualityOptions"><button class="quality-option active" data-quality="auto">Auto</button><button class="quality-option" data-quality="1080p">1080p</button><button class="quality-option" data-quality="720p">720p</button><button class="quality-option" data-quality="480p">480p</button><button class="quality-option" data-quality="360p">360p</button></div></div>
-                        <div class="settings-section"><h4>Data Saver</h4><label class="toggle-switch"><input type="checkbox" id="dataSaverToggle"><span class="toggle-slider"></span></label><p class="toggle-description">Reduce data usage by streaming at lower quality</p></div>
-                        <div class="settings-section"><h4>Speed</h4><div class="speed-options"><button class="speed-option" data-speed="0.5">0.5x</button><button class="speed-option" data-speed="0.75">0.75x</button><button class="speed-option active" data-speed="1">1x</button><button class="speed-option" data-speed="1.25">1.25x</button><button class="speed-option" data-speed="1.5">1.5x</button><button class="speed-option" data-speed="2">2x</button></div></div>
+                        <div class="settings-accordion-row" data-row="quality">
+                            <button type="button" class="settings-row-header" aria-expanded="false">
+                                <span class="settings-row-label">Quality</span>
+                                <span class="settings-row-value" id="qualityRowValue">Auto</span>
+                                <i class="fas fa-chevron-down settings-row-chevron"></i>
+                            </button>
+                            <div class="settings-row-body">
+                                <div class="quality-options" id="qualityOptions"><button class="quality-option active" data-quality="auto">Auto</button><button class="quality-option" data-quality="1080p">1080p</button><button class="quality-option" data-quality="720p">720p</button><button class="quality-option" data-quality="480p">480p</button><button class="quality-option" data-quality="360p">360p</button></div>
+                            </div>
+                        </div>
+                        <div class="settings-accordion-row" data-row="datasaver">
+                            <button type="button" class="settings-row-header" aria-expanded="false">
+                                <span class="settings-row-label">Data Saver</span>
+                                <span class="settings-row-value" id="dataSaverRowValue">Off</span>
+                                <i class="fas fa-chevron-down settings-row-chevron"></i>
+                            </button>
+                            <div class="settings-row-body">
+                                <label class="toggle-switch"><input type="checkbox" id="dataSaverToggle"><span class="toggle-slider"></span></label>
+                                <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
+                            </div>
+                        </div>
+                        <div class="settings-accordion-row" data-row="speed">
+                            <button type="button" class="settings-row-header" aria-expanded="false">
+                                <span class="settings-row-label">Speed</span>
+                                <span class="settings-row-value" id="speedRowValue">1x</span>
+                                <i class="fas fa-chevron-down settings-row-chevron"></i>
+                            </button>
+                            <div class="settings-row-body">
+                                <div class="speed-options"><button class="speed-option" data-speed="0.5">0.5x</button><button class="speed-option" data-speed="0.75">0.75x</button><button class="speed-option active" data-speed="1">1x</button><button class="speed-option" data-speed="1.25">1.25x</button><button class="speed-option" data-speed="1.5">1.5x</button><button class="speed-option" data-speed="1.75">1.75x</button><button class="speed-option" data-speed="2">2x</button></div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                <!-- Center transport controls — mobile/tablet only (≤768px, see
+                     CSS); replaces the bottom-bar play button and skip-10 buttons
+                     at those breakpoints. Shares the same show/hide-on-tap timing
+                     as .enhanced-video-controls (js/video-player.js _showControls/
+                     _hideControls toggle both). Prev/Next only shown with a real
+                     queue, same rule as the bottom bar's own previousTrackBtn/
+                     nextTrackBtn (js/queue-manager.js _attachControls). -->
+                <div class="player-center-controls">
+                    <button class="center-control-btn" id="centerPrevBtn" title="Previous" style="display:none"><i class="fas fa-backward-step"></i></button>
+                    <button class="center-control-btn center-play-pause" id="centerPlayBtn" title="Play/Pause"><i class="fas fa-play"></i></button>
+                    <button class="center-control-btn" id="centerNextBtn" title="Next" style="display:none"><i class="fas fa-forward-step"></i></button>
                 </div>
                 <div class="buffering-indicator"><div class="spinner"></div><p>Buffering...</p></div>
                 <div class="error-overlay"><div class="error-content"><i class="fas fa-exclamation-triangle"></i><h3>Playback Error</h3><p class="error-message">Unable to play video. Please check your connection.</p><button class="retry-btn">Retry</button></div></div>
