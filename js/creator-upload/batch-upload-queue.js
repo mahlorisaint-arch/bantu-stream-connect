@@ -405,6 +405,19 @@ async function runBatchUpload(isDraft) {
             row._assignedSortIndex = nextSortIndex++;
         }
 
+        // preExtractRowMetadata() runs in the background as soon as a file is
+        // queued, but publishing can happen before it finishes (especially
+        // for later rows in a large batch) — make sure duration is actually
+        // captured before this row uploads rather than silently sending null.
+        if (row.extractedDuration === null) {
+            try {
+                row.extractedDuration = await extractMediaDuration(row.file);
+                updateBatchRowMeta(row.localId);
+            } catch (e) {
+                row.extractedDuration = null;
+            }
+        }
+
         const formData = {
             title: row.title,
             description: desc,
@@ -478,6 +491,16 @@ async function retryBatchRow(localId) {
     }
 
     setRowStatus(row, 'uploading');
+
+    if (row.extractedDuration === null) {
+        try {
+            row.extractedDuration = await extractMediaDuration(row.file);
+            updateBatchRowMeta(row.localId);
+        } catch (e) {
+            row.extractedDuration = null;
+        }
+    }
+
     const sharedMeta = collectContentMetadata() || {};
     const desc = document.getElementById('content-description').value.trim();
     const contentFormat = document.getElementById('content_format').value;

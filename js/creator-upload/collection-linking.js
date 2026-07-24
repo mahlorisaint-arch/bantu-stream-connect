@@ -49,13 +49,16 @@ async function findOrCreateCreatorPlaylist({ creatorId, name, playlistType, genr
     // visibility: 'public' is load-bearing — the bantu-waves-* home-feed
     // carousels hard-filter .eq('visibility','public'), so a published album
     // with no visibility set would silently never appear on the home feed.
+    // No `genre` column here — the live schema rejects it ("Could not find
+    // the 'genre' column of 'creator_playlists' in the schema cache"),
+    // despite recommendation-engine.js referencing one; that code path is
+    // apparently untested/broken elsewhere, not evidence the column exists.
     const { data: created, error: createError } = await window.supabaseClient
         .from('creator_playlists')
         .insert([{
             name: trimmedName,
             description: description || null,
             playlist_type: playlistType,
-            genre: genre || null,
             custom_thumbnail_url: coverArtUrl || null,
             visibility: 'public',
             status: 'published',
