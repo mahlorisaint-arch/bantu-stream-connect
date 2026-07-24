@@ -16,18 +16,20 @@ function updateButtonsState() {
     const isShortValid = selectedMediaType !== 'short' || (extractedDuration !== null && extractedDuration <= 60);
     const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
     
+    const hasBatchQueue = typeof batchModeActive !== 'undefined' && batchModeActive && batchQueue.length > 1;
+
     // Safely check if validateGenreMetadata exists
     let metadataValid = true;
     if (typeof validateGenreMetadata === 'function') {
-        metadataValid = isNews ? true : validateGenreMetadata();
+        metadataValid = isNews ? true : validateGenreMetadata(hasBatchQueue);
     }
-    
+
     if (saveDraftBtn) {
         saveDraftBtn.disabled = !titleVal || isUploading || !currentUserId;
     }
-    
+
     if (publishBtn) {
-        publishBtn.disabled = !titleVal || !descVal || (!isNews && !selectedMediaFile) || isUploading || !currentUserId || !hasRequiredDuration || !genreVal || !contentFormatVal || !metadataValid;
+        publishBtn.disabled = !titleVal || !descVal || (!isNews && !selectedMediaFile && !hasBatchQueue) || isUploading || !currentUserId || !hasRequiredDuration || !genreVal || !contentFormatVal || !metadataValid;
     }
     
     if (isUploading) {
@@ -76,7 +78,12 @@ function saveDraftToLocalStorage() {
         newsCategory: newsCategory ? newsCategory.value : '',
         readTime: readTime ? readTime.value : '3',
         isBreaking: isBreaking ? isBreaking.checked : false,
-        articleBody: articleBody ? articleBody.value : ''
+        articleBody: articleBody ? articleBody.value : '',
+        // Actual File objects can't be serialized — this is a reminder list
+        // for manual re-selection on recovery, same limitation as the
+        // single-file hasMedia/mediaName fields above.
+        isBatchMode: typeof batchModeActive !== 'undefined' ? batchModeActive : false,
+        batchFileNames: (typeof batchQueue !== 'undefined' ? batchQueue : []).map(r => ({ name: r.file.name, title: r.title, number: r.number }))
     };
     localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
 }
@@ -125,6 +132,9 @@ function loadDraftFromLocalStorage() {
             if (typeof updateButtonsState === 'function') updateButtonsState();
             if (draft.hasMedia && typeof showToast === 'function') {
                 showToast(`Draft recovered: ${draft.mediaName}`, 'success');
+            }
+            if (draft.isBatchMode && draft.batchFileNames?.length && typeof showToast === 'function') {
+                showToast(`Draft recovered: ${draft.batchFileNames.length} queued files. Please re-select them to resume (titles/order aren't restored automatically).`, 'info');
             }
         } catch (e) {
             console.warn('Failed to load draft:', e);
@@ -175,7 +185,16 @@ function setupListeners() {
             selectedGenres = [];
             selectedSAGenres = [];
             movieTags = [];
-            if (typeof updateGenreForm === 'function') updateGenreForm();
+
+            const hasQueue = typeof batchModeActive !== 'undefined' && batchModeActive && batchQueue.length > 0;
+            if (hasQueue && !isBatchModeSupported(genreSelect.value)) {
+                const keepFile = batchQueue[0].file;
+                showToast("Multiple files aren't supported for this content type — keeping the first file only.", 'info');
+                if (typeof resetBatchState === 'function') resetBatchState();
+                if (typeof handleMediaFile === 'function') handleMediaFile(keepFile);
+            }
+
+            if (typeof updateGenreForm === 'function') updateGenreForm(typeof batchModeActive !== 'undefined' && batchModeActive);
             if (typeof updateButtonsState === 'function') updateButtonsState();
             if (typeof updateChecklist === 'function') updateChecklist();
             saveDraftToLocalStorage();

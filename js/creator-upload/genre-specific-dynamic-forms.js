@@ -36,8 +36,8 @@ const genreConfig = {
         fields: [
             { name: 'show_title', type: 'text', label: 'Show Title', required: true, placeholder: 'e.g., Bantu Stories' },
             { name: 'season_number', type: 'number', label: 'Season Number', required: true, min: 1 },
-            { name: 'episode_number', type: 'number', label: 'Episode Number', required: true, min: 1 },
-            { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning' },
+            { name: 'episode_number', type: 'number', label: 'Episode Number', required: true, min: 1, perItem: true },
+            { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Beginning', perItem: true },
             { name: 'series_description', type: 'textarea', label: 'Series Description', required: false, rows: 3 }
         ],
         content_format: 'series_episode',
@@ -50,10 +50,10 @@ const genreConfig = {
     'Music': {
         title: 'Music Details',
         fields: [
-            { name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up' },
+            { name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up', perItem: true },
             { name: 'artist_name', type: 'text', label: 'Artist Name', required: true, placeholder: 'e.g., Bantu Artist' },
             { name: 'album_title', type: 'text', label: 'Album Title', required: false, placeholder: 'e.g., African Dreams' },
-            { name: 'track_number', type: 'number', label: 'Track Number', required: false, min: 1 },
+            { name: 'track_number', type: 'number', label: 'Track Number', required: false, min: 1, perItem: true },
             { name: 'featured_artists', type: 'tags', label: 'Featured Artists', required: false, placeholder: 'e.g., Artist 1, Artist 2' },
             { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
             { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
@@ -71,8 +71,8 @@ const genreConfig = {
         fields: [
             { name: 'show_title', type: 'text', label: 'Podcast Show Title', required: true, placeholder: 'e.g., Bantu Voices' },
             { name: 'season_number', type: 'number', label: 'Season Number', required: false, min: 1 },
-            { name: 'episode_number', type: 'number', label: 'Episode Number', required: false, min: 1 },
-            { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Journey Begins' },
+            { name: 'episode_number', type: 'number', label: 'Episode Number', required: false, min: 1, perItem: true },
+            { name: 'episode_title', type: 'text', label: 'Episode Title', required: true, placeholder: 'e.g., The Journey Begins', perItem: true },
             { name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
             { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
             { name: 'category', type: 'select', label: 'Category', required: true, options: ['News', 'Business', 'Technology', 'Culture', 'Education', 'Entertainment', 'Health', 'Sports'] },
@@ -114,7 +114,7 @@ function createFieldHTML(field) {
     return '';
 }
 
-function updateGenreForm() {
+function updateGenreForm(isBatchMode = false) {
     const genre = document.getElementById('content-genre').value;
     const config = genreConfig[genre];
     const container = document.getElementById('dynamic-fields-container');
@@ -123,19 +123,22 @@ function updateGenreForm() {
     const chaptersSection = document.getElementById('chapters-section');
     const movieSection = document.getElementById('movie-classification-section');
     const newsFields = document.getElementById('news-fields');
-    
+
     container.classList.remove('active');
     moodSection.classList.remove('active');
     chaptersSection.classList.remove('active');
     movieSection.classList.remove('active');
     newsFields.classList.remove('active');
-    
+
     if (!config) return;
-    
+
     document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
     contentDiv.innerHTML = '';
-    
-    config.fields.forEach(field => {
+
+    // perItem fields (track/episode title+number) move into the batch queue
+    // rows instead of the shared form when 2+ files are queued.
+    const fieldsToRender = isBatchMode ? config.fields.filter(f => !f.perItem) : config.fields;
+    fieldsToRender.forEach(field => {
         if (field.type === 'tags') {
             const ph = document.createElement('div');
             ph.id = `field-${field.name}`;
@@ -146,24 +149,27 @@ function updateGenreForm() {
             contentDiv.insertAdjacentHTML('beforeend', createFieldHTML(field));
         }
     });
-    
+
     container.classList.add('active');
-    
+
     if (config.requires_mood) {
         moodSection.classList.add('active');
     }
-    
-    if (config.requires_chapters) {
+
+    // Chapters apply to a single file's timestamps — no per-row chapter UI
+    // exists yet, so batch mode skips this section entirely rather than
+    // collecting chapter data that would get wrongly applied to every item.
+    if (config.requires_chapters && !isBatchMode) {
         chaptersSection.classList.add('active');
         renderChaptersList();
     }
-    
+
     if (config.isMovieContent) {
         movieSection.classList.add('active');
         setupMovieGenreChips();
         setupMovieTagsInput();
     }
-    
+
     updateChecklist();
 }
 
@@ -227,7 +233,7 @@ function collectPodcastMetadata() {
     };
 }
 
-function validateGenreMetadata() {
+function validateGenreMetadata(isBatchMode = false) {
     const genre = document.getElementById('content-genre').value;
     const config = genreConfig[genre];
     if (!config) return true;
@@ -275,6 +281,7 @@ function validateGenreMetadata() {
     
     let isValid = true;
     for (const field of config.fields) {
+        if (isBatchMode && field.perItem) continue;
         if (field.required) {
             if (field.type === 'tags') {
                 const element = document.getElementById(`field-${field.name}`);

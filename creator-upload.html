@@ -55,6 +55,7 @@
 <link rel="stylesheet" href="css/creator-upload/upload-quality-score.css">
 <link rel="stylesheet" href="css/creator-upload/upload-management-workflow.css">
 <link rel="stylesheet" href="css/creator-upload/post-upload-actions.css">
+<link rel="stylesheet" href="css/creator-upload/collection-linking.css">
 
 <style>
 /* Critical CSS for skeleton loading */
@@ -381,7 +382,23 @@
                     <div class="quality-checklist"><div class="checklist-header"><span>Upload Quality Score</span><span class="checklist-score" id="quality-score">0%</span></div><div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div><div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div><div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Media File Uploaded</div><div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div><div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Genre Selected</div><div class="checklist-item" id="check-metadata"><i class="far fa-circle"></i> Genre Metadata Completed</div></div>
 
                     <!-- Media Upload -->
-                    <div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none"></div>
+                    <div class="form-group"><label class="form-label">Media File (Video/Audio) <span>*</span></label><div id="media-upload-zone" class="upload-zone"><div class="upload-zone-icon"><i class="fas fa-video"></i></div><div class="upload-zone-text" id="media-zone-text">Click or drag video/audio files here</div><div class="upload-zone-hint">Supports MP4, MOV, AVI, MKV, WEBM, MP3, AAC, WAV (Max 800MB)</div></div><div class="duration-display" id="duration-display" style="display: none;"><i class="fas fa-clock"></i><span id="duration-text">Duration: --:--</span><span id="duration-status"></span><span class="duration-badge" id="duration-badge" style="display: none;">Real Duration</span></div><div id="media-file-info" class="file-info"><div class="file-icon" id="file-icon"><i class="fas fa-video"></i></div><div style="flex:1"><div class="file-name" id="media-file-name"></div><div class="file-size" id="media-file-size"></div></div><div class="file-remove" onclick="window.removeMediaFile()"><i class="fas fa-times"></i></div></div><input type="file" id="media-file-input" accept="video/*,audio/*" style="display:none" multiple></div>
+
+                    <!-- Batch Upload Queue (shown when 2+ files are queued for Music/Series/Podcast) -->
+                    <div id="batch-queue-section" class="batch-queue-section">
+                        <div class="dynamic-fields-title"><i class="fas fa-list-ul"></i><span>Upload Queue (<span id="batch-queue-count">0</span> items)</span></div>
+                        <p class="batch-queue-hint">The fields above apply to every item in this batch. Give each file below its own title and track/episode number.</p>
+                        <div id="batch-queue-list"></div>
+
+                        <div class="form-group">
+                            <label class="form-label">Collection Cover Art <span class="optional">(Optional)</span></label>
+                            <div id="collection-cover-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag cover art here</div><div class="upload-zone-hint">Used as the album/season cover — falls back to each item's own thumbnail if left blank</div></div>
+                            <div id="collection-cover-preview" class="thumbnail-preview"><img id="collection-cover-image" src="" alt="Collection Cover Preview"></div>
+                            <input type="file" id="collection-cover-file-input" accept="image/*" style="display:none">
+                        </div>
+
+                        <div class="batch-queue-summary" id="batch-queue-progress-label">Ready to publish</div>
+                    </div>
 
                     <!-- Thumbnail -->
                     <div class="form-group thumbnail-section"><label class="form-label">Thumbnail Image <span class="optional">(Optional - Auto-generated if none)</span></label><div style="color:var(--warm-gold);font-size:13px;margin-bottom:10px"><i class="fas fa-lightbulb"></i> Videos with custom thumbnails get up to 2x more clicks. Auto-generated from video if none selected.</div><div id="thumbnail-upload-zone" class="upload-zone" style="padding:20px"><div class="upload-zone-icon"><i class="fas fa-image"></i></div><div class="upload-zone-text">Click or drag thumbnail image here</div><div class="upload-zone-hint">Supports JPG, PNG, GIF (Recommended: 1280x720)</div></div><div id="thumbnail-preview" class="thumbnail-preview"><img id="thumbnail-image" src="" alt="Thumbnail Preview"></div><div class="thumbnail-actions"><button type="button" class="thumbnail-btn" onclick="window.openImagePicker()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Choose from Gallery</button><button type="button" class="thumbnail-btn" onclick="window.captureCameraImage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Take Photo</button></div><input type="file" id="thumbnail-file-input" accept="image/*" style="display:none"><input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none"></div>
@@ -399,7 +416,7 @@
             <div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message" id="processing-message">Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
 
             <!-- Success State -->
-            <div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
+            <div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message" id="success-message-text">Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
         </div>
     </main>
 
@@ -775,6 +792,8 @@
 <script src="js/creator-upload/thumbnail-management.js"></script>
 <script src="js/creator-upload/chapter-markers.js"></script>
 <script src="js/creator-upload/upload-quality-score.js"></script>
+<script src="js/creator-upload/collection-linking.js"></script>
+<script src="js/creator-upload/batch-upload-queue.js"></script>
 <script src="js/creator-upload/upload-management-workflow.js"></script>
 <script src="js/creator-upload/post-upload-actions.js"></script>
 

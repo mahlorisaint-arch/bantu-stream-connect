@@ -251,6 +251,40 @@ const BANTU_UPLOAD_ENGINE = {
                 throw new Error(`Database error: ${dbError.message}`);
             }
 
+            // STEP 4: Link to a collection (album/series/podcast season) if
+            // this upload produced one. A link failure never rolls back or
+            // blocks the Content publish that already succeeded — it's
+            // surfaced via newContent._linkWarning for the caller to handle.
+            if (formData.collection?.name) {
+                uiCallbacks.updateStatus("Linking to collection...");
+                try {
+                    let playlistId = formData.collection.playlistId;
+                    let sortIndex = formData.collection.sortIndex;
+                    if (!playlistId) {
+                        const resolved = await findOrCreateCreatorPlaylist({
+                            creatorId: user.id,
+                            name: formData.collection.name,
+                            playlistType: formData.collection.playlistType,
+                            genre: formData.genre,
+                            coverArtUrl: formData.collection.coverArtUrl || finalThumbnailUrl
+                        });
+                        playlistId = resolved.playlistId;
+                        if (sortIndex === undefined || sortIndex === null) sortIndex = resolved.nextSortIndex;
+                    }
+                    await linkContentToCollection(playlistId, newContent.id, {
+                        sortIndex: sortIndex ?? 0,
+                        itemType: formData.collection.itemType,
+                        trackNumber: formData.collection.trackNumber,
+                        seasonNumber: formData.collection.seasonNumber,
+                        displayTitleOverride: formData.collection.displayTitle
+                    });
+                    newContent._linkedPlaylistId = playlistId;
+                } catch (linkError) {
+                    console.error('Collection link failed (content still published standalone):', linkError);
+                    newContent._linkWarning = linkError.message;
+                }
+            }
+
             uiCallbacks.onSuccess(newContent);
 
         } catch (error) {
@@ -261,6 +295,10 @@ const BANTU_UPLOAD_ENGINE = {
 };
 
 async function uploadContent(isDraft = false) {
+    if (batchModeActive && batchQueue.length > 1) {
+        return runBatchUpload(isDraft);
+    }
+
     if (!currentUserId) {
         showToast('Please sign in to upload content');
         authModal.classList.add('active');
@@ -328,6 +366,29 @@ async function uploadContent(isDraft = false) {
             duration: extractedDuration,
             chapters: chapters.length > 0 ? chapters : null
         };
+
+        // A single Music/Series/Podcast upload with an album/show title also
+        // creates/links a creator_playlists collection — the same helper the
+        // batch queue uses, so a lone track and a full album produce
+        // identical, consistent data instead of the album metadata being
+        // silently discarded into content_metadata with no relational link.
+        const genreCfgForCollection = genreConfig[genre];
+        if (genreCfgForCollection?.uses_playlist) {
+            const collectionName = buildCollectionName(genre, formData.genreSpecificMetadata);
+            if (collectionName) {
+                formData.collection = {
+                    name: collectionName,
+                    playlistType: genreCfgForCollection.playlist_type,
+                    itemType: genre === 'Music' ? 'track' : 'episode',
+                    trackNumber: genre === 'Music' ? (formData.genreSpecificMetadata.track_number ? parseInt(formData.genreSpecificMetadata.track_number, 10) : null) : null,
+                    seasonNumber: genre !== 'Music' ? (formData.genreSpecificMetadata.season_number ? parseInt(formData.genreSpecificMetadata.season_number, 10) : null) : null,
+                    displayTitle: genre === 'Music' ? formData.genreSpecificMetadata.track_title : formData.genreSpecificMetadata.episode_title,
+                    sortIndex: null,
+                    coverArtUrl: null,
+                    playlistId: null
+                };
+            }
+        }
 
         // For news articles, we don't upload media
         if (selectedMediaType === 'news') {

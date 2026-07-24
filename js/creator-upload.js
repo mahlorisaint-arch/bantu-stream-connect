@@ -451,7 +451,11 @@ async function initialize() {
         } else {
             console.warn('⚠️ setupThumbnailUpload not defined');
         }
-        
+
+        if (typeof setupCollectionCoverUpload === 'function') {
+            setupCollectionCoverUpload();
+        }
+
         if (typeof setupListeners === 'function') {
             setupListeners();
         } else {
@@ -597,7 +601,8 @@ window.uploadAnother = function() {
     selectedGenres = [];
     selectedSAGenres = [];
     movieTags = [];
-    
+    if (typeof resetBatchState === 'function') resetBatchState();
+
     const fileInfo = document.getElementById('media-file-info');
     const thumbPreview = document.getElementById('thumbnail-preview');
     const durationDisplay = document.getElementById('duration-display');
