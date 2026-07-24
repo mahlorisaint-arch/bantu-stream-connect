@@ -208,6 +208,14 @@ const BANTU_UPLOAD_ENGINE = {
                 }
             }
 
+            // A batch item with no thumbnail of its own (typically an audio
+            // track/episode — video already got one above) falls back to the
+            // collection's shared cover art, so every Content row in an album
+            // still shows real artwork instead of a blank thumbnail_url.
+            if (!finalThumbnailUrl && formData.collection?.coverArtUrl) {
+                finalThumbnailUrl = formData.collection.coverArtUrl;
+            }
+
             // STEP 3: CREATE THE UNIFIED SUPABASE CONTENT ROW
             uiCallbacks.updateStatus("Publishing content metadata...");
             
