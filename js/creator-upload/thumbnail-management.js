@@ -49,30 +49,15 @@ function setupThumbnailUpload() {
 }
 
 async function uploadThumbnailOnly(file) {
+    // Media on this platform is never stored in Supabase Storage — the
+    // get-upload-url edge function routes video to Cloudflare Stream and
+    // everything else (images included) to Cloudflare R2 via a pre-signed
+    // URL. This now matches the same handshake+XHR path processCreatorPublish
+    // already uses for a video's own custom thumbnail.
     try {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        if (!session) throw new Error("Not authenticated");
-
-        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(7);
-        const fileName = `${timestamp}_${random}_${cleanFileName}`;
-        const filePath = `${currentUserId}/thumbnails/${fileName}`;
-
-        const { data, error } = await window.supabaseClient.storage
-            .from('content-thumbnails')
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
-
-        if (error) throw error;
-
-        const { data: urlData } = window.supabaseClient.storage
-            .from('content-thumbnails')
-            .getPublicUrl(filePath);
-
-        return urlData.publicUrl;
+        const handshake = await BANTU_UPLOAD_ENGINE.getSecureUploadHandshake('image', file.name);
+        await BANTU_UPLOAD_ENGINE.uploadFileViaXHR(file, handshake.uploadUrl, false, () => {});
+        return handshake.fileUrl;
     } catch (error) {
         console.error('Thumbnail upload error:', error);
         return null;
