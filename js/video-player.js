@@ -921,7 +921,23 @@
         }
     };
 
-    document.addEventListener('click', window.__bantuFailSafeHandler, true);
+    // NOT registered (was: document.addEventListener('click',
+    // window.__bantuFailSafeHandler, true)). This ran in the CAPTURE phase
+    // on document, ahead of every real button listener (queue-manager.js's
+    // prev/next, _setupSkipButtons(), _setupSettingsMenu(), etc.), and
+    // called stopPropagation() for any click matching .play-pause-btn/
+    // .prev-track-btn/.next-track-btn/.volume-btn/.pip-btn/.settings-btn/
+    // .fullscreen-btn — which stops the event from ever reaching the
+    // target, not just from bubbling further. That silently prevented
+    // every one of those buttons' real click listeners from firing at all;
+    // this handler's own fallback logic ran instead, and for Previous/Next
+    // specifically that fallback only knows how to drive an old playlist-
+    // sidebar/global-function pattern this page doesn't use — on a normal
+    // single video it found nothing to do and silently no-opped, which is
+    // why Previous/Next (and, via the separate "Emergency Mobile Guard"
+    // handler below matching .control-btn even more broadly, skip-10) did
+    // nothing when clicked or tapped. The real per-button handlers already
+    // implement everything this fallback did, correctly.
     console.log("🚀 VERSION 2 COOPERATION SYSTEM DEPLOYED AND FULLY OPERATIONAL.");
   }
 
@@ -4260,7 +4276,16 @@
     }, true); // Executed during capture phase to kill event before it bubbles to the video surface
 
     document.addEventListener('click', function(e) {
-        const controlsContainer = e.target.closest('.custom-controls-container') || e.target.closest('.vjs-control-bar') || e.target.closest('.control-btn');
+        // Was also matching .control-btn — every single player button has
+        // that class, so this ran (capture phase, ahead of every real
+        // button listener) on literally every player click and called
+        // stopPropagation() with no action of its own, silently killing
+        // clicks/taps on Previous, Next, skip-10, and everything else
+        // before they ever reached their real handlers. .custom-controls-
+        // container/.vjs-control-bar don't match anything in this page's
+        // actual markup, so this listener is effectively inert now,
+        // matching its original (harmless) intent.
+        const controlsContainer = e.target.closest('.custom-controls-container') || e.target.closest('.vjs-control-bar');
         if (controlsContainer) {
             console.log('📱 Emergency Mobile Guard: Click inside controls detected. Isolating event.');
             e.stopPropagation();
