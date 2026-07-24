@@ -2669,6 +2669,7 @@
           // (a middle-third double-tap just resolves to no-op, not a
           // second toggle).
           this._showControls();
+          this._scheduleControlsHide();
           return;
         }
 
@@ -2677,12 +2678,14 @@
           this._lastTapTime = 0;
           this.togglePlay();
           this._showControls();
+          this._scheduleControlsHide();
         }, 300);
         return;
       }
 
       this.togglePlay();
       this._showControls();
+      this._scheduleControlsHide();
     }
 
     _showSkipFlash(direction) {
@@ -2800,6 +2803,7 @@
           e.preventDefault();
           this.togglePlay();
           this._showControls();
+          this._scheduleControlsHide();
         }
       }, { passive: false });
       
@@ -2936,10 +2940,7 @@
       this.container.addEventListener('mousemove', showControls);
       
       this.container.addEventListener('touchstart', () => {
-        this._showControls();
-        if (this.controlsHideTimeout) {
-          clearTimeout(this.controlsHideTimeout);
-        }
+        showControls();
       }, { passive: true });
       
       if (this.video) {
@@ -2956,10 +2957,10 @@
         clearTimeout(this.controlsHideTimeout);
       }
       
-      if (this._isMobile || (this.video && this.video.paused)) return;
-      
+      if (this.video && this.video.paused) return;
+
       this.controlsHideTimeout = setTimeout(() => {
-        if (this.isPlaying && !this._isMobile) {
+        if (this.isPlaying) {
           this._hideControls();
         }
       }, this.config.hideControlsDelay);
@@ -2978,12 +2979,12 @@
     }
 
     _hideControls() {
-      if (this.controls && this.isPlaying && !this._isMobile) {
+      if (this.controls && this.isPlaying) {
         this.controls.style.opacity = '0';
         this.controls.style.pointerEvents = 'none';
       }
       const centerControls = this.container ? this.container.querySelector('.player-center-controls') : null;
-      if (centerControls && this.isPlaying && !this._isMobile) {
+      if (centerControls && this.isPlaying) {
         centerControls.style.opacity = '0';
         centerControls.style.pointerEvents = 'none';
       }

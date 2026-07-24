@@ -261,16 +261,16 @@
     pointer-events: none !important; /* Still let clicks pass through */
 }
 
-/* WHEN PLAYBACK STARTS, ensure controls are visible */
-.video-container.is-playing .enhanced-video-controls,
-.video-player-wrapper.is-playing .enhanced-video-controls {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-}
-
-/* Force controls to remain visible on hover */
-.video-container:hover .enhanced-video-controls,
-.enhanced-video-controls:hover,
+/* Controls auto-hide during playback after a few seconds of no activity —
+   driven entirely by video-player.js's _showControls()/_hideControls()
+   (inline opacity, no !important, so it always wins over the plain CSS
+   rules below). This used to permanently force opacity:1 !important for
+   the whole time .is-playing was set (i.e. the entire duration of
+   playback, not just the moment it started), which made the JS timer
+   pointless — removed. :focus-within/.force-visible are kept forced
+   visible since those are deliberate "never auto-hide here" signals
+   (keyboard focus inside the controls; an explicit JS override), not a
+   blanket "playing" or "hovering" state. */
 .video-container:focus-within .enhanced-video-controls,
 .enhanced-video-controls.force-visible {
     opacity: 1 !important;
@@ -1699,8 +1699,6 @@ input:checked + .toggle-slider:before {
 /* Touch device optimizations — keep touch targets accessible */
 @media (hover: none) and (pointer: coarse) {
   .enhanced-video-controls {
-    opacity: 1;
-    transform: translateY(0);
     background: linear-gradient(to top, rgba(15, 15, 15, 0.95), rgba(15, 15, 15, 0.7));
   }
 
@@ -1726,13 +1724,6 @@ input:checked + .toggle-slider:before {
     min-height: 16px !important;
   }
 
-  /* Touch devices never auto-hide controls (matches the guard already in
-     video-player.js's _hideControls: `if (... && !this._isMobile) return;`)
-     — keep the center transport visible in step with the bottom bar. */
-  .player-center-controls {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
 }
 
 @media (max-width: 480px) {
