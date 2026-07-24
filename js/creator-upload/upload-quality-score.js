@@ -6,6 +6,7 @@ function updateChecklist() {
     const desc = document.getElementById('content-description').value.trim();
     const genre = document.getElementById('content-genre').value;
     const config = genreConfig[genre];
+    const hasBatchQueue = typeof batchModeActive !== 'undefined' && batchModeActive && batchQueue.length > 1;
     let score = 0;
     
     if (title.length > 5) {
@@ -26,7 +27,7 @@ function updateChecklist() {
         document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
     }
     
-    if (selectedMediaType === 'news' || selectedMediaFile) {
+    if (selectedMediaType === 'news' || selectedMediaFile || hasBatchQueue) {
         document.getElementById('check-media').classList.add('completed');
         document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
         score += 20;
@@ -34,8 +35,9 @@ function updateChecklist() {
         document.getElementById('check-media').classList.remove('completed');
         document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
     }
-    
-    if (selectedThumbnailFile) {
+
+    const hasThumb = selectedThumbnailFile || (hasBatchQueue && typeof selectedCollectionCoverFile !== 'undefined' && selectedCollectionCoverFile);
+    if (hasThumb) {
         document.getElementById('check-thumb').classList.add('completed');
         document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
         score += 20;
@@ -71,6 +73,7 @@ function updateChecklist() {
         hasMetadata = selectedGenres.length > 0 && selectedSAGenres.length > 0 && selectedMood;
     } else if (config) {
         hasMetadata = config.fields.some(f => {
+            if (hasBatchQueue && f.perItem) return false;
             if (f.required) {
                 const el = document.getElementById(`field-${f.name}`);
                 if (f.type === 'tags') {
@@ -87,7 +90,15 @@ function updateChecklist() {
     } else {
         hasMetadata = true;
     }
-    
+
+    // In batch mode, perItem fields (track/episode title) live on the queue
+    // rows instead of the shared form — require every row to have a title
+    // too, or "Genre Metadata Completed" would tick before the batch is
+    // actually ready to publish.
+    if (hasBatchQueue && hasMetadata && config) {
+        hasMetadata = batchQueue.length > 0 && batchQueue.every(r => r.title && r.title.trim().length > 0);
+    }
+
     if (hasMetadata || !config) {
         document.getElementById('check-metadata').classList.add('completed');
         document.getElementById('check-metadata').innerHTML = '<i class="fas fa-check-circle"></i> Genre Metadata Completed';

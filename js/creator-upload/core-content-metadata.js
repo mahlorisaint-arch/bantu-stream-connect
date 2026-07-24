@@ -254,7 +254,12 @@ function setupListeners() {
     });
     
     document.addEventListener('change', (e) => {
-        if (e.target.id && e.target.id.startsWith('field-')) {
+        // Radio inputs (e.g. Music's Audio Track/Music Video toggle) carry
+        // the field's identity on `name`, not `id` — matching only `id` here
+        // meant selecting a radio option never refreshed the Publish button
+        // or checklist, leaving them stuck showing stale/incomplete state.
+        const isFieldEl = (e.target.id && e.target.id.startsWith('field-')) || (e.target.name && e.target.name.startsWith('field-'));
+        if (isFieldEl) {
             if (typeof updateButtonsState === 'function') updateButtonsState();
             if (typeof updateChecklist === 'function') updateChecklist();
             saveDraftToLocalStorage();

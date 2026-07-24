@@ -111,16 +111,22 @@ function showBatchQueueUI() {
     const section = document.getElementById('batch-queue-section');
     const fileInfo = document.getElementById('media-file-info');
     const zoneText = document.getElementById('media-zone-text');
+    const thumbnailSection = document.querySelector('.thumbnail-section');
     if (section) section.classList.add('active');
     if (fileInfo) fileInfo.style.display = 'none';
     if (zoneText) zoneText.textContent = `${batchQueue.length} files selected — click to add more`;
+    // The singular Thumbnail section is per-single-item; Collection Cover
+    // Art (inside the queue section) replaces it for a batch of files.
+    if (thumbnailSection) thumbnailSection.style.display = 'none';
 }
 
 function hideBatchQueueUI() {
     const section = document.getElementById('batch-queue-section');
     const zoneText = document.getElementById('media-zone-text');
+    const thumbnailSection = document.querySelector('.thumbnail-section');
     if (section) section.classList.remove('active');
     if (zoneText) zoneText.textContent = 'Click or drag video/audio files here';
+    if (thumbnailSection) thumbnailSection.style.display = '';
 }
 
 function batchStatusLabel(row) {
@@ -163,7 +169,13 @@ function renderBatchQueue() {
     list.querySelectorAll('.batch-row-title').forEach(input => {
         input.addEventListener('input', (e) => {
             const row = findBatchRow(e.target.dataset.localId);
-            if (row) { row.title = e.target.value; saveDraftToLocalStorage(); }
+            if (row) {
+                row.title = e.target.value;
+                e.target.classList.remove('invalid');
+                if (typeof updateChecklist === 'function') updateChecklist();
+                if (typeof updateButtonsState === 'function') updateButtonsState();
+                saveDraftToLocalStorage();
+            }
         });
     });
     list.querySelectorAll('.batch-row-number').forEach(input => {
@@ -216,6 +228,7 @@ function removeBatchRow(localId) {
         hideBatchQueueUI();
         renderBatchQueue();
         if (typeof updateButtonsState === 'function') updateButtonsState();
+        if (typeof updateChecklist === 'function') updateChecklist();
         return;
     }
 
@@ -226,6 +239,7 @@ function removeBatchRow(localId) {
 
     renderBatchQueue();
     if (typeof updateButtonsState === 'function') updateButtonsState();
+    if (typeof updateChecklist === 'function') updateChecklist();
     if (typeof saveDraftToLocalStorage === 'function') saveDraftToLocalStorage();
 }
 
@@ -309,6 +323,9 @@ function handleCollectionCoverFile(file) {
     };
     reader.readAsDataURL(file);
     showToast('Cover art selected', 'success');
+    if (typeof updateChecklist === 'function') updateChecklist();
+    if (typeof updateButtonsState === 'function') updateButtonsState();
+    if (typeof saveDraftToLocalStorage === 'function') saveDraftToLocalStorage();
 }
 
 async function runBatchUpload(isDraft) {
