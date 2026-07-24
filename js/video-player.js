@@ -1780,8 +1780,32 @@
       this.container.appendChild(this.controls);
       this._cacheControlElements();
       this._setupSettingsMenu();
-      
+      this._setupSkipButtons();
+
       console.log('✅ Custom controls created');
+    }
+
+    _setupSkipButtons() {
+      if (!this.controls) return;
+      const rewindBtn = this.controls.querySelector('#rewind10Btn');
+      const forwardBtn = this.controls.querySelector('#forward10Btn');
+
+      if (rewindBtn) {
+        rewindBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.video) this.video.currentTime = Math.max(0, this.video.currentTime - 10);
+        });
+      }
+
+      if (forwardBtn) {
+        forwardBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!this.video) return;
+          const dur = this.video.duration;
+          const target = this.video.currentTime + 10;
+          this.video.currentTime = Number.isFinite(dur) ? Math.min(dur, target) : target;
+        });
+      }
     }
     
     _getControlsHTML() {
@@ -1793,12 +1817,23 @@
       
       return `
         <div class="controls-bar" role="group" aria-label="Playback controls">
-          <button class="control-btn play-pause-btn" 
+          <button class="control-btn play-pause-btn"
                   title="Play/Pause (Space)"
                   aria-label="Play or pause video">
             <i class="fas fa-play" aria-hidden="true"></i>
           </button>
-          
+
+          <button class="control-btn skip-btn" id="rewind10Btn"
+                  title="Back 10 seconds"
+                  aria-label="Rewind 10 seconds">
+            <i class="fas fa-rotate-left" aria-hidden="true"></i><span>10</span>
+          </button>
+          <button class="control-btn skip-btn" id="forward10Btn"
+                  title="Forward 10 seconds"
+                  aria-label="Forward 10 seconds">
+            <i class="fas fa-rotate-right" aria-hidden="true"></i><span>10</span>
+          </button>
+
           <div class="time-display" aria-live="off">
             <span class="current-time">0:00</span>
             <span class="time-separator"> / </span>
@@ -1834,14 +1869,16 @@
           <div class="controls-spacer"></div>
           
           ${this.config.enableCollectionNav ? `
-          <button class="control-btn prev-track-btn player-prev-btn" 
+          <button class="control-btn prev-track-btn player-prev-btn" id="previousTrackBtn"
                   title="Previous (P)"
-                  aria-label="Play previous item">
+                  aria-label="Play previous item"
+                  style="display:none">
             <i class="fas fa-step-backward" aria-hidden="true"></i>
           </button>
-          <button class="control-btn next-track-btn player-next-btn" 
+          <button class="control-btn next-track-btn player-next-btn" id="nextTrackBtn"
                   title="Next (N)"
-                  aria-label="Play next item">
+                  aria-label="Play next item"
+                  style="display:none">
             <i class="fas fa-step-forward" aria-hidden="true"></i>
           </button>
           ` : ''}
@@ -2756,6 +2793,12 @@
         const percent = (currentTime / duration) * 100;
         this._controlsCache.progressBar.value = percent;
         this._controlsCache.progressBar.setAttribute('aria-valuenow', Math.round(percent));
+        // No separate .progress-fill overlay exists in the real DOM — the
+        // "filled" look comes from a background gradient on the input
+        // itself, split at this percentage (see .progress-bar background
+        // in video-player.css). Works regardless of appearance:none/browser,
+        // unlike accent-color which appearance:none disables.
+        this._controlsCache.progressBar.style.setProperty('--progress', `${percent}%`);
       }
     }
     
@@ -4058,36 +4101,18 @@
   console.log('   🚀 Ready for production deployment with Guard Clause Propagation Trap Fix');
 
   // ============================================
-  // NEW PLAYER TOP-BAR / SKIP CONTROLS
-  // Plain, self-contained DOM wiring — deliberately NOT routed through
-  // _controlsCache, since several of its class-based lookups (e.g.
-  // '.play-pause-btn', '.next-track-btn') don't match this page's actual
-  // static markup ('.play-pause', id="nextTrackBtn") and silently no-op.
+  // PLAYER TOP-BAR CONTROLS (Cast / Captions / More)
+  // .player-top-bar lives outside .enhanced-video-controls, so unlike the
+  // bottom controls bar it is NOT rebuilt by _createControls() — wiring it
+  // once at DOMContentLoaded is safe. The "more options" button still looks
+  // up .settings-btn fresh at click time (not cached here), since THAT
+  // element gets destroyed and replaced by _createControls() ~500ms after
+  // load and a stale reference would click a detached, invisible node.
   // ============================================
   document.addEventListener('DOMContentLoaded', () => {
-    const video = document.getElementById('inlineVideoPlayer');
-    const rewindBtn = document.getElementById('rewind10Btn');
-    const forwardBtn = document.getElementById('forward10Btn');
     const castBtn = document.getElementById('castBtn');
     const captionsBtn = document.getElementById('captionsBtn');
     const moreOptionsBtn = document.getElementById('moreOptionsBtn');
-    const settingsBtn = document.querySelector('.settings-btn');
-    const settingsMenu = document.querySelector('.settings-menu');
-
-    if (video && rewindBtn) {
-      rewindBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        video.currentTime = Math.max(0, video.currentTime - 10);
-      });
-    }
-
-    if (video && forwardBtn) {
-      forwardBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const dur = video.duration;
-        video.currentTime = Math.min(Number.isFinite(dur) ? dur : video.currentTime + 10, video.currentTime + 10);
-      });
-    }
 
     const comingSoon = (label) => {
       if (typeof showToast === 'function') showToast(`${label} — coming soon`, 'info');
@@ -4109,10 +4134,11 @@
 
     // "More options" reuses the existing settings menu rather than
     // inventing a second, redundant popover.
-    if (moreOptionsBtn && settingsBtn && settingsMenu) {
+    if (moreOptionsBtn) {
       moreOptionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        settingsBtn.click();
+        const settingsBtn = document.querySelector('.settings-btn');
+        if (settingsBtn) settingsBtn.click();
       });
     }
   });

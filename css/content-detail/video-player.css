@@ -414,8 +414,10 @@
   pointer-events: auto !important;
 }
 
-/* Control buttons */
-.enhanced-video-controls .control-btn {
+/* Control buttons — applies inside BOTH the top bar and the bottom
+   controls bar (they're siblings under .video-container, not nested),
+   so this is intentionally not scoped to .enhanced-video-controls. */
+.video-container .control-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -439,14 +441,14 @@
   position: relative;
 }
 
-.enhanced-video-controls .control-btn:hover {
+.video-container .control-btn:hover {
   background: rgba(255, 255, 255, 0.2) !important;
   border-color: var(--player-accent-dim) !important;
   transform: scale(1.1);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
-.enhanced-video-controls .control-btn:active {
+.video-container .control-btn:active {
   transform: scale(0.95);
 }
 
@@ -467,7 +469,7 @@
 }
 
 /* Play/Pause button — larger, glowing accent */
-.enhanced-video-controls .play-pause {
+.enhanced-video-controls .play-pause-btn {
   width: 42px;
   height: 42px;
   background: rgba(255, 255, 255, 0.12) !important;
@@ -479,7 +481,7 @@
   transition: all 0.3s ease !important;
 }
 
-.enhanced-video-controls .play-pause:hover {
+.enhanced-video-controls .play-pause-btn:hover {
   background: rgba(255, 255, 255, 0.2) !important;
   border-color: var(--player-accent) !important;
   transform: scale(1.15);
@@ -529,6 +531,21 @@
   height: 6px;
 }
 
+/* How much has downloaded, behind the playback fill (JS sets width via
+   _updateBufferedProgress() in video-player.js) */
+.enhanced-video-controls .progress-container .progress-buffer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 2;
+  transition: width 0.2s linear;
+}
+
 /* Progress bar input */
 .enhanced-video-controls .progress-container .progress-bar {
   position: absolute;
@@ -538,7 +555,12 @@
   height: 100%;
   -webkit-appearance: none;
   appearance: none;
-  background: transparent;
+  accent-color: var(--player-accent);
+  /* The "filled" look — there's no separate .progress-fill overlay element
+     in the live DOM, so this gradient (kept in sync with --progress by
+     _updateProgressBar() in video-player.js) IS the fill. */
+  background: linear-gradient(to right, var(--player-accent) var(--progress, 0%), rgba(255, 255, 255, 0.15) var(--progress, 0%));
+  border-radius: 4px;
   cursor: pointer;
   margin: 0;
   padding: 0;
@@ -630,7 +652,7 @@
 /* ============================================ */
 /* VOLUME CONTROL */
 /* ============================================ */
-.enhanced-video-controls .volume-controls {
+.enhanced-video-controls .volume-group {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1278,7 +1300,7 @@ input:checked + .toggle-slider:before {
     min-height: 30px !important;
   }
 
-  .enhanced-video-controls .play-pause {
+  .enhanced-video-controls .play-pause-btn {
     width: 34px !important;
     height: 34px !important;
     min-width: 34px !important;
@@ -1303,7 +1325,7 @@ input:checked + .toggle-slider:before {
     margin: 0 4px !important;
   }
 
-  .enhanced-video-controls .volume-controls .volume-bar {
+  .enhanced-video-controls .volume-group .volume-bar {
     width: 40px !important;
   }
 
@@ -1371,7 +1393,7 @@ input:checked + .toggle-slider:before {
     font-size: 9px !important;
   }
 
-  .enhanced-video-controls .volume-controls .volume-bar {
+  .enhanced-video-controls .volume-group .volume-bar {
     display: none;
   }
 
@@ -1394,7 +1416,7 @@ input:checked + .toggle-slider:before {
     min-height: 34px !important;
   }
 
-  .enhanced-video-controls .play-pause {
+  .enhanced-video-controls .play-pause-btn {
     min-width: 38px !important;
     min-height: 38px !important;
   }
