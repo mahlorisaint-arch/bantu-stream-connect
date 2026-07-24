@@ -784,17 +784,25 @@ function setupNavButtonScrollAnimation() {
 // SHARED COMPONENTS: Quality & Network Indicators
 // ============================================
 function updateQualityIndicator(quality) {
+    // Lives in the persistent top-bar now (matches the reference design),
+    // not a transient corner flash — no auto-hide timer.
     const indicator = document.getElementById('qualityBadge');
     const dataSaverBadge = document.getElementById('dataSaverBadge');
     if (!indicator) return;
 
-    indicator.style.display = 'block';
-    indicator.textContent = quality.toUpperCase();
+    const normalized = (quality || 'auto').toLowerCase();
+    const height = parseInt(normalized, 10);
+    let label = 'AUTO';
+    if (!isNaN(height)) {
+        const tier = height >= 1080 ? 'FHD' : height >= 720 ? 'HD' : 'SD';
+        label = `${height}P ${tier}`;
+    }
+    indicator.textContent = label;
 
     indicator.classList.remove('auto', 'hd');
-    if (quality === 'auto') {
+    if (normalized === 'auto') {
         indicator.classList.add('auto');
-    } else if (['720p', '1080p'].includes(quality)) {
+    } else if (!isNaN(height) && height >= 720) {
         indicator.classList.add('hd');
     }
 
@@ -803,12 +811,6 @@ function updateQualityIndicator(quality) {
     } else {
         dataSaverBadge?.style.setProperty('display', 'none');
     }
-
-    setTimeout(() => {
-        if (indicator && !window.streamingManager?.isDataSaverEnabled()) {
-            indicator.style.display = 'none';
-        }
-    }, 5000);
 }
 
 function updateNetworkSpeedIndicator(speedMbps) {

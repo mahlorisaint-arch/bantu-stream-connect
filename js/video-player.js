@@ -3381,16 +3381,24 @@
     
     setQuality(quality) {
       if (quality === this.currentQuality) return;
-      
+
       console.log(`🎬 Quality: ${quality}`);
+      const previousQuality = this.currentQuality;
       this.currentQuality = quality;
       this.stats.qualityChanges++;
-      
+
+      // The actual HLS level switch lives on StreamingManager (owns the
+      // real hls.js instance) — this class only tracked UI/stat state
+      // before, so picking a quality here never touched real playback.
+      if (window.streamingManager && typeof window.streamingManager.setQuality === 'function') {
+        window.streamingManager.setQuality(quality);
+      }
+
       this._emit('playback:quality-change', {
-        from: this.currentQuality,
+        from: previousQuality,
         to: quality
       });
-      
+
       if (window.stateManager) {
         window.stateManager.setPreference('quality', quality);
       }
@@ -4048,5 +4056,65 @@
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Inline CSS overrides bypass external stylesheet crashes');
   console.log('   🚨 NUCLEAR DIAGNOSTIC: Capture-phase event listeners for mobile touch protection');
   console.log('   🚀 Ready for production deployment with Guard Clause Propagation Trap Fix');
-  
+
+  // ============================================
+  // NEW PLAYER TOP-BAR / SKIP CONTROLS
+  // Plain, self-contained DOM wiring — deliberately NOT routed through
+  // _controlsCache, since several of its class-based lookups (e.g.
+  // '.play-pause-btn', '.next-track-btn') don't match this page's actual
+  // static markup ('.play-pause', id="nextTrackBtn") and silently no-op.
+  // ============================================
+  document.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('inlineVideoPlayer');
+    const rewindBtn = document.getElementById('rewind10Btn');
+    const forwardBtn = document.getElementById('forward10Btn');
+    const castBtn = document.getElementById('castBtn');
+    const captionsBtn = document.getElementById('captionsBtn');
+    const moreOptionsBtn = document.getElementById('moreOptionsBtn');
+    const settingsBtn = document.querySelector('.settings-btn');
+    const settingsMenu = document.querySelector('.settings-menu');
+
+    if (video && rewindBtn) {
+      rewindBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        video.currentTime = Math.max(0, video.currentTime - 10);
+      });
+    }
+
+    if (video && forwardBtn) {
+      forwardBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dur = video.duration;
+        video.currentTime = Math.min(Number.isFinite(dur) ? dur : video.currentTime + 10, video.currentTime + 10);
+      });
+    }
+
+    const comingSoon = (label) => {
+      if (typeof showToast === 'function') showToast(`${label} — coming soon`, 'info');
+    };
+
+    if (castBtn) {
+      castBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        comingSoon('Cast');
+      });
+    }
+
+    if (captionsBtn) {
+      captionsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        comingSoon('Captions');
+      });
+    }
+
+    // "More options" reuses the existing settings menu rather than
+    // inventing a second, redundant popover.
+    if (moreOptionsBtn && settingsBtn && settingsMenu) {
+      moreOptionsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsBtn.click();
+      });
+    }
+  });
+
 })();

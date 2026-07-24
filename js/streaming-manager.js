@@ -299,12 +299,31 @@
     // Save preference
     this._saveQualityPreference(quality);
     
-    // If HLS, switch quality level
-    if (this.hlsInstance && quality !== 'auto') {
-      const levelIndex = this.qualityLevels.findIndex(q => q.value === quality);
-      if (levelIndex >= 0 && levelIndex < this.hlsInstance.levels.length) {
+    // If HLS, switch quality level — match by the REAL rendition height
+    // reported by the manifest (hlsInstance.levels), not a fixed array
+    // position. Cloudflare Stream doesn't guarantee levels are ordered to
+    // match qualityLevels' Auto/1080p/720p/480p/360p sequence, and a video
+    // may not have all five renditions encoded.
+    if (this.hlsInstance && quality === 'auto') {
+      this.hlsInstance.currentLevel = -1; // hls.js convention: re-enable ABR
+      console.log('✅ HLS quality set to Auto (ABR)');
+    } else if (this.hlsInstance && quality !== 'auto') {
+      const levels = this.hlsInstance.levels || [];
+      const targetHeight = parseInt(quality, 10);
+      let levelIndex = levels.findIndex(l => l.height === targetHeight);
+      if (levelIndex === -1 && levels.length > 0) {
+        // No exact match encoded for this video — snap to the closest
+        // available rendition instead of silently doing nothing.
+        levelIndex = levels.reduce((bestIdx, l, i) => {
+          if (bestIdx === -1) return i;
+          return Math.abs(l.height - targetHeight) < Math.abs(levels[bestIdx].height - targetHeight) ? i : bestIdx;
+        }, -1);
+      }
+      if (levelIndex >= 0) {
         this.hlsInstance.currentLevel = levelIndex;
-        console.log('✅ HLS quality switched to:', quality);
+        console.log('✅ HLS quality switched to:', quality, '-> level', levelIndex, levels[levelIndex]);
+      } else {
+        console.warn('⚠️ No HLS levels available to switch quality');
       }
     } else {
       // For MP4, we need to reload with different URL

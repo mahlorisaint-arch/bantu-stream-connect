@@ -315,7 +315,14 @@
       this._dom.repeatToggle = document.getElementById('repeatToggle');
       this._dom.queueList = document.querySelector('.queue-list, .playlist-queue');
       this._dom.videoElement = document.getElementById('inlineVideoPlayer');
-      
+
+      // Prev/Next only make sense with an actual queue behind them — hidden
+      // by default in the player markup (a single track/episode has nothing
+      // to skip to), shown here once a real multi-item queue exists.
+      const hasQueue = this.queue.length > 1;
+      if (this._dom.nextBtn) this._dom.nextBtn.style.display = hasQueue ? '' : 'none';
+      if (this._dom.prevBtn) this._dom.prevBtn.style.display = hasQueue ? '' : 'none';
+
       // Next button
       if (this._dom.nextBtn) {
         // Clone to remove existing listeners, then attach new

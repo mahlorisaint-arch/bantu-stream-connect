@@ -1646,6 +1646,12 @@ async function initializeStreamingManager() {
             }
         });
         await streamingManager.initialize();
+        // window.streamingManager = streamingManager; at the bottom of this
+        // file runs once at parse time, before this async init resolves, so
+        // it captures streamingManager while it's still null — re-assign
+        // here so other modules (e.g. video-player.js's quality buttons)
+        // reach the real, initialized instance instead of a stale snapshot.
+        window.streamingManager = streamingManager;
         console.log('✅ StreamingManager initialized');
     } catch (error) {
         console.error('❌ Failed to initialize StreamingManager:', error);

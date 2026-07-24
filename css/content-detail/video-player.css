@@ -1,12 +1,18 @@
 /* ============================================ */
 /* CONTENT DETAIL - VIDEO PLAYER MODULE */
 /* Enhanced video player, controls, quality indicators, overlays */
+/* Cyan accent (#00E5FF) — a deliberate, scoped exception to the platform's
+   gold/blue design system, requested for the player surface only. Do not
+   propagate this token outside .inline-player. */
 /* ============================================ */
 
 /* ============================================ */
 /* INLINE VIDEO PLAYER CONTAINER */
 /* ============================================ */
 .inline-player {
+  --player-accent: #00E5FF;
+  --player-accent-dim: rgba(0, 229, 255, 0.35);
+  --player-accent-glow: rgba(0, 229, 255, 0.25);
   background: var(--deep-navy);
   border: none;
   border-radius: 0;
@@ -66,7 +72,7 @@
 }
 
 .video-container[data-media-type="audio"] video.audio-mode {
-  background: radial-gradient(circle at center, rgba(29, 78, 216, 0.35), rgba(10, 14, 18, 1));
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.25), rgba(10, 14, 18, 1));
 }
 
 .video-container[data-media-type="audio"] video[poster] {
@@ -105,7 +111,7 @@
 }
 
 /* ============================================ */
-/* 🚨 CRITICAL FIX: Video Player State Control Layer */
+/* Video Player State Control Layer */
 /* CSS State Architecture for automatic layer management */
 /* ============================================ */
 
@@ -131,12 +137,12 @@
 }
 
 /* ============================================ */
-/* 🛠️ FIX 2: BREAK THE CLICK BLOCKADE ON PLAYER CONTROLS */
+/* Break the click blockade on player controls */
 /* ============================================ */
 
 /* 1. Prevent poster and overlay elements from hijacking interactions */
-.custom-poster-overlay, 
-.video-poster-container, 
+.custom-poster-overlay,
+.video-poster-container,
 .visual-blockade,
 #customPosterOverlay,
 .player-poster-overlay {
@@ -152,7 +158,7 @@
     opacity: 1;
     transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
     visibility: visible;
-    pointer-events: none !important; /* 🚨 CRITICAL: Let clicks pass through to video */
+    pointer-events: none !important; /* Let clicks pass through to video */
     user-select: none !important;
     display: block;
     background-color: #0a0a0a;
@@ -168,7 +174,7 @@
     left: 0;
     width: 100%;
     z-index: 10 !important; /* Must sit above everything else */
-    pointer-events: auto !important; /* 🚨 CRITICAL: Enforces element interactivity */
+    pointer-events: auto !important;
 }
 
 /* 3. Ensure all control bar elements are clickable */
@@ -221,7 +227,7 @@
    STATE OVERRIDES: Automatic Layer Management via Parent Classes
    ========================================================================== */
 
-/* 🚀 WHEN VIDEO IS PLAYING: Drop the overlay instantly and expose controls */
+/* WHEN VIDEO IS PLAYING: Drop the overlay instantly and expose controls */
 .video-container.is-playing #customPosterOverlay,
 .video-container.is-playing .player-poster-overlay,
 .video-player-wrapper.is-playing #customPosterOverlay,
@@ -232,7 +238,7 @@
     z-index: -1 !important;
 }
 
-/* ⏸️ WHEN VIDEO IS PAUSED/ENDED: Keep overlay out of the way once user has engaged */
+/* WHEN VIDEO IS PAUSED/ENDED: Keep overlay out of the way once user has engaged */
 .video-container.is-paused #customPosterOverlay,
 .video-container.is-paused .player-poster-overlay,
 .video-player-wrapper.is-paused #customPosterOverlay,
@@ -243,7 +249,7 @@
     z-index: -1 !important;
 }
 
-/* 🎵 AUDIO MODE EXCEPTION: Keep overlay visible for audio tracks */
+/* AUDIO MODE EXCEPTION: Keep overlay visible for audio tracks */
 .video-container.audio-active #customPosterOverlay,
 .video-container.audio-active .player-poster-overlay,
 .video-player-wrapper.audio-active #customPosterOverlay,
@@ -251,10 +257,10 @@
     opacity: 1 !important;
     visibility: visible !important;
     z-index: 5 !important;
-    pointer-events: none !important; /* 🚨 Still let clicks pass through */
+    pointer-events: none !important; /* Still let clicks pass through */
 }
 
-/* 🚀 WHEN PLAYBACK STARTS, ensure controls are visible */
+/* WHEN PLAYBACK STARTS, ensure controls are visible */
 .video-container.is-playing .enhanced-video-controls,
 .video-player-wrapper.is-playing .enhanced-video-controls {
     opacity: 1 !important;
@@ -279,7 +285,7 @@
     .player-poster-overlay {
         background-size: contain;
     }
-    
+
     .video-container.audio-active #customPosterOverlay,
     .video-container.audio-active .player-poster-overlay,
     .video-player-wrapper.audio-active #customPosterOverlay,
@@ -289,7 +295,82 @@
 }
 
 /* ============================================ */
-/* ENHANCED VIDEO CONTROLS - GLASSMORPHISM */
+/* TOP BAR — logo, quality badge, cast/CC/more */
+/* ============================================ */
+.player-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  z-index: 15;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+  pointer-events: none;
+}
+
+.player-top-bar .player-logo,
+.player-top-bar .player-top-actions {
+  pointer-events: auto;
+}
+
+.player-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-logo img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4));
+}
+
+.player-logo span {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--soft-white);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.player-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-top-bar .quality-indicator {
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+  animation: none;
+  background: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: var(--player-accent);
+  border: 1px solid var(--player-accent-dim) !important;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.player-top-bar .quality-indicator.auto {
+  color: var(--soft-white);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.top-btn {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 13px !important;
+}
+
+/* ============================================ */
+/* ENHANCED VIDEO CONTROLS */
 /* ============================================ */
 .enhanced-video-controls {
   position: absolute;
@@ -313,11 +394,11 @@
   transform: translateY(0);
 }
 
-/* Controls bar - Glassmorphism */
+/* Controls bar */
 .enhanced-video-controls .controls-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 8px 16px;
   background: rgba(15, 15, 15, 0.6) !important;
   backdrop-filter: blur(25px) saturate(180%) !important;
@@ -333,7 +414,7 @@
   pointer-events: auto !important;
 }
 
-/* Control buttons - Glassmorphism */
+/* Control buttons */
 .enhanced-video-controls .control-btn {
   width: 36px;
   height: 36px;
@@ -360,7 +441,7 @@
 
 .enhanced-video-controls .control-btn:hover {
   background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(245, 158, 11, 0.6) !important;
+  border-color: var(--player-accent-dim) !important;
   transform: scale(1.1);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
@@ -369,24 +450,40 @@
   transform: scale(0.95);
 }
 
-/* Play/Pause button - Glassmorphism with gradient glow */
-.enhanced-video-controls .play-pause-btn {
+/* Skip 10s buttons (rewind/forward) */
+.enhanced-video-controls .skip-btn {
   width: 40px;
-  height: 40px;
+  flex-direction: column;
+  gap: 0;
+  font-size: 13px;
+}
+
+.enhanced-video-controls .skip-btn span {
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: -1px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Play/Pause button — larger, glowing accent */
+.enhanced-video-controls .play-pause {
+  width: 42px;
+  height: 42px;
   background: rgba(255, 255, 255, 0.12) !important;
   backdrop-filter: blur(15px) !important;
   -webkit-backdrop-filter: blur(15px) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  border: 1.5px solid var(--player-accent-dim) !important;
   color: white !important;
-  box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), 0 0 40px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 32px var(--player-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   transition: all 0.3s ease !important;
 }
 
-.enhanced-video-controls .play-pause-btn:hover {
+.enhanced-video-controls .play-pause:hover {
   background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(245, 158, 11, 0.7) !important;
+  border-color: var(--player-accent) !important;
   transform: scale(1.15);
-  box-shadow: 0 8px 40px rgba(29, 78, 216, 0.4), 0 0 60px rgba(245, 158, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 8px 40px var(--player-accent-glow), 0 0 40px var(--player-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
 /* Time display */
@@ -407,7 +504,7 @@
 }
 
 /* ============================================ */
-/* PROGRESS CONTAINER - FIXED ALIGNMENT */
+/* PROGRESS CONTAINER */
 /* ============================================ */
 .enhanced-video-controls .progress-container {
   flex: 1;
@@ -432,7 +529,7 @@
   height: 6px;
 }
 
-/* Progress bar input - FIXED: Inside the container */
+/* Progress bar input */
 .enhanced-video-controls .progress-container .progress-bar {
   position: absolute;
   top: 0;
@@ -455,12 +552,12 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: rgba(245, 158, 11, 0.9) !important;
+  background: var(--player-accent) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 0 15px var(--player-accent-glow) !important;
   transition: transform 0.2s ease;
   margin-top: 0;
 }
@@ -473,30 +570,30 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: rgba(245, 158, 11, 0.9) !important;
+  background: var(--player-accent) !important;
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 0 15px var(--player-accent-glow) !important;
 }
 
-/* Progress fill - Glassmorphism with gradient */
+/* Progress fill */
 .enhanced-video-controls .progress-container .progress-fill {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(90deg, rgba(29, 78, 216, 0.8), rgba(245, 158, 11, 0.9)) !important;
+  background: var(--player-accent) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   border-radius: 4px;
   width: var(--progress, 0%);
   pointer-events: none;
-  box-shadow: 0 0 15px rgba(29, 78, 216, 0.3), 0 0 30px rgba(245, 158, 11, 0.15) !important;
+  box-shadow: 0 0 15px var(--player-accent-glow) !important;
   transition: width 0.1s linear;
   z-index: 1;
 }
 
-/* Buffer fill - Glassmorphism */
+/* Buffer fill */
 .enhanced-video-controls .progress-container .buffer-fill {
   position: absolute;
   top: 0;
@@ -511,7 +608,7 @@
   z-index: 0;
 }
 
-/* Progress hover preview - Glassmorphism */
+/* Progress hover preview */
 .progress-preview {
   position: absolute;
   bottom: 20px;
@@ -533,7 +630,7 @@
 /* ============================================ */
 /* VOLUME CONTROL */
 /* ============================================ */
-.enhanced-video-controls .volume-control {
+.enhanced-video-controls .volume-controls {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -560,13 +657,13 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(245, 158, 11, 0.9) !important;
+  background: var(--player-accent) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   cursor: pointer;
   transition: transform 0.2s ease;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 2px 8px var(--player-accent-glow) !important;
 }
 
 .enhanced-video-controls .volume-bar::-webkit-slider-thumb:hover {
@@ -577,7 +674,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(245, 158, 11, 0.9) !important;
+  background: var(--player-accent) !important;
   cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
@@ -645,7 +742,7 @@
   letter-spacing: 0.5px;
 }
 
-/* Quality options - Glassmorphism */
+/* Quality options */
 .quality-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -670,22 +767,22 @@
 }
 
 .quality-option:hover {
-  background: rgba(29, 78, 216, 0.25) !important;
-  border-color: rgba(29, 78, 216, 0.4) !important;
+  background: var(--player-accent-glow) !important;
+  border-color: var(--player-accent-dim) !important;
   transform: translateY(-1px);
 }
 
 .quality-option.active {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.4), rgba(245, 158, 11, 0.4)) !important;
+  background: rgba(0, 229, 255, 0.18) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  border-color: rgba(245, 158, 11, 0.5) !important;
+  border-color: var(--player-accent) !important;
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 12px rgba(29, 78, 216, 0.2) !important;
+  box-shadow: 0 2px 12px var(--player-accent-glow) !important;
 }
 
-/* Speed options - Glassmorphism */
+/* Speed options */
 .speed-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -709,21 +806,21 @@
 }
 
 .speed-option:hover {
-  background: rgba(29, 78, 216, 0.25) !important;
-  border-color: rgba(29, 78, 216, 0.4) !important;
+  background: var(--player-accent-glow) !important;
+  border-color: var(--player-accent-dim) !important;
   transform: translateY(-1px);
 }
 
 .speed-option.active {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.4), rgba(245, 158, 11, 0.4)) !important;
+  background: rgba(0, 229, 255, 0.18) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  border-color: rgba(245, 158, 11, 0.5) !important;
+  border-color: var(--player-accent) !important;
   color: white;
   font-weight: 600;
 }
 
-/* Toggle switch - Glassmorphism */
+/* Toggle switch */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -769,8 +866,8 @@
 }
 
 input:checked + .toggle-slider {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.5), rgba(245, 158, 11, 0.5)) !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
+  background: rgba(0, 229, 255, 0.4) !important;
+  border-color: var(--player-accent-dim) !important;
 }
 
 input:checked + .toggle-slider:before {
@@ -787,7 +884,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* QUALITY & NETWORK INDICATORS - Glassmorphism */
+/* NETWORK/HLS/DATA-SAVER INDICATORS */
 /* ============================================ */
 .quality-indicator {
   position: absolute;
@@ -806,41 +903,13 @@ input:checked + .toggle-slider:before {
   align-items: center;
   gap: 5px;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
 }
 
-.quality-indicator.visible {
-  opacity: 1;
-  animation: fadeOut 3s ease forwards;
-}
-
-@keyframes fadeOut {
-  0% { opacity: 1; }
-  70% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-.quality-indicator i {
-  color: var(--warm-gold);
-  font-size: 10px;
-}
-
-.quality-indicator.auto i {
-  color: var(--bantu-blue);
-}
-
-.quality-indicator.hd i {
-  color: var(--warm-gold);
-}
-
-/* HLS badge - Glassmorphism */
 .hls-badge {
   position: absolute;
   top: 12px;
   right: 70px;
-  background: rgba(29, 78, 216, 0.7) !important;
+  background: rgba(0, 229, 255, 0.25) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   color: white;
@@ -856,7 +925,7 @@ input:checked + .toggle-slider:before {
   pointer-events: none;
 }
 
-/* Data saver badge - Glassmorphism */
+/* Data saver badge */
 .data-saver-badge {
   position: absolute;
   top: 12px;
@@ -881,10 +950,9 @@ input:checked + .toggle-slider:before {
 
 .data-saver-badge.visible {
   opacity: 1;
-  animation: fadeOut 3s ease forwards;
 }
 
-/* Network speed indicator - Glassmorphism */
+/* Network speed indicator */
 .network-speed-indicator {
   position: absolute;
   bottom: 70px;
@@ -911,6 +979,12 @@ input:checked + .toggle-slider:before {
   animation: fadeOut 3s ease forwards;
 }
 
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .network-speed-indicator i {
   font-size: 11px;
 }
@@ -928,7 +1002,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* BUFFERING INDICATOR - Glassmorphism */
+/* BUFFERING INDICATOR */
 /* ============================================ */
 .buffering-indicator {
   position: absolute;
@@ -955,9 +1029,14 @@ input:checked + .toggle-slider:before {
   width: 24px;
   height: 24px;
   border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--warm-gold);
+  border-top-color: var(--player-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .buffering-indicator p {
@@ -1012,18 +1091,18 @@ input:checked + .toggle-slider:before {
 
 .retry-btn {
   padding: 10px 25px;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  background: var(--player-accent);
   border: none;
   border-radius: 8px;
-  color: white;
-  font-weight: 600;
+  color: var(--deep-black);
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .retry-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 5px 15px var(--player-accent-glow);
 }
 
 /* ============================================ */
@@ -1035,7 +1114,7 @@ input:checked + .toggle-slider:before {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #0A1128 0%, #0F172A 100%);
+  background: linear-gradient(135deg, #050810 0%, #0A1420 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1051,29 +1130,27 @@ input:checked + .toggle-slider:before {
 .bantu-logo {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  background: rgba(0, 229, 255, 0.12);
+  border: 1.5px solid var(--player-accent-dim);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 15px;
   animation: spin 2s linear infinite;
-  box-shadow: 0 0 30px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 0 30px var(--player-accent-glow);
 }
 
 .bantu-logo i {
   font-size: 2.5rem;
-  color: white;
+  color: var(--player-accent);
 }
 
 .bantu-brand-text {
   font-family: 'Orbitron', sans-serif;
   font-size: 18px;
   font-weight: 700;
-  background: linear-gradient(to right, var(--soft-white), var(--warm-gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--soft-white);
   letter-spacing: 1px;
 }
 
@@ -1097,9 +1174,9 @@ input:checked + .toggle-slider:before {
 }
 
 #initialPlayButton {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  background: var(--player-accent);
   border: none;
-  color: white;
+  color: var(--deep-black);
   padding: 18px 32px;
   border-radius: 60px;
   font-size: 1.2rem;
@@ -1110,13 +1187,12 @@ input:checked + .toggle-slider:before {
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 30px var(--player-accent-glow);
 }
 
 #initialPlayButton:hover {
   transform: scale(1.05);
-  box-shadow: 0 12px 28px rgba(29, 78, 216, 0.5);
-  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 50px var(--player-accent-glow);
 }
 
 #initialPlayButton i {
@@ -1150,316 +1226,186 @@ input:checked + .toggle-slider:before {
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS - FIXED FOR MOBILE */
+/* RESPONSIVE ADJUSTMENTS */
 /* ============================================ */
 @media (max-width: 768px) {
+  .player-top-bar {
+    padding: 10px 12px;
+  }
+
+  .player-logo img {
+    width: 22px;
+    height: 22px;
+  }
+
+  .player-logo span {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .player-top-actions {
+    gap: 6px;
+  }
+
+  .top-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 11px !important;
+  }
+
+  .player-top-bar .quality-indicator {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
   .enhanced-video-controls {
-    padding: 5.8px 5.8px 3.5px !important;
+    padding: 10px 10px 8px !important;
+    opacity: 1;
+    transform: translateY(0);
   }
-  
+
   .enhanced-video-controls .controls-bar {
-    padding: 2.3px 4.6px !important;
-    gap: 3.5px !important;
-    border-radius: 11.6px !important;
-    border-width: 0.5px !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    border-radius: 30px !important;
   }
-  
+
   .enhanced-video-controls .control-btn {
-    width: 10.4px !important;
-    height: 10.4px !important;
-    font-size: 4.1px !important;
-    border-width: 0.5px !important;
-    border-radius: 50% !important;
-    min-width: 10.4px !important;
-    min-height: 10.4px !important;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 12px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
   }
-  
-  .enhanced-video-controls .play-pause-btn {
-    width: 11.6px !important;
-    height: 11.6px !important;
-    min-width: 11.6px !important;
-    min-height: 11.6px !important;
+
+  .enhanced-video-controls .play-pause {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
   }
-  
+
+  .enhanced-video-controls .skip-btn {
+    width: 32px !important;
+  }
+
+  .enhanced-video-controls .skip-btn span {
+    font-size: 6px !important;
+  }
+
   .enhanced-video-controls .time-display {
-    font-size: 3.8px !important;
-    min-width: 29px !important;
-    padding: 1.2px 2.3px !important;
-    border-radius: 5.8px !important;
-    letter-spacing: 0.15px !important;
+    font-size: 10px !important;
+    min-width: 70px !important;
+    padding: 3px 6px !important;
   }
-  
-  /* FIXED: Progress container properly sized and aligned */
+
   .enhanced-video-controls .progress-container {
-    height: 1.2px !important;
-    border-radius: 0.6px !important;
-    min-height: 8px !important;
     margin: 0 4px !important;
-    flex: 1 !important;
   }
-  
-  .enhanced-video-controls .progress-container:hover {
-    height: 1.7px !important;
+
+  .enhanced-video-controls .volume-controls .volume-bar {
+    width: 40px !important;
   }
-  
-  .enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb {
-    width: 8px !important;
-    height: 8px !important;
+
+  .settings-menu {
+    min-width: 180px !important;
+    max-width: 220px !important;
+    padding: 10px !important;
+    bottom: 44px !important;
+    right: 6px !important;
   }
-  
-  .enhanced-video-controls .progress-container .progress-bar::-moz-range-thumb {
-    width: 8px !important;
-    height: 8px !important;
+
+  .quality-option,
+  .speed-option {
+    font-size: 10px !important;
+    padding: 5px 6px !important;
   }
-  
-  .enhanced-video-controls .volume-control {
-    gap: 2.3px !important;
-  }
-  
-  .enhanced-video-controls .volume-bar {
-    width: 23.2px !important;
-    height: 1.2px !important;
-    min-height: 8px !important;
-    border-radius: 0.6px !important;
-  }
-  
-  .enhanced-video-controls .volume-bar::-webkit-slider-thumb {
-    width: 3.5px !important;
-    height: 3.5px !important;
-    min-width: 10px !important;
-    min-height: 10px !important;
-  }
-  
-  .enhanced-video-controls .settings-menu {
-    min-width: 63.8px !important;
-    max-width: 81.2px !important;
-    padding: 3.5px !important;
-    bottom: 14.5px !important;
-    right: 2.9px !important;
-    border-radius: 3.5px !important;
-  }
-  
-  .enhanced-video-controls .settings-section {
-    margin-bottom: 3.5px !important;
-    padding-bottom: 2.9px !important;
-  }
-  
-  .enhanced-video-controls .settings-section h4 {
-    font-size: 3.5px !important;
-    margin-bottom: 2.3px !important;
-    letter-spacing: 0.15px !important;
-  }
-  
-  .enhanced-video-controls .quality-options {
-    gap: 1.7px !important;
-  }
-  
-  .enhanced-video-controls .quality-option {
-    padding: 1.7px 2.3px !important;
-    font-size: 3.2px !important;
-    border-radius: 1.7px !important;
-    border-width: 0.5px !important;
-  }
-  
-  .enhanced-video-controls .speed-options {
-    gap: 1.5px !important;
-  }
-  
-  .enhanced-video-controls .speed-option {
-    padding: 1.5px 1.7px !important;
-    font-size: 3.2px !important;
-    border-radius: 1.7px !important;
-    border-width: 0.5px !important;
-  }
-  
-  .enhanced-video-controls .toggle-switch {
-    width: 12.8px !important;
-    height: 6.4px !important;
-    margin: 1.7px 0 1.2px !important;
-  }
-  
-  .enhanced-video-controls .toggle-slider {
-    border-radius: 6.4px !important;
-    border-width: 0.5px !important;
-  }
-  
-  .enhanced-video-controls .toggle-slider:before {
-    height: 5.2px !important;
-    width: 5.2px !important;
-    left: 0.6px !important;
-    bottom: 0.6px !important;
-  }
-  
-  .enhanced-video-controls input:checked + .toggle-slider:before {
-    transform: translateX(6.4px) !important;
-  }
-  
-  .enhanced-video-controls .toggle-description {
-    font-size: 2.9px !important;
-    max-width: 52.2px !important;
-  }
-  
+
   .quality-indicator,
   .hls-badge,
   .data-saver-badge {
-    font-size: 3.2px !important;
-    padding: 1.2px 2.9px !important;
-    border-radius: 5.8px !important;
-    top: 3.5px !important;
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+    top: 8px !important;
   }
-  
-  .quality-indicator {
-    right: 3.5px !important;
-  }
-  
+
   .hls-badge {
-    right: 20.3px !important;
+    right: 60px !important;
   }
-  
-  .data-saver-badge {
-    left: 3.5px !important;
-  }
-  
+
   .network-speed-indicator {
-    font-size: 3.2px !important;
-    padding: 1.7px 3.5px !important;
-    bottom: 20.3px !important;
-    left: 3.5px !important;
-    border-radius: 5.8px !important;
-    gap: 2.3px !important;
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+    bottom: 56px !important;
+    left: 8px !important;
   }
-  
-  .network-speed-indicator i {
-    font-size: 3.2px !important;
-  }
-  
+
   #initialPlayButton {
-    padding: 5.2px 9.3px !important;
-    font-size: 0.35rem !important;
-    border-radius: 17.4px !important;
-    gap: 3.5px !important;
+    padding: 12px 22px !important;
+    font-size: 0.9rem !important;
+    gap: 8px !important;
   }
-  
-  #initialPlayButton i {
-    font-size: 0.41rem !important;
-  }
-  
+
   .buffering-indicator {
-    padding: 4.4px 7.3px !important;
-    border-radius: 11.6px !important;
-    gap: 4.4px !important;
+    padding: 10px 18px !important;
+    gap: 10px !important;
   }
-  
+
   .buffering-indicator .spinner {
-    width: 7px !important;
-    height: 7px !important;
-    border-width: 0.9px !important;
+    width: 18px !important;
+    height: 18px !important;
   }
-  
+
   .buffering-indicator p {
-    font-size: 4.1px !important;
-  }
-  
-  /* Progress preview */
-  .progress-preview {
-    font-size: 3.5px !important;
-    padding: 1.2px 2.3px !important;
-    bottom: 5.8px !important;
-    border-radius: 1.2px !important;
+    font-size: 12px !important;
   }
 }
 
 @media (max-width: 480px) {
-  .enhanced-video-controls {
-    padding: 5.2px 5.2px 3.1px !important;
+  .player-logo span {
+    display: none;
   }
-  
-  .enhanced-video-controls .controls-bar {
-    padding: 2.1px 4.2px !important;
-    gap: 3.1px !important;
-    border-radius: 10.4px !important;
-  }
-  
-  .enhanced-video-controls .control-btn {
-    width: 9.4px !important;
-    height: 9.4px !important;
-    font-size: 3.6px !important;
-    min-width: 9.4px !important;
-    min-height: 9.4px !important;
-  }
-  
-  .enhanced-video-controls .play-pause-btn {
-    width: 10.4px !important;
-    height: 10.4px !important;
-    min-width: 10.4px !important;
-    min-height: 10.4px !important;
-  }
-  
+
   .enhanced-video-controls .time-display {
-    font-size: 3.4px !important;
-    min-width: 26px !important;
-    padding: 1px 2.1px !important;
-    border-radius: 5.2px !important;
+    min-width: 56px !important;
+    font-size: 9px !important;
   }
-  
-  .enhanced-video-controls .progress-container {
-    height: 1px !important;
-    margin: 0 3px !important;
+
+  .enhanced-video-controls .volume-controls .volume-bar {
+    display: none;
   }
-  
-  .enhanced-video-controls .volume-bar {
-    width: 20.8px !important;
-    height: 1px !important;
-  }
-  
+
   .settings-menu {
-    min-width: 57.2px !important;
-    max-width: 72.8px !important;
-    right: 2.6px !important;
-    bottom: 13px !important;
-  }
-  
-  .quality-option,
-  .speed-option {
-    font-size: 2.9px !important;
-    padding: 1.6px 1.6px !important;
-  }
-  
-  .settings-section h4 {
-    font-size: 3.1px !important;
+    min-width: 160px !important;
+    max-width: 190px !important;
   }
 }
 
-/* Touch device optimizations - keep touch targets accessible */
+/* Touch device optimizations — keep touch targets accessible */
 @media (hover: none) and (pointer: coarse) {
   .enhanced-video-controls {
     opacity: 1;
     transform: translateY(0);
     background: linear-gradient(to top, rgba(15, 15, 15, 0.95), rgba(15, 15, 15, 0.7));
   }
-  
-  /* Keep touch targets at least 16px for usability */
+
   .enhanced-video-controls .control-btn {
-    min-width: 16px !important;
-    min-height: 16px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
   }
-  
-  .enhanced-video-controls .play-pause-btn {
-    min-width: 18px !important;
-    min-height: 18px !important;
+
+  .enhanced-video-controls .play-pause {
+    min-width: 38px !important;
+    min-height: 38px !important;
   }
-  
+
   .enhanced-video-controls .progress-container {
     min-height: 14px !important;
   }
-  
-  .enhanced-video-controls .volume-bar {
-    min-height: 14px !important;
-  }
-  
+
   .enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb {
-    min-width: 14px !important;
-    min-height: 14px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
   }
 }
 
