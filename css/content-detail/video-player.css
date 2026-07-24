@@ -296,7 +296,10 @@
 }
 
 /* ============================================ */
-/* TOP BAR — logo, quality badge, cast/CC/more */
+/* TOP BAR — quality badge, CC/more */
+/* No logo/wordmark and no Cast — removed permanently from the player
+   (top bar, bottom bar, and center controls all have no Cast/Audio
+   affordance now, not just hidden at some breakpoint). */
 /* ============================================ */
 .player-top-bar {
   position: absolute;
@@ -306,39 +309,15 @@
   min-height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 16px 20px;
   z-index: 15;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
   pointer-events: none;
 }
 
-.player-top-bar .player-logo,
 .player-top-bar .player-top-actions {
   pointer-events: auto;
-}
-
-.player-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.player-logo img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4));
-}
-
-.player-logo span {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  line-height: 1.25;
-  color: var(--soft-white);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .player-top-actions {
@@ -1498,23 +1477,6 @@ input:checked + .toggle-slider:before {
     min-height: 52px;
   }
 
-  .player-logo img {
-    width: 22px;
-    height: 22px;
-  }
-
-  /* Wordmark collapses to a single line at tablet width rather than
-     staying 3-line-stacked — the <br> tags are hidden but a literal
-     space before "STREAM"/"CONNECT" in the markup keeps word spacing. */
-  .player-logo span {
-    font-size: 11px;
-    letter-spacing: 0.5px;
-  }
-
-  .player-logo span br {
-    display: none;
-  }
-
   .player-top-actions {
     gap: 8px;
   }
@@ -1641,11 +1603,6 @@ input:checked + .toggle-slider:before {
 }
 
 @media (max-width: 480px) {
-  /* Logo: icon only, wordmark dropped entirely to reclaim width */
-  .player-logo span {
-    display: none;
-  }
-
   .player-top-bar {
     padding: 8px 10px;
     min-height: 46px;

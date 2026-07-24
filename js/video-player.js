@@ -4322,7 +4322,10 @@
   console.log('   🚀 Ready for production deployment with Guard Clause Propagation Trap Fix');
 
   // ============================================
-  // TOP-BAR + BOTTOM-BAR STUB CONTROLS (Cast / Captions / Audio / More)
+  // TOP-BAR STUB CONTROLS (Captions / More)
+  // Cast and the Audio-settings toggle were removed from the player
+  // entirely (top bar, bottom bar, and center controls all have no Cast/
+  // Audio affordance now — this is not a per-breakpoint hide).
   // Safe to wire once at DOMContentLoaded: _createControls() now reuses the
   // static .enhanced-video-controls element in place instead of destroying
   // and rebuilding it, so nothing here goes stale/detached later.
@@ -4332,24 +4335,11 @@
       if (typeof showToast === 'function') showToast(`${label} — coming soon`, 'info');
     };
 
-    ['castBtnTop', 'castBtnBottom'].forEach((id) => {
-      const btn = document.getElementById(id);
-      if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); comingSoon('Cast'); });
-    });
-
     const captionsBtn = document.getElementById('captionsBtn');
     if (captionsBtn) {
       captionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         comingSoon('Captions');
-      });
-    }
-
-    const audioToggleBtn = document.getElementById('audioToggleBtn');
-    if (audioToggleBtn) {
-      audioToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        comingSoon('Audio settings');
       });
     }
 
