@@ -379,7 +379,7 @@ async function uploadContent(isDraft = false) {
                 formData.collection = {
                     name: collectionName,
                     playlistType: genreCfgForCollection.playlist_type,
-                    itemType: genre === 'Music' ? 'track' : 'episode',
+                    itemType: genre === 'Music' ? 'TRACK' : 'EPISODE',
                     trackNumber: genre === 'Music' ? (formData.genreSpecificMetadata.track_number ? parseInt(formData.genreSpecificMetadata.track_number, 10) : null) : null,
                     seasonNumber: genre !== 'Music' ? (formData.genreSpecificMetadata.season_number ? parseInt(formData.genreSpecificMetadata.season_number, 10) : null) : null,
                     displayTitle: genre === 'Music' ? formData.genreSpecificMetadata.track_title : formData.genreSpecificMetadata.episode_title,

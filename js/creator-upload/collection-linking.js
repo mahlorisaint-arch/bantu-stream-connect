@@ -46,13 +46,17 @@ async function findOrCreateCreatorPlaylist({ creatorId, name, playlistType, genr
         return { playlistId: existing.id, nextSortIndex };
     }
 
+    // Column set verified directly against the live schema (via read probes
+    // against real rows), not just static grep — this table has already
+    // burned two rounds on columns that looked plausible in other files but
+    // don't actually exist here: no `genre` (recommendation-engine.js
+    // references one, but that code path is apparently untested/broken
+    // elsewhere) and no `status`. `sort_order` on every real row is the
+    // string "manual" (a sort STRATEGY, not a numeric position) — omitted
+    // here so its column default applies rather than guessing at the value.
     // visibility: 'public' is load-bearing — the bantu-waves-* home-feed
     // carousels hard-filter .eq('visibility','public'), so a published album
     // with no visibility set would silently never appear on the home feed.
-    // No `genre` column here — the live schema rejects it ("Could not find
-    // the 'genre' column of 'creator_playlists' in the schema cache"),
-    // despite recommendation-engine.js referencing one; that code path is
-    // apparently untested/broken elsewhere, not evidence the column exists.
     const { data: created, error: createError } = await window.supabaseClient
         .from('creator_playlists')
         .insert([{
@@ -61,9 +65,7 @@ async function findOrCreateCreatorPlaylist({ creatorId, name, playlistType, genr
             playlist_type: playlistType,
             custom_thumbnail_url: coverArtUrl || null,
             visibility: 'public',
-            status: 'published',
-            creator_id: creatorId,
-            sort_order: 0
+            creator_id: creatorId
         }])
         .select('id')
         .single();
@@ -74,6 +76,9 @@ async function findOrCreateCreatorPlaylist({ creatorId, name, playlistType, genr
 }
 
 async function linkContentToCollection(playlistId, contentId, { sortIndex, itemType, trackNumber, seasonNumber, displayTitleOverride }) {
+    // item_type is uppercase ('TRACK'/'EPISODE') on every existing row —
+    // matched here even though nothing currently reads it case-sensitively,
+    // to stay consistent with real data rather than introduce a second casing.
     const { error: pcError } = await window.supabaseClient
         .from('playlist_contents')
         .insert([{
@@ -82,7 +87,7 @@ async function linkContentToCollection(playlistId, contentId, { sortIndex, itemT
             sort_index: sortIndex,
             item_type: itemType,
             track_number: trackNumber ?? null,
-            disc_number: null,
+            disc_number: itemType === 'TRACK' ? 1 : null,
             season_number: seasonNumber ?? null,
             display_title_override: displayTitleOverride ?? null
         }]);

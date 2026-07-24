@@ -385,7 +385,7 @@ async function runBatchUpload(isDraft) {
     }
 
     const seasonNumber = genre !== 'Music' ? (sharedMeta.season_number ? parseInt(sharedMeta.season_number, 10) : null) : null;
-    const itemType = genre === 'Music' ? 'track' : 'episode';
+    const itemType = genre === 'Music' ? 'TRACK' : 'EPISODE';
 
     currentBatchPlaylistId = playlistInfo.playlistId;
     currentBatchCollectionName = collectionName;
@@ -469,7 +469,7 @@ async function retryBatchRow(localId) {
 
     const genre = document.getElementById('content-genre').value;
     const cfg = genreConfig[genre];
-    const itemType = genre === 'Music' ? 'track' : 'episode';
+    const itemType = genre === 'Music' ? 'TRACK' : 'EPISODE';
 
     if (row.status === 'published-unlinked' && row.contentId) {
         setRowStatus(row, 'uploading');
