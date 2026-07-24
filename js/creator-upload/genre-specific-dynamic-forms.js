@@ -3,7 +3,7 @@
 // ============================================
 const genreConfig = {
     'Film': {
-        title: '🎬 Film Details',
+        title: 'Film Details',
         fields: [
             { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
             { name: 'cast', type: 'tags', label: 'Cast', required: false, placeholder: 'e.g., Actor 1, Actor 2' },
@@ -17,7 +17,7 @@ const genreConfig = {
         isMovieContent: true
     },
     'Documentary': {
-        title: '📽️ Documentary Details',
+        title: 'Documentary Details',
         fields: [
             { name: 'director', type: 'text', label: 'Director', required: true, placeholder: 'e.g., Ava DuVernay' },
             { name: 'subject_matter', type: 'tags', label: 'Subject Matter', required: true, placeholder: 'e.g., Nature, Politics, History' },
@@ -32,7 +32,7 @@ const genreConfig = {
         isMovieContent: true
     },
     'Series': {
-        title: '📺 Series Episode Details',
+        title: 'Series Episode Details',
         fields: [
             { name: 'show_title', type: 'text', label: 'Show Title', required: true, placeholder: 'e.g., Bantu Stories' },
             { name: 'season_number', type: 'number', label: 'Season Number', required: true, min: 1 },
@@ -48,7 +48,7 @@ const genreConfig = {
         isMovieContent: true
     },
     'Music': {
-        title: '🎵 Music Details',
+        title: 'Music Details',
         fields: [
             { name: 'track_title', type: 'text', label: 'Track Title', required: true, placeholder: 'e.g., Rise Up' },
             { name: 'artist_name', type: 'text', label: 'Artist Name', required: true, placeholder: 'e.g., Bantu Artist' },
@@ -67,7 +67,7 @@ const genreConfig = {
         isMovieContent: false
     },
     'Podcast': {
-        title: '🎙️ Podcast Episode Details',
+        title: 'Podcast Episode Details',
         fields: [
             { name: 'show_title', type: 'text', label: 'Podcast Show Title', required: true, placeholder: 'e.g., Bantu Voices' },
             { name: 'season_number', type: 'number', label: 'Season Number', required: false, min: 1 },
@@ -88,7 +88,7 @@ const genreConfig = {
         isPodcastContent: true
     },
     'Shorts': {
-        title: '⚡ Shorts Details',
+        title: 'Shorts Details',
         fields: [
             { name: 'audio_title', type: 'text', label: 'Audio Title', required: false, placeholder: 'e.g., Trending Sound' },
             { name: 'original_sound', type: 'checkbox', label: 'Original Sound (not trending audio)', required: false }
@@ -180,7 +180,7 @@ function collectContentMetadata() {
     config.fields.forEach(field => {
         const element = document.getElementById(`field-${field.name}`);
         if (!element) return;
-        
+
         if (field.type === 'tags') {
             const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
             metadata[field.name] = container?.dataset.tags ? JSON.parse(container.dataset.tags) : [];
@@ -193,7 +193,20 @@ function collectContentMetadata() {
             metadata[field.name] = element.value;
         }
     });
-    
+
+    // tempo/key_signature/is_explicit live in #tempo-group/#key-group/
+    // #explicit-group with unprefixed ids (tempo/key_signature/is_explicit),
+    // not the field-${name} convention the generic loop above expects, so
+    // they were never collected and silently discarded on submit.
+    if (genre === 'Music') {
+        const tempoEl = document.getElementById('tempo');
+        const keyEl = document.getElementById('key_signature');
+        const explicitEl = document.getElementById('is_explicit');
+        metadata.tempo = tempoEl?.value ? parseInt(tempoEl.value, 10) : null;
+        metadata.key_signature = keyEl?.value || null;
+        metadata.is_explicit = explicitEl?.checked || false;
+    }
+
     return metadata;
 }
 

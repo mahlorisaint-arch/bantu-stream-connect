@@ -28,20 +28,20 @@ async function validateMediaFile(file) {
         try {
             const duration = await extractMediaDuration(file);
             extractedDuration = duration;
-            const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
-            durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
+            const mediaIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
+            durationText.innerHTML = `Duration: ${formatTime(duration)} <i class="fas ${mediaIcon}"></i>`;
             durationBadge.style.display = 'inline-block';
-            
+
             if (file.type.includes('audio')) {
                 durationDisplay.classList.add('valid');
-                durationStatus.textContent = '✓ Audio file';
+                durationStatus.innerHTML = '<i class="fas fa-check"></i> Audio file';
             } else if (selectedMediaType === 'short') {
                 if (duration > 60) {
                     durationDisplay.classList.add('invalid');
-                    durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
+                    durationStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Too long for Shorts (max 60s)';
                 } else {
                     durationDisplay.classList.add('valid');
-                    durationStatus.textContent = '✓ Valid for Shorts';
+                    durationStatus.innerHTML = '<i class="fas fa-check"></i> Valid for Shorts';
                 }
             }
             
@@ -53,7 +53,7 @@ async function validateMediaFile(file) {
             }
         } catch (error) {
             durationText.textContent = `Duration: unknown`;
-            durationStatus.textContent = '⚠️ Could not read duration';
+            durationStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Could not read duration';
             durationDisplay.classList.add('invalid');
         }
     } else {

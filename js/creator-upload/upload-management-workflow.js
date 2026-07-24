@@ -316,7 +316,7 @@ async function uploadContent(isDraft = false) {
     // Show processing state
     uploadFormState.style.display = 'none';
     processingState.classList.add('active');
-    processingMessage.innerHTML = '🎬 Preparing your content...<br>This may take a moment';
+    processingMessage.innerHTML = 'Preparing your content...<br>This may take a moment';
 
     try {
         const formData = {

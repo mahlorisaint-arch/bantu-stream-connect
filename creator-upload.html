@@ -181,7 +181,7 @@
                     <div class="form-group"><label class="form-label">Title <span>*</span></label><input type="text" id="content-title" class="form-input" placeholder="Enter content title (max 100 characters)" maxlength="100" required></div>
                     <div class="form-group"><label class="form-label">Description <span>*</span></label><textarea id="content-description" class="form-input" placeholder="Describe your content (max 500 characters)" maxlength="500" rows="4" required></textarea></div>
                     
-                    <div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">🎬 Film</option><option value="Documentary">📽️ Documentary</option><option value="Series">📺 Series</option><option value="Music">🎵 Music</option><option value="Podcast">🎙️ Podcast</option><option value="Shorts">⚡ Shorts</option><option value="STEM">🔬 STEM</option><option value="Culture">🌍 Culture</option><option value="News">📰 News</option><option value="Sports">⚽ Sports</option><option value="Skits">😂 Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
+                    <div class="form-group"><label class="form-label">Genre/Category <span>*</span></label><select id="content-genre" class="form-input" required><option value="">Select a genre (required)</option><option value="Film">Film</option><option value="Documentary">Documentary</option><option value="Series">Series</option><option value="Music">Music</option><option value="Podcast">Podcast</option><option value="Shorts">Shorts</option><option value="STEM">STEM</option><option value="Culture">Culture</option><option value="News">News</option><option value="Sports">Sports</option><option value="Skits">Skits</option></select><div style="color:var(--slate-grey);font-size:14px;margin-top:5px">Selecting the right genre helps users discover your content and enables special features</div></div>
 
                     <div class="form-group">
                         <label><i class="fas fa-layer-group"></i> Content Format <span>*</span></label>
@@ -228,7 +228,7 @@
                         <div class="breaking-news-toggle">
                             <label>
                                 <input type="checkbox" id="is-breaking" />
-                                <span style="font-weight: 600; color: var(--error-color);">🔥 Breaking News</span>
+                                <span style="font-weight: 600; color: var(--error-color);"><i class="fas fa-fire"></i> Breaking News</span>
                             </label>
                         </div>
                         <div class="form-group">
@@ -299,7 +299,7 @@
                         <div class="bantu-original-toggle">
                             <label>
                                 <input type="checkbox" id="is-bantu-original">
-                                <span>☑️ This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
+                                <span>This is a <strong>Bantu Original</strong> <span class="badge">PREMIUM</span></span>
                             </label>
                             <small class="form-text text-muted" style="color: var(--slate-grey); margin-top: 5px; display: block;">Bantu Originals get featured placement and priority discovery</small>
                         </div>
@@ -361,7 +361,7 @@
                     </div>
 
                     <!-- Mood Tags -->
-                    <div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and movies)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic">⚡ Energetic</button><button type="button" class="mood-option" data-mood="relaxing">😌 Relaxing</button><button type="button" class="mood-option" data-mood="inspiring">✨ Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking">🤔 Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good">😊 Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic">📸 Nostalgic</button><button type="button" class="mood-option" data-mood="educational">📚 Educational</button><button type="button" class="mood-option" data-mood="thrilling">🎢 Thrilling</button><button type="button" class="mood-option" data-mood="romantic">💕 Romantic</button><button type="button" class="mood-option" data-mood="adventurous">🗺️ Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
+                    <div id="mood-tags-section" class="mood-tags-section"><div class="dynamic-fields-title"><i class="fas fa-smile"></i><span>Mood & Energy Tags</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Help viewers discover your content by mood (great for music and movies)</p><div class="mood-grid" id="mood-grid"><button type="button" class="mood-option" data-mood="energetic"><i class="fas fa-bolt"></i> Energetic</button><button type="button" class="mood-option" data-mood="relaxing"><i class="fas fa-spa"></i> Relaxing</button><button type="button" class="mood-option" data-mood="inspiring"><i class="fas fa-star"></i> Inspiring</button><button type="button" class="mood-option" data-mood="thought-provoking"><i class="fas fa-brain"></i> Thought-Provoking</button><button type="button" class="mood-option" data-mood="feel-good"><i class="fas fa-smile"></i> Feel-Good</button><button type="button" class="mood-option" data-mood="nostalgic"><i class="fas fa-camera-retro"></i> Nostalgic</button><button type="button" class="mood-option" data-mood="educational"><i class="fas fa-book"></i> Educational</button><button type="button" class="mood-option" data-mood="thrilling"><i class="fas fa-fire"></i> Thrilling</button><button type="button" class="mood-option" data-mood="romantic"><i class="fas fa-heart"></i> Romantic</button><button type="button" class="mood-option" data-mood="adventurous"><i class="fas fa-map"></i> Adventurous</button></div><div style="margin-top:15px"><label class="form-label">Mood Intensity (1-10)</label><input type="range" id="mood-intensity" min="1" max="10" value="7" step="1" style="width:100%"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--slate-grey)"><span>Subtle</span><span>Moderate</span><span>Intense</span></div></div></div>
 
                     <!-- Chapters -->
                     <div id="chapters-section" class="chapters-section"><div class="dynamic-fields-title"><i class="fas fa-list-ol"></i><span>Chapter Markers</span></div><p style="font-size:14px;color:var(--slate-grey);margin-bottom:15px">Add timestamps to help viewers navigate your content</p><div id="chapters-list"></div><button type="button" id="add-chapter-btn" class="add-chapter-btn"><i class="fas fa-plus"></i> Add Chapter</button></div>
@@ -385,10 +385,10 @@
             </div>
 
             <!-- Processing State -->
-            <div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message" id="processing-message">🎉 Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
+            <div id="processing-state" class="state-screen"><div class="success-icon processing-icon"><i class="fas fa-cog"></i></div><h2 class="state-title">Processing Your Content</h2><p class="state-message" id="processing-message">Your content is now processing and will appear in feeds shortly.<br>Estimated processing time: 30–60 seconds</p><div class="spinner"></div></div>
 
             <!-- Success State -->
-            <div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">🚀 Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
+            <div id="success-state" class="state-screen"><div class="success-icon"><i class="fas fa-check"></i></div><h2 class="state-title">Upload Successful!</h2><p class="state-message">Your content is now live!<br>We're starting to show it to viewers who enjoy this type of content.<br>Share your content with your community to boost early engagement.</p><div class="post-upload-actions"><div class="action-card" onclick="window.viewContent()"><i class="fas fa-eye"></i><span>View Content</span></div><div class="action-card" onclick="window.shareContent()"><i class="fas fa-share-alt"></i><span>Share Content</span></div><div class="action-card" onclick="window.uploadAnother()"><i class="fas fa-plus-circle"></i><span>Upload Another</span></div><div class="action-card" onclick="window.goToDashboard()"><i class="fas fa-chart-line"></i><span>Creator Dashboard</span></div></div></div>
         </div>
     </main>
 
@@ -396,25 +396,13 @@
     <!-- FOOTER - MATCHES INDEX.HTML -->
     <!-- ============================================ -->
     <footer class="footer">
-        <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart" style="color: var(--warm-gold);"></i> Built in South Africa • NO DNA, JUST RSA</p>
+        <p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p>
         <div class="footer-links">
             <a href="privacy-policy.html">Privacy Policy</a>
             <a href="terms-of-service.html">Terms of Service</a>
             <a href="support.html">Support</a>
         </div>
     </footer>
-
-    <!-- ============================================ -->
-    <!-- BOTTOM NAVIGATION - MATCHES INDEX.HTML -->
-    <!-- ============================================ -->
-    <div class="navigation-button-container">
-        <div class="navigation-button">
-            <div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div>
-            <div class="nav-icon" id="nav-history-btn" title="Watch History"><i class="fas fa-history"></i></div>
-            <div class="nav-icon" id="nav-create-btn" title="Create Content"><i class="fas fa-plus-circle"></i></div>
-            <div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div>
-        </div>
-    </div>
 
     <!-- ============================================ -->
     <!-- TOAST CONTAINER -->
@@ -429,146 +417,113 @@
 </div>
 
 <!-- ============================================ -->
-<!-- SIDEBAR - MATCHES INDEX.HTML -->
+<!-- SIDEBAR (canonical v4.0 sectioned sidebar, copied verbatim from
+     my-space.html — replaces the old data-toggle/id="section-*" pattern
+     shared-components.js's setupSidebarToggles() doesn't target, and the
+     hardcoded absolute production URLs to category pages that don't
+     actually exist in this codebase besides Movies/Music.) -->
 <!-- ============================================ -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
-    <div class="sidebar-header">
-        <div class="sidebar-logo" onclick="window.location.href='index.html'">
-            <div class="logo-icon">
-                <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" style="width: 100%; height: 100%; object-fit: contain;">
-            </div>
-            <span class="sidebar-logo-text">BANTU</span>
-        </div>
-        <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+  <div class="sidebar-header">
+    <div class="sidebar-logo" onclick="window.location.href='index.html'">
+      <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+      <span class="sidebar-logo-text">BSC</span>
     </div>
-    <div class="sidebar-profile" id="sidebar-profile">
-        <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
-        <div class="sidebar-profile-info">
-            <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
-            <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
-        </div>
-        <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
+    <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sidebar-profile" id="sidebar-profile">
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+    <div class="sidebar-profile-info">
+      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
     </div>
-    
-    <!-- SIDEBAR NAVIGATION - Matches index.html -->
-    <nav class="sidebar-nav">
-        <!-- MAIN NAVIGATION -->
-        <div class="sidebar-section" data-section="main">
-            <div class="sidebar-section-header" data-toggle="main">
-                <span>MAIN</span>
-                <i class="fas fa-chevron-up toggle-icon"></i>
-            </div>
-            <div class="sidebar-section-items" id="section-main">
-                <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
-                <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
-                <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
-                <a href="creators.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
-            </div>
-        </div>
+    <i class="fas fa-chevron-right"></i>
+  </div>
+  <nav class="sidebar-nav">
 
-        <!-- CONTENT CATEGORIES -->
-        <div class="sidebar-section" data-section="categories">
-            <div class="sidebar-section-header" data-toggle="categories">
-                <span>CATEGORIES</span>
-                <i class="fas fa-chevron-up toggle-icon"></i>
-            </div>
-            <div class="sidebar-section-items" id="section-categories">
-                <a href="https://bantustreamconnect.com/category/music" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
-                <a href="https://bantustreamconnect.com/category/stem" class="sidebar-nav-item" data-category="stem"><i class="fas fa-atom"></i><span>STEM</span></a>
-                <a href="https://bantustreamconnect.com/category/culture" class="sidebar-nav-item" data-category="culture"><i class="fas fa-drum"></i><span>Culture</span></a>
-                <a href="https://bantustreamconnect.com/category/news" class="sidebar-nav-item" data-category="news"><i class="fas fa-newspaper"></i><span>News</span></a>
-                <a href="https://bantustreamconnect.com/category/sports" class="sidebar-nav-item" data-category="sports"><i class="fas fa-futbol"></i><span>Sports</span></a>
-                <a href="https://bantustreamconnect.com/category/movies" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
-                <a href="https://bantustreamconnect.com/category/documentaries" class="sidebar-nav-item" data-category="documentaries"><i class="fas fa-video"></i><span>Documentaries</span></a>
-                <a href="https://bantustreamconnect.com/category/podcasts" class="sidebar-nav-item" data-category="podcasts"><i class="fas fa-microphone-alt"></i><span>Podcasts</span></a>
-            </div>
-        </div>
-
-        <!-- YOUR CONTENT -->
-        <div class="sidebar-section" data-section="your-content">
-            <div class="sidebar-section-header" data-toggle="your-content">
-                <span>YOU</span>
-                <i class="fas fa-chevron-up toggle-icon"></i>
-            </div>
-            <div class="sidebar-section-items" id="section-your-content">
-                <a href="content-library.html" class="sidebar-nav-item" data-page="library"><i class="fas fa-book"></i><span>Library</span></a>
-                <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
-                <a href="my-uploads.html" class="sidebar-nav-item" data-page="uploads"><i class="fas fa-upload"></i><span>My Uploads</span></a>
-            </div>
-        </div>
-
-        <!-- CREATOR ZONE -->
-        <div class="sidebar-section creator-only" data-section="creator" style="display: none;">
-            <div class="sidebar-section-header" data-toggle="creator">
-                <span>CREATOR</span>
-                <i class="fas fa-chevron-up toggle-icon"></i>
-            </div>
-            <div class="sidebar-section-items" id="section-creator">
-                <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
-                <a href="creator-analytics.html" class="sidebar-nav-item" data-page="analytics"><i class="fas fa-chart-line"></i><span>Creator Analytics</span></a>
-                <a href="creator-upload.html" class="sidebar-nav-item active" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
-            </div>
-        </div>
-
-        <!-- COMMUNITY & SOCIAL -->
-        <div class="sidebar-section" data-section="community">
-            <div class="sidebar-section-header" data-toggle="community">
-                <span>COMMUNITY</span>
-                <i class="fas fa-chevron-up toggle-icon"></i>
-            </div>
-            <div class="sidebar-section-items" id="section-community">
-                <a href="index.html#community-pulse-section" class="sidebar-nav-item" data-page="pulse"><i class="fas fa-bolt"></i><span>Community Pulse</span></a>
-                <a href="https://bantustreamconnect.com/watch-party" class="sidebar-nav-item" id="sidebar-watch-party"><i class="fas fa-users"></i><span>Watch Party</span></a>
-                <a href="https://bantustreamconnect.com/my-badges" class="sidebar-nav-item" id="sidebar-badges"><i class="fas fa-medal"></i><span>My Badges</span></a>
-            </div>
-        </div>
-
-        <!-- ACCOUNT & SETTINGS -->
-        <div class="sidebar-section" data-section="account">
-            <div class="sidebar-section-header" data-toggle="account">
-                <span>ACCOUNT</span>
-                <i class="fas fa-chevron-up toggle-icon"></i>
-            </div>
-            <div class="sidebar-section-items" id="section-account">
-                <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
-                <a href="settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
-                <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Sidebar Footer -->
-    <div class="sidebar-footer" id="sidebar-footer">
-        <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
-            <label class="toggle-switch">
-                <input type="checkbox" id="creatorModeSwitch">
-                <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">Creator Mode</span>
-        </div>
-        
-        <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-            <span><i class="fas fa-palette"></i> Theme</span>
-            <i class="fas fa-chevron-right"></i>
-        </div>
-        
-        <div class="sidebar-scale-control">
-            <div class="scale-control-row">
-                <span><i class="fas fa-text-height"></i> UI Size</span>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button>
-                    <span class="scale-value" id="sidebar-scale-value">100%</span>
-                    <button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button>
-                </div>
-            </div>
-            <div class="scale-control-row">
-                <button class="scale-btn" id="sidebar-scale-reset" style="width: 100%;">
-                    <i class="fas fa-undo"></i> Reset to Default
-                </button>
-            </div>
-        </div>
+    <!-- MAIN -->
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header">
+        <span>MAIN</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+        <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+        <a href="discover-creator.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+      </div>
     </div>
+
+    <!-- CATEGORIES -->
+    <div class="sidebar-section" data-section-id="categories">
+      <div class="sidebar-section-header">
+        <span>CATEGORIES</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="category/movies.html" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+        <a href="category/music.html" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+      </div>
+    </div>
+
+    <!-- YOU -->
+    <div class="sidebar-section" data-section-id="you">
+      <div class="sidebar-section-header">
+        <span>YOU</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="my-space.html" class="sidebar-nav-item" data-page="my-space"><i class="fas fa-layer-group"></i><span>My Space</span></a>
+        <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+      </div>
+    </div>
+
+    <!-- CREATOR (hidden until checkAndShowCreatorSection confirms published content) -->
+    <div class="sidebar-section creator-only" data-section-id="creator" style="display: none;">
+      <div class="sidebar-section-header">
+        <span>CREATOR</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+        <a href="creator-upload.html" class="sidebar-nav-item active" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="sidebar-section" data-section-id="account">
+      <div class="sidebar-section-header">
+        <span>ACCOUNT</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+      </div>
+      <div class="sidebar-section-items">
+        <a href="settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+        <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+      </div>
+    </div>
+
+  </nav>
+  <div class="sidebar-footer">
+    <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
+      <label class="toggle-switch"><input type="checkbox" id="creatorModeSwitch"><span class="toggle-slider"></span></label>
+      <span class="toggle-label">Creator Mode</span>
+    </div>
+    <div class="sidebar-theme-toggle" id="sidebar-theme-toggle"><span><i class="fas fa-palette"></i> Theme</span><i class="fas fa-chevron-right"></i></div>
+    <div class="sidebar-scale-control">
+      <div class="scale-control-row">
+        <span><i class="fas fa-text-height"></i> UI Size</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="scale-btn" id="sidebar-scale-decrease"><i class="fas fa-minus"></i></button>
+          <span class="scale-value" id="sidebar-scale-value">100%</span>
+          <button class="scale-btn" id="sidebar-scale-increase"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div class="scale-control-row"><button class="scale-btn" id="sidebar-scale-reset"><i class="fas fa-undo"></i> Reset</button></div>
+    </div>
+  </div>
 </div>
 
 <!-- ============================================ -->
@@ -599,17 +554,17 @@
 
         <div class="search-filter-pills-bar">
             <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">🧬 STEM</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
-            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">🎬 Movies</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">Music</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Stem">STEM</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">Culture</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">News</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">Sports</button>
+            <button class="search-filter-pill" data-filter-group="category" data-filter-value="Movies">Movies</button>
             <button class="search-filter-pill" data-filter-group="type" data-filter-value="">All Types</button>
-            <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">🎞️ Video</button>
-            <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">🎵 Audio</button>
-            <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
-            <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="video">Video</button>
+            <button class="search-filter-pill" data-filter-group="type" data-filter-value="audio">Audio</button>
+            <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">Newest</button>
+            <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">Popular</button>
         </div>
 
         <div id="search-results-grid" class="search-results-grid"></div>
@@ -641,10 +596,10 @@
         </div>
         <div class="analytics-body">
             <div class="analytics-period-selector">
-                <button class="period-btn active" data-period="7d">📊 Last 7 Days</button>
-                <button class="period-btn" data-period="30d">📈 Last 30 Days</button>
-                <button class="period-btn" data-period="90d">📉 Last 90 Days</button>
-                <button class="period-btn" data-period="all">📅 All Time</button>
+                <button class="period-btn active" data-period="7d"><i class="fas fa-calendar-alt"></i> Last 7 Days</button>
+                <button class="period-btn" data-period="30d"><i class="fas fa-calendar-alt"></i> Last 30 Days</button>
+                <button class="period-btn" data-period="90d"><i class="fas fa-calendar-alt"></i> Last 90 Days</button>
+                <button class="period-btn" data-period="all"><i class="fas fa-calendar-alt"></i> All Time</button>
             </div>
             <div class="analytics-stats-grid">
                 <div class="analytics-stat-card">
@@ -673,12 +628,12 @@
                 </div>
             </div>
             <div class="analytics-extended-stats">
-                <div class="extended-stat"><span class="extended-label">📦 Total Content</span><span class="extended-value" id="total-content">0</span></div>
-                <div class="extended-stat"><span class="extended-label">❤️ Total Likes</span><span class="extended-value" id="total-likes">0</span></div>
-                <div class="extended-stat"><span class="extended-label">🔄 Total Shares</span><span class="extended-value" id="total-shares">0</span></div>
-                <div class="extended-stat"><span class="extended-label">👤 Unique Viewers</span><span class="extended-value" id="unique-viewers">0</span></div>
-                <div class="extended-stat"><span class="extended-label">⏱️ Avg. Session</span><span class="extended-value" id="avg-session">0:00</span></div>
-                <div class="extended-stat"><span class="extended-label">📉 Bounce Rate</span><span class="extended-value" id="bounce-rate">0%</span></div>
+                <div class="extended-stat"><span class="extended-label"><i class="fas fa-box"></i> Total Content</span><span class="extended-value" id="total-content">0</span></div>
+                <div class="extended-stat"><span class="extended-label"><i class="fas fa-heart"></i> Total Likes</span><span class="extended-value" id="total-likes">0</span></div>
+                <div class="extended-stat"><span class="extended-label"><i class="fas fa-share-alt"></i> Total Shares</span><span class="extended-value" id="total-shares">0</span></div>
+                <div class="extended-stat"><span class="extended-label"><i class="fas fa-user"></i> Unique Viewers</span><span class="extended-value" id="unique-viewers">0</span></div>
+                <div class="extended-stat"><span class="extended-label"><i class="fas fa-stopwatch"></i> Avg. Session</span><span class="extended-value" id="avg-session">0:00</span></div>
+                <div class="extended-stat"><span class="extended-label"><i class="fas fa-chart-line"></i> Bounce Rate</span><span class="extended-value" id="bounce-rate">0%</span></div>
             </div>
             <div class="analytics-chart-top-content-row">
                 <div class="charts-container">
@@ -700,10 +655,10 @@
             <div class="audience-insights">
                 <h3><i class="fas fa-users" style="color: var(--bantu-blue);"></i> Audience Insights</h3>
                 <div class="insights-grid">
-                    <div class="insight-card"><span class="insight-label">🔄 Returning Viewers</span><span class="insight-value" id="returning-viewers">0%</span></div>
-                    <div class="insight-card"><span class="insight-label">✨ New Viewers</span><span class="insight-value" id="new-viewers">0%</span></div>
-                    <div class="insight-card"><span class="insight-label">🌙 Peak Time</span><span class="insight-value" id="peak-time">--:--</span></div>
-                    <div class="insight-card"><span class="insight-label">📅 Best Day</span><span class="insight-value" id="best-day">--</span></div>
+                    <div class="insight-card"><span class="insight-label"><i class="fas fa-sync-alt"></i> Returning Viewers</span><span class="insight-value" id="returning-viewers">0%</span></div>
+                    <div class="insight-card"><span class="insight-label"><i class="fas fa-user-plus"></i> New Viewers</span><span class="insight-value" id="new-viewers">0%</span></div>
+                    <div class="insight-card"><span class="insight-label"><i class="fas fa-moon"></i> Peak Time</span><span class="insight-value" id="peak-time">--:--</span></div>
+                    <div class="insight-card"><span class="insight-label"><i class="fas fa-calendar-day"></i> Best Day</span><span class="insight-value" id="best-day">--</span></div>
                 </div>
             </div>
         </div>
