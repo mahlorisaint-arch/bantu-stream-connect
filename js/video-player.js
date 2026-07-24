@@ -1149,12 +1149,26 @@
     // 4. 🌉 Deploy the orphaned controls bridge
     _setupOrphanedControlsBridge();
     
-    // 5. ☢️ Deploy Nuclear Bridge V2 (Ancestral Force Loop)
-    _deployNuclearBridgeV2();
+    // 5/6. ☢️ Nuclear Bridge V2 / Absolute Structural Override Matrix — NOT
+    // invoked. Both were legacy patches for an older, more broken player
+    // markup (targeting classes like .player-controls/.control-bar/
+    // .video-controls/.controls-container that don't exist in the current
+    // real markup, so their injected CSS is inert). But Nuclear Bridge V2's
+    // ancestor-force-walk (`__bantuForceVisibilityExecutionLoop`) doesn't
+    // match by those class names — it starts from `.play-pause-btn` (which
+    // DOES exist) and, every 150ms plus on every fullscreenchange/resize
+    // while in fullscreen, force-sets `position:absolute !important;
+    // inset:0 !important` on `.enhanced-video-controls` (the real controls
+    // wrapper) with `opacity:1 !important`. That's what permanently forced
+    // the controls visible in fullscreen (defeating the auto-hide timer)
+    // and stretched the controls wrapper to cover the entire video —
+    // reported as "the whole player including content overlaid by
+    // something" — and it re-fired on every orientation change via its own
+    // resize listener, so rotating never cleared it. The real player's own
+    // `.video-container:fullscreen` CSS and the auto-hide JS already handle
+    // fullscreen correctly without any of this. Function definitions are
+    // left in place (harmless while never called) rather than deleted.
 
-    // 6. ☢️ Deploy Absolute Structural Override Matrix (Fullscreen Hijack)
-    _deployAbsoluteStructuralOverride();
-    
     console.log('✅ Player interaction fixes initialized');
   }
 
