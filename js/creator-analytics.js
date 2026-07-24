@@ -395,10 +395,15 @@ class CreatorAnalytics {
         const dateFilter = this._getDateFilter(timeRange, activeFilters.customDateRange);
         const contentTypeFilter = this._getContentTypeFilter(activeFilters.contentType);
         
-        // Build content query
+        // Build content query. views_count/likes_count are NOT real columns
+        // on Content (same bug already fixed in _calculateSummary() —
+        // confirmed via the live schema, only comments_count/shares_count
+        // exist there), so selecting them here made this whole query throw
+        // a 400 on every call. comments_count is real and kept; real likes
+        // come from content_engagement_stats below instead.
         let contentQuery = this.supabase
           .from('Content')
-          .select('id, title, created_at, duration, thumbnail_url, views_count, likes_count, comments_count, media_type, user_id')
+          .select('id, title, created_at, duration, thumbnail_url, comments_count, media_type, user_id')
           .eq('user_id', this.userId)
           .eq('status', 'published');
         
@@ -417,7 +422,16 @@ class CreatorAnalytics {
         if (!content || content.length === 0) return [];
         
         const contentIds = content.map(c => c.id);
-        
+
+        // Real per-content likes from content_engagement_stats.
+        const { data: statsRows, error: statsError } = await this.supabase
+          .from('content_engagement_stats')
+          .select('content_id, total_likes')
+          .in('content_id', contentIds);
+        if (statsError) throw statsError;
+        const likesByContent = {};
+        (statsRows || []).forEach(row => { likesByContent[row.content_id] = row.total_likes || 0; });
+
         // ✅ 5G: Apply audience segment filter
         const filteredViewerIds = await this._getAudienceSegmentFilter(
           activeFilters.audienceSegment,
@@ -470,7 +484,8 @@ class CreatorAnalytics {
           const avgCompletionRate = item.duration && item.duration > 0
             ? (avgWatchTime / item.duration) * 100
             : 0;
-          const totalEngagements = (item.likes_count || 0) + (item.comments_count || 0);
+          const itemLikes = likesByContent[item.id] || 0;
+          const totalEngagements = itemLikes + (item.comments_count || 0);
           const engagementRate = analytics.totalViews > 0
             ? (totalEngagements / analytics.totalViews) * 100
             : 0;
@@ -478,12 +493,12 @@ class CreatorAnalytics {
           return {
             ...item,
             analytics: {
-              totalViews: analytics.totalViews || item.views_count || 0,
+              totalViews: analytics.totalViews || 0,
               uniqueViewers: analytics.uniqueViewers.size,
               totalWatchTime: analytics.totalWatchTime,
               avgWatchTime: Math.round(avgWatchTime * 100) / 100,
               avgCompletionRate: Math.min(100, Math.round(avgCompletionRate * 100) / 100),
-              totalLikes: item.likes_count || 0,
+              totalLikes: itemLikes,
               totalComments: item.comments_count || 0,
               engagementRate: Math.round(engagementRate * 100) / 100
             }

@@ -443,7 +443,13 @@
   function renderViewsChart(content) {
     const ctx = dom.viewsChart;
     if (!ctx || typeof Chart === 'undefined') return;
-    
+    // The empty-state branch below replaces ctx.parentNode's innerHTML,
+    // which detaches this canvas from the DOM. If this function runs again
+    // afterward (e.g. the page's own error-recovery re-init), dom.viewsChart
+    // still points at that now-detached node, whose .parentNode is null —
+    // guard against that instead of throwing.
+    if (!ctx.parentNode) return;
+
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const data = (content || []).slice(0, 7).map(function(c) {
       const analytics = c.analytics || c;
@@ -492,7 +498,9 @@
   function renderWatchTimeChart(content) {
     const ctx = dom.watchTimeChart;
     if (!ctx || typeof Chart === 'undefined') return;
-    
+    // See renderViewsChart() above for why this guard is needed.
+    if (!ctx.parentNode) return;
+
     const labels = (content || []).slice(0, 7).map(function(_, i) {
       return `Day ${i + 1}`;
     });
@@ -548,6 +556,8 @@
   function renderEngagementChart(summary) {
     const ctx = dom.engagementChart;
     if (!ctx || typeof Chart === 'undefined') return;
+    // See renderViewsChart() above for why this guard is needed.
+    if (!ctx.parentNode) return;
     if (charts.engagement) charts.engagement.destroy();
 
     const likes = summary?.total_likes || 0;
@@ -586,37 +596,56 @@
     if (!contentList || contentList.length === 0) {
       console.log('📊 Fetching basic content as fallback...');
       
-      // Try to fetch basic content directly from Content table
+      // Try to fetch basic content directly from Content table.
+      // views_count/likes_count are NOT real columns on Content (same bug
+      // already fixed in creator-analytics.js — confirmed via the live
+      // schema, only comments_count/shares_count exist there), and ordering
+      // by views_count doesn't work either for the same reason. Real views/
+      // likes now come from a batched content_engagement_stats query below,
+      // and this orders by created_at (recency) instead.
       try {
         const supabaseClient = window.supabaseClient || window.SupabaseHelper?.client;
         if (supabaseClient && currentUser?.id) {
           const { data: basicContent, error } = await supabaseClient
             .from('Content')
-            .select('id, title, thumbnail_url, views_count, likes_count, comments_count, duration, created_at')
+            .select('id, title, thumbnail_url, comments_count, duration, created_at')
             .eq('user_id', currentUser.id)
             .eq('status', 'published')
-            .order('views_count', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(10);
-          
+
           if (!error && basicContent?.length > 0) {
             console.log('📊 Found', basicContent.length, 'basic content items for fallback');
-            
+
+            const contentIds = basicContent.map(item => item.id);
+            const { data: statsRows } = await supabaseClient
+              .from('content_engagement_stats')
+              .select('content_id, total_views, total_likes')
+              .in('content_id', contentIds);
+            const statsByContent = {};
+            (statsRows || []).forEach(row => { statsByContent[row.content_id] = row; });
+
             // Transform to match expected format
-            const transformedContent = basicContent.map(item => ({
-              ...item,
-              analytics: {
-                totalViews: item.views_count || 0,
-                totalWatchTime: 0,
-                avgWatchTime: 0,
-                avgCompletionRate: 0,
-                totalLikes: item.likes_count || 0,
-                totalComments: item.comments_count || 0,
-                engagementRate: item.views_count > 0 
-                  ? Math.round(((item.likes_count || 0) + (item.comments_count || 0)) / item.views_count * 100) 
-                  : 0
-              }
-            }));
-            
+            const transformedContent = basicContent.map(item => {
+              const stats = statsByContent[item.id] || {};
+              const views = stats.total_views || 0;
+              const likes = stats.total_likes || 0;
+              return {
+                ...item,
+                analytics: {
+                  totalViews: views,
+                  totalWatchTime: 0,
+                  avgWatchTime: 0,
+                  avgCompletionRate: 0,
+                  totalLikes: likes,
+                  totalComments: item.comments_count || 0,
+                  engagementRate: views > 0
+                    ? Math.round((likes + (item.comments_count || 0)) / views * 100)
+                    : 0
+                }
+              };
+            });
+
             renderTopContentTable(transformedContent);
             return;
           }
