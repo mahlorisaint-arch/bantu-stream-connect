@@ -916,60 +916,60 @@
   
   .creator-details h3,
   #creatorDisplayName {
-    font-size: 12px !important;
+    font-size: 14px !important;
     margin: 0 !important;
     line-height: 1.2 !important;
   }
-  
+
   .creator-details p {
-    font-size: 8px !important;
+    font-size: 11px !important;
     gap: 3px !important;
     margin: 0 !important;
     line-height: 1.2 !important;
   }
-  
+
   .creator-details p i {
-    font-size: 7px !important;
-  }
-  
-  .connect-btn {
-    padding: 6px 14px !important;
     font-size: 10px !important;
+  }
+
+  .connect-btn {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
     border-radius: 28px !important;
-    gap: 4px !important;
+    gap: 5px !important;
     flex-shrink: 0 !important;
   }
-  
+
   .creator-bio {
     margin-top: 10px !important;
     padding-top: 10px !important;
-    font-size: 9px !important;
+    font-size: 12px !important;
   }
-  
+
   .bio-toggle {
-    font-size: 9px !important;
+    font-size: 11px !important;
     padding: 1px 0 !important;
     margin-top: 3px !important;
   }
-  
+
   .bio-toggle i {
-    font-size: 7px !important;
+    font-size: 10px !important;
   }
-  
+
   .creator-social {
     gap: 6px !important;
     margin-top: 10px !important;
   }
-  
+
   .social-link {
-    padding: 3px 8px !important;
-    font-size: 9px !important;
+    padding: 4px 10px !important;
+    font-size: 11px !important;
     border-radius: 12px !important;
-    gap: 3px !important;
+    gap: 4px !important;
   }
-  
+
   .social-link i {
-    font-size: 9px !important;
+    font-size: 11px !important;
   }
 
   /* --- 3D HOLOGRAPHIC TOKEN - RESPONSIVE OVERRIDES (REDUCED) --- */
@@ -1057,23 +1057,23 @@
   
   .creator-details h3,
   #creatorDisplayName {
-    font-size: 11px !important;
+    font-size: 13px !important;
     margin: 0 !important;
   }
-  
+
   .creator-details p {
-    font-size: 7px !important;
+    font-size: 10px !important;
     margin: 0 !important;
     gap: 2px !important;
   }
-  
+
   .creator-details p i {
-    font-size: 6px !important;
-  }
-  
-  .connect-btn {
-    padding: 5px 12px !important;
     font-size: 9px !important;
+  }
+
+  .connect-btn {
+    padding: 7px 14px !important;
+    font-size: 11px !important;
   }
 }
 
@@ -1117,81 +1117,81 @@
   
   .creator-details h3,
   #creatorDisplayName {
+    font-size: 12px !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  .creator-details p {
     font-size: 9px !important;
     margin: 0 !important;
-    line-height: 1.1 !important;
-  }
-  
-  .creator-details p {
-    font-size: 6px !important;
-    margin: 0 !important;
     gap: 2px !important;
     line-height: 1.1 !important;
   }
-  
+
   .creator-details p i {
-    font-size: 5px !important;
+    font-size: 8px !important;
   }
-  
+
   .connect-btn {
-    padding: 3px 8px !important;
-    font-size: 7px !important;
+    padding: 6px 12px !important;
+    font-size: 10px !important;
     border-radius: 16px !important;
-    gap: 2px !important;
+    gap: 4px !important;
     flex-shrink: 0 !important;
   }
-  
+
   .connect-btn i {
-    font-size: 6px !important;
+    font-size: 10px !important;
   }
-  
+
   .connect-btn span {
     display: inline !important;
-    font-size: 7px !important;
+    font-size: 10px !important;
   }
-  
+
   .creator-bio {
     margin-top: 6px !important;
     padding-top: 6px !important;
-    font-size: 6px !important;
+    font-size: 10px !important;
   }
-  
+
   .bio-toggle {
-    font-size: 6px !important;
+    font-size: 10px !important;
     padding: 1px 0 !important;
     margin-top: 2px !important;
   }
-  
+
   .bio-toggle i {
-    font-size: 5px !important;
+    font-size: 9px !important;
   }
-  
+
   .creator-social {
     gap: 4px !important;
     margin-top: 6px !important;
   }
-  
+
   .social-link {
-    padding: 2px 5px !important;
-    font-size: 6px !important;
+    padding: 3px 7px !important;
+    font-size: 10px !important;
     border-radius: 8px !important;
-    gap: 2px !important;
+    gap: 3px !important;
   }
-  
+
   .social-link i {
-    font-size: 6px !important;
+    font-size: 10px !important;
   }
-  
+
   .social-link span {
     display: none !important;
   }
-  
+
   .social-link {
-    padding: 2px 5px !important;
+    padding: 3px 7px !important;
   }
-  
+
   .social-link i {
-    font-size: 8px !important;
+    font-size: 10px !important;
     margin: 0 !important;
   }
 
