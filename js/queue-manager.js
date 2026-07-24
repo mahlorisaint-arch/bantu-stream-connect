@@ -316,18 +316,17 @@
       this._dom.queueList = document.querySelector('.queue-list, .playlist-queue');
       this._dom.videoElement = document.getElementById('inlineVideoPlayer');
 
-      // Prev/Next only make sense with an actual queue behind them — the
-      // player's default visual spec doesn't include them at all, so both
-      // stay hidden until a real multi-item queue exists. The mobile/tablet
-      // center-overlay prev/next (centerPrevBtn/centerNextBtn) mirror the
-      // same bottom-bar buttons' clicks, so they follow the same rule here.
+      // Bottom-bar Prev/Next (laptop/desktop) only make sense with an actual
+      // queue behind them — the player's default visual spec doesn't
+      // include them at all, so both stay hidden until a real multi-item
+      // queue exists. The mobile/tablet center-overlay prev/next
+      // (centerPrevBtn/centerNextBtn) are deliberately NOT gated the same
+      // way — they always show/hide together with the center play button,
+      // and simply no-op (playPrevious()/playNext() already guard for an
+      // empty queue) when there's nothing to skip to.
       const hasQueue = this.queue.length > 1;
-      const centerNextBtn = document.getElementById('centerNextBtn');
-      const centerPrevBtn = document.getElementById('centerPrevBtn');
       if (this._dom.nextBtn) this._dom.nextBtn.style.display = hasQueue ? '' : 'none';
       if (this._dom.prevBtn) this._dom.prevBtn.style.display = hasQueue ? '' : 'none';
-      if (centerNextBtn) centerNextBtn.style.display = hasQueue ? '' : 'none';
-      if (centerPrevBtn) centerPrevBtn.style.display = hasQueue ? '' : 'none';
 
       // Next button
       if (this._dom.nextBtn) {

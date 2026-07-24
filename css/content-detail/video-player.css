@@ -1701,7 +1701,10 @@ input:checked + .toggle-slider:before {
   }
 
   .enhanced-video-controls .progress-container {
-    min-height: 14px !important;
+    /* Kept sleek/futuristic on touch devices too — was 14px, visually
+       chunky. The bigger tap target lives on the thumb below, not the
+       track itself. */
+    min-height: 6px !important;
   }
 
   .enhanced-video-controls .progress-container .progress-bar::-webkit-slider-thumb {
