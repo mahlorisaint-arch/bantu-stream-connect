@@ -70,8 +70,10 @@
 }
 
 .sort-select {
-  background: rgba(255, 255, 255, 0.08);
-  border: none;
+  background: rgba(10, 14, 18, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 999px;
   padding: 6px 14px;
   color: var(--soft-white);
@@ -80,11 +82,23 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  /* Native <select> option-list chrome is OS/browser-controlled and
+     can't be fully glassmorphic-styled from CSS in any browser — this
+     covers the closed/resting state, which is all that's stylable. */
+  color-scheme: dark;
 }
 
-.sort-select:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(0, 229, 255, 0.3);
+.sort-select:hover,
+.sort-select:focus {
+  background: rgba(10, 14, 18, 0.75);
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
+  outline: none;
+}
+
+.sort-select option {
+  background: #0A0E12;
+  color: var(--soft-white);
 }
 
 /* Refresh button */
