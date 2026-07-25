@@ -73,7 +73,8 @@
 .info-bar-creator-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
 }
 
 .info-bar-creator-name {
@@ -278,6 +279,28 @@
   background: rgba(0, 229, 255, 0.12);
 }
 
+/* Share/Save/Favorite get relocated in here on mobile/tablet (see
+   hero-section.js relocateSecondaryActionsForViewport) — override their
+   .action-pill look to read as plain menu rows instead of floating
+   pills once they're inside the dropdown. */
+.info-bar-more-menu .action-pill {
+  height: auto;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  justify-content: flex-start;
+}
+
+.info-bar-more-menu .action-pill:hover {
+  background: rgba(0, 229, 255, 0.12);
+  border: none;
+}
+
+.info-bar-more-menu .action-pill span {
+  display: inline !important;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 768px) {
@@ -313,11 +336,6 @@
 }
 
 @media (max-width: 480px) {
-  .info-bar-sub,
-  .info-bar-dot {
-    display: none;
-  }
-
   .info-bar-right {
     gap: 6px;
   }

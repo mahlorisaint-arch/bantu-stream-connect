@@ -86,23 +86,20 @@
   gap: 16px;
 }
 
-/* Related content card */
+/* Related content card — flat, no boxed card (matches creator-channel's
+   .upload-card): the thumbnail is the only element with visual chrome,
+   title/metadata sit directly on the page below it. */
 .related-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  overflow: hidden;
-  transition: all 0.3s ease;
   cursor: pointer;
+  transition: transform 0.2s ease;
   text-decoration: none;
   color: inherit;
+  display: block;
   position: relative;
 }
 
 .related-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
-  border-color: rgba(0, 229, 255, 0.35);
+  transform: translateY(-4px);
 }
 
 /* ============================================ */
@@ -114,6 +111,8 @@
   width: 100%;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
 .related-card .card-thumbnail img {
@@ -206,19 +205,18 @@
 /* CARD CONTENT */
 /* ============================================ */
 .related-card .card-content {
-  padding: 12px;
+  padding: 0;
 }
 
 .related-card .card-title {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0 0 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 38px;
   color: var(--soft-white);
   line-height: 1.4;
   transition: color 0.2s ease;
@@ -228,12 +226,12 @@
   color: #00E5FF;
 }
 
-/* Card metadata row */
+/* Card metadata row — plain inline text, matching creator-channel's
+   .upload-card__meta (no chip/pill backgrounds). */
 .card-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 4px 10px;
   flex-wrap: wrap;
 }
 
@@ -241,26 +239,28 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-family: 'Inter', sans-serif;
   color: var(--slate-grey);
 }
 
 .views-count i {
-  font-size: 11px;
+  font-size: 10px;
   color: #00E5FF;
 }
 
-/* Like count badge */
+/* Like count */
 .like-count {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  color: var(--slate-grey);
+}
+
+.like-count i {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  padding: 2px 6px;
-  border-radius: 999px;
 }
 
 /* Genre tag */
@@ -268,32 +268,25 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(0, 229, 255, 0.12);
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 10px;
+  font-size: 11px;
   font-family: 'Inter', sans-serif;
   color: #00E5FF;
 }
 
-/* Creator chip */
+/* Creator name */
 .creator-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 4px 10px;
-  border-radius: 999px;
+  gap: 5px;
   font-size: 11px;
   font-family: 'Inter', sans-serif;
   color: var(--slate-grey);
-  margin-top: 8px;
-  transition: all 0.2s ease;
+  margin-top: 2px;
+  transition: color 0.2s ease;
   width: fit-content;
 }
 
 .related-card:hover .creator-chip {
-  background: rgba(0, 229, 255, 0.12);
   color: var(--soft-white);
 }
 

@@ -275,8 +275,8 @@
 <div class="sidebar-menu" id="sidebar-menu">
     <div class="sidebar-header">
         <div class="sidebar-logo" onclick="window.location.href='index.html'">
-            <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Logo"></div>
-            <span class="sidebar-logo-text">BANTU</span>
+            <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+            <span class="sidebar-logo-text">BSC</span>
         </div>
         <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
     </div>
@@ -289,59 +289,70 @@
         <i class="fas fa-chevron-right"></i>
     </div>
     <nav class="sidebar-nav">
-        <div class="sidebar-section" data-section="main">
-            <div class="sidebar-section-header" data-toggle="main"><span>MAIN</span><i class="fas fa-chevron-up toggle-icon"></i></div>
-            <div class="sidebar-section-items" id="section-main">
-                <a href="index.html" class="sidebar-nav-item active"><i class="fas fa-home"></i><span>Home</span></a>
-                <a href="explore-screen.html" class="sidebar-nav-item"><i class="fas fa-compass"></i><span>Explore</span></a>
-                <a href="trending.html" class="sidebar-nav-item"><i class="fas fa-fire"></i><span>Trending</span></a>
-                <a href="creators.html" class="sidebar-nav-item"><i class="fas fa-users"></i><span>Discover Creators</span></a>
-            </div>
+
+        <!-- MAIN -->
+        <div class="sidebar-section" data-section-id="main">
+          <div class="sidebar-section-header">
+            <span>MAIN</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="sidebar-section-items">
+            <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+            <a href="explore-screen.html" class="sidebar-nav-item" data-page="explore"><i class="fas fa-compass"></i><span>Explore</span></a>
+            <a href="trending_screen.html" class="sidebar-nav-item" data-page="trending"><i class="fas fa-fire"></i><span>Trending</span></a>
+            <a href="discover-creator.html" class="sidebar-nav-item" data-page="creators"><i class="fas fa-users"></i><span>Discover Creators</span></a>
+          </div>
         </div>
-        <div class="sidebar-section" data-section="categories">
-            <div class="sidebar-section-header" data-toggle="categories"><span>CATEGORIES</span><i class="fas fa-chevron-up toggle-icon"></i></div>
-            <div class="sidebar-section-items" id="section-categories">
-                <a href="#" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="stem"><i class="fas fa-atom"></i><span>STEM</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="culture"><i class="fas fa-palette"></i><span>Culture</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="news"><i class="fas fa-newspaper"></i><span>News</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="sports"><i class="fas fa-futbol"></i><span>Sports</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="documentaries"><i class="fas fa-video"></i><span>Documentaries</span></a>
-                <a href="#" class="sidebar-nav-item" data-category="podcasts"><i class="fas fa-microphone-alt"></i><span>Podcasts</span></a>
-            </div>
+
+        <!-- CATEGORIES -->
+        <div class="sidebar-section" data-section-id="categories">
+          <div class="sidebar-section-header">
+            <span>CATEGORIES</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="sidebar-section-items">
+            <a href="category/movies.html" class="sidebar-nav-item" data-category="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+            <a href="category/music.html" class="sidebar-nav-item" data-category="music"><i class="fas fa-music"></i><span>Music</span></a>
+          </div>
         </div>
-        <div class="sidebar-section" data-section="your-content">
-            <div class="sidebar-section-header" data-toggle="your-content"><span>YOU</span><i class="fas fa-chevron-up toggle-icon"></i></div>
-            <div class="sidebar-section-items" id="section-your-content">
-                <a href="library.html" class="sidebar-nav-item"><i class="fas fa-book"></i><span>Library</span></a>
-                <a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
-                <a href="my-uploads.html" class="sidebar-nav-item"><i class="fas fa-upload"></i><span>My Uploads</span></a>
-            </div>
+
+        <!-- YOU -->
+        <div class="sidebar-section" data-section-id="you">
+          <div class="sidebar-section-header">
+            <span>YOU</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="sidebar-section-items">
+            <a href="my-space.html" class="sidebar-nav-item" data-page="my-space"><i class="fas fa-layer-group"></i><span>My Space</span></a>
+            <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+          </div>
         </div>
-        <div class="sidebar-section creator-only" data-section="creator" style="display: none;">
-            <div class="sidebar-section-header" data-toggle="creator"><span>CREATOR</span><i class="fas fa-chevron-up toggle-icon"></i></div>
-            <div class="sidebar-section-items" id="section-creator">
-                <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
-                <a href="creator-analytics.html" class="sidebar-nav-item"><i class="fas fa-chart-line"></i><span>Creator Analytics</span></a>
-                <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
-            </div>
+
+        <!-- CREATOR (hidden until checkAndShowCreatorSection confirms published content) -->
+        <div class="sidebar-section creator-only" data-section-id="creator" style="display: none;">
+          <div class="sidebar-section-header">
+            <span>CREATOR</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="sidebar-section-items">
+            <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+            <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+          </div>
         </div>
-        <div class="sidebar-section" data-section="community">
-            <div class="sidebar-section-header" data-toggle="community"><span>COMMUNITY</span><i class="fas fa-chevron-up toggle-icon"></i></div>
-            <div class="sidebar-section-items" id="section-community">
-                <a href="index.html#community-pulse" class="sidebar-nav-item"><i class="fas fa-heart"></i><span>Community Pulse</span></a>
-                <a href="#" class="sidebar-nav-item" id="sidebar-watch-party"><i class="fas fa-users"></i><span>Watch Party</span></a>
-                <a href="#" class="sidebar-nav-item" id="sidebar-badges"><i class="fas fa-medal"></i><span>My Badges</span></a>
-            </div>
+
+        <!-- ACCOUNT -->
+        <div class="sidebar-section" data-section-id="account">
+          <div class="sidebar-section-header">
+            <span>ACCOUNT</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+          </div>
+          <div class="sidebar-section-items">
+            <a href="settings.html" class="sidebar-nav-item" data-page="settings"><i class="fas fa-cog"></i><span>Settings</span></a>
+            <a href="manage-profiles.html" class="sidebar-nav-item" data-page="profiles"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+            <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+          </div>
         </div>
-        <div class="sidebar-section" data-section="account">
-            <div class="sidebar-section-header" data-toggle="account"><span>ACCOUNT</span><i class="fas fa-chevron-up toggle-icon"></i></div>
-            <div class="sidebar-section-items" id="section-account">
-                <a href="manage-profiles.html" class="sidebar-nav-item"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
-                <a href="#" class="sidebar-nav-item" id="sidebar-logout"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
-            </div>
-        </div>
+
     </nav>
     <div class="sidebar-footer">
         <div class="creator-mode-toggle" id="creatorModeToggle" style="display: none;">
@@ -364,21 +375,15 @@
 
 <!-- Main App -->
 <div id="app" style="display: none;">
-    <header class="header">
+    <header class="header" id="site-header">
         <div class="logo" onclick="window.location.href='index.html'">
-            <button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
-            <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="Logo"></div>
-            <div class="logo-text">BANTU STREAM CONNECT</div>
+            <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu"><i class="fas fa-bars"></i></button>
+            <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+            <div class="logo-text">BSC</div>
         </div>
         <div class="header-actions">
-            <button id="voice-search-btn" class="icon-btn"><i class="fas fa-microphone"></i></button>
-<button id="analytics-btn" class="icon-btn" title="Analytics Dashboard" aria-label="Analytics Dashboard">
-    <i class="fas fa-chart-line"></i>
-</button>
-        
-<button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
+<button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
     <i class="fas fa-search"></i>
-    <span class="search-shortcut">⌘K</span>
 </button>
 
            <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">

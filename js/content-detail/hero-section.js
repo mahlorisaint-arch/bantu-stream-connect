@@ -741,10 +741,54 @@ function setupInfoBarMiscControls() {
     }
 }
 
+/**
+ * On mobile/tablet, Share/Save/Favorite move into the More (⋮) dropdown
+ * alongside Playlist/Close Player instead of sitting in the main pill
+ * row — same real buttons/ids/click handlers, just relocated in the DOM
+ * so the visible row stays to Like/Dislike/More. Moved back into the
+ * main row above the breakpoint. Re-runs on viewport changes (e.g.
+ * rotating a tablet) via matchMedia, not just once on load.
+ */
+function setupResponsiveActionRelocation() {
+    const shareBtn = document.getElementById('shareBtn');
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const infoBarRight = document.querySelector('.info-bar-right');
+    const moreMenu = document.getElementById('infoBarMoreMenu');
+    const moreWrap = document.querySelector('.info-bar-more-wrap');
+    const albumToggleBtn = document.getElementById('albumToggleBtn');
+
+    if (!shareBtn || !watchLaterBtn || !favoriteBtn || !infoBarRight || !moreMenu || !moreWrap) {
+        return;
+    }
+
+    const mql = window.matchMedia('(max-width: 768px)');
+
+    function relocate(isCompact) {
+        if (isCompact) {
+            const anchor = albumToggleBtn || moreMenu.firstChild;
+            [shareBtn, watchLaterBtn, favoriteBtn].forEach(btn => {
+                moreMenu.insertBefore(btn, anchor);
+            });
+        } else {
+            [shareBtn, watchLaterBtn, favoriteBtn].forEach(btn => {
+                infoBarRight.insertBefore(btn, moreWrap);
+            });
+        }
+    }
+
+    relocate(mql.matches);
+    mql.addEventListener('change', (e) => relocate(e.matches));
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupInfoBarMiscControls);
+    document.addEventListener('DOMContentLoaded', () => {
+        setupInfoBarMiscControls();
+        setupResponsiveActionRelocation();
+    });
 } else {
     setupInfoBarMiscControls();
+    setupResponsiveActionRelocation();
 }
 
 // ============================================
