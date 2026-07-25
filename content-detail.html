@@ -384,6 +384,7 @@
         <div class="header-actions">
 <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
     <i class="fas fa-search"></i>
+    <span class="search-shortcut">⌘K</span>
 </button>
 
            <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">
@@ -877,7 +878,7 @@
 </section>
     </main>
 
-    <footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
+    <footer class="footer"><p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
 
     <div class="navigation-button-container"><div class="navigation-button"><div class="nav-icon" id="nav-home-btn"><i class="fas fa-home"></i></div><div class="nav-icon" id="nav-history-btn"><i class="fas fa-history"></i></div><div class="nav-icon" id="nav-create-btn"><i class="fas fa-plus-circle"></i></div><div class="nav-icon" id="nav-menu-btn"><i class="fas fa-bars"></i></div></div></div>
 
@@ -1137,43 +1138,26 @@
 </div>
 
     <!-- ============================================ -->
-<!-- NOTIFICATIONS PANEL - COMPLETE -->
+<!-- NOTIFICATIONS PANEL - canonical structure, copied
+     verbatim from category/music.html so this page uses
+     the exact same shared-components.css/.js-driven panel
+     as every other page (tabs, cyan styling, working
+     Settings button id) instead of a page-specific copy. -->
 <!-- ============================================ -->
-<div id="notifications-panel" class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
-    
-    <!-- Notifications Header -->
-    <div class="notifications-header">
-        <h2>
-            <i class="fas fa-bell" style="color: var(--warm-gold);"></i> 
-            Notifications
-            <span class="notification-count-badge" id="notifications-header-count">0</span>
-        </h2>
-        <div class="notifications-header-actions">
-            <button id="mark-all-read" class="text-btn" title="Mark all as read" style="background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:12px;font-weight:500;padding:6px 12px;border-radius:6px;transition:all 0.3s ease;display:flex;align-items:center;gap:4px;">
-                <i class="fas fa-check-double"></i> Mark all read
-            </button>
-            <button id="close-notifications" class="close-btn" title="Close notifications" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:16px;flex-shrink:0;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Notifications List -->
-    <div id="notifications-list" class="notifications-list">
-        <!-- Notifications will be dynamically rendered here -->
-        <div class="empty-notifications">
-            <i class="fas fa-bell-slash"></i>
-            <p>No notifications yet</p>
-            <span>When you get notifications, they'll appear here</span>
-        </div>
-    </div>
-
-    <!-- Notifications Footer -->
-    <div class="notifications-footer">
-        <button id="notification-settings" class="text-btn" style="width:100%;background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:13px;font-weight:500;padding:10px;border-radius:8px;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;gap:8px;">
-            <i class="fas fa-cog"></i> Settings
-        </button>
-    </div>
+<div id="notifications-panel" class="notifications-panel">
+  <div class="notifications-header">
+    <h2>Notifications <span id="notifications-header-count"></span></h2>
+    <button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notification-tabs-container">
+    <button class="notification-tab active" data-tab="all">All</button>
+    <button class="notification-tab" data-tab="unread">Unread</button>
+  </div>
+  <div class="notifications-list" id="notifications-list"></div>
+  <div class="notifications-footer">
+    <button id="mark-all-read" class="text-btn">Mark all as read</button>
+    <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+  </div>
 </div>
     <div id="theme-selector" class="theme-selector"><button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button><button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button><button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button></div>
 

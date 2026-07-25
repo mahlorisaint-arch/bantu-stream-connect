@@ -1119,7 +1119,7 @@ function setupNotifications() {
     const panel = document.getElementById('notifications-panel');
     const closeBtn = document.getElementById('close-notifications');
     const markAllReadBtn = document.getElementById('mark-all-read');
-    const settingsBtn = document.getElementById('notification-settings');
+    const settingsBtn = document.getElementById('notification-settings-btn');
 
     if (!notificationsBtn || !panel) return;
 

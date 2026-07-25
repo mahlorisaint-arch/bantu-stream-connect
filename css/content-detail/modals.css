@@ -816,182 +816,15 @@
 /* ============================================ */
 /* LEGACY SEARCH MODAL - DEPRECATED (Kept for backward compatibility) */
 /* ============================================ */
-.search-modal-legacy {
-  display: none;
-}
-
-/* ============================================ */
-/* NOTIFICATIONS PANEL */
-/* ============================================ */
-.notifications-panel {
-  position: fixed;
-  top: 0;
-  right: -400px;
-  width: 380px;
-  height: 100%;
-  background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid var(--card-border);
-  z-index: 1001;
-  transition: right 0.3s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.notifications-panel.active {
-  right: 0;
-}
-
-.notifications-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--card-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notifications-header h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--soft-white);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.notification-count {
-  background: var(--bantu-blue);
-  color: white;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 20px;
-}
-
-.mark-all-read {
-  background: none;
-  border: none;
-  color: var(--bantu-blue);
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.mark-all-read:hover {
-  color: var(--warm-gold);
-}
-
-.notifications-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.notification-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
-  border: 1px solid var(--card-border);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  gap: 12px;
-  position: relative;
-}
-
-.notification-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateX(4px);
-}
-
-.notification-item.unread {
-  border-left: 3px solid var(--bantu-blue);
-  background: rgba(29, 78, 216, 0.1);
-}
-
-.notification-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(29, 78, 216, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.notification-icon i {
-  font-size: 18px;
-  color: var(--bantu-blue);
-}
-
-.notification-content {
-  flex: 1;
-}
-
-.notification-content h4 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--soft-white);
-  margin-bottom: 4px;
-}
-
-.notification-content p {
-  font-size: 12px;
-  color: var(--slate-grey);
-  margin-bottom: 4px;
-}
-
-.notification-time {
-  font-size: 11px;
-  color: var(--slate-grey);
-  opacity: 0.7;
-}
-
-.notification-dot {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 8px;
-  height: 8px;
-  background: var(--bantu-blue);
-  border-radius: 50%;
-}
-
-.empty-notifications {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--slate-grey);
-}
-
-.empty-notifications i {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.notifications-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--card-border);
-}
-
-.view-all-notifications {
-  width: 100%;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  color: var(--soft-white);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.view-all-notifications:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--bantu-blue);
-}
+/* Notifications panel + search-modal-legacy CSS used to live here as a full
+   independent copy of shared-components.css's .notifications-panel system —
+   an outdated structure (h3 instead of h2, no tabs, old gold/blue colors)
+   that both conflicted with and was structurally out of sync with the real
+   canonical markup. shared-components.css already owns the complete, correct,
+   cyan-styled implementation (position/tabs/header/list/item/footer/empty
+   state) used by every other page — removed the duplicate here so
+   content-detail.html renders exactly the same panel as the rest of the
+   platform instead of a second, independently-drifting copy. */
 
 /* ============================================ */
 /* THEME SELECTOR - FIXED FOR SIDEBAR OVERLAY */
@@ -1269,11 +1102,6 @@
   .analytics-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-  }
-  
-  .notifications-panel {
-    width: 100%;
-    right: -100%;
   }
   
   .playlist-modal-content {
