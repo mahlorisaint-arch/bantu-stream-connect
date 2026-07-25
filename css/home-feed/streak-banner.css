@@ -1,0 +1,30 @@
+/* ============================================ */
+/* STREAK BANNER — slim inline bar, not a card/rail */
+/* ============================================ */
+#streak-banner {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  margin: 0 0 20px 0;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 999px;
+  color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#streak-banner i {
+  color: #00E5FF;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  #streak-banner {
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+}

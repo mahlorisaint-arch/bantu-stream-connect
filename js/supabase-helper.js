@@ -170,11 +170,22 @@ const SupabaseHelper = {
             }
             
             console.log(`✅ View recorded via RPC for content ${contentId}, total views: ${data?.views || 0}`);
-            
+
             // Mark as recorded this session
             const sessionKey = `${contentId}_${finalSessionId}`;
             this._viewRecordedForSession.add(sessionKey);
-            
+
+            // Touch the watch streak on this same real "actually watched"
+            // signal (recordContentView only fires after watch-session.js's
+            // 15s/30%-of-duration threshold) rather than inventing a
+            // separate tracking mechanism. Non-critical - a failure here
+            // must never affect view recording itself.
+            if (userId) {
+                this.client.rpc('touch_watch_streak', { p_user_id: userId }).then(({ error: streakError }) => {
+                    if (streakError) console.warn('⚠️ touch_watch_streak failed:', streakError);
+                });
+            }
+
             return { success: true, views: data?.views || 0 };
             
         } catch (error) {
