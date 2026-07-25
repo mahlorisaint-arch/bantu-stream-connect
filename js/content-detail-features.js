@@ -1011,19 +1011,19 @@ async function updateWatchLaterButtonState() {
         const isInList = await window.playlistManager.isInWatchLater(window.currentContent.id);
         if (isInList) {
             btn.classList.add('active');
-            btn.innerHTML = '<i class="fas fa-check"></i><span>Saved</span>';
+            btn.innerHTML = '<i class="fas fa-bookmark"></i><span>Save</span>';
             btn.title = 'Remove from Watch Later';
             btn.setAttribute('aria-pressed', 'true');
         } else {
             btn.classList.remove('active');
-            btn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+            btn.innerHTML = '<i class="far fa-bookmark"></i><span>Save</span>';
             btn.title = 'Add to Watch Later';
             btn.setAttribute('aria-pressed', 'false');
         }
     } catch (error) {
         console.error('❌ Failed to update Watch Later button:', error);
         btn.classList.remove('active');
-        btn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+        btn.innerHTML = '<i class="far fa-bookmark"></i><span>Save</span>';
     }
 }
 

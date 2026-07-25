@@ -1,0 +1,323 @@
+/* ============================================ */
+/* CREATOR INFO BAR — the row directly below the  */
+/* player (thumbnail/title/creator/Connect on the */
+/* left, Like/Dislike/Share/Save/Favorite/More on */
+/* the right).                                    */
+/*                                                 */
+/* Deliberate, explicit exception to the platform's */
+/* gold/blue design system: this bar uses the       */
+/* player's cyan accent (#00E5FF), not gold — it's   */
+/* part of the same reference-image design as the    */
+/* player itself, confirmed directly by the user.    */
+/* ============================================ */
+
+.creator-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ---------- Left group ---------- */
+
+.info-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.info-bar-thumbnail {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--slate-grey);
+  font-size: 18px;
+}
+
+.info-bar-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-bar-meta {
+  min-width: 0;
+}
+
+.info-bar-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--soft-white);
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 420px;
+}
+
+.info-bar-creator-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-bar-creator-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--slate-grey);
+  white-space: nowrap;
+}
+
+.verified-badge {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00E5FF;
+  color: #06141A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 8px;
+}
+
+.connect-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: #00E5FF;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.connect-pill i {
+  color: #00E5FF;
+  font-size: 12px;
+}
+
+.connect-pill:hover {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.7);
+}
+
+/* ---------- Right group (action row) ---------- */
+
+.info-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.action-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.action-pill i {
+  color: var(--soft-white);
+  font-size: 14px;
+}
+
+.action-pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+/* Active/toggled state (liked, favorited, saved) — the one place these
+   pills pick up the cyan accent, signaling "you did this." */
+.action-pill.active {
+  color: #00E5FF;
+}
+.action-pill.active i {
+  color: #00E5FF;
+}
+
+.action-pill-icon-only {
+  width: 40px;
+  padding: 0;
+  gap: 0;
+}
+
+/* Resume (continue watching) — a primary CTA injected dynamically by
+   hero-section.js's addResumeButton(), not part of the reference image's
+   fixed button set, so it gets the cyan treatment like Connect to read as
+   the "do this" action rather than a neutral secondary one. */
+.resume-pill {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  color: #00E5FF;
+}
+
+.resume-pill i {
+  color: #00E5FF;
+}
+
+.resume-pill:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00E5FF;
+}
+
+/* ---------- More options (circular, matches header .icon-btn) ---------- */
+
+.info-bar-more-wrap {
+  position: relative;
+}
+
+.more-options-btn {
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.more-options-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  border-color: #00E5FF;
+}
+
+.info-bar-more-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  background: rgba(10, 14, 18, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.info-bar-more-menu.open {
+  display: flex;
+}
+
+.info-bar-more-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.info-bar-more-menu button:hover {
+  background: rgba(0, 229, 255, 0.12);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .creator-info-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .info-bar-thumbnail {
+    width: 44px;
+    height: 44px;
+  }
+
+  .info-bar-title {
+    font-size: 14px;
+    max-width: 220px;
+  }
+
+  .action-pill {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .action-pill span {
+    display: none;
+  }
+
+  .action-pill-icon-only {
+    width: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-bar-right {
+    gap: 6px;
+  }
+
+  .info-bar-title {
+    max-width: 160px;
+    font-size: 13px;
+  }
+
+  .connect-pill span {
+    display: none;
+  }
+
+  .connect-pill {
+    padding: 8px 10px;
+  }
+
+  .action-pill {
+    padding: 0 10px;
+  }
+}

@@ -104,41 +104,42 @@ function updateEngagementButtonsUI(states) {
     // Like button
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
+        const likeCount = window.formatNumber ? window.formatNumber(window.currentContent?.likes_count || 0) : (window.currentContent?.likes_count || 0);
         if (states.liked) {
             likeBtn.classList.add('active');
-            likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+            likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i><span id="likesCount">${likeCount}</span>`;
             likeBtn.setAttribute('data-liked', 'true');
         } else {
             likeBtn.classList.remove('active');
-            likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+            likeBtn.innerHTML = `<i class="far fa-thumbs-up"></i><span id="likesCount">${likeCount}</span>`;
             likeBtn.setAttribute('data-liked', 'false');
         }
     }
-    
+
     // Favorite button
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
         if (states.favorited) {
             favoriteBtn.classList.add('active');
-            favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+            favoriteBtn.innerHTML = '<i class="fas fa-heart"></i><span>Favorite</span>';
             favoriteBtn.setAttribute('data-favorited', 'true');
         } else {
             favoriteBtn.classList.remove('active');
-            favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+            favoriteBtn.innerHTML = '<i class="far fa-heart"></i><span>Favorite</span>';
             favoriteBtn.setAttribute('data-favorited', 'false');
         }
     }
-    
-    // Watch Later button
+
+    // Watch Later ("Save") button
     const watchLaterBtn = document.getElementById('watchLaterBtn');
     if (watchLaterBtn) {
         if (states.watchLater) {
             watchLaterBtn.classList.add('active');
-            watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+            watchLaterBtn.innerHTML = '<i class="fas fa-bookmark"></i><span>Save</span>';
             watchLaterBtn.setAttribute('data-watchlater', 'true');
         } else {
             watchLaterBtn.classList.remove('active');
-            watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+            watchLaterBtn.innerHTML = '<i class="far fa-bookmark"></i><span>Save</span>';
             watchLaterBtn.setAttribute('data-watchlater', 'false');
         }
     }

@@ -1759,38 +1759,33 @@ async function handleLikeButtonClick() {
     }
     
     const likeBtn = document.getElementById('likeBtn');
-    const likesCountEl = document.getElementById('likesCount');
     const isCurrentlyLiked = likeBtn?.classList.contains('active') || false;
-    
+
     // Get current count for optimistic update
-    let currentCount = parseInt(likesCountEl?.textContent?.replace(/\D/g, '') || '0') || 0;
+    let currentCount = parseInt(likeBtn?.querySelector('#likesCount')?.textContent?.replace(/\D/g, '') || '0') || 0;
     const newCount = isCurrentlyLiked ? currentCount - 1 : currentCount + 1;
-    
+
     // Optimistic UI update
     if (likeBtn) {
         likeBtn.classList.toggle('active', !isCurrentlyLiked);
-        likeBtn.innerHTML = !isCurrentlyLiked 
-            ? '<i class="fas fa-heart"></i><span>Liked</span>' 
-            : '<i class="far fa-heart"></i><span>Like</span>';
+        const displayCount = window.formatNumber ? window.formatNumber(newCount) : newCount;
+        likeBtn.innerHTML = !isCurrentlyLiked
+            ? `<i class="fas fa-thumbs-up"></i><span id="likesCount">${displayCount}</span>`
+            : `<i class="far fa-thumbs-up"></i><span id="likesCount">${displayCount}</span>`;
         likeBtn.disabled = true;
     }
-    if (likesCountEl) {
-        likesCountEl.textContent = window.formatNumber ? window.formatNumber(newCount) : newCount;
-    }
-    
+
     try {
         const newState = await toggleLike(window.currentContent.id, window.currentUserId, isCurrentlyLiked);
-        
+
         if (newState === isCurrentlyLiked) {
             // Revert on failure
             if (likeBtn) {
                 likeBtn.classList.toggle('active', isCurrentlyLiked);
-                likeBtn.innerHTML = isCurrentlyLiked 
-                    ? '<i class="fas fa-heart"></i><span>Liked</span>' 
-                    : '<i class="far fa-heart"></i><span>Like</span>';
-            }
-            if (likesCountEl) {
-                likesCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+                const displayCount = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+                likeBtn.innerHTML = isCurrentlyLiked
+                    ? `<i class="fas fa-thumbs-up"></i><span id="likesCount">${displayCount}</span>`
+                    : `<i class="far fa-thumbs-up"></i><span id="likesCount">${displayCount}</span>`;
             }
             if (typeof window.showToast === 'function') {
                 window.showToast('Failed to update like', 'error');
@@ -1798,9 +1793,6 @@ async function handleLikeButtonClick() {
         } else {
             // Success - refresh counts from server
             const liveCounts = await loadLiveEngagementCounts(window.currentContent.id);
-            if (likesCountEl) {
-                likesCountEl.textContent = window.formatNumber ? window.formatNumber(liveCounts.likes) : liveCounts.likes;
-            }
             if (typeof updateViewsUI === 'function') {
                 updateViewsUI(liveCounts.views);
             }
@@ -1823,12 +1815,10 @@ async function handleLikeButtonClick() {
         console.error('❌ Like button error:', error);
         if (likeBtn) {
             likeBtn.classList.toggle('active', isCurrentlyLiked);
-            likeBtn.innerHTML = isCurrentlyLiked 
-                ? '<i class="fas fa-heart"></i><span>Liked</span>' 
-                : '<i class="far fa-heart"></i><span>Like</span>';
-        }
-        if (likesCountEl) {
-            likesCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+            const displayCount = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
+            likeBtn.innerHTML = isCurrentlyLiked
+                ? `<i class="fas fa-thumbs-up"></i><span id="likesCount">${displayCount}</span>`
+                : `<i class="far fa-thumbs-up"></i><span id="likesCount">${displayCount}</span>`;
         }
         if (typeof window.showToast === 'function') {
             window.showToast('Failed to update like', 'error');
@@ -1871,9 +1861,9 @@ async function handleFavoriteButtonClick() {
     // Optimistic UI
     if (favoriteBtn) {
         favoriteBtn.classList.toggle('active', !isCurrentlyFavorited);
-        favoriteBtn.innerHTML = !isCurrentlyFavorited 
-            ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-            : '<i class="far fa-star"></i><span>Favorite</span>';
+        favoriteBtn.innerHTML = !isCurrentlyFavorited
+            ? '<i class="fas fa-heart"></i><span>Favorite</span>'
+            : '<i class="far fa-heart"></i><span>Favorite</span>';
         favoriteBtn.disabled = true;
     }
     if (favCountEl) {
@@ -1886,9 +1876,9 @@ async function handleFavoriteButtonClick() {
         if (newState === isCurrentlyFavorited) {
             if (favoriteBtn) {
                 favoriteBtn.classList.toggle('active', isCurrentlyFavorited);
-                favoriteBtn.innerHTML = isCurrentlyFavorited 
-                    ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-                    : '<i class="far fa-star"></i><span>Favorite</span>';
+                favoriteBtn.innerHTML = isCurrentlyFavorited
+                    ? '<i class="fas fa-heart"></i><span>Favorite</span>'
+                    : '<i class="far fa-heart"></i><span>Favorite</span>';
             }
             if (favCountEl) {
                 favCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
@@ -1910,9 +1900,9 @@ async function handleFavoriteButtonClick() {
         console.error('❌ Favorite button error:', error);
         if (favoriteBtn) {
             favoriteBtn.classList.toggle('active', isCurrentlyFavorited);
-            favoriteBtn.innerHTML = isCurrentlyFavorited 
-                ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-                : '<i class="far fa-star"></i><span>Favorite</span>';
+            favoriteBtn.innerHTML = isCurrentlyFavorited
+                ? '<i class="fas fa-heart"></i><span>Favorite</span>'
+                : '<i class="far fa-heart"></i><span>Favorite</span>';
         }
         if (favCountEl) {
             favCountEl.textContent = window.formatNumber ? window.formatNumber(currentCount) : currentCount;
@@ -1951,9 +1941,9 @@ async function handleWatchLaterButtonClick() {
     // Optimistic UI
     if (watchLaterBtn) {
         watchLaterBtn.classList.toggle('active', !isCurrentlySaved);
-        watchLaterBtn.innerHTML = !isCurrentlySaved 
-            ? '<i class="fas fa-clock"></i><span>Watch Later</span>' 
-            : '<i class="far fa-clock"></i><span>Watch Later</span>';
+        watchLaterBtn.innerHTML = !isCurrentlySaved
+            ? '<i class="fas fa-bookmark"></i><span>Save</span>'
+            : '<i class="far fa-bookmark"></i><span>Save</span>';
         watchLaterBtn.disabled = true;
     }
     
@@ -1963,9 +1953,9 @@ async function handleWatchLaterButtonClick() {
         if (newState === isCurrentlySaved) {
             if (watchLaterBtn) {
                 watchLaterBtn.classList.toggle('active', isCurrentlySaved);
-                watchLaterBtn.innerHTML = isCurrentlySaved 
-                    ? '<i class="fas fa-clock"></i><span>Watch Later</span>' 
-                    : '<i class="far fa-clock"></i><span>Watch Later</span>';
+                watchLaterBtn.innerHTML = isCurrentlySaved
+                    ? '<i class="fas fa-bookmark"></i><span>Save</span>'
+                    : '<i class="far fa-bookmark"></i><span>Save</span>';
             }
             if (typeof window.showToast === 'function') {
                 window.showToast('Failed to update Watch Later', 'error');
@@ -1984,9 +1974,9 @@ async function handleWatchLaterButtonClick() {
         console.error('❌ Watch Later button error:', error);
         if (watchLaterBtn) {
             watchLaterBtn.classList.toggle('active', isCurrentlySaved);
-            watchLaterBtn.innerHTML = isCurrentlySaved 
-                ? '<i class="fas fa-clock"></i><span>Watch Later</span>' 
-                : '<i class="far fa-clock"></i><span>Watch Later</span>';
+            watchLaterBtn.innerHTML = isCurrentlySaved
+                ? '<i class="fas fa-bookmark"></i><span>Save</span>'
+                : '<i class="far fa-bookmark"></i><span>Save</span>';
         }
     } finally {
         if (watchLaterBtn) {

@@ -526,6 +526,37 @@
             </div>
         </div>
 
+        <div class="creator-info-bar" id="creatorInfoBar">
+            <div class="info-bar-left">
+                <div class="info-bar-thumbnail" id="infoBarThumbnailWrap">
+                    <img id="infoBarThumbnail" alt="" style="display:none;">
+                    <i class="fas fa-film" id="infoBarThumbnailPlaceholder"></i>
+                </div>
+                <div class="info-bar-meta">
+                    <h2 class="info-bar-title" id="infoBarTitle">Loading...</h2>
+                    <div class="info-bar-creator-row">
+                        <span class="info-bar-creator-name" id="infoBarCreatorName">Creator</span>
+                        <span class="verified-badge" id="infoBarVerifiedBadge" style="display:none;" title="Verified"><i class="fas fa-check"></i></span>
+                        <button id="connectCreatorBtn" class="connect-pill" type="button"><i class="fas fa-user-plus"></i><span>Connect</span></button>
+                    </div>
+                </div>
+            </div>
+            <div class="info-bar-right">
+                <button class="action-pill" id="likeBtn" type="button" title="Like"><i class="far fa-thumbs-up"></i><span id="likesCount">Like</span></button>
+                <button class="action-pill action-pill-icon-only" id="dislikeBtn" type="button" title="Dislike"><i class="far fa-thumbs-down"></i></button>
+                <button class="action-pill" id="shareBtn" type="button"><i class="fas fa-share"></i><span>Share</span></button>
+                <button class="action-pill" id="watchLaterBtn" type="button"><i class="far fa-bookmark"></i><span>Save</span></button>
+                <button class="action-pill" id="favoriteBtn" type="button"><i class="far fa-heart"></i><span>Favorite</span></button>
+                <div class="info-bar-more-wrap">
+                    <button class="icon-btn more-options-btn" id="infoBarMoreBtn" type="button" title="More options"><i class="fas fa-ellipsis-vertical"></i></button>
+                    <div class="info-bar-more-menu" id="infoBarMoreMenu">
+                        <button id="albumToggleBtn" class="album-toggle-btn" type="button"><i class="fas fa-list"></i><span>Playlist</span></button>
+                        <button id="closePlayerFromHero" style="display: none;" type="button"><i class="fas fa-times"></i><span>Close Player</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <section class="playlist-queue-section" id="playlistQueueSection" style="display: none;"><div class="playlist-queue-header"><h2>Playlist Queue</h2></div><div class="playlist-queue" id="playlistQueue"></div></section>
         <section class="playlist-section" id="playlistSection" style="display: none;"><div class="section-header"><h2 class="section-title">Playlist Queue</h2><div class="playlist-meta"><span id="playlistTotalItems">0 items</span></div></div><div class="playlist-items" id="playlistItems"></div></section>
 
@@ -566,37 +597,6 @@
                 <span id="uploadDate">--</span>
             </div>
         </div>
-    
-        <div class="hero-actions">
-            <button class="btn btn-primary" id="playBtn" type="button">
-                <i class="fas fa-play"></i>
-                <span>Play Now</span>
-            </button>
-            <button class="btn btn-secondary" id="likeBtn" type="button">
-                <i class="far fa-heart"></i>
-                <span>Like</span>
-            </button>
-            <button class="btn btn-secondary" id="favoriteBtn" type="button">
-                <i class="far fa-star"></i>
-                <span>Favorite</span>
-            </button>
-            <button class="btn btn-secondary" id="watchLaterBtn" type="button">
-                <i class="far fa-clock"></i>
-                <span>Watch Later</span>
-            </button>
-            <button class="btn btn-secondary" id="shareBtn" type="button">
-                <i class="fas fa-share"></i>
-                <span>Share</span>
-            </button>
-            <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;" type="button">
-                <i class="fas fa-times"></i>
-                <span>Close Player</span>
-            </button>
-            <button id="albumToggleBtn" class="album-toggle-btn" type="button">
-                <i class="fas fa-list"></i>
-                <span>Playlist</span>
-            </button>
-        </div>
     </div>
 </section>
 
@@ -607,7 +607,6 @@
             <h3 id="creatorDisplayName">Creator Name</h3>
             <div class="creator-subtext-metadata"></div>
         </div>
-        <button id="connectCreatorBtn" class="connect-btn" type="button"><i class="fas fa-user-plus"></i><span>Connect</span></button>
     </div>
 </section>
 

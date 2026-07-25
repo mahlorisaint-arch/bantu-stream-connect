@@ -67,16 +67,77 @@ function updateHeroPoster(content) {
 }
 
 /**
+ * Update the small thumbnail in the creator-info-bar (below the player)
+ * @param {Object} content - Content object with thumbnail_url
+ */
+function updateInfoBarThumbnail(content) {
+    const img = document.getElementById('infoBarThumbnail');
+    const placeholder = document.getElementById('infoBarThumbnailPlaceholder');
+    if (!img) return;
+
+    if (content && content.thumbnail_url) {
+        const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url, 'thumbnail') || content.thumbnail_url;
+        img.src = imgUrl;
+        img.alt = content.title || 'Content thumbnail';
+        img.style.display = '';
+        img.onerror = function() {
+            this.style.display = 'none';
+            if (placeholder) placeholder.style.display = '';
+        };
+        img.onload = function() {
+            if (placeholder) placeholder.style.display = 'none';
+        };
+    } else {
+        img.style.display = 'none';
+        if (placeholder) placeholder.style.display = '';
+    }
+}
+
+/**
+ * Update the small verified badge next to the creator name in the
+ * creator-info-bar, reusing the same real verification data (creators
+ * table is_founder/is_creator_verified/is_verified) that drives the
+ * fuller badge in the creator section further down the page — just a
+ * plain cyan circle + checkmark here instead of the holographic token.
+ * @param {Object} content - Content object with creator_id
+ */
+async function updateInfoBarVerifiedBadge(content) {
+    const badge = document.getElementById('infoBarVerifiedBadge');
+    if (!badge) return;
+
+    const creatorId = content?.creator_id || (window.getCurrentCreatorData ? window.getCurrentCreatorData()?.id : null);
+    if (!creatorId || typeof window.getCreatorVerificationDetails !== 'function') {
+        badge.style.display = 'none';
+        return;
+    }
+
+    try {
+        const details = await window.getCreatorVerificationDetails(creatorId);
+        badge.style.display = details.isVerified ? '' : 'none';
+        if (details.isVerified && details.label) {
+            badge.title = details.label;
+        }
+    } catch (err) {
+        console.warn('Info bar verified badge check failed:', err);
+        badge.style.display = 'none';
+    }
+}
+
+/**
  * Update the entire content UI (hero section)
  */
 function updateContentUI(content) {
     if (!content) return;
     
     window.safeSetText('contentTitle', content.title);
-    
+    window.safeSetText('infoBarTitle', content.title);
+
     const creatorName = content.creator || (window.currentPlaylist?.creator_name || window.currentPlaylist?.creator_username || 'Creator');
     window.safeSetText('creatorName', creatorName);
     window.safeSetText('creatorDisplayName', creatorName);
+    window.safeSetText('infoBarCreatorName', creatorName);
+    updateInfoBarThumbnail(content);
+    updateInfoBarVerifiedBadge(content);
     
     // Update views
     window.safeSetText('viewsCount', window.formatNumber(content.views_count) + ' views');
@@ -197,7 +258,7 @@ function updateContentDetails(content) {
  * Add resume button to hero actions
  */
 async function addResumeButton(progressSeconds) {
-    const heroActions = document.querySelector('.hero-actions');
+    const heroActions = document.querySelector('.info-bar-right');
     if (!heroActions) return;
     if (document.getElementById('resumeBtn')) return;
     
@@ -223,7 +284,8 @@ async function addResumeButton(progressSeconds) {
     
     const resumeBtn = document.createElement('button');
     resumeBtn.id = 'resumeBtn';
-    resumeBtn.className = 'btn btn-primary resume-btn';
+    resumeBtn.type = 'button';
+    resumeBtn.className = 'action-pill resume-pill';
     resumeBtn.innerHTML = `
         <i class="fas fa-play"></i>
         <span>Resume (${window.formatDuration(finalProgress)})</span>
@@ -233,27 +295,19 @@ async function addResumeButton(progressSeconds) {
             window.startPlaybackFromUserGesture();
         }
     });
-    
-    const playBtn = document.getElementById('playBtn');
-    if (playBtn) {
-        heroActions.insertBefore(resumeBtn, playBtn);
-        playBtn.style.display = 'none';
-    } else {
-        heroActions.prepend(resumeBtn);
-    }
-    
+
+    heroActions.prepend(resumeBtn);
+
     console.log('✅ Resume button added with progress:', finalProgress);
 }
 
 /**
- * Remove resume button from hero actions
+ * Remove resume button from the creator-info-bar
  */
 function removeResumeButton() {
     const resumeBtn = document.getElementById('resumeBtn');
     if (resumeBtn) {
         resumeBtn.remove();
-        const playBtn = document.getElementById('playBtn');
-        if (playBtn) playBtn.style.display = 'flex';
     }
 }
 
@@ -289,12 +343,13 @@ function setupHeroEngagementSync() {
             
             const likeBtn = document.getElementById('likeBtn');
             if (likeBtn) {
+                const likeCount = window.formatNumber ? window.formatNumber(likesCount || 0) : (likesCount || 0);
                 if (isLiked) {
                     likeBtn.classList.add('active');
-                    likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+                    likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i><span id="likesCount">${likeCount}</span>`;
                 } else {
                     likeBtn.classList.remove('active');
-                    likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+                    likeBtn.innerHTML = `<i class="far fa-thumbs-up"></i><span id="likesCount">${likeCount}</span>`;
                 }
             }
         }
@@ -325,38 +380,39 @@ function setupHeroEngagementSync() {
             if (states.liked !== undefined) {
                 const likeBtn = document.getElementById('likeBtn');
                 if (likeBtn) {
+                    const likeCount = likeBtn.querySelector('#likesCount')?.textContent || (window.currentContent?.likes_count ?? 0);
                     if (states.liked) {
                         likeBtn.classList.add('active');
-                        likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+                        likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i><span id="likesCount">${likeCount}</span>`;
                     } else {
                         likeBtn.classList.remove('active');
-                        likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+                        likeBtn.innerHTML = `<i class="far fa-thumbs-up"></i><span id="likesCount">${likeCount}</span>`;
                     }
                 }
             }
-            
+
             if (states.favorited !== undefined) {
                 const favoriteBtn = document.getElementById('favoriteBtn');
                 if (favoriteBtn) {
                     if (states.favorited) {
                         favoriteBtn.classList.add('active');
-                        favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+                        favoriteBtn.innerHTML = '<i class="fas fa-heart"></i><span>Favorite</span>';
                     } else {
                         favoriteBtn.classList.remove('active');
-                        favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+                        favoriteBtn.innerHTML = '<i class="far fa-heart"></i><span>Favorite</span>';
                     }
                 }
             }
-            
+
             if (states.watchLater !== undefined) {
                 const watchLaterBtn = document.getElementById('watchLaterBtn');
                 if (watchLaterBtn) {
                     if (states.watchLater) {
                         watchLaterBtn.classList.add('active');
-                        watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Watch Later</span>';
+                        watchLaterBtn.innerHTML = '<i class="fas fa-bookmark"></i><span>Save</span>';
                     } else {
                         watchLaterBtn.classList.remove('active');
-                        watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+                        watchLaterBtn.innerHTML = '<i class="far fa-bookmark"></i><span>Save</span>';
                     }
                 }
             }
@@ -651,10 +707,51 @@ function refreshContentInBackground(contentId) {
     } catch(e) { console.warn('Background refresh failed:', e); }
 }
 
+/**
+ * Wire the creator-info-bar's More-options circular button (opens a small
+ * dropdown housing Playlist toggle + Close Player — both real, pre-existing
+ * buttons just relocated here, not reimplemented) and the Dislike pill
+ * (no dislike backend/schema exists anywhere in this app, so it's a real,
+ * clickable button that's honest about not being wired yet, same treatment
+ * as the player's Cast/CC buttons).
+ */
+function setupInfoBarMiscControls() {
+    const moreBtn = document.getElementById('infoBarMoreBtn');
+    const moreMenu = document.getElementById('infoBarMoreMenu');
+    if (moreBtn && moreMenu) {
+        moreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            moreMenu.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!moreMenu.classList.contains('open')) return;
+            if (e.target === moreBtn || moreMenu.contains(e.target)) return;
+            moreMenu.classList.remove('open');
+        });
+    }
+
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    if (dislikeBtn) {
+        dislikeBtn.addEventListener('click', () => {
+            if (typeof window.showToast === 'function') {
+                window.showToast('Coming soon', 'info');
+            }
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupInfoBarMiscControls);
+} else {
+    setupInfoBarMiscControls();
+}
+
 // ============================================
 // GLOBAL EXPORTS
 // ============================================
 window.updateHeroPoster = updateHeroPoster;
+window.updateInfoBarThumbnail = updateInfoBarThumbnail;
+window.updateInfoBarVerifiedBadge = updateInfoBarVerifiedBadge;
 window.updateContentUI = updateContentUI;
 window.updateContentDetails = updateContentDetails;
 window.updateHeroLikesUI = updateHeroLikesUI;
