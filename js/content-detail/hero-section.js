@@ -683,7 +683,8 @@ async function loadContentFromURLLegacy() {
     } catch (error) {
         console.error('❌ Content load failed:', error);
         window.showToast('Content not available. Please try again.', 'error');
-        document.getElementById('contentTitle').textContent = 'Content Unavailable';
+        const titleEl = document.getElementById('infoBarTitle');
+        if (titleEl) titleEl.textContent = 'Content Unavailable';
     }
 }
 

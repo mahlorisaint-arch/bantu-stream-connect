@@ -280,9 +280,9 @@ function closeVideoPlayer() {
     if (heroPoster) heroPoster.style.opacity = '1';
     if (closeFromHero) closeFromHero.style.display = 'none';
     
-    // Scroll back to hero
-    const hero = document.querySelector('.content-hero');
-    if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Scroll back to the player
+    const playerSection = document.getElementById('inlinePlayer');
+    if (playerSection) playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**

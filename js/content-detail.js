@@ -1568,7 +1568,8 @@ async function loadContentFromURLLegacy() {
     } catch (error) {
         console.error('❌ Content load failed:', error);
         if (typeof showToast === 'function') showToast('Content not available. Please try again.', 'error');
-        document.getElementById('contentTitle').textContent = 'Content Unavailable';
+        const titleEl = document.getElementById('infoBarTitle');
+        if (titleEl) titleEl.textContent = 'Content Unavailable';
     }
 }
 
@@ -2262,7 +2263,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadContentFromURLLegacy();
         } catch (fallbackErr) {
             console.error('Fallback also failed:', fallbackErr);
-            document.getElementById('contentTitle').textContent = 'Content Unavailable';
+            const titleEl = document.getElementById('infoBarTitle');
+            if (titleEl) titleEl.textContent = 'Content Unavailable';
         }
     }
     

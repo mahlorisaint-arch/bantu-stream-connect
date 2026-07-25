@@ -21,14 +21,14 @@
   margin: 0 0 20px 0;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35), 0 0 20px rgba(0, 229, 255, 0.15), inset 0 0 0 1px rgba(0, 229, 255, 0.3);
   animation: slideDown 0.3s ease;
-  display: none;
+  /* Always visible from page load, in both single and playlist mode —
+     no more poster-click gate before the player itself appears. The
+     player's own #initialPlayOverlay (inside the container) is the real
+     "tap to start" affordance now, independent of this visibility. */
+  display: block;
   position: relative;
   z-index: 10;
   width: 100%;
-}
-
-.inline-player.visible {
-  display: block;
 }
 
 @keyframes slideDown {

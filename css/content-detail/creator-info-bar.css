@@ -83,6 +83,19 @@
   white-space: nowrap;
 }
 
+.info-bar-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--slate-grey);
+  white-space: nowrap;
+}
+
+.info-bar-dot {
+  color: var(--slate-grey);
+  font-size: 10px;
+  opacity: 0.6;
+}
+
 .verified-badge {
   width: 14px;
   height: 14px;
@@ -300,6 +313,11 @@
 }
 
 @media (max-width: 480px) {
+  .info-bar-sub,
+  .info-bar-dot {
+    display: none;
+  }
+
   .info-bar-right {
     gap: 6px;
   }
