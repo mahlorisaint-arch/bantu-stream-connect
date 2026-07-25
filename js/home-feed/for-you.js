@@ -766,13 +766,13 @@ const ForYou = (function() {
             let formatBadgeHtml = '';
             if (content.content_format) {
                 const formatIcons = {
-                    'film': '🎬', 'documentary': '📽️', 'movie': '🎥',
-                    'podcast': '🎙️', 'audio': '🎧', 'long_form': '📺',
-                    'video': '📹', 'series_episode': '📺'
+                    'film': 'fa-film', 'documentary': 'fa-video', 'movie': 'fa-film',
+                    'podcast': 'fa-microphone-alt', 'audio': 'fa-headphones', 'long_form': 'fa-video',
+                    'video': 'fa-video', 'series_episode': 'fa-video'
                 };
-                const icon = formatIcons[content.content_format] || '📹';
+                const icon = formatIcons[content.content_format] || 'fa-video';
                 const formatLabel = content.content_format.replace('_', ' ').toUpperCase();
-                formatBadgeHtml = `<div class="card-badge format-badge">${icon} ${formatLabel}</div>`;
+                formatBadgeHtml = `<div class="card-badge format-badge"><i class="fas ${icon}"></i> ${formatLabel}</div>`;
             }
             
             // New badge

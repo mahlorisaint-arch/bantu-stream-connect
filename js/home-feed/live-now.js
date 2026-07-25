@@ -445,7 +445,7 @@ const LiveNow = (function() {
             
             // Sample chat messages for preview
             const sampleMessages = [
-                { user: 'Fan', message: 'Great stream! 🔥' },
+                { user: 'Fan', message: 'Great stream!' },
                 { user: 'Viewer', message: 'Love this content!' }
             ];
             const randomMessage = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
@@ -664,7 +664,7 @@ const LiveNow = (function() {
     function sendLiveNotification(streamTitle, creatorName) {
         if (!notificationPermission) return;
         
-        const notification = new Notification('🔴 Live Now on Bantu Stream Connect', {
+        const notification = new Notification('Live Now on Bantu Stream Connect', {
             body: `${creatorName} just went live: ${streamTitle}`,
             icon: '/assets/icon/bantu_stream_connect_icon.png',
             tag: 'live-stream',

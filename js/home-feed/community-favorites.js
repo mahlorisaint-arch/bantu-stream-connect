@@ -557,13 +557,13 @@ const CommunityFavorites = (function() {
             let rankIcon = '';
             if (rank === 1) {
                 rankClass = 'top-1';
-                rankIcon = '👑';
+                rankIcon = '<i class="fas fa-crown"></i>';
             } else if (rank === 2) {
                 rankClass = 'top-2';
-                rankIcon = '🥈';
+                rankIcon = '<i class="fas fa-medal"></i>';
             } else if (rank === 3) {
                 rankClass = 'top-3';
-                rankIcon = '🥉';
+                rankIcon = '<i class="fas fa-medal"></i>';
             }
             
             // Avatar HTML
