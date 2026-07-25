@@ -25,17 +25,14 @@
     <link rel="preload" href="css/home-feed/for-you.css" as="style">
     <link rel="preload" href="css/home-feed/wavelets.css" as="style">
     <link rel="preload" href="css/home-feed/live-now.css" as="style">
-    <link rel="preload" href="css/home-feed/latest-gems.css" as="style">
     <link rel="preload" href="css/home-feed/community-favorites.css" as="style">
     <link rel="preload" href="css/home-feed/trending-now.css" as="style">
-    <link rel="preload" href="css/home-feed/creator-of-the-week.css" as="style">
-    <link rel="preload" href="css/home-feed/upcoming-events.css" as="style">
     <link rel="preload" href="css/home-feed/bantu-waves-music.css" as="style">
     <link rel="preload" href="css/home-feed/bantu-waves-podcasts.css" as="style">
     <link rel="preload" href="css/home-feed/bantu-waves-series.css" as="style">
-    <link rel="preload" href="css/home-feed/bantu-waves-africa-rising.css" as="style">
     <link rel="preload" href="css/home-feed/bantu-waves-midnight.css" as="style">
-    <link rel="preload" href="css/home-feed/bantu-ink.css" as="style">
+    <link rel="preload" href="css/home-feed/streak-banner.css" as="style">
+    <link rel="preload" href="css/shared/preview-clips.css" as="style">
     <link rel="preload" href="css/community-pulse.css" as="style">
     <link rel="preload" href="css/audio-player.css" as="style">
     
@@ -68,17 +65,14 @@
     <link rel="stylesheet" href="css/home-feed/for-you.css">
     <link rel="stylesheet" href="css/home-feed/wavelets.css">
     <link rel="stylesheet" href="css/home-feed/live-now.css">
-    <link rel="stylesheet" href="css/home-feed/latest-gems.css">
     <link rel="stylesheet" href="css/home-feed/community-favorites.css">
     <link rel="stylesheet" href="css/home-feed/trending-now.css">
-    <link rel="stylesheet" href="css/home-feed/creator-of-the-week.css">
-    <link rel="stylesheet" href="css/home-feed/upcoming-events.css">
     <link rel="stylesheet" href="css/home-feed/bantu-waves-music.css">
     <link rel="stylesheet" href="css/home-feed/bantu-waves-podcasts.css">
     <link rel="stylesheet" href="css/home-feed/bantu-waves-series.css">
-    <link rel="stylesheet" href="css/home-feed/bantu-waves-africa-rising.css">
     <link rel="stylesheet" href="css/home-feed/bantu-waves-midnight.css">
-    <link rel="stylesheet" href="css/home-feed/bantu-ink.css">
+    <link rel="stylesheet" href="css/home-feed/streak-banner.css">
+    <link rel="stylesheet" href="css/shared/preview-clips.css">
     <link rel="stylesheet" href="css/community-pulse.css">
     <link rel="stylesheet" href="css/audio-player.css">
     
@@ -229,17 +223,34 @@
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
-                <button id="voice-search-btn" class="icon-btn" title="Voice Search"><i class="fas fa-microphone"></i></button>
                 <button id="analytics-btn" class="icon-btn" title="Analytics"><i class="fas fa-chart-line"></i></button>
-                
                 <button id="search-btn" class="icon-btn search-btn" data-search-trigger aria-label="Search">
                     <i class="fas fa-search"></i>
                     <span class="search-shortcut">⌘K</span>
                 </button>
-                 <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">
-    <i class="fas fa-bell"></i>
-    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-</button>
+                <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                </button>
+                <div class="language-filter-wrap" id="language-filter-wrap">
+                    <button id="language-filter-btn" class="icon-btn" title="Filter by Language" aria-label="Filter by Language">
+                        <i class="fas fa-language"></i>
+                    </button>
+                    <div class="language-filter-dropdown" id="language-filter-dropdown">
+                        <button class="language-chip active" data-lang="all">All</button>
+                        <button class="language-chip" data-lang="en">English</button>
+                        <button class="language-chip" data-lang="zu">IsiZulu</button>
+                        <button class="language-chip" data-lang="xh">IsiXhosa</button>
+                        <button class="language-chip" data-lang="af">Afrikaans</button>
+                        <button class="language-chip" data-lang="nso">Sepedi</button>
+                        <button class="language-chip" data-lang="st">Sesotho</button>
+                        <button class="language-chip" data-lang="tn">Setswana</button>
+                        <button class="language-chip" data-lang="ss">siSwati</button>
+                        <button class="language-chip" data-lang="ve">Tshivenda</button>
+                        <button class="language-chip" data-lang="ts">Xitsonga</button>
+                        <button class="language-chip" data-lang="nr">isiNdebele</button>
+                    </div>
+                </div>
                 <div class="profile-switcher">
                     <button id="current-profile-btn" class="profile-btn" title="Profile">
                         <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
@@ -264,33 +275,12 @@
             <p id="welcome-subtitle">Discover new content tailored just for you</p>
         </div>
 
-        <!-- Language Filter Bar -->
-        <div class="language-filter-bar">
-            <div class="language-filter-container">
-                <i class="fas fa-language"></i>
-                <span class="language-filter-label">Filter by Language:</span>
-                <div class="language-chips" id="language-chips">
-                    <button class="language-chip active" data-lang="all">All</button>
-                    <button class="language-chip" data-lang="en">English</button>
-                    <button class="language-chip" data-lang="zu">IsiZulu</button>
-                    <button class="language-chip" data-lang="xh">IsiXhosa</button>
-                    <button class="language-chip" data-lang="af">Afrikaans</button>
-                    <button class="language-chip" data-lang="nso">Sepedi</button>
-                    <button class="language-chip" data-lang="st">Sesotho</button>
-                    <button class="language-chip" data-lang="tn">Setswana</button>
-                    <button class="language-chip" data-lang="ss">siSwati</button>
-                    <button class="language-chip" data-lang="ve">Tshivenda</button>
-                    <button class="language-chip" data-lang="ts">Xitsonga</button>
-                    <button class="language-chip" data-lang="nr">isiNdebele</button>
-                    <button class="language-chip-more" id="more-languages-btn">More <i class="fas fa-chevron-down"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Category Tabs -->
-        <div class="category-tabs-container">
-            <div id="category-tabs" class="category-tabs"></div>
-        </div>
+        <!-- The old language-filter-bar (12 chips) and category-tabs-container
+             were both confirmed fully inert - the JS that would wire them
+             (settings.js, content-library.js) isn't loaded on this page.
+             Category browsing already lives on Explore; language filtering
+             is now a compact header dropdown (see #language-filter-wrap
+             below) instead of a full-width strip competing with the hero. -->
 
         <!-- Main Content -->
         <main class="container">
@@ -336,7 +326,35 @@
                 <div class="hero-featured-badge" id="hero-featured-badge"><i class="fas fa-crown"></i> FEATURED CREATOR OF THE DAY</div>
             </section>
 
-            <!-- Live Now -->
+            <!-- Continue Watching — promoted right after the hero -->
+            <section class="section" id="continue-watching-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-play-circle" style="color: var(--warm-gold);"></i> CONTINUE WATCHING</h2>
+                    <a href="watch-history.html" class="see-all-btn" id="see-all-continue">See All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="content-grid" id="continue-watching-grid"></div>
+            </section>
+
+            <!-- Streak banner — slim inline bar, not a card/rail. Hidden by
+                 default (css/home-feed/streak-banner.css); js/home-feed/
+                 streak-banner.js shows it only for a user with a real
+                 user_streaks row. -->
+            <div id="streak-banner"></div>
+
+            <!-- For You / Trending in Mzansi — header text + query switch
+                 based on real personalization signal, handled entirely in
+                 js/home-feed/for-you.js (updateSectionLabel). -->
+            <section class="section" id="for-you-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-magic" style="color: var(--bantu-blue);"></i> FOR YOU</h2>
+                    <a href="#" class="see-all-btn" id="see-all-for-you">See All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="content-grid" id="for-you-grid"></div>
+            </section>
+
+            <!-- Live Now — hidden entirely when there's no real live
+                 signal (js/home-feed/live-now.js showEmptyState), not shown
+                 as an empty shelf. -->
             <section class="section" id="live-now-section">
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-circle" style="color: #EF4444;"></i> LIVE NOW</h2>
@@ -346,42 +364,54 @@
                 <div id="no-live-streams" class="empty-state" style="display: none;"><div class="empty-icon"><i class="fas fa-broadcast-tower"></i></div><h3>No Live Streams</h3><p>Check back later for live content</p></div>
             </section>
 
-            <!-- Latest Gems -->
-            <section class="section" id="latest-gems-section">
+            <!-- Trending Now — formalized. js/home-feed/trending-now.js used
+                 to silently self-inject this exact section into the DOM at
+                 runtime because it never existed in the static HTML;
+                 createFallbackElements() has been removed and this markup
+                 (matching what that function used to generate) is now the
+                 single source of truth. -->
+            <section class="section" id="trending-now-section">
                 <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-gem" style="color: #10B981;"></i> LATEST GEMS</h2>
-                    <a href="https://bantustreamconnect.com/content-library" class="see-all-btn">See All <i class="fas fa-arrow-right"></i></a>
+                    <h2 class="section-title">
+                        <i class="fas fa-fire" style="color: var(--warm-gold);"></i>
+                        TRENDING NOW
+                        <span class="trending-flame"><i class="fas fa-fire"></i> Viral</span>
+                    </h2>
+                    <div id="trending-time-selector" class="trending-time-selector"></div>
+                    <a href="https://bantustreamconnect.com/trending_screen" class="see-all-btn">See All <i class="fas fa-arrow-right"></i></a>
                 </div>
-                <div id="latest-stats-bar" class="latest-stats-bar"></div>
-                <div id="category-filter-bar" class="category-filter-bar"></div>
-                <div class="content-grid" id="new-content-grid"></div>
+                <div id="trending-stats-bar" class="trending-stats-bar"></div>
+                <div class="content-grid" id="trending-grid"></div>
             </section>
 
-            <!-- Continue Watching -->
-            <section class="section" id="continue-watching-section">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-play-circle" style="color: var(--warm-gold);"></i> CONTINUE WATCHING</h2>
-                    <a href="watch-history.html" class="see-all-btn" id="see-all-continue">See All <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="content-grid" id="continue-watching-grid"></div>
-            </section>
-
-            <!-- For You -->
-            <section class="section" id="for-you-section">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-magic" style="color: var(--bantu-blue);"></i> FOR YOU</h2>
-                    <a href="#" class="see-all-btn" id="see-all-for-you">See All <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="content-grid" id="for-you-grid"></div>
-            </section>
-
-            <!-- Wavelets -->
+            <!-- Wavelets (shorts) -->
             <section class="section" id="wavelets-section">
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-bolt" style="color: var(--warm-gold);"></i> WAVELETS</h2>
                     <a href="#" class="see-all-btn" id="see-all-wavelets">See All <i class="fas fa-arrow-right"></i></a>
                 </div>
                 <div class="wavelets-container" id="wavelets-container"></div>
+            </section>
+
+            <!-- Community Pulse — genuinely distinct data model (pulse_posts,
+                 social/UGC), not a duplicate of Community Favorites below. -->
+            <section class="section" id="community-pulse-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-bolt" style="color: var(--warm-gold);"></i> COMMUNITY PULSE</h2>
+                </div>
+                <div class="pulse-grid" id="pulse-feed"></div>
+            </section>
+
+            <!-- Community Favorites — kept over Creator of the Week: ranks
+                 real content by real engagement (content_engagement_stats),
+                 whereas Creator of the Week's own name promised weekly
+                 rotation it never actually implemented. -->
+            <section class="section" id="community-favorites-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-handshake" style="color: var(--warm-gold);"></i> COMMUNITY FAVORITES</h2>
+                    <a href="#" class="see-all-btn" id="see-all-community">See All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="content-grid" id="community-favorites-grid"></div>
             </section>
 
             <!-- Bantu Waves: Music -->
@@ -411,16 +441,12 @@
                 <div class="series-grid" id="bantu-waves-series-grid"></div>
             </section>
 
-            <!-- Bantu Waves: Africa Rising -->
-            <section class="section bantu-waves-africa-rising" id="bantu-waves-africa-rising">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-globe-africa" style="color: #10B981;"></i> BANTU WAVES: AFRICA RISING</h2>
-                    <a href="#" class="see-all-btn" id="see-all-africa">See All <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="africa-rising-grid" id="bantu-waves-africa-rising-grid"></div>
-            </section>
-
-            <!-- Bantu Waves: Midnight Sessions -->
+            <!-- Bantu Waves: Midnight Sessions — kept over Africa Rising,
+                 which was confirmed near-duplicate by construction (same
+                 base query, and its filter matched 55 of 58 published
+                 content rows live - effectively "everything," not a real
+                 curated concept). Midnight narrows by content_format first,
+                 a genuinely smaller, more curated shelf. -->
             <section class="section bantu-waves-midnight" id="bantu-waves-midnight">
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-moon" style="color: #8B5CF6;"></i> BANTU WAVES: MIDNIGHT SESSIONS</h2>
@@ -428,56 +454,6 @@
                     <a href="#" class="see-all-btn" id="see-all-midnight">See All <i class="fas fa-arrow-right"></i></a>
                 </div>
                 <div class="midnight-grid" id="bantu-waves-midnight-grid"></div>
-            </section>
-
-            <!-- Community Pulse -->
-            <section class="section" id="community-pulse-section">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-bolt" style="color: var(--warm-gold);"></i> COMMUNITY PULSE</h2>
-                </div>
-                <div class="pulse-grid" id="pulse-feed"></div>
-            </section>
-
-            <!-- Community Favorites -->
-            <section class="section" id="community-favorites-section">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-handshake" style="color: var(--warm-gold);"></i> COMMUNITY FAVORITES</h2>
-                    <a href="#" class="see-all-btn" id="see-all-community">See All <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="content-grid" id="community-favorites-grid"></div>
-            </section>
-
-            <!-- Creator of the Week -->
-            <section class="section" id="creator-of-the-week-section">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-star" style="color: var(--warm-gold);"></i> CREATOR OF THE WEEK</h2>
-                    <a href="https://bantustreamconnect.com/creators" class="see-all-btn">See All <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="featured-creators">
-                    <div class="swiper" id="creators-swiper">
-                        <div class="swiper-wrapper" id="creators-list"></div>
-                        <div class="swiper-pagination"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Upcoming Events -->
-            <section class="section events-section" id="upcoming-events-section">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-calendar-alt" style="color: var(--warm-gold);"></i> UPCOMING EVENTS</h2>
-                </div>
-                <div id="events-list"></div>
-                <div id="no-events" class="empty-state" style="display: none;"><div class="empty-icon"><i class="fas fa-calendar-alt"></i></div><h3>No Upcoming Events</h3><p>Check back soon for scheduled events</p></div>
-            </section>
-
-            <!-- Bantu Ink -->
-            <section class="section bantu-ink" id="bantu-ink">
-                <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-newspaper" style="color: var(--slate-grey);"></i> BANTU INK</h2>
-                    <a href="bantu-ink.html" class="see-all-btn">See All <i class="fas fa-arrow-right"></i></a>
-                    <div class="breaking-alert"></div>
-                </div>
-                <div class="ink-container" id="bantu-ink-grid"></div>
             </section>
 
             <!-- Explore All CTA -->
@@ -490,7 +466,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart" style="color: var(--warm-gold);"></i> Built in South Africa • NO DNA, JUST RSA</p>
+            <p>Bantu Stream Connect © 2026 • Built in South Africa • NO DNA, JUST RSA</p>
             <div class="footer-links">
                 <a href="privacy-policy.html">Privacy Policy</a>
                 <a href="terms-of-service.html">Terms of Service</a>
@@ -498,15 +474,10 @@
             </div>
         </footer>
 
-        <!-- Bottom Navigation -->
-        <div class="navigation-button-container">
-            <div class="navigation-button">
-                <div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div>
-                <div class="nav-icon" id="nav-history-btn" title="Watch History"><i class="fas fa-history"></i></div>
-                <div class="nav-icon" id="nav-create-btn" title="Create Content"><i class="fas fa-plus-circle"></i></div>
-                <div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div>
-            </div>
-        </div>
+        <!-- Bottom nav removed: unwired (zero JS references anywhere) and
+             explicitly contradicts the platform's own established design
+             ("glass header, sections sidebar, no bottom nav" —
+             shared-components.js's own init log). -->
 
         <div id="toast-container" class="toast-container"></div>
         <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
@@ -911,41 +882,23 @@
     <!-- ============================================ -->
 <!-- NOTIFICATIONS PANEL - COMPLETE -->
 <!-- ============================================ -->
-<div id="notifications-panel" class="notifications-panel" role="dialog" aria-modal="true" aria-label="Notifications">
-    
-    <!-- Notifications Header -->
-    <div class="notifications-header">
-        <h2>
-            <i class="fas fa-bell" style="color: var(--warm-gold);"></i> 
-            Notifications
-            <span class="notification-count-badge" id="notifications-header-count">0</span>
-        </h2>
-        <div class="notifications-header-actions">
-            <button id="mark-all-read" class="text-btn" title="Mark all as read" style="background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:12px;font-weight:500;padding:6px 12px;border-radius:6px;transition:all 0.3s ease;display:flex;align-items:center;gap:4px;">
-                <i class="fas fa-check-double"></i> Mark all read
-            </button>
-            <button id="close-notifications" class="close-btn" title="Close notifications" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);color:var(--soft-white);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;font-size:16px;flex-shrink:0;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Notifications List -->
-    <div id="notifications-list" class="notifications-list">
-        <!-- Notifications will be dynamically rendered here -->
-        <div class="empty-notifications">
-            <i class="fas fa-bell-slash"></i>
-            <p>No notifications yet</p>
-            <span>When you get notifications, they'll appear here</span>
-        </div>
-    </div>
-
-    <!-- Notifications Footer -->
-    <div class="notifications-footer">
-        <button id="notification-settings" class="text-btn" style="width:100%;background:none;border:none;color:var(--warm-gold);cursor:pointer;font-size:13px;font-weight:500;padding:10px;border-radius:8px;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;gap:8px;">
-            <i class="fas fa-cog"></i> Settings
-        </button>
-    </div>
+<!-- Notifications panel — canonical structure, matching category/music.html
+     so this page uses the exact same shared-components.css/.js-driven panel
+     as every other page (tabs, cyan styling, working Settings button id). -->
+<div id="notifications-panel" class="notifications-panel">
+  <div class="notifications-header">
+    <h2>Notifications <span id="notifications-header-count"></span></h2>
+    <button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notification-tabs-container">
+    <button class="notification-tab active" data-tab="all">All</button>
+    <button class="notification-tab" data-tab="unread">Unread</button>
+  </div>
+  <div class="notifications-list" id="notifications-list"></div>
+  <div class="notifications-footer">
+    <button id="mark-all-read" class="text-btn">Mark all as read</button>
+    <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+  </div>
 </div>
     <div id="theme-selector" class="theme-selector"><button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button><button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button><button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button></div>
 
@@ -1125,30 +1078,27 @@
     <script src="env.js"></script>
     <script src="js/rate-limiter.js"></script>
     <script src="js/image-fix.js"></script>
-    
+    <script src="js/shared/preview-clips.js"></script>
+
     <!-- 2. Core Home Feed -->
     <script src="js/home-feed.js"></script>
     <script src="js/home-feed-ui.js"></script>
     <script src="js/home-feed-features.js"></script>
-    
+
     <!-- 3. Migrated Modules (auto-init disabled) -->
     <script src="js/home-feed/hero-content.js"></script>
     <script src="js/home-feed/continue-watching.js"></script>
-    <script src="js/home-feed/creator-of-the-week.js"></script>
+    <script src="js/home-feed/streak-banner.js"></script>
     <script src="js/home-feed/community-favorites.js"></script>
     <script src="js/home-feed/for-you.js"></script>
-    <script src="js/home-feed/latest-gems.js"></script>
     <script src="js/home-feed/live-now.js"></script>
     <script src="js/home-feed/trending-now.js"></script>
-    <script src="js/home-feed/upcoming-events.js"></script>
     <script src="js/home-feed/wavelets.js"></script>
-    <script src="js/home-feed/bantu-ink.js"></script>
-    <script src="js/home-feed/bantu-waves-africa-rising.js"></script>
     <script src="js/home-feed/bantu-waves-midnight.js"></script>
     <script src="js/home-feed/bantu-waves-music.js"></script>
     <script src="js/home-feed/bantu-waves-podcasts.js"></script>
     <script src="js/home-feed/bantu-waves-series.js"></script>
-    
+
     <!-- 4. Master Initializer -->
     <script src="js/init-all-modules.js"></script>
     

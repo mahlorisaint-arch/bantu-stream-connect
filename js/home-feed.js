@@ -207,6 +207,42 @@ async function loadCommunityStatsBar() {
     }
 }
 
+/**
+ * Compact header language-filter dropdown (replaces the old 12-chip
+ * full-width strip, which was confirmed fully inert). Toggle + selection
+ * are real; actual content filtering by language isn't wired to any
+ * home-feed row query yet, so picking a language is honest about that
+ * instead of silently doing nothing.
+ */
+function setupLanguageFilterDropdown() {
+    const wrap = document.getElementById('language-filter-wrap');
+    const btn = document.getElementById('language-filter-btn');
+    const dropdown = document.getElementById('language-filter-dropdown');
+    if (!wrap || !btn || !dropdown) return;
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+
+    dropdown.querySelectorAll('.language-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            dropdown.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            dropdown.classList.remove('active');
+            if (chip.dataset.lang !== 'all') {
+                showToast('Language filtering coming soon', 'info');
+            }
+        });
+    });
+}
+
 function updateNotificationBadge(count) {
     ['notification-count', 'sidebar-notification-count'].forEach(id => {
         const badge = document.getElementById(id);
@@ -239,6 +275,7 @@ function setupGlobalImageErrorHandler() {
 async function initCore() {
     console.log('🚀 Initializing Core System...');
     setupGlobalImageErrorHandler();
+    setupLanguageFilterDropdown();
     await checkAuth();
     loadCommunityStatsBar();
     console.log('✅ Core System initialized');
@@ -259,6 +296,7 @@ Object.assign(window, {
     loadUserProfile,
     loadNotifications,
     loadCommunityStatsBar,
+    setupLanguageFilterDropdown,
     updateNotificationBadge,
     showToast,
     escapeHtml,

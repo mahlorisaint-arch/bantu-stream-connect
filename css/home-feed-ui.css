@@ -259,6 +259,36 @@ LANGUAGE FILTER BAR - REDUCED TO 40% SIZE
     flex-wrap: wrap;
 }
 
+/* Compact header dropdown replacing the old full-width 12-chip strip. */
+.language-filter-wrap {
+    position: relative;
+}
+.language-filter-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    min-width: 160px;
+    background: rgba(10, 14, 18, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    z-index: 50;
+}
+.language-filter-dropdown.active {
+    display: flex;
+}
+.language-filter-dropdown .language-chip {
+    width: 100%;
+    text-align: left;
+    border-radius: 8px;
+}
+
 .language-chip {
     /* Reduced from 6px 16px to 3px 8px (50%) */
     padding: 3px 8px;
