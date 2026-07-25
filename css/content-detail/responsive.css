@@ -31,14 +31,13 @@
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   }
   
-  .content-grid,
   .recommendation-grid,
   .creator-content-grid,
   .related-grid {
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-  
+
   .playlist-queue-list {
     max-height: 400px;
   }
@@ -57,14 +56,13 @@
     padding: 24px;
   }
   
-  .content-grid,
   .recommendation-grid,
   .creator-content-grid,
   .related-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
-  
+
   .content-hero {
     padding: 30px;
     gap: 30px;
@@ -257,14 +255,13 @@
     font-size: 16px;
   }
   
-  .content-grid,
   .recommendation-grid,
   .creator-content-grid,
   .related-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   /* Cards */
   .card-title {
     font-size: 13px;
