@@ -172,11 +172,11 @@ function createCommentElement(comment) {
         <div class="comment-header">
             <div class="comment-avatar-sm">
                 ${avatarUrl && avatarUrl !== 'null' ?
-                    `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}" 
-                          alt="${window.escapeHtml(authorName)}" 
-                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);"
-                          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;\\'>${initial}</div>';">` :
-                    `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;border:2px solid rgba(29,78,216,0.2);">${initial}</div>`
+                    `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}"
+                          alt="${window.escapeHtml(authorName)}"
+                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;"
+                          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);color:#06141A;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;\\'>${initial}</div>';">` :
+                    `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);color:#06141A;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">${initial}</div>`
                 }
             </div>
             <div class="comment-user-info">
@@ -403,11 +403,11 @@ function createReplyElement(reply) {
         <div class="comment-header">
             <div class="comment-avatar-sm">
                 ${avatarUrl && avatarUrl !== 'null' ?
-                    `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}" 
-                          alt="${window.escapeHtml(authorName)}" 
-                          style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);"
-                          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;\\'>${initial}</div>';">` :
-                    `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border:2px solid rgba(29,78,216,0.2);">${initial}</div>`
+                    `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}"
+                          alt="${window.escapeHtml(authorName)}"
+                          style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;"
+                          onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);color:#06141A;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;\\'>${initial}</div>';">` :
+                    `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);color:#06141A;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;">${initial}</div>`
                 }
             </div>
             <div class="comment-user-info">
@@ -599,41 +599,15 @@ function editComment(commentId) {
     textarea.className = 'edit-textarea';
     textarea.value = currentText;
     textarea.maxLength = 500;
-    textarea.style.width = '100%';
-    textarea.style.padding = '8px';
-    textarea.style.borderRadius = '8px';
-    textarea.style.background = 'rgba(255,255,255,0.06)';
-    textarea.style.border = '1px solid var(--card-border)';
-    textarea.style.color = 'var(--soft-white)';
-    textarea.style.fontFamily = 'inherit';
-    textarea.style.fontSize = '13px';
-    textarea.style.resize = 'vertical';
-    textarea.style.minHeight = '60px';
-    
+
     const saveBtn = document.createElement('button');
     saveBtn.className = 'edit-save-btn';
     saveBtn.textContent = 'Save';
-    saveBtn.style.marginTop = '8px';
-    saveBtn.style.marginRight = '8px';
-    saveBtn.style.padding = '6px 16px';
-    saveBtn.style.borderRadius = '20px';
-    saveBtn.style.border = 'none';
-    saveBtn.style.background = 'linear-gradient(135deg, #1D4ED8, #F59E0B)';
-    saveBtn.style.color = 'white';
-    saveBtn.style.fontWeight = '600';
-    saveBtn.style.cursor = 'pointer';
-    
+
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'edit-cancel-btn';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.marginTop = '8px';
-    cancelBtn.style.padding = '6px 16px';
-    cancelBtn.style.borderRadius = '20px';
-    cancelBtn.style.border = '1px solid var(--card-border)';
-    cancelBtn.style.background = 'rgba(255,255,255,0.08)';
-    cancelBtn.style.color = 'var(--soft-white)';
-    cancelBtn.style.cursor = 'pointer';
-    
+
     const btnContainer = document.createElement('div');
     btnContainer.style.display = 'flex';
     btnContainer.style.gap = '8px';
@@ -782,7 +756,7 @@ async function updateCommentInputState() {
                 commentAvatar.innerHTML = `<img src="${fixedUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
             } else {
                 const initial = displayName.charAt(0).toUpperCase();
-                commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1.2rem;">${initial}</div>`;
+                commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#00E5FF,#0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;font-size:1.2rem;">${initial}</div>`;
             }
         }
         

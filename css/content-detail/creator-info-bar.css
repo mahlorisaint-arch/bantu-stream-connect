@@ -11,6 +11,39 @@
 /* player itself, confirmed directly by the user.    */
 /* ============================================ */
 
+/* ---------- Page-wide cyan scoping for shared/global UI ---------- */
+/* #loading/.spinner and #toast-container/.toast are shared components
+   (shared-components.css) used on every page — can't recolor them
+   globally without leaking cyan onto pages that should stay gold/blue.
+   Scoped via body.content-detail-page (set in content-detail.html)
+   instead, so only this page's loading spinner and toast "info" accent
+   pick up the cyan language; everywhere else is untouched. */
+body.content-detail-page .spinner {
+  border-color: rgba(0, 229, 255, 0.15);
+  border-top-color: #00E5FF;
+}
+
+/* Toast container itself — same glass language as the rest of this
+   page (rgba fill, no var(--card-border) hairline, cyan-tinted glow)
+   instead of the platform's default card-bg/card-border combo. The
+   per-type left-border accent (success=green, error=red, warning=
+   amber) stays semantic and untouched — only "info" picks up cyan,
+   since that's the one that was tied to var(--bantu-blue). */
+body.content-detail-page .toast {
+  background: rgba(10, 14, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 229, 255, 0.08);
+  font-family: 'Inter', sans-serif;
+}
+
+body.content-detail-page .toast-info {
+  border-left-color: #00E5FF;
+}
+
+body.content-detail-page .toast-info i {
+  color: #00E5FF;
+}
+
 .creator-info-bar {
   display: flex;
   align-items: center;
@@ -190,6 +223,10 @@
   gap: 0;
 }
 
+.action-pill-icon-only i {
+  font-size: 16px;
+}
+
 /* Resume (continue watching) — a primary CTA injected dynamically by
    hero-section.js's addResumeButton(), not part of the reference image's
    fixed button set, so it gets the cyan treatment like Connect to read as
@@ -279,22 +316,45 @@
   background: rgba(0, 229, 255, 0.12);
 }
 
+/* Fixed-width icon column so every row's label starts at the same
+   horizontal position regardless of how wide each icon's own glyph is
+   (fa-list vs fa-share vs fa-bookmark vs fa-heart all differ) — without
+   this, rows read as randomly placed instead of a clean aligned list. */
+.info-bar-more-menu button i {
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 14px;
+}
+
 /* Share/Save/Favorite get relocated in here on mobile/tablet (see
-   hero-section.js relocateSecondaryActionsForViewport) — override their
-   .action-pill look to read as plain menu rows instead of floating
-   pills once they're inside the dropdown. */
+   hero-section.js setupResponsiveActionRelocation) — override their
+   .action-pill look completely so they render exactly like Playlist/
+   Close Player (icon, fixed-width, then label), not as floating pills
+   dropped into a list. */
 .info-bar-more-menu .action-pill {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
   height: auto;
   width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
   background: transparent;
-  justify-content: flex-start;
+  border: none;
+  font-size: 13px;
+  font-weight: 400;
+  white-space: normal;
 }
 
 .info-bar-more-menu .action-pill:hover {
   background: rgba(0, 229, 255, 0.12);
   border: none;
+}
+
+.info-bar-more-menu .action-pill.active {
+  color: #00E5FF;
 }
 
 .info-bar-more-menu .action-pill span {
