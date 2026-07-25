@@ -2188,9 +2188,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const skeleton = document.getElementById('content-skeleton');
     const loadingScreen = document.getElementById('loading');
     const app = document.getElementById('app');
-    
+    // The real page content (<main class="container">, everything from the
+    // player down) used to stay visible the whole time the skeleton was
+    // shown above it — every section rendering its own "Loading..."
+    // text/spinner at once — so the page visibly showed two different,
+    // stacked loading states instead of one. Hide it until the skeleton
+    // is dismissed below.
+    const mainContent = document.querySelector('main.container');
+
     if (loadingScreen) loadingScreen.style.display = 'none';
     if (app) app.style.display = 'block';
+    if (mainContent) mainContent.style.display = 'none';
     if (skeleton) skeleton.style.display = 'block';
     
     if (!window.supabaseClient) {
@@ -2253,6 +2261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]);
         
         if (skeleton) skeleton.style.display = 'none';
+        if (mainContent) mainContent.style.display = '';
         if (typeof updateCommentInputState === 'function') updateCommentInputState();
         
         if (typeof initAnalyticsModal === 'function') initAnalyticsModal();
@@ -2296,6 +2305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('❌ Critical load failed:', err);
         if (typeof showToast === 'function') showToast('Failed to load content. Retrying...', 'error');
         if (skeleton) skeleton.style.display = 'none';
+        if (mainContent) mainContent.style.display = '';
         try {
             await loadContentFromURLLegacy();
         } catch (fallbackErr) {
@@ -2317,6 +2327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     setTimeout(() => {
         if (skeleton && skeleton.style.display !== 'none') skeleton.style.display = 'none';
+        if (mainContent && mainContent.style.display === 'none') mainContent.style.display = '';
         const loading = document.getElementById('loading');
         const appElem = document.getElementById('app');
         if (loading && appElem && loading.style.display !== 'none') {

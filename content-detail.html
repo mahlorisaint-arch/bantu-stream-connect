@@ -24,38 +24,63 @@
 <link rel="stylesheet" href="css/content-detail.css">
 
 <style>
-/* YouTube-Style Skeleton Loading UI */
+/* YouTube-Style Skeleton Loading UI — mirrors the real page shape: a
+   full-width player, an info bar (thumbnail + title/meta + action
+   pills), a description line, and a two-card rail. */
 .content-skeleton {
     animation: fadeIn 0.2s ease;
     padding: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
 }
-.skeleton-hero {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 24px;
-    margin-bottom: 20px;
-}
-.skeleton-poster {
-    height: 220px;
+.skeleton-player {
+    width: 100%;
+    aspect-ratio: 16 / 9;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     animation: pulse 1.5s infinite;
+    margin-bottom: 16px;
 }
-.skeleton-info {
+.skeleton-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.skeleton-info-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+.skeleton-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    animation: pulse 1.5s infinite 0.1s;
+}
+.skeleton-info-text {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
 }
 .skeleton-title {
-    height: 28px;
-    width: 70%;
+    height: 18px;
+    width: 60%;
     background: rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     animation: pulse 1.5s infinite 0.2s;
 }
 .skeleton-meta {
-    height: 16px;
-    width: 50%;
+    height: 13px;
+    width: 35%;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 4px;
     animation: pulse 1.5s infinite 0.4s;
@@ -66,29 +91,55 @@
     background: rgba(255, 255, 255, 0.04);
     border-radius: 4px;
     animation: pulse 1.5s infinite 0.6s;
+    margin-bottom: 24px;
 }
 .skeleton-actions {
     display: flex;
-    gap: 12px;
-    margin-top: 8px;
+    gap: 10px;
+    flex-shrink: 0;
 }
 .skeleton-btn {
-    height: 36px;
-    width: 100px;
+    height: 40px;
+    width: 80px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
     animation: pulse 1.5s infinite 0.8s;
+}
+.skeleton-rail-title {
+    height: 18px;
+    width: 180px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    animation: pulse 1.5s infinite;
+    margin-bottom: 16px;
 }
 .skeleton-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
 }
-.skeleton-card {
-    height: 140px;
+.skeleton-card-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+    border-radius: 8px;
     animation: pulse 1.5s infinite 1s;
+    margin-bottom: 10px;
+}
+.skeleton-card-title {
+    height: 14px;
+    width: 85%;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 4px;
+    animation: pulse 1.5s infinite 1.1s;
+    margin-bottom: 8px;
+}
+.skeleton-card-meta {
+    height: 12px;
+    width: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    animation: pulse 1.5s infinite 1.2s;
 }
 @keyframes pulse {
     0%, 100% { opacity: 0.6; }
@@ -97,6 +148,11 @@
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+@media (max-width: 768px) {
+    .skeleton-info-bar { flex-direction: column; align-items: stretch; }
+    .skeleton-actions { justify-content: flex-start; }
+    .skeleton-grid { grid-template-columns: 1fr; }
 }
 
 /* YouTube-Style Persistent Sidebar */
@@ -250,23 +306,39 @@
     <div class="glow-cycle glow-4"></div>
 </div>
 
-<!-- Content Skeleton -->
+<!-- Content Skeleton — mirrors the real page shape (full-width player,
+     info bar, description, card rail) so it reads as one continuous
+     loading state instead of a stale, differently-shaped placeholder
+     that gets replaced by a second, different-looking loading view. -->
 <div id="content-skeleton" class="content-skeleton" style="display: none;">
-    <div class="skeleton-hero">
-        <div class="skeleton-poster"></div>
-        <div class="skeleton-info">
-            <div class="skeleton-title"></div>
-            <div class="skeleton-meta"></div>
-            <div class="skeleton-description"></div>
-            <div class="skeleton-actions">
-                <div class="skeleton-btn"></div>
-                <div class="skeleton-btn"></div>
-                <div class="skeleton-btn"></div>
+    <div class="skeleton-player"></div>
+    <div class="skeleton-info-bar">
+        <div class="skeleton-info-left">
+            <div class="skeleton-thumb"></div>
+            <div class="skeleton-info-text">
+                <div class="skeleton-title"></div>
+                <div class="skeleton-meta"></div>
             </div>
         </div>
+        <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+        </div>
     </div>
+    <div class="skeleton-description"></div>
+    <div class="skeleton-rail-title"></div>
     <div class="skeleton-grid">
-        <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
+        <div class="skeleton-card">
+            <div class="skeleton-card-thumb"></div>
+            <div class="skeleton-card-title"></div>
+            <div class="skeleton-card-meta"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton-card-thumb"></div>
+            <div class="skeleton-card-title"></div>
+            <div class="skeleton-card-meta"></div>
+        </div>
     </div>
 </div>
 

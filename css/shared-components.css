@@ -1303,11 +1303,17 @@ html.theme-high-contrast .header.scrolled {
 /* ============================================ */
 .back-to-top {
   position: fixed; bottom: 30px; right: 20px; width: 44px; height: 44px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); color: white; border: none;
+  background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: #00E5FF; border: 1px solid rgba(0, 229, 255, 0.35);
   cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 18px;
-  z-index: 998; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+  z-index: 998; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 16px rgba(0, 229, 255, 0.15);
 }
-.back-to-top:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(29, 78, 216, 0.6); }
+.back-to-top:hover {
+  transform: translateY(-3px);
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00E5FF;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 229, 255, 0.35);
+}
 
 /* ============================================ */
 /* FOOTER */
