@@ -710,26 +710,35 @@ async function toggleWatchLater(contentId, userId, isCurrentlySaved) {
 }
 
 /**
- * Share content
+ * Share modal — a real "share to..." panel (copy link + WhatsApp/X/Facebook/
+ * Email) instead of relying solely on navigator.share(), which isn't
+ * supported everywhere and previously left the button showing a spinner
+ * with no visible outcome when it wasn't available.
  */
-async function shareContent(contentId, userId) {
+function openShareModal() {
+    if (!window.currentContent?.id) {
+        console.warn('No current content for share action');
+        return;
+    }
+    const modal = document.getElementById('share-modal');
+    const input = document.getElementById('shareLinkInput');
+    if (input) input.value = window.location.href;
+    if (modal) modal.classList.add('active');
+}
+
+function closeShareModal() {
+    const modal = document.getElementById('share-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+/**
+ * Persist a share event once an actual share action (copy or platform
+ * link) has happened — moved out of the old all-or-nothing shareContent()
+ * so every path in the modal records consistently.
+ */
+async function recordShareEvent(contentId, userId) {
     if (!contentId) return;
-    
-    const shareText = `📺 ${window.currentContent?.title || 'Check this out!'}\nWatch on Bantu Stream Connect\nNO DNA, JUST RSA`;
-    const shareUrl = window.location.href;
-    
     try {
-        if (navigator.share && navigator.canShare?.({ text: shareText, url: shareUrl })) {
-            await navigator.share({
-                title: 'Bantu Stream Connect',
-                text: shareText,
-                url: shareUrl
-            });
-        } else {
-            await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-            if (typeof showToast === 'function') showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
-        }
-        
         if (userId) {
             await window.supabaseClient
                 .from('content_shares')
@@ -738,7 +747,7 @@ async function shareContent(contentId, userId) {
                     user_id: userId,
                     shared_at: new Date().toISOString()
                 });
-            
+
             await window.supabaseClient
                 .from('content_events')
                 .insert({
@@ -748,16 +757,80 @@ async function shareContent(contentId, userId) {
                     created_at: new Date().toISOString()
                 });
         }
-        
         if (typeof updateShareCountUI === 'function') {
             updateShareCountUI(1);
         }
     } catch (err) {
-        if (err.name !== 'AbortError') {
-            console.error('Share failed:', err);
-            if (typeof showToast === 'function') showToast('Failed to share. Try copying link manually.', 'error');
-        }
+        console.warn('Failed to record share event:', err);
     }
+}
+
+async function copyShareLink() {
+    const shareUrl = window.location.href;
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(shareUrl);
+        } else {
+            // Clipboard API needs a secure context; fall back to the
+            // classic hidden-textarea + execCommand trick so copying still
+            // works everywhere else (older browsers, non-HTTPS testing).
+            const textarea = document.createElement('textarea');
+            textarea.value = shareUrl;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        if (typeof showToast === 'function') showToast('✨ Link copied!', 'success');
+        await recordShareEvent(window.currentContent?.id, window.currentUserId);
+        closeShareModal();
+    } catch (err) {
+        console.error('Copy link failed:', err);
+        if (typeof showToast === 'function') showToast('Could not copy link. Try selecting it manually.', 'error');
+    }
+}
+
+function shareToPlatform(platform) {
+    const url = window.location.href;
+    const title = window.currentContent?.title || 'Check this out on Bantu Stream Connect';
+    const text = `📺 ${title}\nNO DNA, JUST RSA`;
+    const targets = {
+        whatsapp: `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`,
+        twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+        email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text + '\n' + url)}`
+    };
+    const target = targets[platform];
+    if (!target) return;
+
+    if (platform === 'email') {
+        window.location.href = target;
+    } else {
+        window.open(target, '_blank', 'noopener,noreferrer');
+    }
+    recordShareEvent(window.currentContent?.id, window.currentUserId);
+    closeShareModal();
+}
+
+function setupShareModal() {
+    const modal = document.getElementById('share-modal');
+    if (!modal) return;
+
+    const closeBtn = document.getElementById('close-share-modal');
+    if (closeBtn) closeBtn.addEventListener('click', closeShareModal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeShareModal();
+    });
+
+    const copyBtn = document.getElementById('copyShareLinkBtn');
+    if (copyBtn) copyBtn.addEventListener('click', copyShareLink);
+
+    modal.querySelectorAll('.share-platform-btn').forEach(btn => {
+        btn.addEventListener('click', () => shareToPlatform(btn.dataset.platform));
+    });
 }
 
 // ============================================
@@ -1268,27 +1341,27 @@ function resetPlaylistCompletionLock() {
 // ============================================
 // DIRECT USER GESTURE PLAYBACK
 // ============================================
-const startPlaybackFromUserGesture = async () => {
+const startPlaybackFromUserGesture = async (resumeSeconds) => {
     try {
         const player = document.getElementById('inlinePlayer');
         const placeholder = document.getElementById('videoPlaceholder');
         const heroPoster = document.getElementById('heroPoster');
-        
+
         if (player) {
             player.style.display = 'block';
             player.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         if (placeholder) placeholder.style.display = 'none';
         if (heroPoster) heroPoster.style.opacity = '0.3';
-        
+
         const playerInstance = window.enhancedVideoPlayer || enhancedVideoPlayer;
         if (!playerInstance || !playerInstance.video) {
             console.error('❌ Player instance not found.');
             return;
         }
-        
+
         const video = playerInstance.video;
-        
+
         if (!video.src && !window.isPlaylistMode && window.currentContent) {
             const fileUrl = getPlayableMediaUrl(window.currentContent);
             if (fileUrl) {
@@ -1296,25 +1369,44 @@ const startPlaybackFromUserGesture = async () => {
                 video.load();
             }
         }
-        
+
         video.muted = false;
         video.volume = 1.0;
         window.userHasInteractedWithMedia = true;
         document.body.classList.add('user-interacted');
-        
+
+        // Resume button passes the saved position here. HLS sources attach
+        // asynchronously (streaming-manager.js), so currentTime can only be
+        // set reliably once metadata is actually loaded — setting it too
+        // early is silently dropped once the manifest parses and resets
+        // playback to 0. Cover both cases: seek now if metadata is already
+        // there, otherwise seek once on the next loadedmetadata event.
+        if (resumeSeconds > 0) {
+            const seekToResumePosition = () => {
+                if (video.duration && resumeSeconds < video.duration - 1) {
+                    video.currentTime = resumeSeconds;
+                }
+            };
+            if (video.readyState >= 1) {
+                seekToResumePosition();
+            } else {
+                video.addEventListener('loadedmetadata', seekToResumePosition, { once: true });
+            }
+        }
+
         await video.play().catch(async (err) => {
             console.warn('⚠️ Unmuted play failed, trying muted fallback:', err.message);
             video.muted = true;
             await video.play();
         });
-        
+
         const overlay = document.getElementById('initialPlayOverlay');
         if (overlay) overlay.classList.add('hidden');
-        
+
         if (window.currentContent?.id && !watchSession) {
             initializeWatchSessionOnPlay();
         }
-        
+
     } catch (error) {
         console.warn('⚠️ Direct playback failed:', error.message);
         if (typeof showToast === 'function') {
@@ -1916,108 +2008,48 @@ async function handleFavoriteButtonClick() {
 }
 
 /**
- * Handle Watch Later button click
+ * Handle Save button click — opens the YouTube-style "Save to..." picker
+ * (js/playlist-modal.js's PlaylistModal) instead of directly toggling a
+ * single Watch Later flag, so users can save into any of their own
+ * playlists, create a new one on the spot, or quick-add to Watch Later.
  */
-async function handleWatchLaterButtonClick() {
-    console.log('⏰ Watch Later button clicked');
-    
+function handleWatchLaterButtonClick() {
+    console.log('📁 Save button clicked - opening playlist picker');
+
     if (!window.currentContent?.id) {
-        console.warn('No current content for watch later action');
+        console.warn('No current content for save action');
         return;
     }
-    
+
     if (!window.currentUserId) {
         if (typeof window.showToast === 'function') {
-            window.showToast('Sign in to use Watch Later', 'warning');
+            window.showToast('Sign in to save content', 'warning');
         }
         setTimeout(() => {
             window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
         }, 1500);
         return;
     }
-    
-    const watchLaterBtn = document.getElementById('watchLaterBtn');
-    const isCurrentlySaved = watchLaterBtn?.classList.contains('active') || false;
-    
-    // Optimistic UI
-    if (watchLaterBtn) {
-        watchLaterBtn.classList.toggle('active', !isCurrentlySaved);
-        watchLaterBtn.innerHTML = !isCurrentlySaved
-            ? '<i class="fas fa-bookmark"></i><span>Save</span>'
-            : '<i class="far fa-bookmark"></i><span>Save</span>';
-        watchLaterBtn.disabled = true;
+
+    if (!window.playlistModal && typeof initializePlaylistModal === 'function') {
+        initializePlaylistModal();
     }
-    
-    try {
-        const newState = await toggleWatchLater(window.currentContent.id, window.currentUserId, isCurrentlySaved);
-        
-        if (newState === isCurrentlySaved) {
-            if (watchLaterBtn) {
-                watchLaterBtn.classList.toggle('active', isCurrentlySaved);
-                watchLaterBtn.innerHTML = isCurrentlySaved
-                    ? '<i class="fas fa-bookmark"></i><span>Save</span>'
-                    : '<i class="far fa-bookmark"></i><span>Save</span>';
-            }
-            if (typeof window.showToast === 'function') {
-                window.showToast('Failed to update Watch Later', 'error');
-            }
-        } else {
-            if (typeof window.showToast === 'function') {
-                window.showToast(newState ? 'Added to Watch Later!' : 'Removed from Watch Later', 'success');
-            }
-            // Update engagement cache
-            if (typeof updateEngagementButtonsUI === 'function') {
-                const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
-                updateEngagementButtonsUI(states);
-            }
-        }
-    } catch (error) {
-        console.error('❌ Watch Later button error:', error);
-        if (watchLaterBtn) {
-            watchLaterBtn.classList.toggle('active', isCurrentlySaved);
-            watchLaterBtn.innerHTML = isCurrentlySaved
-                ? '<i class="fas fa-bookmark"></i><span>Save</span>'
-                : '<i class="far fa-bookmark"></i><span>Save</span>';
-        }
-    } finally {
-        if (watchLaterBtn) {
-            watchLaterBtn.disabled = false;
-        }
+
+    if (window.playlistModal && typeof window.playlistModal.open === 'function') {
+        window.playlistModal.open();
+    } else if (typeof window.showToast === 'function') {
+        window.showToast('Unable to open playlists right now', 'error');
     }
 }
 
 /**
- * Handle Share button click
+ * Handle Share button click — opens the share modal instead of firing a
+ * spinner around a single fire-and-forget navigator.share()/clipboard
+ * attempt that gave no visible result when either API was unavailable.
  */
-async function handleShareButtonClick() {
+function handleShareButtonClick() {
     console.log('📤 Share button clicked');
-    
-    if (!window.currentContent?.id) {
-        console.warn('No current content for share action');
-        return;
-    }
-    
-    const shareBtn = document.getElementById('shareBtn');
-    const originalHTML = shareBtn?.innerHTML;
-    
-    if (shareBtn) {
-        shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Sharing...</span>';
-        shareBtn.disabled = true;
-    }
-    
-    try {
-        await shareContent(window.currentContent.id, window.currentUserId);
-    } catch (error) {
-        console.error('Share error:', error);
-        if (typeof window.showToast === 'function') {
-            window.showToast('Failed to share', 'error');
-        }
-    } finally {
-        if (shareBtn) {
-            shareBtn.innerHTML = originalHTML;
-            shareBtn.disabled = false;
-        }
-    }
+    openShareModal();
 }
 
 /**
@@ -2226,11 +2258,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof initAnalyticsModal === 'function') initAnalyticsModal();
         if (typeof initSearchModal === 'function') initSearchModal();
         if (typeof initNotificationsPanel === 'function') initNotificationsPanel();
+        if (typeof setupShareModal === 'function') setupShareModal();
         
         if (window.PlaylistManager && window.currentUserId && typeof initializePlaylistManager === 'function') {
             await initializePlaylistManager();
         }
-        
+
+        if (typeof initializePlaylistModal === 'function') {
+            initializePlaylistModal();
+        }
+
         if (typeof initializeRecommendationEngine === 'function') {
             if (!window.isPlaylistMode && window.currentContent?.id) {
                 await initializeRecommendationEngine();
@@ -2434,7 +2471,7 @@ window.loadAllEngagementStates = loadAllEngagementStates;
 window.toggleLike = toggleLike;
 window.toggleFavorite = toggleFavorite;
 window.toggleWatchLater = toggleWatchLater;
-window.shareContent = shareContent;
+window.openShareModal = openShareModal;
 window.updateGlobalContentId = updateGlobalContentId;
 window.setCurrentContent = setCurrentContent;
 window.loadLiveEngagementCounts = loadLiveEngagementCounts;

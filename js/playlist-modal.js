@@ -111,7 +111,7 @@
     createTitle.textContent = 'Create New Playlist';
     createTitle.style.cssText = `
       font-size: 14px;
-      color: var(--warm-gold);
+      color: #00E5FF;
       margin-bottom: 10px;
     `;
     
@@ -141,10 +141,10 @@
     createBtn.textContent = 'Create';
     createBtn.style.cssText = `
       padding: 10px 20px;
-      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-      border: none;
-      border-radius: 8px;
-      color: white;
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid rgba(0, 229, 255, 0.5);
+      border-radius: 999px;
+      color: #00E5FF;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
@@ -184,21 +184,21 @@
     const watchLaterSection = document.createElement('div');
     watchLaterSection.style.cssText = `
       padding: 15px;
-      background: rgba(245, 158, 11, 0.1);
+      background: rgba(0, 229, 255, 0.08);
       border-radius: 12px;
-      border: 1px solid var(--warm-gold);
+      border: 1px solid rgba(0, 229, 255, 0.4);
     `;
-    
+
     const watchLaterBtn = document.createElement('button');
     watchLaterBtn.id = 'quick-watch-later-btn';
     watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i> Add to Watch Later';
     watchLaterBtn.style.cssText = `
       width: 100%;
       padding: 12px;
-      background: rgba(245, 158, 11, 0.2);
-      border: 1px solid var(--warm-gold);
-      border-radius: 8px;
-      color: var(--warm-gold);
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid rgba(0, 229, 255, 0.5);
+      border-radius: 999px;
+      color: #00E5FF;
       font-weight: 600;
       cursor: pointer;
       display: flex;
@@ -289,15 +289,15 @@
             transition: all 0.2s ease;
           " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
             <div style="display:flex;align-items:center;gap:10px">
-              <i class="fas ${isWatchLater ? 'fa-clock' : 'fa-list'}" style="color:var(--warm-gold)"></i>
+              <i class="fas ${isWatchLater ? 'fa-clock' : 'fa-list'}" style="color:#00E5FF"></i>
               <span style="color:var(--soft-white);font-size:14px">${this._escapeHtml(playlist.name)}</span>
             </div>
             <button class="add-to-playlist-btn" data-playlist-id="${playlist.id}" data-playlist-name="${playlist.name}" style="
               padding: 6px 12px;
-              background: var(--bantu-blue);
-              border: none;
-              border-radius: 6px;
-              color: white;
+              background: rgba(0, 229, 255, 0.15);
+              border: 1px solid rgba(0, 229, 255, 0.5);
+              border-radius: 999px;
+              color: #00E5FF;
               font-size: 12px;
               font-weight: 600;
               cursor: pointer;
@@ -492,12 +492,35 @@
           content_id: this.contentId,
           position: await this._getNextPosition(watchLater.id)
         });
-      
+
       if (error) throw error;
-      
+
+      // Also flag the simple watch_later table, kept in sync so the Save
+      // button's bookmark icon and any other page reading that table
+      // (engagement-manager.js) stay accurate — this playlist-based flow
+      // is additive, not a replacement for that existing engagement flag.
+      try {
+        const { data: existingFlag } = await this.supabase
+          .from('watch_later')
+          .select('id')
+          .eq('user_id', this.userId)
+          .eq('content_id', this.contentId)
+          .maybeSingle();
+        if (!existingFlag) {
+          await this.supabase.from('watch_later').insert({ user_id: this.userId, content_id: this.contentId });
+        }
+      } catch (flagError) {
+        console.warn('Could not sync watch_later flag:', flagError);
+      }
+
+      if (typeof window.updateEngagementButtonsUI === 'function' && typeof window.loadAllEngagementStates === 'function') {
+        const states = await window.loadAllEngagementStates(this.contentId, this.userId);
+        window.updateEngagementButtonsUI(states);
+      }
+
       showToast('✅ Added to Watch Later', 'success');
       this.close();
-      
+
     } catch (error) {
       console.error('Error adding to Watch Later:', error);
       if (error.code === '23505') {

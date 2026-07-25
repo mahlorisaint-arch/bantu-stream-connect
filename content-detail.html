@@ -1161,7 +1161,36 @@
 </div>
     <div id="theme-selector" class="theme-selector"><button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button><button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button><button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button></div>
 
-    <div id="playlist-modal" class="playlist-modal"><div class="playlist-modal-content"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h2>Add to Playlist</h2><button class="playlist-modal-close" id="close-playlist-modal"><i class="fas fa-times"></i></button></div><div id="playlist-list"></div><div style="display: flex; gap: 10px; margin-top: 15px;"><input type="text" id="new-playlist-name" placeholder="New playlist name..."><button id="create-playlist-btn">Create</button></div><button id="quick-watch-later-btn"><i class="far fa-clock"></i> Add to Watch Later</button></div></div>
+    <!-- Save-to-playlist modal is built entirely by js/playlist-modal.js's
+         PlaylistModal class (createModal()) and appended to <body> at
+         runtime — the static placeholder that used to live here had a
+         different, unused structure (#playlist-list instead of the real
+         #playlists-container) and would have collided by id with the real
+         one once wired up. Removed. -->
+
+    <!-- Share modal — reuses .playlist-modal/.playlist-modal-content for the
+         overlay/box chrome (same visual language, already styled) and adds
+         its own link-row + platform-grid content. Guarantees a working share
+         action (real URL links, no Web Share API dependency) instead of the
+         old spinner-then-nothing button. -->
+    <div id="share-modal" class="playlist-modal">
+      <div class="playlist-modal-content share-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>Share</h2>
+          <button class="playlist-modal-close" id="close-share-modal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="share-link-row">
+          <input type="text" id="shareLinkInput" readonly aria-label="Share link">
+          <button id="copyShareLinkBtn" type="button"><i class="fas fa-copy"></i><span>Copy</span></button>
+        </div>
+        <div class="share-platform-grid">
+          <button class="share-platform-btn" type="button" data-platform="whatsapp"><i class="fab fa-whatsapp"></i><span>WhatsApp</span></button>
+          <button class="share-platform-btn" type="button" data-platform="twitter"><i class="fab fa-twitter"></i><span>X</span></button>
+          <button class="share-platform-btn" type="button" data-platform="facebook"><i class="fab fa-facebook"></i><span>Facebook</span></button>
+          <button class="share-platform-btn" type="button" data-platform="email"><i class="fas fa-envelope"></i><span>Email</span></button>
+        </div>
+      </div>
+    </div>
 
     <div id="badges-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>My Badges</h2><button id="close-badges"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div id="badges-list"></div></div></div></div>
 

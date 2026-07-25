@@ -292,7 +292,7 @@ async function addResumeButton(progressSeconds) {
     `;
     resumeBtn.addEventListener('click', () => {
         if (typeof window.startPlaybackFromUserGesture === 'function') {
-            window.startPlaybackFromUserGesture();
+            window.startPlaybackFromUserGesture(finalProgress);
         }
     });
 
