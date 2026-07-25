@@ -306,32 +306,8 @@
 }
 .upload-card__meta { font-size: 11px; color: var(--slate-grey); display: flex; align-items: center; gap: 6px; }
 
-/* ===== CARD PREVIEW VIDEO ===== */
-.card-preview-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  z-index: 2;
-}
-.card-preview-video.active { opacity: 1; }
-.card-preview-frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  z-index: 2;
-  pointer-events: none;
-  transform: scale(1.1);
-  transform-origin: center;
-}
-.card-preview-frame.active { opacity: 1; }
+/* Card preview video/frame styling moved to css/shared/preview-clips.css —
+   shared with the home feed, which loads it separately. */
 
 /* ===== KEYBOARD FOCUS STATES ===== */
 .upload-card:focus-visible,

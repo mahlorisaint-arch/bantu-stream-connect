@@ -12,9 +12,9 @@
   window.currentUser = null;
   let currentFilter = 'all';
 
-  // ===== HOVER PREVIEW STATE =====
-  const HOVER_DELAY = 500;
-  const hoverTimers = new WeakMap();
+  // Hover-preview-clip logic (getPreviewUrl/attachHoverPreview/etc.) now
+  // lives in js/shared/preview-clips.js (window.BSCPreviewClips), shared
+  // with the home feed instead of duplicated here.
 
   // ===== FOCUS RETURN STATE =====
   let lastFocusedCard = null;
@@ -127,23 +127,6 @@
 
   function hasHeroVideo(item) {
     return !!(item?.preview_clip_url || (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id));
-  }
-
-  function getPreviewUrl(item) {
-    if (!item) return '';
-    if (item.preview_clip_url) return fixMediaUrl(item.preview_clip_url);
-    if (item.streaming_provider === 'cloudflare_stream' && item.provider_video_id) {
-      const params = new URLSearchParams({
-        autoplay: 'true',
-        muted: 'true',
-        loop: 'true',
-        controls: 'false',
-        preload: 'true',
-        poster: getCloudflareThumbnailUrl(item.provider_video_id, 480)
-      });
-      return `https://iframe.videodelivery.net/${item.provider_video_id}?${params.toString()}`;
-    }
-    return '';
   }
 
   function getHeroFeatureLabel(item) {
@@ -355,67 +338,6 @@
     `;
   }
 
-  // ===== HOVER PREVIEW FUNCTIONS =====
-  function attachHoverPreview(cardEl, item) {
-    if (!getPreviewUrl(item)) return;
-    if (window.matchMedia('(hover: none)').matches) return;
-
-    const thumb = cardEl.querySelector('.upload-card__thumb, .top10-thumb');
-    if (!thumb) return;
-
-    cardEl.addEventListener('mouseenter', () => {
-      const timer = setTimeout(() => startPreview(thumb, item), HOVER_DELAY);
-      hoverTimers.set(cardEl, timer);
-    });
-
-    cardEl.addEventListener('mouseleave', () => {
-      clearTimeout(hoverTimers.get(cardEl));
-      stopPreview(thumb);
-    });
-  }
-
-  function startPreview(thumb, item) {
-    if (thumb.querySelector('video, iframe')) return;
-
-    if (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id && !item?.preview_clip_url) {
-      const frame = document.createElement('iframe');
-      frame.src = getPreviewUrl(item);
-      frame.className = 'card-preview-frame';
-      frame.title = `${item.title || 'Content'} preview`;
-      frame.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
-      frame.referrerPolicy = 'strict-origin-when-cross-origin';
-      thumb.appendChild(frame);
-      requestAnimationFrame(() => {
-        frame.classList.add('active');
-      });
-      return;
-    }
-
-    const video = document.createElement('video');
-    video.src = getPreviewUrl(item);
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.className = 'card-preview-video';
-    thumb.appendChild(video);
-    requestAnimationFrame(() => {
-      video.classList.add('active');
-      video.play().catch(() => {});
-    });
-  }
-
-  function stopPreview(thumb) {
-    const video = thumb.querySelector('video');
-    if (video) {
-      video.pause();
-      video.remove();
-    }
-
-    const frame = thumb.querySelector('iframe');
-    if (frame) {
-      frame.remove();
-    }
-  }
 
   // ===== REAL DATA: IN-PAGE DETAIL OVERLAY =====
   window.openInPageDetail = async function(contentId) {
@@ -895,7 +817,7 @@
         }
       });
       const item = items.find(i => String(i.id) === card.dataset.contentId);
-      if (item) attachHoverPreview(card, item);
+      if (item) window.BSCPreviewClips?.attachHoverPreview(card, item, '.upload-card__thumb, .top10-thumb');
     });
   }
 
