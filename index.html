@@ -226,25 +226,6 @@
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notification-count" style="display: none;">0</span>
                 </button>
-                <div class="language-filter-wrap" id="language-filter-wrap">
-                    <button id="language-filter-btn" class="icon-btn" title="Filter by Language" aria-label="Filter by Language">
-                        <i class="fas fa-language"></i>
-                    </button>
-                    <div class="language-filter-dropdown" id="language-filter-dropdown">
-                        <button class="language-chip active" data-lang="all">All</button>
-                        <button class="language-chip" data-lang="en">English</button>
-                        <button class="language-chip" data-lang="zu">IsiZulu</button>
-                        <button class="language-chip" data-lang="xh">IsiXhosa</button>
-                        <button class="language-chip" data-lang="af">Afrikaans</button>
-                        <button class="language-chip" data-lang="nso">Sepedi</button>
-                        <button class="language-chip" data-lang="st">Sesotho</button>
-                        <button class="language-chip" data-lang="tn">Setswana</button>
-                        <button class="language-chip" data-lang="ss">siSwati</button>
-                        <button class="language-chip" data-lang="ve">Tshivenda</button>
-                        <button class="language-chip" data-lang="ts">Xitsonga</button>
-                        <button class="language-chip" data-lang="nr">isiNdebele</button>
-                    </div>
-                </div>
                 <div class="profile-switcher">
                     <button id="current-profile-btn" class="profile-btn" title="Profile">
                         <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
@@ -273,8 +254,9 @@
              were both confirmed fully inert - the JS that would wire them
              (settings.js, content-library.js) isn't loaded on this page.
              Category browsing already lives on Explore; language filtering
-             is now a compact header dropdown (see #language-filter-wrap
-             below) instead of a full-width strip competing with the hero. -->
+             is now a compact dropdown (see #language-filter-wrap below,
+             moved out of the header to match content-detail.html's header
+             exactly) instead of a full-width strip competing with the hero. -->
 
         <!-- Main Content -->
         <main class="container">
@@ -284,6 +266,29 @@
                 <div class="community-stat"><i class="fas fa-video"></i><span class="community-stat-value" id="total-content">2.3K</span><span class="community-stat-label">Pieces of Content</span></div>
                 <div class="community-stat"><i class="fas fa-user-plus"></i><span class="community-stat-value" id="new-connectors">+342</span><span class="community-stat-label">Joined Today</span></div>
                 <div class="community-stat"><i class="fas fa-map-pin"></i><span class="community-stat-value">11</span><span class="community-stat-label">South African Languages</span></div>
+            </div>
+
+            <!-- Compact language filter, moved out of the header -->
+            <div class="language-filter-row">
+                <div class="language-filter-wrap" id="language-filter-wrap">
+                    <button id="language-filter-btn" class="language-filter-trigger" title="Filter by Language" aria-label="Filter by Language">
+                        <i class="fas fa-language"></i><span>Language</span><i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="language-filter-dropdown" id="language-filter-dropdown">
+                        <button class="language-chip active" data-lang="all">All</button>
+                        <button class="language-chip" data-lang="en">English</button>
+                        <button class="language-chip" data-lang="zu">IsiZulu</button>
+                        <button class="language-chip" data-lang="xh">IsiXhosa</button>
+                        <button class="language-chip" data-lang="af">Afrikaans</button>
+                        <button class="language-chip" data-lang="nso">Sepedi</button>
+                        <button class="language-chip" data-lang="st">Sesotho</button>
+                        <button class="language-chip" data-lang="tn">Setswana</button>
+                        <button class="language-chip" data-lang="ss">siSwati</button>
+                        <button class="language-chip" data-lang="ve">Tshivenda</button>
+                        <button class="language-chip" data-lang="ts">Xitsonga</button>
+                        <button class="language-chip" data-lang="nr">isiNdebele</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Hero Section -->

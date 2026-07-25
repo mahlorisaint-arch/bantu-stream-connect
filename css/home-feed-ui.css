@@ -79,10 +79,16 @@ html, body {
 
 /* ============================================
 MODALS - HIDDEN BY DEFAULT
-============================================ */
+============================================
+.notifications-panel is intentionally NOT part of this reset - it's a
+right-slide-in panel (position/width/right handled by
+shared-components.css), not a full-screen centered modal like the ones
+below. It used to be bundled in here with left:0/width:100% !important,
+which completely destroyed its real design and made its contents render
+flush against the left edge instead of sliding in from the right like
+content-detail.html. */
 .analytics-modal,
 .search-modal,
-.notifications-panel,
 .watch-party-modal,
 .tip-modal,
 .badges-modal,
@@ -99,7 +105,6 @@ MODALS - HIDDEN BY DEFAULT
 
 .analytics-modal.active,
 .search-modal.active,
-.notifications-panel.active,
 .watch-party-modal.active,
 .tip-modal.active,
 .badges-modal.active,
@@ -259,9 +264,40 @@ LANGUAGE FILTER BAR - REDUCED TO 40% SIZE
     flex-wrap: wrap;
 }
 
-/* Compact header dropdown replacing the old full-width 12-chip strip. */
+/* Compact dropdown replacing the old full-width 12-chip strip - lives as
+   its own row above the hero, not in the header (matches
+   content-detail.html's header exactly, which has no language control). */
+.language-filter-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
 .language-filter-wrap {
     position: relative;
+}
+.language-filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: 999px;
+    color: var(--soft-white, #F8FAFC);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.language-filter-trigger i:first-child,
+.language-filter-trigger i:last-child {
+    color: #00E5FF;
+    font-size: 12px;
+}
+.language-filter-trigger:hover {
+    background: rgba(0, 229, 255, 0.1);
+    border-color: #00E5FF;
 }
 .language-filter-dropdown {
     display: none;
