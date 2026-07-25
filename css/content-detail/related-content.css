@@ -76,24 +76,14 @@
 }
 
 /* ============================================ */
-/* RELATED CONTENT ROW — horizontal scroll, trending-screen pattern */
+/* RELATED CONTENT GRID — two cards per row (not a horizontal scroll
+   row; that made each card stretch full-width and oversized on
+   narrower screens). */
 /* ============================================ */
 .related-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: #00E5FF transparent;
-}
-
-.related-grid::-webkit-scrollbar {
-  height: 4px;
-}
-
-.related-grid::-webkit-scrollbar-thumb {
-  background: rgba(0, 229, 255, 0.4);
-  border-radius: 2px;
 }
 
 /* Related content card */
@@ -107,7 +97,6 @@
   text-decoration: none;
   color: inherit;
   position: relative;
-  flex: 0 0 220px;
 }
 
 .related-card:hover {
@@ -411,10 +400,9 @@
 /* SKELETON LOADING */
 /* ============================================ */
 .related-skeleton-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
 }
 
 .related-skeleton-card {
@@ -422,7 +410,6 @@
   border-radius: 16px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
-  flex: 0 0 220px;
 }
 
 .skeleton-thumbnail {
@@ -466,11 +453,6 @@
 @media (max-width: 768px) {
   .related-content-section .section-title {
     font-size: 16px;
-  }
-
-  .related-card,
-  .related-skeleton-card {
-    flex: 0 0 170px;
   }
 
   .related-grid,
@@ -534,9 +516,9 @@
     padding: 4px 10px;
   }
 
-  .related-card,
-  .related-skeleton-card {
-    flex: 0 0 140px;
+  .related-grid,
+  .related-skeleton-grid {
+    gap: 8px;
   }
 
   .card-meta {

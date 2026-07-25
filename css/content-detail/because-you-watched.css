@@ -119,24 +119,14 @@
 }
 
 /* ============================================ */
-/* RECOMMENDATION ROW — horizontal scroll, trending-screen pattern */
+/* RECOMMENDATION GRID — two cards per row (not a horizontal scroll
+   row; that made each card stretch full-width and oversized on
+   narrower screens). */
 /* ============================================ */
 .recommendation-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: #00E5FF transparent;
-}
-
-.recommendation-grid::-webkit-scrollbar {
-  height: 4px;
-}
-
-.recommendation-grid::-webkit-scrollbar-thumb {
-  background: rgba(0, 229, 255, 0.4);
-  border-radius: 2px;
 }
 
 /* Recommendation card */
@@ -150,7 +140,6 @@
   text-decoration: none;
   color: inherit;
   position: relative;
-  flex: 0 0 220px;
 }
 
 .recommendation-card:hover {
@@ -436,10 +425,9 @@
 /* SKELETON LOADING */
 /* ============================================ */
 .recommendation-skeleton-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
 }
 
 .skeleton-card {
@@ -447,7 +435,6 @@
   border-radius: 16px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
-  flex: 0 0 220px;
 }
 
 .skeleton-thumbnail {
@@ -489,11 +476,6 @@
 /* RESPONSIVE ADJUSTMENTS */
 /* ============================================ */
 @media (max-width: 768px) {
-  .recommendation-card,
-  .skeleton-card {
-    flex: 0 0 170px;
-  }
-
   .recommendation-grid,
   .recommendation-skeleton-grid {
     gap: 12px;
@@ -530,9 +512,9 @@
 }
 
 @media (max-width: 550px) {
-  .recommendation-card,
-  .skeleton-card {
-    flex: 0 0 140px;
+  .recommendation-grid,
+  .recommendation-skeleton-grid {
+    gap: 8px;
   }
 
   .view-all-link {

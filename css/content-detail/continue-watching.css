@@ -67,24 +67,14 @@
 }
 
 /* ============================================ */
-/* CONTINUE WATCHING ROW — horizontal scroll, trending-screen pattern */
+/* CONTINUE WATCHING GRID — two cards per row (not a horizontal scroll
+   row; that made each card stretch full-width and oversized on
+   narrower screens). */
 /* ============================================ */
 .continue-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: #00E5FF transparent;
-}
-
-.continue-grid::-webkit-scrollbar {
-  height: 4px;
-}
-
-.continue-grid::-webkit-scrollbar-thumb {
-  background: rgba(0, 229, 255, 0.4);
-  border-radius: 2px;
 }
 
 /* Continue card */
@@ -98,7 +88,6 @@
   text-decoration: none;
   color: inherit;
   position: relative;
-  flex: 0 0 220px;
 }
 
 .continue-card:hover {
@@ -354,10 +343,9 @@
 /* SKELETON LOADING */
 /* ============================================ */
 .continue-skeleton-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
 }
 
 .continue-skeleton-card {
@@ -365,7 +353,6 @@
   border-radius: 16px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
-  flex: 0 0 220px;
 }
 
 .skeleton-thumbnail {
@@ -453,11 +440,6 @@
     padding: 5px 12px;
   }
 
-  .continue-card,
-  .continue-skeleton-card {
-    flex: 0 0 170px;
-  }
-
   .continue-grid,
   .continue-skeleton-grid {
     gap: 12px;
@@ -507,9 +489,9 @@
     margin-left: 0;
   }
 
-  .continue-card,
-  .continue-skeleton-card {
-    flex: 0 0 140px;
+  .continue-grid,
+  .continue-skeleton-grid {
+    gap: 8px;
   }
 
   .resume-badge span {

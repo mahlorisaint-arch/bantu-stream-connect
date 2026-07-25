@@ -105,24 +105,14 @@
 }
 
 /* ============================================ */
-/* CREATOR CONTENT ROW — horizontal scroll, trending-screen pattern */
+/* CREATOR CONTENT GRID — two cards per row (not a horizontal scroll
+   row; that made each card stretch full-width and oversized on
+   narrower screens). */
 /* ============================================ */
 .creator-content-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: #00E5FF transparent;
-}
-
-.creator-content-grid::-webkit-scrollbar {
-  height: 4px;
-}
-
-.creator-content-grid::-webkit-scrollbar-thumb {
-  background: rgba(0, 229, 255, 0.4);
-  border-radius: 2px;
 }
 
 /* Creator content card - specific styling for creator's other content */
@@ -136,7 +126,6 @@
   text-decoration: none;
   color: inherit;
   position: relative;
-  flex: 0 0 220px;
 }
 
 .creator-content-card:hover {
@@ -401,10 +390,9 @@
 /* SKELETON LOADING */
 /* ============================================ */
 .creator-skeleton-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
 }
 
 .creator-skeleton-card {
@@ -412,7 +400,6 @@
   border-radius: 16px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
-  flex: 0 0 220px;
 }
 
 .skeleton-thumbnail {
@@ -461,11 +448,6 @@
   .view-all-link {
     font-size: 12px;
     padding: 5px 12px;
-  }
-
-  .creator-content-card,
-  .creator-skeleton-card {
-    flex: 0 0 170px;
   }
 
   .creator-content-grid,
@@ -524,9 +506,9 @@
     margin-left: 0;
   }
 
-  .creator-content-card,
-  .creator-skeleton-card {
-    flex: 0 0 140px;
+  .creator-content-grid,
+  .creator-skeleton-grid {
+    gap: 8px;
   }
 
   .card-meta {
