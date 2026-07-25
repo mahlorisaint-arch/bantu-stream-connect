@@ -16,20 +16,25 @@
 -- integer.
 
 -- ============================================================
--- 1. comment_replies table
+-- 1. comment_replies table (same style/conventions as the existing
+--    comment_likes table: named constraints, explicit tablespace)
 -- ============================================================
-create table if not exists public.comment_replies (
-  id uuid primary key default gen_random_uuid(),
-  comment_id uuid not null references public.comments(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  author_name text,
-  author_avatar text,
+create table public.comment_replies (
+  id uuid not null default gen_random_uuid (),
+  comment_id uuid not null,
+  user_id uuid not null,
+  author_name text null,
+  author_avatar text null,
   reply_text text not null,
-  created_at timestamptz not null default now()
-);
+  created_at timestamp with time zone null default now(),
+  constraint comment_replies_pkey primary key (id),
+  constraint comment_replies_comment_id_fkey foreign KEY (comment_id) references comments (id) on delete CASCADE,
+  constraint comment_replies_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
-create index if not exists comment_replies_comment_id_idx
-  on public.comment_replies (comment_id);
+create index IF not exists idx_comment_replies_comment_id on public.comment_replies using btree (comment_id) TABLESPACE pg_default;
+
+create index IF not exists idx_comment_replies_user_id on public.comment_replies using btree (user_id) TABLESPACE pg_default;
 
 alter table public.comment_replies enable row level security;
 
