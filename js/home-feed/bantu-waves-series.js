@@ -478,9 +478,6 @@ const BantuWavesSeries = {
                         <button class="action-btn watchlist-btn ${isInWatchlist ? 'active' : ''}" data-series-id="${series.id}" title="${isInWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}">
                             <i class="fas ${watchlistButtonIcon}"></i> ${watchlistButtonText}
                         </button>
-                        <button class="action-btn notify-btn" data-series-id="${series.id}" title="Get Notifications">
-                            <i class="far fa-bell"></i> Notify
-                        </button>
                     </div>
                 </div>
             </div>
@@ -505,14 +502,6 @@ const BantuWavesSeries = {
             watchlistBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.toggleWatchlist(series, watchlistBtn);
-            });
-        }
-        
-        const notifyBtn = card.querySelector('.notify-btn');
-        if (notifyBtn) {
-            notifyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleNotifications(series.id);
             });
         }
         
@@ -616,61 +605,11 @@ const BantuWavesSeries = {
         }
     },
 
-    async toggleNotifications(seriesId) {
-        const user = await this.getCurrentUser();
-        if (!user) {
-            this.showToast('Please sign in to enable notifications', 'warning');
-            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            return;
-        }
-        
-        if (!window.supabaseAuth) {
-            this.showToast('Service unavailable', 'error');
-            return;
-        }
-        
-        try {
-            // Check if already subscribed to notifications
-            const { data: existing, error: fetchError } = await window.supabaseAuth
-                .from('series_notifications')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('playlist_id', seriesId)
-                .maybeSingle();
-            
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                console.error('Error checking notifications:', fetchError);
-                this.showToast('Error checking notifications', 'error');
-                return;
-            }
-            
-            if (existing) {
-                // Disable notifications
-                const { error: deleteError } = await window.supabaseAuth
-                    .from('series_notifications')
-                    .delete()
-                    .eq('id', existing.id);
-                    
-                if (deleteError) throw deleteError;
-                this.showToast('Notifications disabled', 'info');
-            } else {
-                // Enable notifications
-                const { error: insertError } = await window.supabaseAuth
-                    .from('series_notifications')
-                    .insert({
-                        user_id: user.id,
-                        playlist_id: seriesId,
-                        created_at: new Date().toISOString()
-                    });
-                    
-                if (insertError) throw insertError;
-                this.showToast('Notifications enabled!', 'success');
-            }
-        } catch (error) {
-            console.error('Error toggling notifications:', error);
-            this.showToast('Error updating notifications', 'error');
-        }
-    },
+    // toggleNotifications() removed — it wrote to a `series_notifications`
+    // table that doesn't exist in the live schema, so the "Get
+    // Notifications" button silently errored on every click. Removed the
+    // button + its wiring above along with this. Series' Watchlist button
+    // is unaffected (real `watch_later` table).
 
     // FIX 1: Redirect to content-detail with playlist_id (like Music section)
     viewSeries(seriesId) {

@@ -520,9 +520,6 @@ const BantuWavesMusic = {
                         <p class="playlist-description">${this.truncateText(this.escapeHtml(playlist.description), 80)}</p>
                     ` : ''}
                     <div class="playlist-actions">
-                        <button class="action-btn save-playlist-btn" data-playlist-id="${playlist.id}" title="Save to Library">
-                            <i class="far fa-heart"></i>
-                        </button>
                         <button class="action-btn share-playlist-btn" data-playlist-id="${playlist.id}" title="Share">
                             <i class="fas fa-share-alt"></i>
                         </button>
@@ -537,14 +534,6 @@ const BantuWavesMusic = {
             playAllBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.playPlaylist(playlist.id, playlist.contents);
-            });
-        }
-        
-        const saveBtn = card.querySelector('.save-playlist-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.savePlaylist(playlist.id);
             });
         }
         
@@ -669,62 +658,9 @@ const BantuWavesMusic = {
         }
     },
 
-    async savePlaylist(playlistId) {
-        const user = await this.getCurrentUser();
-        if (!user) {
-            this.showToast('Please sign in to save playlists', 'warning');
-            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            return;
-        }
-        
-        // FIXED: Use window.supabaseAuth
-        if (!window.supabaseAuth) {
-            this.showToast('Service unavailable', 'error');
-            return;
-        }
-        
-        try {
-            // Check if already saved
-            const { data: existing, error: fetchError } = await window.supabaseAuth
-                .from('saved_playlists')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('playlist_id', playlistId)
-                .maybeSingle();
-            
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                console.error('Error checking saved playlist:', fetchError);
-                this.showToast('Error accessing saved playlists', 'error');
-                return;
-            }
-            
-            if (existing) {
-                // Unsave
-                const { error: deleteError } = await window.supabaseAuth
-                    .from('saved_playlists')
-                    .delete()
-                    .eq('id', existing.id);
-                    
-                if (deleteError) throw deleteError;
-                this.showToast('Removed from your library', 'info');
-            } else {
-                // Save
-                const { error: insertError } = await window.supabaseAuth
-                    .from('saved_playlists')
-                    .insert({
-                        user_id: user.id,
-                        playlist_id: playlistId,
-                        saved_at: new Date().toISOString()
-                    });
-                    
-                if (insertError) throw insertError;
-                this.showToast('Added to your library', 'success');
-            }
-        } catch (error) {
-            console.error('Error saving playlist:', error);
-            this.showToast('Error saving playlist', 'error');
-        }
-    },
+    // savePlaylist() removed — it wrote to a `saved_playlists` table that
+    // doesn't exist in the live schema, so the button silently errored on
+    // every click. Removed the button + its wiring above along with this.
 
     sharePlaylist(playlistId, playlistName) {
         // FIX 3: Use content-detail with playlist_id parameter

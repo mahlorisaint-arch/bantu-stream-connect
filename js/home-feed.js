@@ -147,10 +147,63 @@ async function loadNotifications() {
         const { data, error } = await supabaseAuth.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
         if (error) throw error;
         window.notifications = data || [];
-        updateNotificationBadge(window.notifications.filter(n => !n.is_read).length);
+
+        // The badge's job is to say "something is waiting for you" - it was
+        // only counting the `notifications` table and silently missing
+        // Pulse-related notifications (likes/comments/reposts on Community
+        // Pulse posts), which land in a separate `pulse_notifications` table
+        // (target_user_id, not user_id). Union both counts so the badge is
+        // actually accurate. (Every other page's header badge has this same
+        // gap - not fixed here, flagged separately as a shared-components.js
+        // follow-up.)
+        let pulseUnreadCount = 0;
+        try {
+            const { count, error: pulseError } = await supabaseAuth
+                .from('pulse_notifications')
+                .select('id', { count: 'exact', head: true })
+                .eq('target_user_id', window.currentUser.id)
+                .eq('is_read', false);
+            if (!pulseError) pulseUnreadCount = count || 0;
+        } catch (pulseErr) {
+            console.warn('Could not load pulse_notifications count:', pulseErr);
+        }
+
+        const generalUnreadCount = window.notifications.filter(n => !n.is_read).length;
+        updateNotificationBadge(generalUnreadCount + pulseUnreadCount);
     } catch (error) {
         console.error('Error loading notifications:', error);
         updateNotificationBadge(0);
+    }
+}
+
+/**
+ * Community Stats Bar (#total-connectors / #new-connectors) - was
+ * confirmed hardcoded ("12.5K" / "+342", never touched by any JS). Wires
+ * it to real counts using the same query shape already proven out for the
+ * Community Favorites section's own local stats widget
+ * (js/home-feed/community-favorites.js loadCommunityStats): a plain
+ * connectors count, plus user_profiles rows created since local midnight
+ * for "Joined Today" (the more literal/honest read of that label than
+ * reusing a views-based proxy).
+ */
+async function loadCommunityStatsBar() {
+    const connectorsEl = document.getElementById('total-connectors');
+    const newConnectorsEl = document.getElementById('new-connectors');
+    if (!connectorsEl && !newConnectorsEl) return;
+
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const [{ count: connectorsCount }, { count: joinedTodayCount }] = await Promise.all([
+            supabaseAuth.from('connectors').select('*', { count: 'exact', head: true }),
+            supabaseAuth.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', today.toISOString())
+        ]);
+
+        if (connectorsEl) connectorsEl.textContent = formatNumber(connectorsCount || 0);
+        if (newConnectorsEl) newConnectorsEl.textContent = `+${formatNumber(joinedTodayCount || 0)}`;
+    } catch (error) {
+        console.error('Error loading community stats bar:', error);
     }
 }
 
@@ -187,6 +240,7 @@ async function initCore() {
     console.log('🚀 Initializing Core System...');
     setupGlobalImageErrorHandler();
     await checkAuth();
+    loadCommunityStatsBar();
     console.log('✅ Core System initialized');
 }
 
@@ -204,6 +258,7 @@ Object.assign(window, {
     checkAuth,
     loadUserProfile,
     loadNotifications,
+    loadCommunityStatsBar,
     updateNotificationBadge,
     showToast,
     escapeHtml,
