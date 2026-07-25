@@ -181,8 +181,9 @@ function updateCreatorDisplayName() {
 }
 
 /**
- * Setup creator click navigation - FIXED for both modes
- * Makes the entire creator section clickable to navigate to creator channel
+ * Setup creator click navigation
+ * Makes the info bar's thumbnail and creator name (two separate targets)
+ * clickable to navigate to the creator's channel.
  */
 function setupCreatorClickNavigation() {
     const creatorData = getCurrentCreatorData();
@@ -190,62 +191,67 @@ function setupCreatorClickNavigation() {
         console.log('⚠️ No creator_id available, skipping click navigation setup');
         return;
     }
-    
-    // Find clickable containers - try multiple selectors
-    const possibleContainers = [
-        document.querySelector('.creator-section'),
-        document.querySelector('.creator-info'),
-        document.getElementById('creatorName')?.parentElement,
-        document.getElementById('creatorAvatar')?.parentElement,
-        document.querySelector('.creator-details'),
-        document.querySelector('.creator-card')
-    ];
-    
-    let clickableContainer = null;
-    for (const container of possibleContainers) {
-        if (container) {
-            clickableContainer = container;
-            break;
-        }
+
+    // #infoBarCreatorName is a plain span with no dynamic children, safe to
+    // clone+replace to strip old listeners. #infoBarThumbnailWrap's <img>
+    // child gets its src/onerror/onload set dynamically elsewhere
+    // (updateInfoBarThumbnail) — cloning it here could run before or after
+    // that and silently wipe those handlers, so it's bound once instead via
+    // a guard flag rather than cloned. Both handlers look up
+    // getCurrentCreatorData() fresh at click time (not the creatorData
+    // captured here) so navigation stays correct after the playlist
+    // advances to a different creator's content without re-running setup.
+    const creatorNameTarget = document.getElementById('infoBarCreatorName');
+    if (creatorNameTarget) {
+        const newTarget = creatorNameTarget.cloneNode(true);
+        creatorNameTarget.parentNode?.replaceChild(newTarget, creatorNameTarget);
+        bindCreatorNavClick(newTarget);
     }
-    
-    if (!clickableContainer) {
-        console.warn('⚠️ Creator clickable container not found');
+
+    const thumbnailTarget = document.getElementById('infoBarThumbnailWrap');
+    if (thumbnailTarget && !thumbnailTarget.dataset.navBound) {
+        thumbnailTarget.dataset.navBound = 'true';
+        bindCreatorNavClick(thumbnailTarget);
+    }
+
+    if (!creatorNameTarget && !thumbnailTarget) {
+        console.warn('⚠️ Creator clickable targets not found');
         return;
     }
-    
-    // Remove any existing listeners (clone and replace)
-    const newContainer = clickableContainer.cloneNode(true);
-    clickableContainer.parentNode?.replaceChild(newContainer, clickableContainer);
-    
-    newContainer.style.cursor = 'pointer';
-    newContainer.style.transition = 'opacity 0.2s ease';
-    
-    newContainer.addEventListener('click', function(e) {
-        // Don't navigate if clicking on the connect button or its children
-        if (e.target.closest('.connect-btn')) {
+
+    console.log('✅ Creator click navigation setup complete (Mode: ' + (window.isPlaylistMode ? 'Playlist' : 'Single') + ')');
+}
+
+/**
+ * Bind click-to-navigate-to-creator-channel behavior to a target element.
+ * Re-fetches creator data at click time so it stays correct even if the
+ * playlist has advanced to different content since this was bound.
+ */
+function bindCreatorNavClick(target) {
+    target.style.cursor = 'pointer';
+    target.style.transition = 'opacity 0.2s ease';
+
+    target.addEventListener('click', function(e) {
+        if (e.target.closest('.connect-pill')) {
             console.log('🚫 Connect button clicked, not navigating to creator channel');
             return;
         }
-        
-        const creatorId = creatorData.id;
-        const creatorName = encodeURIComponent(creatorData.name);
-        
-        if (creatorId) {
-            console.log('🔗 Navigating to creator channel:', creatorId, creatorData.name);
-            window.location.href = `creator-channel.html?id=${creatorId}&name=${creatorName}`;
-        }
+
+        const liveCreatorData = getCurrentCreatorData();
+        if (!liveCreatorData?.id) return;
+
+        const creatorId = liveCreatorData.id;
+        const creatorName = encodeURIComponent(liveCreatorData.name || '');
+        console.log('🔗 Navigating to creator channel:', creatorId, liveCreatorData.name);
+        window.location.href = `creator-channel.html?id=${creatorId}&name=${creatorName}`;
     });
-    
-    // Add hover effect
-    newContainer.addEventListener('mouseenter', function() {
+
+    target.addEventListener('mouseenter', function() {
         this.style.opacity = '0.8';
     });
-    newContainer.addEventListener('mouseleave', function() {
+    target.addEventListener('mouseleave', function() {
         this.style.opacity = '1';
     });
-    
-    console.log('✅ Creator click navigation setup complete (Mode: ' + (window.isPlaylistMode ? 'Playlist' : 'Single') + ')');
 }
 
 // ============================================
