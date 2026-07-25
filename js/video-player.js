@@ -3087,14 +3087,14 @@
     _showBufferingIndicator() {
       const indicator = this._controlsCache ? this._controlsCache.bufferingIndicator : null;
       if (indicator) {
-        indicator.classList.remove('hidden');
+        indicator.classList.add('active');
       }
     }
-    
+
     _hideBufferingIndicator() {
       const indicator = this._controlsCache ? this._controlsCache.bufferingIndicator : null;
       if (indicator) {
-        indicator.classList.add('hidden');
+        indicator.classList.remove('active');
       }
     }
     

@@ -237,13 +237,13 @@ async function updateHeaderProfile() {
             const img = document.createElement('img');
             img.src = avatarUrl;
             img.alt = displayName;
-            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+            img.style.cssText = 'display:block;width:100%;height:100%;min-width:100%;min-height:100%;border-radius:50%;object-fit:cover;object-position:center;';
             img.onerror = () => {
-                profilePlaceholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
+                profilePlaceholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;font-size:1rem;">${initial}</div>`;
             };
             profilePlaceholder.appendChild(img);
         } else {
-            profilePlaceholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
+            profilePlaceholder.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;font-size:1rem;">${initial}</div>`;
         }
 
         // Signed-in: profile button toggles the dropdown (handled in setupProfileDropdown).
@@ -300,7 +300,7 @@ async function updateSidebarProfile() {
             const img = document.createElement('img');
             img.src = avatarUrl;
             img.alt = displayName;
-            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+            img.style.cssText = 'display:block;width:100%;height:100%;min-width:100%;min-height:100%;border-radius:50%;object-fit:cover;object-position:center;';
             img.onerror = () => {
                 avatarDiv.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initial}</span>`;
             };
@@ -373,9 +373,9 @@ async function updateProfileDropdown() {
             if (window.SupabaseHelper && typeof window.SupabaseHelper.fixMediaUrl === 'function') {
                 avatarUrl = window.SupabaseHelper.fixMediaUrl(avatarUrl);
             }
-            avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" style="display:block;width:100%;height:100%;min-width:100%;min-height:100%;border-radius:50%;object-fit:cover;object-position:center;">`;
         } else {
-            avatarHtml = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #1D4ED8, #F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initial}</div>`;
+            avatarHtml = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #00E5FF, #0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;">${initial}</div>`;
         }
 
         profileList.innerHTML = `
