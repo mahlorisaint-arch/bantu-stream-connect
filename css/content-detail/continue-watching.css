@@ -1,6 +1,10 @@
 /* ============================================ */
 /* CONTINUE WATCHING SECTION MODULE */
 /* Resume badges, progress bars, and watch history cards */
+/* Card/layout pattern matches trending-screen.css's horizontal-scroll
+   content row; colors/accents match creator-info-bar.css (cyan, no
+   gold/blue). Section header is flat (no card-bg/border), matching the
+   rest of the content-detail page's redesign. */
 /* ============================================ */
 
 /* ============================================ */
@@ -18,15 +22,13 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--card-border);
   flex-wrap: nowrap;
   gap: 16px;
 }
 
 .continue-watching-section .section-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 19px;
   font-weight: 700;
   color: var(--soft-white);
   margin: 0;
@@ -37,60 +39,72 @@
 }
 
 .continue-watching-section .section-title i {
-  color: var(--bantu-blue);
-  font-size: 20px;
+  color: #00E5FF;
+  font-size: 18px;
 }
 
-/* View all link - CORRECTLY POSITIONED ON RIGHT */
+/* View all link */
 .view-all-link {
-  color: var(--bantu-blue);
+  color: #00E5FF;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
   transition: all 0.2s ease;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
   margin-left: auto;
 }
 
 .view-all-link:hover {
-  color: var(--warm-gold);
   gap: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 /* ============================================ */
-/* CONTINUE WATCHING GRID */
+/* CONTINUE WATCHING ROW — horizontal scroll, trending-screen pattern */
 /* ============================================ */
 .continue-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #00E5FF transparent;
 }
 
-/* Continue card - specific styling for watch history */
+.continue-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.continue-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.4);
+  border-radius: 2px;
+}
+
+/* Continue card */
 .continue-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  backdrop-filter: blur(10px);
   position: relative;
+  flex: 0 0 220px;
 }
 
 .continue-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
-  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+  border-color: rgba(0, 229, 255, 0.35);
 }
 
 /* ============================================ */
@@ -128,24 +142,25 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  background: #00E5FF;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
   transition: width 0.3s ease;
   border-radius: 0 2px 2px 0;
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - RESUME BADGE */
+/* RESUME BADGE */
 /* ============================================ */
 .resume-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(29, 78, 216, 0.25) !important;
+  background: rgba(6, 20, 26, 0.7) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  color: white;
+  color: var(--soft-white);
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
   display: flex;
@@ -155,8 +170,7 @@
   opacity: 0;
   transform: translateX(10px);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
 }
 
 .continue-card:hover .resume-badge {
@@ -166,20 +180,21 @@
 
 .resume-badge i {
   font-size: 10px;
+  color: #00E5FF;
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - WATCH TIME INDICATOR */
+/* WATCH TIME INDICATOR */
 /* ============================================ */
 .watch-time-indicator {
   position: absolute;
   bottom: 10px;
   left: 10px;
-  background: rgba(0, 0, 0, 0.3) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 500;
   color: white;
@@ -188,13 +203,12 @@
   gap: 4px;
   z-index: 3;
   font-family: monospace;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .watch-time-indicator i {
   font-size: 10px;
-  color: var(--warm-gold);
+  color: #00E5FF;
 }
 
 /* ============================================ */
@@ -205,6 +219,7 @@
 }
 
 .continue-card .card-title {
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
@@ -218,7 +233,7 @@
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - PROGRESS TEXT */
+/* PROGRESS TEXT */
 /* ============================================ */
 .progress-text {
   display: flex;
@@ -226,17 +241,15 @@
   gap: 8px;
   margin-bottom: 8px;
   font-size: 12px;
+  font-family: 'Inter', sans-serif;
   color: var(--slate-grey);
-  background: rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(255, 255, 255, 0.05);
   padding: 4px 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 999px;
 }
 
 .progress-text i {
-  color: var(--bantu-blue);
+  color: #00E5FF;
   font-size: 11px;
 }
 
@@ -245,63 +258,53 @@
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - PERCENTAGE BADGE */
+/* PERCENTAGE BADGE */
 /* ============================================ */
 .percentage-badge {
-  background: rgba(245, 158, 11, 0.15) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  color: var(--warm-gold);
+  background: rgba(0, 229, 255, 0.15);
+  color: #00E5FF;
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   margin-left: auto;
-  border: 1px solid rgba(245, 158, 11, 0.15) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - CREATOR CHIP */
+/* CREATOR CHIP */
 /* ============================================ */
 .continue-card .creator-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(255, 255, 255, 0.06);
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 11px;
+  font-family: 'Inter', sans-serif;
   color: var(--slate-grey);
   margin-top: 8px;
   transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 .continue-card:hover .creator-chip {
-  background: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(0, 229, 255, 0.12);
   color: var(--soft-white);
-  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .creator-chip i {
   font-size: 10px;
-  color: var(--bantu-blue);
+  color: #00E5FF;
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - CONTINUE WATCHING EMPTY STATE */
+/* CONTINUE WATCHING EMPTY STATE */
 /* ============================================ */
 .continue-watching-empty {
   text-align: center;
   padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
 }
 
 .continue-watching-empty i {
@@ -312,12 +315,14 @@
 }
 
 .continue-watching-empty h3 {
+  font-family: 'Inter', sans-serif;
   font-size: 18px;
   color: var(--soft-white);
   margin-bottom: 8px;
 }
 
 .continue-watching-empty p {
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--slate-grey);
   margin-bottom: 20px;
@@ -328,11 +333,12 @@
   align-items: center;
   gap: 8px;
   padding: 10px 24px;
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  background: #00E5FF;
   border: none;
-  border-radius: 40px;
-  color: white;
-  font-weight: 600;
+  border-radius: 999px;
+  color: var(--deep-black);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
@@ -341,26 +347,25 @@
 .browse-btn:hover {
   transform: translateY(-2px);
   gap: 12px;
-  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 229, 255, 0.35);
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - SKELETON LOADING */
+/* SKELETON LOADING */
 /* ============================================ */
 .continue-skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 
 .continue-skeleton-card {
-  background: rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
-  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  flex: 0 0 220px;
 }
 
 .skeleton-thumbnail {
@@ -399,29 +404,30 @@
 }
 
 /* ============================================ */
-/* GLASSMORPHISM - PROGRESS UPDATE TOAST */
+/* PROGRESS UPDATE TOAST */
 /* ============================================ */
 .progress-update-toast {
   position: fixed;
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: rgba(15, 23, 42, 0.85) !important;
+  background: rgba(10, 14, 18, 0.9) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 40px;
+  border: 1px solid rgba(0, 229, 255, 0.2) !important;
+  border-radius: 999px;
   padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   z-index: 1000;
   opacity: 0;
   transition: all 0.3s ease;
   white-space: nowrap;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .progress-update-toast.show {
@@ -439,48 +445,46 @@
 /* ============================================ */
 @media (max-width: 768px) {
   .continue-watching-section .section-title {
-    font-size: 18px;
+    font-size: 16px;
   }
-  
+
   .view-all-link {
-    font-size: 13px;
-    padding: 4px 10px;
+    font-size: 12px;
+    padding: 5px 12px;
   }
-  
-  .continue-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
+
+  .continue-card,
+  .continue-skeleton-card {
+    flex: 0 0 170px;
   }
-  
+
+  .continue-grid,
   .continue-skeleton-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
   }
-  
+
   .resume-badge {
     opacity: 1;
     transform: translateX(0);
     padding: 4px 10px;
     font-size: 10px;
-    background: rgba(29, 78, 216, 0.3) !important;
   }
-  
+
   .watch-time-indicator {
     font-size: 9px;
     padding: 3px 6px;
-    background: rgba(0, 0, 0, 0.4) !important;
   }
-  
+
   .continue-card .card-title {
     font-size: 13px;
     min-height: 34px;
   }
-  
+
   .progress-text {
     font-size: 10px;
     padding: 3px 8px;
   }
-  
+
   .percentage-badge {
     font-size: 9px;
     padding: 1px 6px;
@@ -492,59 +496,52 @@
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .continue-watching-section .section-title {
-    font-size: 16px;
+    font-size: 15px;
   }
-  
+
   .view-all-link {
-    font-size: 12px;
-    padding: 4px 8px;
+    font-size: 11px;
+    padding: 4px 10px;
     margin-left: 0;
   }
-  
-  .continue-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+
+  .continue-card,
+  .continue-skeleton-card {
+    flex: 0 0 140px;
   }
-  
-  .continue-skeleton-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  
+
   .resume-badge span {
     display: none;
   }
-  
+
   .resume-badge {
     padding: 6px 8px;
-    background: rgba(29, 78, 216, 0.35) !important;
   }
-  
+
   .resume-badge i {
     font-size: 12px;
     margin: 0;
   }
-  
+
   .watch-time-indicator span {
     display: none;
   }
-  
+
   .watch-time-indicator {
     padding: 4px 6px;
-    background: rgba(0, 0, 0, 0.4) !important;
   }
-  
+
   .watch-time-indicator i {
     margin: 0;
   }
-  
+
   .progress-text {
     padding: 2px 6px;
     font-size: 9px;
   }
-  
+
   .percentage-badge {
     font-size: 8px;
     padding: 1px 4px;
@@ -552,19 +549,14 @@
 }
 
 @media (max-width: 400px) {
-  .continue-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
   .continue-card .card-title {
     font-size: 12px;
-    -webkit-line-clamp: 2;
   }
-  
+
   .progress-text {
     display: none;
   }
-  
+
   .percentage-badge {
     display: inline-block;
     margin-top: 4px;
@@ -572,119 +564,15 @@
 }
 
 /* ============================================ */
-/* HOVER EFFECTS FOR TOUCH DEVICES */
+/* TOUCH DEVICES */
 /* ============================================ */
 @media (hover: none) and (pointer: coarse) {
   .continue-card:active {
     transform: scale(0.98);
   }
-  
+
   .resume-badge {
     opacity: 1;
     transform: translateX(0);
-    background: rgba(29, 78, 216, 0.3) !important;
   }
 }
-
-/* ============================================ */
-/* THEME SUPPORT */
-/* ============================================ */
-.theme-light .continue-watching-section .section-title {
-  color: var(--deep-navy);
-}
-
-.theme-light .continue-card {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.theme-light .continue-card .card-title {
-  color: var(--deep-navy);
-}
-
-.theme-light .progress-text {
-  color: var(--slate-grey);
-}
-
-.theme-light .creator-chip {
-  color: var(--slate-grey);
-}
-
-.theme-light .continue-watching-empty {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.theme-light .continue-watching-empty h3 {
-  color: var(--deep-navy);
-}
-
-.theme-light .view-all-link {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.theme-light .view-all-link:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-/* High contrast mode */
-.theme-high-contrast .continue-card {
-  border: 2px solid white;
-  background: black;
-}
-
-.theme-high-contrast .continue-card .card-title {
-  color: white;
-}
-
-.theme-high-contrast .progress-fill {
-  background: #00FF00;
-}
-
-.theme-high-contrast .resume-badge {
-  border: 2px solid white;
-  background: black !important;
-  color: white;
-}
-
-.theme-high-contrast .resume-badge i {
-  color: #00FF00;
-}
-
-.theme-high-contrast .percentage-badge {
-  border: 1px solid #00FF00;
-  color: #00FF00;
-}
-
-.theme-high-contrast .view-all-link {
-  border: 1px solid white;
-  color: white;
-}
-
-.theme-high-contrast .view-all-link:hover {
-  background: white;
-  color: black;
-}
-
-/* ============================================ */
-/* GLASSMORPHISM - CONTINUE WATCHING NOTIFICATION DOT */
-/* ============================================ */
-.new-progress-dot {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 8px;
-  height: 8px;
-  background: var(--warm-gold);
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-  z-index: 3;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5) !important;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
-
-/* ============================================ */
-/* END OF CONTINUE WATCHING MODULE */
-/* ============================================ */

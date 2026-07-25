@@ -1,6 +1,9 @@
 /* ============================================ */
 /* BECAUSE YOU WATCHED SECTION MODULE */
 /* Personalized recommendation rail based on watch history */
+/* Card/layout pattern matches trending-screen.css's horizontal-scroll
+   content row; colors/accents match creator-info-bar.css (cyan, no
+   gold/blue). Section header is flat (no card-bg/border). */
 /* ============================================ */
 
 /* ============================================ */
@@ -18,15 +21,13 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--card-border);
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .because-you-watched-rail .section-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 19px;
   font-weight: 700;
   color: var(--soft-white);
   margin: 0;
@@ -37,8 +38,8 @@
 }
 
 .because-you-watched-rail .section-title i {
-  color: var(--bantu-blue);
-  font-size: 20px;
+  color: #00E5FF;
+  font-size: 18px;
 }
 
 /* Rail actions - View All ONLY */
@@ -52,23 +53,23 @@
 
 /* View all link */
 .view-all-link {
-  color: var(--bantu-blue);
+  color: #00E5FF;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
   transition: all 0.2s ease;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .view-all-link:hover {
-  color: var(--warm-gold);
   gap: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 /* Title tooltip/info icon */
@@ -86,7 +87,7 @@
 }
 
 .title-info:hover i {
-  color: var(--bantu-blue);
+  color: #00E5FF;
 }
 
 .title-info .tooltip-text {
@@ -94,7 +95,8 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--deep-navy);
+  background: rgba(10, 14, 18, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   color: var(--soft-white);
   font-size: 11px;
   padding: 6px 12px;
@@ -107,7 +109,7 @@
   z-index: 10;
   font-family: 'Inter', sans-serif;
   font-weight: normal;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .title-info:hover .tooltip-text {
@@ -117,32 +119,44 @@
 }
 
 /* ============================================ */
-/* RECOMMENDATION GRID */
+/* RECOMMENDATION ROW — horizontal scroll, trending-screen pattern */
 /* ============================================ */
 .recommendation-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #00E5FF transparent;
+}
+
+.recommendation-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.recommendation-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.4);
+  border-radius: 2px;
 }
 
 /* Recommendation card */
 .recommendation-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  backdrop-filter: blur(10px);
   position: relative;
+  flex: 0 0 220px;
 }
 
 .recommendation-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
-  border-color: rgba(245, 158, 11, 0.4);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+  border-color: rgba(0, 229, 255, 0.35);
 }
 
 /* ============================================ */
@@ -193,7 +207,7 @@
   backdrop-filter: blur(4px);
   color: white;
   padding: 3px 8px;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   z-index: 2;
@@ -207,12 +221,12 @@
   position: absolute;
   top: 8px;
   left: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(6, 20, 26, 0.75);
   backdrop-filter: blur(4px);
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 10px;
-  color: var(--warm-gold);
+  color: #00E5FF;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -221,6 +235,7 @@
   transform: translateX(-10px);
   transition: all 0.3s ease;
   pointer-events: none;
+  border: 1px solid rgba(0, 229, 255, 0.25);
 }
 
 .recommendation-card:hover .reason-badge {
@@ -240,6 +255,7 @@
 }
 
 .recommendation-card .card-title {
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 8px;
@@ -254,7 +270,7 @@
 }
 
 .recommendation-card:hover .card-title {
-  color: var(--bantu-blue);
+  color: #00E5FF;
 }
 
 /* Views and metadata */
@@ -272,12 +288,13 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
+  font-family: 'Inter', sans-serif;
   color: var(--slate-grey);
 }
 
 .views-count i {
   font-size: 11px;
-  color: var(--bantu-blue);
+  color: #00E5FF;
 }
 
 /* Like count badge */
@@ -288,8 +305,8 @@
   font-size: 11px;
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
-  padding: 2px 6px;
-  border-radius: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
 }
 
 .like-badge i {
@@ -303,8 +320,9 @@
   gap: 6px;
   background: rgba(255, 255, 255, 0.08);
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 11px;
+  font-family: 'Inter', sans-serif;
   color: var(--slate-grey);
   margin-top: 8px;
   transition: all 0.2s ease;
@@ -312,13 +330,13 @@
 }
 
 .recommendation-card:hover .creator-chip {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 229, 255, 0.12);
   color: var(--soft-white);
 }
 
 .creator-chip i {
   font-size: 10px;
-  color: var(--bantu-blue);
+  color: #00E5FF;
 }
 
 /* Genre tag */
@@ -326,11 +344,12 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(0, 229, 255, 0.12);
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 10px;
-  color: var(--warm-gold);
+  font-family: 'Inter', sans-serif;
+  color: #00E5FF;
   margin-top: 6px;
 }
 
@@ -340,10 +359,9 @@
 .because-you-watched-empty {
   text-align: center;
   padding: 60px 20px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  border-radius: 20px;
 }
 
 .because-you-watched-empty i {
@@ -354,12 +372,14 @@
 }
 
 .because-you-watched-empty h3 {
+  font-family: 'Inter', sans-serif;
   font-size: 18px;
   color: var(--soft-white);
   margin-bottom: 8px;
 }
 
 .because-you-watched-empty p {
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--slate-grey);
   margin-bottom: 20px;
@@ -372,7 +392,7 @@
 .engagement-cta {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
   margin-top: 20px;
 }
@@ -383,9 +403,10 @@
   gap: 8px;
   padding: 8px 20px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--card-border);
-  border-radius: 40px;
+  border: none;
+  border-radius: 999px;
   color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -394,37 +415,39 @@
 }
 
 .cta-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--bantu-blue);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(0, 229, 255, 0.3);
   transform: translateY(-2px);
 }
 
 .cta-btn.like-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.15);
   border-color: #ef4444;
   color: #ef4444;
 }
 
 .cta-btn.watch-btn:hover {
-  background: rgba(29, 78, 216, 0.2);
-  border-color: var(--bantu-blue);
-  color: var(--bantu-blue);
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00E5FF;
+  color: #00E5FF;
 }
 
 /* ============================================ */
 /* SKELETON LOADING */
 /* ============================================ */
 .recommendation-skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 
 .skeleton-card {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   animation: skeletonPulse 1.5s ease-in-out infinite;
+  flex: 0 0 220px;
 }
 
 .skeleton-thumbnail {
@@ -463,200 +486,79 @@
 }
 
 /* ============================================ */
-/* RESPONSIVE ADJUSTMENTS - ONLY MAKE VISIBLE */
+/* RESPONSIVE ADJUSTMENTS */
 /* ============================================ */
-
-/* Tablet and mobile - make all elements visible */
 @media (max-width: 768px) {
-  /* Keep grid working */
-  .recommendation-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-    gap: 16px !important;
+  .recommendation-card,
+  .skeleton-card {
+    flex: 0 0 170px;
   }
-  
-  /* Make reason badge always visible */
+
+  .recommendation-grid,
+  .recommendation-skeleton-grid {
+    gap: 12px;
+  }
+
   .reason-badge {
     opacity: 1 !important;
     transform: translateX(0) !important;
   }
-  
+
   .reason-badge span {
     display: inline !important;
   }
-  
-  /* Make like badge always visible */
-  .like-badge {
-    display: flex !important;
-  }
-  
-  .like-badge span {
-    display: inline !important;
-  }
-  
-  /* Make creator chip always visible */
-  .creator-chip {
-    display: inline-flex !important;
-  }
-  
-  .creator-chip span {
-    display: inline !important;
-  }
-  
-  /* Make genre tag always visible */
+
+  .like-badge,
+  .creator-chip,
   .genre-tag {
     display: inline-flex !important;
   }
-  
-  /* View all link on tablet */
-  .view-all-link {
-    font-size: 13px;
-    padding: 4px 10px;
+
+  .like-badge span,
+  .creator-chip span {
+    display: inline !important;
   }
-  
+
+  .view-all-link {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
   .because-you-watched-rail .section-title {
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 
 @media (max-width: 550px) {
-  /* Keep grid working on phones */
-  .recommendation-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
+  .recommendation-card,
+  .skeleton-card {
+    flex: 0 0 140px;
   }
-  
-  /* Force all elements visible on phones */
-  .reason-badge {
-    opacity: 1 !important;
-    transform: translateX(0) !important;
-  }
-  
-  .reason-badge span {
-    display: inline !important;
-  }
-  
-  .like-badge {
-    display: flex !important;
-  }
-  
-  .like-badge span {
-    display: inline !important;
-  }
-  
-  .creator-chip {
-    display: inline-flex !important;
-  }
-  
-  .creator-chip span {
-    display: inline !important;
-  }
-  
-  .genre-tag {
-    display: inline-flex !important;
-  }
-  
-  /* View all link on phones */
+
   .view-all-link {
-    font-size: 12px;
-    padding: 4px 8px;
+    font-size: 11px;
+    padding: 4px 10px;
   }
-  
+
   .because-you-watched-rail .section-title {
-    font-size: 16px;
+    font-size: 15px;
   }
-  
+
   .rail-actions {
     margin-left: 0;
   }
-  
+
   .because-you-watched-rail .section-header {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .engagement-cta {
-    gap: 10px;
+    gap: 8px;
   }
-  
+
   .cta-btn {
     padding: 6px 16px;
     font-size: 12px;
   }
 }
-
-/* ============================================ */
-/* THEME SUPPORT */
-/* ============================================ */
-.theme-light .because-you-watched-rail .section-title {
-  color: var(--deep-navy);
-}
-
-.theme-light .recommendation-card {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.theme-light .recommendation-card .card-title {
-  color: var(--deep-navy);
-}
-
-.theme-light .recommendation-card:hover .card-title {
-  color: var(--bantu-blue);
-}
-
-.theme-light .views-count {
-  color: var(--slate-grey);
-}
-
-.theme-light .creator-chip {
-  color: var(--slate-grey);
-}
-
-.theme-light .because-you-watched-empty {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.theme-light .because-you-watched-empty h3 {
-  color: var(--deep-navy);
-}
-
-.theme-light .view-all-link {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.theme-light .view-all-link:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-/* High contrast mode */
-.theme-high-contrast .recommendation-card {
-  border: 2px solid white;
-  background: black;
-}
-
-.theme-high-contrast .recommendation-card .card-title {
-  color: white;
-}
-
-.theme-high-contrast .recommendation-card:hover {
-  border-color: #00FF00;
-}
-
-.theme-high-contrast .view-all-link {
-  border: 1px solid white;
-  color: white;
-}
-
-.theme-high-contrast .view-all-link:hover {
-  background: white;
-  color: black;
-}
-
-.theme-high-contrast .reason-badge {
-  border: 1px solid #00FF00;
-  color: #00FF00;
-}
-
-/* ============================================ */
-/* END OF BECAUSE YOU WATCHED MODULE */
-/* ============================================ */
