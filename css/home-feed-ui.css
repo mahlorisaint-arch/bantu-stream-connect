@@ -216,46 +216,10 @@ WELCOME BANNER - REDUCED TO 40% SIZE
     font-weight: 700;
 }
 
-/* ============================================
-LANGUAGE FILTER BAR - REDUCED TO 40% SIZE
-============================================ */
-.language-filter-bar {
-    background: rgba(10, 14, 18, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 30px;
-    /* Reduced from 20px to 8px (40%) */
-    margin: 8px 0;
-    /* Reduced from 10px 20px to 4px 8px (40%) */
-    padding: 4px 8px;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow-x: auto;
-}
-
-.language-filter-container {
-    display: flex;
-    align-items: center;
-    /* Reduced from 15px to 6px (40%) */
-    gap: 6px;
-    white-space: nowrap;
-}
-
-.language-filter-container i {
-    color: var(--warm-gold, #00E5FF);
-    /* Reduced from 18px to 10px (55%) */
-    font-size: 10px;
-    flex-shrink: 0;
-}
-
-.language-filter-label {
-    color: var(--soft-white, #F8FAFC);
-    /* Reduced from 14px to 8px (57%) */
-    font-size: 8px;
-    font-weight: 500;
-    flex-shrink: 0;
-}
+/* .language-filter-bar/.language-filter-container/.language-filter-label
+   styled the old full-width 12-chip strip, replaced by the compact
+   .language-filter-row/.language-filter-trigger dropdown below - no
+   markup uses these classes anymore, removed as dead code. */
 
 .language-chips {
     display: flex;
@@ -352,19 +316,8 @@ LANGUAGE FILTER BAR - REDUCED TO 40% SIZE
     border-color: transparent;
 }
 
-.language-chip-more {
-    /* Reduced from 6px 16px to 3px 8px (50%) */
-    padding: 3px 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px dashed var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 20px;
-    color: var(--slate-grey, #94A3B8);
-    /* Reduced from 13px to 8px (61%) */
-    font-size: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
+/* .language-chip-more ("More" expander button) isn't used by the new
+   compact dropdown, which lists every language directly - removed. */
 
 /* Community Stats Bar removed permanently (see index.html) - deleted its
    base + responsive rules here too rather than leave dead CSS behind. */
@@ -387,24 +340,23 @@ CONTENT GRID & CARDS - FIXED
     width: 100%;
 }
 
+/* Flat card matching content-detail.html's "Because You Watched"
+   .recommendation-card pattern (css/content-detail/because-you-watched.css)
+   - no boxed background/border/blur container, no padded content area.
+   The thumbnail is the only element with visual chrome; title/meta sit
+   directly on the page below it. */
 .content-card {
-    background: var(--card-bg, rgba(15, 23, 42, 0.6));
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 16px;
-    overflow: hidden;
-    transition: all 0.3s ease;
     cursor: pointer;
+    transition: transform 0.2s ease;
     text-decoration: none;
     color: inherit;
-    backdrop-filter: blur(10px);
+    display: block;
     position: relative;
     width: 100%;
 }
 
 .content-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(0, 229, 255, 0.3);
-    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px);
 }
 
 .card-thumbnail {
@@ -412,30 +364,42 @@ CONTENT GRID & CARDS - FIXED
     width: 100%;
     aspect-ratio: 16 / 9;
     overflow: hidden;
-    background: #1a1a2e;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-bottom: 8px;
 }
 
 .card-thumbnail img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s ease;
+    transition: transform 0.5s ease;
+}
+
+.content-card:hover .card-thumbnail img {
+    transform: scale(1.08);
 }
 
 .card-content {
-    padding: 12px;
+    padding: 0;
 }
 
 .card-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    margin: 0 0 4px;
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     color: var(--soft-white, #F8FAFC);
+    transition: color 0.2s ease;
+}
+
+.content-card:hover .card-title {
+    color: #00E5FF;
 }
 
 .creator-info {
@@ -470,10 +434,11 @@ CONTENT GRID & CARDS - FIXED
 
 .card-meta {
     display: flex;
-    gap: 12px;
-    font-size: 12px;
+    gap: 10px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
     color: var(--slate-grey, #94A3B8);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     flex-wrap: wrap;
 }
 
@@ -483,9 +448,17 @@ CONTENT GRID & CARDS - FIXED
     gap: 4px;
 }
 
+.card-meta i,
+.creator-info i,
+.connector-info i {
+    font-size: 10px;
+    color: #00E5FF;
+}
+
 .connector-info {
-    font-size: 12px;
-    color: var(--warm-gold, #00E5FF);
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    color: var(--slate-grey, #94A3B8);
     display: flex;
     align-items: center;
     gap: 5px;
@@ -495,10 +468,15 @@ CONTENT GRID & CARDS - FIXED
     position: absolute;
     bottom: 8px;
     right: 8px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 2px 6px;
-    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 999px;
     font-size: 11px;
+    font-weight: 600;
+    font-family: monospace;
     z-index: 2;
 }
 
@@ -598,335 +576,25 @@ CONTENT GRID & CARDS - FIXED
     transition: width 0.3s ease;
 }
 
-/* ============================================
-WAVELETS
-============================================ */
-.wavelets-container {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding: 10px 0;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-}
+/* Wavelets: this file used to carry a second, fully independent
+   .wavelet-card/.wavelet-thumbnail/.wavelet-title/etc. definition -
+   a complete duplicate of css/home-feed/wavelets.css's real
+   implementation, still boxed (background/border) and never updated
+   when that file was flattened to match content-detail.html's card
+   pattern. It happened to lose the cascade by load order (this file
+   loads before wavelets.css) so it wasn't visibly broken, but removed
+   entirely rather than leave a landmine that only "worked" by accident
+   of <link> ordering - same rule as every other hidden-duplicate CSS
+   found this session.
 
-.wavelets-container::-webkit-scrollbar {
-    height: 4px;
-}
-
-.wavelet-card {
-    flex: 0 0 auto;
-    width: 200px;
-    background: var(--card-bg, rgba(15, 23, 42, 0.6));
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 16px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.wavelet-thumbnail {
-    position: relative;
-    aspect-ratio: 9 / 16;
-    overflow: hidden;
-}
-
-.wavelet-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.wavelet-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.wavelet-card:hover .wavelet-overlay {
-    opacity: 1;
-}
-
-.wavelet-overlay i {
-    font-size: 40px;
-    color: white;
-}
-
-.wavelet-badge {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 600;
-    color: white;
-}
-
-.wavelet-info {
-    padding: 10px;
-}
-
-.wavelet-title {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.wavelet-creator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 5px;
-}
-
-.wavelet-creator-avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-}
-
-.wavelet-creator-name {
-    font-size: 11px;
-    color: var(--slate-grey, #94A3B8);
-}
-
-.wavelet-stats {
-    display: flex;
-    gap: 8px;
-    font-size: 10px;
-    color: var(--slate-grey, #94A3B8);
-    margin-top: 5px;
-}
-
-/* ============================================
-CREATOR CARDS
-============================================ */
-.featured-creators {
-    padding: 10px 0;
-}
-
-.creator-card {
-    background: var(--card-bg, rgba(15, 23, 42, 0.6));
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 20px;
-    padding: 20px;
-    text-align: center;
-    transition: all 0.3s ease;
-    height: 100%;
-}
-
-.creator-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    margin: 0 auto 15px;
-    overflow: hidden;
-    border: 3px solid var(--warm-gold, #00E5FF);
-}
-
-.creator-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.creator-name {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: var(--soft-white, #F8FAFC);
-}
-
-.creator-username {
-    font-size: 13px;
-    color: var(--warm-gold, #00E5FF);
-    margin-bottom: 10px;
-}
-
-.creator-bio {
-    font-size: 13px;
-    color: var(--slate-grey, #94A3B8);
-    margin-bottom: 15px;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.creator-stats {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 15px;
-}
-
-.stat {
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--warm-gold, #00E5FF);
-}
-
-.stat-label {
-    font-size: 11px;
-    color: var(--slate-grey, #94A3B8);
-}
-
-.creator-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.view-channel-btn {
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 30px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    flex: 1;
-}
-
-.tip-creator-btn {
-    background: rgba(0, 229, 255, 0.2);
-    border: 1px solid #00E5FF;
-    color: #00E5FF;
-    width: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-/* ============================================
-EVENT CARDS
-============================================ */
-.events-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.event-card {
-    background: var(--card-bg, rgba(15, 23, 42, 0.6));
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 16px;
-    padding: 20px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.event-title {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: var(--soft-white, #F8FAFC);
-}
-
-.event-time {
-    font-size: 13px;
-    color: #00E5FF;
-}
-
-.event-description {
-    font-size: 13px;
-    color: var(--slate-grey, #94A3B8);
-    margin-bottom: 12px;
-    line-height: 1.5;
-}
-
-.event-actions {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.reminder-btn {
-    background: rgba(0, 229, 255, 0.15);
-    border: 1px solid #00E5FF;
-    color: #00E5FF;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.event-tags {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.event-tag {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    color: var(--slate-grey, #94A3B8);
-}
-
-/* ============================================
-BOTTOM NAVIGATION
-============================================ */
-.navigation-button-container {
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    z-index: 98;
-    pointer-events: none;
-}
-
-.navigation-button {
-    background: rgba(10, 14, 18, 0.85);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 60px;
-    padding: 10px 20px;
-    display: inline-flex;
-    gap: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    pointer-events: auto;
-}
-
-.nav-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--soft-white, #F8FAFC);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 20px;
-}
+   Creator Cards (.featured-creators/.creator-card/.creator-avatar/etc.),
+   Event Cards (.events-grid/.event-card/etc.), and Bottom Navigation
+   (.navigation-button-container/.nav-icon/etc.) below were all dead code:
+   Creator of the Week and Upcoming Events were both cut entirely earlier
+   in the home-feed restructure, and the bottom nav bar was removed for
+   being unwired and contradicting the platform's "no bottom nav" design.
+   No matching HTML exists for any of these anymore - removed rather than
+   leave them behind. */
 
 /* ============================================
 SECTION HEADERS
@@ -1002,50 +670,10 @@ RESPONSIVE
         font-size: 7px !important;
     }
     
-    /* LANGUAGE FILTER BAR - TABLET REDUCTION */
-    .language-filter-bar {
-        padding: 3px 6px !important;
-        border-radius: 24px !important;
-        margin: 6px 0 !important;
-    }
-    
-    .language-filter-container {
-        gap: 4px !important;
-    }
-    
-    .language-filter-container i {
-        font-size: 8px !important;
-    }
-    
-    .language-filter-label {
-        font-size: 7px !important;
-    }
-    
-    .language-chip {
-        padding: 2px 6px !important;
-        font-size: 7px !important;
-    }
-    
-    .language-chip-more {
-        padding: 2px 6px !important;
-        font-size: 7px !important;
-    }
-    
     .wavelet-card {
         width: 160px;
     }
-    
-    .navigation-button {
-        padding: 8px 16px;
-        gap: 10px;
-    }
-    
-    .nav-icon {
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-    }
-    
+
     .section-title {
         font-size: 18px;
     }
@@ -1055,10 +683,6 @@ RESPONSIVE
     .content-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
-    }
-    
-    .card-content {
-        padding: 8px;
     }
     
     .card-title {
@@ -1090,50 +714,8 @@ RESPONSIVE
         font-size: 6px !important;
     }
     
-    /* LANGUAGE FILTER BAR - PHONE REDUCTION */
-    .language-filter-bar {
-        padding: 2px 4px !important;
-        border-radius: 16px !important;
-        margin: 4px 0 !important;
-    }
-    
-    .language-filter-container {
-        gap: 3px !important;
-    }
-    
-    .language-filter-container i {
-        font-size: 7px !important;
-    }
-    
-    .language-filter-label {
-        display: none !important;
-    }
-    
-    .language-chip {
-        padding: 2px 5px !important;
-        font-size: 6px !important;
-        border-radius: 14px !important;
-    }
-    
-    .language-chip-more {
-        padding: 2px 5px !important;
-        font-size: 6px !important;
-        border-radius: 14px !important;
-    }
-    
     .wavelet-card {
         width: 140px;
-    }
-    
-    .navigation-button {
-        padding: 6px 12px;
-        gap: 8px;
-    }
-    
-    .nav-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
     }
 }
 

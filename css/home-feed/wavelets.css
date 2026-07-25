@@ -33,24 +33,20 @@
     border-radius: 10px;
 }
 
-/* Wavelet Card */
+/* Wavelet Card - flat, matching content-detail.html's "Because You
+   Watched" .recommendation-card pattern: no boxed background/border,
+   thumbnail is the only element with visual chrome. */
 .wavelet-card {
     flex: 0 0 auto;
     width: calc(11.25rem * var(--ui-scale));
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: calc(1.25rem * var(--ui-scale));
-    overflow: hidden;
     text-decoration: none;
     color: inherit;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease;
     position: relative;
 }
 
 .wavelet-card:hover {
-    transform: translateY(calc(-0.5rem * var(--ui-scale)));
-    border-color: #00E5FF;
-    box-shadow: 0 calc(0.75rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.3);
+    transform: translateY(calc(-0.25rem * var(--ui-scale)));
 }
 
 /* Wavelet Thumbnail */
@@ -58,6 +54,8 @@
     position: relative;
     height: calc(18.75rem * var(--ui-scale));
     overflow: hidden;
+    border-radius: 8px;
+    margin-bottom: 8px;
 }
 
 .wavelet-thumbnail img {
@@ -153,19 +151,25 @@
     font-size: 8px;
 }
 
-/* Wavelet Info */
+/* Wavelet Info - plain text below the thumbnail, no padded box */
 .wavelet-info {
-    padding: var(--spacing-sm);
+    padding: 0;
 }
 
 .wavelet-title {
-    font-size: var(--font-sm);
-    font-weight: 600;
-    margin-bottom: var(--spacing-xs);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
     color: var(--soft-white);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+
+.wavelet-card:hover .wavelet-title {
+    color: #00E5FF;
 }
 
 .wavelet-creator {
