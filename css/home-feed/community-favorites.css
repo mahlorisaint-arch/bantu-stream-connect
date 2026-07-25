@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    COMMUNITY FAVORITES - Community-Driven Content Module
    ============================================ */
 
@@ -9,7 +9,7 @@
 
 /* Section Title Icon */
 #community-favorites-section .section-title i {
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 
 /* Community Badge */
@@ -17,11 +17,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(0, 229, 255, 0.15);
     padding: 4px 12px;
     border-radius: 20px;
     font-size: var(--font-xs);
-    color: var(--warm-gold);
+    color: #00E5FF;
     margin-left: var(--spacing-sm);
 }
 
@@ -31,7 +31,7 @@
 
 /* Favorite Indicator Badge */
 .favorite-badge {
-    background: linear-gradient(135deg, #F59E0B, #f97316);
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: var(--deep-black);
     font-weight: 700;
 }
@@ -55,7 +55,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 
 .card-favorite-count i {
@@ -80,7 +80,7 @@
 }
 
 .community-rank.top-1 {
-    background: linear-gradient(135deg, #F59E0B, #f97316);
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: var(--deep-black);
 }
 
@@ -106,7 +106,7 @@
 
 .creator-location i {
     font-size: 9px;
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 
 /* Community Stats Tooltip */
@@ -162,7 +162,7 @@
 }
 
 .community-stat-item i {
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-size: var(--icon-md);
 }
 
@@ -184,7 +184,7 @@
     }
     50% {
         transform: scale(1.1);
-        color: #F59E0B;
+        color: #00E5FF;
     }
     100% {
         transform: scale(1);
@@ -212,7 +212,7 @@
 
 /* Connector Badge Special Style for Community Favorites */
 #community-favorites-grid .connector-badge {
-    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     padding: calc(0.25rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale));
     border-radius: calc(0.75rem * var(--ui-scale));
 }
@@ -229,7 +229,7 @@
 
 #community-favorites-grid .empty-state .empty-icon {
     font-size: calc(3rem * var(--ui-scale));
-    color: var(--warm-gold);
+    color: #00E5FF;
     opacity: 0.5;
     margin-bottom: var(--spacing-md);
 }
@@ -360,7 +360,7 @@
 
 /* Light Theme */
 .theme-light .community-badge {
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(0, 229, 255, 0.1);
 }
 
 .theme-light .card-favorite-count,
@@ -393,7 +393,7 @@
 }
 
 .theme-high-contrast .card-favorite-count {
-    border: 1px solid var(--warm-gold);
+    border: 1px solid #00E5FF;
 }
 
 .theme-high-contrast .creator-location {

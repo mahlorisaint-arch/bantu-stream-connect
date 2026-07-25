@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    HERO CONTENT - CINEMATIC CREATOR SPOTLIGHT
    ============================================ */
 
@@ -65,7 +65,7 @@
     height: calc(2.5rem * var(--ui-scale));
     border-radius: 50%;
     overflow: hidden;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -103,14 +103,14 @@
 }
 
 .hero-trending-badge {
-    color: var(--warm-gold);
+    color: #00E5FF;
     display: flex;
     align-items: center;
     gap: calc(0.25rem * var(--ui-scale));
 }
 
 .hero-verified-badge {
-    color: var(--bantu-blue);
+    color: #00E5FF;
     display: flex;
     align-items: center;
     gap: calc(0.25rem * var(--ui-scale));
@@ -121,11 +121,11 @@
     font-family: 'Orbitron', sans-serif;
     font-size: var(--font-4xl);
     font-weight: 700;
-    background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+    background: linear-gradient(135deg, var(--soft-white), #00E5FF);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: var(--spacing-lg);
-    text-shadow: 0 0 calc(1.25rem * var(--ui-scale)) rgba(245, 158, 11, 0.3);
+    text-shadow: 0 0 calc(1.25rem * var(--ui-scale)) rgba(0, 229, 255, 0.3);
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
@@ -158,7 +158,7 @@
 }
 
 .hero-metric i {
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-size: var(--icon-md);
     margin-bottom: calc(0.25rem * var(--ui-scale));
 }
@@ -181,7 +181,7 @@
 }
 
 .hero-primary-btn {
-    background: linear-gradient(135deg, var(--warm-gold), #f97316);
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     border: none;
     border-radius: calc(0.75rem * var(--ui-scale));
     padding: calc(0.875rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale));
@@ -198,7 +198,7 @@
 
 .hero-primary-btn:hover {
     transform: translateY(calc(-0.1875rem * var(--ui-scale)));
-    box-shadow: 0 calc(0.625rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale)) rgba(245, 158, 11, 0.4);
+    box-shadow: 0 calc(0.625rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale)) rgba(0, 229, 255, 0.4);
 }
 
 .hero-secondary-btn {
@@ -245,7 +245,7 @@
 }
 
 .hero-audio-control:hover {
-    background: var(--warm-gold);
+    background: #00E5FF;
     color: var(--deep-black);
     transform: scale(1.1);
 }
@@ -255,7 +255,7 @@
     position: absolute;
     top: calc(1.875rem * var(--ui-scale));
     right: calc(1.875rem * var(--ui-scale));
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     padding: calc(0.5rem * var(--ui-scale)) calc(1.25rem * var(--ui-scale));
     border-radius: calc(2.5rem * var(--ui-scale));
@@ -279,7 +279,7 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: rgba(245, 158, 11, 0.9);
+    background: rgba(0, 229, 255, 0.9);
     border: none;
     color: white;
     font-size: 24px;
@@ -293,7 +293,7 @@
 
 .hero-video-play-btn:hover {
     transform: translate(-50%, -50%) scale(1.1);
-    background: var(--warm-gold);
+    background: #00E5FF;
 }
 
 /* Mobile Responsive */

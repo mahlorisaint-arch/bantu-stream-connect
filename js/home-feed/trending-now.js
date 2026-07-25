@@ -673,9 +673,9 @@ const TrendingNow = (function() {
             }
             
             ctx.beginPath();
-            ctx.strokeStyle = '#F59E0B';
+            ctx.strokeStyle = '#00E5FF';
             ctx.lineWidth = 1.5;
-            ctx.fillStyle = 'rgba(245, 158, 11, 0.1)';
+            ctx.fillStyle = 'rgba(0, 229, 255, 0.1)';
             
             const step = width / (points.length - 1);
             ctx.moveTo(0, points[0]);

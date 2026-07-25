@@ -1,4 +1,4 @@
-/* Button Components */
+﻿/* Button Components */
 .icon-btn {
     width: 40px;
     height: 40px;
@@ -23,14 +23,14 @@
 }
 
 .search-btn {
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 
 .profile-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     border: 2px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     overflow: hidden;
@@ -48,7 +48,7 @@
 
 .profile-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 229, 255, 0.3);
 }
 
 .profile-img {
@@ -63,7 +63,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     font-size: 16px;
 }
@@ -146,7 +146,7 @@
 }
 
 .nav-icon:nth-child(4):hover {
-    color: #F59E0B; /* Dashboard - Gold */
+    color: #00E5FF; /* Dashboard - Gold */
 }
 
 .nav-icon:nth-child(5):hover {
@@ -181,7 +181,7 @@
     overflow: hidden;
     backdrop-filter: blur(10px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    border-top: 2px solid var(--warm-gold);
+    border-top: 2px solid #00E5FF;
 }
 
 .development-card::before {
@@ -191,7 +191,7 @@
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, var(--warm-gold), var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(45deg, #00E5FF, #00E5FF, #00E5FF);
     border-radius: 26px;
     z-index: -1;
     opacity: 0.2;
@@ -225,7 +225,7 @@
     height: 80px;
     border-radius: 20px;
     background: rgba(15, 23, 42, 0.8);
-    border: 2px solid rgba(245, 158, 11, 0.3);
+    border: 2px solid rgba(0, 229, 255, 0.3);
     position: relative;
     overflow: hidden;
     display: flex;
@@ -260,7 +260,7 @@
 }
 
 .pulse-node {
-    fill: var(--warm-gold);
+    fill: #00E5FF;
     animation: pulseNode 2.5s ease-in-out infinite;
 }
 
@@ -282,7 +282,7 @@
     right: 0;
     bottom: 0;
     border-radius: 20px;
-    border: 2px solid rgba(245, 158, 11, 0.3);
+    border: 2px solid rgba(0, 229, 255, 0.3);
     animation: ripple 3s ease-in-out infinite;
 }
 
@@ -300,7 +300,7 @@
 .development-content h2 {
     font-size: 28px;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+    background: linear-gradient(135deg, var(--soft-white), #00E5FF);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 10px;
@@ -314,7 +314,7 @@
 }
 
 .development-message strong {
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-weight: 600;
 }
 
@@ -343,7 +343,7 @@
 
 /* Hero Button */
 .hero-btn {
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: var(--soft-white);
     border: none;
     padding: 15px 30px;
@@ -359,7 +359,7 @@
 
 .hero-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+    box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* See All Button */
@@ -368,7 +368,7 @@
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--card-border);
     border-radius: 10px;
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -379,7 +379,7 @@
 
 .see-all-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    border-color: var(--warm-gold);
+    border-color: #00E5FF;
 }
 
 /* CTA Button */
@@ -403,7 +403,7 @@
 
 .cta-button:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-color: var(--warm-gold);
+    border-color: #00E5FF;
     transform: translateY(-3px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
@@ -435,7 +435,7 @@
 .text-btn {
     background: none;
     border: none;
-    color: var(--warm-gold);
+    color: #00E5FF;
     cursor: pointer;
     font-size: 14px;
     transition: all 0.3s ease;
@@ -470,13 +470,13 @@
 }
 
 .theme-option.active {
-    background: rgba(29, 78, 216, 0.2);
-    color: var(--bantu-blue);
+    background: rgba(0, 229, 255, 0.2);
+    color: #00E5FF;
 }
 
 /* Primary/Secondary Buttons */
 .btn-primary {
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     border: none;
     padding: 15px;
@@ -491,7 +491,7 @@
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 10px 20px rgba(0, 229, 255, 0.3);
 }
 
 .btn-secondary {
@@ -521,7 +521,7 @@
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    color: var(--warm-gold);
+    color: #00E5FF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -534,13 +534,13 @@
 }
 
 .share-btn:hover {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     transform: scale(1.1);
 }
 
 /* Creator Button */
 .creator-btn {
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: var(--soft-white);
     border: none;
     padding: 8px 15px;
@@ -559,7 +559,7 @@
 
 .creator-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 229, 255, 0.4);
 }
 
 /* Card Badges */
@@ -584,7 +584,7 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     padding: 4px 8px;
     border-radius: 6px;
@@ -601,7 +601,7 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    background: rgba(29, 78, 216, 0.9);
+    background: rgba(0, 229, 255, 0.9);
     color: white;
     padding: 4px 8px;
     border-radius: 6px;
@@ -628,7 +628,7 @@
 
 .continue-watching-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(90deg, #00E5FF, #00E5FF);
     transition: width 0.3s ease;
     pointer-events: none;
 }
@@ -685,7 +685,7 @@
     opacity: 0.8;
 }
 .retry-btn {
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     border: none;
     padding: 10px 25px;
@@ -704,20 +704,20 @@
 }
 .result-count {
     font-weight: 600;
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 .search-query {
     color: var(--slate-grey);
     font-style: italic;
 }
 mark {
-    background-color: rgba(245, 158, 11, 0.3);
+    background-color: rgba(0, 229, 255, 0.3);
     color: var(--soft-white);
     border-radius: 3px;
     padding: 0 2px;
 }
 .genre-tag {
-    background: rgba(29, 78, 216, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 11px;
@@ -728,7 +728,7 @@ mark {
     height: 30px;
     border: 3px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    border-top-color: var(--warm-gold);
+    border-top-color: #00E5FF;
     animation: spin 1s linear infinite;
     margin: 0 auto 10px;
 }

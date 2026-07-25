@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    TRENDING NOW - Viral & Popular Content Module
    ============================================ */
 
@@ -18,11 +18,11 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(239, 68, 68, 0.2));
     padding: 4px 12px;
     border-radius: 20px;
     font-size: var(--font-xs);
-    color: var(--warm-gold);
+    color: #00E5FF;
     margin-left: var(--spacing-sm);
 }
 
@@ -44,7 +44,7 @@
 
 /* Trending Badge on Cards */
 .trending-badge {
-    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    background: linear-gradient(135deg, #00E5FF, #EF4444);
     color: white;
     font-weight: 700;
 }
@@ -72,9 +72,9 @@
 }
 
 .trending-rank.top-1 {
-    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    background: linear-gradient(135deg, #00E5FF, #EF4444);
     color: white;
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
 }
 
 .trending-rank.top-2 {
@@ -106,7 +106,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 
 .trending-score i {
@@ -197,7 +197,7 @@
 }
 
 .trending-stat-item i {
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-size: var(--icon-md);
 }
 
@@ -232,12 +232,12 @@
 }
 
 .time-option:hover {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: var(--warm-gold);
+    background: rgba(0, 229, 255, 0.1);
+    border-color: #00E5FF;
 }
 
 .time-option.active {
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     border-color: transparent;
 }
@@ -278,7 +278,7 @@
 
 #trending-grid .empty-state .empty-icon {
     font-size: calc(3rem * var(--ui-scale));
-    color: var(--warm-gold);
+    color: #00E5FF;
     opacity: 0.5;
     margin-bottom: var(--spacing-md);
 }
@@ -375,13 +375,13 @@
 /* Pulse Animation for Top Trending */
 @keyframes trendingGlow {
     0% {
-        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+        box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4);
     }
     70% {
-        box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+        box-shadow: 0 0 0 10px rgba(0, 229, 255, 0);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+        box-shadow: 0 0 0 0 rgba(0, 229, 255, 0);
     }
 }
 

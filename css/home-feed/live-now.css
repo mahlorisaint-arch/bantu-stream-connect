@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    LIVE NOW - Live Streaming Module
    ============================================ */
 
@@ -159,7 +159,7 @@
 }
 
 .live-chat-message i {
-    color: var(--warm-gold);
+    color: #00E5FF;
     margin-right: 4px;
 }
 
@@ -208,7 +208,7 @@
 
 /* Upcoming Stream Indicator */
 .upcoming-badge {
-    background: rgba(245, 158, 11, 0.9);
+    background: rgba(0, 229, 255, 0.9);
     color: var(--deep-black);
 }
 

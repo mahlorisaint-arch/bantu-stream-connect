@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    WAVELETS - Short-form Content Module
    (Formerly Quick Bits - Renamed for better brand alignment)
    ============================================ */
@@ -15,7 +15,7 @@
     overflow-x: auto;
     padding: calc(1.25rem * var(--ui-scale)) calc(0.625rem * var(--ui-scale));
     scrollbar-width: thin;
-    scrollbar-color: var(--warm-gold) var(--card-bg);
+    scrollbar-color: #00E5FF var(--card-bg);
     -webkit-overflow-scrolling: touch;
 }
 
@@ -29,7 +29,7 @@
 }
 
 .wavelets-container::-webkit-scrollbar-thumb {
-    background: var(--warm-gold);
+    background: #00E5FF;
     border-radius: 10px;
 }
 
@@ -49,7 +49,7 @@
 
 .wavelet-card:hover {
     transform: translateY(calc(-0.5rem * var(--ui-scale)));
-    border-color: var(--warm-gold);
+    border-color: #00E5FF;
     box-shadow: 0 calc(0.75rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.3);
 }
 
@@ -101,7 +101,7 @@
     position: absolute;
     top: var(--spacing-xs);
     left: var(--spacing-xs);
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
     padding: calc(0.25rem * var(--ui-scale)) calc(0.625rem * var(--ui-scale));
     border-radius: calc(0.75rem * var(--ui-scale));
@@ -139,7 +139,7 @@
     left: var(--spacing-xs);
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-size: 10px;
     padding: 2px 6px;
     border-radius: 12px;
@@ -180,7 +180,7 @@
     height: calc(1.5rem * var(--ui-scale));
     border-radius: 50%;
     overflow: hidden;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -217,7 +217,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    color: var(--warm-gold);
+    color: #00E5FF;
 }
 
 /* Wavelet Animation */
@@ -250,8 +250,8 @@
 .wavelets-loading .spinner {
     width: 24px;
     height: 24px;
-    border: 2px solid rgba(245, 158, 11, 0.2);
-    border-top-color: var(--warm-gold);
+    border: 2px solid rgba(0, 229, 255, 0.2);
+    border-top-color: #00E5FF;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -385,7 +385,7 @@
 }
 
 .theme-high-contrast .wavelet-card:hover {
-    border-color: var(--warm-gold);
+    border-color: #00E5FF;
 }
 
 .theme-high-contrast .wavelet-overlay {
@@ -426,7 +426,7 @@
 }
 
 .wavelets-scroll-indicator i {
-    color: var(--warm-gold);
+    color: #00E5FF;
     font-size: 20px;
     animation: scrollBounce 1.5s infinite;
 }

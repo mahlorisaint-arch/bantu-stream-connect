@@ -1,4 +1,4 @@
-/* ============================================ */
+﻿/* ============================================ */
 /* BANTU WAVES: SERIES SECTION
    Home Feed Component Styles
 /* ============================================ */
@@ -23,7 +23,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm, 0.5rem);
-    background: linear-gradient(135deg, var(--soft-white, #F8FAFC), var(--warm-gold, #F59E0B));
+    background: linear-gradient(135deg, var(--soft-white, #F8FAFC), var(--warm-gold, #00E5FF));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -33,7 +33,7 @@
     background: none;
     -webkit-background-clip: unset;
     background-clip: unset;
-    color: var(--warm-gold, #F59E0B);
+    color: var(--warm-gold, #00E5FF);
 }
 
 /* Series Grid */
@@ -63,7 +63,7 @@
 
 .series-card:hover {
     transform: translateY(-6px);
-    border-color: var(--warm-gold, #F59E0B);
+    border-color: var(--warm-gold, #00E5FF);
     box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -104,7 +104,7 @@
 }
 
 .watch-latest-btn {
-    background: linear-gradient(135deg, var(--warm-gold, #F59E0B), #f97316);
+    background: linear-gradient(135deg, var(--warm-gold, #00E5FF), #0891b2);
     border: none;
     padding: 10px 20px;
     border-radius: var(--radius-full, 9999px);
@@ -120,7 +120,7 @@
 
 .watch-latest-btn:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
 }
 
 /* Progress Bar */
@@ -129,7 +129,7 @@
     bottom: 0;
     left: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--warm-gold, #F59E0B), #f97316);
+    background: linear-gradient(90deg, var(--warm-gold, #00E5FF), #0891b2);
     transition: width 0.3s ease;
     z-index: 2;
 }
@@ -139,7 +139,7 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: linear-gradient(135deg, var(--warm-gold, #F59E0B), #f97316);
+    background: linear-gradient(135deg, var(--warm-gold, #00E5FF), #0891b2);
     padding: 4px 10px;
     border-radius: var(--radius-full, 9999px);
     font-size: var(--font-xs, 0.75rem);
@@ -179,7 +179,7 @@
     width: 28px;
     height: 28px;
     border-radius: var(--radius-full, 9999px);
-    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
+    background: linear-gradient(135deg, var(--bantu-blue, #00E5FF), var(--warm-gold, #00E5FF));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,8 +265,8 @@
 }
 
 .series-actions .action-btn:hover {
-    background: rgba(245, 158, 11, 0.2);
-    color: var(--warm-gold, #F59E0B);
+    background: rgba(0, 229, 255, 0.2);
+    color: var(--warm-gold, #00E5FF);
     transform: translateY(-2px);
 }
 
@@ -341,7 +341,7 @@
 }
 
 .retry-btn {
-    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
+    background: linear-gradient(135deg, var(--bantu-blue, #00E5FF), var(--warm-gold, #00E5FF));
     border: none;
     padding: 10px 24px;
     border-radius: var(--radius-full, 9999px);
@@ -357,7 +357,7 @@
 
 .retry-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
 }
 
 /* Theme Adjustments */
