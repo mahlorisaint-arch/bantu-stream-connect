@@ -1058,8 +1058,12 @@
   font-weight: 600;
 }
 
-/* Toggle switch */
-.toggle-switch {
+/* Toggle switch — scoped to the settings-menu Data Saver row only. These
+   selectors used to be unscoped (.toggle-switch/.toggle-slider), which also
+   matched the sidebar's Creator Mode toggle (same class names, reused
+   markup) and forced it into this player-specific pill-switch look instead
+   of the plain native checkbox every other page shows for it. */
+.settings-row-body .toggle-switch {
   position: relative;
   display: inline-block;
   width: 44px;
@@ -1067,13 +1071,13 @@
   margin: 6px 0 4px;
 }
 
-.toggle-switch input {
+.settings-row-body .toggle-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.toggle-slider {
+.settings-row-body .toggle-slider {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -1088,7 +1092,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-.toggle-slider:before {
+.settings-row-body .toggle-slider:before {
   position: absolute;
   content: "";
   height: 18px;
@@ -1103,12 +1107,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-input:checked + .toggle-slider {
+.settings-row-body input:checked + .toggle-slider {
   background: rgba(0, 229, 255, 0.4) !important;
   border-color: var(--player-accent-dim) !important;
 }
 
-input:checked + .toggle-slider:before {
+.settings-row-body input:checked + .toggle-slider:before {
   transform: translateX(22px);
   background: white !important;
 }

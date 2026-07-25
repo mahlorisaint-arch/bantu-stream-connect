@@ -503,19 +503,16 @@ function updateProfileSwitcher() {
         });
     });
 
-    const profileBtn = document.getElementById('current-profile-btn');
-    const dropdown = document.getElementById('profile-dropdown');
-    if (profileBtn && dropdown) {
-        profileBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('active');
-        });
-        document.addEventListener('click', (e) => {
-            if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.remove('active');
-            }
-        });
-    }
+    // #current-profile-btn's click-to-toggle-dropdown behavior is owned by
+    // shared-components.js's setupProfileDropdown() (dedup'd via a
+    // clone-and-replace, called once at init). This function used to also
+    // addEventListener('click', ...) here — since updateProfileSwitcher()
+    // is called repeatedly (every profile switch re-renders and re-ran this
+    // block), each call stacked another listener on the button with no
+    // removal, so N calls meant a click toggled .active N times: with an
+    // even listener count the dropdown visually never opened no matter how
+    // many times it was clicked. Removed; the shared function already
+    // handles this correctly everywhere else.
 
     applyMobileHeaderStyles();
 }
