@@ -330,8 +330,17 @@
     display: none;
   }
 
-  .action-pill-icon-only {
-    width: 36px;
+  /* Two-class selector so this reliably beats the .action-pill rule
+     above at equal specificity (same-specificity rules resolve by
+     source order, and this used to lose, silently forcing Dislike back
+     to 0 12px padding inside its fixed width — squeezing its icon and
+     making it look mismatched against Like). Dislike is also sized
+     smaller than Like here on purpose: it's the secondary, not-yet-
+     wired action, and shouldn't visually dominate the real Like
+     button next to it. */
+  .action-pill.action-pill-icon-only {
+    width: 32px;
+    padding: 0;
   }
 }
 
