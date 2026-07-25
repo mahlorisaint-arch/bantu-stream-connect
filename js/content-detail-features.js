@@ -430,200 +430,17 @@ function optimizeMobileSidebar() {
     }
 }
 
-async function updateSidebarProfile() {
-    const avatar = document.getElementById('sidebar-profile-avatar');
-    const name = document.getElementById('sidebar-profile-name');
-    const email = document.getElementById('sidebar-profile-email');
-    const profileSection = document.getElementById('sidebar-profile');
-
-    if (!avatar || !name || !email) return;
-    avatar.innerHTML = '';
-
-    if (window.currentUser || (window.AuthHelper?.isAuthenticated?.())) {
-        try {
-            const userProfile = window.AuthHelper?.getUserProfile?.() || window.currentUser;
-            const userId = userProfile?.id;
-
-            if (userId) {
-                const { data: profile, error } = await window.supabaseClient
-                    .from('user_profiles')
-                    .select('id, full_name, username, avatar_url')
-                    .eq('id', userId)
-                    .maybeSingle();
-
-                if (error || !profile) {
-                    renderSidebarFallback(avatar, name, email, userProfile);
-                    return;
-                }
-
-                name.textContent = profile.full_name || profile.username || 'User';
-                email.textContent = userProfile.email || 'user@example.com';
-
-                if (profile.avatar_url) {
-                    const avatarUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
-                    const img = document.createElement('img');
-                    img.src = avatarUrl;
-                    img.alt = profile.full_name || 'Profile';
-                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
-                    img.onerror = () => renderSidebarInitials(avatar, profile);
-                    avatar.appendChild(img);
-                } else {
-                    renderSidebarInitials(avatar, profile);
-                }
-
-                if (profileSection) {
-                    profileSection.onclick = () => {
-                        document.getElementById('sidebar-close')?.click();
-                        window.location.href = 'manage-profiles.html';
-                    };
-                }
-            } else {
-                renderSidebarFallback(avatar, name, email, userProfile);
-            }
-        } catch (err) {
-            console.warn('Sidebar profile fetch error:', err);
-            renderSidebarFallback(avatar, name, email, window.currentUser);
-        }
-    } else {
-        name.textContent = 'Guest';
-        email.textContent = 'Sign in to continue';
-        avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
-        if (profileSection) {
-            profileSection.onclick = () => {
-                document.getElementById('sidebar-close')?.click();
-                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-            };
-        }
-    }
-}
-
-function renderSidebarInitials(container, profile) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = profile?.full_name || profile?.username || 'User';
-    const initials = getInitials(name);
-    const span = document.createElement('span');
-    span.style.cssText = `
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: var(--soft-white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        line-height: 1;
-    `;
-    span.textContent = initials;
-    container.appendChild(span);
-}
-
-function renderSidebarFallback(avatar, name, email, user) {
-    if (avatar) avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
-    if (name) name.textContent = user?.email?.split('@')[0] || 'User';
-    if (email) email.textContent = user?.email || 'Sign in to continue';
-}
-
-// ============================================
-// UI CHROME: Header Profile
-// ============================================
-async function updateHeaderProfile() {
-    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-    const currentProfileName = document.getElementById('current-profile-name');
-    if (!profilePlaceholder || !currentProfileName) return;
-    profilePlaceholder.innerHTML = '';
-
-    if (window.currentUser || window.AuthHelper?.isAuthenticated?.()) {
-        try {
-            const userProfile = window.AuthHelper?.getUserProfile?.() || window.currentUser;
-            const { data: profile } = await window.supabaseClient
-                .from('user_profiles')
-                .select('full_name, username, avatar_url')
-                .eq('id', userProfile.id)
-                .maybeSingle();
-
-            const displayName = profile?.full_name || profile?.username || userProfile.email?.split('@')[0] || 'User';
-            currentProfileName.textContent = displayName;
-
-            if (profile?.avatar_url) {
-                const avatarUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
-                const img = document.createElement('img');
-                img.className = 'profile-img';
-                img.src = avatarUrl;
-                img.alt = displayName;
-                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
-                img.onerror = () => renderInitialsProfile(profilePlaceholder, { full_name: displayName });
-                profilePlaceholder.appendChild(img);
-            } else {
-                renderInitialsProfile(profilePlaceholder, { full_name: displayName });
-            }
-        } catch (e) {
-            renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
-        }
-    } else {
-        renderGuestProfile(profilePlaceholder, currentProfileName);
-    }
-
-    applyMobileHeaderStyles();
-}
-
-function applyMobileHeaderStyles() {
-    const isMobile = window.innerWidth <= 480;
-    const profileBtn = document.querySelector('.profile-btn');
-    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-    const profileNameSpan = document.getElementById('current-profile-name');
-
-    if (isMobile) {
-        if (profilePlaceholder) {
-            profilePlaceholder.style.display = 'none';
-        }
-        if (profileBtn) {
-            profileBtn.style.minWidth = 'auto';
-            profileBtn.style.padding = '0.3125rem 0.75rem';
-            profileBtn.style.justifyContent = 'center';
-        }
-        if (profileNameSpan) {
-            profileNameSpan.style.display = 'inline-block';
-        }
-    } else {
-        if (profilePlaceholder) {
-            profilePlaceholder.style.display = 'flex';
-        }
-        if (profileBtn) {
-            profileBtn.style.minWidth = '160px';
-            profileBtn.style.padding = '0.3125rem 1.2rem 0.3125rem 0.5rem';
-            profileBtn.style.justifyContent = 'flex-start';
-        }
-    }
-}
-
-function renderInitialsProfile(container, profile) {
-    if (!container) return;
-    container.innerHTML = '';
-    const name = profile?.full_name || 'User';
-    const initials = name.split(' ').map(p => p[0]).join('').toUpperCase().substring(0, 2);
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;text-transform:uppercase;';
-    div.textContent = initials;
-    container.appendChild(div);
-}
-
-function renderGuestProfile(container, nameElement) {
-    if (!container) return;
-    container.innerHTML = '';
-    const div = document.createElement('div');
-    div.className = 'profile-placeholder';
-    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
-    div.textContent = 'G';
-    container.appendChild(div);
-    if (nameElement) nameElement.textContent = 'Guest';
-}
-
-function renderFallbackProfile(container, nameElement, user) {
-    if (container) container.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
-    if (nameElement) nameElement.textContent = user?.email?.split('@')[0] || 'User';
-}
+// updateSidebarProfile(), updateHeaderProfile(), and applyMobileHeaderStyles()
+// used to be redefined here as page-specific copies. Classic <script> tags
+// share one global scope, and this file loads after shared-components.js,
+// so these duplicates silently overwrote — and permanently shadowed — the
+// real, maintained implementations for every page that only loads
+// shared-components.js (trending_screen.html, discover-creator.html, etc.).
+// That's what caused the header/sidebar avatar styling fixes to never take
+// effect here even after being fixed at the source. Removed so this page
+// falls through to the single shared implementation, same as every other
+// page — no page-specific header/sidebar/profile chrome left to drift out
+// of sync again.
 
 function updateProfileSwitcher() {
     const profileList = document.getElementById('profile-list');
@@ -642,13 +459,13 @@ function updateProfileSwitcher() {
             img.className = 'profile-img';
             img.src = window.SupabaseHelper?.fixMediaUrl?.(window.currentProfile.avatar_url) || window.currentProfile.avatar_url;
             img.alt = window.currentProfile.name;
-            img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+            img.style.cssText = 'display:block;width:100%;height:100%;min-width:100%;min-height:100%;border-radius:50%;object-fit:cover;object-position:center;';
             profilePlaceholder.appendChild(img);
         } else {
             const initials = getInitials(window.currentProfile.name);
             const div = document.createElement('div');
             div.className = 'profile-placeholder';
-            div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+            div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#00E5FF,#0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;font-size:16px';
             div.textContent = initials;
             profilePlaceholder.appendChild(div);
         }
@@ -1118,9 +935,6 @@ window.initThemeSelector = initThemeSelector;
 window.applyTheme = applyTheme;
 window.setupCompleteSidebar = setupCompleteSidebar;
 window.setupMobileSidebar = setupMobileSidebar;
-window.updateSidebarProfile = updateSidebarProfile;
-window.updateHeaderProfile = updateHeaderProfile;
-window.applyMobileHeaderStyles = applyMobileHeaderStyles;
 window.updateProfileSwitcher = updateProfileSwitcher;
 window.setupNavigationButtons = setupNavigationButtons;
 window.setupNavButtonScrollAnimation = setupNavButtonScrollAnimation;
