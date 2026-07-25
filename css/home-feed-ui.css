@@ -613,32 +613,43 @@ SECTION HEADERS
     gap: 10px;
 }
 
+/* Matches content-detail.html's rail header convention
+   (.because-you-watched-rail .section-title, creator-info-bar.css's
+   Inter-over-Orbitron rule) - plain solid color, no gradient-clip
+   effect, Inter instead of Orbitron. */
 .section-title {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: 19px;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--soft-white, #F8FAFC), var(--warm-gold, #00E5FF));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--soft-white, #F8FAFC);
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
+/* Matches content-detail.html's .view-all-link
+   (css/content-detail/because-you-watched.css) exactly. */
 .see-all-btn {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--card-border, rgba(148, 163, 184, 0.2));
-    border-radius: 30px;
-    color: var(--warm-gold, #00E5FF);
-    font-size: 14px;
-    font-weight: 500;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 999px;
+    color: #00E5FF;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+}
+
+.see-all-btn:hover {
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.14);
 }
 
 /* ============================================
