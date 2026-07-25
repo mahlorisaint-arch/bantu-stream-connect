@@ -177,37 +177,6 @@ async function loadNotifications() {
 }
 
 /**
- * Community Stats Bar (#total-connectors / #new-connectors) - was
- * confirmed hardcoded ("12.5K" / "+342", never touched by any JS). Wires
- * it to real counts using the same query shape already proven out for the
- * Community Favorites section's own local stats widget
- * (js/home-feed/community-favorites.js loadCommunityStats): a plain
- * connectors count, plus user_profiles rows created since local midnight
- * for "Joined Today" (the more literal/honest read of that label than
- * reusing a views-based proxy).
- */
-async function loadCommunityStatsBar() {
-    const connectorsEl = document.getElementById('total-connectors');
-    const newConnectorsEl = document.getElementById('new-connectors');
-    if (!connectorsEl && !newConnectorsEl) return;
-
-    try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const [{ count: connectorsCount }, { count: joinedTodayCount }] = await Promise.all([
-            supabaseAuth.from('connectors').select('*', { count: 'exact', head: true }),
-            supabaseAuth.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', today.toISOString())
-        ]);
-
-        if (connectorsEl) connectorsEl.textContent = formatNumber(connectorsCount || 0);
-        if (newConnectorsEl) newConnectorsEl.textContent = `+${formatNumber(joinedTodayCount || 0)}`;
-    } catch (error) {
-        console.error('Error loading community stats bar:', error);
-    }
-}
-
-/**
  * Compact header language-filter dropdown (replaces the old 12-chip
  * full-width strip, which was confirmed fully inert). Toggle + selection
  * are real; actual content filtering by language isn't wired to any
@@ -277,7 +246,6 @@ async function initCore() {
     setupGlobalImageErrorHandler();
     setupLanguageFilterDropdown();
     await checkAuth();
-    loadCommunityStatsBar();
     console.log('✅ Core System initialized');
 }
 
@@ -295,7 +263,6 @@ Object.assign(window, {
     checkAuth,
     loadUserProfile,
     loadNotifications,
-    loadCommunityStatsBar,
     setupLanguageFilterDropdown,
     updateNotificationBadge,
     showToast,
