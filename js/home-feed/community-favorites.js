@@ -341,13 +341,16 @@ const CommunityFavorites = (function() {
                     language, 
                     created_at, 
                     favorites_count,
+                    streaming_provider,
+                    provider_video_id,
+                    preview_clip_url,
                     user_id,
                     user_profiles!user_id (
-                        id, 
-                        full_name, 
-                        username, 
-                        avatar_url, 
-                        bio, 
+                        id,
+                        full_name,
+                        username,
+                        avatar_url,
+                        bio,
                         location
                     )
                 `)
@@ -644,11 +647,12 @@ const CommunityFavorites = (function() {
             `;
             
             fragment.appendChild(card);
+            window.BSCPreviewClips?.attachHoverPreview(card, content, '.card-thumbnail');
         });
-        
+
         container.appendChild(fragment);
     }
-    
+
     /**
      * Get language name from code
      */

@@ -291,8 +291,9 @@ const TrendingNow = (function() {
             const { data: contentData, error: contentError } = await window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
+                    id, title, description, thumbnail_url, duration,
                     genre, language, created_at, favorites_count,
+                    streaming_provider, provider_video_id, preview_clip_url,
                     user_id, user_profiles!user_id(id, full_name, username, avatar_url)
                 `)
                 .eq('status', 'published')
@@ -642,8 +643,9 @@ const TrendingNow = (function() {
             `;
             
             fragment.appendChild(card);
+            window.BSCPreviewClips?.attachHoverPreview(card, content, '.card-thumbnail');
         });
-        
+
         container.appendChild(fragment);
         
         // Draw sparklines

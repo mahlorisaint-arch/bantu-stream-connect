@@ -177,17 +177,20 @@ const ContinueWatching = (function() {
         const { data: contentData, error: contentError } = await window.supabaseAuth
             .from('Content')
             .select(`
-                id, 
-                title, 
-                thumbnail_url, 
-                duration, 
-                genre, 
-                language, 
+                id,
+                title,
+                thumbnail_url,
+                duration,
+                genre,
+                language,
                 user_id,
+                streaming_provider,
+                provider_video_id,
+                preview_clip_url,
                 user_profiles!user_id (
-                    id, 
-                    full_name, 
-                    username, 
+                    id,
+                    full_name,
+                    username,
                     avatar_url
                 )
             `)
@@ -415,9 +418,10 @@ const ContinueWatching = (function() {
             `;
             
             container.appendChild(card);
+            window.BSCPreviewClips?.attachHoverPreview(card, content, '.card-thumbnail');
         });
     }
-    
+
     /**
      * Animate cards with stagger effect
      */

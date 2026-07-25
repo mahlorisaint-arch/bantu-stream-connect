@@ -223,13 +223,16 @@ const LiveNow = (function() {
                     genre, 
                     language, 
                     created_at, 
-                    favorites_count, 
+                    favorites_count,
                     shares_count,
-                    user_id, 
+                    streaming_provider,
+                    provider_video_id,
+                    preview_clip_url,
+                    user_id,
                     user_profiles!user_id (
-                        id, 
-                        full_name, 
-                        username, 
+                        id,
+                        full_name,
+                        username,
                         avatar_url
                     )
                 `)
@@ -488,7 +491,8 @@ const LiveNow = (function() {
             `;
             
             fragment.appendChild(card);
-            
+            window.BSCPreviewClips?.attachHoverPreview(card, stream, '.card-thumbnail');
+
             // Staggered animation
             setTimeout(() => {
                 card.style.opacity = '1';

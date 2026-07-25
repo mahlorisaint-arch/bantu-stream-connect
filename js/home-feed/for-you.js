@@ -405,17 +405,20 @@ const ForYou = (function() {
                     content_format,
                     media_type,
                     tags,
-                    user_id, 
+                    streaming_provider,
+                    provider_video_id,
+                    preview_clip_url,
+                    user_id,
                     user_profiles!user_id (
-                        id, 
-                        full_name, 
-                        username, 
+                        id,
+                        full_name,
+                        username,
                         avatar_url
                     )
                 `)
                 .eq('status', 'published')
                 .in('content_format', LONG_FORM_FORMATS);
-            
+
             // Only add genre filter if we have preferences
             if (userPreferences.genres && userPreferences.genres.length > 0) {
                 const validGenres = userPreferences.genres.filter(g => g && typeof g === 'string');
@@ -443,9 +446,10 @@ const ForYou = (function() {
                 let fallbackQuery = window.supabaseAuth
                     .from('Content')
                     .select(`
-                        id, title, description, thumbnail_url, duration, 
+                        id, title, description, thumbnail_url, duration,
                         genre, language, created_at, favorites_count,
                         content_format, media_type, tags,
+                        streaming_provider, provider_video_id, preview_clip_url,
                         user_id, user_profiles!user_id (
                             id, full_name, username, avatar_url
                         )
@@ -503,6 +507,7 @@ const ForYou = (function() {
                     id, title, description, thumbnail_url, duration,
                     genre, language, created_at, favorites_count,
                     content_format, media_type,
+                    streaming_provider, provider_video_id, preview_clip_url,
                     user_id, user_profiles!user_id (
                         id, full_name, username, avatar_url
                     )
@@ -538,8 +543,9 @@ const ForYou = (function() {
             const { data, error } = await window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
+                    id, title, description, thumbnail_url, duration,
                     genre, language, created_at, favorites_count,
+                    streaming_provider, provider_video_id, preview_clip_url,
                     user_id, user_profiles!user_id (
                         id, full_name, username, avatar_url
                     )
@@ -854,8 +860,9 @@ const ForYou = (function() {
             `;
             
             fragment.appendChild(card);
+            window.BSCPreviewClips?.attachHoverPreview(card, content, '.card-thumbnail');
         });
-        
+
         container.appendChild(fragment);
     }
     

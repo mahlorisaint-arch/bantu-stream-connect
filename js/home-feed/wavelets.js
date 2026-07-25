@@ -178,10 +178,13 @@ const Wavelets = (function() {
                     content_format,
                     media_type,
                     status,
+                    streaming_provider,
+                    provider_video_id,
+                    preview_clip_url,
                     user_profiles!user_id (
-                        id, 
-                        full_name, 
-                        username, 
+                        id,
+                        full_name,
+                        username,
                         avatar_url
                     )
                 `)
@@ -360,7 +363,8 @@ const Wavelets = (function() {
             `;
             
             fragment.appendChild(card);
-            
+            window.BSCPreviewClips?.attachHoverPreview(card, content, '.wavelet-thumbnail');
+
             // Staggered animation
             setTimeout(() => {
                 card.style.opacity = '1';
