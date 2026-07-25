@@ -306,29 +306,38 @@ const ForYou = (function() {
                 if (container) showSkeletons();
                 
                 let contentList = [];
-                
+                let usedPersonalizedContent = false;
+
                 // Try to get personalized recommendations
                 if (currentUser && userPreferences?.hasPreferences) {
                     contentList = await getPersonalizedRecommendations();
+                    usedPersonalizedContent = !!(contentList && contentList.length > 0);
                 }
-                
+
                 // Fallback to trending/recent content if no personalized content
                 if (!contentList || contentList.length === 0) {
                     console.log('No personalized content, falling back to recent content');
                     contentList = await getRecentContentFallback();
                 }
-                
+
                 // Second fallback - get any published content
                 if (!contentList || contentList.length === 0) {
                     console.log('No recent content, falling back to any published content');
                     contentList = await getAnyContentFallback();
                 }
-                
+
                 if (!contentList || contentList.length === 0) {
                     showEmptyState();
                     return;
                 }
-                
+
+                // Section only keeps calling itself "For You" when it
+                // actually used real personalization signal - otherwise it
+                // relabels honestly instead of claiming personalization it
+                // didn't do (same rule enforced everywhere else on the
+                // platform: no section may claim behavior it isn't doing).
+                updateSectionLabel(usedPersonalizedContent);
+
                 // Build complete dataset with metrics from engagement_stats
                 let sectionData = await buildSectionData(contentList.slice(0, DISPLAY_ITEMS));
                 
@@ -465,16 +474,33 @@ const ForYou = (function() {
     }
     
     /**
-     * Get recent content as fallback (simpler query)
+     * Cold-start fallback — was a plain "recent content" query
+     * (created_at DESC), which isn't actually "popular," just "new." Swapped
+     * to the same real popularity query the Trending Now rail uses
+     * (content_engagement_stats ordered by total_views), reused rather than
+     * duplicated, so a signal-less user gets an honest "Trending in Mzansi"
+     * result instead of a relabeled "recent" list.
      */
     async function getRecentContentFallback() {
         try {
             if (!window.supabaseAuth) return [];
-            
+
+            const { data: engagementData, error: engagementError } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views')
+                .order('total_views', { ascending: false })
+                .limit(20);
+
+            if (engagementError || !engagementData || engagementData.length === 0) {
+                return [];
+            }
+
+            const contentIds = engagementData.map(e => e.content_id);
+
             const { data, error } = await window.supabaseAuth
                 .from('Content')
                 .select(`
-                    id, title, description, thumbnail_url, duration, 
+                    id, title, description, thumbnail_url, duration,
                     genre, language, created_at, favorites_count,
                     content_format, media_type,
                     user_id, user_profiles!user_id (
@@ -483,17 +509,20 @@ const ForYou = (function() {
                 `)
                 .eq('status', 'published')
                 .in('content_format', LONG_FORM_FORMATS)
-                .order('created_at', { ascending: false })
+                .in('id', contentIds)
                 .limit(DISPLAY_ITEMS);
-            
+
             if (error) {
-                console.warn('Error fetching recent content:', error.message);
+                console.warn('Error fetching trending fallback content:', error.message);
                 return [];
             }
-            
-            return data || [];
+
+            const viewsById = new Map(engagementData.map(e => [e.content_id, e.total_views || 0]));
+            const result = (data || []).slice();
+            result.sort((a, b) => (viewsById.get(b.id) || 0) - (viewsById.get(a.id) || 0));
+            return result;
         } catch (err) {
-            console.error('Error getting recent content:', err);
+            console.error('Error getting trending fallback content:', err);
             return [];
         }
     }
@@ -935,6 +964,31 @@ const ForYou = (function() {
     }
     
     /**
+     * Relabels the section header honestly based on whether this render
+     * actually used real personalization signal. Previously the header
+     * always said "FOR YOU" even for a cold-start user seeing a generic
+     * fallback list - only a tooltip's text changed, which most users would
+     * never notice, so the section quietly overclaimed personalization it
+     * wasn't doing.
+     */
+    function updateSectionLabel(isPersonalized) {
+        const sectionTitle = document.querySelector('#for-you-section .section-title');
+        if (!sectionTitle) return;
+
+        const icon = sectionTitle.querySelector('i.fas, i.far');
+        const tooltip = sectionTitle.querySelector('.personalization-tooltip');
+        if (tooltip) tooltip.remove();
+
+        if (icon) icon.className = isPersonalized ? 'fas fa-magic' : 'fas fa-arrow-trend-up';
+        sectionTitle.childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) node.remove();
+        });
+        sectionTitle.appendChild(document.createTextNode(isPersonalized ? ' FOR YOU' : ' TRENDING IN MZANSI'));
+
+        if (tooltip) sectionTitle.appendChild(tooltip);
+    }
+
+    /**
      * Add personalization tooltip to section title
      */
     function addPersonalizationTooltip() {
@@ -948,10 +1002,9 @@ const ForYou = (function() {
         tooltipSpan.innerHTML = `
             <i class="fas fa-info-circle" style="font-size: 14px; color: var(--slate-grey);"></i>
             <span class="tooltip-text">
-                Based on your interests and watch history. 
-                ${userPreferences?.hasPreferences ? 
-                    `We found ${userPreferences.genres?.length || 0} genres you enjoy.` : 
-                    'Watch and like content to get better recommendations!'}
+                ${userPreferences?.hasPreferences ?
+                    `Based on your interests and watch history — we found ${userPreferences.genres?.length || 0} genres you enjoy.` :
+                    'Showing what\'s trending until we learn your preferences — watch and like content to get personalized picks here.'}
             </span>
         `;
         
