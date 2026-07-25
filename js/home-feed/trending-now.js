@@ -32,12 +32,12 @@ const TrendingNow = (function() {
         
         section = document.getElementById('trending-now-section');
         container = document.getElementById('trending-grid');
-        
+
         if (!section || !container) {
-            console.warn('Trending Now elements not found, creating fallback');
-            createFallbackElements();
+            console.warn('Trending Now elements not found in the DOM (expected a static #trending-now-section in index.html)');
+            return;
         }
-        
+
         // Get current user
         await getCurrentUser();
         
@@ -60,46 +60,6 @@ const TrendingNow = (function() {
         startBackgroundRefresh();
         
         console.log('✅ Trending Now Module initialized');
-    }
-    
-    /**
-     * Create fallback elements if not present in DOM
-     */
-    function createFallbackElements() {
-        if (!document.getElementById('trending-now-section')) {
-            const newSection = document.createElement('section');
-            newSection.id = 'trending-now-section';
-            newSection.className = 'section';
-            newSection.innerHTML = `
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <i class="fas fa-fire" style="color: var(--warm-gold);"></i>
-                        TRENDING NOW
-                        <span class="trending-flame">
-                            <i class="fas fa-fire"></i> Viral
-                        </span>
-                    </h2>
-                    <div id="trending-time-selector" class="trending-time-selector"></div>
-                    <a href="https://bantustreamconnect.com/trending_screen" class="see-all-btn">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div id="trending-stats-bar" class="trending-stats-bar"></div>
-                <div class="content-grid" id="trending-grid"></div>
-            `;
-            
-            const liveNowSection = document.getElementById('live-now-section');
-            if (liveNowSection && liveNowSection.parentNode) {
-                liveNowSection.insertAdjacentElement('afterend', newSection);
-            } else {
-                const main = document.querySelector('main.container');
-                if (main) main.appendChild(newSection);
-            }
-        }
-        
-        section = document.getElementById('trending-now-section');
-        container = document.getElementById('trending-grid');
     }
     
     /**

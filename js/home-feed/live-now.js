@@ -390,16 +390,17 @@ const LiveNow = (function() {
      */
     function renderLiveStreams(streams) {
         if (!container) return;
-        
-        container.style.display = 'grid';
-        if (noLiveStreams) noLiveStreams.style.display = 'none';
-        container.innerHTML = '';
-        
+
         if (!streams || streams.length === 0) {
             showEmptyState();
             return;
         }
-        
+
+        if (section) section.style.display = '';
+        container.style.display = 'grid';
+        if (noLiveStreams) noLiveStreams.style.display = 'none';
+        container.innerHTML = '';
+
         const fragment = document.createDocumentFragment();
         
         streams.forEach((stream, index) => {
@@ -518,13 +519,13 @@ const LiveNow = (function() {
     }
     
     /**
-     * Show empty state
+     * No real "is live" signal exists server-side (fetchLiveStreams
+     * filters client-side after the query), so an empty result is a real,
+     * common case, not an edge case. Hide the whole section rather than
+     * show an empty "no live streams" placeholder shelf.
      */
     function showEmptyState() {
-        if (!container) return;
-        
-        container.style.display = 'none';
-        if (noLiveStreams) noLiveStreams.style.display = 'block';
+        if (section) section.style.display = 'none';
     }
     
     /**
