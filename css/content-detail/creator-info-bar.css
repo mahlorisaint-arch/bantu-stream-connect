@@ -23,27 +23,40 @@ body.content-detail-page .spinner {
   border-top-color: #00E5FF;
 }
 
-/* Toast container itself — same glass language as the rest of this
-   page (rgba fill, no var(--card-border) hairline, cyan-tinted glow)
-   instead of the platform's default card-bg/card-border combo. The
-   per-type left-border accent (success=green, error=red, warning=
-   amber) stays semantic and untouched — only "info" picks up cyan,
-   since that's the one that was tied to var(--bantu-blue). */
+/* Toast container — transparent glassmorphic card highlighted by the
+   same cyan used consistently across this page, on every message type
+   (success/error/warning/info alike), not just the platform's default
+   card-bg/card-border combo with a type-colored left accent bar. The
+   left-border accent (previously green/red/amber/blue per type,
+   shared-components.css) is overridden to cyan here across the board —
+   that accent bar is the most visually prominent color on the toast,
+   so leaving it semantic-colored was what made these still read as
+   "old style" even with a cyan outer border. !important is needed
+   here: shared-components.css's .toast-success/.toast-error/etc are
+   the same specificity as these type overrides, and this file already
+   loses that fight at points elsewhere in the cascade (see the
+   layout.css writeup) — not leaving it to source order again. */
 body.content-detail-page .toast {
-  background: rgba(10, 14, 18, 0.92);
+  background: rgba(10, 14, 18, 0.92) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 229, 255, 0.18);
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 229, 255, 0.2) !important;
   font-family: 'Inter', sans-serif;
 }
 
+body.content-detail-page .toast-success,
+body.content-detail-page .toast-error,
+body.content-detail-page .toast-warning,
 body.content-detail-page .toast-info {
-  border-left-color: #00E5FF;
+  border-left: 4px solid #00E5FF !important;
 }
 
+body.content-detail-page .toast-success i,
+body.content-detail-page .toast-error i,
+body.content-detail-page .toast-warning i,
 body.content-detail-page .toast-info i {
-  color: #00E5FF;
+  color: #00E5FF !important;
 }
 
 .creator-info-bar {
