@@ -194,12 +194,56 @@ function getPlayableMediaUrl(content) {
 }
 
 // ============================================
+// Reads ?id= from the URL - the target of a search result click
+// (renderSearchResults) or a share link (updateShareLink generates
+// shorts-detail.html?id=X). Previously nothing on this page ever read it,
+// so clicking a search result or opening a shared link just landed on the
+// generic feed instead of the thing the user actually chose - which is
+// exactly why search looked completely broken end to end.
+function getRequestedShortId() {
+  return new URLSearchParams(window.location.search).get('id');
+}
+
+async function fetchRequestedShort(id) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('Content')
+      .select(`
+        *,
+        user_profiles!user_id (
+          id,
+          username,
+          full_name,
+          avatar_url
+        ),
+        content_engagement_stats (
+          total_views,
+          total_likes,
+          total_comments,
+          total_shares
+        )
+      `)
+      .eq('id', id)
+      .eq('status', 'published')
+      .maybeSingle();
+
+    if (error) throw error;
+    return data || null;
+  } catch (error) {
+    console.error('Error fetching requested short:', error);
+    return null;
+  }
+}
+
 // Load shorts from Supabase
 // ============================================
 async function loadShorts() {
   updateLoadingProgress('Loading shorts...', 50);
-  
+
   try {
+    const requestedId = getRequestedShortId();
+    const requestedShort = requestedId ? await fetchRequestedShort(requestedId) : null;
+
     const { data, error } = await supabaseClient
       .from('Content')
       .select(`
@@ -220,13 +264,17 @@ async function loadShorts() {
       .eq('status', 'published')
       .in('media_type', ['video', 'audio', 'short'])
       .lte('duration', 60)
+      .neq('id', requestedShort?.id || 0)
       .order('created_at', { ascending: false })
       .limit(20);
-    
+
     if (error) throw error;
-    
+
     if (data && data.length > 0) {
-      shortsData = data;
+      // Requested short (search result / share link) plays first, ahead of
+      // the general feed - not buried wherever it happens to fall in
+      // created_at order, or missing entirely if it doesn't match.
+      shortsData = requestedShort ? [requestedShort, ...data] : data;
       console.log(`✅ Loaded ${shortsData.length} shorts`);
       
       // Cache the data
@@ -929,26 +977,44 @@ function debounce(func, wait) {
 
 async function searchShorts(query, category = '', sortBy = 'newest') {
   try {
-    let orderBy = 'created_at';
-    let order = 'desc';
-    if (sortBy === 'popular') orderBy = 'views_count';
-    else if (sortBy === 'trending') orderBy = 'likes_count';
-    
+    // views_count/likes_count are not real columns on Content (verified
+    // against the live schema - the real numbers live in
+    // content_engagement_stats), so ordering by them at the DB level threw
+    // a 400 the moment a user picked "Most Popular"/"Trending" - this was
+    // part of why search looked broken. Embed the same stats table the
+    // main feed uses and sort client-side instead (result sets here are
+    // small, at most 20 rows).
     let queryBuilder = supabaseClient
       .from('Content')
-      .select('*, user_profiles!user_id(*)')
+      .select(`
+        *,
+        user_profiles!user_id (*),
+        content_engagement_stats (
+          total_views,
+          total_likes,
+          total_comments,
+          total_shares
+        )
+      `)
       .ilike('title', `%${query}%`)
       .eq('status', 'published')
       .in('media_type', ['video', 'audio', 'short'])
       .lte('duration', 60)
-      .order(orderBy, { ascending: order === 'asc' })
+      .order('created_at', { ascending: false })
       .limit(20);
-    
+
     if (category) queryBuilder = queryBuilder.eq('genre', category);
-    
+
     const { data, error } = await queryBuilder;
     if (error) throw error;
-    return data || [];
+
+    const results = data || [];
+    if (sortBy === 'popular') {
+      results.sort((a, b) => (b.content_engagement_stats?.total_views || 0) - (a.content_engagement_stats?.total_views || 0));
+    } else if (sortBy === 'trending') {
+      results.sort((a, b) => (b.content_engagement_stats?.total_likes || 0) - (a.content_engagement_stats?.total_likes || 0));
+    }
+    return results;
   } catch (error) {
     console.error('Search error:', error);
     return [];
@@ -966,7 +1032,7 @@ function renderSearchResults(results) {
   
   grid.innerHTML = results.map(item => {
     const creator = item.user_profiles?.full_name || item.user_profiles?.username || 'Creator';
-    const viewsCount = item.views_count || 0;
+    const viewsCount = item.content_engagement_stats?.total_views || 0;
     return `
       <div class="content-card" data-content-id="${item.id}">
         <div class="card-thumbnail">
@@ -1244,116 +1310,90 @@ function getDeviceType() {
 }
 
 /**
- * Record view using RPC (matches video player pattern)
+ * Record a view by inserting directly into content_views.
+ *
+ * This used to try an RPC (record_content_view) first. Verified against the
+ * live database that this RPC name is overloaded - a legacy 2-argument
+ * version (content_uuid, session_uuid) still exists alongside the current
+ * 4-argument one this app actually calls, writes to a different, no-longer-
+ * used table (unified_views), and returns a different JSON shape
+ * ({views_count} instead of {views}). PostgREST cannot reliably resolve a
+ * call to an overloaded function name, so this RPC call was silently never
+ * completing - confirmed via 24h API logs: zero POST requests to
+ * /rest/v1/rpc/record_content_view or /rest/v1/content_views ever appear,
+ * despite playback sessions (a separate insert, unaffected by this)
+ * succeeding repeatedly. On top of that, the fallback insert this used to
+ * fall back to also had its own bug (sent a "viewed_at" field - verified
+ * against the live schema, that column doesn't exist; it's "created_at").
+ * Both bugs are fixed here by going straight to a corrected direct insert,
+ * which a live DB trigger (sync_stats_on_view) turns into a
+ * content_engagement_stats.total_views increment - the same column
+ * short.views_count is read from on page load.
  */
-async function recordViewViaRPC(contentId, userId, sessionId, deviceType) {
-  if (!contentId) {
-    console.error('❌ Cannot record view: missing contentId');
-    return { success: false, views: 0 };
-  }
-  
-  try {
-    const finalDeviceType = deviceType || getDeviceType();
-    const finalSessionId = sessionId || generateSessionId();
-    
-    const { data, error } = await supabaseClient.rpc('record_content_view', {
-      p_content_id: parseInt(contentId),
-      p_user_id: userId || null,
-      p_session_id: finalSessionId,
-      p_device_type: finalDeviceType
-    });
-    
-    if (error) {
-      console.error('❌ RPC view recording failed:', error);
-      return await recordViewFallback(contentId, userId, finalSessionId, finalDeviceType);
-    }
-    
-    console.log(`✅ View recorded via RPC for shorts ${contentId}, total views: ${data?.views || 0}`);
-    
-    // Update UI with new view count
-    if (data?.views !== undefined) {
-      const views = formatNumber(data.views);
-      const viewsElement = document.querySelector(`.swiper-slide-active .shorts-meta span:last-child`);
-      if (viewsElement) {
-        viewsElement.innerHTML = `<i class="fas fa-eye"></i> ${views}`;
-      }
-    }
-    
-    // Dispatch global event
-    window.dispatchEvent(new CustomEvent('content-views-updated', {
-      detail: { contentId: contentId, viewsCount: data?.views || 0 }
-    }));
-    
-    return { success: true, views: data?.views || 0 };
-  } catch (error) {
-    console.error('❌ RPC view recording error:', error);
-    return await recordViewFallback(contentId, userId, sessionId, deviceType);
-  }
-}
+async function recordView(contentId, watchDuration = 3) {
+  if (hasRecordedView) return;
+  if (!contentId) return;
 
-/**
- * Fallback view recording if RPC fails
- */
-async function recordViewFallback(contentId, userId, sessionId, deviceType) {
+  const contentIdNum = parseInt(contentId, 10);
+  if (isNaN(contentIdNum)) {
+    console.error('❌ Invalid content_id:', contentId);
+    return;
+  }
+
+  const userId = getCurrentUserId();
+  const sessionId = generateSessionId();
+  const deviceType = getDeviceType();
+
+  console.log('📝 Recording view for shorts content:', contentId);
+
   try {
-    const finalSessionId = sessionId || generateSessionId();
-    const finalDeviceType = deviceType || getDeviceType();
-    const contentIdNum = parseInt(contentId, 10);
-    
-    if (isNaN(contentIdNum)) {
-      console.error('❌ Invalid content_id:', contentId);
-      return { success: false, views: 0 };
-    }
-    
-    // Check if view already exists for this session
-    const { data: existing, error: checkError } = await supabaseClient
+    // De-dupe: skip if this session already has a recorded view for this
+    // content (mirrors the old fallback's own dedup check).
+    const { data: existing } = await supabaseClient
       .from('content_views')
       .select('id')
       .eq('content_id', contentIdNum)
-      .eq('session_id', finalSessionId)
+      .eq('session_id', sessionId)
       .maybeSingle();
-    
+
     if (existing) {
       console.log('⏭️ View already recorded for this session, skipping');
-      return { success: true, views: null };
+      return;
     }
-    
-    const viewRecord = {
-      content_id: contentIdNum,
-      user_id: userId || null,
-      session_id: finalSessionId,
-      counted_as_view: true,
-      view_duration: Math.floor(currentVideo?.currentTime || 3),
-      device_type: finalDeviceType,
-      viewed_at: new Date().toISOString()
-    };
-    
+
     const { error: insertError } = await supabaseClient
       .from('content_views')
-      .insert([viewRecord]);
-    
+      .insert({
+        content_id: contentIdNum,
+        user_id: userId || null,
+        session_id: sessionId,
+        counted_as_view: true,
+        view_duration: Math.floor(watchDuration),
+        device_type: deviceType
+      });
+
     if (insertError) throw insertError;
-    
-    // Get updated count
+
     const { count, error: countError } = await supabaseClient
       .from('content_views')
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentIdNum)
       .eq('counted_as_view', true);
-    
+
     if (!countError && count !== null) {
+      const short = shortsData.find(s => s.id == contentId);
+      if (short) short.views_count = count;
+
       const views = formatNumber(count);
       const viewsElement = document.querySelector(`.swiper-slide-active .shorts-meta span:last-child`);
       if (viewsElement) {
         viewsElement.innerHTML = `<i class="fas fa-eye"></i> ${views}`;
       }
     }
-    
-    console.log(`✅ View recorded via fallback for shorts ${contentId}`);
-    return { success: true, views: count || 0 };
+
+    console.log(`✅ View recorded for shorts ${contentId}`);
   } catch (error) {
-    console.error('❌ Fallback view recording failed:', error);
-    return { success: false, views: 0 };
+    console.error('❌ View recording failed:', error);
   }
 }
 
@@ -1438,8 +1478,12 @@ function handleTimeUpdate(e) {
     }
   }
 
-  // 🚨 Record view after threshold (3 seconds or 30% of duration)
-  if (!hasRecordedView && video.currentTime >= 3) {
+  // Record view after a threshold that actually fits short-form content:
+  // a flat 3s (content-detail.js's long-form threshold) can be most of an
+  // 7-9s short, so it's 3s or half the video's own duration, whichever is
+  // reached first.
+  const viewThreshold = video.duration ? Math.min(3, video.duration * 0.5) : 3;
+  if (!hasRecordedView && video.currentTime >= viewThreshold) {
     hasRecordedView = true;
     recordView(shortId, Math.floor(video.currentTime));
   }
@@ -1534,29 +1578,6 @@ function seekVideo(container, event) {
   const time = percent * currentVideo.duration;
   
   currentVideo.currentTime = Math.max(0, Math.min(time, currentVideo.duration));
-}
-
-// ============================================
-// 🚨 UPDATED: RECORD VIEW FUNCTION
-// ============================================
-async function recordView(contentId, watchDuration = 3) {
-  if (hasRecordedView) return;
-  if (!contentId) return;
-  
-  const userId = getCurrentUserId();
-  const sessionId = generateSessionId();
-  const deviceType = getDeviceType();
-  
-  console.log('📝 Recording view for shorts content:', contentId);
-  
-  try {
-    const result = await recordViewViaRPC(contentId, userId, sessionId, deviceType);
-    if (result.success) {
-      console.log('✅ View recorded for shorts:', contentId);
-    }
-  } catch (error) {
-    console.error('❌ View recording error:', error);
-  }
 }
 
 /**
@@ -1947,13 +1968,17 @@ async function handleSave(shortId, btn) {
 
   const saved = btn.classList.contains('saved');
   const contentId = parseInt(shortId, 10);
+  const countEl = btn.querySelector('.action-count');
+  const currentCount = parseInt(countEl.textContent.replace(/[^0-9]/g, '')) || 0;
 
   if (saved) {
     btn.classList.remove('saved');
     btn.querySelector('i').className = 'far fa-bookmark';
+    countEl.textContent = formatNumber(currentCount - 1);
   } else {
     btn.classList.add('saved');
     btn.querySelector('i').className = 'fas fa-bookmark';
+    countEl.textContent = formatNumber(currentCount + 1);
   }
 
   try {
@@ -1981,6 +2006,9 @@ async function handleSave(shortId, btn) {
       }
       showToast('Saved!', 'success');
     }
+
+    const short = shortsData.find(s => s.id == shortId);
+    if (short) short.real_saves_count = saved ? currentCount - 1 : currentCount + 1;
   } catch (error) {
     if (saved) {
       btn.classList.add('saved');
@@ -1989,6 +2017,7 @@ async function handleSave(shortId, btn) {
       btn.classList.remove('saved');
       btn.querySelector('i').className = 'far fa-bookmark';
     }
+    countEl.textContent = formatNumber(currentCount);
     console.error('Save error:', error);
     showToast('Failed to save', 'error');
   }
