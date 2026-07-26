@@ -3,81 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0F172A">
+  <meta name="theme-color" content="#0A0E12">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Bantu Shorts - Bantu Stream Connect</title>
-  
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+
   <!-- Swiper for Shorts Carousel -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-  
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/shorts-detail.css">
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div id="shorts-loading" class="shorts-loading">
-    <div class="spinner"></div>
+  <!-- Connection-failure fallback (hidden unless Supabase genuinely fails to
+       load - normal loading is skeleton-first, see .shorts-skeleton-slide
+       below, not a blocking spinner). -->
+  <div id="shorts-loading" class="shorts-loading" style="display:none;">
+    <i class="fas fa-exclamation-circle fallback-icon"></i>
     <div id="loading-text">Loading Shorts...</div>
-    <div class="loading-progress">
-      <div class="loading-progress-bar" id="loading-progress-bar" style="width: 0%"></div>
-    </div>
   </div>
-  
-  <!-- Header -->
-  <header class="header">
-    <div class="logo" onclick="window.location.href='index.html'">
-      <div class="logo-icon">
-        <!-- UPDATED: New logo path -->
-        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect">
-      </div>
-      <div class="logo-text">BANTU SHORTS</div>
+
+  <!-- Top Bar -->
+  <header class="shorts-topbar">
+    <div class="shorts-logo" onclick="window.location.href='index.html'">
+      <img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC">
     </div>
-    <div class="header-actions">
-      <button id="search-btn" class="icon-btn" title="Search">
-        <i class="fas fa-search"></i>
-      </button>
-      <button id="notifications-btn" class="icon-btn" title="Notifications">
+    <div class="feed-tabs" id="feed-tabs">
+      <button class="feed-tab active" data-feed="foryou">For You</button>
+      <button class="feed-tab" data-feed="following">Following</button>
+    </div>
+    <div class="topbar-actions">
+      <button id="notifications-btn" class="icon-btn-glass" title="Notifications">
         <i class="fas fa-bell"></i>
         <span class="notification-badge" id="notification-count" style="display: none;">0</span>
       </button>
-      <button id="profile-btn" class="profile-btn" title="Profile">
-        <div class="profile-placeholder" id="userProfilePlaceholder">
-          <i class="fas fa-user"></i>
-        </div>
+      <button id="search-btn" class="icon-btn-glass" title="Search">
+        <i class="fas fa-search"></i>
       </button>
     </div>
   </header>
-  
+
+  <!-- Segmented progress bar - one segment per loaded short, filled by real
+       video playback progress (js/shorts-detail.js: handleTimeUpdate /
+       Swiper slideChange), not a decorative timer. -->
+  <div class="shorts-progress-segments" id="shorts-progress-segments"></div>
+
   <!-- Main Shorts Player -->
   <div class="shorts-player-container" id="shorts-player">
     <div class="swiper shorts-swiper" id="shorts-swiper">
       <div class="swiper-wrapper" id="shorts-wrapper">
-        <!-- Shorts loaded dynamically -->
+        <!-- Skeleton-first placeholder, shaped like a real slide - replaced
+             entirely by renderShorts() once real data loads (same pattern
+             just built for the home feed). -->
+        <div class="swiper-slide shorts-skeleton-slide">
+          <div class="short-video-wrapper">
+            <div class="skeleton-video-fill"></div>
+            <div class="shorts-actions">
+              <div class="skeleton-action-circle"></div>
+              <div class="skeleton-action-circle"></div>
+              <div class="skeleton-action-circle"></div>
+              <div class="skeleton-action-circle"></div>
+              <div class="skeleton-action-circle"></div>
+            </div>
+            <div class="shorts-info">
+              <div class="creator-info">
+                <div class="skeleton-avatar-circle"></div>
+                <div class="skeleton-line-group">
+                  <div class="skeleton-line short"></div>
+                  <div class="skeleton-line shorter"></div>
+                </div>
+              </div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    
+
     <div class="double-tap-indicator" id="double-tap-indicator">
       <i class="fas fa-heart"></i>
     </div>
-    
+
     <div class="play-pause-overlay" id="play-pause-overlay">
       <i class="fas fa-play" id="play-pause-icon"></i>
     </div>
-    
+
     <!-- More Menu (Three Dots) -->
     <div class="more-menu" id="more-menu">
       <button class="more-menu-item" id="more-report">
@@ -98,13 +122,38 @@
       </button>
     </div>
   </div>
-  
+
+  <!-- Bottom Navigation - same live pattern already used on profile.html/
+       saved.html/search.html/notifications.html/pulse-content-detail.html/
+       pulse-feed.html (shown at all sizes, no sidebar on this page). -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="window.location.href='index.html'">
+      <i class="fas fa-home nav-icon"></i>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="window.location.href='explore-screen.html'">
+      <i class="fas fa-compass nav-icon"></i>
+      <span>Explore</span>
+    </button>
+    <button class="nav-item nav-create" onclick="window.location.href='creator-upload.html'" title="Create">
+      <i class="fas fa-plus"></i>
+    </button>
+    <button class="nav-item" onclick="window.location.href='pulse-feed.html'">
+      <i class="fas fa-wave-square nav-icon"></i>
+      <span>Pulse</span>
+    </button>
+    <button class="nav-item" id="profile-btn" title="Profile">
+      <i class="fas fa-user nav-icon"></i>
+      <span>Profile</span>
+    </button>
+  </nav>
+
   <!-- SEARCH MODAL -->
   <div id="search-modal" class="search-modal">
     <div class="search-modal-header">
       <div class="search-input-container">
         <i class="search-icon fas fa-search"></i>
-        <input type="text" id="search-input" class="search-input" 
+        <input type="text" id="search-input" class="search-input"
                placeholder="Search shorts, creators, or categories..." autocomplete="off">
       </div>
       <button id="close-search-btn" class="close-search-btn">
@@ -138,7 +187,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- NOTIFICATIONS PANEL -->
   <div id="notifications-panel" class="notifications-panel">
     <div class="notifications-header">
@@ -157,7 +206,7 @@
       <button id="mark-all-read" class="text-btn">Mark all as read</button>
     </div>
   </div>
-  
+
   <!-- Comments Drawer Modal -->
   <div class="modal-overlay" id="comments-modal">
     <div class="comments-drawer">
@@ -174,9 +223,9 @@
         <div class="composer-avatar" id="composer-avatar">
           <span id="composer-initials">U</span>
         </div>
-        <textarea 
-          class="composer-input" 
-          id="comment-input" 
+        <textarea
+          class="composer-input"
+          id="comment-input"
           placeholder="Add a comment..."
           maxlength="500"
           rows="1"
@@ -185,7 +234,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Share Modal -->
   <div class="modal-overlay" id="share-modal">
     <div class="share-modal">
@@ -227,10 +276,10 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
-  
+
   <!-- Custom JavaScript -->
   <script src="js/shorts-detail.js"></script>
 </body>

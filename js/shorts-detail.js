@@ -29,6 +29,8 @@ let authCheckComplete = false;
 let hasRecordedView = false; // Track if view has been recorded for current video
 let viewThresholdReached = false;
 let playbackSessionId = null;
+let feedMode = 'foryou'; // 'foryou' | 'following'
+let eventListenersInitialized = false;
 
 // Loading progress tracking
 let loadingProgress = 0;
@@ -206,7 +208,9 @@ async function loadShorts() {
           id,
           username,
           full_name,
-          avatar_url
+          avatar_url,
+          is_verified,
+          is_creator_verified
         )
       `)
       .eq('status', 'published')
@@ -229,7 +233,8 @@ async function loadShorts() {
       } catch (e) {}
       
       updateLoadingProgress('Loading interactions...', 75);
-      await loadLikeCounts();
+      await loadShortMetrics(shortsData);
+      computeTrending(shortsData);
       
       updateLoadingProgress('Rendering...', 90);
       renderShorts();
@@ -250,14 +255,18 @@ async function loadShorts() {
   }
 }
 
-// Load like counts
-async function loadLikeCounts() {
-  if (!shortsData.length) return;
-  
-  const contentIds = shortsData.map(s => s.id);
-  
-  const likeCounts = await Promise.all(
-    contentIds.map(async (id) => {
+// Load real like/save/share counts for a batch of shorts (used for both the
+// initial load and loadMoreShorts - one shared function instead of two
+// near-identical copies that could drift). saved_shorts and
+// content_engagement_stats.total_shares are real tables/columns, same pattern
+// already used for likes here and for shares in js/home-feed/wavelets.js.
+async function loadShortMetrics(shorts) {
+  if (!shorts || !shorts.length) return;
+
+  const contentIds = shorts.map(s => s.id);
+
+  const [likeCounts, saveCounts, engagementStats] = await Promise.all([
+    Promise.all(contentIds.map(async (id) => {
       try {
         const { count } = await supabaseClient
           .from('content_likes')
@@ -267,13 +276,170 @@ async function loadLikeCounts() {
       } catch (e) {
         return { id, count: 0 };
       }
-    })
-  );
-  
+    })),
+    Promise.all(contentIds.map(async (id) => {
+      try {
+        const { count } = await supabaseClient
+          .from('saved_shorts')
+          .select('*', { count: 'exact', head: true })
+          .eq('content_id', id);
+        return { id, count: count || 0 };
+      } catch (e) {
+        return { id, count: 0 };
+      }
+    })),
+    (async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('content_engagement_stats')
+          .select('content_id, total_shares')
+          .in('content_id', contentIds);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        return [];
+      }
+    })()
+  ]);
+
+  const sharesByContentId = {};
+  engagementStats.forEach(row => { sharesByContentId[row.content_id] = row.total_shares || 0; });
+
   likeCounts.forEach(({ id, count }) => {
-    const short = shortsData.find(s => s.id === id);
+    const short = shorts.find(s => s.id === id);
     if (short) short.real_likes_count = count;
   });
+  saveCounts.forEach(({ id, count }) => {
+    const short = shorts.find(s => s.id === id);
+    if (short) short.real_saves_count = count;
+  });
+  shorts.forEach(short => {
+    short.real_shares_count = sharesByContentId[short.id] || 0;
+  });
+}
+
+// Marks the top ~30% of the currently loaded batch by real views_count as
+// "trending" - a real relative signal computed from real fetched data, not a
+// fixed label shown on every card (matches the .trending-badge only
+// appearing for genuinely high-performing content on the home feed's
+// Trending Now rail).
+function computeTrending(shorts) {
+  if (!shorts || shorts.length < 4) {
+    shorts?.forEach(s => { s.is_trending = false; });
+    return;
+  }
+  const sortedViews = shorts.map(s => s.views_count || 0).sort((a, b) => a - b);
+  const thresholdIndex = Math.floor(sortedViews.length * 0.7);
+  const threshold = sortedViews[thresholdIndex];
+  shorts.forEach(short => {
+    short.is_trending = (short.views_count || 0) >= threshold && threshold > 0;
+  });
+}
+
+// Extracts real #hashtags already present in the caption text (never
+// fabricates extra ones) and wraps them in a styled span. Escapes first so
+// this is safe against caption text containing HTML-significant characters.
+function renderCaptionWithHashtags(text) {
+  const escaped = escapeHtml(text || '');
+  return escaped.replace(/#\w+/g, match => `<span class="hashtag">${match}</span>`);
+}
+
+// ============================================
+// FOR YOU / FOLLOWING TABS
+// ============================================
+function initFeedTabs() {
+  const tabs = document.querySelectorAll('.feed-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const mode = tab.dataset.feed;
+      if (mode === feedMode) return;
+
+      feedMode = mode;
+      tabs.forEach(t => t.classList.toggle('active', t === tab));
+      pauseAllVideos();
+
+      if (mode === 'foryou') {
+        loadShorts();
+      } else {
+        fetchFollowingShorts();
+      }
+    });
+  });
+}
+
+// Following feed - genuinely filtered to creators the current user follows
+// (userConnections, populated in fetchUserConnections() during checkAuth()),
+// not a copy of For You. Honest empty states instead of silently showing
+// nothing or falling back to unrelated content.
+async function fetchFollowingShorts() {
+  if (!currentUser) {
+    renderFeedEmptyState('Sign in to follow creators and see their shorts here.', true);
+    return;
+  }
+
+  if (userConnections.size === 0) {
+    renderFeedEmptyState('Follow creators to see their shorts here.', false);
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('Content')
+      .select(`
+        *,
+        user_profiles!user_id (
+          id,
+          username,
+          full_name,
+          avatar_url,
+          is_verified,
+          is_creator_verified
+        )
+      `)
+      .in('user_id', Array.from(userConnections))
+      .eq('status', 'published')
+      .or('media_type.eq.short,duration.lte.60')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      shortsData = data;
+      await loadShortMetrics(shortsData);
+      computeTrending(shortsData);
+      renderShorts();
+      initSwiper();
+    } else {
+      renderFeedEmptyState('No shorts yet from creators you follow.', false);
+    }
+  } catch (error) {
+    console.error('Error loading Following feed:', error);
+    showToast('Failed to load Following feed', 'error');
+  }
+}
+
+function renderFeedEmptyState(message, showSignIn) {
+  const wrapper = document.getElementById('shorts-wrapper');
+  if (!wrapper) return;
+
+  if (swiperInstance) {
+    swiperInstance.destroy(true, false);
+    swiperInstance = null;
+  }
+
+  wrapper.innerHTML = `
+    <div class="swiper-slide">
+      <div class="feed-empty-state">
+        <i class="fas fa-user-friends"></i>
+        <p>${escapeHtml(message)}</p>
+        ${showSignIn ? `<button class="fallback-btn" onclick="window.location.href='login.html?redirect=${encodeURIComponent(window.location.pathname)}'">Sign In</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  const segments = document.getElementById('shorts-progress-segments');
+  if (segments) segments.innerHTML = '';
 }
 
 // Use fallback/cached data
@@ -352,122 +518,206 @@ function useFallbackData() {
 }
 
 // Render shorts to DOM
-function renderShorts() {
-  const wrapper = document.getElementById('shorts-wrapper');
-  if (!wrapper) return;
-  
-  wrapper.innerHTML = shortsData.map((short, index) => {
-    const creator = short.user_profiles || {};
-    const videoUrl = getPlayableMediaUrl(short);
-    const isCloudflareStream = short.streaming_provider === 'cloudflare_stream';
-    const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
-    const creatorName = creator.full_name || creator.username || 'Creator';
-    const initials = getInitials(creatorName);
-    const isConnected = currentUser && userConnections.has(creator.id);
-    
-    // Determine video type for HLS
-    const videoType = isCloudflareStream ? 'application/vnd.apple.mpegurl' : 'video/mp4';
-    
-    return `
-      <div class="swiper-slide" data-short-id="${short.id}" data-index="${index}">
-        <div class="short-video-wrapper">
-          <video 
-            class="short-video" 
-            src="${videoUrl}" 
-            poster="${thumbnailUrl}"
-            loop 
-            playsinline 
-            preload="metadata"
-            data-short-id="${short.id}"
-            data-provider="${short.streaming_provider || 'legacy'}"
-            ${isCloudflareStream ? `type="${videoType}"` : ''}
-          ></video>
-          <div class="video-overlay"></div>
-          
-          <!-- Actions (Right Side) -->
-          <div class="shorts-actions">
-            <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}" title="Like">
-              <i class="far fa-heart"></i>
-              <span class="action-count">${formatNumber(short.real_likes_count || short.likes_count || 0)}</span>
-            </button>
-            
-            <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}" title="Comments">
-              <i class="far fa-comment"></i>
-              <span class="action-count">${formatNumber(short.comments_count || 0)}</span>
-            </button>
-            
-            <button class="action-btn share-btn" data-action="share" data-short-id="${short.id}" title="Share">
-              <i class="fas fa-share"></i>
-            </button>
-            
-            <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}" title="Save">
-              <i class="far fa-bookmark"></i>
+// Shared markup builder - both the initial batch render and loadMoreShorts()
+// used to carry two independently-hand-written copies of this markup
+// (renderShorts()'s inline template vs createShortSlide()), which is exactly
+// the kind of hidden-duplicate drift risk this platform has been bitten by
+// before. One function now, used by both.
+function buildSlideHTML(short, index) {
+  const creator = short.user_profiles || {};
+  const videoUrl = getPlayableMediaUrl(short);
+  const isCloudflareStream = short.streaming_provider === 'cloudflare_stream';
+  const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
+  const creatorName = creator.full_name || creator.username || 'Creator';
+  const initials = getInitials(creatorName);
+  const isConnected = currentUser && userConnections.has(creator.id);
+  const isVerified = !!(creator.is_verified || creator.is_creator_verified);
+  const videoType = isCloudflareStream ? 'application/vnd.apple.mpegurl' : 'video/mp4';
+
+  const avatarHtml = creator.avatar_url
+    ? `<img src="${fixMediaUrl(creator.avatar_url)}" alt="${escapeHtml(creatorName)}" loading="lazy">`
+    : `<span>${initials}</span>`;
+
+  return `
+    <div class="swiper-slide" data-short-id="${short.id}" data-index="${index}">
+      <div class="short-video-wrapper">
+        <video
+          class="short-video"
+          src="${videoUrl}"
+          poster="${thumbnailUrl}"
+          loop
+          playsinline
+          preload="metadata"
+          data-short-id="${short.id}"
+          data-provider="${short.streaming_provider || 'legacy'}"
+          ${isCloudflareStream ? `type="${videoType}"` : ''}
+        ></video>
+        <div class="video-overlay"></div>
+
+        ${short.is_trending ? `<div class="trending-badge-short"><i class="fas fa-bolt"></i> Trending</div>` : ''}
+
+        <button class="control-btn mute-btn-float" title="Mute">
+          <i class="fas fa-volume-up"></i>
+        </button>
+
+        <!-- Actions (Right Side) -->
+        <div class="shorts-actions">
+          <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}" title="Like">
+            <i class="far fa-heart"></i>
+            <span class="action-count">${formatNumber(short.real_likes_count || short.likes_count || 0)}</span>
+          </button>
+
+          <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}" title="Comments">
+            <i class="far fa-comment"></i>
+            <span class="action-count">${formatNumber(short.comments_count || 0)}</span>
+          </button>
+
+          <button class="action-btn share-btn" data-action="share" data-short-id="${short.id}" title="Share">
+            <i class="fas fa-paper-plane"></i>
+            <span class="action-count">${formatNumber(short.real_shares_count || 0)}</span>
+          </button>
+
+          <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}" title="Save">
+            <i class="far fa-bookmark"></i>
+            <span class="action-count">${formatNumber(short.real_saves_count || 0)}</span>
+          </button>
+
+          <button class="control-btn more-btn" data-short-id="${short.id}" title="More options">
+            <i class="fas fa-ellipsis-h"></i>
+          </button>
+
+          <div class="sound-disc" data-creator-id="${creator.id}" title="${escapeHtml(creatorName)}">
+            ${avatarHtml}
+          </div>
+        </div>
+
+        <!-- Creator Info & Caption -->
+        <div class="shorts-info">
+          <div class="creator-info" data-creator-id="${creator.id}" data-creator-name="${escapeHtml(creatorName)}">
+            <div class="creator-avatar">
+              ${avatarHtml}
+            </div>
+            <div class="creator-details">
+              <div class="creator-name">
+                ${escapeHtml(creatorName)}
+                ${isVerified ? '<i class="fas fa-check-circle verified-badge" title="Verified"></i>' : ''}
+              </div>
+              <div class="creator-username">@${escapeHtml(creator.username || 'creator')}</div>
+            </div>
+            <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator.id}">
+              <i class="fas fa-user-friends"></i>
+              <span>${isConnected ? 'Connected' : 'Connect'}</span>
             </button>
           </div>
-          
-          <!-- Creator Info & Caption -->
-          <div class="shorts-info">
-            <div class="creator-info" data-creator-id="${creator.id}" data-creator-name="${creatorName}">
-              <div class="creator-avatar">
-                ${creator.avatar_url 
-                  ? `<img src="${fixMediaUrl(creator.avatar_url)}" alt="${creatorName}" loading="lazy">` 
-                  : `<span>${initials}</span>`
-                }
-              </div>
-              <div class="creator-details">
-                <div class="creator-name">${escapeHtml(creatorName)}</div>
-                <div class="creator-username">@${escapeHtml(creator.username || 'creator')}</div>
-              </div>
-              <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator.id}">
-                ${isConnected ? 'Connected' : 'Connect'}
-              </button>
-            </div>
-            
-            <div class="shorts-caption" id="caption-${short.id}">
-              ${escapeHtml(short.description || short.title || 'No description')}
-            </div>
-            ${(short.description?.length > 100 || short.title?.length > 100) ? `
-              <button class="caption-toggle" data-caption-id="caption-${short.id}">
-                more
-              </button>
-            ` : ''}
-            
-            <div class="shorts-meta">
-              <span><i class="fas fa-music"></i> ${escapeHtml(short.genre || 'Original Audio')}</span>
-              <span><i class="fas fa-clock"></i> ${formatTime(short.duration || 0)}</span>
-              <span><i class="fas fa-eye"></i> ${formatNumber(short.views_count || 0)}</span>
-            </div>
+
+          <div class="shorts-caption" id="caption-${short.id}">
+            ${renderCaptionWithHashtags(short.description || short.title || 'No description')}
           </div>
-          
-          <!-- Video Controls -->
-          <div class="video-controls">
-            <button class="control-btn mute-btn" title="Mute">
-              <i class="fas fa-volume-up"></i>
+          ${(short.description?.length > 100 || short.title?.length > 100) ? `
+            <button class="caption-toggle" data-caption-id="caption-${short.id}">
+              more
             </button>
-            
-            <div class="progress-container">
-              <div class="progress-buffer"></div>
-              <div class="progress-bar"></div>
-            </div>
-            
-            <button class="control-btn more-btn" data-short-id="${short.id}" title="More options">
-              <i class="fas fa-ellipsis-h"></i>
-            </button>
+          ` : ''}
+
+          <div class="sound-pill">
+            <i class="fas fa-music"></i>
+            <span>Original Sound &middot; ${escapeHtml(creatorName)}</span>
+          </div>
+
+          <div class="shorts-meta">
+            <span><i class="fas fa-eye"></i> ${formatNumber(short.views_count || 0)}</span>
+          </div>
+        </div>
+
+        <!-- Video Controls -->
+        <div class="video-controls">
+          <div class="progress-container">
+            <div class="progress-buffer"></div>
+            <div class="progress-bar"></div>
           </div>
         </div>
       </div>
-    `;
-  }).join('');
+    </div>
+  `;
 }
 
-// Initialize Swiper
+function renderShorts() {
+  const wrapper = document.getElementById('shorts-wrapper');
+  if (!wrapper) return;
+
+  wrapper.innerHTML = shortsData.map((short, index) => buildSlideHTML(short, index)).join('');
+}
+
+// ============================================
+// SEGMENTED PROGRESS BAR (Instagram Stories-style)
+// One segment per short currently loaded in shortsData. The active
+// segment's fill is driven by real video playback (handleTimeUpdate above),
+// not a fixed timer - segments before it are fully filled (already
+// watched), after it are empty (upcoming).
+// ============================================
+function renderProgressSegments() {
+  const container = document.getElementById('shorts-progress-segments');
+  if (!container || !shortsData.length) return;
+
+  container.innerHTML = shortsData.map(() => `
+    <div class="progress-segment"><div class="progress-segment-fill"></div></div>
+  `).join('');
+
+  updateProgressSegmentsActive();
+}
+
+// Called when loadMoreShorts() appends additional shorts to an already
+// rendered queue, so existing segments (and their watched state) aren't
+// rebuilt from scratch.
+function appendProgressSegments(count) {
+  const container = document.getElementById('shorts-progress-segments');
+  if (!container) return;
+
+  for (let i = 0; i < count; i++) {
+    container.insertAdjacentHTML('beforeend', `
+      <div class="progress-segment"><div class="progress-segment-fill"></div></div>
+    `);
+  }
+}
+
+function updateProgressSegmentsActive() {
+  const container = document.getElementById('shorts-progress-segments');
+  const activeSlide = document.querySelector('.swiper-slide-active');
+  if (!container || !activeSlide) return;
+
+  const activeIndex = parseInt(activeSlide.dataset.index, 10) || 0;
+  const segments = container.querySelectorAll('.progress-segment');
+
+  segments.forEach((segment, i) => {
+    const fill = segment.querySelector('.progress-segment-fill');
+    segment.classList.remove('active', 'watched');
+    if (i < activeIndex) {
+      segment.classList.add('watched');
+      if (fill) fill.style.width = '100%';
+    } else if (i === activeIndex) {
+      segment.classList.add('active');
+      if (fill) fill.style.width = '0%';
+    } else {
+      if (fill) fill.style.width = '0%';
+    }
+  });
+}
+
+// Initialize Swiper - safe to call again (e.g. on For You/Following tab
+// switch): destroys any previous instance first instead of stacking a
+// second Swiper on the same element.
 function initSwiper() {
   if (typeof Swiper === 'undefined') {
     console.error('Swiper not loaded');
     setTimeout(initSwiper, 100);
     return;
   }
-  
+
+  if (swiperInstance) {
+    swiperInstance.destroy(true, false);
+    swiperInstance = null;
+  }
+
   swiperInstance = new Swiper('.shorts-swiper', {
     direction: 'vertical',
     loop: false,
@@ -480,6 +730,7 @@ function initSwiper() {
     on: {
       init: function() {
         console.log('✅ Swiper initialized');
+        renderProgressSegments();
         setTimeout(() => playCurrentShort(), 300);
       },
       slideChange: function() {
@@ -489,19 +740,24 @@ function initSwiper() {
         playbackSessionId = null;
         setTimeout(() => playCurrentShort(), 100);
         updateActiveShort();
+        updateProgressSegmentsActive();
         closeMoreMenu();
       },
       reachEnd: function() {
-        loadMoreShorts();
+        if (feedMode === 'foryou') loadMoreShorts();
       }
     }
   });
-  
-  setupEventListeners();
-  
-  // Initialize search and notifications after swiper is ready
-  initSearchModal();
-  initNotificationsPanel();
+
+  if (!eventListenersInitialized) {
+    setupEventListeners();
+    initFeedTabs();
+    // Search/notifications buttons live outside the swiper and never get
+    // recreated on tab switch - only wire them up once.
+    initSearchModal();
+    initNotificationsPanel();
+    eventListenersInitialized = true;
+  }
 }
 
 // ============================================
@@ -1094,7 +1350,16 @@ function handleTimeUpdate(e) {
     const progress = (video.currentTime / video.duration) * 100;
     progressBar.style.width = `${progress}%`;
   }
-  
+
+  // Drive the top segmented progress bar's active segment from the real
+  // video playback position - not a fixed timer, matches the actual video.
+  if (video.duration) {
+    const activeFill = document.querySelector('.progress-segment.active .progress-segment-fill');
+    if (activeFill) {
+      activeFill.style.width = `${(video.currentTime / video.duration) * 100}%`;
+    }
+  }
+
   // 🚨 Record view after threshold (3 seconds or 30% of duration)
   if (!hasRecordedView && video.currentTime >= 3) {
     hasRecordedView = true;
@@ -1149,7 +1414,7 @@ function updateActiveShort() {
 }
 
 function updateMuteButton() {
-  const muteBtn = document.querySelector('.swiper-slide-active .mute-btn');
+  const muteBtn = document.querySelector('.swiper-slide-active .mute-btn-float');
   if (muteBtn) {
     muteBtn.innerHTML = isMuted 
       ? '<i class="fas fa-volume-mute"></i>' 
@@ -1643,15 +1908,19 @@ async function handleConnect(creatorId, btn) {
   }
   
   const connected = btn.classList.contains('connected');
-  
+  const setLabel = (text) => {
+    const span = btn.querySelector('span');
+    if (span) span.textContent = text;
+  };
+
   if (connected) {
-    btn.textContent = 'Connect';
+    setLabel('Connect');
     btn.classList.remove('connected');
   } else {
-    btn.textContent = 'Connected';
+    setLabel('Connected');
     btn.classList.add('connected');
   }
-  
+
   try {
     if (connected) {
       await supabaseClient
@@ -1675,10 +1944,10 @@ async function handleConnect(creatorId, btn) {
     }
   } catch (error) {
     if (connected) {
-      btn.textContent = 'Connected';
+      setLabel('Connected');
       btn.classList.add('connected');
     } else {
-      btn.textContent = 'Connect';
+      setLabel('Connect');
       btn.classList.remove('connected');
     }
     console.error('Connection error:', error);
@@ -1804,14 +2073,18 @@ function shareToInstagram() {
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
+// #shorts-loading is hidden by default (normal loading is skeleton-first,
+// see .shorts-skeleton-slide in the HTML) - this only ever becomes visible
+// for a genuine connection failure, showing a real retry UI instead of a
+// generic spinner.
 function hideLoadingScreen(showFallback = false, message = '') {
   const loadingScreen = document.getElementById('shorts-loading');
   if (!loadingScreen) return;
-  
+
   if (showFallback) {
     loadingScreen.innerHTML = `
       <div class="fallback-message">
-        <i class="fas fa-exclamation-circle" style="font-size:3rem;color:var(--warm-gold);margin-bottom:1rem"></i>
+        <i class="fas fa-exclamation-circle" style="font-size:3rem;color:#00E5FF;margin-bottom:1rem"></i>
         <h3>Connection Issue</h3>
         <p>${escapeHtml(message || 'Unable to connect. Showing offline content.')}</p>
         <div class="fallback-actions">
@@ -1827,12 +2100,11 @@ function hideLoadingScreen(showFallback = false, message = '') {
         </div>
       </div>
     `;
+    loadingScreen.style.display = 'flex';
     loadingScreen.classList.remove('hidden');
   } else {
     loadingScreen.classList.add('hidden');
-    setTimeout(() => {
-      loadingScreen.style.display = 'none';
-    }, 300);
+    loadingScreen.style.display = 'none';
   }
 }
 
@@ -2046,7 +2318,9 @@ async function loadMoreShorts() {
           id,
           username,
           full_name,
-          avatar_url
+          avatar_url,
+          is_verified,
+          is_creator_verified
         )
       `)
       .eq('status', 'published')
@@ -2058,110 +2332,30 @@ async function loadMoreShorts() {
     if (error) throw error;
     
     if (data && data.length > 0) {
+      const startIndex = shortsData.length;
       shortsData = [...shortsData, ...data];
-      
-      await loadLikeCountsForNewShorts(data);
-      
-      data.forEach(short => {
-        const slide = createShortSlide(short);
+
+      await loadShortMetrics(data);
+      computeTrending(shortsData);
+      appendProgressSegments(data.length);
+
+      data.forEach((short, i) => {
+        const slide = createShortSlide(short, startIndex + i);
         document.getElementById('shorts-wrapper').appendChild(slide);
       });
-      
+
       if (swiperInstance) swiperInstance.update();
     }
-    
+
   } catch (error) {
     console.error('Error loading more shorts:', error);
   }
 }
 
-async function loadLikeCountsForNewShorts(newShorts) {
-  const contentIds = newShorts.map(s => s.id);
-  
-  const likeCounts = await Promise.all(
-    contentIds.map(async (id) => {
-      try {
-        const { count } = await supabaseClient
-          .from('content_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('content_id', id);
-        return { id, count: count || 0 };
-      } catch (e) {
-        return { id, count: 0 };
-      }
-    })
-  );
-  
-  likeCounts.forEach(({ id, count }) => {
-    const short = shortsData.find(s => s.id === id);
-    if (short) short.real_likes_count = count;
-  });
-}
-
-function createShortSlide(short) {
-  const creator = short.user_profiles || {};
-  const videoUrl = getPlayableMediaUrl(short);
-  const isCloudflareStream = short.streaming_provider === 'cloudflare_stream';
-  const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
-  const creatorName = creator.full_name || creator.username || 'Creator';
-  const initials = getInitials(creatorName);
-  const isConnected = currentUser && userConnections.has(creator.id);
-  const videoType = isCloudflareStream ? 'application/vnd.apple.mpegurl' : 'video/mp4';
-  
-  const slide = document.createElement('div');
-  slide.className = 'swiper-slide';
-  slide.dataset.shortId = short.id;
-  slide.innerHTML = `
-    <div class="short-video-wrapper">
-      <video class="short-video" src="${videoUrl}" poster="${thumbnailUrl}" loop playsinline preload="metadata" data-short-id="${short.id}" data-provider="${short.streaming_provider || 'legacy'}" ${isCloudflareStream ? `type="${videoType}"` : ''}></video>
-      <div class="video-overlay"></div>
-      <div class="shorts-actions">
-        <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}">
-          <i class="far fa-heart"></i>
-          <span class="action-count">${formatNumber(short.real_likes_count || short.likes_count || 0)}</span>
-        </button>
-        <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}">
-          <i class="far fa-comment"></i>
-          <span class="action-count">${formatNumber(short.comments_count || 0)}</span>
-        </button>
-        <button class="action-btn share-btn" data-action="share" data-short-id="${short.id}">
-          <i class="fas fa-share"></i>
-        </button>
-        <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}">
-          <i class="far fa-bookmark"></i>
-        </button>
-      </div>
-      <div class="shorts-info">
-        <div class="creator-info" data-creator-id="${creator.id}" data-creator-name="${creatorName}">
-          <div class="creator-avatar">
-            ${creator.avatar_url ? `<img src="${fixMediaUrl(creator.avatar_url)}" alt="${escapeHtml(creatorName)}">` : `<span>${initials}</span>`}
-          </div>
-          <div class="creator-details">
-            <div class="creator-name">${escapeHtml(creatorName)}</div>
-            <div class="creator-username">@${escapeHtml(creator.username || 'creator')}</div>
-          </div>
-          <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator.id}">
-            ${isConnected ? 'Connected' : 'Connect'}
-          </button>
-        </div>
-        <div class="shorts-caption" id="caption-${short.id}">${escapeHtml(short.description || short.title || '')}</div>
-        <div class="shorts-meta">
-          <span><i class="fas fa-music"></i> ${escapeHtml(short.genre || 'Original Audio')}</span>
-          <span><i class="fas fa-clock"></i> ${formatTime(short.duration || 0)}</span>
-          <span><i class="fas fa-eye"></i> ${formatNumber(short.views_count || 0)}</span>
-        </div>
-      </div>
-      <div class="video-controls">
-        <button class="control-btn mute-btn"><i class="fas fa-volume-up"></i></button>
-        <div class="progress-container">
-          <div class="progress-buffer"></div>
-          <div class="progress-bar"></div>
-        </div>
-        <button class="control-btn more-btn" data-short-id="${short.id}"><i class="fas fa-ellipsis-h"></i></button>
-      </div>
-    </div>
-  `;
-  
+function createShortSlide(short, index) {
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildSlideHTML(short, index).trim();
+  const slide = wrapper.firstElementChild;
   return slide;
 }
 
@@ -2229,9 +2423,23 @@ function setupEventListeners() {
       }
     }
   });
+
+  // Sound disc - real, not decorative: since there's no separate "sound"
+  // entity to link to (it's honestly labeled "Original Sound" further down),
+  // tapping it goes to the same place tapping the creator's name/avatar does.
+  document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+    const soundDisc = e.target.closest('.sound-disc');
+    if (soundDisc) {
+      e.stopPropagation();
+      const creatorId = soundDisc.dataset.creatorId;
+      if (creatorId) {
+        window.location.href = `creator-channel.html?id=${creatorId}`;
+      }
+    }
+  });
   
   document.getElementById('shorts-player')?.addEventListener('click', (e) => {
-    const muteBtn = e.target.closest('.mute-btn');
+    const muteBtn = e.target.closest('.mute-btn-float');
     if (muteBtn) {
       e.stopPropagation();
       toggleMute();
