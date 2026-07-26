@@ -208,13 +208,12 @@ async function loadShorts() {
           id,
           username,
           full_name,
-          avatar_url,
-          is_verified,
-          is_creator_verified
+          avatar_url
         )
       `)
       .eq('status', 'published')
-      .or('media_type.eq.short,duration.lte.60')
+      .in('media_type', ['video', 'audio', 'short'])
+      .lte('duration', 60)
       .order('created_at', { ascending: false })
       .limit(20);
     
@@ -264,8 +263,12 @@ async function loadShortMetrics(shorts) {
   if (!shorts || !shorts.length) return;
 
   const contentIds = shorts.map(s => s.id);
+  // is_verified/is_creator_verified live on the real "creators" table
+  // (keyed by the same id as auth.users/user_profiles), not on
+  // user_profiles itself - confirmed against the live schema.
+  const creatorIds = [...new Set(shorts.map(s => s.user_profiles?.id).filter(Boolean))];
 
-  const [likeCounts, saveCounts, engagementStats] = await Promise.all([
+  const [likeCounts, saveCounts, engagementStats, creatorVerification] = await Promise.all([
     Promise.all(contentIds.map(async (id) => {
       try {
         const { count } = await supabaseClient
@@ -299,11 +302,27 @@ async function loadShortMetrics(shorts) {
       } catch (e) {
         return [];
       }
+    })(),
+    (async () => {
+      if (!creatorIds.length) return [];
+      try {
+        const { data, error } = await supabaseClient
+          .from('creators')
+          .select('id, is_verified, is_creator_verified')
+          .in('id', creatorIds);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        return [];
+      }
     })()
   ]);
 
   const sharesByContentId = {};
   engagementStats.forEach(row => { sharesByContentId[row.content_id] = row.total_shares || 0; });
+
+  const verificationByCreatorId = {};
+  creatorVerification.forEach(row => { verificationByCreatorId[row.id] = row; });
 
   likeCounts.forEach(({ id, count }) => {
     const short = shorts.find(s => s.id === id);
@@ -312,6 +331,13 @@ async function loadShortMetrics(shorts) {
   saveCounts.forEach(({ id, count }) => {
     const short = shorts.find(s => s.id === id);
     if (short) short.real_saves_count = count;
+  });
+  shorts.forEach(short => {
+    const verification = verificationByCreatorId[short.user_profiles?.id];
+    if (verification && short.user_profiles) {
+      short.user_profiles.is_verified = verification.is_verified;
+      short.user_profiles.is_creator_verified = verification.is_creator_verified;
+    }
   });
   shorts.forEach(short => {
     short.real_shares_count = sharesByContentId[short.id] || 0;
@@ -391,14 +417,13 @@ async function fetchFollowingShorts() {
           id,
           username,
           full_name,
-          avatar_url,
-          is_verified,
-          is_creator_verified
+          avatar_url
         )
       `)
       .in('user_id', Array.from(userConnections))
       .eq('status', 'published')
-      .or('media_type.eq.short,duration.lte.60')
+      .in('media_type', ['video', 'audio', 'short'])
+      .lte('duration', 60)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -862,7 +887,8 @@ async function searchShorts(query, category = '', sortBy = 'newest') {
       .select('*, user_profiles!user_id(*)')
       .ilike('title', `%${query}%`)
       .eq('status', 'published')
-      .or('media_type.eq.short,duration.lte.60')
+      .in('media_type', ['video', 'audio', 'short'])
+      .lte('duration', 60)
       .order(orderBy, { ascending: order === 'asc' })
       .limit(20);
     
@@ -1502,7 +1528,9 @@ function initializePlaybackSession(content) {
   
   const userId = getCurrentUserId();
   
-  // Try to create playback session record
+  // Try to create playback session record - payload matches the real
+  // playback_sessions schema (it has no media_type column; that field
+  // was never valid here, pre-dating this redesign).
   supabaseClient
     .from('playback_sessions')
     .insert({
@@ -1512,8 +1540,7 @@ function initializePlaybackSession(content) {
       session_id: generateSessionId(),
       platform: 'Web',
       device_type: getDeviceType(),
-      started_at: new Date().toISOString(),
-      media_type: 'short'
+      started_at: new Date().toISOString()
     })
     .then(({ error }) => {
       if (error) {
@@ -2318,13 +2345,12 @@ async function loadMoreShorts() {
           id,
           username,
           full_name,
-          avatar_url,
-          is_verified,
-          is_creator_verified
+          avatar_url
         )
       `)
       .eq('status', 'published')
-      .or('media_type.eq.short,duration.lte.60')
+      .in('media_type', ['video', 'audio', 'short'])
+      .lte('duration', 60)
       .lt('created_at', lastShort.created_at)
       .order('created_at', { ascending: false })
       .limit(10);
