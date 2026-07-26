@@ -213,6 +213,21 @@ function setupLanguageFilterDropdown() {
 }
 
 /**
+ * Welcome banner above the hero - it was permanently visible and just
+ * sitting there taking up space, so it now auto-dismisses 10s after
+ * page load. Fades out and collapses (not just opacity, see
+ * .welcome-banner-hide in home-feed-ui.css) so the layout closes the
+ * gap it leaves behind instead of holding an empty space open.
+ */
+function setupWelcomeBannerAutoDismiss() {
+    const banner = document.getElementById('welcome-banner');
+    if (!banner) return;
+    setTimeout(() => {
+        banner.classList.add('welcome-banner-hide');
+    }, 10000);
+}
+
+/**
  * Explore All Content CTA at the bottom of the feed. trending-screen.js
  * (which owns the same #explore-all-btn id/handler pattern on the
  * Trending page) isn't loaded here, so this button previously had no
@@ -261,6 +276,7 @@ async function initCore() {
     setupGlobalImageErrorHandler();
     setupLanguageFilterDropdown();
     setupExploreAllCta();
+    setupWelcomeBannerAutoDismiss();
     await checkAuth();
     console.log('✅ Core System initialized');
 }
@@ -281,6 +297,7 @@ Object.assign(window, {
     loadNotifications,
     setupLanguageFilterDropdown,
     setupExploreAllCta,
+    setupWelcomeBannerAutoDismiss,
     updateNotificationBadge,
     showToast,
     escapeHtml,

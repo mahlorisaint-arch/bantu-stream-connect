@@ -176,35 +176,51 @@ CORE UI UTILITIES
 }
 
 /* ============================================
-WELCOME BANNER - REDUCED TO 40% SIZE
+WELCOME BANNER - transparent glassmorphic, outline highlighted by
+cyan (same recipe as .explore-btn/.hero-featured-badge), auto-dismissed
+after 10s by setupWelcomeBannerAutoDismiss() in js/home-feed.js so it
+doesn't sit there permanently taking up space above the hero. The
+.welcome-banner-hide class collapses height/margin/padding (not just
+opacity) so the layout closes the gap once it's gone.
 ============================================ */
 .welcome-banner {
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.15));
-    border: 1px solid rgba(0, 229, 255, 0.3);
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.25);
     border-radius: 12px;
-    /* Reduced from 30px to 12px (40%) */
-    padding: 12px 20px;
-    /* Reduced from 20px to 8px (40%) */
+    padding: 14px 20px;
     margin: 8px 0 12px 0;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     text-align: center;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    opacity: 1;
+    max-height: 160px;
+    overflow: hidden;
+    transition: opacity 0.5s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease, border-width 0.5s ease;
+}
+
+.welcome-banner.welcome-banner-hide {
+    opacity: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    pointer-events: none !important;
 }
 
 .welcome-banner h2 {
-    /* Reduced from 28px to 14px (50%) */
-    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
     font-weight: 600;
-    /* Reduced from 10px to 4px (40%) */
     margin-bottom: 4px;
     color: var(--soft-white, #F8FAFC);
 }
 
 .welcome-banner p {
-    /* Reduced from 16px to 8px (50%) */
-    font-size: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
     color: var(--slate-grey, #94A3B8);
     margin: 0;
 }
@@ -723,14 +739,14 @@ RESPONSIVE
         border-radius: 10px !important;
         margin: 6px 0 10px 0 !important;
     }
-    
+
     .welcome-banner h2 {
-        font-size: 12px !important;
+        font-size: 14px !important;
         margin-bottom: 3px !important;
     }
-    
+
     .welcome-banner p {
-        font-size: 7px !important;
+        font-size: 12px !important;
     }
     
     .wavelet-card {
@@ -831,18 +847,18 @@ RESPONSIVE
 
     /* WELCOME BANNER - PHONE REDUCTION */
     .welcome-banner {
-        padding: 6px 10px !important;
+        padding: 8px 12px !important;
         border-radius: 8px !important;
         margin: 4px 0 6px 0 !important;
     }
-    
+
     .welcome-banner h2 {
-        font-size: 10px !important;
+        font-size: 13px !important;
         margin-bottom: 2px !important;
     }
-    
+
     .welcome-banner p {
-        font-size: 6px !important;
+        font-size: 11px !important;
     }
     
     .wavelet-card {
