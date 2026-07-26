@@ -216,14 +216,14 @@ function setupLanguageFilterDropdown() {
  * Explore All Content CTA at the bottom of the feed. trending-screen.js
  * (which owns the same #explore-all-btn id/handler pattern on the
  * Trending page) isn't loaded here, so this button previously had no
- * click handler at all on Home - wire it to the same content-library.html
- * destination used elsewhere on the platform.
+ * click handler at all on Home - wire it to the Explore screen, same
+ * destination as the sidebar's own "Explore" nav item.
  */
 function setupExploreAllCta() {
     const btn = document.getElementById('explore-all-btn');
     if (!btn) return;
     btn.addEventListener('click', () => {
-        window.location.href = 'content-library.html';
+        window.location.href = 'explore-screen.html';
     });
 }
 

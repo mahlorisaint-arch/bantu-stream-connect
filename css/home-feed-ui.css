@@ -660,9 +660,10 @@ SECTION HEADERS
 
 /* Explore All CTA - trending.css owns a same-named .explore-btn class
    but that stylesheet isn't loaded on the home feed, so this button
-   was rendering completely unstyled here. Transparent glassmorphic,
-   highlighted by cyan - matches the card-badge/reason-badge treatment
-   used throughout the rest of the page instead of a solid fill. */
+   was rendering completely unstyled here. Same exact recipe as
+   .hero-featured-badge (hero-content.css): transparent glassmorphic
+   fill, outline highlighted by the cyan that used to solidly fill it,
+   not a heavier custom glow/gradient treatment of its own. */
 .explore-all-cta {
     display: flex;
     justify-content: center;
@@ -678,7 +679,7 @@ SECTION HEADERS
     background: rgba(6, 20, 26, 0.75);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 229, 255, 0.3);
+    border: 1px solid rgba(0, 229, 255, 0.25);
     border-radius: 999px;
     color: #00E5FF;
     font-family: 'Orbitron', sans-serif;
@@ -687,17 +688,15 @@ SECTION HEADERS
     letter-spacing: 0.5px;
     cursor: pointer;
     transition: all 0.25s ease;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
 }
 
 .explore-btn:hover {
-    background: rgba(0, 229, 255, 0.12);
     border-color: rgba(0, 229, 255, 0.5);
     transform: translateY(-2px);
-    box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
 }
 
 .explore-btn i {
+    color: #00E5FF;
     transition: transform 0.25s ease;
 }
 
