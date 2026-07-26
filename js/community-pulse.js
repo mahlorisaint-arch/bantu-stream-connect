@@ -135,12 +135,14 @@ const CommunityPulse = {
     this.postUpdateBtn.className = 'pulse-btn pulse-post-btn';
     this.postUpdateBtn.innerHTML = '<i class="fas fa-pen"></i> Post Update';
     this.postUpdateBtn.style.cssText = `
-      background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
-      border: none;
+      background: rgba(6, 20, 26, 0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 158, 11, 0.5);
       padding: 6px 12px;
       border-radius: 20px;
-      color: white;
-      font-weight: 500;
+      color: #F59E0B;
+      font-weight: 600;
       font-size: 12px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -174,10 +176,12 @@ const CommunityPulse = {
     // Hover effects
     this.postUpdateBtn.onmouseenter = () => {
       this.postUpdateBtn.style.transform = 'translateY(-1px)';
+      this.postUpdateBtn.style.borderColor = 'rgba(245, 158, 11, 0.85)';
       this.postUpdateBtn.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
     };
     this.postUpdateBtn.onmouseleave = () => {
       this.postUpdateBtn.style.transform = 'translateY(0)';
+      this.postUpdateBtn.style.borderColor = 'rgba(245, 158, 11, 0.5)';
       this.postUpdateBtn.style.boxShadow = 'none';
     };
     

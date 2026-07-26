@@ -1,10 +1,32 @@
 /* Community Pulse Feed Styles */
+/* Horizontal swipeable slideshow instead of a stacked vertical list -
+   native scroll-snap so it swipes naturally on touch (mobile/tablet)
+   and drag/trackpad-scrolls on desktop, same "swipe, don't stack"
+   pattern already used for Wavelets' horizontal rail on this page. */
 .pulse-grid {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--spacing-lg, 20px);
-  max-width: 700px;
-  margin: 0 auto;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 4px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: #00E5FF var(--card-bg);
+}
+
+.pulse-grid::-webkit-scrollbar {
+  height: 6px;
+}
+
+.pulse-grid::-webkit-scrollbar-track {
+  background: var(--card-bg);
+  border-radius: 10px;
+}
+
+.pulse-grid::-webkit-scrollbar-thumb {
+  background: #00E5FF;
+  border-radius: 10px;
 }
 
 /* Section Header */
@@ -27,35 +49,50 @@
   color: var(--soft-white, #F5F5F5);
 }
 
+/* Superseded by the inline style.cssText set in community-pulse.js
+   (CommunityPulse.renderButtons) - inline styles always win over this,
+   so this rule is effectively a fallback only. Kept in sync with it
+   (transparent glassmorphic, highlighted by gold) rather than left
+   stale, since a future removal of the inline styles would otherwise
+   silently resurrect the old solid-fill look. */
 #create-post-btn {
-  background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
-  border: none;
+  background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(245, 158, 11, 0.5);
   padding: 10px 20px;
   border-radius: 40px;
-  color: white;
+  color: #F59E0B;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 #create-post-btn:hover {
   transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.85);
   box-shadow: 0 5px 20px rgba(245, 158, 11, 0.3);
 }
 
-/* Pulse Card */
+/* Pulse Card - transparent glassmorphic, highlighted by cyan (same
+   recipe as .card-badge/.explore-btn) instead of a solid dark fill
+   with a gold hover border. Fixed width + scroll-snap since these are
+   now slides in the horizontal .pulse-grid, not full-width list rows. */
 .pulse-card {
-  background: var(--card-bg, rgba(18, 18, 18, 0.95));
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  flex: 0 0 auto;
+  width: 380px;
+  scroll-snap-align: start;
+  background: rgba(6, 20, 26, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: var(--card-radius, 16px);
   padding: var(--spacing-lg, 20px);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
 .pulse-card:hover {
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(0, 229, 255, 0.5);
   transform: translateY(-2px);
 }
 
@@ -263,7 +300,11 @@
 }
 
 /* Empty State */
+/* width: 100% so this still spans the full row instead of shrinking
+   to content width now that .pulse-grid (its parent) is a horizontal
+   flex row rather than a vertical stack. */
 .empty-pulse {
+  width: 100%;
   text-align: center;
   padding: 48px 24px;
   background: var(--card-bg, rgba(18, 18, 18, 0.95));
@@ -394,9 +435,11 @@
 /* Responsive */
 @media (max-width: 768px) {
   .pulse-card {
+    width: 300px;
     padding: 16px;
   }
-  
+
+
   .pulse-avatar {
     width: 40px;
     height: 40px;
@@ -420,6 +463,12 @@
     width: 40px;
     height: 40px;
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pulse-card {
+    width: 84vw;
   }
 }
 

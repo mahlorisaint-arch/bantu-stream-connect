@@ -94,13 +94,17 @@
     text-shadow: 0 0 calc(0.625rem * var(--ui-scale)) rgba(0, 0, 0, 0.5);
 }
 
-/* Wavelet Badge */
+/* Wavelet Badge - transparent glassmorphic, highlighted by cyan (same
+   recipe as .card-badge/.explore-btn) instead of a solid cyan fill. */
 .wavelet-badge {
     position: absolute;
     top: var(--spacing-xs);
     left: var(--spacing-xs);
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-    color: white;
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    color: #00E5FF;
     padding: calc(0.25rem * var(--ui-scale)) calc(0.625rem * var(--ui-scale));
     border-radius: calc(0.75rem * var(--ui-scale));
     font-size: calc(0.625rem * var(--ui-scale));
