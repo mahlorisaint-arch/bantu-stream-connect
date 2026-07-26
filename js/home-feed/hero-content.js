@@ -118,7 +118,7 @@
             
             if (this.elements.heroExploreBtn) {
                 this.elements.heroExploreBtn.addEventListener('click', () => {
-                    window.location.href = '/content-library';
+                    window.location.href = 'explore-screen.html';
                 });
             }
             

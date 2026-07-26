@@ -180,12 +180,16 @@
     gap: var(--spacing-lg);
 }
 
+/* Transparent glassmorphic, outline highlighted by the same cyan that
+   used to solidly fill it - same recipe as .hero-featured-badge above. */
 .hero-primary-btn {
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-    border: none;
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 229, 255, 0.25);
     border-radius: calc(0.75rem * var(--ui-scale));
     padding: calc(0.875rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale));
-    color: var(--deep-black);
+    color: #00E5FF;
     font-family: 'Orbitron', sans-serif;
     font-weight: 600;
     font-size: var(--font-base);
@@ -196,9 +200,13 @@
     transition: all 0.3s ease;
 }
 
+.hero-primary-btn i {
+    color: #00E5FF;
+}
+
 .hero-primary-btn:hover {
+    border-color: rgba(0, 229, 255, 0.5);
     transform: translateY(calc(-0.1875rem * var(--ui-scale)));
-    box-shadow: 0 calc(0.625rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale)) rgba(0, 229, 255, 0.4);
 }
 
 .hero-secondary-btn {
