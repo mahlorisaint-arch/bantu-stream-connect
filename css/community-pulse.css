@@ -258,13 +258,11 @@
 }
 
 /* Skeleton Loading */
+/* Used as class="pulse-card pulse-skeleton" - sizing/glass-cyan
+   look/scroll-snap all come from .pulse-card itself, this just adds
+   the shimmer so the skeleton is shaped exactly like the real card
+   it's about to become. */
 .pulse-skeleton {
-  background: var(--card-bg, rgba(18, 18, 18, 0.95));
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
-  border-radius: var(--card-radius, 16px);
-  padding: var(--spacing-lg, 20px);
-  display: flex;
-  gap: var(--spacing-md, 16px);
   animation: pulse-skeleton-anim 1.5s ease-in-out infinite;
 }
 

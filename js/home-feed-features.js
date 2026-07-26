@@ -134,18 +134,23 @@ function showToast(message, type = 'info') {
 // ============================================
 // SKELETON LOADING (MUST BE KEPT)
 // ============================================
+// Fallback only - every section below already ships with matching
+// static skeleton markup directly in index.html, so it's visible on
+// the very first paint (the actual page skeleton, not a spinner) and
+// this function's container.children.length === 0 guard means it
+// normally no-ops. Kept as a safety net for any future container that
+// loses its static skeleton, and to still match content shape - e.g.
+// Community Pulse's cards don't look like Continue Watching's, so
+// they don't share a skeleton shape either.
 function showAllSkeletons() {
-    // Show skeletons for all sections immediately
-    const sections = [
+    const genericCardSections = [
         'continue-watching-grid',
         'for-you-grid',
         'trending-grid',
-        'new-content-grid',
         'community-favorites-grid',
-        'live-streams-grid',
-        'pulse-feed'
+        'live-streams-grid'
     ];
-    sections.forEach(sectionId => {
+    genericCardSections.forEach(sectionId => {
         const container = document.getElementById(sectionId);
         if (container && container.children.length === 0) {
             container.innerHTML = Array(4).fill().map(() => `
@@ -158,33 +163,76 @@ function showAllSkeletons() {
             `).join('');
         }
     });
+
+    const shapedSections = {
+        'wavelets-container': { count: 6, cardClass: 'wavelet-skeleton', innerHtml: `
+                <div class="wavelet-skeleton-thumbnail"></div>
+                <div class="wavelet-skeleton-title"></div>
+                <div class="wavelet-skeleton-creator"></div>` },
+        'bantu-waves-music-grid': { count: 6, cardClass: 'skeleton-music-card', innerHtml: `
+                <div class="skeleton-thumbnail"></div>
+                <div class="skeleton-title"></div>
+                <div class="skeleton-creator"></div>
+                <div class="skeleton-stats"></div>` },
+        'bantu-waves-podcasts-grid': { count: 4, cardClass: 'skeleton-podcast-card', innerHtml: `
+                <div class="skeleton-thumbnail"></div>
+                <div class="skeleton-title"></div>
+                <div class="skeleton-creator"></div>
+                <div class="skeleton-stats"></div>` },
+        'bantu-waves-series-grid': { count: 4, cardClass: 'skeleton-series-card', innerHtml: `
+                <div class="skeleton-thumbnail"></div>
+                <div class="skeleton-title"></div>
+                <div class="skeleton-creator"></div>
+                <div class="skeleton-stats"></div>` },
+        'bantu-waves-midnight-grid': { count: 6, cardClass: 'skeleton-midnight-card', innerHtml: `
+                <div class="skeleton-thumbnail"></div>
+                <div class="skeleton-title"></div>
+                <div class="skeleton-creator"></div>
+                <div class="skeleton-stats"></div>` }
+    };
+    Object.entries(shapedSections).forEach(([sectionId, { count, cardClass, innerHtml }]) => {
+        const container = document.getElementById(sectionId);
+        if (container && container.children.length === 0) {
+            container.innerHTML = Array(count).fill().map(() => `<div class="${cardClass}">${innerHtml}</div>`).join('');
+        }
+    });
+
+    const pulseFeed = document.getElementById('pulse-feed');
+    if (pulseFeed && pulseFeed.children.length === 0) {
+        pulseFeed.innerHTML = Array(3).fill().map(() => `
+            <div class="pulse-card pulse-skeleton">
+                <div class="pulse-header">
+                    <div class="skeleton-avatar"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+            </div>
+        `).join('');
+    }
 }
 
 // ============================================
 // HOME FEED CONTROLLER (PERFORMANCE MODE)
 // ============================================
+// The page shows its own skeleton from the very first paint now (static
+// markup in index.html, matching each section's real card shape), the
+// same way YouTube/Instagram render a skeleton shell instead of a
+// spinner - there's no more full-screen loading overlay to hide here.
 async function initializeHomeFeed() {
-    const loadingScreen = document.getElementById('loading');
-    const app = document.getElementById('app');
-    const startTime = performance.now();
     try {
-        console.log("🚀 Initializing Home Feed (Performance Mode)");
-        // ✅ SHOW UI IMMEDIATELY
-        if (loadingScreen) loadingScreen.style.display = 'none';
-        if (app) app.style.display = 'block';
-
-        // Show skeletons instantly
+        // Fallback only - fills in any section whose static skeleton
+        // markup didn't make it into the page for some reason.
         showAllSkeletons();
 
         // Note: All section loading logic (Hero, Continue Watching, For You, Trending, etc.)
         // has been migrated to their respective dedicated modules.
-        
-        const totalTime = performance.now() - startTime;
-        console.log(`✅ Home Feed Core Loaded in ${totalTime.toFixed(0)}ms`);
     } catch (err) {
         console.error("❌ Home Feed Error:", err);
-        if (loadingScreen) loadingScreen.style.display = 'none';
-        if (app) app.style.display = 'block';
         showToast('Page loaded, but some content may be delayed', 'warning');
     }
 }
@@ -192,20 +240,10 @@ async function initializeHomeFeed() {
 // Only run DOMContentLoaded if document is still loading
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🚀 Home Feed Initializing (Performance Mode)');
-        // Override loading text
-        const loadingText = document.getElementById('loading-text');
-        if (loadingText) loadingText.textContent = 'Building Your Feed...';
-        // Initialize the feed
         await initializeHomeFeed();
     });
 } else {
     // DOM is already loaded, run immediately
-    console.log('🚀 Home Feed Initializing (Performance Mode) - DOM already loaded');
-    // Override loading text
-    const loadingText = document.getElementById('loading-text');
-    if (loadingText) loadingText.textContent = 'Building Your Feed...';
-    // Initialize the feed
     initializeHomeFeed().catch(err => {
         console.error("❌ Home Feed Initialization Error:", err);
     });

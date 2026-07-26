@@ -114,28 +114,11 @@
             0%, 100% { opacity: 0.6; }
             50% { opacity: 0.3; }
         }
-        .loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0A0E12;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(245, 158, 11, 0.2);
-            border-top-color: #F59E0B;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
+        /* @keyframes spin is still used by .loading-spinner-small further
+           down the page (an inline spinner inside the orphaned analytics
+           modal) - kept even though the full-screen loading overlay that
+           used to be the other consumer has been removed in favor of
+           showing the page skeleton-populated from the first paint. */
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -192,12 +175,6 @@
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading-screen">
-        <div class="spinner"></div>
-        <div id="loading-text">Loading Your Personalized Feed...</div>
-    </div>
-
     <!-- Animated Background -->
     <div class="animated-bg">
         <div class="glow-cycle glow-1"></div>
@@ -328,7 +305,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-play-circle" style="color: #00E5FF;"></i> CONTINUE WATCHING</h2>
                 </div>
-                <div class="content-grid" id="continue-watching-grid"></div>
+                <div class="content-grid" id="continue-watching-grid"><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Streak banner — slim inline bar, not a card/rail. Hidden by
@@ -344,7 +321,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-magic" style="color: #00E5FF;"></i> FOR YOU</h2>
                 </div>
-                <div class="content-grid" id="for-you-grid"></div>
+                <div class="content-grid" id="for-you-grid"><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Live Now — hidden entirely when there's no real live
@@ -354,7 +331,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-circle" style="color: #EF4444;"></i> LIVE NOW</h2>
                 </div>
-                <div class="content-grid" id="live-streams-grid"></div>
+                <div class="content-grid" id="live-streams-grid"><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
                 <div id="no-live-streams" class="empty-state" style="display: none;"><div class="empty-icon"><i class="fas fa-broadcast-tower"></i></div><h3>No Live Streams</h3><p>Check back later for live content</p></div>
             </section>
 
@@ -374,7 +351,7 @@
                     <div id="trending-time-selector" class="trending-time-selector"></div>
                 </div>
                 <div id="trending-stats-bar" class="trending-stats-bar"></div>
-                <div class="content-grid" id="trending-grid"></div>
+                <div class="content-grid" id="trending-grid"><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Wavelets (shorts) -->
@@ -382,7 +359,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-bolt" style="color: #00E5FF;"></i> WAVELETS</h2>
                 </div>
-                <div class="wavelets-container" id="wavelets-container"></div>
+                <div class="wavelets-container" id="wavelets-container"><div class="wavelet-skeleton"><div class="wavelet-skeleton-thumbnail"></div><div class="wavelet-skeleton-title"></div><div class="wavelet-skeleton-creator"></div></div><div class="wavelet-skeleton"><div class="wavelet-skeleton-thumbnail"></div><div class="wavelet-skeleton-title"></div><div class="wavelet-skeleton-creator"></div></div><div class="wavelet-skeleton"><div class="wavelet-skeleton-thumbnail"></div><div class="wavelet-skeleton-title"></div><div class="wavelet-skeleton-creator"></div></div><div class="wavelet-skeleton"><div class="wavelet-skeleton-thumbnail"></div><div class="wavelet-skeleton-title"></div><div class="wavelet-skeleton-creator"></div></div><div class="wavelet-skeleton"><div class="wavelet-skeleton-thumbnail"></div><div class="wavelet-skeleton-title"></div><div class="wavelet-skeleton-creator"></div></div><div class="wavelet-skeleton"><div class="wavelet-skeleton-thumbnail"></div><div class="wavelet-skeleton-title"></div><div class="wavelet-skeleton-creator"></div></div></div>
             </section>
 
             <!-- Community Pulse — genuinely distinct data model (pulse_posts,
@@ -391,7 +368,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-bolt" style="color: #00E5FF;"></i> COMMUNITY PULSE</h2>
                 </div>
-                <div class="pulse-grid" id="pulse-feed"></div>
+                <div class="pulse-grid" id="pulse-feed"><div class="pulse-card pulse-skeleton"><div class="pulse-header"><div class="skeleton-avatar"></div><div class="skeleton-content"><div class="skeleton-line short"></div><div class="skeleton-line short"></div></div></div><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="pulse-card pulse-skeleton"><div class="pulse-header"><div class="skeleton-avatar"></div><div class="skeleton-content"><div class="skeleton-line short"></div><div class="skeleton-line short"></div></div></div><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="pulse-card pulse-skeleton"><div class="pulse-header"><div class="skeleton-avatar"></div><div class="skeleton-content"><div class="skeleton-line short"></div><div class="skeleton-line short"></div></div></div><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
             </section>
 
             <!-- Community Favorites — kept over Creator of the Week: ranks
@@ -402,7 +379,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-handshake" style="color: #00E5FF;"></i> COMMUNITY FAVORITES</h2>
                 </div>
-                <div class="content-grid" id="community-favorites-grid"></div>
+                <div class="content-grid" id="community-favorites-grid"><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Bantu Waves: Music -->
@@ -410,7 +387,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-music" style="color: #00E5FF;"></i> BANTU WAVES: MUSIC</h2>
                 </div>
-                <div class="music-playlists-grid" id="bantu-waves-music-grid"></div>
+                <div class="music-playlists-grid" id="bantu-waves-music-grid"><div class="skeleton-music-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-music-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-music-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-music-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-music-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-music-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Bantu Waves: Podcasts -->
@@ -418,7 +395,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-microphone-alt" style="color: var(--bantu-blue);"></i> BANTU WAVES: PODCASTS</h2>
                 </div>
-                <div class="podcasts-grid" id="bantu-waves-podcasts-grid"></div>
+                <div class="podcasts-grid" id="bantu-waves-podcasts-grid"><div class="skeleton-podcast-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-podcast-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-podcast-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-podcast-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Bantu Waves: Series -->
@@ -426,7 +403,7 @@
                 <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-tv" style="color: #8B5CF6;"></i> BANTU WAVES: SERIES</h2>
                 </div>
-                <div class="series-grid" id="bantu-waves-series-grid"></div>
+                <div class="series-grid" id="bantu-waves-series-grid"><div class="skeleton-series-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-series-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-series-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-series-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Bantu Waves: Midnight Sessions — kept over Africa Rising,
@@ -440,7 +417,7 @@
                     <h2 class="section-title"><i class="fas fa-moon" style="color: #8B5CF6;"></i> BANTU WAVES: MIDNIGHT SESSIONS</h2>
                     <div class="midnight-time-badge"><i class="fas fa-clock"></i><span>Check back at 9PM</span></div>
                 </div>
-                <div class="midnight-grid" id="bantu-waves-midnight-grid"></div>
+                <div class="midnight-grid" id="bantu-waves-midnight-grid"><div class="skeleton-midnight-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-midnight-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-midnight-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-midnight-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-midnight-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div><div class="skeleton-midnight-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div></div>
             </section>
 
             <!-- Explore All CTA -->
