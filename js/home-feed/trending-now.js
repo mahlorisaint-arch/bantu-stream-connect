@@ -333,42 +333,35 @@ const TrendingNow = (function() {
      */
     function applyTrendingAmplification(items) {
         return items.map(item => {
-            let score = (item.views_count || 0) + 
+            let score = (item.views_count || 0) +
                        ((item.favorites_count || 0) * 10) +
                        ((item.metrics?.likes || 0) * 5) +
                        ((item.metrics?.shares || 0) * 15);
-            
-            let boostReason = null;
-            
+
             // Local Language Boost
             if (LOCAL_LANGUAGES.includes(item.language)) {
                 score = score * 1.3;
-                boostReason = 'Local language trending';
             }
-            
+
             // Freshness Boost (newer content trends faster)
             const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
             if (daysOld < 1) {
                 score = score * 1.5;
-                boostReason = boostReason ? `${boostReason} + Hot off the press` : 'Hot off the press';
             } else if (daysOld < 3) {
                 score = score * 1.3;
-                boostReason = boostReason ? `${boostReason} + Fresh` : 'Fresh';
             } else if (daysOld < 7) {
                 score = score * 1.1;
             }
-            
+
             // High engagement boost (likes/view ratio)
             const engagementRate = (item.metrics?.likes || 0) / (item.views_count || 1);
             if (engagementRate > 0.1) {
                 score = score * 1.2;
-                boostReason = boostReason ? `${boostReason} + High engagement` : 'High engagement';
             }
-            
+
             return {
                 ...item,
-                trending_raw_score: score,
-                boost_reason: boostReason
+                trending_raw_score: score
             };
         });
     }
@@ -543,21 +536,7 @@ const TrendingNow = (function() {
             const trendingScore = content.trending_score || 0;
             const velocity = content.velocity || 'steady';
             const velocityChange = content.velocity_change || 0;
-            
-            // Determine rank class and icon
-            let rankClass = '';
-            let rankIcon = '';
-            if (rank === 1) {
-                rankClass = 'top-1';
-                rankIcon = '<i class="fas fa-crown"></i>';
-            } else if (rank === 2) {
-                rankClass = 'top-2';
-                rankIcon = '<i class="fas fa-medal"></i>';
-            } else if (rank === 3) {
-                rankClass = 'top-3';
-                rankIcon = '<i class="fas fa-medal"></i>';
-            }
-            
+
             // Velocity indicator
             let velocityHtml = '';
             if (velocity === 'up') {
@@ -606,12 +585,6 @@ const TrendingNow = (function() {
                             <i class="fas fa-fire"></i> TRENDING #${rank}
                         </div>
                     </div>
-                    <div class="trending-rank ${rankClass}">
-                        ${rankIcon} #${rank}
-                    </div>
-                    <div class="trending-score">
-                        <i class="fas fa-chart-line"></i> ${trendingScore} score
-                    </div>
                     <div class="sparkline-container">
                         <canvas class="sparkline" data-trend="${trendingScore}"></canvas>
                     </div>
@@ -635,7 +608,6 @@ const TrendingNow = (function() {
                         <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
                     </div>
                     ${content.genre ? `<div class="genre-tags"><span class="genre-tag">${escapeHtml(content.genre)}</span></div>` : ''}
-                    ${content.boost_reason ? `<div class="boost-reason"><i class="fas fa-chart-line"></i> ${content.boost_reason}</div>` : ''}
                 </div>
             `;
             

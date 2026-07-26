@@ -53,75 +53,16 @@
     }
 }
 
-/* Trending Badge on Cards */
+/* Trending Badge on Cards - transparent glassmorphic, highlighted by
+   cyan (same recipe as .card-badge/.explore-btn) instead of a solid
+   cyan-to-red fill. The top-right rank badge (.trending-rank) and the
+   bottom-left score badge (.trending-score) have been removed
+   permanently - this is the only badge left on the card. */
 .trending-badge {
-    background: linear-gradient(135deg, #00E5FF, #EF4444);
-    color: white;
-    font-weight: 700;
-}
-
-.trending-badge i {
-    margin-right: 4px;
-}
-
-/* Trending Rank Indicator */
-.trending-rank {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(4px);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: 'Orbitron', monospace;
-}
-
-.trending-rank.top-1 {
-    background: linear-gradient(135deg, #00E5FF, #EF4444);
-    color: white;
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
-}
-
-.trending-rank.top-2 {
-    background: linear-gradient(135deg, #94A3B8, #64748B);
-    color: white;
-}
-
-.trending-rank.top-3 {
-    background: linear-gradient(135deg, #CD7F32, #B87333);
-    color: white;
-}
-
-.trending-rank i {
-    font-size: 12px;
-}
-
-/* Trending Score Indicator */
-.trending-score {
-    position: absolute;
-    bottom: var(--spacing-xs);
-    left: var(--spacing-xs);
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 9px;
-    font-weight: 600;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.4);
     color: #00E5FF;
-}
-
-.trending-score i {
-    font-size: 8px;
+    font-weight: 700;
 }
 
 /* Velocity Indicator (Trending Speed) */
@@ -182,10 +123,6 @@
 #trending-grid .content-card:hover {
     transform: translateY(calc(-0.5rem * var(--ui-scale)));
     box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
-}
-
-#trending-grid .content-card:hover .trending-rank {
-    transform: scale(1.05);
 }
 
 /* Trending Section Stats */
@@ -331,11 +268,6 @@
         font-size: 9px;
     }
     
-    .trending-rank {
-        font-size: 10px;
-        padding: 2px 8px;
-    }
-    
     .trending-flame {
         font-size: 9px;
         padding: 2px 8px;
@@ -353,34 +285,8 @@
 }
 
 /* Light Theme */
-.theme-light .trending-rank {
-    background: rgba(255, 255, 255, 0.9);
-    color: #1a1a1a;
-}
-
-.theme-light .trending-score {
-    background: rgba(255, 255, 255, 0.9);
-}
-
 .theme-light .trending-stat-item .stat-value {
     color: #1a1a1a;
-}
-
-/* High Contrast Theme */
-.theme-high-contrast .trending-rank {
-    border: 1px solid var(--soft-white);
-}
-
-.theme-high-contrast .trending-rank.top-1 {
-    background: #ff0000;
-}
-
-.theme-high-contrast .trending-rank.top-2 {
-    background: #666666;
-}
-
-.theme-high-contrast .trending-rank.top-3 {
-    background: #CD7F32;
 }
 
 /* Pulse Animation for Top Trending */
