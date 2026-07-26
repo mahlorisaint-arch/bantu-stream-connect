@@ -515,18 +515,23 @@ CONTENT GRID & CARDS - FIXED
     opacity: 1;
 }
 
+/* Transparent glassmorphic, highlighted by cyan - same recipe as
+   .card-badge/.explore-btn, instead of a solid cyan fill. */
 .play-icon {
     width: 50px;
     height: 50px;
-    background: rgba(0, 229, 255, 0.9);
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 229, 255, 0.4);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #0A0E12;
+    color: #00E5FF;
     font-size: 20px;
     transform: scale(0.8);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
 .content-card:hover .play-icon {
@@ -626,13 +631,32 @@ SECTION HEADERS
     width: 100%;
 }
 
+/* nowrap so "See All" stays beside the title on the far right at every
+   breakpoint (matching laptop/desktop) instead of wrapping onto its
+   own row below the title on mobile/tablet - the title itself truncates
+   with an ellipsis if it doesn't fit rather than pushing the button
+   down. #trending-now-section overrides this back to wrap since its
+   header carries a third element (the time selector) that genuinely
+   needs to drop to its own row on narrow screens. */
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 10px;
+}
+
+.section-header .section-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.section-header .see-all-btn {
+    flex-shrink: 0;
 }
 
 /* Matches content-detail.html's rail header convention

@@ -149,7 +149,16 @@
     transform: scale(1.05);
 }
 
-.thumbnail-overlay {
+/* Scoped to .midnight-card - these were unscoped and, because this
+   file loads last among the home-feed row modules, silently won the
+   cascade for every .thumbnail-overlay/.play-overlay/.play-icon on
+   the whole page (Continue Watching, For You, etc.), not just
+   Midnight's own cards - the exact "hidden duplicate CSS" landmine
+   pattern found repeatedly elsewhere in this codebase. .play-icon in
+   particular carried its own purple/white treatment instead of the
+   platform's cyan, which is why every rail's play button was showing
+   the wrong color regardless of that rail's own CSS. */
+.midnight-card .thumbnail-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -160,7 +169,7 @@
     z-index: 1;
 }
 
-.play-overlay {
+.midnight-card .play-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -179,7 +188,7 @@
     opacity: 1;
 }
 
-.play-icon {
+.midnight-card .play-icon {
     width: 50px;
     height: 50px;
     background: rgba(139, 92, 246, 0.9);

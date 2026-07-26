@@ -46,12 +46,15 @@
     100% { transform: translateX(100%); }
 }
 
-/* Continue Watching Badge */
+/* Continue Watching Badge - transparent glassmorphic, highlighted by
+   cyan (same recipe as .card-badge) instead of a solid cyan fill. */
 .continue-badge {
-    background: rgba(0, 229, 255, 0.95);
-    color: var(--deep-black);
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    color: #00E5FF;
     font-weight: 700;
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .continue-badge i {
@@ -99,7 +102,6 @@
 #continue-watching-section .play-icon {
     width: calc(3.5rem * var(--ui-scale));
     height: calc(3.5rem * var(--ui-scale));
-    background: rgba(0, 229, 255, 0.9);
 }
 
 /* Specific Card Styles for Continue Watching */

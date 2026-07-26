@@ -7,11 +7,22 @@
     margin-bottom: calc(2.5rem * var(--ui-scale));
 }
 
+/* home-feed-ui.css's generic .section-header is nowrap (title + See
+   All now stay on one row on mobile/tablet everywhere), but this
+   header has a third element (the time selector) that genuinely needs
+   to drop to its own row on narrow screens - kept wrapping here. */
+#trending-now-section .section-header {
+    flex-wrap: wrap;
+}
+
 /* Section Title with Fire Animation */
 #trending-now-section .section-title {
     display: flex;
     align-items: center;
     gap: 10px;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
 }
 
 .trending-flame {
