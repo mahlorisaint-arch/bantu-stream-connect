@@ -464,10 +464,24 @@ CONTENT GRID & CARDS - FIXED
     gap: 4px;
 }
 
+/* Views/likes/comments/share/language/connector icons match the
+   username color (.creator-name-small) at rest, and light up cyan
+   together with the rest of the card on hover/press - not permanently
+   cyan regardless of interaction state. */
 .card-meta i,
 .creator-info i,
 .connector-info i {
     font-size: 10px;
+    color: var(--slate-grey, #94A3B8);
+    transition: color 0.2s ease;
+}
+
+.content-card:hover .card-meta i,
+.content-card:hover .creator-info i,
+.content-card:hover .connector-info i,
+.content-card:active .card-meta i,
+.content-card:active .creator-info i,
+.content-card:active .connector-info i {
     color: #00E5FF;
 }
 

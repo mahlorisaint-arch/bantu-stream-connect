@@ -215,6 +215,14 @@
 .series-meta i {
     margin-right: 4px;
     font-size: 10px;
+    transition: color 0.2s ease;
+}
+
+/* Matches username color at rest, cyan on hover/press - same pattern
+   as the shared .card-meta icons elsewhere on the home feed. */
+.series-card:hover .series-meta i,
+.series-card:active .series-meta i {
+    color: #00E5FF;
 }
 
 /* Next Episode */

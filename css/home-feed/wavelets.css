@@ -215,6 +215,14 @@
 
 .wavelet-stats i {
     font-size: 8px;
+    transition: color 0.2s ease;
+}
+
+/* Matches username color at rest, cyan on hover/press - same pattern
+   as the shared .card-meta icons elsewhere on the home feed. */
+.wavelet-card:hover .wavelet-stats i,
+.wavelet-card:active .wavelet-stats i {
+    color: #00E5FF;
 }
 
 .wavelet-connectors {

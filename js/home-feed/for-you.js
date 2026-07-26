@@ -37,6 +37,30 @@ const ForYou = (function() {
     
     // South African languages for amplification
     const LOCAL_LANGUAGES = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso', 'af'];
+
+    // Genre badge icon, matching the platform's canonical genre list
+    // (creator-upload.html #content-genre) and, where a matching home-feed
+    // rail already exists, the icon that rail's own section header uses
+    // (Series -> fa-tv, Music -> fa-music, Podcast -> fa-microphone-alt,
+    // Shorts -> fa-bolt, matching Wavelets) instead of one flat fa-tag
+    // for every genre.
+    const GENRE_ICONS = {
+        'Film': 'fa-film',
+        'Documentary': 'fa-video',
+        'Series': 'fa-tv',
+        'Music': 'fa-music',
+        'Podcast': 'fa-microphone-alt',
+        'Shorts': 'fa-bolt',
+        'STEM': 'fa-flask',
+        'Culture': 'fa-globe-africa',
+        'News': 'fa-newspaper',
+        'Sports': 'fa-futbol',
+        'Skits': 'fa-theater-masks'
+    };
+
+    function getGenreIcon(genre) {
+        return GENRE_ICONS[genre] || 'fa-tag';
+    }
     
     /**
      * Initialize For You module with error handling
@@ -578,39 +602,33 @@ const ForYou = (function() {
                              ((item.metrics?.shares || 0) * 10);
             
             score = baseScore || (item.favorites_count || 0) * 5;
-            let boostReason = null;
-            
+
             // 1. Local Language Boost
             if (item.language && LOCAL_LANGUAGES.includes(item.language)) {
                 score = score * 1.3;
-                boostReason = 'Local language content';
             }
-            
+
             // 2. Emerging Creator Boost (< 1000 connectors)
             if (item.metrics?.connectors < 1000) {
                 score = score * 1.2;
-                boostReason = boostReason ? `${boostReason} + Emerging creator` : 'Emerging creator';
             }
-            
+
             // 3. Freshness Boost (< 7 days old)
             if (item.created_at) {
                 const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
                 if (daysOld < 7) {
                     score = score * 1.4;
-                    boostReason = boostReason ? `${boostReason} + Fresh content` : 'Fresh content';
                 }
             }
-            
+
             // 4. Genre Match Boost
             if (userPreferences?.genres?.includes(item.genre)) {
                 score = score * 1.25;
-                boostReason = boostReason ? `${boostReason} + Matches your interests` : 'Matches your interests';
             }
-            
-            return { 
-                ...item, 
+
+            return {
+                ...item,
                 amplification_score: Math.max(score, 100),
-                boost_reason: boostReason || 'Recommended for you',
                 metrics: {
                     ...item.metrics,
                     base_score: baseScore
@@ -751,20 +769,12 @@ const ForYou = (function() {
             const username = creatorProfile?.username || 'creator';
             const initials = getInitials(displayName);
             const durationFormatted = formatDuration(content.duration || 0);
-            
-            // Determine recommendation score class
-            let scoreClass = 'low';
-            let scoreValue = Math.round((content.amplification_score || 100) / 100);
-            if (scoreValue > 100) scoreClass = 'high';
-            else if (scoreValue > 50) scoreClass = 'medium';
-            
-            // Genre badge - the only badge on this card, top-left
+
+            // Genre badge - the only badge on this card, top-left, icon
+            // matches the genre (film/sports/etc.) instead of one flat tag icon
             const genreBadgeHtml = content.genre ?
-                `<div class="card-badge genre-badge"><i class="fas fa-tag"></i> ${escapeHtml(content.genre)}</div>` : '';
-            
-            const boostReason = content.boost_reason || 'Personalized for you';
-            const scoreLabel = scoreValue > 0 ? scoreValue : 'Pick';
-            
+                `<div class="card-badge genre-badge"><i class="fas ${getGenreIcon(content.genre)}"></i> ${escapeHtml(content.genre)}</div>` : '';
+
             // Avatar HTML
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
@@ -803,11 +813,6 @@ const ForYou = (function() {
                         ${genreBadgeHtml}
                     </div>
 
-                    <!-- TOP-RIGHT: Recommendation score -->
-                    <div class="recommendation-score ${scoreClass}" title="${escapeHtml(boostReason)}">
-                        <i class="fas fa-magic"></i> ${scoreLabel}
-                    </div>
-                    
                     <!-- BOTTOM-RIGHT: Duration badge -->
                     ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
                     
