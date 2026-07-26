@@ -206,8 +206,12 @@
     transform: scale(1);
 }
 
-/* Badges */
-.duration-badge {
+/* Badges - scoped to .midnight-card: this was unscoped and, being the
+   last home-feed row module loaded, silently won the cascade for
+   every .duration-badge on the whole page (rectangular, no border)
+   over home-feed-ui.css's pill-shaped bordered version - the same
+   hidden-duplicate-CSS landmine as this file's .play-icon fix above. */
+.midnight-card .duration-badge {
     position: absolute;
     bottom: 12px;
     right: 12px;

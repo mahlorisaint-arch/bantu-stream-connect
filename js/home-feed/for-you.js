@@ -7,7 +7,7 @@
  * uses array overlap for preference matching, and fetches metrics from
  * content_engagement_stats.
  * 
- * BADGE FIX: Split layout with glassmorphism badges
+ * BADGE: Single genre badge, top-left, transparent glassmorphic cyan
  * GLITCH FIX: Added error boundaries, proper null checks, and RAF for animations
  * FIXED: Infinite loading issue - proper error handling and fallback content
  */
@@ -733,7 +733,7 @@ const ForYou = (function() {
     }
     
     /**
-     * Render content cards with split badge layout
+     * Render content cards
      */
     function renderCards(contents) {
         if (!contents || !container) return;
@@ -750,7 +750,6 @@ const ForYou = (function() {
             const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
             const username = creatorProfile?.username || 'creator';
             const initials = getInitials(displayName);
-            const isNew = content.created_at ? (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000 : false;
             const durationFormatted = formatDuration(content.duration || 0);
             
             // Determine recommendation score class
@@ -759,24 +758,8 @@ const ForYou = (function() {
             if (scoreValue > 100) scoreClass = 'high';
             else if (scoreValue > 50) scoreClass = 'medium';
             
-            // Format badge
-            let formatBadgeHtml = '';
-            if (content.content_format) {
-                const formatIcons = {
-                    'film': 'fa-film', 'documentary': 'fa-video', 'movie': 'fa-film',
-                    'podcast': 'fa-microphone-alt', 'audio': 'fa-headphones', 'long_form': 'fa-video',
-                    'video': 'fa-video', 'series_episode': 'fa-video'
-                };
-                const icon = formatIcons[content.content_format] || 'fa-video';
-                const formatLabel = content.content_format.replace('_', ' ').toUpperCase();
-                formatBadgeHtml = `<div class="card-badge format-badge"><i class="fas ${icon}"></i> ${formatLabel}</div>`;
-            }
-            
-            // New badge
-            const newBadgeHtml = isNew ? `<div class="card-badge new-badge"><i class="fas fa-gem"></i> NEW</div>` : '';
-            
-            // Genre badge (bottom-left)
-            const genreBadgeHtml = content.genre ? 
+            // Genre badge - the only badge on this card, top-left
+            const genreBadgeHtml = content.genre ?
                 `<div class="card-badge genre-badge"><i class="fas fa-tag"></i> ${escapeHtml(content.genre)}</div>` : '';
             
             const boostReason = content.boost_reason || 'Personalized for you';
@@ -815,17 +798,11 @@ const ForYou = (function() {
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
                     
-                    <!-- TOP-LEFT BADGES: Format and New badges -->
+                    <!-- TOP-LEFT: Genre badge (only badge on this card) -->
                     <div class="for-you-badges-top">
-                        ${formatBadgeHtml}
-                        ${newBadgeHtml}
-                    </div>
-                    
-                    <!-- BOTTOM-LEFT BADGES: Genre badge -->
-                    <div class="for-you-badges-bottom">
                         ${genreBadgeHtml}
                     </div>
-                    
+
                     <!-- TOP-RIGHT: Recommendation score -->
                     <div class="recommendation-score ${scoreClass}" title="${escapeHtml(boostReason)}">
                         <i class="fas fa-magic"></i> ${scoreLabel}
