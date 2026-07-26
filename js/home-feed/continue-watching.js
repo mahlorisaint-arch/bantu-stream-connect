@@ -37,10 +37,7 @@ const ContinueWatching = (function() {
         
         // Load content
         await loadContent();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
+
         // Start background refresh interval
         startBackgroundRefresh();
         
@@ -68,24 +65,6 @@ const ContinueWatching = (function() {
         } catch (err) {
             console.error('Error getting current user:', err);
             currentUser = null;
-        }
-    }
-    
-    /**
-     * Setup see all button
-     */
-    function setupSeeAllButton() {
-        const seeAllBtn = document.getElementById('see-all-continue');
-        if (seeAllBtn) {
-            seeAllBtn.addEventListener('click', (e) => {
-                if (!currentUser) {
-                    e.preventDefault();
-                    showToast('Please sign in to view watch history', 'warning');
-                    window.location.href = `login.html?redirect=watch-history.html`;
-                    return;
-                }
-                // Allow default navigation to watch-history.html
-            });
         }
     }
     

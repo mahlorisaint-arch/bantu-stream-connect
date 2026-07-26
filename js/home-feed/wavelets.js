@@ -41,10 +41,7 @@ const Wavelets = (function() {
         
         // Load content
         await loadContent();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
+
         // Add scroll indicator
         addScrollIndicator();
         
@@ -69,10 +66,6 @@ const Wavelets = (function() {
                         WAVELETS
                         <span class="wavelet-badge-header">Short & Sweet</span>
                     </h2>
-                    <a href="#" class="see-all-btn" id="see-all-wavelets">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
                 </div>
                 <div id="wavelets-container" class="wavelets-container"></div>
             `;
@@ -459,19 +452,6 @@ const Wavelets = (function() {
                     if (indicator.parentNode) indicator.remove();
                 }, 300);
             }, { once: true });
-        }
-    }
-    
-    /**
-     * Setup see all button
-     */
-    function setupSeeAllButton() {
-        const seeAllBtn = document.getElementById('see-all-wavelets');
-        if (seeAllBtn) {
-            seeAllBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.href = 'https://bantustreamconnect.com/wavelets';
-            });
         }
     }
     

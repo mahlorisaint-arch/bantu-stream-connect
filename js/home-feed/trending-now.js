@@ -52,10 +52,7 @@ const TrendingNow = (function() {
         
         // Load content
         await loadContent();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
+
         // Start background refresh
         startBackgroundRefresh();
         
@@ -749,18 +746,6 @@ const TrendingNow = (function() {
                 <button class="see-all-btn" onclick="location.reload()">Retry</button>
             </div>
         `;
-    }
-    
-    /**
-     * Setup see all button
-     */
-    function setupSeeAllButton() {
-        const seeAllBtn = document.querySelector('#trending-now-section .see-all-btn');
-        if (seeAllBtn) {
-            seeAllBtn.addEventListener('click', (e) => {
-                // Allow default navigation to trending_screen
-            });
-        }
     }
     
     /**

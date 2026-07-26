@@ -77,10 +77,7 @@ const ForYou = (function() {
             
             // Load content
             await loadContent();
-            
-            // Setup see all button
-            setupSeeAllButton();
-            
+
             // Add personalization tooltip
             addPersonalizationTooltip();
             
@@ -953,19 +950,6 @@ const ForYou = (function() {
         if (discoverBtn) {
             discoverBtn.addEventListener('click', () => {
                 window.location.href = 'https://bantustreamconnect.com/discover-creator';
-            });
-        }
-    }
-    
-    /**
-     * Setup see all button
-     */
-    function setupSeeAllButton() {
-        const seeAllBtn = document.getElementById('see-all-for-you');
-        if (seeAllBtn) {
-            seeAllBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.href = 'https://bantustreamconnect.com/for-you';
             });
         }
     }

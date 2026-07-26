@@ -65,7 +65,6 @@ const BantuWavesMidnight = {
     elements: {
         section: null,
         container: null,
-        seeAllBtn: null,
         loadingIndicator: null,
         timeBadge: null,
         nowPlayingBtn: null
@@ -100,20 +99,12 @@ const BantuWavesMidnight = {
     cacheElements() {
         this.elements.section = document.getElementById(this.config.sectionId);
         this.elements.container = document.getElementById(this.config.containerId);
-        this.elements.seeAllBtn = document.querySelector(`#${this.config.sectionId} .see-all-btn`);
         this.elements.loadingIndicator = document.querySelector(`#${this.config.sectionId} .section-loading`);
         this.elements.timeBadge = document.querySelector(`#${this.config.sectionId} .midnight-time-badge`);
         this.elements.nowPlayingBtn = document.querySelector(`#${this.config.sectionId} .now-playing-btn`);
     },
 
     setupEventListeners() {
-        if (this.elements.seeAllBtn) {
-            this.elements.seeAllBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.href = 'midnight-sessions.html';
-            });
-        }
-
         if (this.elements.nowPlayingBtn) {
             this.elements.nowPlayingBtn.addEventListener('click', () => {
                 this.startMidnightPlaylist();

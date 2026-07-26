@@ -63,10 +63,7 @@ const CommunityFavorites = (function() {
         
         // Load content
         await loadContent();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
+
         // Add community tooltip
         addCommunityTooltip();
         
@@ -93,10 +90,6 @@ const CommunityFavorites = (function() {
                             <i class="fas fa-users"></i> Community Picks
                         </span>
                     </h2>
-                    <a href="#" class="see-all-btn" id="see-all-community">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
                 </div>
                 <div id="community-favorites-stats" class="community-favorites-stats"></div>
                 <div class="content-grid" id="community-favorites-grid"></div>
@@ -727,19 +720,6 @@ const CommunityFavorites = (function() {
                 <button class="see-all-btn" onclick="location.reload()">Retry</button>
             </div>
         `;
-    }
-    
-    /**
-     * Setup see all button
-     */
-    function setupSeeAllButton() {
-        const seeAllBtn = document.getElementById('see-all-community');
-        if (seeAllBtn) {
-            seeAllBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.href = 'https://bantustreamconnect.com/community-favorites';
-            });
-        }
     }
     
     /**

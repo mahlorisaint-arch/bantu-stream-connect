@@ -49,10 +49,7 @@ const LiveNow = (function() {
         
         // Load content
         await loadContent();
-        
-        // Setup see all button
-        setupSeeAllButton();
-        
+
         // Setup notification button
         setupNotificationButton();
         
@@ -80,10 +77,6 @@ const LiveNow = (function() {
                             LIVE
                         </span>
                     </h2>
-                    <button class="see-all-btn" id="see-all-live">
-                        See All
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
                 </div>
                 <div class="content-grid" id="live-streams-grid"></div>
                 <div id="no-live-streams" class="empty-state" style="display: none;">
@@ -547,18 +540,6 @@ const LiveNow = (function() {
                 <button class="see-all-btn" onclick="location.reload()">Retry</button>
             </div>
         `;
-    }
-    
-    /**
-     * Setup see all button
-     */
-    function setupSeeAllButton() {
-        const seeAllBtn = document.getElementById('see-all-live');
-        if (seeAllBtn) {
-            seeAllBtn.addEventListener('click', () => {
-                window.location.href = '/live';
-            });
-        }
     }
     
     /**

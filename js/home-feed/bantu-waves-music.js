@@ -42,7 +42,6 @@ const BantuWavesMusic = {
     elements: {
         section: null,
         container: null,
-        seeAllBtn: null,
         loadingIndicator: null
     },
 
@@ -72,18 +71,10 @@ const BantuWavesMusic = {
     cacheElements() {
         this.elements.section = document.getElementById(this.config.sectionId);
         this.elements.container = document.getElementById(this.config.containerId);
-        this.elements.seeAllBtn = document.querySelector(`#${this.config.sectionId} .see-all-btn`);
         this.elements.loadingIndicator = document.querySelector(`#${this.config.sectionId} .section-loading`);
     },
 
     setupEventListeners() {
-        if (this.elements.seeAllBtn) {
-            this.elements.seeAllBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.navigateToMusicHub();
-            });
-        }
-
         // Listen for theme changes to re-render if needed
         document.addEventListener('themeChanged', () => {
             if (this.state.musicPlaylists.length > 0) {
@@ -691,10 +682,6 @@ const BantuWavesMusic = {
     viewPlaylist(playlistId, playlistType) {
         const type = playlistType === 'album' ? 'album' : 'playlist';
         window.location.href = `content-detail?playlist_id=${playlistId}&type=${type}`;
-    },
-
-    navigateToMusicHub() {
-        window.location.href = 'music-hub.html';
     },
 
     /* ============================================ */
