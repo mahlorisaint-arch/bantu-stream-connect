@@ -107,7 +107,7 @@
   color: var(--success-color);
 }
 .space-card-badge.is-progress {
-  background: rgba(29, 78, 216, 0.18); border: 1px solid rgba(29, 78, 216, 0.45);
+  background: rgba(0, 229, 255, 0.18); border: 1px solid rgba(0, 229, 255, 0.45);
   color: var(--brand-cyan-core);
 }
 
@@ -124,8 +124,8 @@
 }
 .space-card-progress-fill {
   height: 100%;
-  background: rgba(29, 78, 216, 0.55);
-  box-shadow: 0 0 6px rgba(29, 78, 216, 0.9), 0 0 14px rgba(29, 78, 216, 0.6), 0 0 24px rgba(29, 78, 216, 0.35);
+  background: rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.9), 0 0 14px rgba(0, 229, 255, 0.6), 0 0 24px rgba(0, 229, 255, 0.35);
   transition: width 0.3s ease;
 }
 .space-card-badge.is-completed ~ .space-card-progress .space-card-progress-fill {
@@ -140,7 +140,7 @@
 .space-card:hover .space-card-play, .space-card:focus-visible .space-card-play { opacity: 1; }
 .space-card-play i {
   font-size: 22px; color: var(--brand-cyan-core);
-  text-shadow: 0 0 3px var(--brand-cyan-core), 0 0 8px var(--brand-cyan-core), 0 0 18px rgba(29, 78, 216, 0.75);
+  text-shadow: 0 0 3px var(--brand-cyan-core), 0 0 8px var(--brand-cyan-core), 0 0 18px rgba(0, 229, 255, 0.75);
 }
 
 .space-card-title {
@@ -182,7 +182,7 @@
 }
 .playlist-card-thumb .playlist-icon-placeholder {
   width: 48px; height: 48px; border-radius: 50%;
-  background: rgba(29, 78, 216, 0.18); border: 1px solid rgba(29, 78, 216, 0.45);
+  background: rgba(0, 229, 255, 0.18); border: 1px solid rgba(0, 229, 255, 0.45);
   backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
 }
 .playlist-card-thumb .playlist-icon-placeholder i { font-size: 18px; color: var(--brand-cyan-core); }

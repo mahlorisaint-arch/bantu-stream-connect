@@ -160,7 +160,7 @@
 
 .stat-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(245, 158, 11, 0.3);
+    border-color: rgba(0, 229, 255, 0.3);
 }
 
 .stat-icon {
@@ -241,7 +241,7 @@
 
 .upload-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(245, 158, 11, 0.3);
+    border-color: rgba(0, 229, 255, 0.3);
 }
 
 .upload-title {
@@ -261,7 +261,7 @@
 }
 
 .status-published {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     color: var(--warm-gold);
 }
 
@@ -315,7 +315,7 @@
 
 .upload-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+    box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Quick Actions */
@@ -338,7 +338,7 @@
 
 .action-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(245, 158, 11, 0.3);
+    border-color: rgba(0, 229, 255, 0.3);
 }
 
 .action-icon {
@@ -496,7 +496,7 @@
 
 .apply-now-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+    box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* STATE 2: Pending State */
@@ -504,7 +504,7 @@
     width: 80px;
     height: 80px;
     margin: 0 auto 20px;
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     border: 2px solid var(--warm-gold);
     border-radius: 50%;
     display: flex;
@@ -543,7 +543,7 @@
 
 .view-submission-btn:hover {
     border-color: var(--warm-gold);
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(0, 229, 255, 0.1);
 }
 
 /* STATE 3: Rejected State */
@@ -723,7 +723,7 @@
 
 .add-link-btn:hover {
     border-color: var(--warm-gold);
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(0, 229, 255, 0.1);
 }
 
 .document-upload {
@@ -737,7 +737,7 @@
 
 .document-upload:hover {
     border-color: var(--warm-gold);
-    background: rgba(245, 158, 11, 0.05);
+    background: rgba(0, 229, 255, 0.05);
 }
 
 .document-upload i {
@@ -852,7 +852,7 @@
 }
 
 .retry-btn:hover {
-    background: #3b9ce6;
+    background: #00C4DB;
     transform: translateY(-2px);
 }
 
@@ -963,7 +963,7 @@
 }
 
 .modal-btn.primary:hover {
-    background: #f97316;
+    background: #00B8D4;
     transform: translateY(-2px);
 }
 
@@ -1005,7 +1005,7 @@
 
 .toast.error { background: rgba(239, 68, 68, 0.9); }
 .toast.success { background: rgba(16, 185, 129, 0.9); }
-.toast.warning { background: rgba(245, 158, 11, 0.9); }
+.toast.warning { background: rgba(0, 229, 255, 0.9); }
 .toast.info { background: var(--card-bg); border: 1px solid var(--card-border); }
 
 @keyframes slideIn {

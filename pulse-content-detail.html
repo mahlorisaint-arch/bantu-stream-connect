@@ -23,29 +23,29 @@
             --deep-navy: #0F172A;
             --soft-white: #F8FAFC;
             --slate-grey: #94A3B8;
-            --bantu-blue: #1D4ED8;
-            --warm-gold: #F59E0B;
+            --bantu-blue: #00E5FF;
+            --warm-gold: #00E5FF;
             --error-color: #EF4444;
             --success-color: #10B981;
-            --glow-cycle-1: #00A3FF;
-            --glow-cycle-2: #0066FF;
-            --glow-cycle-3: #8B5CF6;
-            --glow-cycle-4: #EC4899;
+            --glow-cycle-1: #00E5FF;
+            --glow-cycle-2: #00E5FF;
+            --glow-cycle-3: #00E5FF;
+            --glow-cycle-4: #00E5FF;
             --card-bg: rgba(15, 23, 42, 0.6);
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
-            --active-overlay: rgba(245, 158, 11, 0.1);
-            --indigo: #4F46E5;
-            --gold-glow: rgba(245, 158, 11, 0.3);
-            --blue-glow: rgba(29, 78, 216, 0.3);
+            --active-overlay: rgba(0, 229, 255, 0.1);
+            --indigo: #00E5FF;
+            --gold-glow: rgba(0, 229, 255, 0.3);
+            --blue-glow: rgba(0, 229, 255, 0.3);
             --glass-bg: rgba(15, 23, 42, 0.8);
             --glass-border: rgba(148, 163, 184, 0.1);
             --tap-color: #10B981;
-            --comment-color: #3B82F6;
-            --repulse-color: #F59E0B;
-            --save-color: #EC4899;
-            --glowing-blue: #00A3FF;
-            --glowing-gold: #FFB300;
+            --comment-color: #00E5FF;
+            --repulse-color: #00E5FF;
+            --save-color: #00E5FF;
+            --glowing-blue: #00E5FF;
+            --glowing-gold: #00E5FF;
         }
         
         * {
@@ -190,7 +190,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            box-shadow: 0 0 32px rgba(0, 229, 255, 0.3);
             overflow: hidden;
             background: transparent;
         }
@@ -246,14 +246,14 @@
             background: var(--warm-gold);
             border-radius: 50%;
             display: block;
-            box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+            box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
             animation: pulse-gold 2s infinite;
         }
         
         @keyframes pulse-gold {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(0, 229, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
         }
         
         .user-avatar {
@@ -385,16 +385,16 @@
             position: relative;
             z-index: 10;
             backdrop-filter: blur(10px);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
             outline: none;
             flex-shrink: 0;
         }
         
         .pulse-connect-btn:hover,
         .pulse-connect-btn:focus {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(0, 229, 255, 0.1);
             transform: scale(1.1);
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.4);
         }
         
         .pulse-connect-btn.connected {
@@ -508,18 +508,18 @@
             cursor: pointer;
             display: inline-block;
             padding: 4px 12px;
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(0, 229, 255, 0.1);
             border-radius: 12px;
-            border: 1px solid rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(0, 229, 255, 0.2);
         }
         
         .series-label:hover {
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(0, 229, 255, 0.2);
         }
         
         /* NEW: Continue Series Button in Series Label */
         .continue-series-btn {
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(0, 229, 255, 0.2);
             border: 1px solid var(--warm-gold);
             color: var(--warm-gold);
             padding: 8px 16px;
@@ -535,9 +535,9 @@
         }
         
         .continue-series-btn:hover {
-            background: rgba(245, 158, 11, 0.3);
+            background: rgba(0, 229, 255, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 229, 255, 0.2);
         }
         
         /* NEW: Series Navigation */
@@ -549,12 +549,12 @@
             background: rgba(15, 23, 42, 0.6);
             border-radius: 12px;
             margin: 0 20px 16px;
-            border: 1px solid rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(0, 229, 255, 0.2);
         }
         
         .series-prev, .series-next {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.3);
             color: var(--warm-gold);
             padding: 8px 16px;
             border-radius: 8px;
@@ -567,7 +567,7 @@
         
         .series-prev:hover:not(:disabled),
         .series-next:hover:not(:disabled) {
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(0, 229, 255, 0.2);
             transform: translateY(-1px);
         }
         
@@ -659,7 +659,7 @@
         
         .video-control-btn {
             background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            border: 1px solid rgba(0, 229, 255, 0.3);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -674,7 +674,7 @@
         }
         
         .video-control-btn:hover {
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(0, 229, 255, 0.2);
             transform: scale(1.1);
         }
         
@@ -713,7 +713,7 @@
         
         /* NEW: Re-Pulse Context Section */
         .repulse-context {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(0, 229, 255, 0.1);
             border-left: 3px solid var(--warm-gold);
             padding: 12px 16px;
             margin: 0 20px 16px;
@@ -733,7 +733,7 @@
             display: none;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid rgba(245, 158, 11, 0.2);
+            border-top: 1px solid rgba(0, 229, 255, 0.2);
         }
         
         .repulse-hidden-contexts.expanded {
@@ -756,7 +756,7 @@
         }
         
         .repulse-expand-toggle:hover {
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(0, 229, 255, 0.1);
         }
         
         /* NEW: Mention styling */
@@ -824,7 +824,7 @@
         }
         
         .action-button:focus-visible {
-            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.3);
         }
         
         /* Tap Button */
@@ -858,8 +858,8 @@
         /* Re-Pulse Button */
         .repulse-btn.repulsed {
             color: var(--repulse-color);
-            border-color: rgba(245, 158, 11, 0.3);
-            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(0, 229, 255, 0.3);
+            background: rgba(0, 229, 255, 0.1);
         }
         
         /* NEW: Pulse Stats */
@@ -1190,7 +1190,7 @@
         
         .post-comment-btn:hover:not(:disabled) {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
         }
         
         .post-comment-btn:disabled {
@@ -1594,7 +1594,7 @@
         
         .modal-btn-post:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
         }
         
         .modal-repulse-btn {
@@ -1602,7 +1602,7 @@
             padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--repulse-color);
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(0, 229, 255, 0.1);
             color: var(--repulse-color);
             font-weight: 600;
             cursor: pointer;
@@ -1622,7 +1622,7 @@
         
         .modal-repulse-btn.soft:hover {
             border-color: var(--repulse-color);
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(0, 229, 255, 0.2);
             color: var(--repulse-color);
         }
         
@@ -1685,7 +1685,7 @@
         
         .continue-series-option.active {
             border-color: var(--warm-gold);
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(0, 229, 255, 0.1);
         }
         
         .continue-series-option h4 {
@@ -1906,11 +1906,11 @@
                     <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="40" height="40" rx="8" fill="#0F172A"/>
                         <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <circle cx="32" cy="26" r="3" fill="#00E5FF"/>
                         <defs>
                             <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#1D4ED8"/>
-                                <stop offset="1" stop-color="#F59E0B"/>
+                                <stop stop-color="#00E5FF"/>
+                                <stop offset="1" stop-color="#00E5FF"/>
                             </linearGradient>
                         </defs>
                     </svg>
@@ -4150,7 +4150,7 @@
                                 ${hasMultiple ? `
                                     <div class="repulse-hidden-contexts" id="hidden-repulses-${pulseId}">
                                         ${otherContextual.map(ctx => `
-                                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(245, 158, 11, 0.2);">
+                                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 229, 255, 0.2);">
                                                 <div class="repulse-context-user">@${ctx.user_profiles?.username || 'user'} re-pulsed with context:</div>
                                                 <div>${ctx.context}</div>
                                             </div>
@@ -4175,7 +4175,7 @@
                             ${hasMultiple ? `
                                 <div class="repulse-hidden-contexts" id="hidden-repulses-${pulseId}">
                                     ${otherRepulses.map(ctx => `
-                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(245, 158, 11, 0.2);">
+                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0, 229, 255, 0.2);">
                                             <div class="repulse-context-user">@${ctx.user_profiles?.username || 'user'} re-pulsed this pulse</div>
                                         </div>
                                     `).join('')}

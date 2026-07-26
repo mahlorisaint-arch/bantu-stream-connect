@@ -45,19 +45,19 @@
 .hero-badges { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .badge-feature {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(29, 78, 216, 0.15); border: 1px solid rgba(29, 78, 216, 0.35);
+  background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.35);
   color: var(--brand-cyan-core); padding: 4px 10px; border-radius: 6px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
 }
 .badge-premium {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4);
   color: var(--warm-gold); padding: 4px 10px; border-radius: 6px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
 }
 .badge-leaving {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4);
   color: var(--warm-gold); padding: 4px 10px; border-radius: 6px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
 }
@@ -86,9 +86,9 @@
 }
 .btn-primary.btn-glow {
   background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
-  color: white; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+  color: white; box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3);
 }
-.btn-primary.btn-glow:hover { box-shadow: 0 6px 30px rgba(245, 158, 11, 0.5); transform: translateY(-2px); }
+.btn-primary.btn-glow:hover { box-shadow: 0 6px 30px rgba(0, 229, 255, 0.5); transform: translateY(-2px); }
 .btn-secondary {
   display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px;
   background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
@@ -235,8 +235,8 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(245, 158, 11, 0.18);
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(0, 229, 255, 0.18);
+  border: 1px solid rgba(0, 229, 255, 0.45);
   color: var(--warm-gold);
   font-size: 11px;
   font-weight: 700;
@@ -276,7 +276,7 @@
 .upload-card:hover .media-hover-play { opacity: 1; }
 .media-hover-play i {
   font-size: 22px; color: var(--brand-cyan-core);
-  text-shadow: 0 0 8px rgba(29, 78, 216, 0.9), 0 0 20px rgba(29, 78, 216, 0.6), 0 0 36px rgba(29, 78, 216, 0.35);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.9), 0 0 20px rgba(0, 229, 255, 0.6), 0 0 36px rgba(0, 229, 255, 0.35);
 }
 
 /* ===== BADGES - transparent glassmorphic, tinted by the badge's own color
@@ -290,7 +290,7 @@
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 .upload-card__badge.leaving-soon {
-  background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.45); color: var(--warm-gold);
+  background: rgba(0, 229, 255, 0.18); border: 1px solid rgba(0, 229, 255, 0.45); color: var(--warm-gold);
 }
 .upload-card__duration {
   position: absolute; bottom: 6px; right: 6px; font-size: 11px; color: white;
@@ -328,8 +328,8 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  background: rgba(245, 158, 11, 0.18);
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(0, 229, 255, 0.18);
+  border: 1px solid rgba(0, 229, 255, 0.45);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   color: var(--warm-gold);
   font-size: 9px;
@@ -434,7 +434,7 @@
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
   padding: 20px; cursor: pointer; transition: all 0.3s ease;
 }
-.world-card:hover { border-color: var(--brand-cyan-core); box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); transform: translateY(-4px); }
+.world-card:hover { border-color: var(--brand-cyan-core); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); transform: translateY(-4px); }
 .world-card-icon { font-size: 24px; color: var(--brand-cyan-core); margin-bottom: 12px; }
 .world-card h4 { font-size: 15px; color: var(--soft-white); margin: 0 0 6px; font-weight: 600; }
 .world-card p { font-size: 12px; color: var(--slate-grey); margin: 0; line-height: 1.4; }

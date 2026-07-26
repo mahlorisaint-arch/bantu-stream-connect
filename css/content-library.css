@@ -354,7 +354,7 @@ body {
 }
 
 .profile-list-item.active {
-  background: rgba(29, 78, 216, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   border-left: 3px solid var(--bantu-blue);
 }
 
@@ -472,7 +472,7 @@ body {
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
   border-color: transparent;
   color: var(--soft-white);
-  box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
 }
 
 /* Hero Section */
@@ -532,7 +532,7 @@ body {
 
 .hero-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Content Sections Base */
@@ -597,7 +597,7 @@ body {
 .content-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(0, 229, 255, 0.3);
 }
 
 .card-thumbnail {
@@ -647,7 +647,7 @@ body {
 .play-icon {
   width: 50px;
   height: 50px;
-  background: rgba(245, 158, 11, 0.9);
+  background: rgba(0, 229, 255, 0.9);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -685,11 +685,11 @@ body {
 }
 
 .badge-trending {
-  background: rgba(245, 158, 11, 0.9);
+  background: rgba(0, 229, 255, 0.9);
 }
 
 .badge-new {
-  background: rgba(29, 78, 216, 0.9);
+  background: rgba(0, 229, 255, 0.9);
 }
 
 .card-badge.badge-duration {
@@ -741,7 +741,7 @@ body {
 
 .creator-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.4);
 }
 
 .card-rating {
@@ -901,7 +901,7 @@ body {
 }
 
 .toast.warning {
-  background: rgba(245, 158, 11, 0.9);
+  background: rgba(0, 229, 255, 0.9);
 }
 
 .toast.info {
@@ -978,7 +978,7 @@ body {
 
 .back-to-top:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 8px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Sidebar Menu */

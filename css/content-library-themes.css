@@ -4,21 +4,21 @@
   --deep-navy: #0F172A;
   --soft-white: #F8FAFC;
   --slate-grey: #94A3B8;
-  --bantu-blue: #1D4ED8;
-  --warm-gold: #F59E0B;
+  --bantu-blue: #00E5FF;
+  --warm-gold: #00E5FF;
   --error-color: #EF4444;
   --success-color: #10B981;
-  --glow-cycle-1: #00A3FF;
-  --glow-cycle-2: #0066FF;
-  --glow-cycle-3: #8B5CF6;
-  --glow-cycle-4: #EC4899;
+  --glow-cycle-1: #00E5FF;
+  --glow-cycle-2: #00E5FF;
+  --glow-cycle-3: #00E5FF;
+  --glow-cycle-4: #00E5FF;
   --card-bg: rgba(15, 23, 42, 0.6);
   --card-border: rgba(148, 163, 184, 0.2);
   --hover-overlay: rgba(255, 255, 255, 0.05);
-  --active-overlay: rgba(245, 158, 11, 0.1);
+  --active-overlay: rgba(0, 229, 255, 0.1);
   --indigo: #4F46E5;
-  --gold-glow: rgba(245, 158, 11, 0.3);
-  --blue-glow: rgba(29, 78, 216, 0.3);
+  --gold-glow: rgba(0, 229, 255, 0.3);
+  --blue-glow: rgba(0, 229, 255, 0.3);
 }
 
 /* Theme Variants */
@@ -83,6 +83,6 @@ body.theme-high-contrast {
 }
 
 .theme-option.active {
-  background: rgba(29, 78, 216, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   color: var(--bantu-blue);
 }

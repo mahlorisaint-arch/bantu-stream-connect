@@ -16,7 +16,7 @@ transition: all .3s ease;
 }
 .form-input:focus {
 outline: none; border-color: var(--warm-gold);
-box-shadow: 0 0 0 2px rgba(245,158,11,.2);
+box-shadow: 0 0 0 2px rgba(0, 229, 255,.2);
 }
 textarea.form-input { min-height: 120px; resize: vertical; }
 select.form-input { cursor: pointer; }

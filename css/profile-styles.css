@@ -4,30 +4,30 @@
     --deep-navy: #0F172A;
     --soft-white: #F8FAFC;
     --slate-grey: #94A3B8;
-    --bantu-blue: #1D4ED8;
-    --warm-gold: #F59E0B;
+    --bantu-blue: #00E5FF;
+    --warm-gold: #00E5FF;
     --error-color: #EF4444;
     --success-color: #10B981;
-    --glow-cycle-1: #00A3FF;
-    --glow-cycle-2: #0066FF;
-    --glow-cycle-3: #8B5CF6;
-    --glow-cycle-4: #EC4899;
+    --glow-cycle-1: #00E5FF;
+    --glow-cycle-2: #00E5FF;
+    --glow-cycle-3: #00E5FF;
+    --glow-cycle-4: #00E5FF;
     --card-bg: rgba(15, 23, 42, 0.7);
     --card-border: rgba(148, 163, 184, 0.2);
     --hover-overlay: rgba(255, 255, 255, 0.05);
-    --active-overlay: rgba(245, 158, 11, 0.1);
-    --deep-indigo: #4F46E5;
-    --subtle-gold: #F59E0B;
+    --active-overlay: rgba(0, 229, 255, 0.1);
+    --deep-indigo: #00E5FF;
+    --subtle-gold: #00E5FF;
     --muted-gray: #94a3b8;
-    --indigo-glow: rgba(79, 70, 229, 0.5);
-    --gold-glow: rgba(245, 158, 11, 0.3);
+    --indigo-glow: rgba(0, 229, 255, 0.5);
+    --gold-glow: rgba(0, 229, 255, 0.3);
     --glass-bg: rgba(15, 23, 42, 0.8);
     --glass-border: rgba(255, 255, 255, 0.1);
     /* New futuristic colors */
-    --futuristic-gold: #FFD700;
-    --futuristic-blue: #00E0FF;
-    --glowing-gold: #FFB300;
-    --glowing-blue: #0095FF;
+    --futuristic-gold: #00E5FF;
+    --futuristic-blue: #00E5FF;
+    --glowing-gold: #00E5FF;
+    --glowing-blue: #00E5FF;
 }
 
 * {
@@ -204,14 +204,14 @@ body {
     background: var(--warm-gold);
     border-radius: 50%;
     display: block;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
     animation: pulse-gold 2s infinite;
 }
 
 @keyframes pulse-gold {
-    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-    70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(0, 229, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
 }
 
 .user-avatar {
@@ -326,16 +326,16 @@ body {
 
 @keyframes gold-ripple {
     0% { 
-        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4),
-                   inset 0 0 0 0 rgba(245, 158, 11, 0.1);
+        box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4),
+                   inset 0 0 0 0 rgba(0, 229, 255, 0.1);
     }
     50% { 
-        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0),
-                   inset 0 0 0 4px rgba(245, 158, 11, 0.1);
+        box-shadow: 0 0 0 8px rgba(0, 229, 255, 0),
+                   inset 0 0 0 4px rgba(0, 229, 255, 0.1);
     }
     100% { 
-        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0),
-                   inset 0 0 0 0 rgba(245, 158, 11, 0);
+        box-shadow: 0 0 0 0 rgba(0, 229, 255, 0),
+                   inset 0 0 0 0 rgba(0, 229, 255, 0);
     }
 }
 
@@ -392,19 +392,19 @@ body {
 
 .action-btn:hover {
     border-color: var(--bantu-blue);
-    background: rgba(29, 78, 216, 0.1);
+    background: rgba(0, 229, 255, 0.1);
     transform: translateY(-2px);
 }
 
 .action-btn.primary {
     background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
     border: none;
-    box-shadow: 0 4px 20px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3);
 }
 
 .action-btn.primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(29, 78, 216, 0.4);
+    box-shadow: 0 6px 25px rgba(0, 229, 255, 0.4);
 }
 
 .action-btn.connected {
@@ -524,7 +524,7 @@ body {
 
 .tab.active {
     color: var(--soft-white);
-    background: rgba(29, 78, 216, 0.1);
+    background: rgba(0, 229, 255, 0.1);
 }
 
 .tab.active::after {
@@ -1163,7 +1163,7 @@ body {
 
 .avatar-upload-option:hover {
     border-color: var(--warm-gold);
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(0, 229, 255, 0.1);
     transform: translateY(-2px);
 }
 
@@ -1202,12 +1202,12 @@ body {
 .btn-primary {
     background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
     color: var(--soft-white);
-    box-shadow: 0 4px 20px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(29, 78, 216, 0.4);
+    box-shadow: 0 6px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Toast Notifications - Glassmorphism */
@@ -1384,12 +1384,12 @@ body {
     display: inline-block;
     margin-left: 8px;
     padding: 4px 10px;
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     color: var(--warm-gold);
     border-radius: 12px;
     font-size: 10px;
     font-weight: 600;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    border: 1px solid rgba(0, 229, 255, 0.3);
     backdrop-filter: blur(10px);
 }
 

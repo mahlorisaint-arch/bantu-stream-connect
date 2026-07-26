@@ -25,14 +25,14 @@
   --deep-navy: #0F172A;
   --soft-white: #F8FAFC;
   --slate-grey: #94A3B8;
-  --bantu-blue: #1D4ED8;
-  --warm-gold: #F59E0B;
+  --bantu-blue: #00E5FF;
+  --warm-gold: #00E5FF;
   --error-color: #EF4444;
   --success-color: #10B981;
-  --glow-blue-1: #00A3FF;
-  --glow-blue-2: #0066FF;
-  --glow-purple: #8B5CF6;
-  --glow-pink: #EC4899;
+  --glow-blue-1: #00E5FF;
+  --glow-blue-2: #00E5FF;
+  --glow-purple: #00E5FF;
+  --glow-pink: #00E5FF;
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -449,7 +449,7 @@ button:focus-visible, a:focus-visible {
 
 .watch-now-btn {
   padding: 15px 40px;
-  background: linear-gradient(135deg, var(--warm-gold) 0%, #f97316 100%);
+  background: linear-gradient(135deg, var(--warm-gold) 0%, #00E5FF 100%);
   border: none;
   border-radius: 12px;
   color: var(--deep-black);
@@ -463,7 +463,7 @@ button:focus-visible, a:focus-visible {
 
 .watch-now-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Content Grids */

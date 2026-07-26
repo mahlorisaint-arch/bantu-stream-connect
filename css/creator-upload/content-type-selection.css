@@ -8,15 +8,15 @@ border-radius: 12px;
 cursor: pointer; transition: all .3s ease;
 text-align: center; font-size: 14px; font-weight: 500;
 }
-.media-type-option:hover { border-color: var(--warm-gold); background: rgba(245,158,11,.05); }
+.media-type-option:hover { border-color: var(--warm-gold); background: rgba(0, 229, 255,.05); }
 .media-type-option.selected {
 border-color: var(--warm-gold);
-background: rgba(245,158,11,.1); color: var(--warm-gold);
+background: rgba(0, 229, 255,.1); color: var(--warm-gold);
 }
 .media-type-option i { display: block; font-size: 24px; margin-bottom: 8px; }
 
 .shorts-info-box {
-background: rgba(245,158,11,.1); border: 1px solid var(--warm-gold);
+background: rgba(0, 229, 255,.1); border: 1px solid var(--warm-gold);
 border-radius: 12px; padding: 15px; margin: 15px 0; display: none;
 }
 .shorts-info-box.active { display: block; }

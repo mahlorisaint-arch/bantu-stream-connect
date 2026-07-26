@@ -103,7 +103,7 @@
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+  background: linear-gradient(135deg, #00E5FF, #00E5FF);
   object-fit: cover;
   /* Added: prevent broken image flash */
   flex-shrink: 0;
@@ -156,11 +156,11 @@
 
 .player-controls button:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #F59E0B;
+  color: #00E5FF;
 }
 
 #player-play-pause {
-  background: #F59E0B;
+  background: #00E5FF;
   color: #0A0A0A;
   width: 32px;
   height: 32px;
@@ -168,7 +168,7 @@
 }
 
 #player-play-pause:hover {
-  background: #e08e0b;
+  background: #00C4DB;
   color: #0A0A0A;
   transform: scale(1.05);
 }
@@ -186,7 +186,7 @@
 
 #player-bar {
   height: 100%;
-  background: #F59E0B;
+  background: #00E5FF;
   width: 0%;
   transition: width 0.1s linear;
   border-radius: 0 0 0 60px;
@@ -314,7 +314,7 @@
 .player-track-info img[src="#"],
 .player-track-info img:not([src]) {
   opacity: 0.6;
-  background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+  background: linear-gradient(135deg, #00E5FF, #00E5FF);
 }
 
 /* Glass reflection effect (extra polish) */

@@ -23,22 +23,22 @@
             --deep-navy: #0F172A;
             --soft-white: #F8FAFC;
             --slate-grey: #94A3B8;
-            --bantu-blue: #1D4ED8;
-            --warm-gold: #F59E0B;
-            --gold-light: rgba(245, 158, 11, 0.1);
-            --gold-medium: rgba(245, 158, 11, 0.3);
-            --gold-glow: rgba(245, 158, 11, 0.5);
+            --bantu-blue: #00E5FF;
+            --warm-gold: #00E5FF;
+            --gold-light: rgba(0, 229, 255, 0.1);
+            --gold-medium: rgba(0, 229, 255, 0.3);
+            --gold-glow: rgba(0, 229, 255, 0.5);
             --error-color: #EF4444;
             --success-color: #10B981;
-            --glow-cycle-1: #00A3FF;
-            --glow-cycle-2: #0066FF;
-            --glow-cycle-3: #8B5CF6;
-            --glow-cycle-4: #EC4899;
+            --glow-cycle-1: #00E5FF;
+            --glow-cycle-2: #00E5FF;
+            --glow-cycle-3: #00E5FF;
+            --glow-cycle-4: #00E5FF;
             --card-bg: rgba(15, 23, 42, 0.6);
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
-            --unread-bg: rgba(245, 158, 11, 0.08);
-            --unread-border: rgba(245, 158, 11, 0.3);
+            --unread-bg: rgba(0, 229, 255, 0.08);
+            --unread-border: rgba(0, 229, 255, 0.3);
             --soft-indigo: rgba(79, 70, 229, 0.1);
             --indigo-border: rgba(79, 70, 229, 0.3);
             --indigo-glow: rgba(79, 70, 229, 0.2);
@@ -282,7 +282,7 @@
             left: 0;
             width: 100%;
             height: 2px;
-            background: linear-gradient(to right, var(--warm-gold), #FBBF24);
+            background: linear-gradient(to right, var(--warm-gold), #00E5FF);
             box-shadow: 0 0 8px var(--gold-glow);
         }
         
@@ -320,7 +320,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            border-left: 3px solid #4F46E5;
+            border-left: 3px solid #00E5FF;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
@@ -331,7 +331,7 @@
         
         .founder-welcome-notification.unread {
             background: rgba(79, 70, 229, 0.2);
-            border-left: 3px solid #6366F1;
+            border-left: 3px solid #00E5FF;
             box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
         }
         
@@ -350,7 +350,7 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            background: linear-gradient(135deg, #00E5FF, #00E5FF);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -444,7 +444,7 @@
             display: inline-block;
             width: 8px;
             height: 8px;
-            background: #6366F1;
+            background: #00E5FF;
             border-radius: 50%;
             box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
             animation: pulse-indigo 2s infinite;
@@ -496,7 +496,7 @@
         }
         
         .notification-avatar.system {
-            background: linear-gradient(135deg, #8B5CF6, #EC4899);
+            background: linear-gradient(135deg, #00E5FF, #00E5FF);
         }
         
         .notification-avatar.creator {
@@ -563,8 +563,8 @@
         
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 var(--gold-glow); }
-            70% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+            70% { box-shadow: 0 0 0 4px rgba(0, 229, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
         }
         
         /* Grouped Notification */
@@ -814,7 +814,7 @@
         
         .toast.warning {
             background: var(--warm-gold);
-            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 229, 255, 0.3);
         }
         
         @keyframes slideUp {
@@ -906,7 +906,7 @@
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: #FBBF24;
+            background: #00E5FF;
         }
         
         /* Responsive */
@@ -992,13 +992,13 @@
         
         .notification-type.comment {
             background: rgba(59, 130, 246, 0.2);
-            color: #3B82F6;
+            color: #00E5FF;
             border: 1px solid rgba(59, 130, 246, 0.3);
         }
         
         .notification-type.comment_like {
             background: rgba(139, 92, 246, 0.2);
-            color: #8B5CF6;
+            color: #00E5FF;
             border: 1px solid rgba(139, 92, 246, 0.3);
         }
         
@@ -1015,9 +1015,9 @@
         }
         
         .notification-type.share {
-            background: rgba(245, 158, 11, 0.2);
-            color: #F59E0B;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(0, 229, 255, 0.2);
+            color: #00E5FF;
+            border: 1px solid rgba(0, 229, 255, 0.3);
         }
         
         .notification-type.creator {
@@ -1028,7 +1028,7 @@
         
         .notification-type.system {
             background: rgba(99, 102, 241, 0.2);
-            color: #6366F1;
+            color: #00E5FF;
             border: 1px solid rgba(99, 102, 241, 0.3);
         }
         
@@ -1072,14 +1072,14 @@
             align-items: center;
             justify-content: center;
             font-size: 18px;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
             z-index: 90;
             transition: all 0.3s ease;
         }
         
         .refresh-btn:hover {
             transform: rotate(30deg);
-            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 6px 16px rgba(0, 229, 255, 0.4);
         }
         
         .refresh-btn:active {
@@ -1144,7 +1144,7 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: linear-gradient(90deg, transparent, #6366F1, #8B5CF6, #EC4899, #6366F1, transparent);
+            background: linear-gradient(90deg, transparent, #00E5FF, #00E5FF, #00E5FF, #00E5FF, transparent);
             animation: scanLine 3s linear infinite;
         }
         
@@ -1158,7 +1158,7 @@
             font-weight: 700;
             color: var(--soft-white);
             margin-bottom: 8px;
-            background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+            background: linear-gradient(90deg, #00E5FF, #00E5FF, #00E5FF);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -1220,7 +1220,7 @@
             background: rgba(99, 102, 241, 0.1);
             padding: 15px;
             border-radius: 10px;
-            border-left: 3px solid #6366F1;
+            border-left: 3px solid #00E5FF;
             margin: 20px 0;
             font-style: italic;
         }
@@ -1253,7 +1253,7 @@
         }
         
         .hologram-close-btn {
-            background: linear-gradient(135deg, #6366F1, #4F46E5);
+            background: linear-gradient(135deg, #00E5FF, #00E5FF);
             color: white;
             border: none;
             padding: 12px 40px;
@@ -1291,7 +1291,7 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            background: linear-gradient(135deg, #00E5FF, #00E5FF);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1357,11 +1357,11 @@
                     <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="40" height="40" rx="8" fill="#0F172A"/>
                         <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <circle cx="32" cy="26" r="3" fill="#00E5FF"/>
                         <defs>
                             <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#F59E0B"/>
-                                <stop offset="1" stop-color="#1D4ED8"/>
+                                <stop stop-color="#00E5FF"/>
+                                <stop offset="1" stop-color="#00E5FF"/>
                             </linearGradient>
                         </defs>
                     </svg>

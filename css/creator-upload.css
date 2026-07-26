@@ -29,7 +29,7 @@ margin-bottom: 30px; text-align: center;
 .creator-streak {
 position: absolute;
 top: 20px; right: 20px;
-background: rgba(245,158,11,.1);
+background: rgba(0, 229, 255,.1);
 border: 1px solid var(--warm-gold);
 color: var(--warm-gold);
 padding: 8px 16px;
@@ -62,7 +62,7 @@ display: flex; align-items: center; gap: 10px;
 }
 .toast.error { background: rgba(239,68,68,.9); }
 .toast.success { background: rgba(16,185,129,.9); }
-.toast.info { background: rgba(245,158,11,.9); }
+.toast.info { background: rgba(0, 229, 255,.9); }
 
 /* Auth Modal */
 .auth-modal {
@@ -116,7 +116,7 @@ cursor: pointer;
 transition: all 0.2s ease;
 }
 .tag-btn:hover {
-background: rgba(245,158,11,0.2);
+background: rgba(0, 229, 255,0.2);
 border-color: var(--warm-gold);
 }
 .tag-btn.selected {

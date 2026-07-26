@@ -11,9 +11,9 @@
   /* This cyan accent set isn't defined in shared-components.css — copied
      verbatim from creator-channel.css's :root (the primary design
      reference for this pass), not invented. */
-  --brand-cyan-core: #34E7FF;
-  --brand-cyan-main: #16D6FF;
-  --brand-cyan-outer: #00C8FF;
+  --brand-cyan-core: #00E5FF;
+  --brand-cyan-main: #00E5FF;
+  --brand-cyan-outer: #00E5FF;
   --brand-cyan-bloom: rgba(125, 239, 255, 0.25);
   --brand-cyan-deep: rgba(0, 153, 255, 0.15);
   --brand-glow-stack:
@@ -35,7 +35,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 /* ===== USER STREAK ===== */
 .user-streak {
   display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4);
   padding: 6px 14px; border-radius: 30px; color: var(--warm-gold);
   font-size: 13px; font-weight: 600; margin-bottom: 15px; cursor: pointer;
 }
@@ -96,15 +96,15 @@ html, body { overflow-x: hidden; max-width: 100%; }
 /* Watch Now / Listen Now / Explore All — transparent glassmorphic, glowing
    with --bantu-blue (the platform's actual blue brand token), not a solid fill. */
 .watch-now-btn, .explore-btn {
-  padding: 12px 28px; background: rgba(29, 78, 216, 0.15); backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px); color: var(--soft-white); border: 1px solid rgba(29, 78, 216, 0.5);
+  padding: 12px 28px; background: rgba(0, 229, 255, 0.15); backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); color: var(--soft-white); border: 1px solid rgba(0, 229, 255, 0.5);
   border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.25s ease; font-size: 14px;
   display: inline-flex; align-items: center; gap: 8px; width: fit-content;
-  box-shadow: 0 0 20px rgba(29, 78, 216, 0.4), 0 0 40px rgba(29, 78, 216, 0.15);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4), 0 0 40px rgba(0, 229, 255, 0.15);
 }
 .watch-now-btn:hover, .explore-btn:hover {
-  background: rgba(29, 78, 216, 0.25); transform: translateY(-2px);
-  box-shadow: 0 0 28px rgba(29, 78, 216, 0.6), 0 0 56px rgba(29, 78, 216, 0.25);
+  background: rgba(0, 229, 255, 0.25); transform: translateY(-2px);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.6), 0 0 56px rgba(0, 229, 255, 0.25);
 }
 
 /* ===== STANDARD 16:9 CARDS — same class names/shape/behavior as
@@ -195,7 +195,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 /* ===== INFINITE SCROLL LOADER ===== */
 .infinite-scroll-loader { display: none; text-align: center; padding: 30px; }
 .infinite-spinner {
-  width: 32px; height: 32px; margin: 0 auto 10px; border: 3px solid rgba(245,158,11,0.2);
+  width: 32px; height: 32px; margin: 0 auto 10px; border: 3px solid rgba(0, 229, 255,0.2);
   border-top-color: var(--warm-gold); border-radius: 50%; animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }

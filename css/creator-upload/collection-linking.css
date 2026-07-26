@@ -35,7 +35,7 @@ transition: border-color .2s ease;
 width: 40px;
 height: 40px;
 border-radius: 8px;
-background: rgba(245,158,11,.1);
+background: rgba(0, 229, 255,.1);
 display: flex;
 align-items: center;
 justify-content: center;
@@ -78,10 +78,10 @@ width: fit-content;
 background: rgba(148,163,184,.15);
 color: var(--slate-grey);
 }
-.batch-row[data-status="uploading"] .batch-row-status-badge { background: rgba(29,78,216,.15); color: var(--bantu-blue); }
+.batch-row[data-status="uploading"] .batch-row-status-badge { background: rgba(0, 229, 255,.15); color: var(--bantu-blue); }
 .batch-row[data-status="done"] .batch-row-status-badge { background: rgba(16,185,129,.15); color: var(--success-color); }
 .batch-row[data-status="failed"] .batch-row-status-badge { background: rgba(239,68,68,.15); color: var(--error-color); }
-.batch-row[data-status="published-unlinked"] .batch-row-status-badge { background: rgba(245,158,11,.15); color: var(--warm-gold); }
+.batch-row[data-status="published-unlinked"] .batch-row-status-badge { background: rgba(0, 229, 255,.15); color: var(--warm-gold); }
 
 .batch-row-progress {
 grid-column: 1 / -1;

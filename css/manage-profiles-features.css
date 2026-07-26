@@ -61,7 +61,7 @@
     font-size: var(--font-sm);
     margin-top: var(--spacing-md);
     padding: var(--spacing-xs);
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(0, 229, 255, 0.1);
     border-radius: calc(0.5rem * var(--ui-scale));
 }
 
@@ -244,7 +244,7 @@
 }
 
 .watch-party-content-item.selected {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     border-left: 3px solid var(--warm-gold);
 }
 
@@ -289,7 +289,7 @@
 }
 
 .tip-option:hover {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(0, 229, 255, 0.2);
     border-color: var(--warm-gold);
     transform: translateY(calc(-0.125rem * var(--ui-scale)));
 }
@@ -325,7 +325,7 @@
 }
 
 .badge-item.earned {
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(0, 229, 255, 0.1);
     border-color: var(--warm-gold);
 }
 

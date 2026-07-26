@@ -8,15 +8,15 @@
    ✅ CSS VARIABLES
    ============================================ */
 :root {
-  --bantu-blue: #1E4AE9;
-  --warm-gold: #FFB347;
+  --bantu-blue: #00E5FF;
+  --warm-gold: #00E5FF;
   --deep-navy: #0A192F;
   --slate-grey: #94A3B8;
   --soft-white: #F8FAFC;
   --card-bg: rgba(30, 41, 59, 0.7);
   --card-border: rgba(255, 255, 255, 0.1);
   --success-color: #10b981;
-  --warning-color: #f59e0b;
+  --warning-color: #00E5FF;
   --error-color: #ef4444;
 }
 
@@ -67,7 +67,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, var(--bantu-blue), #3b82f6);
+  background: linear-gradient(135deg, var(--bantu-blue), #00E5FF);
   color: white;
   border: none;
   border-radius: 10px;
@@ -75,13 +75,13 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
 }
 
 .export-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.5);
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5);
+  background: linear-gradient(135deg, #00E5FF, #00E5FF);
 }
 
 .export-btn:disabled {
@@ -259,9 +259,9 @@
 }
 
 .badge.warning {
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
-  border: 1px solid #f59e0b;
+  background: rgba(0, 229, 255, 0.2);
+  color: #00E5FF;
+  border: 1px solid #00E5FF;
 }
 
 /* ============================================
@@ -424,7 +424,7 @@
 
 .action-btn {
   padding: 6px 12px;
-  background: rgba(29, 78, 216, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   border: 1px solid var(--bantu-blue);
   border-radius: 6px;
   color: var(--bantu-blue);
@@ -958,7 +958,7 @@
 }
 
 .error-state .btn:hover {
-  background: #2563eb;
+  background: #00E5FF;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(30, 74, 233, 0.3);
 }
@@ -1057,15 +1057,15 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--bantu-blue), #3b82f6);
+  background: linear-gradient(135deg, var(--bantu-blue), #00E5FF);
   color: white;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.5);
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5);
+  background: linear-gradient(135deg, #00E5FF, #00E5FF);
 }
 
 .btn-secondary {

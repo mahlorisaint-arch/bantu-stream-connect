@@ -109,7 +109,7 @@ input:checked + .toggle-slider:before { transform: translateX(22px); }
 }
 .pref-chip:hover { border-color: var(--warm-gold); color: var(--soft-white); }
 .pref-chip.is-selected {
-  background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.5); color: var(--warm-gold);
+  background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.5); color: var(--warm-gold);
 }
 
 /* ===== APPEARANCE ===== */

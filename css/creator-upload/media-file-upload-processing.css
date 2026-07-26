@@ -6,7 +6,7 @@ text-align: center; cursor: pointer;
 transition: all .3s ease; margin-bottom: 20px;
 background: rgba(255,255,255,.05);
 }
-.upload-zone:hover { border-color: var(--warm-gold); background: rgba(245,158,11,.05); }
+.upload-zone:hover { border-color: var(--warm-gold); background: rgba(0, 229, 255,.05); }
 .upload-zone-icon { font-size: 48px; color: var(--warm-gold); margin-bottom: 15px; }
 .upload-zone-text { font-size: 16px; color: var(--slate-grey); margin-bottom: 10px; }
 .upload-zone-hint { font-size: 14px; color: rgba(255,255,255,.5); }

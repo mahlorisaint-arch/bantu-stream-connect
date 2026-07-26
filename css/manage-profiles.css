@@ -12,14 +12,14 @@
   --deep-navy: #0F172A;
   --soft-white: #F8FAFC;
   --slate-grey: #94A3B8;
-  --bantu-blue: #1D4ED8;
-  --warm-gold: #F59E0B;
+  --bantu-blue: #00E5FF;
+  --warm-gold: #00E5FF;
   --error-color: #EF4444;
   --success-color: #10B981;
-  --glow-cycle-1: #00A3FF;
-  --glow-cycle-2: #0066FF;
-  --glow-cycle-3: #8B5CF6;
-  --glow-cycle-4: #EC4899;
+  --glow-cycle-1: #00E5FF;
+  --glow-cycle-2: #00E5FF;
+  --glow-cycle-3: #00E5FF;
+  --glow-cycle-4: #00E5FF;
   
   /* Component Colors */
   --card-bg: rgba(15, 23, 42, 0.6);
@@ -410,7 +410,7 @@ body {
 }
 
 .profile-item.active {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(0, 229, 255, 0.1);
 }
 
 .profile-avatar-small {
@@ -792,7 +792,7 @@ body {
 .profile-card:hover {
   transform: translateY(calc(-0.5rem * var(--ui-scale)));
   box-shadow: 0 calc(1.25rem * var(--ui-scale)) calc(2.5rem * var(--ui-scale)) rgba(0, 0, 0, 0.4);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(0, 229, 255, 0.3);
 }
 
 @keyframes fadeInUp {
@@ -963,7 +963,7 @@ body {
 }
 
 .profile-action-btn.set-default-btn {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   border-color: var(--warm-gold);
   color: var(--warm-gold);
 }
@@ -996,7 +996,7 @@ body {
 
 .add-profile-btn:hover {
   border-color: var(--warm-gold);
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(0, 229, 255, 0.1);
   transform: scale(1.05);
 }
 
@@ -1598,7 +1598,7 @@ input:checked + .toggle-slider:before {
 
 .save-btn:hover {
   transform: translateY(calc(-0.125rem * var(--ui-scale)));
-  box-shadow: 0 calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) rgba(245, 158, 11, 0.4);
+  box-shadow: 0 calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) rgba(0, 229, 255, 0.4);
 }
 
 .save-btn:disabled {
@@ -1704,7 +1704,7 @@ input:checked + .toggle-slider:before {
   font-size: var(--font-sm) !important;
   margin-top: var(--spacing-md);
   padding: var(--spacing-xs);
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(0, 229, 255, 0.1);
   border-radius: calc(0.5rem * var(--ui-scale));
 }
 
@@ -1815,7 +1815,7 @@ input:checked + .toggle-slider:before {
 }
 
 .toast.warning {
-  background: rgba(245, 158, 11, 0.9);
+  background: rgba(0, 229, 255, 0.9);
 }
 
 .toast.info {
@@ -2207,7 +2207,7 @@ input:checked + .toggle-slider:before {
 }
 
 .notification-item.unread {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(0, 229, 255, 0.1);
   border-color: var(--warm-gold);
 }
 
@@ -2428,7 +2428,7 @@ input:checked + .toggle-slider:before {
 }
 
 .watch-party-item.selected {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(0, 229, 255, 0.1);
   border-color: var(--warm-gold);
 }
 
@@ -2470,7 +2470,7 @@ input:checked + .toggle-slider:before {
 
 .primary-btn {
   padding: var(--spacing-sm) calc(1.5625rem * var(--ui-scale));
-  background: linear-gradient(135deg, var(--warm-gold), #f97316);
+  background: linear-gradient(135deg, var(--warm-gold), #00E5FF);
   border: none;
   border-radius: calc(0.625rem * var(--ui-scale));
   color: var(--deep-black);
@@ -2485,7 +2485,7 @@ input:checked + .toggle-slider:before {
 
 .primary-btn:hover {
   transform: translateY(calc(-0.1875rem * var(--ui-scale)));
-  box-shadow: 0 calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) rgba(245, 158, 11, 0.4);
+  box-shadow: 0 calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) rgba(0, 229, 255, 0.4);
 }
 
 /* Tip Modal */
@@ -2910,7 +2910,7 @@ input:checked + .toggle-slider:before {
 
 .create-first-btn:hover {
   transform: translateY(calc(-0.125rem * var(--ui-scale)));
-  box-shadow: 0 calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) rgba(245, 158, 11, 0.4);
+  box-shadow: 0 calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) rgba(0, 229, 255, 0.4);
 }
 
 /* Empty State Small */

@@ -143,7 +143,7 @@
 
 .playlist-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(0, 229, 255, 0.3);
 }
 
 .playlist-card-thumb {
@@ -161,8 +161,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(29, 78, 216, 0.18);
-  border: 1px solid rgba(29, 78, 216, 0.45);
+  background: rgba(0, 229, 255, 0.18);
+  border: 1px solid rgba(0, 229, 255, 0.45);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -417,7 +417,7 @@
 }
 
 .status-badge.published {
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   color: var(--warm-gold);
 }
 
@@ -523,13 +523,13 @@
 .action-btn.edit:hover {
   border-color: var(--bantu-blue);
   color: var(--bantu-blue);
-  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 229, 255, 0.3);
 }
 
 .action-btn.insights:hover {
   border-color: var(--warm-gold);
   color: var(--warm-gold);
-  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 229, 255, 0.3);
 }
 
 .action-btn.view:hover {
@@ -596,7 +596,7 @@
 
 .upload-now-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Error State */
@@ -825,7 +825,7 @@
 /* Creator Summary Card — 3 columns now that Earnings is hidden (no real
    payout flow exists yet, consistent with creator-dashboard.html). */
 .creator-summary {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(245, 158, 11, 0.1));
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.1), rgba(0, 229, 255, 0.1));
   border: 1px solid var(--card-border);
   border-radius: 20px;
   padding: 24px;
@@ -926,7 +926,7 @@
 
 .save-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
 /* Toast Container */
@@ -956,7 +956,7 @@
 
 .toast.error { background: rgba(239, 68, 68, 0.9); }
 .toast.success { background: rgba(16, 185, 129, 0.9); }
-.toast.warning { background: rgba(245, 158, 11, 0.9); }
+.toast.warning { background: rgba(0, 229, 255, 0.9); }
 .toast.info { background: var(--card-bg); }
 
 @keyframes slideIn {

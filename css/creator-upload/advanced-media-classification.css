@@ -2,7 +2,7 @@
 .movie-classification-section {
 margin: 20px 0;
 padding: 20px;
-background: rgba(29, 78, 216, 0.1);
+background: rgba(0, 229, 255, 0.1);
 border: 1px solid var(--bantu-blue);
 border-radius: 12px;
 display: none;
@@ -42,7 +42,7 @@ transition: all 0.2s ease;
 }
 .genre-chip:hover, .sa-genre-chip:hover {
 border-color: var(--warm-gold);
-background: rgba(245,158,11,0.1);
+background: rgba(0, 229, 255,0.1);
 }
 .genre-chip.selected, .sa-genre-chip.selected {
 background: var(--warm-gold);
@@ -90,7 +90,7 @@ gap: 8px;
 margin-bottom: 10px;
 }
 .tag {
-background: rgba(245,158,11,.2);
+background: rgba(0, 229, 255,.2);
 border: 1px solid var(--warm-gold);
 color: var(--warm-gold);
 padding: 5px 12px;
@@ -102,7 +102,7 @@ gap: 8px;
 cursor: pointer;
 transition: all .2s ease;
 }
-.tag:hover { background: rgba(245,158,11,.4); }
+.tag:hover { background: rgba(0, 229, 255,.4); }
 .tag i { font-size: 10px; }
 .tags-input {
 background: transparent;

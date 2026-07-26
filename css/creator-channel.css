@@ -8,8 +8,8 @@ COMPLETE MERGED FILE (Existing + New Design + All Fixes + Pulse Bridge + Brand G
 --deep-navy: #0F172A;
 --soft-white: #F8FAFC;
 --slate-grey: #94A3B8;
---bantu-blue: #1D4ED8;
---warm-gold: #F59E0B;
+--bantu-blue: #00E5FF;
+--warm-gold: #00E5FF;
 --error-color: #EF4444;
 --success-color: #10B981;
 --card-bg: rgba(15, 23, 42, 0.6);
@@ -44,22 +44,24 @@ COMPLETE MERGED FILE (Existing + New Design + All Fixes + Pulse Bridge + Brand G
 --font-sm: 13px;
 --font-xs: 11px;
 
-/* ===== SERIES TAB TYPE BADGE COLORS ===== */
---type-series: #04342C;
---type-series-text: #5DCAA5;
---type-music: #4A1B0C;
---type-music-text: #F0997B;
---type-podcast: #26215C;
---type-podcast-text: #7F77DD;
---type-video: #1D4ED8;
---type-video-text: #93BBFF;
---type-other: #3B3B3B;
+/* ===== TAB TYPE BADGE COLORS - unified to the single cyan accent (was a
+   5-color legend per content type); background kept as a dark cyan-tinted
+   fill so the cyan text stays readable rather than cyan-on-cyan. ===== */
+--type-series: #0D3238;
+--type-series-text: #00E5FF;
+--type-music: #0D3238;
+--type-music-text: #00E5FF;
+--type-podcast: #0D3238;
+--type-podcast-text: #00E5FF;
+--type-video: #0D3238;
+--type-video-text: #00E5FF;
+--type-other: #0D3238;
 --type-other-text: #94A3B8;
 
 /* ===== BRAND GLOW SYSTEM ===== */
---brand-cyan-core: #34E7FF;
---brand-cyan-main: #16D6FF;
---brand-cyan-outer: #00C8FF;
+--brand-cyan-core: #00E5FF;
+--brand-cyan-main: #00E5FF;
+--brand-cyan-outer: #00E5FF;
 --brand-cyan-bloom: rgba(125, 239, 255, 0.25);
 --brand-cyan-deep: rgba(0, 153, 255, 0.15);
 --brand-glow-stack:
@@ -93,8 +95,8 @@ html.theme-high-contrast {
 --deep-navy: #050505;
 --soft-white: #FFFFFF;
 --slate-grey: #CCCCCC;
---bantu-blue: #FFD700;
---warm-gold: #00FFFF;
+--bantu-blue: #00E5FF;
+--warm-gold: #00E5FF;
 --card-bg: #0A0A0A;
 --card-border: #FFFFFF;
 --bg-page: #000000;
@@ -220,7 +222,7 @@ ANALYTICS STYLES
 PLAYLIST BUILDER STYLES
 ============================================ */
 .pl-item.dragging { opacity: 0.4; }
-.pl-item.drag-over { border-color: var(--warm-gold); background: rgba(245,158,11,0.1); }
+.pl-item.drag-over { border-color: var(--warm-gold); background: rgba(0, 229, 255,0.1); }
 .pl-lib-card:hover { transform: translateY(-2px); border-color: var(--warm-gold); transition: 0.2s; }
 /* ============================================
 LOADING SCREEN — now owned by shared-components.css
@@ -236,9 +238,9 @@ pointer-events: none; /* CRITICAL FIX: Allows clicks to pass through to UI */
 position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.1;
 animation: float 8s infinite ease-in-out;
 }
-.glow-1 { width: 400px; height: 400px; background: #00A3FF; top: 10%; left: 5%; }
-.glow-2 { width: 300px; height: 300px; background: #0066FF; top: 60%; right: 10%; animation-delay: 2s; }
-.glow-3 { width: 350px; height: 350px; background: #8B5CF6; bottom: 10%; left: 20%; animation-delay: 4s; }
+.glow-1 { width: 400px; height: 400px; background: #00E5FF; top: 10%; left: 5%; }
+.glow-2 { width: 300px; height: 300px; background: #00E5FF; top: 60%; right: 10%; animation-delay: 2s; }
+.glow-3 { width: 350px; height: 350px; background: #00E5FF; bottom: 10%; left: 20%; animation-delay: 4s; }
 @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
 /* ============================================
 SIDEBAR MENU & HEADER — now owned by shared-components.css
@@ -305,7 +307,7 @@ transition: all 0.3s ease;
 background: var(--warm-gold);
 color: var(--deep-black);
 transform: translateY(-2px);
-box-shadow: 0 8px 25px rgba(245,158,11,0.4);
+box-shadow: 0 8px 25px rgba(0, 229, 255,0.4);
 }
 /* Streak badge on banner */
 .streak-badge {
@@ -403,13 +405,13 @@ height: 96px;
 position: absolute;
 bottom: -4px;
 right: -4px;
-background: linear-gradient(135deg, var(--warm-gold), #f97316);
+background: linear-gradient(135deg, var(--warm-gold), #00E5FF);
 color: var(--deep-black);
 padding: 3px 10px;
 border-radius: 12px;
 font-size: 9px;
 font-weight: 700;
-box-shadow: 0 4px 15px rgba(245,158,11,0.4);
+box-shadow: 0 4px 15px rgba(0, 229, 255,0.4);
 z-index: 2;
 white-space: nowrap;
 }
@@ -440,20 +442,24 @@ white-space: nowrap;
   gap: 5px;
   font-size: 11px;
   font-weight: 500;
-  color: #1DA1F2;
+  color: #00E5FF;
 }
-.creator-status-badge i { font-size: 13px; color: #1DA1F2; }
+.creator-status-badge i { font-size: 13px; color: #00E5FF; }
 
-/* Founder gets a premium gold treatment instead of the plain verified blue */
+/* Founder previously got a gold treatment to stand out from the plain
+   verified cyan; unified to the single platform accent per the cyan
+   restyle - both now render the same cyan, so the founder/verified
+   distinction is currently color-only-identical (flagged for a future
+   non-color differentiator, e.g. a distinct icon, if that's still wanted). */
 .creator-status-badge.is-founder {
-  color: #F7C948;
+  color: #00E5FF;
 }
 .creator-status-badge.is-founder i {
-  color: #F7C948;
-  text-shadow: 0 0 6px rgba(247, 201, 72, 0.5);
+  color: #00E5FF;
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
 }
 .creator-status-badge.is-founder #creator-status-badge-text {
-  background: linear-gradient(135deg, #FDE68A, #F7C948, #D4A017);
+  background: #00E5FF;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -476,8 +482,8 @@ margin: 0;
 }
 /* CREATOR BADGE - Auto-generates from dominant content type */
 .creator-badge {
-background: rgba(245, 158, 11, 0.2);
-border: 1px solid rgba(245, 158, 11, 0.3);
+background: rgba(0, 229, 255, 0.2);
+border: 1px solid rgba(0, 229, 255, 0.3);
 color: var(--warm-gold);
 padding: 2px 10px;
 border-radius: 20px;
@@ -526,7 +532,7 @@ gap: 6px;
   color: var(--warm-gold);
 }
 .channel-actions .connect-btn:hover:not(:disabled) {
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(0, 229, 255, 0.08);
   transform: translateY(-1px);
 }
 .channel-actions .connect-btn.connected {
@@ -565,7 +571,7 @@ background: rgba(255,255,255,0.05);
 border-color: var(--text-secondary);
 }
 .channel-actions .icon-action-btn.active {
-background: rgba(245, 158, 11, 0.15);
+background: rgba(0, 229, 255, 0.15);
 border-color: var(--warm-gold);
 color: var(--warm-gold);
 }
@@ -1538,8 +1544,8 @@ Just typography, whitespace, and a single divider.
 
 .about-meta-row { display: flex; flex-wrap: wrap; gap: 16px; }
 .about-meta-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
-.about-meta-item--verified { color: #1DA1F2; }
-.about-meta-item--verified i { color: #1DA1F2; }
+.about-meta-item--verified { color: #00E5FF; }
+.about-meta-item--verified i { color: #00E5FF; }
 
 .about-links-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .about-link-chip {
@@ -1700,7 +1706,7 @@ border-radius: 8px; margin-bottom: 8px; cursor: grab;
 }
 .playlist-item-card.dragging, .pl-item.dragging { opacity: 0.4; }
 .playlist-item-card.drag-over, .pl-item.drag-over {
-border-color: var(--warm-gold); background: rgba(245, 158, 11, 0.1);
+border-color: var(--warm-gold); background: rgba(0, 229, 255, 0.1);
 }
 .library-item-card, .pl-lib-card {
 background: var(--card-bg); border: 1px solid var(--card-border);
@@ -1737,7 +1743,7 @@ flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 16px;
 font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 }
 .modal-btn.close { background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue)); color: var(--soft-white); border: 1px solid rgba(255, 255, 255, 0.1); }
-.modal-btn.close:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
+.modal-btn.close:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4); }
 .modal-btn.cancel { background: transparent; border: 1px solid var(--card-border); color: var(--slate-grey); }
 .modal-btn.cancel:hover { background: rgba(255, 255, 255, 0.1); color: var(--soft-white); }
 /* ============================================
@@ -1751,7 +1757,7 @@ background: rgba(0, 0, 0, 0.3); color: var(--soft-white); font-size: 14px;
 transition: all 0.3s ease;
 }
 .form-input:focus, .form-textarea:focus {
-outline: none; border-color: var(--warm-gold); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+outline: none; border-color: var(--warm-gold); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.2);
 }
 .form-textarea { min-height: 100px; resize: vertical; font-family: 'Inter', sans-serif; }
 /* ============================================
@@ -1825,7 +1831,7 @@ padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: 
 cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
 transition: all 0.3s ease;
 }
-.banner-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
+.banner-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4); }
 .banner-url-input { display: flex; gap: 10px; }
 .banner-url-field {
 flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--card-border);
@@ -1844,7 +1850,7 @@ flex: 1; padding: 12px; border-radius: 10px; border: none;
 background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
 color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 }
-.banner-save-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
+.banner-save-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4); }
 .banner-cancel-btn {
 flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border);
 background: transparent; color: var(--slate-grey); font-weight: 600;
@@ -1869,7 +1875,7 @@ box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 .toast i { font-size: 18px; }
 .toast.error { background: rgba(239, 68, 68, 0.9); }
 .toast.success { background: rgba(16, 185, 129, 0.9); }
-.toast.warning { background: rgba(245, 158, 11, 0.9); }
+.toast.warning { background: rgba(0, 229, 255, 0.9); }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 /* ============================================
 CONFETTI

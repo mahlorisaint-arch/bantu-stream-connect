@@ -202,8 +202,8 @@
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(29, 78, 216, 0.35);
-  box-shadow: 0 0 16px rgba(29, 78, 216, 0.35);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
   margin-bottom: 1rem;
 }
 
@@ -328,15 +328,15 @@
 }
 
 .category-chip:hover {
-  background: rgba(29, 78, 216, 0.15);
+  background: rgba(0, 229, 255, 0.15);
   border-color: var(--bantu-blue);
 }
 
 .category-chip.active {
-  background: rgba(29, 78, 216, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   border: 1px solid var(--bantu-blue);
   color: var(--soft-white);
-  box-shadow: 0 0 14px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4);
 }
 
 .content-grid {
@@ -488,7 +488,7 @@
 
 .discover-all-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
 }
 
 /* ============================================

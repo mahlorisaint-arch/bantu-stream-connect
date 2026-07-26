@@ -907,14 +907,14 @@
 
 .notification-item.unread {
   border-left: 3px solid var(--bantu-blue);
-  background: rgba(29, 78, 216, 0.1);
+  background: rgba(0, 229, 255, 0.1);
 }
 
 .notification-icon {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(29, 78, 216, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1041,7 +1041,7 @@
 }
 
 .theme-option.active {
-  background: rgba(29, 78, 216, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   color: var(--bantu-blue);
 }
 
@@ -1224,7 +1224,7 @@
 #quick-watch-later-btn {
   width: 100%;
   padding: 12px;
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(0, 229, 255, 0.2);
   border: 1px solid var(--warm-gold);
   border-radius: 10px;
   color: var(--warm-gold);
@@ -1239,7 +1239,7 @@
 }
 
 #quick-watch-later-btn:hover {
-  background: rgba(245, 158, 11, 0.3);
+  background: rgba(0, 229, 255, 0.3);
   transform: translateY(-2px);
 }
 
@@ -1655,9 +1655,9 @@
 }
 
 .theme-light .search-filter-pill.active {
-  background: linear-gradient(135deg, rgba(0, 150, 200, 0.2), rgba(0, 150, 200, 0.05));
-  border-color: #0099cc;
-  color: #0099cc;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 229, 255, 0.05));
+  border-color: #00E5FF;
+  color: #00E5FF;
 }
 
 .theme-light .split-section h4 {
@@ -1751,7 +1751,7 @@
 }
 
 .theme-high-contrast #search-input:focus {
-  border-color: #00FFFF;
+  border-color: #00E5FF;
 }
 
 .theme-high-contrast .search-filter-pill {
@@ -1760,9 +1760,9 @@
 }
 
 .theme-high-contrast .search-filter-pill.active {
-  background: rgba(0, 255, 255, 0.3);
-  border-color: #00FFFF;
-  color: #00FFFF;
+  background: rgba(0, 229, 255, 0.3);
+  border-color: #00E5FF;
+  color: #00E5FF;
 }
 
 .theme-high-contrast .split-section h4 {
@@ -1774,7 +1774,7 @@
 }
 
 .theme-high-contrast .premium-search-card:hover {
-  border-color: #00FFFF;
+  border-color: #00E5FF;
 }
 
 .theme-high-contrast .creator-mini-profile-card {
@@ -1782,7 +1782,7 @@
 }
 
 .theme-high-contrast .creator-mini-profile-card:hover {
-  border-color: #00FFFF;
+  border-color: #00E5FF;
 }
 
 .theme-high-contrast .trending-mini-card {
@@ -1790,7 +1790,7 @@
 }
 
 .theme-high-contrast .trending-mini-card:hover {
-  border-color: #00FFFF;
+  border-color: #00E5FF;
 }
 
 .theme-high-contrast .history-pill {
@@ -1799,8 +1799,8 @@
 }
 
 .theme-high-contrast .history-pill:hover {
-  border-color: #00FFFF;
-  color: #00FFFF;
+  border-color: #00E5FF;
+  color: #00E5FF;
 }
 
 .theme-high-contrast .section-header-row h4 {

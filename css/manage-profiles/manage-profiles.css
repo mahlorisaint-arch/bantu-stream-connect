@@ -55,7 +55,7 @@ display: flex; align-items: center; justify-content: center;
 
 .profile-type {
 display: inline-block; font-size: 12px; color: var(--warm-gold);
-background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);
+background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.35);
 padding: 2px 10px; border-radius: 20px; margin-bottom: 12px; text-transform: capitalize;
 }
 
@@ -194,7 +194,7 @@ color: var(--soft-white); font-size: 14px;
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
 outline: none; border-color: var(--warm-gold);
-box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.2);
 }
 
 .form-textarea { min-height: 100px; resize: vertical; }
@@ -246,7 +246,7 @@ border-radius: 10px; cursor: pointer; transition: all 0.3s ease;
 
 .profile-type-option span { font-size: 13px; color: var(--soft-white); }
 
-.profile-type-option:has(input:checked) { border-color: var(--warm-gold); background: rgba(245, 158, 11, 0.1); }
+.profile-type-option:has(input:checked) { border-color: var(--warm-gold); background: rgba(0, 229, 255, 0.1); }
 
 .profile-type-option:has(input:checked) i,
 .profile-type-option:has(input:checked) span { color: var(--warm-gold); }
@@ -268,7 +268,7 @@ border-radius: 10px; cursor: pointer; transition: all 0.3s ease;
 
 .preference-checkbox span { font-size: 12px; color: var(--soft-white); }
 
-.preference-checkbox:has(input:checked) { border-color: var(--warm-gold); background: rgba(245, 158, 11, 0.1); }
+.preference-checkbox:has(input:checked) { border-color: var(--warm-gold); background: rgba(0, 229, 255, 0.1); }
 
 .preference-checkbox:has(input:checked) i { color: var(--warm-gold); }
 
@@ -289,7 +289,7 @@ font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 
 .save-btn { background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue)); color: white; }
 
-.save-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); }
+.save-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4); }
 
 /* ===== Enhanced Upload Progress (page-specific, not in shared-components.css) ===== */
 .upload-progress {

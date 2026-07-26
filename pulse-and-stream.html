@@ -11,20 +11,20 @@
       theme: {
         extend: {
           colors: {
-            'pulse-blue': '#2563eb',       // Dynamic, energetic blue for Pulse
+            'pulse-blue': '#00E5FF',       // Dynamic, energetic blue for Pulse
             'stream-indigo': '#4f46e5',    // Deep, stable indigo for Stream
             'rhythm-cyan': '#06b6d4',      // Connecting cyan for rhythm
             'bantu-dark': '#0f172a',
             'bantu-light': '#f8fafc',
             'bantu-primary': '#4f46e5',
-            'bantu-accent': '#f59e0b',
+            'bantu-accent': '#00E5FF',
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
           backgroundImage: {
-            'pulse-gradient': 'linear-gradient(135deg, #2563eb 0%, #06b6d4 50%, #4f46e5 100%)',
+            'pulse-gradient': 'linear-gradient(135deg, #00E5FF 0%, #06b6d4 50%, #4f46e5 100%)',
             'stream-gradient': 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
             'rhythm-pattern': 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(6, 182, 212, 0.1) 10px, rgba(6, 182, 212, 0.1) 20px)',
           },
@@ -92,11 +92,11 @@
       background: #e2e8f0;
     }
     ::-webkit-scrollbar-thumb {
-      background: linear-gradient(to bottom, #2563eb, #4f46e5);
+      background: linear-gradient(to bottom, #00E5FF, #4f46e5);
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(to bottom, #1d4ed8, #3730a3);
+      background: linear-gradient(to bottom, #00E5FF, #3730a3);
     }
 
     /* Article content styling */
@@ -112,7 +112,7 @@
       margin-bottom: 1.5rem;
       padding-bottom: 0.5rem;
       border-bottom: 3px solid;
-      border-image: linear-gradient(90deg, #2563eb, #4f46e5) 1;
+      border-image: linear-gradient(90deg, #00E5FF, #4f46e5) 1;
     }
 
     .article-content h3 {
@@ -123,7 +123,7 @@
     .doctrine-card {
       background: white;
       border: 2px solid;
-      border-image: linear-gradient(135deg, #2563eb, #4f46e5) 1;
+      border-image: linear-gradient(135deg, #00E5FF, #4f46e5) 1;
       border-radius: 0.75rem;
       padding: 2rem;
       margin: 2rem 0;
@@ -138,7 +138,7 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, #2563eb, #4f46e5);
+      background: linear-gradient(90deg, #00E5FF, #4f46e5);
     }
 
     .stream-card {
@@ -155,20 +155,20 @@
 
     .pulse-card {
       background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-      border-left: 4px solid #2563eb;
+      border-left: 4px solid #00E5FF;
       border-right: 1px solid #e2e8f0;
       border-top: 1px solid #e2e8f0;
       border-bottom: 1px solid #e2e8f0;
       border-radius: 0.75rem;
       padding: 2rem;
       margin: 2rem 0;
-      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
+      box-shadow: 0 4px 6px -1px rgba(0, 229, 255, 0.1);
     }
 
     .rhythm-flow {
       background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
       border: 2px solid;
-      border-image: linear-gradient(45deg, #2563eb, #06b6d4, #4f46e5) 1;
+      border-image: linear-gradient(45deg, #00E5FF, #06b6d4, #4f46e5) 1;
       border-radius: 0.75rem;
       padding: 2rem;
       margin: 2rem 0;
@@ -186,7 +186,7 @@
 
     .mantra-box.pulse {
       background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-      border-color: #2563eb;
+      border-color: #00E5FF;
     }
 
     .mantra-box.stream {
@@ -207,7 +207,7 @@
     .platform-pill.pulse {
       background: linear-gradient(135deg, #dbeafe 0%, #dbeafe 100%);
       color: #1e40af;
-      border: 2px solid #2563eb;
+      border: 2px solid #00E5FF;
     }
 
     .platform-pill.stream {
@@ -232,7 +232,7 @@
     }
 
     .rhythm-table thead {
-      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+      background: linear-gradient(135deg, #00E5FF 0%, #4f46e5 100%);
       color: white;
     }
 
@@ -279,7 +279,7 @@
     }
 
     .phase-1 { background: #4f46e5; color: white; }
-    .phase-2 { background: #2563eb; color: white; }
+    .phase-2 { background: #00E5FF; color: white; }
     .phase-3 { background: #06b6d4; color: white; }
     .phase-4 { background: #10b981; color: white; }
 
@@ -381,7 +381,7 @@
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 Digital Rhythm
               </span>
-              <span class="platform-pill" style="background: linear-gradient(135deg, #fef3c7 0%, #fef3c7 100%); color: #92400e; border: 2px solid #f59e0b;">
+              <span class="platform-pill" style="background: linear-gradient(135deg, #fef3c7 0%, #fef3c7 100%); color: #92400e; border: 2px solid #00E5FF;">
                 <i data-lucide="key" class="w-4 h-4"></i>
                 Platform Guide
               </span>
@@ -900,7 +900,7 @@
       pill.addEventListener('mouseenter', function() {
         if (this.classList.contains('pulse')) {
           this.style.transform = 'translateY(-2px)';
-          this.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.2)';
+          this.style.boxShadow = '0 4px 12px rgba(0, 229, 255, 0.2)';
         } else if (this.classList.contains('stream')) {
           this.style.transform = 'translateY(-2px)';
           this.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.2)';
