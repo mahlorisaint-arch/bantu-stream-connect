@@ -26,7 +26,6 @@ const Wavelets = (function() {
      * Initialize Wavelets module
      */
     async function init() {
-        console.log('🌊 Wavelets Module initializing...');
         
         section = document.getElementById('wavelets-section');
         container = document.getElementById('wavelets-container');
@@ -48,7 +47,6 @@ const Wavelets = (function() {
         // Start background refresh
         startBackgroundRefresh();
         
-        console.log('✅ Wavelets Module initialized');
     }
     
     /**
@@ -95,7 +93,6 @@ const Wavelets = (function() {
             
             const { data: { session } } = await window.supabaseAuth.auth.getSession();
             currentUser = session?.user || null;
-            console.log('👤 Wavelets user:', currentUser ? currentUser.id : 'guest');
         } catch (err) {
             console.error('Error getting current user:', err);
             currentUser = null;
@@ -106,12 +103,10 @@ const Wavelets = (function() {
      * Load wavelet content
      */
     async function loadContent() {
-        console.log('🌊 Loading Wavelets...');
         
         // Try cached data first
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0) {
-            console.log('📦 Wavelets: Using cached data,', cachedData.length, 'items');
             renderWavelets(cachedData);
             // Refresh in background
             refreshInBackground();
@@ -138,7 +133,6 @@ const Wavelets = (function() {
             // Cache the result
             saveToCache(sectionData);
             
-            console.log('✅ Wavelets loaded:', sectionData.length, 'items');
             
         } catch (err) {
             console.error("❌ Wavelets Section Error:", err);
@@ -464,12 +458,11 @@ const Wavelets = (function() {
             if (newContent && newContent.length > 0) {
                 const cachedData = loadFromCache();
                 if (cachedData && cachedData.length !== newContent.length) {
-                    console.log('🔄 New wavelets detected, refreshing...');
                     await loadContent();
                 }
             }
         } catch (err) {
-            console.log('Background refresh failed:', err);
+            console.warn('Wavelets background refresh failed:', err);
         }
     }
     
@@ -614,7 +607,6 @@ const Wavelets = (function() {
         if (container) {
             container.innerHTML = '';
         }
-        console.log('🌊 Wavelets Module destroyed');
     }
     
     // Public API

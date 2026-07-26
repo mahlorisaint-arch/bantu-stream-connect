@@ -28,7 +28,6 @@ const TrendingNow = (function() {
      * Initialize Trending Now module
      */
     async function init() {
-        console.log('🔥 Trending Now Module initializing...');
         
         section = document.getElementById('trending-now-section');
         container = document.getElementById('trending-grid');
@@ -56,7 +55,6 @@ const TrendingNow = (function() {
         // Start background refresh
         startBackgroundRefresh();
         
-        console.log('✅ Trending Now Module initialized');
     }
     
     /**
@@ -71,7 +69,6 @@ const TrendingNow = (function() {
             
             const { data: { session } } = await window.supabaseAuth.auth.getSession();
             currentUser = session?.user || null;
-            console.log('🔥 Trending Now user:', currentUser ? currentUser.id : 'guest');
         } catch (err) {
             console.error('Error getting current user:', err);
             currentUser = null;
@@ -111,7 +108,6 @@ const TrendingNow = (function() {
                 lastUpdated: Date.now()
             };
             
-            console.log('📊 Trending Stats loaded:', window.trendingStats);
             
         } catch (err) {
             console.error('Error loading trending stats:', err);
@@ -195,12 +191,10 @@ const TrendingNow = (function() {
      * Load trending content
      */
     async function loadContent() {
-        console.log('🔥 Loading Trending Now...');
         
         // Try cached data first
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0) {
-            console.log('📦 Trending Now: Using cached data,', cachedData.length, 'items');
             container.innerHTML = '';
             renderCards(cachedData);
             animateCards();
@@ -246,7 +240,6 @@ const TrendingNow = (function() {
             // Animate cards
             animateCards();
             
-            console.log('✅ Trending Now loaded:', sectionData.length, 'items');
             
         } catch (err) {
             console.error("❌ Trending Now Section Error:", err);
@@ -278,7 +271,6 @@ const TrendingNow = (function() {
             }
             
             if (!engagementData || engagementData.length === 0) {
-                console.log('No engagement stats found');
                 return [];
             }
             
@@ -316,9 +308,6 @@ const TrendingNow = (function() {
             
             // Sort by total_views (most viewed first)
             mergedData.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-            
-            console.log('📊 Fetched trending content with correct view counts:', 
-                mergedData.map(c => ({ title: c.title, views: c.views_count })));
             
             return mergedData;
             
@@ -728,7 +717,7 @@ const TrendingNow = (function() {
             await loadTrendingStats();
             addTrendingStatsBar();
         } catch (err) {
-            console.log('Background refresh failed:', err);
+            console.warn('Trending Now background refresh failed:', err);
         }
     }
     
@@ -878,7 +867,6 @@ const TrendingNow = (function() {
         if (container) {
             container.innerHTML = '';
         }
-        console.log('🔥 Trending Now Module destroyed');
     }
     
     // Public API

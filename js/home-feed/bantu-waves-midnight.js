@@ -8,7 +8,6 @@
    FIXED: Audio player now receives contentId for view tracking (15-second rule)
 /* ============================================ */
 
-console.log('🌙 Bantu Waves: Midnight Sessions section loading...');
 
 const BantuWavesMidnight = {
     config: {
@@ -93,7 +92,6 @@ const BantuWavesMidnight = {
         setInterval(() => this.checkMidnightMode(), 60 * 60 * 1000);
         
         this.state.initialized = true;
-        console.log('🌙 Midnight Sessions section initialized, midnight mode:', this.state.isMidnightMode);
     },
 
     cacheElements() {
@@ -166,7 +164,6 @@ const BantuWavesMidnight = {
             }
         }
         
-        console.log('🌙 Midnight mode:', isMidnight, 'at hour:', currentHour);
         return isMidnight;
     },
 
@@ -219,7 +216,6 @@ const BantuWavesMidnight = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('📦 Midnight Sessions: Using cached data', cachedData.length, 'items');
                 this.state.content = cachedData;
                 this.render(cachedData);
                 return;
@@ -257,7 +253,6 @@ const BantuWavesMidnight = {
             this.cacheData(topItems);
             this.render(topItems);
             
-            console.log('✅ Midnight Sessions loaded:', topItems.length, 'items');
             
         } catch (error) {
             console.error('❌ Error loading Midnight Sessions:', error);
@@ -711,7 +706,6 @@ const BantuWavesMidnight = {
                 contentId           // ✅ CONTENT ID (bigint) - This enables view recording!
             );
             
-            console.log(`🎵 Playing: "${title}" (ID: ${contentId}) - View will record after 15 seconds`);
             this.showToast(`Now playing: ${title}`, 'success');
         } else if (contentId) {
             // Fallback: redirect to content detail page
@@ -993,8 +987,6 @@ const BantuWavesMidnight = {
     showToast(message, type) {
         if (window.showToast) {
             window.showToast(message, type);
-        } else {
-            console.log(`[${type}] ${message}`);
         }
     }
 };
@@ -1006,7 +998,6 @@ if (document.readyState === 'loading') {
             if (window.supabaseAuth) {
                 BantuWavesMidnight.init();
             } else {
-                console.log('🌙 Midnight Sessions waiting for supabaseAuth...');
                 const authCheck = setInterval(() => {
                     if (window.supabaseAuth) {
                         clearInterval(authCheck);
@@ -1028,7 +1019,6 @@ if (document.readyState === 'loading') {
         if (window.supabaseAuth) {
             BantuWavesMidnight.init();
         } else {
-            console.log('🌙 Midnight Sessions waiting for supabaseAuth...');
             const authCheck = setInterval(() => {
                 if (window.supabaseAuth) {
                     clearInterval(authCheck);

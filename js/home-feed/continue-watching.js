@@ -22,7 +22,6 @@ const ContinueWatching = (function() {
      * Initialize Continue Watching module
      */
     async function init() {
-        console.log('📺 Continue Watching Module initializing...');
         
         section = document.getElementById('continue-watching-section');
         container = document.getElementById('continue-watching-grid');
@@ -41,7 +40,6 @@ const ContinueWatching = (function() {
         // Start background refresh interval
         startBackgroundRefresh();
         
-        console.log('✅ Continue Watching Module initialized');
     }
     
     /**
@@ -56,12 +54,6 @@ const ContinueWatching = (function() {
             
             const { data: { session } } = await window.supabaseAuth.auth.getSession();
             currentUser = session?.user || null;
-            
-            if (currentUser) {
-                console.log('👤 User authenticated for Continue Watching:', currentUser.id);
-            } else {
-                console.log('👤 No user logged in for Continue Watching');
-            }
         } catch (err) {
             console.error('Error getting current user:', err);
             currentUser = null;
@@ -72,12 +64,10 @@ const ContinueWatching = (function() {
      * Load continue watching content
      */
     async function loadContent() {
-        console.log('📺 Loading Continue Watching...');
         
         // Try cached data first for instant display
         const cachedData = loadFromCache();
         if (cachedData && cachedData.data && cachedData.data.length > 0) {
-            console.log('📦 Continue Watching: Using cached data,', cachedData.data.length, 'items');
             section.style.display = 'block';
             container.innerHTML = '';
             renderCards(cachedData.data, cachedData.progressMap || {});
@@ -94,7 +84,6 @@ const ContinueWatching = (function() {
         
         // If not logged in, hide section
         if (!currentUser) {
-            console.log('ℹ️ No user logged in, hiding continue watching');
             setTimeout(() => {
                 section.style.display = 'none';
             }, 1000);
@@ -229,7 +218,6 @@ const ContinueWatching = (function() {
         renderCards(enrichedData, progressMap);
         animateCards();
         
-        console.log('✅ Continue Watching loaded:', enrichedData.length, 'items');
     }
     
     /**
@@ -441,13 +429,12 @@ const ContinueWatching = (function() {
                     const hasNewContent = newIds.some(id => !cachedIds.includes(id));
                     
                     if (hasNewContent) {
-                        console.log('🔄 New continue watching content detected, refreshing...');
                         await fetchAndRenderContent();
                     }
                 }
             }
         } catch (err) {
-            console.log('Background refresh failed:', err);
+            console.warn('Continue Watching background refresh failed:', err);
         }
     }
     
@@ -640,7 +627,6 @@ const ContinueWatching = (function() {
         if (container) {
             container.innerHTML = '';
         }
-        console.log('📺 Continue Watching Module destroyed');
     }
     
     // Public API

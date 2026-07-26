@@ -30,7 +30,6 @@ const LiveNow = (function() {
      * Initialize Live Now module
      */
     async function init() {
-        console.log('🔴 Live Now Module initializing...');
         
         section = document.getElementById('live-now-section');
         container = document.getElementById('live-streams-grid');
@@ -56,7 +55,6 @@ const LiveNow = (function() {
         // Start real-time refresh interval
         startRealTimeRefresh();
         
-        console.log('✅ Live Now Module initialized');
     }
     
     /**
@@ -117,7 +115,6 @@ const LiveNow = (function() {
             
             const { data: { session } } = await window.supabaseAuth.auth.getSession();
             currentUser = session?.user || null;
-            console.log('🔴 Live Now user:', currentUser ? currentUser.id : 'guest');
         } catch (err) {
             console.error('Error getting current user:', err);
             currentUser = null;
@@ -145,12 +142,10 @@ const LiveNow = (function() {
      * Load live content
      */
     async function loadContent() {
-        console.log('🔴 Loading Live Now...');
         
         // Try cached data first (but live content needs freshness)
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0 && Date.now() - (cachedData.timestamp || 0) < 60000) {
-            console.log('📦 Live Now: Using cached data (fresh within 60s)');
             renderLiveStreams(cachedData.data || cachedData);
             return;
         }
@@ -185,7 +180,6 @@ const LiveNow = (function() {
             // Cache the result
             saveToCache(enrichedData);
             
-            console.log('✅ Live Now loaded:', enrichedData.length, 'streams');
             
         } catch (err) {
             console.error("❌ Live Now Section Error:", err);
@@ -246,7 +240,6 @@ const LiveNow = (function() {
                        format === 'live_stream' || type === 'live_stream';
             });
             
-            console.log(`🔴 Found ${liveContent.length} live streams`);
             return liveContent;
             
         } catch (err) {
@@ -586,7 +579,6 @@ const LiveNow = (function() {
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(async () => {
             if (section && isElementInViewport(section)) {
-                console.log('🔴 Real-time refresh: fetching latest live streams');
                 await refreshLiveData();
             }
         }, REFRESH_INTERVAL);
@@ -626,7 +618,7 @@ const LiveNow = (function() {
                 liveStreamsData = [];
             }
         } catch (err) {
-            console.log('Real-time refresh failed:', err);
+            console.warn('Live Now refresh failed:', err);
         }
     }
     
@@ -809,7 +801,6 @@ const LiveNow = (function() {
         if (container) {
             container.innerHTML = '';
         }
-        console.log('🔴 Live Now Module destroyed');
     }
     
     // Public API

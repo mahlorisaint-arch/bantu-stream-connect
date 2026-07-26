@@ -11,7 +11,6 @@
    3. Shows correct total_views from content_engagement_stats
 /* ============================================ */
 
-console.log('📺 Bantu Waves: Series section loading...');
 
 const BantuWavesSeries = {
     config: {
@@ -53,7 +52,6 @@ const BantuWavesSeries = {
         this.loadSeries();
         
         this.state.initialized = true;
-        console.log('📺 Series section initialized');
     },
 
     cacheElements() {
@@ -76,7 +74,6 @@ const BantuWavesSeries = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('📦 Series: Using cached data', cachedData.length, 'items');
                 this.state.series = cachedData;
                 this.render(cachedData);
                 return;
@@ -97,7 +94,6 @@ const BantuWavesSeries = {
             this.cacheData(enrichedSeries);
             this.render(enrichedSeries);
             
-            console.log('✅ Series loaded:', enrichedSeries.length);
             
         } catch (error) {
             console.error('❌ Error loading series:', error);
@@ -746,8 +742,6 @@ const BantuWavesSeries = {
     showToast(message, type) {
         if (window.showToast) {
             window.showToast(message, type);
-        } else {
-            console.log(`[${type}] ${message}`);
         }
     }
 };
@@ -759,7 +753,6 @@ if (document.readyState === 'loading') {
             if (window.supabaseAuth) {
                 BantuWavesSeries.init();
             } else {
-                console.log('📺 Series waiting for supabaseAuth...');
                 const authCheck = setInterval(() => {
                     if (window.supabaseAuth) {
                         clearInterval(authCheck);
@@ -781,7 +774,6 @@ if (document.readyState === 'loading') {
         if (window.supabaseAuth) {
             BantuWavesSeries.init();
         } else {
-            console.log('📺 Series waiting for supabaseAuth...');
             const authCheck = setInterval(() => {
                 if (window.supabaseAuth) {
                     clearInterval(authCheck);

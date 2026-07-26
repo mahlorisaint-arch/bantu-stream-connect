@@ -68,7 +68,6 @@ const ForYou = (function() {
     async function init() {
         // Prevent multiple simultaneous initializations
         if (isLoading) {
-            console.log('🎯 For You already initializing, waiting...');
             // Wait for the existing load to complete
             if (loadPromise) {
                 await loadPromise;
@@ -77,7 +76,6 @@ const ForYou = (function() {
         }
         
         isLoading = true;
-        console.log('🎯 For You Module initializing...');
         
         try {
             container = document.getElementById('for-you-grid');
@@ -108,7 +106,6 @@ const ForYou = (function() {
             // Start background refresh
             startBackgroundRefresh();
             
-            console.log('✅ For You Module initialized successfully');
             initAttempts = 0;
             
         } catch (err) {
@@ -116,7 +113,6 @@ const ForYou = (function() {
             initAttempts++;
             
             if (initAttempts < MAX_INIT_ATTEMPTS) {
-                console.log(`Retrying initialization (${initAttempts}/${MAX_INIT_ATTEMPTS})...`);
                 setTimeout(() => {
                     isLoading = false;
                     init();
@@ -159,12 +155,9 @@ const ForYou = (function() {
             if (error) throw error;
             
             currentUser = session?.user || null;
-            
+
             if (currentUser) {
-                console.log('👤 User authenticated for For You:', currentUser.id);
                 await loadUserProfile();
-            } else {
-                console.log('👤 No user logged in for For You');
             }
         } catch (err) {
             console.error('Error getting current user:', err);
@@ -193,7 +186,6 @@ const ForYou = (function() {
             
             if (profile) {
                 currentUser.profile = profile;
-                console.log('👤 User profile loaded:', profile);
             }
         } catch (err) {
             console.warn('Could not load user profile:', err);
@@ -286,7 +278,6 @@ const ForYou = (function() {
                 lastUpdated: Date.now()
             };
             
-            console.log('📊 User Preferences loaded:', userPreferences);
             
         } catch (err) {
             console.error('Error loading user preferences:', err);
@@ -302,7 +293,6 @@ const ForYou = (function() {
         
         // Don't load if already loading
         if (isLoading && loadPromise) {
-            console.log('Already loading, waiting for existing load...');
             return loadPromise;
         }
         
@@ -312,7 +302,6 @@ const ForYou = (function() {
                 // Try cached data first
                 const cachedData = loadFromCache();
                 if (cachedData && cachedData.length > 0) {
-                    console.log('📦 For You: Using cached data,', cachedData.length, 'items');
                     if (container) {
                         container.innerHTML = '';
                         renderCards(cachedData);
@@ -337,13 +326,11 @@ const ForYou = (function() {
 
                 // Fallback to trending/recent content if no personalized content
                 if (!contentList || contentList.length === 0) {
-                    console.log('No personalized content, falling back to recent content');
                     contentList = await getRecentContentFallback();
                 }
 
                 // Second fallback - get any published content
                 if (!contentList || contentList.length === 0) {
-                    console.log('No recent content, falling back to any published content');
                     contentList = await getAnyContentFallback();
                 }
 
@@ -381,7 +368,6 @@ const ForYou = (function() {
                 animateCards();
                 
                 const loadTime = performance.now() - startTime;
-                console.log(`📊 For You section loaded in ${loadTime.toFixed(0)}ms with ${sectionData.length} items`);
                 
             } catch (err) {
                 console.error("❌ For You Section Error:", err);
@@ -1000,10 +986,10 @@ const ForYou = (function() {
                 await loadContent();
             }
         } catch (err) {
-            console.log('Background refresh failed:', err);
+            console.warn('For You background refresh failed:', err);
         }
     }
-    
+
     /**
      * Start background refresh interval
      */
@@ -1147,7 +1133,6 @@ const ForYou = (function() {
         if (container) {
             container.innerHTML = '';
         }
-        console.log('🎯 For You Module destroyed');
     }
     
     // Public API

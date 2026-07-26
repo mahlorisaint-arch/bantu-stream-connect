@@ -11,7 +11,6 @@
    3. Redirects to playlist mode in content-detail
 /* ============================================ */
 
-console.log('🎵 Bantu Waves: Music section loading...');
 
 // ============================================ */
 // MUSIC SECTION CONTROLLER
@@ -50,7 +49,6 @@ const BantuWavesMusic = {
     /* ============================================ */
     init() {
         if (this.state.initialized) {
-            console.log('🎵 Music section already initialized');
             return;
         }
 
@@ -65,7 +63,6 @@ const BantuWavesMusic = {
         this.loadMusicContent();
         
         this.state.initialized = true;
-        console.log('🎵 Music section initialized');
     },
 
     cacheElements() {
@@ -93,7 +90,6 @@ const BantuWavesMusic = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('📦 Music section: Using cached data', cachedData.length, 'items');
                 this.state.musicPlaylists = cachedData;
                 this.render(cachedData);
                 return;
@@ -115,7 +111,6 @@ const BantuWavesMusic = {
                 playlist.contents && playlist.contents.length > 0
             );
             
-            console.log(`📊 Music: Filtered out ${enrichedPlaylists.length - playlistsWithContent.length} empty playlists`);
             
             // Sort by engagement score
             const sortedPlaylists = this.sortByEngagement(playlistsWithContent);
@@ -127,7 +122,6 @@ const BantuWavesMusic = {
             this.cacheData(topPlaylists);
             this.render(topPlaylists);
             
-            console.log('✅ Music section loaded:', topPlaylists.length, 'playlists with content');
             
         } catch (error) {
             console.error('❌ Error loading music section:', error);
@@ -790,8 +784,6 @@ const BantuWavesMusic = {
     showToast(message, type) {
         if (window.showToast) {
             window.showToast(message, type);
-        } else {
-            console.log(`[${type}] ${message}`);
         }
     }
 };
@@ -805,7 +797,6 @@ if (document.readyState === 'loading') {
         if (window.supabaseAuth) {
             BantuWavesMusic.init();
         } else {
-            console.log('🎵 Music waiting for supabaseAuth...');
             const authCheck = setInterval(() => {
                 if (window.supabaseAuth) {
                     clearInterval(authCheck);

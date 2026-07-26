@@ -10,7 +10,6 @@ const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIs
 
 // Initialize Supabase client for authentication
 const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-console.log('✅ Supabase Auth client initialized');
 
 // ============================================
 // GLOBAL STATE (Minimal & Shared)
@@ -112,10 +111,10 @@ async function checkAuth() {
         const { data, error } = await supabaseAuth.auth.getSession();
         if (error) throw error;
         window.currentUser = data?.session?.user || null;
-        console.log(`🔐 Auth check completed in ${(performance.now() - startTime).toFixed(0)}ms`);
         if (window.currentUser) {
-            console.log('✅ User authenticated:', window.currentUser.email);
             loadUserProfile().catch(console.warn);
+        } else {
+            updateWelcomeBanner();
         }
         return window.currentUser;
     } catch (error) {
@@ -130,11 +129,46 @@ async function loadUserProfile() {
         const { data: profile, error } = await supabaseAuth.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
         if (!error && profile) {
             window.currentProfile = profile;
-            console.log('✅ Profile loaded:', profile.full_name || profile.username);
             await loadNotifications();
         }
+        updateWelcomeBanner();
     } catch (error) {
         console.error('Error loading profile:', error);
+        updateWelcomeBanner();
+    }
+}
+
+/**
+ * Welcome banner heading/subtitle - honest about personalization the
+ * same way For You relabels itself to "Trending in Mzansi" for a
+ * signal-less user: a signed-in user gets a real name/greeting and the
+ * "tailored for you" claim (backed by the real personalized queries
+ * used elsewhere on this page); a guest, who has no personalization
+ * signal at all, gets an honest sign-in nudge instead of a false
+ * "Welcome back"/"tailored just for you" claim - which is what the
+ * static HTML used to show unconditionally, guest or not. Previously
+ * duplicated in an inline <script> in index.html (which also
+ * re-implemented header/sidebar avatar updates that
+ * shared-components.js already owns, using a stray hardcoded
+ * blue-to-gold avatar-fallback gradient instead of the platform's
+ * cyan one) - consolidated here instead of living as a second,
+ * parallel implementation.
+ */
+function updateWelcomeBanner() {
+    const messageEl = document.getElementById('welcome-message');
+    const subtitleEl = document.getElementById('welcome-subtitle');
+    if (!messageEl && !subtitleEl) return;
+
+    if (window.currentUser) {
+        const profile = window.currentProfile;
+        const displayName = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+        if (messageEl) messageEl.innerHTML = `${greeting}, <span id="user-name">${escapeHtml(displayName)}</span>!`;
+        if (subtitleEl) subtitleEl.textContent = 'Discover new content tailored just for you';
+    } else {
+        if (messageEl) messageEl.textContent = 'Welcome to Bantu Stream Connect';
+        if (subtitleEl) subtitleEl.textContent = 'Sign in to get content recommendations tailored to you';
     }
 }
 
@@ -272,13 +306,11 @@ function setupGlobalImageErrorHandler() {
 // INITIALIZATION
 // ============================================
 async function initCore() {
-    console.log('🚀 Initializing Core System...');
     setupGlobalImageErrorHandler();
     setupLanguageFilterDropdown();
     setupExploreAllCta();
     setupWelcomeBannerAutoDismiss();
     await checkAuth();
-    console.log('✅ Core System initialized');
 }
 
 if (document.readyState === 'loading') {

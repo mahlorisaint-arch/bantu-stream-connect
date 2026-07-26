@@ -313,7 +313,7 @@ async function updateSidebarProfile() {
             profileDiv.onclick = () => { window.location.href = 'manage-profiles.html'; };
         }
 
-        await checkAndShowCreatorSection(user.id);
+        checkAndShowCreatorSection(user.id);
 
     } else {
         nameSpan.textContent = 'Guest';
@@ -329,29 +329,27 @@ async function updateSidebarProfile() {
 }
 
 // ============================================ */
-// CHECK IF USER IS CREATOR AND SHOW CREATOR SECTION */
+// SHOW CREATOR SECTION - any logged-in user, no publish history required */
 // ============================================ */
-async function checkAndShowCreatorSection(userId) {
-    if (!userId || !window.supabaseClient) return;
+// Used to require at least one published Content row before revealing
+// "Create"/"Dashboard" in the sidebar - a closed loop with no way in:
+// a brand-new user could never find the upload entry point, since it
+// only appeared after they'd already found a way to publish something.
+// This one function gates the CREATOR section on every rebuilt screen
+// (Home, Movies, Music, Trending, Explore, Discover Creators, My Space,
+// Settings, Watch History, Creator Dashboard/Upload/Channel/Analytics -
+// they all share this file), so fixing it here fixes all of them.
+// Creator Dashboard already has a real empty state for zero-content
+// creators, same as every other honest-empty-state pattern on this
+// platform, so there's no reason to hide the path to it.
+function checkAndShowCreatorSection(userId) {
+    if (!userId) return;
 
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('Content')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('status', 'published')
-            .limit(1);
+    const creatorSection = document.querySelector('.sidebar-section.creator-only');
+    if (creatorSection) creatorSection.style.display = 'block';
 
-        if (!error && data && data.length > 0) {
-            const creatorSection = document.querySelector('.sidebar-section.creator-only');
-            if (creatorSection) creatorSection.style.display = 'block';
-
-            const creatorModeToggle = document.getElementById('creatorModeToggle');
-            if (creatorModeToggle) creatorModeToggle.style.display = 'flex';
-        }
-    } catch (e) {
-        console.warn('Error checking creator status:', e);
-    }
+    const creatorModeToggle = document.getElementById('creatorModeToggle');
+    if (creatorModeToggle) creatorModeToggle.style.display = 'flex';
 }
 
 // ============================================ */

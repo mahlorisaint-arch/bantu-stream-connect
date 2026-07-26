@@ -42,7 +42,6 @@ const CommunityFavorites = (function() {
      * Initialize Community Favorites module
      */
     async function init() {
-        console.log('⭐ Community Favorites Module initializing...');
         
         section = document.getElementById('community-favorites-section');
         container = document.getElementById('community-favorites-grid');
@@ -70,7 +69,6 @@ const CommunityFavorites = (function() {
         // Start background refresh
         startBackgroundRefresh();
         
-        console.log('✅ Community Favorites Module initialized');
     }
     
     /**
@@ -120,7 +118,6 @@ const CommunityFavorites = (function() {
             
             const { data: { session } } = await window.supabaseAuth.auth.getSession();
             currentUser = session?.user || null;
-            console.log('👤 Community Favorites user:', currentUser ? currentUser.id : 'guest');
         } catch (err) {
             console.error('Error getting current user:', err);
             currentUser = null;
@@ -179,7 +176,6 @@ const CommunityFavorites = (function() {
                 lastUpdated: Date.now()
             };
             
-            console.log('📊 Community Stats loaded:', communityStats);
             
         } catch (err) {
             console.error('Error loading community stats:', err);
@@ -238,12 +234,10 @@ const CommunityFavorites = (function() {
      * UPDATED: Now joins with content_engagement_stats and orders by total_likes DESC, total_shares DESC
      */
     async function loadContent() {
-        console.log('⭐ Loading Community Favorites...');
         
         // Try cached data first
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0) {
-            console.log('📦 Community Favorites: Using cached data,', cachedData.length, 'items');
             container.innerHTML = '';
             renderCards(cachedData);
             animateCards();
@@ -266,15 +260,16 @@ const CommunityFavorites = (function() {
             // Build complete dataset with metrics from engagement_stats
             let sectionData = await buildSectionData(contentList);
             
-            // Apply community boost logic
+            // Apply community boost logic (likes/shares/favorites/views/
+            // connectors weighted score, boosted for SA-region and
+            // local-language content - see applyCommunityBoost)
             sectionData = applyCommunityBoost(sectionData);
-            
-            // Sort by engagement score (likes * 2 + shares) - likes take priority
-            sectionData.sort((a, b) => {
-                const scoreA = (a.metrics?.likes || 0) * 2 + (a.metrics?.shares || 0);
-                const scoreB = (b.metrics?.likes || 0) * 2 + (b.metrics?.shares || 0);
-                return scoreB - scoreA;
-            });
+
+            // Sort by the boosted community_score computed above, not
+            // raw engagement - this is what actually makes the SA-region/
+            // local-language boost mean something instead of being
+            // computed and discarded.
+            sectionData.sort((a, b) => (b.community_score || 0) - (a.community_score || 0));
 
             // Render
             container.innerHTML = '';
@@ -286,7 +281,6 @@ const CommunityFavorites = (function() {
             // Animate cards
             animateCards();
             
-            console.log('✅ Community Favorites loaded:', sectionData.length, 'items');
             
         } catch (err) {
             console.error("❌ Community Favorites Section Error:", err);
@@ -709,7 +703,7 @@ const CommunityFavorites = (function() {
             await loadCommunityStats();
             addCommunityStatsBar();
         } catch (err) {
-            console.log('Background refresh failed:', err);
+            console.warn('Community Favorites background refresh failed:', err);
         }
     }
     
@@ -855,7 +849,6 @@ const CommunityFavorites = (function() {
         if (container) {
             container.innerHTML = '';
         }
-        console.log('⭐ Community Favorites Module destroyed');
     }
     
     // Public API

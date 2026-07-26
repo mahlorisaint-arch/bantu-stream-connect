@@ -19,9 +19,6 @@
 (function() {
     'use strict';
     
-    console.log('🎬 [HERO-LOAD] hero-content.js file has been loaded and is executing!');
-    console.log('🎬 [HERO-LOAD] Timestamp:', new Date().toISOString());
-    console.log('🎬 [HERO-LOAD] window.supabaseAuth exists?', !!window.supabaseAuth);
     
     const HeroContent = {
         // Configuration
@@ -57,11 +54,9 @@
         
         // Initialize the module
         async init() {
-            console.log('🎬 [HERO-INIT] HeroContent.init() called');
             
             // Prevent double initialization
             if (this.state.initialized) {
-                console.log('⚠️ [HERO-INIT] Already initialized, skipping');
                 return;
             }
             
@@ -74,7 +69,6 @@
                 return;
             }
             
-            console.log('✅ [HERO-INIT] Hero section element found:', this.elements.heroSection);
             
             // Setup event listeners
             this.setupEventListeners();
@@ -83,11 +77,9 @@
             await this.loadContent();
             
             this.state.initialized = true;
-            console.log('✅ [HERO-INIT] Hero Content Module initialized successfully');
         },
         
         cacheElements() {
-            console.log('🎬 [HERO-CACHE] Caching DOM elements...');
             
             this.elements = {
                 heroSection: document.getElementById('cinematic-hero'),
@@ -110,11 +102,9 @@
             };
             
             const foundCount = Object.values(this.elements).filter(v => v !== null).length;
-            console.log(`✅ [HERO-CACHE] Found ${foundCount} of ${Object.keys(this.elements).length} elements`);
         },
         
         setupEventListeners() {
-            console.log('🎬 [HERO-EVENTS] Setting up event listeners...');
             
             if (this.elements.heroExploreBtn) {
                 this.elements.heroExploreBtn.addEventListener('click', () => {
@@ -171,10 +161,8 @@
         },
         
         async loadContent() {
-            console.log('🎬 [HERO-LOAD] Starting to load hero content...');
             
             if (this.state.isLoading) {
-                console.log('⚠️ [HERO-LOAD] Already loading, skipping...');
                 return;
             }
             
@@ -188,7 +176,6 @@
                     return;
                 }
                 
-                console.log('✅ [HERO-LOAD] supabaseAuth is available');
                 
                 // Fetch ALL published content with video files including Cloudflare fields
                 const { data: allContent, error } = await window.supabaseAuth
@@ -226,7 +213,6 @@
                     return;
                 }
                 
-                console.log(`📊 [HERO-LOAD] Fetched ${allContent.length} total content items`);
                 
                 // ============================================
                 // 🔥 FIXED: LESS STRICT VIDEO FILTERING
@@ -235,7 +221,6 @@
                 const videoContent = allContent.filter(item => {
                     // 1. Cloudflare Stream is ALWAYS video
                     if (item.streaming_provider === 'cloudflare_stream') {
-                        console.log(`🎬 [HERO-FILTER] Cloudflare Stream video: "${item.title}" (ID: ${item.id})`);
                         return true;
                     }
                     
@@ -250,7 +235,6 @@
                         // Check if it matches any video type
                         for (const type of this.config.videoTypes) {
                             if (format.includes(type) || type.includes(format)) {
-                                console.log(`🎬 [HERO-FILTER] Video by format: "${item.title}" (${format})`);
                                 return true;
                             }
                         }
@@ -261,7 +245,6 @@
                         const type = item.content_type.toLowerCase();
                         for (const videoType of this.config.videoTypes) {
                             if (type.includes(videoType) || videoType.includes(type)) {
-                                console.log(`🎬 [HERO-FILTER] Video by type: "${item.title}" (${type})`);
                                 return true;
                             }
                         }
@@ -272,7 +255,6 @@
                         const fileUrl = item.file_url.toLowerCase();
                         for (const ext of this.config.videoExtensions) {
                             if (fileUrl.endsWith(ext)) {
-                                console.log(`🎬 [HERO-FILTER] Video by extension: "${item.title}" (${ext})`);
                                 return true;
                             }
                         }
@@ -280,19 +262,16 @@
                     
                     // 6. If media_type is 'video' (legacy field)
                     if (item.media_type && item.media_type.toLowerCase() === 'video') {
-                        console.log(`🎬 [HERO-FILTER] Video by media_type: "${item.title}"`);
                         return true;
                     }
                     
                     return false;
                 });
                 
-                console.log(`📹 [HERO-LOAD] Filtered to ${videoContent.length} video items`);
                 
                 // If no video content found, try to use ALL content as fallback
                 if (videoContent.length === 0) {
                     console.warn('⚠️ [HERO-LOAD] No video content found with strict filtering!');
-                    console.log('🔄 [HERO-LOAD] Attempting fallback: using all content...');
                     
                     // Fallback: include any content that has a file_url or streaming_provider
                     const fallbackContent = allContent.filter(item => {
@@ -302,14 +281,12 @@
                             if (item.streaming_provider === 'cloudflare_r2') {
                                 return false;
                             }
-                            console.log(`🔄 [HERO-FALLBACK] Including: "${item.title}" (ID: ${item.id})`);
                             return true;
                         }
                         return false;
                     });
                     
                     if (fallbackContent.length > 0) {
-                        console.log(`📹 [HERO-FALLBACK] Using ${fallbackContent.length} items as fallback`);
                         // Use fallback content
                         return this.selectAndRenderContent(fallbackContent);
                     }
@@ -341,7 +318,6 @@
                 return;
             }
             
-            console.log(`🎯 [HERO-SELECT] Selecting from ${contentList.length} items`);
             
             // Get stored selection or select random
             const lastVideoId = localStorage.getItem('hero_last_content_id');
@@ -353,11 +329,6 @@
             // Check if we should use existing selection (within rotation window)
             if (lastVideoId && lastVideoTime && (now - parseInt(lastVideoTime)) < this.config.rotationMs) {
                 selectedVideo = contentList.find(v => v.id.toString() === lastVideoId);
-                if (selectedVideo) {
-                    console.log(`🎬 [HERO-SELECT] Using existing video (within ${this.config.rotationHours} hours): "${selectedVideo.title}" (ID: ${selectedVideo.id})`);
-                } else {
-                    console.log(`🔄 [HERO-SELECT] Previous video no longer available, selecting new...`);
-                }
             }
             
             // If no existing selection or expired, pick random
@@ -380,7 +351,6 @@
                 localStorage.setItem('hero_last_content_id', selectedVideo.id.toString());
                 localStorage.setItem('hero_last_update_time', now.toString());
                 
-                console.log(`🎬 [HERO-SELECT] Selected NEW random video: "${selectedVideo.title}" (ID: ${selectedVideo.id}) - ${randomIndex + 1} of ${availableVideos.length}`);
             }
             
             // Generate session ID
@@ -397,7 +367,6 @@
                 clearInterval(this.state.rotationInterval);
             }
             this.state.rotationInterval = setInterval(() => this.rotateContent(), this.config.rotationMs);
-            console.log(`⏰ [HERO-SELECT] Rotation set for ${this.config.rotationHours} hours`);
         },
         
         /**
@@ -445,7 +414,6 @@
                     content.total_views = data.total_views || 0;
                     content.total_likes = data.total_likes || 0;
                     content.total_shares = data.total_shares || 0;
-                    console.log(`📊 [HERO-STATS] Stats: ${content.total_views} views, ${content.total_likes} likes`);
                 } else {
                     // Fallback to content_views count
                     try {
@@ -479,7 +447,6 @@
                     
                     if (!connError) {
                         content.connector_count = count || 0;
-                        console.log(`👥 [HERO-STATS] Creator ${content.user_id} has ${content.connector_count} connectors/followers`);
                     } else {
                         console.warn('⚠️ [HERO-STATS] Could not fetch connector count:', connError.message);
                         content.connector_count = 0;
@@ -494,7 +461,6 @@
         },
         
         async renderContent(content) {
-            console.log(`🎬 [HERO-RENDER] Rendering content: "${content.title}" (ID: ${content.id})`);
             
             if (!content) {
                 console.error('❌ [HERO-RENDER] No content to render');
@@ -526,7 +492,6 @@
                 this.elements.heroWatchBtn.dataset.contentId = content.id;
             }
             
-            console.log('✅ [HERO-RENDER] Content rendered successfully');
         },
         
         updateText(content) {
@@ -549,7 +514,6 @@
             if (this.elements.heroCreatorName) {
                 const displayName = creator?.full_name || creator?.username || 'Featured Creator';
                 this.elements.heroCreatorName.textContent = displayName;
-                console.log(`👤 [HERO-RENDER] Creator: ${displayName}`);
             }
             
             if (this.elements.heroCreatorAvatar && creator?.avatar_url) {
@@ -582,7 +546,6 @@
             if (this.elements.heroConnectors) this.elements.heroConnectors.textContent = connectors;
             if (this.elements.heroShares) this.elements.heroShares.textContent = shares;
             
-            console.log(`📊 [HERO-RENDER] Metrics: ${views} views, ${favorites} favs, ${connectors} connectors, ${shares} shares`);
         },
         
         updateBadges(content) {
@@ -631,8 +594,6 @@
             
             const isCloudflareStream = content.streaming_provider === 'cloudflare_stream';
             
-            console.log(`🎬 [HERO-VIDEO] Loading video: ${videoUrl.substring(0, 80)}...`);
-            console.log(`🎬 [HERO-VIDEO] Cloudflare Stream: ${isCloudflareStream}`);
             
             // Reset video
             this.elements.heroVideo.pause();
@@ -644,7 +605,6 @@
             // Set appropriate type for HLS
             if (isCloudflareStream || videoUrl.endsWith('.m3u8')) {
                 this.elements.videoSource.type = 'application/vnd.apple.mpegurl';
-                console.log('📺 [HERO-VIDEO] HLS manifest detected, type set to application/vnd.apple.mpegurl');
             } else {
                 // Determine MIME type from extension
                 const ext = videoUrl.split('.').pop()?.toLowerCase();
@@ -682,13 +642,11 @@
             const playPromise = this.elements.heroVideo.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log('✅ [HERO-VIDEO] Video playing successfully');
                     this.state.isPlaying = true;
                     this.startViewTimer();
                     // Initialize playback session
                     this.initializePlaybackSession(content);
                 }).catch(error => {
-                    console.log('⚠️ [HERO-VIDEO] Autoplay prevented:', error.message);
                     this.showPlayButton();
                 });
             }
@@ -739,8 +697,6 @@
                 .then(({ error }) => {
                     if (error) {
                         console.warn('⚠️ [HERO-SESSION] Playback session creation failed:', error.message);
-                    } else {
-                        console.log('🎬 [HERO-SESSION] Playback session initialized:', this.state.playbackSessionId);
                     }
                 });
         },
@@ -846,7 +802,6 @@
             if (!this.state.currentContent) return;
             if (this.state.viewRecorded) return;
             
-            console.log('⏱️ [HERO-VIEW] View timer started for content:', this.state.currentContent.id);
             this.state.viewTimer = setTimeout(() => {
                 this.recordView();
             }, this.config.viewThresholdSeconds * 1000);
@@ -876,7 +831,6 @@
             const threshold = Math.min(this.config.viewThresholdSeconds, duration * this.config.viewPercentage);
             
             if (currentTime >= threshold) {
-                console.log(`🎯 [HERO-VIEW] View threshold reached (${threshold}s), recording view for content:`, this.state.currentContent.id);
                 this.recordView();
             }
         },
@@ -927,7 +881,6 @@
             const deviceType = this.getDeviceType();
             const currentTime = Math.floor(this.elements.heroVideo?.currentTime || 0);
             
-            console.log('📝 [HERO-VIEW] Recording view for content:', contentId);
             
             try {
                 // Use RPC for view recording
@@ -945,7 +898,6 @@
                     return;
                 }
                 
-                console.log(`✅ [HERO-VIEW] View recorded for content ${contentId}, total views: ${data?.views || 0}`);
                 
                 // Update UI with new view count
                 if (data?.views !== undefined) {
@@ -989,7 +941,6 @@
                     .maybeSingle();
                 
                 if (existing) {
-                    console.log('⏭️ [HERO-VIEW] View already recorded, skipping');
                     return;
                 }
                 
@@ -1009,7 +960,6 @@
                 
                 if (insertError) throw insertError;
                 
-                console.log(`✅ [HERO-VIEW] View recorded via fallback for content ${contentId}`);
                 
                 // Get updated count
                 const { count, error: countError } = await window.supabaseAuth
@@ -1031,7 +981,6 @@
         },
         
         async rotateContent() {
-            console.log('🔄 [HERO-ROTATE] Rotating hero content...');
             // Clean up current view state
             this.state.viewRecorded = false;
             this.clearViewTimer();
@@ -1054,7 +1003,6 @@
         },
         
         showPlaceholder(reason) {
-            console.log(`🎬 [HERO-PLACEHOLDER] Showing placeholder: ${reason}`);
             
             if (this.elements.heroTitle) {
                 this.elements.heroTitle.textContent = 'WELCOME TO BANTU STREAM CONNECT';
@@ -1096,13 +1044,11 @@
             }
             this.state.initialized = false;
             this.state.viewRecorded = false;
-            console.log('🎬 [HERO] Module destroyed');
         }
     };
     
     // Make available globally
     window.HeroContent = HeroContent;
-    console.log('🎬 [HERO-LOAD] HeroContent module registered on window');
     
     // Auto-initialize with a delay to ensure DOM is ready
     if (document.readyState === 'loading') {
@@ -1116,7 +1062,6 @@
     // Fallback initialization
     window.addEventListener('load', () => {
         if (!window.HeroContent.state.initialized) {
-            console.log('🎬 [HERO-LOAD] Load event fallback, initializing...');
             setTimeout(() => window.HeroContent.init(), 100);
         }
     });

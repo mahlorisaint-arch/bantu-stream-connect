@@ -11,7 +11,6 @@
    3. Shows 'Connected' state after connecting
 /* ============================================ */
 
-console.log('🎙️ Bantu Waves: Podcasts section loading...');
 
 const BantuWavesPodcasts = {
     config: {
@@ -53,7 +52,6 @@ const BantuWavesPodcasts = {
         this.loadPodcasts();
         
         this.state.initialized = true;
-        console.log('🎙️ Podcasts section initialized');
     },
 
     cacheElements() {
@@ -76,7 +74,6 @@ const BantuWavesPodcasts = {
         if (!forceRefresh) {
             const cachedData = this.getCachedData();
             if (cachedData && cachedData.length > 0) {
-                console.log('📦 Podcasts: Using cached data', cachedData.length, 'items');
                 this.state.podcasts = cachedData;
                 this.render(cachedData);
                 return;
@@ -97,7 +94,6 @@ const BantuWavesPodcasts = {
             this.cacheData(enrichedPodcasts);
             this.render(enrichedPodcasts);
             
-            console.log('✅ Podcasts loaded:', enrichedPodcasts.length);
             
         } catch (error) {
             console.error('❌ Error loading podcasts:', error);
@@ -733,8 +729,6 @@ const BantuWavesPodcasts = {
     showToast(message, type) {
         if (window.showToast) {
             window.showToast(message, type);
-        } else {
-            console.log(`[${type}] ${message}`);
         }
     }
 };
@@ -746,7 +740,6 @@ if (document.readyState === 'loading') {
             if (window.supabaseAuth) {
                 BantuWavesPodcasts.init();
             } else {
-                console.log('🎙️ Podcasts waiting for supabaseAuth...');
                 const authCheck = setInterval(() => {
                     if (window.supabaseAuth) {
                         clearInterval(authCheck);
@@ -768,7 +761,6 @@ if (document.readyState === 'loading') {
         if (window.supabaseAuth) {
             BantuWavesPodcasts.init();
         } else {
-            console.log('🎙️ Podcasts waiting for supabaseAuth...');
             const authCheck = setInterval(() => {
                 if (window.supabaseAuth) {
                     clearInterval(authCheck);

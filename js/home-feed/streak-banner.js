@@ -14,7 +14,6 @@ const StreakBannerModule = (function() {
     let currentUser = null;
 
     async function init() {
-        console.log('🔥 Streak Banner Module initializing...');
 
         container = document.getElementById('streak-banner');
         if (!container) {
@@ -30,7 +29,6 @@ const StreakBannerModule = (function() {
         }
 
         await render();
-        console.log('✅ Streak Banner Module initialized');
     }
 
     async function getCurrentUser() {
