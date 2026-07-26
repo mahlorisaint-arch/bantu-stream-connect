@@ -658,6 +658,53 @@ SECTION HEADERS
     background: rgba(255, 255, 255, 0.14);
 }
 
+/* Explore All CTA - trending.css owns a same-named .explore-btn class
+   but that stylesheet isn't loaded on the home feed, so this button
+   was rendering completely unstyled here. Transparent glassmorphic,
+   highlighted by cyan - matches the card-badge/reason-badge treatment
+   used throughout the rest of the page instead of a solid fill. */
+.explore-all-cta {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    margin: 20px 0 40px;
+}
+
+.explore-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 999px;
+    color: #00E5FF;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+.explore-btn:hover {
+    background: rgba(0, 229, 255, 0.12);
+    border-color: rgba(0, 229, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+}
+
+.explore-btn i {
+    transition: transform 0.25s ease;
+}
+
+.explore-btn:hover i {
+    transform: translateX(4px);
+}
+
 /* ============================================
 RESPONSIVE
 ============================================ */
@@ -689,6 +736,15 @@ RESPONSIVE
     
     .wavelet-card {
         width: 160px;
+    }
+
+    .explore-all-cta {
+        padding: 28px 15px;
+    }
+
+    .explore-btn {
+        padding: 12px 24px;
+        font-size: 13px;
     }
 
     /* Tablet reduction - matches content-detail.html's rail header

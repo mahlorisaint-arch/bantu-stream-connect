@@ -212,6 +212,21 @@ function setupLanguageFilterDropdown() {
     });
 }
 
+/**
+ * Explore All Content CTA at the bottom of the feed. trending-screen.js
+ * (which owns the same #explore-all-btn id/handler pattern on the
+ * Trending page) isn't loaded here, so this button previously had no
+ * click handler at all on Home - wire it to the same content-library.html
+ * destination used elsewhere on the platform.
+ */
+function setupExploreAllCta() {
+    const btn = document.getElementById('explore-all-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        window.location.href = 'content-library.html';
+    });
+}
+
 function updateNotificationBadge(count) {
     ['notification-count', 'sidebar-notification-count'].forEach(id => {
         const badge = document.getElementById(id);
@@ -245,6 +260,7 @@ async function initCore() {
     console.log('🚀 Initializing Core System...');
     setupGlobalImageErrorHandler();
     setupLanguageFilterDropdown();
+    setupExploreAllCta();
     await checkAuth();
     console.log('✅ Core System initialized');
 }
@@ -264,6 +280,7 @@ Object.assign(window, {
     loadUserProfile,
     loadNotifications,
     setupLanguageFilterDropdown,
+    setupExploreAllCta,
     updateNotificationBadge,
     showToast,
     escapeHtml,

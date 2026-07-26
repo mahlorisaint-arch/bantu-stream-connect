@@ -250,13 +250,15 @@
     transform: scale(1.1);
 }
 
-/* Featured Badge */
+/* Featured Badge - transparent glassmorphic, highlighted by cyan
+   (matches content-detail.html's .reason-badge treatment) instead of
+   a solid cyan-fill pill. */
 .hero-featured-badge {
     position: absolute;
     top: calc(1.875rem * var(--ui-scale));
     right: calc(1.875rem * var(--ui-scale));
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-    color: white;
+    background: rgba(6, 20, 26, 0.75);
+    color: #00E5FF;
     padding: calc(0.5rem * var(--ui-scale)) calc(1.25rem * var(--ui-scale));
     border-radius: calc(2.5rem * var(--ui-scale));
     font-size: var(--font-sm);
@@ -265,9 +267,13 @@
     align-items: center;
     gap: var(--spacing-xs);
     z-index: 4;
-    box-shadow: 0 calc(0.25rem * var(--ui-scale)) calc(1rem * var(--ui-scale)) rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.hero-featured-badge i {
+    color: #00E5FF;
 }
 
 /* Video Play Button Overlay */
