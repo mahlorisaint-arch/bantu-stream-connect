@@ -209,6 +209,12 @@ async function loadShorts() {
           username,
           full_name,
           avatar_url
+        ),
+        content_engagement_stats (
+          total_views,
+          total_likes,
+          total_comments,
+          total_shares
         )
       `)
       .eq('status', 'published')
@@ -233,8 +239,9 @@ async function loadShorts() {
       
       updateLoadingProgress('Loading interactions...', 75);
       await loadShortMetrics(shortsData);
+      await applyUserEngagementState(shortsData);
       computeTrending(shortsData);
-      
+
       updateLoadingProgress('Rendering...', 90);
       renderShorts();
       
@@ -254,11 +261,18 @@ async function loadShorts() {
   }
 }
 
-// Load real like/save/share counts for a batch of shorts (used for both the
-// initial load and loadMoreShorts - one shared function instead of two
-// near-identical copies that could drift). saved_shorts and
-// content_engagement_stats.total_shares are real tables/columns, same pattern
-// already used for likes here and for shares in js/home-feed/wavelets.js.
+// Real engagement counts + creator verification for a batch of shorts, used
+// for both the initial load and loadMoreShorts - one shared function
+// instead of two near-identical copies that could drift.
+//
+// views/likes/comments/shares now come from the content_engagement_stats
+// embed added to the Content select above - the exact same source of truth
+// content-detail.js uses (fetchContentProfileDetails/loadLiveEngagementCounts),
+// instead of a separate per-short content_likes count query and the raw
+// (often stale) Content.views_count/comments_count columns. Save count
+// switched from saved_shorts to watch_later, matching content-detail's own
+// bookmark-icon "Save" button (#watchLaterBtn), which is watch_later, not a
+// shorts-only table.
 async function loadShortMetrics(shorts) {
   if (!shorts || !shorts.length) return;
 
@@ -268,11 +282,11 @@ async function loadShortMetrics(shorts) {
   // user_profiles itself - confirmed against the live schema.
   const creatorIds = [...new Set(shorts.map(s => s.user_profiles?.id).filter(Boolean))];
 
-  const [likeCounts, saveCounts, engagementStats, creatorVerification] = await Promise.all([
+  const [saveCounts, creatorVerification] = await Promise.all([
     Promise.all(contentIds.map(async (id) => {
       try {
         const { count } = await supabaseClient
-          .from('content_likes')
+          .from('watch_later')
           .select('*', { count: 'exact', head: true })
           .eq('content_id', id);
         return { id, count: count || 0 };
@@ -280,29 +294,6 @@ async function loadShortMetrics(shorts) {
         return { id, count: 0 };
       }
     })),
-    Promise.all(contentIds.map(async (id) => {
-      try {
-        const { count } = await supabaseClient
-          .from('saved_shorts')
-          .select('*', { count: 'exact', head: true })
-          .eq('content_id', id);
-        return { id, count: count || 0 };
-      } catch (e) {
-        return { id, count: 0 };
-      }
-    })),
-    (async () => {
-      try {
-        const { data, error } = await supabaseClient
-          .from('content_engagement_stats')
-          .select('content_id, total_shares')
-          .in('content_id', contentIds);
-        if (error) throw error;
-        return data || [];
-      } catch (e) {
-        return [];
-      }
-    })(),
     (async () => {
       if (!creatorIds.length) return [];
       try {
@@ -318,29 +309,82 @@ async function loadShortMetrics(shorts) {
     })()
   ]);
 
-  const sharesByContentId = {};
-  engagementStats.forEach(row => { sharesByContentId[row.content_id] = row.total_shares || 0; });
-
   const verificationByCreatorId = {};
   creatorVerification.forEach(row => { verificationByCreatorId[row.id] = row; });
 
-  likeCounts.forEach(({ id, count }) => {
-    const short = shorts.find(s => s.id === id);
-    if (short) short.real_likes_count = count;
-  });
   saveCounts.forEach(({ id, count }) => {
     const short = shorts.find(s => s.id === id);
     if (short) short.real_saves_count = count;
   });
+
   shorts.forEach(short => {
+    const stats = short.content_engagement_stats;
+    short.views_count = stats?.total_views || 0;
+    short.real_likes_count = stats?.total_likes || 0;
+    short.comments_count = stats?.total_comments || 0;
+    short.real_shares_count = stats?.total_shares || 0;
+
     const verification = verificationByCreatorId[short.user_profiles?.id];
     if (verification && short.user_profiles) {
       short.user_profiles.is_verified = verification.is_verified;
       short.user_profiles.is_creator_verified = verification.is_creator_verified;
     }
   });
+}
+
+// Bulk-fetch which of the currently loaded shorts the signed-in user has
+// already liked/saved, baked directly into the initial slide markup
+// (buildSlideHTML) instead of being checked asynchronously per-slide after
+// render. The old per-active-slide check (updateLikeButton/updateSaveButton,
+// fired from Swiper's slideChange) never ran for the very first slide
+// (slideChange doesn't fire on init), which is exactly why a like a user
+// had already made didn't always show as liked - this fixes that by making
+// the state part of the data the card is built from, the same way
+// content-detail.js's loadAllEngagementStates() bulk-loads
+// liked/favorited/watchLater state up front rather than checking on demand.
+async function applyUserEngagementState(shorts) {
+  if (!shorts || !shorts.length || !currentUser) {
+    shorts?.forEach(s => { s.is_liked = false; s.is_saved = false; });
+    return;
+  }
+
+  const contentIds = shorts.map(s => s.id);
+
+  const [likedRows, savedRows] = await Promise.all([
+    (async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('content_likes')
+          .select('content_id')
+          .eq('user_id', currentUser.id)
+          .in('content_id', contentIds);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        return [];
+      }
+    })(),
+    (async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('watch_later')
+          .select('content_id')
+          .eq('user_id', currentUser.id)
+          .in('content_id', contentIds);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        return [];
+      }
+    })()
+  ]);
+
+  const likedIds = new Set(likedRows.map(r => r.content_id));
+  const savedIds = new Set(savedRows.map(r => r.content_id));
+
   shorts.forEach(short => {
-    short.real_shares_count = sharesByContentId[short.id] || 0;
+    short.is_liked = likedIds.has(short.id);
+    short.is_saved = savedIds.has(short.id);
   });
 }
 
@@ -418,6 +462,12 @@ async function fetchFollowingShorts() {
           username,
           full_name,
           avatar_url
+        ),
+        content_engagement_stats (
+          total_views,
+          total_likes,
+          total_comments,
+          total_shares
         )
       `)
       .in('user_id', Array.from(userConnections))
@@ -432,6 +482,7 @@ async function fetchFollowingShorts() {
     if (data && data.length > 0) {
       shortsData = data;
       await loadShortMetrics(shortsData);
+      await applyUserEngagementState(shortsData);
       computeTrending(shortsData);
       renderShorts();
       initSwiper();
@@ -585,11 +636,13 @@ function buildSlideHTML(short, index) {
           <i class="fas fa-volume-up"></i>
         </button>
 
-        <!-- Actions (Right Side) -->
+        <!-- Actions (Right Side) - liked/saved state is baked in here from
+             applyUserEngagementState() (bulk-loaded before render), not
+             checked asynchronously per-slide after the fact. -->
         <div class="shorts-actions">
-          <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}" title="Like">
-            <i class="far fa-heart"></i>
-            <span class="action-count">${formatNumber(short.real_likes_count || short.likes_count || 0)}</span>
+          <button class="action-btn like-btn ${short.is_liked ? 'liked' : ''}" data-action="like" data-short-id="${short.id}" title="Like">
+            <i class="${short.is_liked ? 'fas' : 'far'} fa-heart"></i>
+            <span class="action-count">${formatNumber(short.real_likes_count || 0)}</span>
           </button>
 
           <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}" title="Comments">
@@ -602,8 +655,8 @@ function buildSlideHTML(short, index) {
             <span class="action-count">${formatNumber(short.real_shares_count || 0)}</span>
           </button>
 
-          <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}" title="Save">
-            <i class="far fa-bookmark"></i>
+          <button class="action-btn save-btn ${short.is_saved ? 'saved' : ''}" data-action="save" data-short-id="${short.id}" title="Save">
+            <i class="${short.is_saved ? 'fas' : 'far'} fa-bookmark"></i>
             <span class="action-count">${formatNumber(short.real_saves_count || 0)}</span>
           </button>
 
@@ -764,7 +817,6 @@ function initSwiper() {
         viewThresholdReached = false;
         playbackSessionId = null;
         setTimeout(() => playCurrentShort(), 100);
-        updateActiveShort();
         updateProgressSegmentsActive();
         closeMoreMenu();
       },
@@ -1430,15 +1482,6 @@ function handleVideoError(e) {
   showToast('Failed to load video', 'error');
 }
 
-function updateActiveShort() {
-  const activeSlide = document.querySelector('.swiper-slide-active');
-  if (!activeSlide) return;
-  
-  const shortId = activeSlide.dataset.shortId;
-  updateLikeButton(shortId);
-  updateSaveButton(shortId);
-}
-
 function updateMuteButton() {
   const muteBtn = document.querySelector('.swiper-slide-active .mute-btn-float');
   if (muteBtn) {
@@ -1829,16 +1872,21 @@ function attachCommentActionListeners() {
 // ============================================
 // ACTION HANDLERS
 // ============================================
+// Same check-existing-row-before-insert pattern as content-detail.js's
+// toggleLike() ("Toggle like with no 409 conflicts") - avoids a duplicate-
+// key error if the optimistic UI state and the real DB state have drifted
+// (e.g. liked on another tab/device).
 async function handleLike(shortId, btn) {
   if (!currentUser) {
     showToast('Sign in to like shorts', 'info');
     return;
   }
-  
+
   const liked = btn.classList.contains('liked');
   const countEl = btn.querySelector('.action-count');
   let currentCount = parseInt(countEl.textContent.replace(/[^0-9]/g, '')) || 0;
-  
+  const contentId = parseInt(shortId, 10);
+
   if (liked) {
     btn.classList.remove('liked');
     btn.querySelector('i').className = 'far fa-heart';
@@ -1848,47 +1896,58 @@ async function handleLike(shortId, btn) {
     btn.querySelector('i').className = 'fas fa-heart';
     countEl.textContent = formatNumber(currentCount + 1);
   }
-  
+
   try {
     if (liked) {
-      await supabaseClient
+      const { error } = await supabaseClient
         .from('content_likes')
         .delete()
-        .eq('content_id', shortId)
-        .eq('user_id', currentUser.id);
+        .eq('user_id', currentUser.id)
+        .eq('content_id', contentId);
+      if (error) throw error;
     } else {
-      await supabaseClient
+      const { data: existing } = await supabaseClient
         .from('content_likes')
-        .insert({
-          content_id: shortId,
-          user_id: currentUser.id,
-          created_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('content_id', contentId)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await supabaseClient
+          .from('content_likes')
+          .insert({ user_id: currentUser.id, content_id: contentId });
+        if (error) throw error;
+      }
       showDoubleTapIndicator();
     }
   } catch (error) {
     if (liked) {
       btn.classList.add('liked');
       btn.querySelector('i').className = 'fas fa-heart';
-      countEl.textContent = formatNumber(currentCount);
     } else {
       btn.classList.remove('liked');
       btn.querySelector('i').className = 'far fa-heart';
-      countEl.textContent = formatNumber(currentCount);
     }
+    countEl.textContent = formatNumber(currentCount);
     console.error('Like error:', error);
     showToast('Failed to update like', 'error');
   }
 }
 
+// "Save" uses watch_later - the same real table content-detail.html's own
+// bookmark-icon Save button (#watchLaterBtn) writes to, not a shorts-only
+// table, so a short saved here shows up in the same Watch Later list
+// everywhere else on the platform.
 async function handleSave(shortId, btn) {
   if (!currentUser) {
     showToast('Sign in to save shorts', 'info');
     return;
   }
-  
+
   const saved = btn.classList.contains('saved');
-  
+  const contentId = parseInt(shortId, 10);
+
   if (saved) {
     btn.classList.remove('saved');
     btn.querySelector('i').className = 'far fa-bookmark';
@@ -1896,23 +1955,30 @@ async function handleSave(shortId, btn) {
     btn.classList.add('saved');
     btn.querySelector('i').className = 'fas fa-bookmark';
   }
-  
+
   try {
     if (saved) {
-      await supabaseClient
-        .from('saved_shorts')
+      const { error } = await supabaseClient
+        .from('watch_later')
         .delete()
-        .eq('content_id', shortId)
-        .eq('user_id', currentUser.id);
+        .eq('user_id', currentUser.id)
+        .eq('content_id', contentId);
+      if (error) throw error;
       showToast('Removed from saved', 'info');
     } else {
-      await supabaseClient
-        .from('saved_shorts')
-        .insert({
-          content_id: shortId,
-          user_id: currentUser.id,
-          saved_at: new Date().toISOString()
-        });
+      const { data: existing } = await supabaseClient
+        .from('watch_later')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('content_id', contentId)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await supabaseClient
+          .from('watch_later')
+          .insert({ user_id: currentUser.id, content_id: contentId });
+        if (error) throw error;
+      }
       showToast('Saved!', 'success');
     }
   } catch (error) {
@@ -1950,22 +2016,36 @@ async function handleConnect(creatorId, btn) {
 
   try {
     if (connected) {
-      await supabaseClient
+      const { error } = await supabaseClient
         .from('connectors')
         .delete()
         .eq('connector_id', currentUser.id)
         .eq('connected_id', creatorId);
+      if (error) throw error;
       userConnections.delete(creatorId);
       showToast('Disconnected', 'info');
     } else {
-      await supabaseClient
+      // Same check-existing-row-before-insert pattern as handleLike/
+      // handleSave (and content-detail.js's toggleLike/toggleFavorite/
+      // toggleWatchLater) - avoids a duplicate-key 409 if already
+      // connected from another tab/device.
+      const { data: existing } = await supabaseClient
         .from('connectors')
-        .insert({
-          connector_id: currentUser.id,
-          connected_id: creatorId,
-          connection_type: 'creator',
-          created_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('connector_id', currentUser.id)
+        .eq('connected_id', creatorId)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await supabaseClient
+          .from('connectors')
+          .insert({
+            connector_id: currentUser.id,
+            connected_id: creatorId,
+            connection_type: 'creator'
+          });
+        if (error) throw error;
+      }
       userConnections.add(creatorId);
       showToast('Connected!', 'success');
     }
@@ -2065,6 +2145,46 @@ function updateShareLink() {
   document.getElementById('share-link-input').value = shareUrl;
 }
 
+// Same pattern as content-detail.js's recordShareEvent(): a share only
+// counts once an actual share action has happened (copy or platform link),
+// not just from opening the modal - content_shares insert (real columns
+// only: content_id/user_id, unlike content-detail.js's own copy of this,
+// which sends a shared_at field that column doesn't have) has a DB trigger
+// that keeps content_engagement_stats.total_shares in sync, so this is the
+// same source of truth the displayed share count is read from. The
+// content_events insert compensates for a DB-side bug: the trigger that
+// auto-logs content_shares inserts into content_events hardcodes
+// event_type='like' regardless of table, so without this every share would
+// get silently mislogged as a like in the events table.
+async function recordShareEvent(shortId) {
+  if (!shortId) return;
+  const contentId = parseInt(shortId, 10);
+  try {
+    if (currentUser) {
+      await supabaseClient
+        .from('content_shares')
+        .insert({ content_id: contentId, user_id: currentUser.id });
+
+      await supabaseClient
+        .from('content_events')
+        .insert({
+          content_id: contentId,
+          user_id: currentUser.id,
+          event_type: 'share',
+          created_at: new Date().toISOString()
+        });
+    }
+
+    const short = shortsData.find(s => s.id == shortId);
+    if (short) short.real_shares_count = (short.real_shares_count || 0) + 1;
+
+    const countEl = document.querySelector(`.swiper-slide-active .share-btn[data-short-id="${shortId}"] .action-count`);
+    if (countEl) countEl.textContent = formatNumber(short?.real_shares_count || 0);
+  } catch (err) {
+    console.warn('Failed to record share event:', err);
+  }
+}
+
 async function copyShareLink() {
   const input = document.getElementById('share-link-input');
   try {
@@ -2075,6 +2195,7 @@ async function copyShareLink() {
     document.execCommand('copy');
     showToast('Link copied!', 'success');
   }
+  await recordShareEvent(currentShort?.id);
   closeShare();
 }
 
@@ -2082,6 +2203,7 @@ function shareToWhatsApp() {
   const text = `Check out this short on Bantu Stream Connect!`;
   const url = document.getElementById('share-link-input').value;
   window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+  recordShareEvent(currentShort?.id);
   closeShare();
 }
 
@@ -2089,6 +2211,7 @@ function shareToTwitter() {
   const text = `Check out this short on Bantu Stream Connect!`;
   const url = document.getElementById('share-link-input').value;
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+  recordShareEvent(currentShort?.id);
   closeShare();
 }
 
@@ -2211,46 +2334,6 @@ function fixMediaUrl(url) {
   return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 
-function updateLikeButton(shortId) {
-  if (!currentUser) return;
-  const btn = document.querySelector(`.swiper-slide-active .like-btn[data-short-id="${shortId}"]`);
-  if (!btn) return;
-  
-  supabaseClient
-    .from('content_likes')
-    .select('id')
-    .eq('content_id', shortId)
-    .eq('user_id', currentUser.id)
-    .maybeSingle()
-    .then(({ data }) => {
-      if (data) {
-        btn.classList.add('liked');
-        btn.querySelector('i').className = 'fas fa-heart';
-      }
-    })
-    .catch(() => {});
-}
-
-function updateSaveButton(shortId) {
-  if (!currentUser) return;
-  const btn = document.querySelector(`.swiper-slide-active .save-btn[data-short-id="${shortId}"]`);
-  if (!btn) return;
-  
-  supabaseClient
-    .from('saved_shorts')
-    .select('id')
-    .eq('content_id', shortId)
-    .eq('user_id', currentUser.id)
-    .maybeSingle()
-    .then(({ data }) => {
-      if (data) {
-        btn.classList.add('saved');
-        btn.querySelector('i').className = 'fas fa-bookmark';
-      }
-    })
-    .catch(() => {});
-}
-
 function showDoubleTapIndicator() {
   const indicator = document.getElementById('double-tap-indicator');
   indicator.classList.add('active');
@@ -2346,6 +2429,12 @@ async function loadMoreShorts() {
           username,
           full_name,
           avatar_url
+        ),
+        content_engagement_stats (
+          total_views,
+          total_likes,
+          total_comments,
+          total_shares
         )
       `)
       .eq('status', 'published')
@@ -2362,6 +2451,7 @@ async function loadMoreShorts() {
       shortsData = [...shortsData, ...data];
 
       await loadShortMetrics(data);
+      await applyUserEngagementState(data);
       computeTrending(shortsData);
       appendProgressSegments(data.length);
 

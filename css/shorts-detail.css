@@ -417,8 +417,8 @@ body {
 }
 
 .action-btn.like-btn.liked {
-  color: var(--error-color);
-  border-color: rgba(239, 68, 68, 0.5);
+  color: var(--cyan);
+  border-color: var(--glass-border-strong);
 }
 
 .action-btn.like-btn.liked i {
@@ -691,7 +691,7 @@ body {
 .double-tap-indicator.active {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1.2);
-  color: var(--error-color);
+  color: var(--cyan);
   animation: doubleTapPulse 0.5s ease forwards;
 }
 
