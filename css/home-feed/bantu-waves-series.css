@@ -390,9 +390,24 @@
     .series-info {
         padding: var(--spacing-sm, 0.75rem);
     }
-    
+
+    .series-title {
+        font-size: 12px;
+    }
+
     .series-meta {
+        font-size: 11px;
         gap: var(--spacing-sm, 0.75rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .series-title {
+        font-size: 11px;
+    }
+
+    .series-meta {
+        font-size: 10px;
     }
 }
 

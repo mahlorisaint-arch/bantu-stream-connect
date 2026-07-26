@@ -136,7 +136,7 @@
 }
 
 .recommendation-score.medium {
-    background: linear-gradient(135deg, #00E5FF, #D97706);
+    background: linear-gradient(135deg, #00E5FF, #0891b2);
     color: white;
 }
 
@@ -499,7 +499,7 @@
 }
 
 .theme-light #for-you-grid .content-card::before {
-    background: linear-gradient(90deg, #2563EB, #D97706);
+    background: linear-gradient(90deg, #00E5FF, #0891b2);
 }
 
 /* High Contrast Theme */

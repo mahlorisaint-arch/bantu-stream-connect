@@ -123,13 +123,17 @@
     box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
 }
 
-/* Badges */
+/* Badges - transparent glassmorphic, highlighted by cyan, matching
+   content-detail.html's badge treatment. */
 .playlist-type-badge {
     position: absolute;
     top: 12px;
     left: 12px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(6, 20, 26, 0.75);
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    color: #00E5FF;
     padding: 4px 10px;
     border-radius: var(--radius-full, 9999px);
     font-size: var(--font-xs, 0.75rem);
@@ -394,15 +398,22 @@
     }
     
     .playlist-title {
-        font-size: var(--font-sm, 0.875rem);
+        font-size: 12px;
     }
-    
+
     .playlist-meta {
+        font-size: 11px;
         gap: var(--spacing-sm, 0.75rem);
     }
-    
+
     .playlist-actions .action-btn {
         padding: 6px 10px;
+    }
+
+    .playlist-type-badge,
+    .featured-badge {
+        font-size: 11px;
+        padding: 3px 8px;
     }
 }
 
@@ -410,9 +421,23 @@
     .music-playlists-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .playlist-info {
         padding: var(--spacing-sm, 0.75rem);
+    }
+
+    .playlist-title {
+        font-size: 11px;
+    }
+
+    .playlist-meta {
+        font-size: 10px;
+    }
+
+    .playlist-type-badge,
+    .featured-badge {
+        font-size: 10px;
+        padding: 2px 7px;
     }
 }
 

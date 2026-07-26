@@ -454,14 +454,32 @@
         flex-wrap: wrap;
         gap: 4px;
     }
-    
+
     .episode-date {
         margin-left: 0;
     }
-    
+
     .podcast-actions .action-btn {
         padding: 6px 12px;
         font-size: 11px;
+    }
+
+    .podcast-title {
+        font-size: 12px;
+    }
+
+    .podcast-meta {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .podcast-title {
+        font-size: 11px;
+    }
+
+    .podcast-meta {
+        font-size: 10px;
     }
 }
 

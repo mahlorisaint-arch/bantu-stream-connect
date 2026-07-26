@@ -87,7 +87,7 @@ const CommunityFavorites = (function() {
             newSection.innerHTML = `
                 <div class="section-header">
                     <h2 class="section-title">
-                        <i class="fas fa-handshake" style="color: var(--warm-gold);"></i>
+                        <i class="fas fa-handshake" style="color: #00E5FF;"></i>
                         COMMUNITY FAVORITES
                         <span class="community-badge">
                             <i class="fas fa-users"></i> Community Picks
@@ -576,11 +576,11 @@ const CommunityFavorites = (function() {
                              alt="${escapeHtml(displayName)}" 
                              loading="lazy"
                              style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
-                             onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;\'>${initials}</div>';">
+                             onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#00E5FF,#0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;\'>${initials}</div>';">
                     </div>
                 `;
             } else {
-                avatarHtml = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initials}</div>`;
+                avatarHtml = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#00E5FF,#0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;">${initials}</div>`;
             }
             
             const card = document.createElement('a');

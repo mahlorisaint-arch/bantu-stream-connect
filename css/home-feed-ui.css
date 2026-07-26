@@ -526,11 +526,17 @@ CONTENT GRID & CARDS - FIXED
     z-index: 2;
 }
 
+/* Transparent glassmorphic, highlighted by cyan - matches
+   content-detail.html's badge treatment (e.g. .reason-badge in
+   because-you-watched.css) instead of a plain opaque black pill. */
 .card-badge {
     padding: 4px 8px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(6, 20, 26, 0.75);
     backdrop-filter: blur(4px);
-    border-radius: 20px;
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: 999px;
+    color: #00E5FF;
     font-size: 10px;
     font-weight: 600;
     display: flex;
@@ -685,8 +691,43 @@ RESPONSIVE
         width: 160px;
     }
 
+    /* Tablet reduction - matches content-detail.html's rail header
+       scale-down (e.g. .continue-watching-section .section-title,
+       .because-you-watched-rail .section-title: 19px -> 16px @768px)
+       instead of the barely-noticeable 19px -> 18px this used to be. */
     .section-title {
-        font-size: 18px;
+        font-size: 16px;
+    }
+
+    .see-all-btn {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+
+    .card-title {
+        font-size: 12px;
+    }
+
+    .creator-name-small {
+        font-size: 12px;
+    }
+
+    .card-meta {
+        font-size: 10px;
+    }
+
+    .connector-info {
+        font-size: 10px;
+    }
+
+    .card-badge {
+        font-size: 9px;
+        padding: 3px 7px;
+    }
+
+    .duration-badge {
+        font-size: 10px;
+        padding: 2px 7px;
     }
 }
 
@@ -695,20 +736,44 @@ RESPONSIVE
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
-    
-    .card-title {
-        font-size: 12px;
+
+    /* Matches content-detail.html's smallest-breakpoint step (e.g.
+       .continue-watching-section .section-title: 15px @550px). */
+    .section-title {
+        font-size: 15px;
     }
-    
+
+    .see-all-btn {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+
+    .card-title {
+        font-size: 11px;
+    }
+
     .creator-name-small {
         font-size: 11px;
     }
-    
+
     .card-meta {
-        font-size: 10px;
+        font-size: 9px;
         gap: 6px;
     }
-    
+
+    .connector-info {
+        font-size: 9px;
+    }
+
+    .card-badge {
+        font-size: 8px;
+        padding: 2px 6px;
+    }
+
+    .duration-badge {
+        font-size: 9px;
+    }
+
     /* WELCOME BANNER - PHONE REDUCTION */
     .welcome-banner {
         padding: 6px 10px !important;

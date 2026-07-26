@@ -232,7 +232,7 @@ function setupGlobalImageErrorHandler() {
             const container = target.parentElement;
             if (container) {
                 const initials = target.alt?.charAt(0)?.toUpperCase() || 'U';
-                container.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
+                container.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#00E5FF,#0891b2);display:flex;align-items:center;justify-content:center;color:#06141A;font-weight:bold;font-size:12px;">${initials}</div>`;
             }
         }
     }, true);

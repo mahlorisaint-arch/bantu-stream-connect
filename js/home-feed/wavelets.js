@@ -65,7 +65,7 @@ const Wavelets = (function() {
             newSection.innerHTML = `
                 <div class="section-header">
                     <h2 class="section-title">
-                        <i class="fas fa-bolt" style="color: var(--warm-gold);"></i>
+                        <i class="fas fa-bolt" style="color: #00E5FF;"></i>
                         WAVELETS
                         <span class="wavelet-badge-header">Short & Sweet</span>
                     </h2>
@@ -357,7 +357,7 @@ const Wavelets = (function() {
                         <span class="wavelet-connectors">
                             <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)}
                         </span>
-                        ${isTrending ? '<span class="trending-flame"><i class="fas fa-fire" style="color: var(--warm-gold);"></i></span>' : ''}
+                        ${isTrending ? '<span class="trending-flame"><i class="fas fa-fire" style="color: #00E5FF;"></i></span>' : ''}
                     </div>
                 </div>
             `;
