@@ -62,38 +62,6 @@
     font-size: 10px;
 }
 
-/* Community Rank Indicator */
-.community-rank {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 600;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.community-rank.top-1 {
-    background: linear-gradient(135deg, #00E5FF, #0891b2);
-    color: var(--deep-black);
-}
-
-.community-rank.top-2 {
-    background: linear-gradient(135deg, #94A3B8, #64748B);
-    color: white;
-}
-
-.community-rank.top-3 {
-    background: linear-gradient(135deg, #CD7F32, #B87333);
-    color: white;
-}
-
 /* Location Text - Desktop default */
 .creator-location {
     font-size: 11px;
@@ -297,13 +265,6 @@
         padding: 1px 6px;
     }
     
-    .community-rank {
-        font-size: 8px;
-        padding: 1px 6px;
-        top: 4px;
-        right: 4px;
-    }
-    
     /* MOBILE FIX: Location text size reduced by 25-30% */
     .creator-location {
         font-size: 8px;
@@ -363,8 +324,7 @@
     background: rgba(0, 229, 255, 0.1);
 }
 
-.theme-light .card-favorite-count,
-.theme-light .community-rank {
+.theme-light .card-favorite-count {
     background: rgba(0, 0, 0, 0.8);
 }
 
@@ -377,21 +337,6 @@
 }
 
 /* High Contrast Theme */
-.theme-high-contrast .community-rank.top-1 {
-    background: #ff0000;
-    color: white;
-}
-
-.theme-high-contrast .community-rank.top-2 {
-    background: #666666;
-    color: white;
-}
-
-.theme-high-contrast .community-rank.top-3 {
-    background: #CD7F32;
-    color: black;
-}
-
 .theme-high-contrast .card-favorite-count {
     border: 1px solid #00E5FF;
 }

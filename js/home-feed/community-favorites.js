@@ -275,10 +275,7 @@ const CommunityFavorites = (function() {
                 const scoreB = (b.metrics?.likes || 0) * 2 + (b.metrics?.shares || 0);
                 return scoreB - scoreA;
             });
-            
-            // Add rank to top items
-            sectionData = addRanks(sectionData);
-            
+
             // Render
             container.innerHTML = '';
             renderCards(sectionData);
@@ -393,27 +390,23 @@ const CommunityFavorites = (function() {
                        (item.metrics?.views || 0) +
                        ((item.metrics?.connectors || 0) * 5);
             
-            let boostReason = null;
-            
             // Boost local South African creators
             if (item.user_profiles?.location) {
                 const location = item.user_profiles.location.toLowerCase();
                 for (const [region, keywords] of Object.entries(SA_REGIONS)) {
                     if (keywords.some(kw => location.includes(kw))) {
                         score = score * 1.25;
-                        boostReason = `Popular in ${region}`;
                         break;
                     }
                 }
             }
-            
+
             // Boost local language content
             const localLanguages = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso', 'af'];
             if (localLanguages.includes(item.language)) {
                 score = score * 1.2;
-                boostReason = boostReason ? `${boostReason} + Local language` : 'Local language favorite';
             }
-            
+
             // Top performer badge based on likes
             let rankBadge = null;
             if (item.metrics?.likes > 5000) {
@@ -427,22 +420,11 @@ const CommunityFavorites = (function() {
             return {
                 ...item,
                 community_score: score,
-                boost_reason: boostReason,
                 rank_badge: rankBadge
             };
         });
     }
-    
-    /**
-     * Add rank numbers to top items
-     */
-    function addRanks(items) {
-        return items.map((item, index) => ({
-            ...item,
-            rank: index + 1
-        }));
-    }
-    
+
     /**
      * Build section data with metrics from content_engagement_stats
      * UPDATED: Uses the new engagement_stats table instead of individual tables
@@ -543,22 +525,7 @@ const CommunityFavorites = (function() {
             const likeCount = content.metrics?.likes || 0;
             const shareCount = content.metrics?.shares || 0;
             const favoriteCount = content.metrics?.favorites || 0;
-            const rank = content.rank;
-            
-            // Determine rank class
-            let rankClass = '';
-            let rankIcon = '';
-            if (rank === 1) {
-                rankClass = 'top-1';
-                rankIcon = '<i class="fas fa-crown"></i>';
-            } else if (rank === 2) {
-                rankClass = 'top-2';
-                rankIcon = '<i class="fas fa-medal"></i>';
-            } else if (rank === 3) {
-                rankClass = 'top-3';
-                rankIcon = '<i class="fas fa-medal"></i>';
-            }
-            
+
             // Avatar HTML
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
@@ -584,16 +551,7 @@ const CommunityFavorites = (function() {
             card.dataset.category = content.genre || '';
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
-            
-            // Boost reason tooltip
-            const boostTooltip = content.boost_reason ? 
-                `<div class="community-rank ${rankClass}" title="Community favorite: ${content.boost_reason}">
-                    ${rankIcon} #${rank}
-                 </div>` :
-                `<div class="community-rank ${rankClass}">
-                    ${rankIcon} #${rank}
-                 </div>`;
-            
+
             // FIX: Added mobile-responsive location class for better sizing
             const locationHtml = creatorProfile?.location ? 
                 `<span class="creator-location community-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(creatorProfile.location)}</span>` : '';
@@ -610,7 +568,6 @@ const CommunityFavorites = (function() {
                             <i class="fas fa-thumbs-up"></i> ${formatNumber(likeCount)} Likes
                         </div>
                     </div>
-                    ${boostTooltip}
                     <div class="card-engagement-count">
                         <i class="fas fa-heart"></i> ${formatNumber(favoriteCount)}
                     </div>
@@ -635,10 +592,9 @@ const CommunityFavorites = (function() {
                     <div class="connector-info">
                         <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
                     </div>
-                    ${content.genre ? `<div class="genre-tags"><span class="genre-tag">${escapeHtml(content.genre)}</span></div>` : ''}
                 </div>
             `;
-            
+
             fragment.appendChild(card);
             window.BSCPreviewClips?.attachHoverPreview(card, content, '.card-thumbnail');
         });
