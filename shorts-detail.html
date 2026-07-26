@@ -24,6 +24,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
+  <!-- Shared search-modal styling (same rules content-detail.html and
+       trending_screen.html use), loaded before shorts-detail.css so
+       page-specific rules can still override where needed. -->
+  <link rel="stylesheet" href="css/shared-components.css">
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/shorts-detail.css">
 </head>
@@ -148,40 +153,32 @@
     </button>
   </nav>
 
-  <!-- SEARCH MODAL -->
+  <!-- SEARCH MODAL - same engine/markup pattern as content-detail.html and
+       trending_screen.html (js/shared-components.js's search functions,
+       ported into js/shorts-detail.js below) instead of a separate, weaker
+       bespoke implementation. -->
   <div id="search-modal" class="search-modal">
-    <div class="search-modal-header">
-      <div class="search-input-container">
-        <i class="search-icon fas fa-search"></i>
-        <input type="text" id="search-input" class="search-input"
-               placeholder="Search shorts, creators, or categories..." autocomplete="off">
+    <div class="search-modal-overlay"></div>
+    <div class="search-modal-content">
+      <div class="search-modal-header">
+        <div class="search-input-wrapper">
+          <input type="text" id="search-input" class="search-input"
+                 placeholder="Search shorts, creators, or categories..." autocomplete="off" spellcheck="false">
+        </div>
+        <button id="close-search-btn" class="close-search-btn">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-      <button id="close-search-btn" class="close-search-btn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="search-filters">
-      <div class="filter-group">
-        <label class="filter-label">Category</label>
-        <select id="category-filter" class="filter-select">
-          <option value="">All Categories</option>
-          <option value="Music">Music</option>
-          <option value="STEM">STEM</option>
-          <option value="Culture">Culture</option>
-          <option value="News">News</option>
-          <option value="Sports">Sports</option>
-        </select>
+      <div class="search-filter-pills-bar">
+        <button class="search-filter-pill active" data-filter-group="category" data-filter-value="">All</button>
+        <button class="search-filter-pill" data-filter-group="category" data-filter-value="Music">🎵 Music</button>
+        <button class="search-filter-pill" data-filter-group="category" data-filter-value="STEM">🧬 STEM</button>
+        <button class="search-filter-pill" data-filter-group="category" data-filter-value="Culture">🌍 Culture</button>
+        <button class="search-filter-pill" data-filter-group="category" data-filter-value="News">📰 News</button>
+        <button class="search-filter-pill" data-filter-group="category" data-filter-value="Sports">⚽ Sports</button>
+        <button class="search-filter-pill active" data-filter-group="sort" data-filter-value="newest">✨ Newest</button>
+        <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">🔥 Popular</button>
       </div>
-      <div class="filter-group">
-        <label class="filter-label">Sort By</label>
-        <select id="sort-filter" class="filter-select">
-          <option value="newest">Newest First</option>
-          <option value="popular">Most Popular</option>
-          <option value="trending">Trending</option>
-        </select>
-      </div>
-    </div>
-    <div id="search-results" class="search-results">
       <div id="search-results-grid" class="search-results-grid">
         <!-- Results loaded here -->
       </div>

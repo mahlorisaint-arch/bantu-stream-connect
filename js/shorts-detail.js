@@ -17,7 +17,13 @@ let currentUser = null;
 let shortsData = [];
 let currentShort = null;
 let currentVideo = null;
-let isMuted = false;
+// Starts muted - every browser blocks unmuted autoplay without a user
+// gesture first (confirmed: every video was hitting "Autoplay prevented"
+// and just sitting paused, which is why nothing ever played long enough to
+// cross the view-recording threshold). Muted autoplay is allowed
+// everywhere and is the standard TikTok/Reels/Shorts convention anyway -
+// the mute button lets the user opt into sound.
+let isMuted = true;
 let isPlaying = true;
 let userConnections = new Set();
 let moreMenuOpen = false;
@@ -670,6 +676,7 @@ function buildSlideHTML(short, index) {
           src="${videoUrl}"
           poster="${thumbnailUrl}"
           loop
+          muted
           playsinline
           preload="metadata"
           data-short-id="${short.id}"
@@ -680,8 +687,8 @@ function buildSlideHTML(short, index) {
 
         ${short.is_trending ? `<div class="trending-badge-short"><i class="fas fa-bolt"></i> Trending</div>` : ''}
 
-        <button class="control-btn mute-btn-float" title="Mute">
-          <i class="fas fa-volume-up"></i>
+        <button class="control-btn mute-btn-float" title="Unmute">
+          <i class="fas fa-volume-mute"></i>
         </button>
 
         <!-- Actions (Right Side) - liked/saved state is baked in here from
@@ -887,186 +894,350 @@ function initSwiper() {
 
 // ============================================
 // SEARCH FUNCTIONS
+// Ported from js/shared-components.js - the same search engine
+// content-detail.html and trending_screen.html use (creators + content
+// split results, filter pills, recent-search history, trending
+// suggestions) - instead of shorts-detail running its own separate,
+// weaker implementation. Result clicks route to shorts-detail.html for
+// short-form results (duration <= 60s) and content-detail.html for
+// long-form ones, since this page can only play shorts.
 // ============================================
+let searchDebounceTimer = null;
+let searchHistory = JSON.parse(localStorage.getItem('bantu_search_history')) || [];
+let activeSearchFilters = { category: '', sort: 'newest' };
+
 function initSearchModal() {
-  const searchBtn = document.getElementById('search-btn');
-  const searchModal = document.getElementById('search-modal');
-  const closeSearchBtn = document.getElementById('close-search-btn');
-  const searchInput = document.getElementById('search-input');
-  const categoryFilter = document.getElementById('category-filter');
-  const sortFilter = document.getElementById('sort-filter');
-  
-  if (!searchBtn || !searchModal) return;
-  
-  searchBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    searchModal.classList.add('active');
-    setTimeout(() => searchInput?.focus(), 300);
+  const modal = document.getElementById('search-modal');
+  const input = document.getElementById('search-input');
+  const closeBtn = document.getElementById('close-search-btn');
+  const searchTriggerBtn = document.getElementById('search-btn');
+
+  if (!modal || !input) return;
+
+  if (searchTriggerBtn) searchTriggerBtn.addEventListener('click', () => openSearchModal(modal, input));
+  if (closeBtn) closeBtn.addEventListener('click', () => closeSearchModal(modal));
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeSearchModal(modal);
   });
-  
-  closeSearchBtn?.addEventListener('click', () => {
-    searchModal.classList.remove('active');
-    if (searchInput) searchInput.value = '';
-    document.getElementById('search-results-grid').innerHTML = '';
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) closeSearchModal(modal);
   });
-  
-  searchModal.addEventListener('click', (e) => {
-    if (e.target === searchModal) {
-      searchModal.classList.remove('active');
-      if (searchInput) searchInput.value = '';
-      document.getElementById('search-results-grid').innerHTML = '';
-    }
+
+  input.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(searchDebounceTimer);
+    if (query.length === 0) { renderSearchZeroState(); return; }
+    searchDebounceTimer = setTimeout(() => performAdvancedSearch(query), 350);
   });
-  
-  // Search with debounce
-  if (searchInput) {
-    searchInput.addEventListener('input', debounce(async (e) => {
-      const query = e.target.value.trim();
-      const category = categoryFilter?.value || '';
-      const sortBy = sortFilter?.value || 'newest';
-      
-      if (query.length < 2) {
-        document.getElementById('search-results-grid').innerHTML = 
-          '<div class="no-results">Start typing to search...</div>';
-        return;
-      }
-      
-      document.getElementById('search-results-grid').innerHTML = 
-        '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div>Searching...</div>';
-      
-      try {
-        const results = await searchShorts(query, category, sortBy);
-        renderSearchResults(results);
-      } catch (error) {
-        console.error('Search error:', error);
-        document.getElementById('search-results-grid').innerHTML = 
-          '<div class="no-results">Error searching. Please try again.</div>';
-      }
-    }, 300));
-  }
-  
-  // Filter change events
-  if (categoryFilter) {
-    categoryFilter.addEventListener('change', () => {
-      if (searchInput?.value.trim().length >= 2) {
-        searchInput.dispatchEvent(new Event('input'));
-      }
+
+  input.addEventListener('focus', () => {
+    if (input.value.trim().length === 0) renderSearchZeroState();
+  });
+
+  setupSearchFilterPills(input);
+}
+
+function openSearchModal(modal, input) {
+  modal.classList.add('active');
+  setTimeout(() => input.focus(), 50);
+  if (input.value.trim().length === 0) renderSearchZeroState();
+}
+
+function closeSearchModal(modal) {
+  modal.classList.remove('active');
+}
+
+function setupSearchFilterPills(inputElement) {
+  document.querySelectorAll('.search-filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const group = pill.dataset.filterGroup;
+      const value = pill.dataset.filterValue;
+
+      document.querySelectorAll(`.search-filter-pill[data-filter-group="${group}"]`)
+        .forEach(sibling => sibling.classList.remove('active'));
+      pill.classList.add('active');
+      activeSearchFilters[group] = value;
+
+      const currentQuery = inputElement.value.trim();
+      if (currentQuery.length >= 2) performAdvancedSearch(currentQuery);
     });
-  }
-  
-  if (sortFilter) {
-    sortFilter.addEventListener('change', () => {
-      if (searchInput?.value.trim().length >= 2) {
-        searchInput.dispatchEvent(new Event('input'));
-      }
-    });
-  }
+  });
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
+function renderSearchZeroState() {
+  const resultsGrid = document.getElementById('search-results-grid');
+  if (!resultsGrid) return;
 
-async function searchShorts(query, category = '', sortBy = 'newest') {
-  try {
-    // views_count/likes_count are not real columns on Content (verified
-    // against the live schema - the real numbers live in
-    // content_engagement_stats), so ordering by them at the DB level threw
-    // a 400 the moment a user picked "Most Popular"/"Trending" - this was
-    // part of why search looked broken. Embed the same stats table the
-    // main feed uses and sort client-side instead (result sets here are
-    // small, at most 20 rows).
-    let queryBuilder = supabaseClient
-      .from('Content')
-      .select(`
-        *,
-        user_profiles!user_id (*),
-        content_engagement_stats (
-          total_views,
-          total_likes,
-          total_comments,
-          total_shares
-        )
-      `)
-      .ilike('title', `%${query}%`)
-      .eq('status', 'published')
-      .in('media_type', ['video', 'audio', 'short'])
-      .lte('duration', 60)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (category) queryBuilder = queryBuilder.eq('genre', category);
-
-    const { data, error } = await queryBuilder;
-    if (error) throw error;
-
-    const results = data || [];
-    if (sortBy === 'popular') {
-      results.sort((a, b) => (b.content_engagement_stats?.total_views || 0) - (a.content_engagement_stats?.total_views || 0));
-    } else if (sortBy === 'trending') {
-      results.sort((a, b) => (b.content_engagement_stats?.total_likes || 0) - (a.content_engagement_stats?.total_likes || 0));
-    }
-    return results;
-  } catch (error) {
-    console.error('Search error:', error);
-    return [];
-  }
-}
-
-function renderSearchResults(results) {
-  const grid = document.getElementById('search-results-grid');
-  if (!grid) return;
-  
-  if (!results || results.length === 0) {
-    grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
-    return;
-  }
-  
-  grid.innerHTML = results.map(item => {
-    const creator = item.user_profiles?.full_name || item.user_profiles?.username || 'Creator';
-    const viewsCount = item.content_engagement_stats?.total_views || 0;
-    return `
-      <div class="content-card" data-content-id="${item.id}">
-        <div class="card-thumbnail">
-          <img src="${fixMediaUrl(item.thumbnail_url) || 'https://via.placeholder.com/400x700'}" 
-               alt="${escapeHtml(item.title)}"
-               onerror="this.src='https://via.placeholder.com/400x700'">
+  resultsGrid.innerHTML = `
+    <div class="search-zero-state-container">
+      <div class="search-history-section">
+        <div class="section-header-row">
+          <h4>Recent Searches</h4>
+          ${searchHistory.length > 0 ? `<button class="clear-history-btn" id="clear-search-history-btn">Clear All</button>` : ''}
         </div>
-        <div class="card-content">
-          <h3 class="card-title">${truncateText(item.title, 45)}</h3>
-          <div class="related-meta">
-            <i class="fas fa-eye"></i>
-            <span>${formatNumber(viewsCount)} views</span>
-          </div>
+        <div class="history-pills-container">
+          ${searchHistory.length === 0 ?
+            `<p class="neutral-placeholder-text">Your recent searches will show up here.</p>` :
+            searchHistory.map(term => `
+              <span class="history-pill" data-term="${escapeHtml(term)}">
+                <i class="fas fa-history"></i> <span class="term-text">${escapeHtml(term)}</span>
+              </span>
+            `).join('')
+          }
         </div>
       </div>
-    `;
-  }).join('');
-  
-  // Add click handlers
-  grid.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const id = card.dataset.contentId;
-      if (id) {
-        document.getElementById('search-modal')?.classList.remove('active');
-        window.location.href = `shorts-detail.html?id=${id}`;
-      }
+      <div class="search-trending-section">
+        <h4>Trending Now</h4>
+        <div id="trending-search-placeholder" class="trending-mini-grid">
+          <div class="loading-spinner-small"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  resultsGrid.querySelector('#clear-search-history-btn')?.addEventListener('click', clearSearchHistory);
+  resultsGrid.querySelectorAll('.history-pill').forEach(pill => {
+    pill.addEventListener('click', () => triggerFastSearch(pill.dataset.term));
+  });
+
+  loadTrendingSearchItems();
+}
+
+async function loadTrendingSearchItems() {
+  const placeholder = document.getElementById('trending-search-placeholder');
+  if (!placeholder) return;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('Content')
+      .select(`
+        id,
+        title,
+        thumbnail_url,
+        genre,
+        content_engagement_stats!inner(total_views)
+      `)
+      .eq('status', 'published')
+      .order('total_views', { referencedTable: 'content_engagement_stats', ascending: false })
+      .limit(3);
+
+    if (error || !data || data.length === 0) {
+      placeholder.innerHTML = '<p class="neutral-placeholder-text">Checking live stream waves...</p>';
+      return;
+    }
+
+    placeholder.innerHTML = data.map(item => `
+      <div class="trending-mini-card" data-content-id="${item.id}">
+        <img src="${fixMediaUrl(item.thumbnail_url) || 'https://via.placeholder.com/200x200'}" alt="" onerror="this.src='https://via.placeholder.com/200x200'">
+        <div class="mini-card-details">
+          <h5>${escapeHtml(item.title)}</h5>
+          <span>${formatNumber(item.content_engagement_stats?.total_views || 0)} views · ${escapeHtml(item.genre || 'Vibe')}</span>
+        </div>
+      </div>
+    `).join('');
+
+    placeholder.querySelectorAll('.trending-mini-card').forEach(card => {
+      card.addEventListener('click', () => goToSearchResult(card.dataset.contentId));
     });
+
+  } catch (err) {
+    console.error('Failed to load search recommendations:', err.message);
+    placeholder.innerHTML = '<p class="neutral-placeholder-text">Failed to fetch recommendations.</p>';
+  }
+}
+
+async function performAdvancedSearch(query) {
+  const resultsGrid = document.getElementById('search-results-grid');
+  if (!resultsGrid) return;
+
+  if (query.length < 2) {
+    resultsGrid.innerHTML = `<div class="search-status-message"><p>Keep typing to search...</p></div>`;
+    return;
+  }
+
+  resultsGrid.innerHTML = `
+    <div class="search-loading-container">
+      <div class="loading-spinner-small"></div>
+      <p>Searching Bantu Stream...</p>
+    </div>
+  `;
+
+  try {
+    let creatorQuery = supabaseClient
+      .from('user_profiles')
+      .select('id, full_name, username, avatar_url, role')
+      .eq('role', 'creator')
+      .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
+      .limit(4);
+
+    let contentQuery = supabaseClient
+      .from('Content')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        duration,
+        genre,
+        media_type,
+        created_at,
+        user_id,
+        user_profiles!inner(full_name, username, avatar_url),
+        content_engagement_stats(total_views)
+      `)
+      .eq('status', 'published')
+      .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`);
+
+    if (activeSearchFilters.category) contentQuery = contentQuery.eq('genre', activeSearchFilters.category);
+
+    if (activeSearchFilters.sort === 'popular') {
+      contentQuery = contentQuery.order('total_views', { referencedTable: 'content_engagement_stats', ascending: false });
+    } else {
+      contentQuery = contentQuery.order('created_at', { ascending: false });
+    }
+
+    contentQuery = contentQuery.limit(24);
+
+    const [creatorsRes, contentRes] = await Promise.all([creatorQuery, contentQuery]);
+    if (contentRes.error) throw contentRes.error;
+
+    const localizedResults = (contentRes.data || []).map(row => ({
+      ...row,
+      total_views: row.content_engagement_stats?.total_views || 0
+    }));
+
+    saveSearchHistoryTerm(query);
+    renderSplitSearchResults(creatorsRes.data || [], localizedResults, query);
+
+  } catch (error) {
+    console.error('Search error:', error);
+    resultsGrid.innerHTML = `
+      <div class="search-error-state">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Something interrupted the search. Please try again.</p>
+        <button id="search-retry-btn">Retry</button>
+      </div>
+    `;
+    resultsGrid.querySelector('#search-retry-btn')?.addEventListener('click', () => performAdvancedSearch(query));
+  }
+}
+
+function renderSplitSearchResults(creators, drops, query) {
+  const resultsGrid = document.getElementById('search-results-grid');
+  if (!resultsGrid) return;
+
+  if (creators.length === 0 && drops.length === 0) {
+    resultsGrid.innerHTML = `
+      <div class="search-empty-state">
+        <p>No results matching "<strong>${escapeHtml(query)}</strong>" found.</p>
+        <span>Check your spelling or try different keywords.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const shorts = drops.filter(d => (d.duration || 0) <= 60 || d.media_type === 'short');
+  const longForm = drops.filter(d => !((d.duration || 0) <= 60 || d.media_type === 'short'));
+
+  resultsGrid.innerHTML = `
+    <div class="split-search-matrix-wrapper">
+      ${creators.length > 0 ? `
+        <div class="split-section creators-split-track">
+          <h4>Matching Creators</h4>
+          <div class="creators-flex-row">
+            ${creators.map(creator => `
+              <div class="creator-mini-profile-card" data-creator-id="${creator.id}" data-creator-name="${escapeHtml(creator.full_name || creator.username || 'Creator')}">
+                <img src="${creator.avatar_url || 'images/default-avatar.png'}" alt="">
+                <div class="creator-meta">
+                  <h6>${escapeHtml(creator.full_name || '')}</h6>
+                  <span>@${escapeHtml(creator.username || '')}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${shorts.length > 0 ? `
+        <div class="split-section audio-split-track">
+          <h4>Shorts</h4>
+          <div class="premium-search-grid-layout">
+            ${shorts.map(drop => generateSearchCardHtml(drop, false)).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${longForm.length > 0 ? `
+        <div class="split-section drops-split-track">
+          <h4>Videos &amp; Audio</h4>
+          <div class="premium-search-grid-layout">
+            ${longForm.map(drop => generateSearchCardHtml(drop, true)).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  resultsGrid.querySelectorAll('.creator-mini-profile-card').forEach(card => {
+    card.addEventListener('click', () => {
+      window.location.href = `creator-channel.html?id=${card.dataset.creatorId}&name=${encodeURIComponent(card.dataset.creatorName)}`;
+    });
+  });
+  resultsGrid.querySelectorAll('.premium-search-card').forEach(card => {
+    card.addEventListener('click', () => goToSearchResult(card.dataset.contentId, card.dataset.isLongForm === 'true'));
   });
 }
 
-function truncateText(text, maxLength) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
+function generateSearchCardHtml(drop, isLongForm) {
+  const durationStr = drop.duration ? formatTime(drop.duration) : '';
+  const creatorName = drop.user_profiles ? (drop.user_profiles.full_name || drop.user_profiles.username) : 'Creator';
+  const viewCount = drop.total_views || 0;
+
+  return `
+    <div class="premium-search-card" data-content-id="${drop.id}" data-is-long-form="${isLongForm}">
+      <div class="thumbnail-wrapper-frame">
+        <img src="${fixMediaUrl(drop.thumbnail_url) || 'https://via.placeholder.com/400x700'}" alt="" onerror="this.src='https://via.placeholder.com/400x700'">
+        ${durationStr ? `<span class="premium-duration-badge">${durationStr}</span>` : ''}
+      </div>
+      <div class="premium-card-payload">
+        <h5>${escapeHtml(drop.title)}</h5>
+        <p class="premium-card-author-row">By <span>${escapeHtml(creatorName)}</span></p>
+        <div class="premium-card-footer-metrics">
+          <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)} views</span>
+          <span class="genre-tag-node">${escapeHtml(drop.genre || 'Stream')}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function goToSearchResult(contentId, isLongForm = false) {
+  if (!contentId) return;
+  document.getElementById('search-modal')?.classList.remove('active');
+  window.location.href = isLongForm ? `content-detail.html?id=${contentId}` : `shorts-detail.html?id=${contentId}`;
+}
+
+function saveSearchHistoryTerm(term) {
+  if (!searchHistory.includes(term)) {
+    searchHistory.unshift(term);
+    if (searchHistory.length > 6) searchHistory.pop();
+    localStorage.setItem('bantu_search_history', JSON.stringify(searchHistory));
+  }
+}
+
+function triggerFastSearch(term) {
+  const input = document.getElementById('search-input');
+  if (!input) return;
+  input.value = term;
+  performAdvancedSearch(term);
+}
+
+function clearSearchHistory() {
+  searchHistory = [];
+  localStorage.removeItem('bantu_search_history');
+  renderSearchZeroState();
 }
 
 // ============================================
@@ -1432,7 +1603,8 @@ function playCurrentShort() {
   }
   
   video.currentTime = 0;
-  
+  video.muted = isMuted;
+
   // Try to play with user interaction fallback
   const playPromise = video.play();
   if (playPromise !== undefined) {
@@ -2433,8 +2605,12 @@ async function fetchUserConnections() {
     if (error) throw error;
     
     userConnections.clear();
-    if (data) data.forEach(c => userConnections.add(c.connected_id));
-    
+    // Some connectors rows have a null connected_id (data-quality gap) - adding
+    // that to the Set means Array.from(userConnections) later serializes to the
+    // literal string "null" inside a .in() filter, which Postgres then rejects
+    // with "invalid input syntax for type uuid: null". Skip null/falsy ids.
+    if (data) data.forEach(c => { if (c.connected_id) userConnections.add(c.connected_id); });
+
   } catch (error) {
     console.error('Error fetching connections:', error);
   }
