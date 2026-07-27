@@ -67,7 +67,9 @@ async function fetchFeaturedCreators(limit = 12) {
   try {
     if (!window.supabaseClient) throw new Error('Supabase not initialized');
 
-    // Fetch from creator_pulse_score for trending creators
+    // Real trend/velocity signal, where it exists - creator_pulse_score is
+    // only computed for a handful of creators today, so it's a booster on
+    // top of the real creator pool below, not the pool itself.
     const { data: pulseData, error: pulseError } = await window.supabaseClient
       .from('creator_pulse_score')
       .select(`
@@ -84,44 +86,41 @@ async function fetchFeaturedCreators(limit = 12) {
 
     if (pulseError) throw pulseError;
 
-    if (!pulseData || pulseData.length === 0) {
-      // Fallback to user_profiles
-      const { data: profiles, error: profileError } = await window.supabaseClient
-        .from('user_profiles')
-        .select('id, username, full_name, avatar_url, bio, location, role')
-        .eq('role', 'creator')
-        .limit(limit);
-
-      if (profileError) throw profileError;
-
-      const withVerification = await enrichWithVerification(profiles || []);
-      window.appState.cachedData.set(cacheKey, { data: withVerification, timestamp: Date.now() });
-      window.appState.featuredCreators = withVerification;
-      return withVerification;
-    }
-
-    // Get creator details
-    const creatorIds = pulseData.map(p => p.creator_id);
+    // Always pull the real creator pool (not gated behind pulseData being
+    // empty) so browsing / Verified filtering has a real, non-starved set
+    // to work with even when pulse-score coverage is sparse.
     const { data: profiles, error: profileError } = await window.supabaseClient
       .from('user_profiles')
       .select('id, username, full_name, avatar_url, bio, location, role')
-      .in('id', creatorIds);
+      .eq('role', 'creator')
+      .limit(Math.max(limit, 100));
 
     if (profileError) throw profileError;
 
     const profileMap = new Map();
     (profiles || []).forEach(p => profileMap.set(p.id, p));
 
-    const enriched = pulseData.map(pulse => ({
-      ...profileMap.get(pulse.creator_id),
-      pulse_score: pulse.final_pulse_score,
-      velocity_score: pulse.velocity_score,
-      trend_stage: pulse.trend_stage,
-      trend_label: pulse.trend_label,
-      global_rank: pulse.global_rank
-    })).filter(item => item.id);
+    // Creators with real pulse data (real trend_stage/velocity_score
+    // attached) surface first, ordered by pulse score; the rest of the
+    // real creator pool follows so the section is never starved down to
+    // just the one or two creators pulse-score currently covers.
+    const pulseCovered = (pulseData || [])
+      .filter(pulse => profileMap.has(pulse.creator_id))
+      .map(pulse => ({
+        ...profileMap.get(pulse.creator_id),
+        pulse_score: pulse.final_pulse_score,
+        velocity_score: pulse.velocity_score,
+        trend_stage: pulse.trend_stage,
+        trend_label: pulse.trend_label,
+        global_rank: pulse.global_rank
+      }));
 
-    const withVerification = await enrichWithVerification(enriched);
+    const coveredIds = new Set(pulseCovered.map(p => p.id));
+    const rest = (profiles || []).filter(p => !coveredIds.has(p.id));
+
+    const merged = [...pulseCovered, ...rest];
+
+    const withVerification = await enrichWithVerification(merged);
     window.appState.cachedData.set(cacheKey, { data: withVerification, timestamp: Date.now() });
     window.appState.featuredCreators = withVerification;
     return withVerification;
