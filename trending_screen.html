@@ -172,7 +172,6 @@
     <div id="shorts-section" class="shorts-section section">
         <div class="section-header">
             <h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BSC SHORTS</h2>
-            <button id="view-all-shorts" class="see-all-btn">SEE ALL</button>
         </div>
         <div id="shorts-scroll" class="shorts-scroll"></div>
     </div>
@@ -440,7 +439,6 @@ async function loadUserWatchHistory() { if(!currentUser) return; try { const { d
 // ==========================================
 function setupNavigation() {
     document.getElementById('explore-all-btn')?.addEventListener('click', () => window.location.href = 'explore-screen.html');
-    document.getElementById('view-all-shorts')?.addEventListener('click', () => window.location.href = 'explore-screen.html');
 }
 
 async function init() {

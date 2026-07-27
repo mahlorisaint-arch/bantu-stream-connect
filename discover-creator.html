@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Discover Creators - Bantu Stream Connect</title>
 <link rel="preload" href="css/home-feed.css" as="style">
-<link rel="preload" href="css/discover-creators.css" as="style">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -805,9 +804,31 @@ body {
         justify-content: space-between;
     }
 
+    /* Thinner, tighter-fitting on mobile/tablet - matches the explore
+       screen's .hero-action treatment: full-width stacked pills instead
+       of a horizontally-scrolling bar of thick buttons. */
     .intent-switcher {
         width: 100%;
-        overflow-x: auto;
+        flex-direction: column;
+        background: transparent;
+        padding: 0;
+        gap: 8px;
+    }
+
+    .intent-btn {
+        width: 100%;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.65rem 1.25rem;
+        font-size: 0.8rem;
+        background: rgba(6, 20, 26, 0.75);
+        border: 1px solid rgba(0, 229, 255, 0.3);
+    }
+
+    .intent-btn.active {
+        border-color: var(--warm-gold);
     }
 
     .hero-stats {
@@ -833,6 +854,15 @@ body {
 
     .hero-badge, .hero-creator-badges {
         font-size: 10px;
+    }
+
+    .intent-btn {
+        padding: 0.55rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    .intent-btn i {
+        font-size: 0.7rem;
     }
 
     .hero-stat-value {
@@ -1060,7 +1090,7 @@ body {
             <span class="filter-label"><i class="fas fa-map-marker-alt"></i> City</span>
             <select id="cityFilter" class="filter-select">
                 <option value="">All Cities</option>
-                <!-- All SA cities populated by JS -->
+                <!-- Populated by loadFilterOptions() from real creator data -->
             </select>
         </div>
         
@@ -1068,24 +1098,15 @@ body {
             <span class="filter-label"><i class="fas fa-tag"></i> Craft</span>
             <select id="craftFilter" class="filter-select">
                 <option value="">All Crafts</option>
-                <option value="Music Producer">Music Producer</option>
-                <option value="Filmmaker">Filmmaker</option>
-                <option value="Street Artist">Street Artist</option>
-                <option value="Athlete">Athlete</option>
-                <option value="Cinematographer">Cinematographer</option>
-                <option value="Podcaster">Podcaster</option>
-                <option value="Dancer">Dancer</option>
+                <!-- Populated by loadFilterOptions() from real creator data -->
             </select>
         </div>
-        
+
         <div class="filter-group">
             <span class="filter-label"><i class="fas fa-bolt"></i> Energy</span>
             <select id="energyFilter" class="filter-select">
                 <option value="">All Vibes</option>
-                <option value="Chill">Chill</option>
-                <option value="Hype">Hype</option>
-                <option value="Soulful">Soulful</option>
-                <option value="Intense">Intense</option>
+                <!-- Populated by loadFilterOptions() from real creator data -->
             </select>
         </div>
         
@@ -1404,17 +1425,47 @@ async function loadFeaturedCreators() {
     grid.innerHTML = renderSkeletonCreatorCards();
     try {
         if (!supabaseClient) await initSupabase();
-        let query = supabaseClient.from('mv_discover_feed').select('*');
+
+        // Baseline signal filter - excludes empty stub/placeholder profiles
+        // (0 content, 0 connections) from ever being "featured": mv_discover_feed
+        // has rows for every creator-role account, including ones that never
+        // published or connected with anyone.
+        let query = supabaseClient.from('mv_discover_feed').select('*')
+            .or('total_content_count.gte.1,total_connections.gte.1');
+
         if (currentFilters.city) query = query.eq('city', currentFilters.city);
         if (currentFilters.craft) query = query.eq('primary_craft', currentFilters.craft);
         if (currentFilters.energy) query = query.eq('energy_level', currentFilters.energy);
-        
+
+        // Each intent maps to a real field, not just a visual toggle:
+        // - Find Collaborators -> seeking_collaboration (real opt-in flag)
+        // - Get Inspired -> has actual published content to look at
+        // - Hire / Work With -> verified creators (no dedicated "for hire"
+        //   field exists yet, so verification is the closest real signal
+        //   of a credible professional to reach out to)
+        if (currentFilters.intent === 'collaborate') query = query.eq('seeking_collaboration', true);
+        else if (currentFilters.intent === 'inspire') query = query.gte('total_content_count', 1);
+        else if (currentFilters.intent === 'hire') query = query.eq('is_verified', true);
+
+        const sortFieldMap = { pulse: 'final_pulse_score', trending: 'velocity_score', connections: 'total_connections', recent: 'connections_growth_24h' };
+        const sortField = sortFieldMap[currentFilters.sort] || 'final_pulse_score';
+        query = query.order(sortField, { ascending: false, nullsFirst: false }).limit(48);
+
         const { data: creators, error } = await query;
         if (error) throw error;
-        
+
         allCreatorsData = creators || [];
-        const featured = selectFeaturedCreators(allCreatorsData);
-        document.getElementById('resultCount').innerText = `${featured.length} featured creators (rotating every 2 days)`;
+
+        // The 2-day "featured rotation" only makes sense for the default,
+        // unfiltered browse. Once someone picks a city/craft/energy/intent,
+        // they're actively searching and should see the real matching set,
+        // not a further-shuffled-down sample of it.
+        const hasActiveFilters = !!(currentFilters.city || currentFilters.craft || currentFilters.energy || (currentFilters.intent && currentFilters.intent !== 'discover'));
+        const featured = hasActiveFilters ? allCreatorsData : selectFeaturedCreators(allCreatorsData);
+
+        document.getElementById('resultCount').innerText = hasActiveFilters
+            ? `${featured.length} creator${featured.length === 1 ? '' : 's'} found`
+            : `${featured.length} featured creators (rotating every 2 days)`;
 
         if (!featured.length) {
             grid.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No creators match filters. Try resetting.</p></div>';
@@ -1472,7 +1523,7 @@ function renderSkeletonCreatorCards(count = 6) {
 
 function renderCreatorCard(creator) {
     const pulseScore = Math.round(creator.final_pulse_score || 0);
-    const momentumPercent = Math.min((creator.momentum_score || 0) / 10, 100);
+    const momentumPercent = Math.min(creator.momentum_score || 0, 100);
     const trendIcon = creator.trend_stage === 'rising' ? '<i class="fas fa-fire"></i>' : (creator.trend_stage === 'peak' ? '<i class="fas fa-bolt"></i>' : '<i class="fas fa-arrow-trend-up"></i>');
     const locationText = creator.city ? `${creator.city}` : '';
     return `
@@ -1506,11 +1557,10 @@ function renderCreatorCard(creator) {
 // ==========================================
 // BSC RADAR: ALL SOUTH AFRICAN CITIES (LIVELY)
 // ==========================================
-const allSACities = [
-    'Johannesburg', 'Cape Town', 'Pretoria', 'Durban', 'Gqeberha', 'Bloemfontein',
-    'Polokwane', 'Nelspruit', 'Kimberley', 'Pietermaritzburg', 'East London', 'Rustenburg'
-];
-
+// The radar's city markers (cityCoords below) are a fixed set of hubs the
+// platform highlights on the map, independent of the City filter dropdown,
+// which only ever offers cities real creators have actually set on their
+// profile - see loadFilterOptions().
 function initDynamicMap() {
     const svg = document.querySelector('.map-svg');
     if (!svg) return;
@@ -1674,15 +1724,31 @@ async function handleCollabRequest(creatorId) {
         showToast('Could not send collab request', 'error');
     }
 }
-function applyFilters() { currentFilters = { city: document.getElementById('cityFilter').value, craft: document.getElementById('craftFilter').value, energy: document.getElementById('energyFilter').value, sort: document.getElementById('sortFilter').value }; loadFeaturedCreators(); }
+function applyFilters() { currentFilters = { ...currentFilters, city: document.getElementById('cityFilter').value, craft: document.getElementById('craftFilter').value, energy: document.getElementById('energyFilter').value, sort: document.getElementById('sortFilter').value }; loadFeaturedCreators(); }
 window.resetFilters = function() { document.getElementById('cityFilter').value=''; document.getElementById('craftFilter').value=''; document.getElementById('energyFilter').value=''; document.getElementById('sortFilter').value='pulse'; applyFilters(); };
 
-let currentFilters = { city: '', craft: '', energy: '', sort: 'pulse' };
+let currentFilters = { city: '', craft: '', energy: '', sort: 'pulse', intent: 'discover' };
 
-// Populate city filter with all SA cities
-function populateCityFilter() {
-    const select = document.getElementById('cityFilter');
-    select.innerHTML = '<option value="">All Cities</option>' + allSACities.map(c => `<option value="${c}">${c}</option>`).join('');
+// City/Craft/Energy filter dropdowns only ever offer values real creators
+// have actually set on mv_discover_feed - a hardcoded guess list (e.g. a
+// fixed set of "craft" categories) would mismatch the real free-text data
+// creators enter and make most options silently return zero results.
+async function loadFilterOptions() {
+    try {
+        if (!supabaseClient) await initSupabase();
+        const { data, error } = await supabaseClient.from('mv_discover_feed').select('city, primary_craft, energy_level');
+        if (error) throw error;
+
+        const cities = [...new Set((data || []).map(c => c.city).filter(Boolean))].sort();
+        const crafts = [...new Set((data || []).map(c => c.primary_craft).filter(Boolean))].sort();
+        const energies = [...new Set((data || []).map(c => c.energy_level).filter(Boolean))].sort();
+
+        document.getElementById('cityFilter').innerHTML = '<option value="">All Cities</option>' + cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        document.getElementById('craftFilter').innerHTML = '<option value="">All Crafts</option>' + crafts.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        document.getElementById('energyFilter').innerHTML = '<option value="">All Vibes</option>' + energies.map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
+    } catch (e) {
+        console.warn('Could not load filter options (non-fatal, filters stay at "All"):', e);
+    }
 }
 
 // ==========================================
@@ -1704,18 +1770,18 @@ async function loadConnectionState() {
 
 async function init() {
     await initSupabase();
-    populateCityFilter();
     initDynamicMap();
 
     // Content first: hero + grid must render even if the connection-state
     // lookup above is slow, errors, or getCurrentUser isn't available yet.
     await Promise.all([
         loadConnectionState(),
-        loadHeroWithRealContent()
+        loadHeroWithRealContent(),
+        loadFilterOptions()
     ]);
     await loadFeaturedCreators();
 
-    document.querySelectorAll('.intent-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); loadFeaturedCreators(); }));
+    document.querySelectorAll('.intent-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentFilters.intent = btn.dataset.intent; loadFeaturedCreators(); }));
     document.getElementById('cityFilter').addEventListener('change', applyFilters);
     document.getElementById('craftFilter').addEventListener('change', applyFilters);
     document.getElementById('energyFilter').addEventListener('change', applyFilters);
