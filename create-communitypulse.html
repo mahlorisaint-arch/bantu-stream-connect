@@ -17,8 +17,17 @@ document.documentElement.classList.add(`theme-${savedTheme}`);
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
-<!-- Load Supabase SDK first -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<!-- Load Supabase SDK first - NOT deferred: js/shared-components.js (loaded
+     synchronously in body) reads window.supabase the moment it executes to
+     seed window.supabaseClient, and initSharedComponents() calls
+     supabaseClient.auth.getUser()/onAuthStateChange() on DOMContentLoaded.
+     A deferred SDK script doesn't run until right before DOMContentLoaded,
+     which is too late - shared-components.js would have already fallen
+     back to its no-op dummy client, so auth state (and the logged-in
+     header) never resolves. Every other page using shared-components.js
+     (creator-channel.html, search.html, notifications.html, etc.) loads
+     this the same non-deferred way for exactly this reason. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="css/home-feed.css">
 <!-- Shared header/sidebar/footer (same canonical system as creator-channel.html) -->
 <link rel="stylesheet" href="css/shared-components.css">
