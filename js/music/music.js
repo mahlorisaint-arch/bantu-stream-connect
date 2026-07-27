@@ -267,14 +267,16 @@
       const colors = ['#1D4ED8', '#F59E0B', '#EC4899', '#10B981', '#8B5CF6', '#EF4444'];
       const color = genre.onboarding_card_color || colors[this.currentStep % colors.length];
 
+      // Transparent glassmorphic inside, highlighted by the genre's own
+      // color as the border/glow outside - not a solid color-tinted fill.
       container.innerHTML = `
-        <div class="sonic-quiz-card" style="background: linear-gradient(135deg, ${color}40, ${color}80);">
+        <div class="sonic-quiz-card" style="background: rgba(6, 20, 26, 0.75); border-color: ${color}; box-shadow: 0 0 24px ${color}66, inset 0 0 30px ${color}1a;">
           <div class="sonic-quiz-card-overlay"></div>
           <div class="sonic-quiz-card-content">
             <h3 class="sonic-quiz-card-name">${escapeHtml(genre.name)}</h3>
             <p class="sonic-quiz-card-desc">${escapeHtml(genre.description || 'Explore this sound')}</p>
           </div>
-          <div class="sonic-quiz-card-cta">
+          <div class="sonic-quiz-card-cta" style="background: ${color}33; border: 1px solid ${color}; color: ${color};">
             <i class="fas fa-heart"></i>
             <span>Into it</span>
           </div>
@@ -532,7 +534,7 @@
               <div class="continue-card-progress">
                 <div class="continue-card-progress-fill" style="width: ${progress}%;"></div>
               </div>
-              <div class="continue-card-play"><i class="fas fa-play"></i></div>
+              <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
             </div>
             <p class="continue-card-title">${escapeHtml(content.title)}</p>
             <p class="continue-card-meta">
@@ -1360,7 +1362,7 @@
               <span class="trending-card-badge" style="background: ${meta.color};">${escapeHtml(meta.label)}</span>
               ${item.duration ? `<span class="trending-card-duration">${formatDuration(item.duration)}</span>` : ''}
               <div class="trending-card-rank">${idx + 1}</div>
-              <div class="trending-card-play"><i class="fas fa-play"></i></div>
+              <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
             </div>
             <p class="trending-card-title">${escapeHtml(item.title)}</p>
             <p class="trending-card-artist">${escapeHtml(creator)}</p>
