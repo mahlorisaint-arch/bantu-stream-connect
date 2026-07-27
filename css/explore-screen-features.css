@@ -158,22 +158,26 @@
 }
 
 .journey-generate-btn {
-  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
-  border: none;
+  background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 229, 255, 0.5);
   padding: 1rem 2rem;
   border-radius: 50px;
-  color: white;
+  color: #00E5FF;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
 }
 
 .journey-generate-btn:hover {
   transform: translateY(-3px);
-  box-shadow: var(--gold-glow);
+  border-color: rgba(0, 229, 255, 0.85);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.4);
 }
 
 .journey-results {
@@ -544,11 +548,13 @@
 }
 
 .discover-all-btn {
-  background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
-  border: none;
+  background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 229, 255, 0.5);
   padding: 1.5rem 4rem;
   border-radius: 60px;
-  color: white;
+  color: #00E5FF;
   font-weight: 700;
   font-size: 1.125rem;
   cursor: pointer;
@@ -556,10 +562,12 @@
   align-items: center;
   gap: 1rem;
   transition: all 0.3s ease;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.18);
 }
 
 .discover-all-btn:hover {
   transform: scale(1.05);
+  border-color: rgba(0, 229, 255, 0.85);
   box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
 }
 
