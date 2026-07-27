@@ -629,6 +629,41 @@ els.previewSmartLink.innerHTML = `
 } else { els.previewSmartLink.innerHTML = ''; }
 }
 // ==========================================
+// UPLOAD ENGINE - same get-upload-url edge function handshake used by
+// creator-upload.html (js/creator-upload/upload-management-workflow.js's
+// BANTU_UPLOAD_ENGINE) - ported the two relevant lanes here rather than
+// loading that whole file, since this page only ever uploads a single
+// image or video per post (no audio compression, no thumbnail pipeline).
+// ==========================================
+async function getSecureUploadHandshake(mediaType, fileName) {
+const { data, error } = await window.supabaseClient.functions.invoke('get-upload-url', {
+body: { mediaType, fileName }
+});
+if (error) throw new Error(error.message || 'Failed to secure upload authorization channel.');
+return data; // { uploadUrl, fileUrl, providerVideoId, streamingProvider }
+}
+function uploadFileViaXHR(file, uploadUrl, isVideoChannel) {
+return new Promise((resolve, reject) => {
+const xhr = new XMLHttpRequest();
+xhr.open(isVideoChannel ? 'POST' : 'PUT', uploadUrl);
+let uploadPayload = file;
+if (isVideoChannel) {
+const formData = new FormData();
+formData.append('file', file);
+uploadPayload = formData;
+}
+xhr.onload = () => {
+if (xhr.status >= 200 && xhr.status < 300) { resolve(true); return; }
+try {
+const errorData = JSON.parse(xhr.responseText);
+reject(new Error(errorData.error || `Upload failed with status: ${xhr.status}`));
+} catch { reject(new Error(`Upload failed with status: ${xhr.status}`)); }
+};
+xhr.onerror = () => reject(new Error('Network connection dropped during transmission.'));
+xhr.send(uploadPayload);
+});
+}
+// ==========================================
 // PUBLISH LOGIC - FIXED to use window.supabaseClient
 // ==========================================
 els.form.addEventListener('submit', async (e) => {
@@ -660,14 +695,21 @@ visibility: state.visibility,
 is_pinned: false
 }).select().single();
 if (postErr) throw postErr;
-// 2. Upload Media
+// 2. Upload Media - routed through the get-upload-url edge function, same
+// handshake every other upload path on the platform uses: video goes to
+// Cloudflare Stream (direct_upload + POST), everything else goes to
+// Cloudflare R2 via a pre-signed PUT URL. Media on this platform is never
+// stored in Supabase Storage.
 const mediaUrls = [];
-for (const file of state.mediaFiles) {
-const path = `${user.id}/${Date.now()}_${file.name}`;
-const { data, error: uploadErr } = await window.supabaseClient.storage.from('pulse-media').upload(path, file);
-if (uploadErr) throw uploadErr;
-const { data: { publicUrl } } = window.supabaseClient.storage.from('pulse-media').getPublicUrl(data.path);
-mediaUrls.push({ post_id: post.id, media_url: publicUrl, media_type: file.type.startsWith('video') ? 'video' : 'image', order_index: state.mediaFiles.indexOf(file) });
+for (let i = 0; i < state.mediaFiles.length; i++) {
+const file = state.mediaFiles[i];
+const isVideo = file.type.startsWith('video');
+const handshake = await getSecureUploadHandshake(isVideo ? 'video' : 'image', file.name);
+await uploadFileViaXHR(file, handshake.uploadUrl, isVideo);
+const finalUrl = isVideo
+? `https://videodelivery.net/${handshake.providerVideoId}/manifest/video.m3u8`
+: handshake.fileUrl;
+mediaUrls.push({ post_id: post.id, media_url: finalUrl, media_type: isVideo ? 'video' : 'image', order_index: i });
 }
 if (mediaUrls.length > 0) await window.supabaseClient.from('pulse_post_media').insert(mediaUrls);
 // 3. Insert Poll (if applicable)
