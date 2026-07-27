@@ -240,7 +240,7 @@ function setupListeners() {
         const newBtn = profileBtn.cloneNode(true);
         profileBtn.parentNode.replaceChild(newBtn, profileBtn);
         newBtn.addEventListener('click', () => {
-            window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+            window.location.href = currentUserId ? `creator-channel.html?id=${currentUserId}` : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
         });
     }
     

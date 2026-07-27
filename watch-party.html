@@ -2046,7 +2046,7 @@ backdrop-filter: blur(10px);
         if (profileBtn) {
             profileBtn.addEventListener('click', async () => {
                 const { data } = await supabaseClient.auth.getSession();
-                data?.session ? window.location.href = 'profile.html' : window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                data?.session ? window.location.href = `creator-channel.html?id=${data.session.user.id}` : window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
             });
         }
     }

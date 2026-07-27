@@ -501,7 +501,7 @@ async function initialize() {
             profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
             newProfileBtn.addEventListener('click', () => {
                 if (currentUserId) {
-                    window.location.href = 'profile.html';
+                    window.location.href = `creator-channel.html?id=${currentUserId}`;
                 } else {
                     window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
                 }

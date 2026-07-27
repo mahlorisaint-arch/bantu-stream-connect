@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (profileBtn) {
       profileBtn.addEventListener('click', async () => {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) window.location.href = 'profile.html';
+        if (session) window.location.href = `creator-channel.html?id=${session.user.id}`;
         else window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
       });
     }

@@ -182,28 +182,8 @@ async function loadNotifications() {
         if (error) throw error;
         window.notifications = data || [];
 
-        // The badge's job is to say "something is waiting for you" - it was
-        // only counting the `notifications` table and silently missing
-        // Pulse-related notifications (likes/comments/reposts on Community
-        // Pulse posts), which land in a separate `pulse_notifications` table
-        // (target_user_id, not user_id). Union both counts so the badge is
-        // actually accurate. (Every other page's header badge has this same
-        // gap - not fixed here, flagged separately as a shared-components.js
-        // follow-up.)
-        let pulseUnreadCount = 0;
-        try {
-            const { count, error: pulseError } = await supabaseAuth
-                .from('pulse_notifications')
-                .select('id', { count: 'exact', head: true })
-                .eq('target_user_id', window.currentUser.id)
-                .eq('is_read', false);
-            if (!pulseError) pulseUnreadCount = count || 0;
-        } catch (pulseErr) {
-            console.warn('Could not load pulse_notifications count:', pulseErr);
-        }
-
         const generalUnreadCount = window.notifications.filter(n => !n.is_read).length;
-        updateNotificationBadge(generalUnreadCount + pulseUnreadCount);
+        updateNotificationBadge(generalUnreadCount);
     } catch (error) {
         console.error('Error loading notifications:', error);
         updateNotificationBadge(0);

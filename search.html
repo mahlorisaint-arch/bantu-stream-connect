@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explore - Bantu Connect Pulse</title>
+    <title>Explore - Bantu Stream Connect</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1335,7 +1335,7 @@
     <div class="container" id="content" style="display: none;">
         <!-- Header -->
         <header class="header">
-            <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
+            <div class="logo-container" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
                     <!-- Updated Pulse Icon -->
                     <svg class="pulse-logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1350,11 +1350,11 @@
                         </defs>
                     </svg>
                 </div>
-                <div class="logo-text">BANTU CONNECT PULSE</div>
+                <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             
             <div class="user-section">
-                <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'">
+                <div class="user-avatar" id="user-avatar" onclick="window.location.href=currentUserId ? `creator-channel.html?id=${currentUserId}` : 'login.html'">
                     <img id="user-avatar-img">
                     <span id="avatar-initials">AB</span>
                 </div>
@@ -1367,7 +1367,7 @@
                 <input type="text" 
                        class="search-input" 
                        id="searchInput" 
-                       placeholder="Search Pulses, Series, Creators, or Topics">
+                       placeholder="Search Creators">
                 <button class="search-clear" id="searchClear">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1402,101 +1402,17 @@
         
         <!-- Search Results Section - NOW ABOVE EXPLORE BANNER -->
         <div class="results-section" id="resultsSection">
-            <div class="results-tabs">
-                <button class="result-tab active" data-tab="pulses">
-                    <!-- Updated Pulses Icon -->
-                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
-                        <path d="M3 8 L5 6 L7 9 L9 7 L11 10 L13 8" stroke="url(#pulse-tab-gradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="13" cy="10" r="1.5" fill="#00E5FF"/>
-                        <defs>
-                            <linearGradient id="pulse-tab-gradient" x1="3" y1="8" x2="13" y2="10" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#00E5FF"/>
-                                <stop offset="1" stop-color="#00E5FF"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    Pulses
-                </button>
-                <button class="result-tab" data-tab="series">
-                    <!-- Updated Series Icon -->
-                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
-                        <!-- Layer 3: Futuristic Blue -->
-                        <rect x="4" y="7" width="8" height="6" rx="1" fill="#00E5FF" fill-opacity="0.3"/>
-                        <!-- Layer 2: Gradient mix of blue and gold -->
-                        <rect x="3" y="5" width="8" height="6" rx="1" fill="url(#series-gradient)" fill-opacity="0.6"/>
-                        <!-- Layer 1: Glowing Gold -->
-                        <rect x="2" y="3" width="8" height="6" rx="1" fill="#00E5FF" fill-opacity="0.8"/>
-                        <defs>
-                            <linearGradient id="series-gradient" x1="3" y1="5" x2="11" y2="11" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#00E5FF"/>
-                                <stop offset="1" stop-color="#00E5FF"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    Series
-                </button>
-                <button class="result-tab" data-tab="creators">
-                    <!-- Updated Creators Icon -->
-                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
-                        <circle cx="8" cy="6" r="2" fill="#00E5FF"/>
-                        <path d="M3 14 C3 11 5 10 8 10 C11 10 13 11 13 14" stroke="#00E5FF" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                    Creators
-                </button>
-                <button class="result-tab" data-tab="content">
-                    <!-- Updated Content Link Icon -->
-                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
-                        <path d="M6 8 L10 8" stroke="url(#content-gradient)" stroke-width="1.5" stroke-linecap="round"/>
-                        <path d="M8 6 L10 8 L8 10" stroke="url(#content-gradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="6" cy="8" r="1.5" fill="url(#content-gradient)"/>
-                        <circle cx="12" cy="8" r="1.5" fill="url(#content-gradient)"/>
-                        <defs>
-                            <linearGradient id="content-gradient" x1="6" y1="6" x2="12" y2="10" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#00E5FF"/>
-                                <stop offset="1" stop-color="#00E5FF"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    Content
-                </button>
-            </div>
-            
-            <!-- Pulses Results -->
-            <div class="results-container active" id="pulsesResults">
-                <div class="pulse-results" id="pulseResultsGrid">
-                    <!-- Pulse results will be loaded here -->
-                </div>
-            </div>
-            
-            <!-- Series Results -->
-            <div class="results-container" id="seriesResults">
-                <div class="series-results" id="seriesResultsGrid">
-                    <!-- Series results will be loaded here -->
-                </div>
-            </div>
-            
             <!-- Creator Results -->
-            <div class="results-container" id="creatorsResults">
+            <div class="results-container active" id="creatorsResults">
                 <div class="creator-results" id="creatorResultsGrid">
                     <!-- Creator results will be loaded here -->
                 </div>
             </div>
-            
-            <!-- Content Results -->
-            <div class="results-container" id="contentResults">
-                <div class="content-results" id="contentResultsGrid">
-                    <!-- Content results will be loaded here -->
-                </div>
-            </div>
         </div>
-        
+
         <!-- Explore Banner - MOVED BELOW SEARCH RESULTS -->
         <div class="explore-banner">
-            <h1 class="explore-title">Explore Pulse</h1>
+            <h1 class="explore-title">Explore</h1>
             <p class="explore-subline">
                 No DNA, just RSA 
                 <span class="sa-flag">
@@ -1530,27 +1446,6 @@
             </div>
         </div>
         
-        <!-- Featured Series -->
-        <div class="featured-section">
-            <div class="featured-header">
-                <h2 class="section-title">Featured Series</h2>
-            </div>
-            <div class="series-scroll" id="seriesScroll">
-                <!-- Featured series will be loaded here -->
-            </div>
-        </div>
-        
-        <!-- Topic View -->
-        <div class="topic-view" id="topicView">
-            <div class="topic-header">
-                <h1 class="topic-title" id="topicTitle">#KasiStories</h1>
-                <p class="topic-subline" id="topicSubline">"Pulses shaping the township narrative."</p>
-            </div>
-            
-            <div class="pulse-results" id="topicResultsGrid">
-                <!-- Topic pulses will be loaded here -->
-            </div>
-        </div>
     </div>
 
     <!-- Refresh Button (like notifications.html) -->
@@ -1560,7 +1455,7 @@
 
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <button class="nav-item" onclick="window.location.href='pulse-feed.html'">
+        <button class="nav-item" onclick="window.location.href='index.html'">
             <i class="fas fa-home nav-icon"></i>
             <span>Home</span>
         </button>
@@ -1568,17 +1463,13 @@
             <i class="fas fa-search nav-icon"></i>
             <span>Explore</span>
         </button>
-        <button class="nav-item" onclick="window.location.href='profile.html'">
+        <button class="nav-item" onclick="window.location.href=currentUserId ? `creator-channel.html?id=${currentUserId}` : 'login.html'">
             <i class="fas fa-user nav-icon"></i>
             <span>Profile</span>
         </button>
-        <button class="nav-item" onclick="window.location.href='notifications.html'">
+        <button class="nav-item" onclick="window.location.href='index.html'">
             <i class="far fa-bell nav-icon"></i>
             <span>Alerts</span>
-        </button>
-        <button class="nav-item" onclick="window.location.href='saved.html'">
-            <i class="fas fa-bookmark nav-icon"></i>
-            <span>Saved</span>
         </button>
     </div>
 
@@ -1593,7 +1484,6 @@
         let supabaseClient = null;
         let currentUserId = null;
         let currentSearchTerm = '';
-        let currentTopic = '';
         let searchTimeout = null;
 
         // South African-rooted categories
@@ -1602,32 +1492,8 @@
             { id: 'film', name: 'Film', icon: '🎬' },
             { id: 'culture', name: 'Culture', icon: '🌍' },
             { id: 'tech', name: 'Tech', icon: '💻' },
-            { id: 'education', name: 'Education', icon: '📚' },
-            { id: 'amapiano', name: 'Amapiano & Afro House', icon: '🎧', sa: true },
-            { id: 'kasi', name: 'Kasi Stories', icon: '🏘️', sa: true },
-            { id: 'business', name: 'Mzansi Business', icon: '💼', sa: true },
-            { id: 'fashion', name: 'Street Culture & Fashion', icon: '👕', sa: true },
-            { id: 'language', name: 'Xitsonga / isiZulu / isiXhosa', icon: '🗣️', sa: true },
-            { id: 'politics', name: 'SA Politics & Society', icon: '🏛️', sa: true },
-            { id: 'sports', name: 'Sports & Fan Culture', icon: '⚽', sa: true },
-            { id: 'township-tech', name: 'Township Tech', icon: '📱', sa: true },
-            { id: 'poetry', name: 'Spoken Word & Poetry', icon: '📜', sa: true },
-            { id: 'heritage', name: 'Heritage & History', icon: '🏺', sa: true }
+            { id: 'education', name: 'Education', icon: '📚' }
         ];
-
-        // Topic descriptions
-        const TOPIC_DESCRIPTIONS = {
-            'kasi': 'Pulses shaping the township narrative.',
-            'amapiano': 'The sound of South African youth culture.',
-            'business': 'Entrepreneurship in the Rainbow Nation.',
-            'fashion': 'Street style and cultural expression.',
-            'language': 'Preserving and celebrating indigenous languages.',
-            'politics': 'Conversations shaping our democracy.',
-            'sports': 'Passion, pride, and national unity.',
-            'township-tech': 'Innovation from the grassroots up.',
-            'poetry': 'Words that move and inspire generations.',
-            'heritage': 'Honoring our past, building our future.'
-        };
 
         async function initialize() {
             console.log('Starting Search/Explore initialization...');
@@ -1694,10 +1560,7 @@
                 
                 // Initialize categories
                 initializeCategories();
-                
-                // Load featured series
-                loadFeaturedSeries();
-                
+
                 // Initialize event listeners
                 initializeEventListeners();
                 
@@ -1729,9 +1592,6 @@
             SA_CATEGORIES.forEach(category => {
                 const chip = document.createElement('div');
                 chip.className = 'category-chip';
-                if (category.sa) {
-                    chip.classList.add('sa-chip');
-                }
                 chip.dataset.categoryId = category.id;
                 chip.textContent = `${category.icon} ${category.name}`;
                 
@@ -1743,14 +1603,8 @@
                     
                     // Add active class to clicked chip
                     chip.classList.add('active');
-                    
-                    // If it's a South African category, show topic view
-                    if (category.sa) {
-                        showTopicView(category);
-                    } else {
-                        // For regular categories, search for that category
-                        performSearch(category.name, 'category');
-                    }
+
+                    performSearch(category.name, 'category');
                 });
                 
                 categoriesScroll.appendChild(chip);
@@ -1793,345 +1647,6 @@
             });
         }
         
-        function showTopicView(category) {
-            // Hide search results
-            document.getElementById('resultsSection').classList.remove('active');
-            
-            // Show topic view
-            const topicView = document.getElementById('topicView');
-            topicView.classList.add('active');
-            
-            // Set topic title and description
-            document.getElementById('topicTitle').textContent = `#${category.name.replace(/ & /g, '').replace(/ /g, '')}`;
-            
-            const description = TOPIC_DESCRIPTIONS[category.id] || `Pulses exploring ${category.name.toLowerCase()}.`;
-            document.getElementById('topicSubline').textContent = `"${description}"`;
-            
-            // Load topic pulses
-            loadTopicPulses(category.id);
-            
-            // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        
-        async function loadTopicPulses(categoryId) {
-            const topicResultsGrid = document.getElementById('topicResultsGrid');
-            
-            // Show loading state
-            topicResultsGrid.innerHTML = `
-                <div class="loading-shimmer" style="width: 100%; height: 180px; grid-column: 1/-1;"></div>
-                <div class="loading-shimmer" style="width: 100%; height: 180px;"></div>
-                <div class="loading-shimmer" style="width: 100%; height: 180px;"></div>
-            `;
-            
-            try {
-                // Use the pulses table directly with proper error handling
-                let pulses = [];
-                try {
-                    const { data: pulsesData, error } = await supabaseClient
-                        .from('pulses')
-                        .select('*')
-                        .or(`caption.ilike.%${categoryId}%,media_type.ilike.%${categoryId}%`)
-                        .is('deleted_at', null)
-                        .order('created_at', { ascending: false })
-                        .limit(6);
-                    
-                    if (error) throw error;
-                    pulses = pulsesData || [];
-                } catch (error) {
-                    console.error('Error fetching pulses:', error);
-                    // Fallback to sample data
-                    pulses = [];
-                }
-                
-                topicResultsGrid.innerHTML = '';
-                
-                if (!pulses || pulses.length === 0) {
-                    // Create sample pulses for the topic
-                    const samplePulses = [
-                        {
-                            id: `topic-${categoryId}-1`,
-                            caption: getTopicPulseCaption(categoryId, 0),
-                            user_id: currentUserId,
-                            created_at: new Date(Date.now() - 3600000).toISOString(),
-                            likes_count: Math.floor(Math.random() * 50) + 1,
-                            comments_count: Math.floor(Math.random() * 20),
-                            username: 'user1',
-                            full_name: 'User One'
-                        },
-                        {
-                            id: `topic-${categoryId}-2`,
-                            caption: getTopicPulseCaption(categoryId, 1),
-                            user_id: currentUserId,
-                            created_at: new Date(Date.now() - 7200000).toISOString(),
-                            likes_count: Math.floor(Math.random() * 50) + 1,
-                            comments_count: Math.floor(Math.random() * 20),
-                            username: 'user2',
-                            full_name: 'User Two'
-                        },
-                        {
-                            id: `topic-${categoryId}-3`,
-                            caption: getTopicPulseCaption(categoryId, 2),
-                            user_id: currentUserId,
-                            created_at: new Date(Date.now() - 10800000).toISOString(),
-                            likes_count: Math.floor(Math.random() * 50) + 1,
-                            comments_count: Math.floor(Math.random() * 20),
-                            username: 'user3',
-                            full_name: 'User Three'
-                        }
-                    ];
-                    
-                    // Get actual likes count for sample pulses
-                    for (const pulse of samplePulses) {
-                        pulse.actualLikesCount = pulse.likes_count;
-                    }
-                    
-                    samplePulses.forEach(pulse => {
-                        const pulseCard = createPulseResultCard(pulse);
-                        topicResultsGrid.appendChild(pulseCard);
-                    });
-                } else {
-                    // Get actual likes count from pulse_likes table for real pulses
-                    const pulseIds = pulses.map(p => p.id);
-                    
-                    try {
-                        const { data: likesData, error: likesError } = await supabaseClient
-                            .from('pulse_likes')
-                            .select('pulse_id')
-                            .in('pulse_id', pulseIds);
-                        
-                        if (!likesError && likesData) {
-                            // Create a map of pulse_id to like count
-                            const likesMap = {};
-                            likesData.forEach(like => {
-                                likesMap[like.pulse_id] = (likesMap[like.pulse_id] || 0) + 1;
-                            });
-                            
-                            // Add actual likes count to each pulse
-                            pulses.forEach(pulse => {
-                                pulse.actualLikesCount = likesMap[pulse.id] || pulse.likes_count || 0;
-                            });
-                        }
-                    } catch (likesError) {
-                        console.error('Error fetching likes:', likesError);
-                        // Use stored likes_count as fallback
-                        pulses.forEach(pulse => {
-                            pulse.actualLikesCount = pulse.likes_count || 0;
-                        });
-                    }
-                    
-                    // Get user profiles for the pulses
-                    const userIds = [...new Set(pulses.map(p => p.user_id))];
-                    try {
-                        const { data: userProfiles } = await supabaseClient
-                            .from('user_profiles')
-                            .select('id, full_name, username')
-                            .in('id', userIds);
-                        
-                        const userMap = {};
-                        if (userProfiles) {
-                            userProfiles.forEach(profile => {
-                                userMap[profile.id] = profile;
-                            });
-                        }
-                        
-                        // Combine pulse data with user info
-                        pulses.forEach(pulse => {
-                            const userProfile = userMap[pulse.user_id] || {};
-                            pulse.full_name = userProfile.full_name || 'User';
-                            pulse.username = userProfile.username || 'user';
-                        });
-                    } catch (profileError) {
-                        console.error('Error fetching user profiles:', profileError);
-                        pulses.forEach(pulse => {
-                            pulse.full_name = 'User';
-                            pulse.username = 'user';
-                        });
-                    }
-                    
-                    // Display real pulses
-                    pulses.forEach(pulse => {
-                        const pulseCard = createPulseResultCard(pulse);
-                        topicResultsGrid.appendChild(pulseCard);
-                    });
-                }
-                
-            } catch (error) {
-                console.error('Error loading topic pulses:', error);
-                topicResultsGrid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="empty-icon">
-                            <i class="fas fa-compass"></i>
-                        </div>
-                        <div class="empty-title">Could not load topic pulses</div>
-                        <div class="empty-description">Please try again later</div>
-                    </div>
-                `;
-            }
-        }
-        
-        function getTopicPulseCaption(categoryId, index) {
-            const captions = {
-                kasi: [
-                    "Growing up in Soweto taught me resilience in ways no book ever could.",
-                    "The sound of a township waking up is better than any alarm clock.",
-                    "Kasi entrepreneurship: Turning challenges into opportunities every day.",
-                    "Our streets tell stories of struggle, triumph, and community.",
-                    "Township vibes - where every corner has a story worth telling."
-                ],
-                amapiano: [
-                    "Amapiano isn't just music, it's a movement. Feel the vibration.",
-                    "From the townships to the world - the piano sound that conquered all.",
-                    "Creating amapiano in my bedroom studio, dreaming of global stages.",
-                    "The evolution of South African house music through amapiano's lens.",
-                    "When the piano keys drop, the whole nation starts moving."
-                ],
-                business: [
-                    "Building a tech startup from Khayelitsha to Silicon Valley.",
-                    "Mzansi entrepreneurship: Resourcefulness is our competitive advantage.",
-                    "The rise of black-owned businesses changing South Africa's economy.",
-                    "From spaza shop to e-commerce empire - the digital transformation.",
-                    "Investing in township economies: The future of SA business growth."
-                ]
-            };
-            
-            const defaultCaptions = [
-                "Exploring the depths of South African culture through storytelling.",
-                "Every pulse tells a story, every story shapes our identity.",
-                "The rhythm of our nation beats in every conversation.",
-                "From struggle to strength - the South African narrative continues.",
-                "Cultural preservation through digital storytelling."
-            ];
-            
-            const categoryCaptions = captions[categoryId] || defaultCaptions;
-            return categoryCaptions[index % categoryCaptions.length];
-        }
-        
-        async function loadFeaturedSeries() {
-            const seriesScroll = document.getElementById('seriesScroll');
-            
-            // Show loading state
-            seriesScroll.innerHTML = `
-                <div class="series-card loading-shimmer" style="min-width: 240px; height: 190px;"></div>
-                <div class="series-card loading-shimmer" style="min-width: 240px; height: 190px;"></div>
-                <div class="series-card loading-shimmer" style="min-width: 240px; height: 190px;"></div>
-            `;
-            
-            try {
-                // Try to use series_with_details view first
-                let series = [];
-                try {
-                    const { data: seriesData, error: seriesError } = await supabaseClient
-                        .from('series_with_details')
-                        .select('*')
-                        .eq('is_archived', false)
-                        .order('created_at', { ascending: false })
-                        .limit(5);
-                    
-                    if (seriesError) throw seriesError;
-                    series = seriesData || [];
-                } catch (viewError) {
-                    console.error('Error using series_with_details, falling back to pulse_series:', viewError);
-                    // Fallback to pulse_series table
-                    const { data: seriesData, error: fallbackError } = await supabaseClient
-                        .from('pulse_series')
-                        .select('*')
-                        .eq('is_archived', false)
-                        .order('created_at', { ascending: false })
-                        .limit(5);
-                    
-                    if (fallbackError) throw fallbackError;
-                    series = seriesData || [];
-                }
-                
-                seriesScroll.innerHTML = '';
-                
-                if (!series || series.length === 0) {
-                    seriesScroll.innerHTML = `
-                        <div class="empty-state" style="min-width: 240px; height: 190px; display: flex; flex-direction: column; justify-content: center;">
-                            <div class="empty-icon">
-                                <i class="fas fa-layer-group"></i>
-                            </div>
-                            <div class="empty-title">No Featured Series</div>
-                            <div class="empty-description">Check back soon</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Get creator profiles for the series
-                const creatorIds = [...new Set(series.map(s => s.creator_id))];
-                const { data: userProfiles, error: profileError } = await supabaseClient
-                    .from('user_profiles')
-                    .select('id, full_name, username')
-                    .in('id', creatorIds);
-                
-                const creatorMap = {};
-                if (userProfiles && !profileError) {
-                    userProfiles.forEach(profile => {
-                        creatorMap[profile.id] = profile;
-                    });
-                }
-                
-                series.forEach(s => {
-                    const seriesCard = document.createElement('div');
-                    seriesCard.className = 'series-card';
-                    seriesCard.dataset.seriesId = s.id;
-                    
-                    const creatorProfile = creatorMap[s.creator_id] || {};
-                    const creatorName = creatorProfile.full_name || 'Creator';
-                    const creatorUsername = creatorProfile.username || 'creator';
-                    
-                    // Calculate progress percentage based on pulse count or current_part
-                    let progressPercentage = 0;
-                    let progressText = '0 pulses';
-                    
-                    if (s.pulse_count !== undefined) {
-                        progressPercentage = Math.min((s.pulse_count || 0) / (s.total_parts || 1) * 100, 100);
-                        progressText = `${s.pulse_count || 0} ${s.pulse_count === 1 ? 'pulse' : 'pulses'}`;
-                    } else if (s.current_part !== undefined) {
-                        progressPercentage = Math.min((s.current_part || 0) / (s.total_parts || 1) * 100, 100);
-                        progressText = `${s.current_part || 0}/${s.total_parts || '∞'} parts`;
-                    }
-                    
-                    seriesCard.innerHTML = `
-                        <div class="series-cover">
-                            ${s.cover_image_url ? `<img src="${s.cover_image_url}" alt="${s.title}">` : ''}
-                            <div class="series-badge">Featured</div>
-                            <div class="series-progress">
-                                <div class="series-progress-fill" style="width: ${progressPercentage}%"></div>
-                            </div>
-                        </div>
-                        <div class="series-info">
-                            <div class="series-title">${s.title || 'Untitled Series'}</div>
-                            <div class="series-creator">By ${creatorName}</div>
-                            <div class="series-meta">
-                                <span>${progressText}</span>
-                                <span>${s.is_completed ? 'Completed' : 'Active'}</span>
-                            </div>
-                        </div>
-                    `;
-                    
-                    seriesCard.addEventListener('click', () => {
-                        viewSeries(s.id);
-                    });
-                    
-                    seriesScroll.appendChild(seriesCard);
-                });
-                
-            } catch (error) {
-                console.error('Error loading featured series:', error);
-                seriesScroll.innerHTML = `
-                    <div class="empty-state" style="min-width: 240px; height: 190px; display: flex; flex-direction: column; justify-content: center;">
-                        <div class="empty-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="empty-title">Failed to load</div>
-                        <div class="empty-description">Please try again</div>
-                    </div>
-                `;
-            }
-        }
         
         function initializeEventListeners() {
             // Search input
@@ -2270,9 +1785,7 @@
             // Add new suggestions based on search term
             const sampleSuggestions = [
                 { type: 'hashtag', text: `#${searchTerm}` },
-                { type: 'creator', text: `@${searchTerm}` },
-                { type: 'pulse', text: `Pulses about ${searchTerm}` },
-                { type: 'series', text: `Series: ${searchTerm}` }
+                { type: 'creator', text: `@${searchTerm}` }
             ];
             
             sampleSuggestions.forEach(suggestion => {
@@ -2303,10 +1816,7 @@
         
         function performSearch(searchTerm, source) {
             currentSearchTerm = searchTerm;
-            
-            // Hide topic view if active
-            document.getElementById('topicView').classList.remove('active');
-            
+
             // Show search results section
             document.getElementById('resultsSection').classList.add('active');
             
@@ -2341,320 +1851,28 @@
             });
             
             // Clear results grids
-            document.getElementById('pulseResultsGrid').innerHTML = '';
-            document.getElementById('seriesResultsGrid').innerHTML = '';
             document.getElementById('creatorResultsGrid').innerHTML = '';
-            document.getElementById('contentResultsGrid').innerHTML = '';
         }
-        
+
         async function loadSearchResults(searchTerm, source) {
             console.log(`Searching for: ${searchTerm} (source: ${source})`);
-            
+
             // Show loading states
             showLoadingStates();
-            
+
             // Load each type of result
             await Promise.all([
-                loadPulseResults(searchTerm),
-                loadSeriesResults(searchTerm),
-                loadCreatorResults(searchTerm),
-                loadContentResults(searchTerm)
+                loadCreatorResults(searchTerm)
             ]);
         }
-        
+
         function showLoadingStates() {
-            // Pulse results loading
-            const pulseGrid = document.getElementById('pulseResultsGrid');
-            pulseGrid.innerHTML = `
-                <div class="loading-shimmer" style="width: 100%; height: 220px; grid-column: 1/-1;"></div>
-                <div class="loading-shimmer" style="width: 100%; height: 220px;"></div>
-                <div class="loading-shimmer" style="width: 100%; height: 220px;"></div>
-            `;
-            
-            // Series results loading
-            const seriesGrid = document.getElementById('seriesResultsGrid');
-            seriesGrid.innerHTML = `
-                <div class="loading-shimmer" style="width: 100%; height: 150px;"></div>
-                <div class="loading-shimmer" style="width: 100%; height: 150px;"></div>
-            `;
-            
             // Creator results loading
             const creatorGrid = document.getElementById('creatorResultsGrid');
             creatorGrid.innerHTML = `
                 <div class="loading-shimmer" style="width: 100%; height: 100px;"></div>
                 <div class="loading-shimmer" style="width: 100%; height: 100px;"></div>
             `;
-            
-            // Content results loading
-            const contentGrid = document.getElementById('contentResultsGrid');
-            contentGrid.innerHTML = `
-                <div class="loading-shimmer" style="width: 100%; height: 150px;"></div>
-                <div class="loading-shimmer" style="width: 100%; height: 150px;"></div>
-            `;
-        }
-        
-        async function loadPulseResults(searchTerm) {
-            const pulseGrid = document.getElementById('pulseResultsGrid');
-            
-            try {
-                // First try to get pulses from the pulses table
-                let pulses = [];
-                try {
-                    const { data: pulsesData, error } = await supabaseClient
-                        .from('pulses')
-                        .select('*')
-                        .or(`caption.ilike.%${searchTerm}%`)
-                        .is('deleted_at', null)
-                        .order('created_at', { ascending: false })
-                        .limit(12);
-                    
-                    if (error) throw error;
-                    pulses = pulsesData || [];
-                } catch (error) {
-                    console.error('Error fetching pulses:', error);
-                    pulses = [];
-                }
-                
-                pulseGrid.innerHTML = '';
-                
-                if (!pulses || pulses.length === 0) {
-                    pulseGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <div class="empty-icon">
-                                <i class="fas fa-search"></i>
-                            </div>
-                            <div class="empty-title">No Pulses Found</div>
-                            <div class="empty-description">Try different search terms or browse categories</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Get actual likes count from pulse_likes table
-                const pulseIds = pulses.map(p => p.id);
-                
-                try {
-                    const { data: likesData, error: likesError } = await supabaseClient
-                        .from('pulse_likes')
-                        .select('pulse_id')
-                        .in('pulse_id', pulseIds);
-                    
-                    if (!likesError && likesData) {
-                        // Create a map of pulse_id to like count
-                        const likesMap = {};
-                        likesData.forEach(like => {
-                            likesMap[like.pulse_id] = (likesMap[like.pulse_id] || 0) + 1;
-                        });
-                        
-                        // Add actual likes count to each pulse
-                        pulses.forEach(pulse => {
-                            pulse.actualLikesCount = likesMap[pulse.id] || pulse.likes_count || 0;
-                        });
-                    }
-                } catch (likesError) {
-                    console.error('Error fetching likes:', likesError);
-                    // Use stored likes_count as fallback
-                    pulses.forEach(pulse => {
-                        pulse.actualLikesCount = pulse.likes_count || 0;
-                    });
-                }
-                
-                // Get user profiles for the pulses
-                const userIds = [...new Set(pulses.map(p => p.user_id))];
-                try {
-                    const { data: userProfiles } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id, full_name, username')
-                        .in('id', userIds);
-                    
-                    const userMap = {};
-                    if (userProfiles) {
-                        userProfiles.forEach(profile => {
-                            userMap[profile.id] = profile;
-                        });
-                    }
-                    
-                    // Combine pulse data with user info
-                    pulses.forEach(pulse => {
-                        const userProfile = userMap[pulse.user_id] || {};
-                        pulse.full_name = userProfile.full_name || 'User';
-                        pulse.username = userProfile.username || 'user';
-                    });
-                } catch (profileError) {
-                    console.error('Error fetching user profiles:', profileError);
-                    pulses.forEach(pulse => {
-                        pulse.full_name = 'User';
-                        pulse.username = 'user';
-                    });
-                }
-                
-                pulses.forEach(pulse => {
-                    const pulseCard = createPulseResultCard(pulse);
-                    pulseGrid.appendChild(pulseCard);
-                });
-                
-            } catch (error) {
-                console.error('Error loading pulse results:', error);
-                pulseGrid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="empty-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="empty-title">Failed to load pulses</div>
-                        <div class="empty-description">Please try again</div>
-                    </div>
-                `;
-            }
-        }
-        
-        function createPulseResultCard(pulse) {
-            const card = document.createElement('div');
-            card.className = 'pulse-result-card';
-            card.dataset.pulseId = pulse.id;
-            
-            // Truncate caption for display
-            const caption = pulse.caption || '';
-            const truncatedCaption = caption.length > 100 ? caption.substring(0, 97) + '...' : caption;
-            
-            // Format time
-            const timeAgo = getTimeAgo(new Date(pulse.created_at));
-            
-            // Get media URL if exists
-            const mediaUrl = pulse.media_url || '';
-            const mediaType = pulse.media_type || 'none';
-            
-            // Get likes count - use actualLikesCount if available, otherwise use stored count
-            const likesCount = pulse.actualLikesCount !== undefined ? pulse.actualLikesCount : (pulse.likes_count || 0);
-            
-            card.innerHTML = `
-                <div class="pulse-result-media">
-                    ${mediaUrl && mediaType === 'image' ? 
-                        `<img src="${mediaUrl}" alt="Pulse preview" onerror="this.style.display='none'">` : 
-                    mediaUrl && mediaType === 'video' ?
-                        `<video poster="${mediaUrl}" onerror="this.style.display='none'">
-                            <source src="${mediaUrl}" type="video/mp4">
-                        </video>` :
-                        `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--slate-grey);">
-                            <i class="fas fa-bolt" style="font-size: 36px; opacity: 0.3;"></i>
-                        </div>`
-                    }
-                </div>
-                <div class="pulse-result-info">
-                    <div class="pulse-result-text">${truncatedCaption}</div>
-                    <div class="pulse-result-meta">
-                        <span>@${pulse.username || 'user'}</span>
-                        <span>${timeAgo} · ${likesCount} ${likesCount === 1 ? 'like' : 'likes'}</span>
-                    </div>
-                </div>
-            `;
-            
-            card.addEventListener('click', () => {
-                viewPulse(pulse.id);
-            });
-            
-            return card;
-        }
-        
-        async function loadSeriesResults(searchTerm) {
-            const seriesGrid = document.getElementById('seriesResultsGrid');
-            
-            try {
-                // Try to use series_with_details view first
-                let series = [];
-                try {
-                    const { data: seriesData, error: seriesError } = await supabaseClient
-                        .from('series_with_details')
-                        .select('*')
-                        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-                        .eq('is_archived', false)
-                        .order('created_at', { ascending: false })
-                        .limit(8);
-                    
-                    if (seriesError) throw seriesError;
-                    series = seriesData || [];
-                } catch (viewError) {
-                    console.error('Error using series_with_details, falling back to pulse_series:', viewError);
-                    // Fallback to pulse_series table
-                    const { data: seriesData, error: fallbackError } = await supabaseClient
-                        .from('pulse_series')
-                        .select('*')
-                        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-                        .eq('is_archived', false)
-                        .order('created_at', { ascending: false })
-                        .limit(8);
-                    
-                    if (fallbackError) throw fallbackError;
-                    series = seriesData || [];
-                }
-                
-                seriesGrid.innerHTML = '';
-                
-                if (!series || series.length === 0) {
-                    seriesGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <div class="empty-icon">
-                                <i class="fas fa-layer-group"></i>
-                            </div>
-                            <div class="empty-title">No Series Found</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Get creator profiles for the series
-                const creatorIds = [...new Set(series.map(s => s.creator_id))];
-                const { data: userProfiles, error: profileError } = await supabaseClient
-                    .from('user_profiles')
-                    .select('id, full_name, username')
-                    .in('id', creatorIds);
-                
-                const creatorMap = {};
-                if (userProfiles && !profileError) {
-                    userProfiles.forEach(profile => {
-                        creatorMap[profile.id] = profile;
-                    });
-                }
-                
-                series.forEach(s => {
-                    const card = document.createElement('div');
-                    card.className = 'series-result-card';
-                    card.dataset.seriesId = s.id;
-                    
-                    const creatorProfile = creatorMap[s.creator_id] || {};
-                    const creatorName = creatorProfile.full_name || 'Creator';
-                    
-                    // Use pulse_count from view or fallback to current_part
-                    const pulseCount = s.pulse_count || s.current_part || 0;
-                    const totalParts = s.total_parts || '∞';
-                    
-                    card.innerHTML = `
-                        <div class="series-result-title">${s.title || 'Untitled Series'}</div>
-                        <div class="series-result-creator">By ${creatorName}</div>
-                        <div class="series-result-stats">
-                            <span>${pulseCount} ${pulseCount === 1 ? 'pulse' : 'pulses'}</span>
-                            <span>${s.is_completed ? 'Completed' : 'In Progress'}</span>
-                        </div>
-                        <div class="series-result-action">View Series</div>
-                    `;
-                    
-                    card.addEventListener('click', () => {
-                        viewSeries(s.id);
-                    });
-                    
-                    seriesGrid.appendChild(card);
-                });
-                
-            } catch (error) {
-                console.error('Error loading series results:', error);
-                seriesGrid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="empty-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="empty-title">Failed to load series</div>
-                    </div>
-                `;
-            }
         }
         
         async function loadCreatorResults(searchTerm) {
@@ -2710,7 +1928,7 @@
                         <div class="creator-result-info">
                             <div class="creator-result-name">${creator.full_name || 'User'}</div>
                             <div class="creator-result-handle">@${creator.username || 'user'}</div>
-                            <div class="creator-result-bio">${creator.bio || 'Bantu Connect Pulse creator'}</div>
+                            <div class="creator-result-bio">${creator.bio || 'Bantu Stream Connect creator'}</div>
                             <div class="creator-result-action">
                                 <button class="connect-btn ${isConnected ? 'connected' : ''}" 
                                         data-creator-id="${creator.id}">
@@ -2760,210 +1978,10 @@
             }
         }
         
-        async function loadContentResults(searchTerm) {
-            const contentGrid = document.getElementById('contentResultsGrid');
-            
-            try {
-                // Search linked content using pulses table directly
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses')
-                    .select('*')
-                    .not('linked_content_id', 'is', null)
-                    .or(`caption.ilike.%${searchTerm}%,linked_content_type.ilike.%${searchTerm}%`)
-                    .is('deleted_at', null)
-                    .order('created_at', { ascending: false })
-                    .limit(6);
-                
-                if (error) throw error;
-                
-                contentGrid.innerHTML = '';
-                
-                if (!pulses || pulses.length === 0) {
-                    contentGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <div class="empty-icon">
-                                <i class="fas fa-link"></i>
-                            </div>
-                            <div class="empty-title">No Linked Content Found</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                pulses.forEach(pulse => {
-                    const card = document.createElement('div');
-                    card.className = 'content-result-card';
-                    
-                    let icon = 'fas fa-link';
-                    let title = 'Linked Content';
-                    
-                    if (pulse.linked_content_type === 'music') {
-                        icon = 'fas fa-music';
-                        title = 'Music';
-                    } else if (pulse.linked_content_type === 'film') {
-                        icon = 'fas fa-film';
-                        title = 'Film';
-                    } else if (pulse.linked_content_type === 'podcast') {
-                        icon = 'fas fa-podcast';
-                        title = 'Podcast';
-                    }
-                    
-                    card.innerHTML = `
-                        <div class="content-result-icon">
-                            <i class="${icon}"></i>
-                        </div>
-                        <div class="content-result-title">${title}</div>
-                        <div class="content-result-description">
-                            ${pulse.caption || 'Linked content from Bantu Stream'}
-                        </div>
-                        <div class="content-result-action">▶ Watch on Bantu Stream</div>
-                    `;
-                    
-                    card.addEventListener('click', () => {
-                        viewLinkedContent(pulse.linked_content_id);
-                    });
-                    
-                    contentGrid.appendChild(card);
-                });
-                
-            } catch (error) {
-                console.error('Error loading content results:', error);
-                contentGrid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <div class="empty-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="empty-title">Failed to load content</div>
-                    </div>
-                `;
-            }
-        }
-        
-        function getTimeAgo(date) {
-            if (!date || isNaN(new Date(date).getTime())) {
-                return 'just now';
-            }
-            
-            const seconds = Math.floor((new Date() - date) / 1000);
-            
-            if (seconds < 30) return 'just now';
-            if (seconds < 60) return seconds + ' seconds ago';
-            
-            const minutes = Math.floor(seconds / 60);
-            if (minutes < 2) return 'a minute ago';
-            if (minutes < 60) return minutes + ' minutes ago';
-            
-            const hours = Math.floor(minutes / 60);
-            if (hours < 2) return 'an hour ago';
-            if (hours < 24) return hours + ' hours ago';
-            
-            const days = Math.floor(hours / 24);
-            if (days < 2) return 'yesterday';
-            if (days < 30) return days + ' days ago';
-            
-            const months = Math.floor(days / 30);
-            if (months < 2) return 'a month ago';
-            if (months < 12) return months + ' months ago';
-            
-            const years = Math.floor(months / 12);
-            if (years < 2) return 'a year ago';
-            return years + ' years ago';
-        }
-        
-        function getInitials(name) {
-            if (!name) return 'U';
-            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        }
-        
-        async function handleConnect(creatorId, button) {
-            try {
-                const isConnected = button.classList.contains('connected');
-                
-                if (isConnected) {
-                    // Disconnect
-                    const { error } = await supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', currentUserId)
-                        .eq('connected_id', creatorId);
-                    
-                    if (error) throw error;
-                    
-                    button.classList.remove('connected');
-                    button.textContent = 'Connect';
-                    showToast('Disconnected', 'success');
-                    
-                } else {
-                    // Connect
-                    const { error } = await supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: currentUserId,
-                            connected_id: creatorId,
-                            connection_type: 'creator'
-                        });
-                    
-                    if (error) throw error;
-                    
-                    button.classList.add('connected');
-                    button.textContent = 'Connected';
-                    showToast('Connected successfully!', 'success');
-                }
-                
-            } catch (error) {
-                console.error('Error handling connection:', error);
-                showToast('Failed to update connection', 'error');
-            }
-        }
-        
-        function viewPulse(pulseId) {
-            window.location.href = `pulse-content-detail.html?id=${pulseId}`;
-        }
-        
-        async function viewSeries(seriesId) {
-            try {
-                // First, try to get the first pulse in the series
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses')
-                    .select('id')
-                    .eq('series_id', seriesId)
-                    .order('series_order', { ascending: true })
-                    .limit(1);
-                
-                if (error) {
-                    console.error('Error fetching series pulses:', error);
-                    // If no pulses found or error, redirect to series view
-                    window.location.href = `pulse-feed.html?series=${seriesId}`;
-                    return;
-                }
-                
-                if (pulses && pulses.length > 0) {
-                    // Redirect to the first pulse in the series
-                    window.location.href = `pulse-content-detail.html?id=${pulses[0].id}`;
-                } else {
-                    // No pulses in series, redirect to feed with series filter
-                    window.location.href = `pulse-feed.html?series=${seriesId}`;
-                }
-                
-            } catch (error) {
-                console.error('Error viewing series:', error);
-                // Fallback to series filter on feed
-                window.location.href = `pulse-feed.html?series=${seriesId}`;
-            }
-        }
-        
         function viewCreatorProfile(creatorId) {
-            window.location.href = `profile.html?user_id=${creatorId}`;
+            window.location.href = `creator-channel.html?id=${creatorId}`;
         }
         
-        function viewLinkedContent(contentId) {
-            showToast('Opening content on Bantu Stream...', 'success');
-            // Implementation depends on your content system
-            // For now, just show a toast
-            setTimeout(() => {
-                showToast('Content opened successfully', 'success');
-            }, 1000);
-        }
         
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
@@ -2983,66 +2001,7 @@
         }
         
         function loadSampleData() {
-            // Load sample categories
             initializeCategories();
-            
-            // Load sample featured series
-            const seriesScroll = document.getElementById('seriesScroll');
-            seriesScroll.innerHTML = '';
-            
-            const sampleSeries = [
-                { 
-                    title: 'Amapiano Evolution', 
-                    creator: 'DJ Kabza', 
-                    pulse_count: 4,
-                    total_parts: 6, 
-                    is_completed: false,
-                    cover_image_url: null
-                },
-                { 
-                    title: 'Kasi Entrepreneurs', 
-                    creator: 'Thando Mokoena', 
-                    pulse_count: 3,
-                    total_parts: 8, 
-                    is_completed: false,
-                    cover_image_url: null
-                },
-                { 
-                    title: 'SA Heritage Stories', 
-                    creator: 'Cultural Archive', 
-                    pulse_count: 6,
-                    total_parts: 6, 
-                    is_completed: true,
-                    cover_image_url: null
-                }
-            ];
-            
-            sampleSeries.forEach(series => {
-                const seriesCard = document.createElement('div');
-                seriesCard.className = 'series-card';
-                
-                const progressPercentage = Math.min((series.pulse_count || 0) / (series.total_parts || 1) * 100, 100);
-                const progressText = `${series.pulse_count || 0} ${series.pulse_count === 1 ? 'pulse' : 'pulses'}`;
-                
-                seriesCard.innerHTML = `
-                    <div class="series-cover">
-                        <div class="series-badge">Featured</div>
-                        <div class="series-progress">
-                            <div class="series-progress-fill" style="width: ${progressPercentage}%"></div>
-                        </div>
-                    </div>
-                    <div class="series-info">
-                        <div class="series-title">${series.title}</div>
-                        <div class="series-creator">By ${series.creator}</div>
-                        <div class="series-meta">
-                            <span>${progressText}</span>
-                            <span>${series.is_completed ? 'Completed' : 'Active'}</span>
-                        </div>
-                    </div>
-                `;
-                
-                seriesScroll.appendChild(seriesCard);
-            });
         }
         
         // Start initialization

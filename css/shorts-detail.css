@@ -850,8 +850,7 @@ body {
 
 /* ============================================
    BOTTOM NAVIGATION
-   Same live pattern already used on profile.html/saved.html/search.html/
-   notifications.html/pulse-content-detail.html/pulse-feed.html.
+   Same live pattern already used on search.html.
    ============================================ */
 .bottom-nav {
   position: fixed;

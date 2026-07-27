@@ -154,7 +154,7 @@ function updateProfileUI(user) {
     `;
     
     profileBtn.onclick = () => {
-        window.location.href = 'profile.html';
+        window.location.href = `creator-channel.html?id=${user.id}`;
     };
 }
 
