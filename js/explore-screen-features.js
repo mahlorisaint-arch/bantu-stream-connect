@@ -438,7 +438,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="journey-rec-grid">
               ${recommendations.map(item => `
                 <div class="rec-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                  <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${window.escapeHtml(item.title)}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;">
+                  <div style="position: relative; border-radius: 8px; overflow: hidden;">
+                    <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${window.escapeHtml(item.title)}" style="width: 100%; height: 120px; object-fit: cover; display: block;">
+                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                  </div>
                   <div style="padding: 12px 4px 0;">
                     <h5 style="font-size: 14px; margin-bottom: 4px;">${window.escapeHtml(item.title) || 'Untitled'}</h5>
                     <p style="font-size: 12px; color: var(--slate-grey);">${window.escapeHtml(item.creator_display_name || 'Creator')}</p>
@@ -771,6 +774,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       <div class="content-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
         <div class="content-card-thumb">
           <img src="${item.thumbnail_url || 'https://via.placeholder.com/400x225'}" alt="${window.escapeHtml(item.title || 'Content')}">
+          <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
         </div>
         <div class="content-card-body">
           <h4>${window.escapeHtml(item.title || 'Untitled')}</h4>

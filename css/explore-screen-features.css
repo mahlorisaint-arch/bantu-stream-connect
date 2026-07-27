@@ -432,6 +432,7 @@
 }
 
 .content-card-thumb {
+  position: relative;
   border-radius: 6px;
   overflow: hidden;
   aspect-ratio: 16 / 9;
@@ -444,6 +445,28 @@
   object-fit: cover;
   display: block;
 }
+
+/* Hover-play overlay - the canonical version of this pattern lives on
+   the home feed's Continue Watching section (css/home-feed-ui.css's
+   .play-overlay/.play-icon): a dark scrim behind a circular
+   transparent-glassmorphic, cyan-bordered button. Ported verbatim so
+   every content thumbnail on this page (World Expanded modal items,
+   Discovery Journey recommendations) uses the same one, not a bare
+   icon or none at all. */
+.play-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.3s ease; z-index: 2;
+}
+.content-card:hover .play-overlay, .rec-item:hover .play-overlay { opacity: 1; }
+.play-icon {
+  width: 50px; height: 50px; background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 229, 255, 0.4); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #00E5FF; font-size: 20px; transform: scale(0.8);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.content-card:hover .play-icon, .rec-item:hover .play-icon { transform: scale(1); }
 
 .content-card-body h4 {
   font-size: 13px;

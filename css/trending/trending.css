@@ -155,18 +155,29 @@ body { background: #000000; }
 .upload-card__byline { font-size: 12px; color: rgba(248,250,252,0.72); margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .upload-card__meta { font-size: 11px; color: var(--slate-grey); display: flex; align-items: center; gap: 6px; }
 
-/* Hover-play overlay — not defined in shared-components.css. Copied from
-   creator-channel.css's .media-hover-play (the one working definition of
-   this pattern in the codebase — movies.html's own cards reference this
-   same class but it isn't actually styled anywhere movies.html loads,
-   a pre-existing gap there) rather than inventing new styling. */
-.media-hover-play {
+/* Hover-play overlay - the canonical version of this pattern actually
+   lives on the home feed's Continue Watching section
+   (css/home-feed-ui.css's .play-overlay/.play-icon, rendered by
+   js/home-feed/continue-watching.js): a dark scrim behind a circular
+   transparent-glassmorphic, cyan-bordered button, not a bare glowing
+   icon with no button shape. Ported verbatim instead of the previous
+   .media-hover-play recipe (itself copied from creator-channel.css's
+   own, different, un-buttoned version of this same idea). */
+.play-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s ease; z-index: 2;
+  background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.3s ease; z-index: 2;
 }
-.upload-card:hover .media-hover-play, .shorts-card:hover .media-hover-play { opacity: 1; }
-.media-hover-play i { font-size: 22px; color: var(--brand-cyan-core); text-shadow: var(--brand-glow-stack); }
-.shorts-card .media-hover-play i { font-size: 18px; }
+.upload-card:hover .play-overlay, .shorts-card:hover .play-overlay { opacity: 1; }
+.play-icon {
+  width: 50px; height: 50px; background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 229, 255, 0.4); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #00E5FF; font-size: 20px; transform: scale(0.8);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.upload-card:hover .play-icon, .shorts-card:hover .play-icon { transform: scale(1); }
+.shorts-card .play-icon { width: 40px; height: 40px; font-size: 16px; }
 
 /* ===== SHORTS ROW (vertical 9:16 variant of the same card family) ===== */
 .shorts-scroll { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; }

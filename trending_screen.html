@@ -351,7 +351,7 @@ function renderCards(items) {
             <div class="upload-card__thumb" style="background-image:url(${buildThumbnailUrl(item.thumbnail_url)});">
                 ${item.is_live ? '<span class="upload-card__badge live">LIVE</span>' : (item.is_new ? '<span class="upload-card__badge new">NEW</span>' : '')}
                 <span class="upload-card__duration">${formatDuration(item.duration)}</span>
-                <div class="media-hover-play"><i class="fas fa-play"></i></div>
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
             </div>
             <p class="upload-card__title">${escapeHtml(item.title)}</p>
             <p class="upload-card__byline">@${escapeHtml(item.user_profiles?.username || 'Creator')} · ${formatTimeAgo(item.created_at)}</p>
@@ -366,7 +366,7 @@ function renderShorts(items) {
         <div class="shorts-card" onclick="window.location.href='shorts-detail.html?id=${item.id}'">
             <div class="upload-card__thumb" style="background-image:url(${buildThumbnailUrl(item.thumbnail_url)});">
                 <span class="upload-card__duration">${formatDuration(item.duration)}</span>
-                <div class="media-hover-play"><i class="fas fa-play"></i></div>
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
             </div>
             <p class="upload-card__title">${escapeHtml(item.title)}</p>
             <p class="upload-card__meta"><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</p>

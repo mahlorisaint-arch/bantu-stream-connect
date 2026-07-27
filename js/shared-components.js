@@ -724,6 +724,7 @@ function generatePremiumCardHtml(drop) {
             <div class="thumbnail-wrapper-frame">
                 <img src="${parseThumbnailUrl(drop.thumbnail_url)}" alt="" onerror="this.src='images/card-fallback.jpg'">
                 ${durationStr ? `<span class="premium-duration-badge">${durationStr}</span>` : ''}
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
             </div>
             <div class="premium-card-payload">
                 <h5>${escapeHtml(drop.title)}</h5>
