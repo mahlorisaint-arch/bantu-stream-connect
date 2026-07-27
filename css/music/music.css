@@ -1070,6 +1070,10 @@ body { background: #000000; }
   object-fit: cover;
 }
 
+.social-strip-avatar i {
+  font-size: 14px;
+}
+
 .social-strip-avatar::after {
   content: '';
   position: absolute;

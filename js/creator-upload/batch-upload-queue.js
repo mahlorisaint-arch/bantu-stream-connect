@@ -424,6 +424,7 @@ async function runBatchUpload(isDraft) {
             genre: genre,
             contentFormat: contentFormat || null,
             genreSpecificMetadata: buildRowMetadata(genre, sharedMeta, row),
+            primaryGenreId: collectPrimaryGenreId(),
             duration: row.extractedDuration,
             chapters: null,
             collection: {

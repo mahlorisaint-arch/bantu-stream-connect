@@ -123,12 +123,27 @@ function updateGenreForm(isBatchMode = false) {
     const chaptersSection = document.getElementById('chapters-section');
     const movieSection = document.getElementById('movie-classification-section');
     const newsFields = document.getElementById('news-fields');
+    const musicGenreGroup = document.getElementById('music-genre-group');
+    const tempoGroup = document.getElementById('tempo-group');
+    const keyGroup = document.getElementById('key-group');
+    const explicitGroup = document.getElementById('explicit-group');
 
     container.classList.remove('active');
     moodSection.classList.remove('active');
     chaptersSection.classList.remove('active');
     movieSection.classList.remove('active');
     newsFields.classList.remove('active');
+
+    // Real primary_genre_id picker (sourced from the genres table) + the
+    // tempo/key/explicit fields collectContentMetadata() already collects
+    // but that were never actually shown anywhere - this is the only place
+    // content-genre's change handler routes through for every content type.
+    const isMusic = genre === 'Music';
+    musicGenreGroup.style.display = isMusic ? 'block' : 'none';
+    tempoGroup.style.display = isMusic ? 'block' : 'none';
+    keyGroup.style.display = isMusic ? 'block' : 'none';
+    explicitGroup.style.display = isMusic ? 'block' : 'none';
+    if (isMusic) loadMusicGenres();
 
     if (!config) return;
 
@@ -171,6 +186,67 @@ function updateGenreForm(isBatchMode = false) {
     }
 
     updateChecklist();
+}
+
+// ============================================
+// MUSIC GENRE PICKER (real genres table - powers Content.primary_genre_id,
+// which the music discovery page's "Worlds" feature filters every track,
+// trending row and weekly find by. Fetched once and cached; #music-genre's
+// options are real genres.id values, not free-text.)
+// ============================================
+let _musicGenresCache = null;
+
+async function loadMusicGenres() {
+    const select = document.getElementById('music-genre');
+    if (!select || _musicGenresCache) return;
+    if (!window.supabaseClient) return;
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('genres')
+            .select('id, name, parent_genre_id')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true });
+
+        if (error) throw error;
+        _musicGenresCache = data || [];
+
+        const topLevel = _musicGenresCache.filter(g => !g.parent_genre_id);
+        select.innerHTML = '<option value="">Select genre...</option>' +
+            topLevel.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+
+        select.addEventListener('change', () => populateSubgenres(select.value));
+    } catch (e) {
+        console.error('Could not load music genres:', e);
+    }
+}
+
+function populateSubgenres(parentGenreId) {
+    const subContainer = document.getElementById('subgenre-container');
+    const subSelect = document.getElementById('music-subgenre');
+    if (!subContainer || !subSelect) return;
+
+    const children = (_musicGenresCache || []).filter(g => g.parent_genre_id === parentGenreId);
+    if (!parentGenreId || children.length === 0) {
+        subContainer.style.display = 'none';
+        subSelect.innerHTML = '<option value="">Select subgenre...</option>';
+        return;
+    }
+
+    subSelect.innerHTML = '<option value="">Select subgenre...</option>' +
+        children.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+    subContainer.style.display = 'block';
+}
+
+// The subgenre, when picked, is the more specific real classification -
+// falls back to the top-level genre otherwise. null for every non-Music
+// genre (no real per-track classification exists for film/series/etc yet).
+function collectPrimaryGenreId() {
+    const genre = document.getElementById('content-genre')?.value;
+    if (genre !== 'Music') return null;
+    const subgenre = document.getElementById('music-subgenre')?.value;
+    const primary = document.getElementById('music-genre')?.value;
+    return subgenre || primary || null;
 }
 
 function collectContentMetadata() {

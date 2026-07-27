@@ -124,8 +124,13 @@
     return `${diffDays}d ago`;
   }
 
+  // No real media URL -> a transparent 1x1 pixel, never an unrelated stock
+  // photo standing in as fake artwork. The card's own dark background
+  // shows through instead.
+  const NO_MEDIA_FALLBACK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
   function fixMediaUrl(url) {
-    if (!url) return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+    if (!url) return NO_MEDIA_FALLBACK;
     if (url.startsWith('http')) return url;
     return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
   }
@@ -1140,38 +1145,52 @@
     };
   }
 
-  // ===== SOCIAL STRIP (SECTION 6 FIX - content_views verification) =====
+  // ===== SOCIAL STRIP =====
+  // content_views and watch_progress both restrict SELECT via RLS to
+  // auth.uid() = viewer_id/user_id only - a signed-in user can only ever
+  // see their OWN viewing history, never anyone else's, no matter the
+  // query. The .neq(..., currentUser.id) filter this used to combine with
+  // that meant both the primary and "fallback" queries here were
+  // structurally guaranteed to return zero rows for every user, always -
+  // not a data-sparsity issue, a real contradiction between what the code
+  // asked for and what RLS permits.
+  //
+  // friend_watch_activity is the actual real, working table for this:
+  // purpose-built for aggregate/anonymized activity (friend_count,
+  // mutual_connections - no individual viewer identity exposed) and
+  // already has an open SELECT policy for authenticated users. It's
+  // currently empty (no backend job populates it yet), so this honestly
+  // shows nothing until real activity is populated, instead of trying to
+  // read data behind a privacy policy that only that data's owner can see.
   async function loadSocialStrip() {
     const row = document.getElementById('social-strip-row');
     const section = document.getElementById('social-strip-section');
 
+    if (!window.currentUser) {
+      section.style.display = 'none';
+      return;
+    }
+
     try {
-      // SECTION 6: Try content_views first, fallback to client-side join if it fails
       const { data, error } = await supabase
-        .from('content_views')
+        .from('friend_watch_activity')
         .select(`
-          viewer_id,
-          updated_at,
+          content_id,
+          friend_count,
+          mutual_connections,
           Content!inner (
             id,
             title,
             content_format,
             user_profiles!user_id (full_name, username)
-          ),
-          user_profiles!viewer_id (full_name, username, avatar_url)
+          )
         `)
         .in('Content.content_format', MUSIC_FORMATS)
-        .neq('viewer_id', window.currentUser?.id || '00000000-0000-0000-0000-000000000000')
-        .gte('updated_at', new Date(Date.now() - 3600000).toISOString())
-        .order('updated_at', { ascending: false })
+        .gte('activity_window_end', new Date(Date.now() - 3600000).toISOString())
+        .order('friend_count', { ascending: false })
         .limit(8);
 
-      if (error) {
-        // SECTION 6 FIX: Fallback to client-side join if content_views doesn't exist
-        console.warn('content_views table may not exist, using fallback:', error);
-        await loadSocialStripFallback();
-        return;
-      }
+      if (error) throw error;
 
       if (!data || data.length === 0) {
         section.style.display = 'none';
@@ -1180,20 +1199,16 @@
 
       section.style.display = 'block';
       row.innerHTML = data.map(item => {
-        const user = item.user_profiles; // This is the viewer's profile
         const content = item.Content;
-        const name = user?.full_name || user?.username || 'Listener';
-        const avatar = user?.avatar_url ? fixMediaUrl(user.avatar_url) : null;
-        const trackTitle = content.title || 'a track';
+        const creator = content.user_profiles?.full_name || content.user_profiles?.username || 'Artist';
+        const friendCount = item.friend_count || 0;
 
         return `
           <div class="social-strip-item" data-content-id="${content.id}">
-            <div class="social-strip-avatar">
-              ${avatar ? `<img src="${avatar}" alt="${escapeHtml(name)}">` : getInitials(name)}
-            </div>
+            <div class="social-strip-avatar"><i class="fas fa-user-friends"></i></div>
             <div class="social-strip-info">
-              <p class="social-strip-name">${escapeHtml(name)}</p>
-              <p class="social-strip-track">Listening to ${escapeHtml(trackTitle)}</p>
+              <p class="social-strip-name">${friendCount} friend${friendCount === 1 ? '' : 's'} listening</p>
+              <p class="social-strip-track">${escapeHtml(content.title)} · ${escapeHtml(creator)}</p>
             </div>
           </div>
         `;
@@ -1207,75 +1222,6 @@
       });
     } catch (e) {
       console.error('Social strip error:', e);
-      // SECTION 6 FALLBACK: Use watch_progress instead
-      await loadSocialStripFallback();
-    }
-  }
-
-  // SECTION 6 FALLBACK: Client-side join version
-  async function loadSocialStripFallback() {
-    const row = document.getElementById('social-strip-row');
-    const section = document.getElementById('social-strip-section');
-
-    try {
-      const { data: activity, error } = await supabase
-        .from('watch_progress')
-        .select('user_id, content_id, updated_at')
-        .neq('user_id', window.currentUser?.id || '00000000-0000-0000-0000-000000000000')
-        .gte('updated_at', new Date(Date.now() - 3600000).toISOString())
-        .order('updated_at', { ascending: false })
-        .limit(8);
-
-      if (error) throw error;
-      if (!activity || activity.length === 0) { 
-        section.style.display = 'none'; 
-        return; 
-      }
-
-      const userIds = [...new Set(activity.map(a => a.user_id))];
-      const contentIds = [...new Set(activity.map(a => a.content_id))];
-
-      const [{ data: profiles }, { data: contents }] = await Promise.all([
-        supabase.from('user_profiles').select('id, full_name, username, avatar_url').in('id', userIds),
-        supabase.from('Content').select('id, title, content_format').in('id', contentIds).in('content_format', MUSIC_FORMATS)
-      ]);
-
-      const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
-      const contentMap = Object.fromEntries((contents || []).map(c => [c.id, c]));
-
-      const items = activity.filter(a => contentMap[a.content_id]);
-
-      if (items.length === 0) { 
-        section.style.display = 'none'; 
-        return; 
-      }
-
-      section.style.display = 'block';
-      row.innerHTML = items.map(item => {
-        const user = profileMap[item.user_id];
-        const content = contentMap[item.content_id];
-        const name = user?.full_name || user?.username || 'Listener';
-        const avatar = user?.avatar_url ? fixMediaUrl(user.avatar_url) : null;
-
-        return `
-          <div class="social-strip-item" data-content-id="${content.id}">
-            <div class="social-strip-avatar">
-              ${avatar ? `<img src="${avatar}" alt="${escapeHtml(name)}">` : getInitials(name)}
-            </div>
-            <div class="social-strip-info">
-              <p class="social-strip-name">${escapeHtml(name)}</p>
-              <p class="social-strip-track">Listening to ${escapeHtml(content.title)}</p>
-            </div>
-          </div>`;
-      }).join('');
-
-      row.querySelectorAll('.social-strip-item').forEach(item => {
-        item.addEventListener('click', () => {
-          window.location.href = `../content-detail.html?id=${item.dataset.contentId}`;
-        });
-      });
-    } catch (e) {
-      console.error('Social strip fallback error:', e);
       section.style.display = 'none';
     }
   }
@@ -1358,10 +1304,7 @@
 
     try {
       const topGenres = window.sonicDNA?.top_genres?.slice(0, 3).map(g => g.id) || [];
-
-      let query = supabase
-        .from('Content')
-        .select(`
+      const baseSelect = `
           id,
           title,
           thumbnail_url,
@@ -1369,19 +1312,35 @@
           content_format,
           user_profiles!user_id (full_name, username),
           content_engagement_stats (total_views, total_likes)
-        `)
-        .in('content_format', MUSIC_FORMATS)
-        .eq('status', 'published');
+        `;
+
+      let data = null, error = null;
 
       if (topGenres.length > 0) {
-        query = query.in('primary_genre_id', topGenres);
+        ({ data, error } = await supabase
+          .from('Content')
+          .select(baseSelect)
+          .in('content_format', MUSIC_FORMATS)
+          .eq('status', 'published')
+          .in('primary_genre_id', topGenres)
+          .order('created_at', { ascending: false })
+          .limit(8));
+        if (error) throw error;
       }
 
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .limit(8);
-
-      if (error) throw error;
+      // No genre-tagged matches (primary_genre_id coverage is still building
+      // up) - fall back to the unfiltered pool rather than showing nothing,
+      // same as when the visitor has no Sonic DNA yet.
+      if (!data || data.length === 0) {
+        ({ data, error } = await supabase
+          .from('Content')
+          .select(baseSelect)
+          .in('content_format', MUSIC_FORMATS)
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .limit(8));
+        if (error) throw error;
+      }
 
       if (!data || data.length === 0) {
         grid.innerHTML = '<div class="music-empty-state"><i class="fas fa-chart-line"></i><h4>No trending tracks yet</h4></div>';

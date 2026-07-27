@@ -233,6 +233,7 @@ const BANTU_UPLOAD_ENGINE = {
                 file_url: finalMediaUrl,
                 thumbnail_url: finalThumbnailUrl,
                 content_metadata: formData.genreSpecificMetadata || {},
+                primary_genre_id: formData.primaryGenreId || null,
                 user_id: user.id,
                 creator_id: user.id,
                 status: 'published'
@@ -371,6 +372,7 @@ async function uploadContent(isDraft = false) {
             genre: genre,
             contentFormat: contentFormat || null,
             genreSpecificMetadata: collectContentMetadata() || {},
+            primaryGenreId: collectPrimaryGenreId(),
             duration: extractedDuration,
             chapters: chapters.length > 0 ? chapters : null
         };
