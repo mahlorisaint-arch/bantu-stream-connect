@@ -454,12 +454,6 @@ document.addEventListener('DOMContentLoaded', async function() {
               `).join('')}
             </div>
           </div>
-
-          <div style="margin-top: 24px; text-align: center;">
-            <button class="explore-result-btn" onclick="window.location.href='explore-screen.html'">
-              Explore More <i class="fas fa-arrow-right"></i>
-            </button>
-          </div>
         </div>
       `;
 
