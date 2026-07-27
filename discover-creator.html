@@ -164,20 +164,26 @@ body {
 /* Intent Switcher */
 .intent-switcher {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 32px;
-    background: rgba(255,255,255,0.05);
-    padding: 6px;
-    border-radius: 60px;
     width: fit-content;
 }
 
+/* Transparent glassmorphic cyan pills - matches the platform-wide
+   .journey-generate-btn/.discover-all-btn recipe (explore-screen), not a
+   solid-fill segmented control. */
 .intent-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 10px 24px;
     border-radius: 40px;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.6);
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    color: rgba(255,255,255,0.75);
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: var(--font-sm);
@@ -186,13 +192,16 @@ body {
 }
 
 .intent-btn.active {
-    background: var(--warm-gold);
-    color: var(--deep-black);
+    background: rgba(6, 20, 26, 0.9);
+    border-color: rgba(0, 229, 255, 0.9);
+    color: #00E5FF;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
 }
 
 .intent-btn:hover:not(.active) {
-    background: rgba(255,255,255,0.1);
-    color: white;
+    border-color: rgba(0, 229, 255, 0.6);
+    background: rgba(6, 20, 26, 0.85);
+    color: #00E5FF;
 }
 
 /* Filters Bar */
@@ -462,14 +471,34 @@ body {
 .skel-creator-card .skel-stats-row { display: flex; gap: 16px; margin-top: 4px; }
 
 .card-thumbnail {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s;
+    z-index: 1;
 }
 
 .creator-card:hover .card-thumbnail {
     transform: scale(1.05);
+}
+
+/* Shown behind .card-thumbnail (or alone, when a creator has no real
+   channel banner / content thumbnail at all) - a branded placeholder
+   instead of a broken image icon or an unrelated stock photo. */
+.card-media-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(10, 10, 20, 0.9));
+}
+
+.card-media-placeholder i {
+    font-size: 32px;
+    color: rgba(0, 229, 255, 0.5);
 }
 
 .pulse-badge {
@@ -806,29 +835,20 @@ body {
 
     /* Thinner, tighter-fitting on mobile/tablet - matches the explore
        screen's .hero-action treatment: full-width stacked pills instead
-       of a horizontally-scrolling bar of thick buttons. */
+       of a horizontally-scrolling bar of thick buttons. Colors/border are
+       already the glassmorphic-cyan treatment from the base .intent-btn
+       rule above; this block only overrides layout/sizing. */
     .intent-switcher {
         width: 100%;
         flex-direction: column;
-        background: transparent;
-        padding: 0;
         gap: 8px;
     }
 
     .intent-btn {
         width: 100%;
         justify-content: center;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
         padding: 0.65rem 1.25rem;
         font-size: 0.8rem;
-        background: rgba(6, 20, 26, 0.75);
-        border: 1px solid rgba(0, 229, 255, 0.3);
-    }
-
-    .intent-btn.active {
-        border-color: var(--warm-gold);
     }
 
     .hero-stats {
@@ -1332,17 +1352,25 @@ async function loadHeroWithRealContent() {
         
         // Use real content thumbnail/video from latest_content_preview — only when there's
         // no channel banner taking priority (banner is hidden behind the video otherwise).
-        // No stock/unrelated video fallback — if there's no real clip, we just show a static image.
+        // No stock/unrelated photo fallback — if there's no real clip or thumbnail, the
+        // video stays hidden and the hero section's own branded dark gradient shows through.
         if (!heroBannerUrl) {
-            let heroMediaUrl = hero.latest_content_preview?.thumbnail_url || hero.latest_content_preview?.video_url || 'https://picsum.photos/1920/1080?random=hero';
+            const heroMediaUrl = hero.latest_content_preview?.thumbnail_url || hero.latest_content_preview?.video_url;
             if (heroMediaUrl && (heroMediaUrl.endsWith('.mp4') || heroMediaUrl.includes('video'))) {
+                heroVideoEl.style.display = '';
                 heroVideoEl.src = heroMediaUrl;
                 heroVideoEl.poster = hero.latest_content_preview?.thumbnail_url || '';
-            } else {
+                heroVideoEl.load();
+            } else if (heroMediaUrl) {
+                heroVideoEl.style.display = '';
                 heroVideoEl.removeAttribute('src');
                 heroVideoEl.poster = heroMediaUrl;
+                heroVideoEl.load();
+            } else {
+                heroVideoEl.style.display = 'none';
+                heroVideoEl.removeAttribute('src');
+                heroVideoEl.removeAttribute('poster');
             }
-            heroVideoEl.load();
         }
     } catch (error) {
         console.error('Hero error:', error);
@@ -1366,16 +1394,18 @@ function initSupabase() {
     });
 }
 
-// mv_discover_feed is a materialized view — its avatar_url is a stale snapshot
-// (can be months old) and often points at a since-replaced file, and it doesn't
-// carry channel_banner_url at all. Always pull both straight from user_profiles.
+// mv_discover_feed is a periodically-refreshed snapshot table, not a live
+// view - its avatar_url can be months old and often points at a
+// since-replaced file, it doesn't carry channel_banner_url at all, and its
+// city/location data lags behind real profile edits. Always pull avatar,
+// banner and location straight from user_profiles (the live table) instead.
 async function fetchFreshProfiles(userIds) {
     const ids = [...new Set((userIds || []).filter(Boolean))];
     if (!ids.length || !supabaseClient) return new Map();
     try {
-        const { data, error } = await supabaseClient.from('user_profiles').select('id, avatar_url, channel_banner_url').in('id', ids);
+        const { data, error } = await supabaseClient.from('user_profiles').select('id, avatar_url, channel_banner_url, location').in('id', ids);
         if (error) throw error;
-        return new Map((data || []).map(p => [p.id, { avatarUrl: p.avatar_url, bannerUrl: p.channel_banner_url }]));
+        return new Map((data || []).map(p => [p.id, { avatarUrl: p.avatar_url, bannerUrl: p.channel_banner_url, location: p.location }]));
     } catch (e) {
         console.warn('Could not fetch fresh profile data (non-fatal, falls back to mv_discover_feed snapshot):', e);
         return new Map();
@@ -1399,6 +1429,42 @@ async function fetchCreatorStatus(userIds) {
         console.warn('Could not fetch creator verification status (non-fatal):', e);
         return new Map();
     }
+}
+
+// mv_discover_feed's `city` column is a periodically-refreshed snapshot, not
+// live - a creator who just set their location on their profile won't show
+// up under it until the next backend refresh runs. user_profiles.location is
+// the live, authoritative field, but it's free text ("Jhb, South Africa",
+// "Pta, South Africa") rather than a clean city name, so it's matched against
+// known SA city names/abbreviations rather than compared for exact equality.
+const SA_CITY_ALIASES = {
+    'Johannesburg': ['johannesburg', 'joburg', 'jozi', 'jhb'],
+    'Cape Town': ['cape town', 'capetown', 'cpt'],
+    'Pretoria': ['pretoria', 'pta'],
+    'Durban': ['durban', 'dbn'],
+    'Gqeberha': ['gqeberha', 'port elizabeth'],
+    'Bloemfontein': ['bloemfontein', 'bloem'],
+    'Polokwane': ['polokwane', 'pietersburg'],
+    'Nelspruit': ['nelspruit', 'mbombela'],
+    'Kimberley': ['kimberley'],
+    'Pietermaritzburg': ['pietermaritzburg', 'pmb', 'maritzburg'],
+    'East London': ['east london'],
+    'Rustenburg': ['rustenburg']
+};
+
+// Matches on word boundaries so short abbreviations like "pta"/"dbn" don't
+// false-positive inside unrelated words.
+function resolveCity(locationText) {
+    if (!locationText) return null;
+    const lower = locationText.toLowerCase();
+    for (const [city, aliases] of Object.entries(SA_CITY_ALIASES)) {
+        for (const alias of aliases) {
+            if (new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(lower)) {
+                return city;
+            }
+        }
+    }
+    return null;
 }
 
 function goldAvatarFallback(name) {
@@ -1433,19 +1499,17 @@ async function loadFeaturedCreators() {
         let query = supabaseClient.from('mv_discover_feed').select('*')
             .or('total_content_count.gte.1,total_connections.gte.1');
 
-        if (currentFilters.city) query = query.eq('city', currentFilters.city);
         if (currentFilters.craft) query = query.eq('primary_craft', currentFilters.craft);
         if (currentFilters.energy) query = query.eq('energy_level', currentFilters.energy);
 
         // Each intent maps to a real field, not just a visual toggle:
         // - Find Collaborators -> seeking_collaboration (real opt-in flag)
         // - Get Inspired -> has actual published content to look at
-        // - Hire / Work With -> verified creators (no dedicated "for hire"
-        //   field exists yet, so verification is the closest real signal
-        //   of a credible professional to reach out to)
+        // - Hire / Work With -> verified, applied client-side below once
+        //   live verification is joined in (mv_discover_feed's own
+        //   is_verified column is a stale snapshot - same issue as city).
         if (currentFilters.intent === 'collaborate') query = query.eq('seeking_collaboration', true);
         else if (currentFilters.intent === 'inspire') query = query.gte('total_content_count', 1);
-        else if (currentFilters.intent === 'hire') query = query.eq('is_verified', true);
 
         const sortFieldMap = { pulse: 'final_pulse_score', trending: 'velocity_score', connections: 'total_connections', recent: 'connections_growth_24h' };
         const sortField = sortFieldMap[currentFilters.sort] || 'final_pulse_score';
@@ -1454,7 +1518,28 @@ async function loadFeaturedCreators() {
         const { data: creators, error } = await query;
         if (error) throw error;
 
-        allCreatorsData = creators || [];
+        let pool = creators || [];
+
+        // Live-resolve city, avatar, banner and verification for the whole
+        // candidate pool up front (never the stale mv_discover_feed snapshot
+        // fields) so filtering and rendering use the same real data, and a
+        // creator's just-updated profile shows up on the very next load.
+        const ids = pool.map(c => c.user_id);
+        const [freshProfiles, creatorStatus] = await Promise.all([fetchFreshProfiles(ids), fetchCreatorStatus(ids)]);
+        pool.forEach(c => {
+            const p = freshProfiles.get(c.user_id);
+            c.resolved_city = resolveCity(p?.location) || c.city || null;
+            if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
+            if (p?.bannerUrl) c.channel_banner_url = p.bannerUrl;
+            const status = creatorStatus.get(c.user_id);
+            c.is_founder = status?.isFounder || false;
+            c.is_verified = status?.isVerified || false;
+        });
+
+        if (currentFilters.city) pool = pool.filter(c => c.resolved_city === currentFilters.city);
+        if (currentFilters.intent === 'hire') pool = pool.filter(c => c.is_verified);
+
+        allCreatorsData = pool;
 
         // The 2-day "featured rotation" only makes sense for the default,
         // unfiltered browse. Once someone picks a city/craft/energy/intent,
@@ -1471,18 +1556,6 @@ async function loadFeaturedCreators() {
             grid.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No creators match filters. Try resetting.</p></div>';
             return;
         }
-
-        // Override each card's possibly stale mv_discover_feed avatar/verification with live data.
-        const ids = featured.map(c => c.user_id);
-        const [freshProfiles, creatorStatus] = await Promise.all([fetchFreshProfiles(ids), fetchCreatorStatus(ids)]);
-        featured.forEach(c => {
-            const p = freshProfiles.get(c.user_id);
-            if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
-            if (p?.bannerUrl) c.channel_banner_url = p.bannerUrl;
-            const status = creatorStatus.get(c.user_id);
-            c.is_founder = status?.isFounder || false;
-            c.is_verified = status?.isVerified || false;
-        });
 
         grid.innerHTML = featured.map(creator => renderCreatorCard(creator)).join('');
         attachCardEvents();
@@ -1525,11 +1598,15 @@ function renderCreatorCard(creator) {
     const pulseScore = Math.round(creator.final_pulse_score || 0);
     const momentumPercent = Math.min(creator.momentum_score || 0, 100);
     const trendIcon = creator.trend_stage === 'rising' ? '<i class="fas fa-fire"></i>' : (creator.trend_stage === 'peak' ? '<i class="fas fa-bolt"></i>' : '<i class="fas fa-arrow-trend-up"></i>');
-    const locationText = creator.city ? `${creator.city}` : '';
+    const locationText = creator.resolved_city || creator.city || '';
+    // No real channel banner / content thumbnail -> a branded placeholder,
+    // never an unrelated stock photo or a broken-image icon.
+    const mediaUrl = creator.channel_banner_url || creator.latest_content_preview?.thumbnail_url || '';
     return `
         <div class="creator-card" data-creator-id="${creator.user_id}">
             <div class="card-media">
-                <img class="card-thumbnail" src="${creator.channel_banner_url || creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}" alt="${escapeHtml(creator.full_name)}" onerror="this.onerror=null;this.src='${creator.latest_content_preview?.thumbnail_url || 'https://picsum.photos/400/200?random=' + creator.user_id}';">
+                <div class="card-media-placeholder"><i class="fas fa-user-astronaut"></i></div>
+                ${mediaUrl ? `<img class="card-thumbnail" src="${mediaUrl}" alt="${escapeHtml(creator.full_name)}" onerror="this.remove();">` : ''}
                 <div class="pulse-badge"><i class="fas fa-chart-line"></i> ${pulseScore}</div>
                 <div class="trend-badge">${trendIcon} ${escapeHtml(creator.trend_label || 'Active')}</div>
             </div>
@@ -1608,19 +1685,30 @@ async function showCityPanel(cityName) {
     panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div class="loading"><div class="loading-spinner"></div><p>Loading city pulse...</p></div>`;
     panel.classList.add('active');
     try {
-        const { data, error, count } = await supabaseClient.from('mv_discover_feed').select('*', { count: 'exact' }).eq('city', cityName).order('final_pulse_score', { ascending: false }).limit(8);
+        // City is matched against live, resolved user_profiles.location
+        // (same as loadFeaturedCreators/loadFilterOptions), not the stale
+        // mv_discover_feed.city snapshot - so a creator who just set their
+        // city shows up here immediately, not after the next backend refresh.
+        const { data: rawData, error } = await supabaseClient.from('mv_discover_feed').select('*')
+            .or('total_content_count.gte.1,total_connections.gte.1')
+            .order('final_pulse_score', { ascending: false })
+            .limit(48);
         if (error) throw error;
-        if (data && data.length) {
-            const ids = data.map(c => c.user_id);
-            const [freshProfiles, creatorStatus] = await Promise.all([fetchFreshProfiles(ids), fetchCreatorStatus(ids)]);
-            data.forEach(c => {
-                const p = freshProfiles.get(c.user_id);
-                if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
-                const status = creatorStatus.get(c.user_id);
-                c.is_founder = status?.isFounder || false;
-                c.is_verified = status?.isVerified || false;
-            });
-            const activeCount = count ?? data.length;
+
+        const ids = (rawData || []).map(c => c.user_id);
+        const [freshProfiles, creatorStatus] = await Promise.all([fetchFreshProfiles(ids), fetchCreatorStatus(ids)]);
+        (rawData || []).forEach(c => {
+            const p = freshProfiles.get(c.user_id);
+            c.resolved_city = resolveCity(p?.location) || c.city || null;
+            if (p?.avatarUrl) c.avatar_url = p.avatarUrl;
+            const status = creatorStatus.get(c.user_id);
+            c.is_founder = status?.isFounder || false;
+            c.is_verified = status?.isVerified || false;
+        });
+
+        const data = (rawData || []).filter(c => c.resolved_city === cityName).slice(0, 8);
+        if (data.length) {
+            const activeCount = data.length;
             panel.innerHTML = `<div class="city-panel-header"><div class="city-name"><i class="fas fa-map-marker-alt"></i> ${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><div style="margin-bottom:20px; background:rgba(0, 229, 255,0.1); padding:12px; border-radius:16px;"><i class="fas fa-chart-line"></i> City Pulse: ${activeCount} active creator${activeCount === 1 ? '' : 's'}</div><div class="creator-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${data.map(c => renderCompactCreatorCard(c)).join('')}</div>`;
         } else {
             panel.innerHTML = `<div class="city-panel-header"><div class="city-name">${cityName}</div><button class="close-panel" onclick="document.getElementById('cityPanel').classList.remove('active')"><i class="fas fa-times"></i></button></div><p style="text-align:center;padding:40px;">Emerging creative hub — more creators arriving soon!</p>`;
@@ -1736,12 +1824,24 @@ let currentFilters = { city: '', craft: '', energy: '', sort: 'pulse', intent: '
 async function loadFilterOptions() {
     try {
         if (!supabaseClient) await initSupabase();
-        const { data, error } = await supabaseClient.from('mv_discover_feed').select('city, primary_craft, energy_level');
-        if (error) throw error;
 
-        const cities = [...new Set((data || []).map(c => c.city).filter(Boolean))].sort();
-        const crafts = [...new Set((data || []).map(c => c.primary_craft).filter(Boolean))].sort();
-        const energies = [...new Set((data || []).map(c => c.energy_level).filter(Boolean))].sort();
+        // Craft/energy only exist on the mv_discover_feed snapshot (no live
+        // equivalent on user_profiles). City is sourced from the live
+        // user_profiles.location instead - scanning every creator-role
+        // profile (not just the mv_discover_feed pool, which doesn't cover
+        // every creator) and resolved via SA_CITY_ALIASES, so a city shows
+        // up in "All Cities" the moment a creator sets their location, not
+        // whenever the snapshot next refreshes.
+        const [{ data: craftEnergyData, error: craftEnergyError }, { data: profileData, error: profileError }] = await Promise.all([
+            supabaseClient.from('mv_discover_feed').select('primary_craft, energy_level'),
+            supabaseClient.from('user_profiles').select('location').eq('role', 'creator')
+        ]);
+        if (craftEnergyError) throw craftEnergyError;
+        if (profileError) throw profileError;
+
+        const crafts = [...new Set((craftEnergyData || []).map(c => c.primary_craft).filter(Boolean))].sort();
+        const energies = [...new Set((craftEnergyData || []).map(c => c.energy_level).filter(Boolean))].sort();
+        const cities = [...new Set((profileData || []).map(p => resolveCity(p.location)).filter(Boolean))].sort();
 
         document.getElementById('cityFilter').innerHTML = '<option value="">All Cities</option>' + cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
         document.getElementById('craftFilter').innerHTML = '<option value="">All Crafts</option>' + crafts.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
