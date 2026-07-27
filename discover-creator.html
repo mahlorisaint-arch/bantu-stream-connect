@@ -192,10 +192,11 @@ body {
 }
 
 .intent-btn.active {
-    background: rgba(6, 20, 26, 0.9);
-    border-color: rgba(0, 229, 255, 0.9);
+    background: rgba(0, 229, 255, 0.16);
+    border-color: #00E5FF;
     color: #00E5FF;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+    font-weight: 700;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
 }
 
 .intent-btn:hover:not(.active) {
@@ -1869,6 +1870,18 @@ async function loadConnectionState() {
 }
 
 async function init() {
+    // Wire up every interactive control synchronously, before any network
+    // request starts - loadFeaturedCreators() now resolves live city/
+    // verification for the whole candidate pool (up to 48 creators, not
+    // just the 4-6 displayed), which takes noticeably longer than before.
+    // Gating these listeners behind that await left a real window where a
+    // click landed on a button with no handler attached yet.
+    document.querySelectorAll('.intent-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentFilters.intent = btn.dataset.intent; loadFeaturedCreators(); }));
+    document.getElementById('cityFilter').addEventListener('change', applyFilters);
+    document.getElementById('craftFilter').addEventListener('change', applyFilters);
+    document.getElementById('energyFilter').addEventListener('change', applyFilters);
+    document.getElementById('sortFilter').addEventListener('change', applyFilters);
+
     await initSupabase();
     initDynamicMap();
 
@@ -1880,12 +1893,6 @@ async function init() {
         loadFilterOptions()
     ]);
     await loadFeaturedCreators();
-
-    document.querySelectorAll('.intent-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.intent-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentFilters.intent = btn.dataset.intent; loadFeaturedCreators(); }));
-    document.getElementById('cityFilter').addEventListener('change', applyFilters);
-    document.getElementById('craftFilter').addEventListener('change', applyFilters);
-    document.getElementById('energyFilter').addEventListener('change', applyFilters);
-    document.getElementById('sortFilter').addEventListener('change', applyFilters);
 }
 init().catch(e => console.error('Discover Creators init failed:', e));
 </script>
