@@ -276,7 +276,7 @@ body { background: #000000; }
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.3s ease; z-index: 2;
 }
-.upload-card:hover .play-overlay { opacity: 1; }
+.upload-card:hover .play-overlay, .top10-card:hover .play-overlay { opacity: 1; }
 .play-icon {
   width: 50px; height: 50px; background: rgba(6, 20, 26, 0.75);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -285,7 +285,7 @@ body { background: #000000; }
   color: #00E5FF; font-size: 20px; transform: scale(0.8);
   transition: transform 0.3s ease, border-color 0.3s ease;
 }
-.upload-card:hover .play-icon { transform: scale(1); }
+.upload-card:hover .play-icon, .top10-card:hover .play-icon { transform: scale(1); }
 
 /* ===== BADGES - transparent glassmorphic, tinted by the badge's own color
    (not solid-filled), matching .badge-premium/.badge-feature/.top10-stamp
@@ -435,17 +435,6 @@ body { background: #000000; }
 .ep-number { font-size: 11px; color: var(--brand-cyan-core); font-weight: 600; text-transform: uppercase; }
 .ep-info h4 { font-size: 13px; color: var(--soft-white); margin: 4px 0; font-weight: 500; }
 .ep-duration, .ep-lock-text { font-size: 11px; color: var(--slate-grey); }
-
-/* World Grid */
-.world-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
-.world-card {
-  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
-  padding: 20px; cursor: pointer; transition: all 0.3s ease;
-}
-.world-card:hover { border-color: var(--brand-cyan-core); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); transform: translateY(-4px); }
-.world-card-icon { font-size: 24px; color: var(--brand-cyan-core); margin-bottom: 12px; }
-.world-card h4 { font-size: 15px; color: var(--soft-white); margin: 0 0 6px; font-weight: 600; }
-.world-card p { font-size: 12px; color: var(--slate-grey); margin: 0; line-height: 1.4; }
 
 /* Live Poll */
 .pulse-card.live-poll {

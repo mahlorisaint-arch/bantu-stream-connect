@@ -63,12 +63,17 @@
     return `https://videodelivery.net/${providerVideoId}/thumbnails/thumbnail.jpg?time=5s&height=${height}`;
   }
 
+  // No real thumbnail/streaming source -> a transparent 1x1 pixel, never an
+  // unrelated stock photo standing in for a real poster. The card/hero
+  // containers' own dark background shows through instead.
+  const NO_POSTER_FALLBACK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
   function getPosterUrl(item, height = 720) {
     if (item?.thumbnail_url) return fixMediaUrl(item.thumbnail_url);
     if (item?.streaming_provider === 'cloudflare_stream' && item?.provider_video_id) {
       return getCloudflareThumbnailUrl(item.provider_video_id, height);
     }
-    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&h=600&fit=crop';
+    return NO_POSTER_FALLBACK;
   }
 
   function getCreatorName(item) {
@@ -312,6 +317,7 @@
           <div class="top10-thumb">
             <span class="top10-stamp"><i class="fas fa-bolt"></i> Heat</span>
             <img src="${posterUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
+            <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
           </div>
           <p class="top10-title">${escapeHtml(item.title)}</p>
           <p class="top10-meta">${escapeHtml(creatorName)}</p>
@@ -393,13 +399,7 @@
         }
       }
 
-      // 3. Fetch World Content (Behind the lens, family web, etc.)
-      const { data: worldData } = await supabase
-        .from('world_content')
-        .select('id, world_type, title, description, media_url')
-        .eq('content_id', contentId);
-
-      renderDetailOverlay(content, seriesInfo, relatedEpisodes, worldData);
+      renderDetailOverlay(content, seriesInfo, relatedEpisodes);
 
     } catch (e) {
       console.error('Detail overlay error:', e);
@@ -423,7 +423,7 @@
     lastFocusedCard?.focus();
   };
 
-  function renderDetailOverlay(content, seriesInfo, relatedEpisodes, worldData) {
+  function renderDetailOverlay(content, seriesInfo, relatedEpisodes) {
     const container = document.getElementById('detail-overlay-content');
     if (!container) return;
 
@@ -468,7 +468,7 @@
       </div>
 
       <div class="detail-body">
-        ${isSeries ? renderSeriesBody(content, seriesInfo, relatedEpisodes, worldData) : renderFilmBody(content, worldData)}
+        ${isSeries ? renderSeriesBody(content, seriesInfo, relatedEpisodes) : renderFilmBody(content)}
       </div>
     `;
 
@@ -485,7 +485,7 @@
     }
   }
 
-  function renderSeriesBody(content, seriesInfo, relatedEpisodes, worldData) {
+  function renderSeriesBody(content, seriesInfo, relatedEpisodes) {
     const episodesHtml = relatedEpisodes.length > 0 
       ? relatedEpisodes.map((ep, idx) => {
           const c = ep.Content;
@@ -512,30 +512,15 @@
         }).join('')
       : '<p style="color:var(--slate-grey);font-size:13px;">No additional episodes found.</p>';
 
-    const worldHtml = (worldData && worldData.length > 0)
-      ? worldData.map(w => `
-          <div class="world-card" onclick="window.location.href='../content-detail.html?id=${content.id}&world=${w.world_type}'">
-            <div class="world-card-icon"><i class="fas fa-${getWorldIcon(w.world_type)}"></i></div>
-            <h4>${escapeHtml(w.title)}</h4>
-            <p>${escapeHtml(w.description)}</p>
-          </div>
-        `).join('')
-      : '<p style="color:var(--slate-grey);font-size:13px;">No deep-dive content available yet.</p>';
-
     return `
       <div class="detail-section">
         <h3 class="section-title">Up Next in ${escapeHtml(seriesInfo?.creator_playlists?.name || 'this series')}</h3>
         <div class="episode-rail">${episodesHtml}</div>
       </div>
-
-      <div class="detail-section">
-        <h3 class="section-title"><i class="fas fa-globe-africa"></i> The World of ${escapeHtml(content.title)}</h3>
-        <div class="world-grid">${worldHtml}</div>
-      </div>
     `;
   }
 
-  function renderFilmBody(content, worldData) {
+  function renderFilmBody(content) {
     // Parse chapters from content_metadata or chapters column
     const chapters = content.chapters && content.chapters.length > 0 
       ? content.chapters 
@@ -557,39 +542,12 @@
         `).join('')
       : '<p style="color:var(--slate-grey);font-size:13px;">No chapters defined.</p>';
 
-    const worldHtml = (worldData && worldData.length > 0)
-      ? worldData.map(w => `
-          <div class="world-card" onclick="window.location.href='../content-detail.html?id=${content.id}&world=${w.world_type}'">
-            <div class="world-card-icon"><i class="fas fa-${getWorldIcon(w.world_type)}"></i></div>
-            <h4>${escapeHtml(w.title)}</h4>
-            <p>${escapeHtml(w.description)}</p>
-          </div>
-        `).join('')
-      : '<p style="color:var(--slate-grey);font-size:13px;">No behind-the-scenes content available yet.</p>';
-
     return `
       <div class="detail-section">
         <h3 class="section-title">Chapters</h3>
         <div class="episode-rail">${chaptersHtml}</div>
       </div>
-
-      <div class="detail-section">
-        <h3 class="section-title"><i class="fas fa-film"></i> Behind the Lens</h3>
-        <div class="world-grid">${worldHtml}</div>
-      </div>
     `;
-  }
-
-  function getWorldIcon(type) {
-    const icons = {
-      'family_web': 'project-diagram',
-      'timeline': 'hourglass-half',
-      'filmed_here': 'map-marker-alt',
-      'making_of': 'video',
-      'directors_cut': 'user-tie',
-      'deleted_scene': 'film'
-    };
-    return icons[type] || 'info-circle';
   }
 
   // ===== FAVORITES FUNCTIONS =====
