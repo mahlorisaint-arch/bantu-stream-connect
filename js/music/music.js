@@ -697,6 +697,14 @@
   }
 
   // ===== STREAK COUNTER (SECTION 4 FIX - Fixed streak calculation) =====
+  // Reads the real, server-authoritative streak - written by
+  // touch_watch_streak(user_id, 'listen'), called from
+  // fn_process_listen_event whenever a genre-tagged track is completed.
+  // This used to recompute a streak client-side from watch_progress; now
+  // consolidated onto the same real user_streaks system Home's streak
+  // banner reads (streak-banner.js), under a distinct 'listen' type so
+  // listening and watching are tracked as the genuinely different
+  // behaviors they are.
   async function computeAndRenderStreak() {
     const streakEl = document.getElementById('streak-count');
     if (!streakEl || !window.currentUser) {
@@ -705,46 +713,16 @@
     }
 
     try {
-      // Get all completed tracks ordered by date
-      const { data } = await supabase
-        .from('watch_progress')
-        .select('completed_at')
+      const { data, error } = await supabase
+        .from('user_streaks')
+        .select('current_streak_days')
         .eq('user_id', window.currentUser.id)
-        .eq('is_completed', true)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false });
+        .eq('streak_type', 'listen')
+        .maybeSingle();
 
-      if (!data || data.length === 0) {
-        streakEl.textContent = '0';
-        return;
-      }
+      if (error) throw error;
 
-      // SECTION 4 FIX: Proper streak calculation
-      let streak = 0;
-      let expectedDiff = null;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      for (const row of data) {
-        const date = new Date(row.completed_at);
-        date.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor((today - date) / 86400000);
-
-        if (expectedDiff === null) {
-          if (diffDays > 1) break; // most recent listen older than yesterday — no active streak
-          expectedDiff = diffDays;
-          streak = 1;
-        } else if (diffDays === expectedDiff) {
-          continue; // same day as already-counted record, skip duplicates
-        } else if (diffDays === expectedDiff + 1) {
-          streak++;
-          expectedDiff = diffDays;
-        } else {
-          break; // gap in the streak
-        }
-      }
-      
-      streakEl.textContent = streak;
+      streakEl.textContent = data?.current_streak_days || 0;
     } catch (e) {
       console.error('Streak error:', e);
       streakEl.textContent = '0';

@@ -8,6 +8,29 @@
 -- creator-channel.js's upload streak and music.js's listening streak, but
 -- nothing backs a real per-user watch streak) — this is new infrastructure,
 -- not reactivating something dormant.
+--
+-- CORRECTION (2026-07-27, during the Music Discovery audit + fix pass):
+-- this file's premise doesn't match the live database. public.user_streaks
+-- already exists in production with a DIFFERENT schema than the CREATE
+-- TABLE below (a streak_type check constraint scoped to
+-- watch/upload/comment/share, a milestones_achieved jsonb column, no
+-- created_at) - it predates this migration and was missed by the audit
+-- that produced the comment above. touch_watch_streak() as written here
+-- was NEVER actually present in the live database (confirmed via
+-- information_schema.routines and zero rows in user_streaks) - meaning the
+-- home-feed streak banner has been silently non-functional in production
+-- this whole time, not because of a design flaw but because this file was
+-- apparently never actually run.
+--
+-- Repaired live via direct SQL rather than re-running this file (which
+-- would fail - the table already exists): touch_watch_streak(p_user_id,
+-- p_streak_type default 'watch') now exists for real, the check constraint
+-- was widened to include 'listen' (used by music.js's consolidated streak,
+-- see js/music/music.js computeAndRenderStreak()), and
+-- fn_process_listen_event now calls it for genre-tagged listen completions.
+-- See supabase/migrations/20260727_music_worlds_and_notifications.sql for
+-- the real, current definitions. Left this file as-is (not rewritten) as a
+-- historical record - do not re-run it against production.
 
 create table public.user_streaks (
   id uuid not null default gen_random_uuid (),

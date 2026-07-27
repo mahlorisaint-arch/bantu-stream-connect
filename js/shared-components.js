@@ -1445,7 +1445,11 @@ function getNotificationIconMeta(type) {
         share: { icon: 'fa-share-alt', bg: 'rgba(6, 182, 212, 0.15)', color: '#22D3EE' },
         mention: { icon: 'fa-at', bg: 'rgba(236, 72, 153, 0.15)', color: '#F472B6' },
         reply: { icon: 'fa-reply', bg: 'rgba(20, 184, 166, 0.15)', color: '#2DD4BF' },
-        live: { icon: 'fa-broadcast-tower', bg: 'rgba(239, 68, 68, 0.2)', color: '#EF4444' }
+        live: { icon: 'fa-broadcast-tower', bg: 'rgba(239, 68, 68, 0.2)', color: '#EF4444' },
+        world_unlock: { icon: 'fa-lock-open', bg: 'rgba(251, 146, 60, 0.15)', color: '#FB923C' },
+        portal_drop: { icon: 'fa-compact-disc', bg: 'rgba(139, 92, 246, 0.15)', color: '#A78BFA' },
+        streak_nudge: { icon: 'fa-fire', bg: 'rgba(248, 113, 113, 0.15)', color: '#F87171' },
+        world_content: { icon: 'fa-wave-square', bg: 'rgba(45, 212, 191, 0.15)', color: '#2DD4BF' }
     };
     return mapping[type] || defaultMeta;
 }
