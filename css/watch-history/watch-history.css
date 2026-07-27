@@ -92,6 +92,11 @@ body { background: #000000; }
 
 .history-card {
   cursor: pointer; transition: transform 0.2s ease; color: inherit; display: block;
+  /* Grid item inside .history-grid; .history-card-byline uses
+     white-space:nowrap for its ellipsis, so without this a long creator
+     name/byline forces the card (and grid) wider than the viewport
+     instead of truncating. */
+  min-width: 0;
 }
 .history-card:hover, .history-card:focus-visible { transform: translateY(-4px); }
 .history-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; border-radius: 8px; }

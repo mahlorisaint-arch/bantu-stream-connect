@@ -874,6 +874,12 @@ flex-shrink: 0;
 width: 100px;
 cursor: pointer;
 transition: transform 0.2s ease;
+/* At >=768px .world-row switches to display:grid (grid-template-columns:
+   repeat(3, 1fr)) and this item's width becomes auto, relying on the
+   grid track. .world-item__label uses white-space:nowrap for its
+   ellipsis, so without this a long label forces the item (and the grid)
+   wider than the tablet viewport instead of truncating. */
+min-width: 0;
 }
 .world-item:hover {
 transform: translateY(-2px);
@@ -1030,6 +1036,13 @@ Replaces all old .series-container, .series-season, .season-header, etc.
 .collection-card {
   cursor: pointer;
   transition: transform 0.2s ease;
+  /* Grid item inside .collections-grid, which is 1 column at the mobile
+     tier - .collection-title below uses white-space:nowrap for its
+     ellipsis truncation, so without this a long collection/playlist name
+     forces this card (and with it the whole page) wider than the
+     viewport instead of actually truncating. Same trap already fixed on
+     Trending's .upload-card (css/trending/trending.css). */
+  min-width: 0;
 }
 .collection-card:hover { transform: translateY(-4px); }
 .collection-card:focus-visible { outline: 2px solid var(--warm-gold); outline-offset: 2px; }

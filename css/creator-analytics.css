@@ -1096,8 +1096,19 @@
 
   /* audience-grid's own repeat(2, 1fr) override removed — with only Peak
      Viewing Times left, forcing 2 columns just left an empty half-width gap
-     next to the single card. The base rule's auto-fit + max-width already
-     displays it cleanly at every width. */
+     next to the single card. */
+}
+
+/* minmax(350px, 1fr) still forces a hard 350px floor on its single track
+   regardless of available width - on phones narrower than ~350px of
+   content area (accounting for page padding, that's most phones under
+   ~390-400px viewport width), that floor overflows the page instead of
+   "displaying cleanly at every width". Only one card lives in this grid,
+   so collapsing to a plain 1fr column removes the floor entirely. */
+@media (max-width: 480px) {
+  .audience-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {

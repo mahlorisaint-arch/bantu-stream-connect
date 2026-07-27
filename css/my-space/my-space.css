@@ -72,6 +72,10 @@ body { background: #000000; }
 
 .space-card {
   cursor: pointer; transition: transform 0.2s ease; color: inherit; display: block;
+  /* Grid item inside .space-grid; .space-card-byline uses white-space:
+     nowrap for its ellipsis, so without this a long byline forces the
+     card (and grid) wider than the viewport instead of truncating. */
+  min-width: 0;
 }
 .space-card:hover, .space-card:focus-visible { transform: translateY(-4px); }
 .space-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; border-radius: 8px; }
@@ -160,6 +164,10 @@ body { background: #000000; }
 .playlist-card {
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
   overflow: hidden; transition: transform 0.2s ease; cursor: pointer;
+  /* Grid item inside .playlist-grid; .playlist-card-title uses
+     white-space:nowrap for its ellipsis, so without this a long
+     playlist name forces the card (and grid) wider than the viewport. */
+  min-width: 0;
 }
 .playlist-card:hover, .playlist-card:focus-visible { transform: translateY(-4px); }
 .playlist-card:focus-visible { outline: 2px solid var(--brand-cyan-core); outline-offset: 3px; }
@@ -193,6 +201,10 @@ body { background: #000000; }
 .following-card {
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
   padding: 16px; display: flex; flex-direction: column; gap: 12px; backdrop-filter: blur(10px);
+  /* Grid item inside .following-grid; .following-card-name uses
+     white-space:nowrap for its ellipsis, so without this a long creator
+     name forces the card (and grid) wider than the viewport. */
+  min-width: 0;
 }
 .following-card-header { display: flex; align-items: center; gap: 12px; }
 .following-card-avatar {

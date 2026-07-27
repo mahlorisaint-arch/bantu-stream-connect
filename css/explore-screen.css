@@ -487,6 +487,18 @@ html, body {
   }
 }
 
+/* .skeleton-grid (the loading-state placeholder for both
+   .worlds-container and .cultural-grid) had no mobile override at all,
+   so its minmax(280px, 1fr) tracks kept forcing 2+ columns on narrow
+   phones during the brief loading window - a squeeze/overflow flash
+   right before the real, correctly-responsive grid replaced it. */
+@media (max-width: 768px) {
+  .skeleton-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .hero-headline {
     font-size: 2rem;

@@ -90,6 +90,10 @@ body { background: #000000; }
   border: 1px solid var(--card-border);
   border-radius: 12px;
   overflow: hidden;
+  /* Grid item inside .playlists-grid; .playlist-card-title uses
+     white-space:nowrap for its ellipsis, so without this a long
+     playlist name forces the card (and grid) wider than the viewport. */
+  min-width: 0;
   transition: transform 0.2s ease;
 }
 

@@ -1122,6 +1122,12 @@ body { background: #000000; }
   cursor: pointer;
   transition: transform 0.2s ease;
   text-decoration: none;
+  /* Grid item inside .trending-grid; .trending-card-artist uses
+     white-space:nowrap for its ellipsis, so without this a long artist
+     name forces the card (and grid) wider than the viewport instead of
+     truncating - same trap already fixed on .world-track-info/
+     .social-strip-info above and on Trending's .upload-card. */
+  min-width: 0;
   color: inherit;
   display: block;
 }
