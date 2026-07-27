@@ -33,13 +33,159 @@ document.addEventListener('DOMContentLoaded', async function() {
   let journeySelections = {
     mood: null,
     region: null,
+    regionCountry: null,
     language: null,
+    languageDbValues: null,
     format: null
   };
 
   // ============================================
   // 1. SETUP DISCOVERY JOURNEY OPTIONS
   // ============================================
+  // Real, factually-accurate official/major languages per country - there's
+  // no languages/countries reference table in the database to query this
+  // from, so it's hardcoded the same way settings.js's own SA language list
+  // already is (English, Zulu, Xhosa, Afrikaans, Sepedi, Tswana, Sotho,
+  // Tsonga, Swati, Venda, Ndebele - South Africa's 11 official languages).
+  // dbValues covers the different casings/formats actually seen in
+  // Content.language (confirmed via the live schema: 'en', 'English',
+  // 'Setswana', 'Tsonga' all exist as real values today) so the language
+  // filter in generateDiscoveryJourney() actually matches real rows instead
+  // of silently filtering everything out.
+  const countryLanguages = {
+    'South Africa': [
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'afrikaans', label: 'Afrikaans', native: 'Afrikaans', dbValues: ['af', 'Afrikaans', 'afrikaans'] },
+      { value: 'zulu', label: 'isiZulu', native: 'Zulu', dbValues: ['zu', 'Zulu', 'isiZulu', 'zulu'] },
+      { value: 'xhosa', label: 'isiXhosa', native: 'Xhosa', dbValues: ['xh', 'Xhosa', 'isiXhosa', 'xhosa'] },
+      { value: 'sepedi', label: 'Sepedi', native: 'Northern Sotho', dbValues: ['nso', 'Sepedi', 'sepedi', 'Northern Sotho'] },
+      { value: 'setswana', label: 'Setswana', native: 'Tswana', dbValues: ['tn', 'Setswana', 'setswana', 'Tswana'] },
+      { value: 'sesotho', label: 'Sesotho', native: 'Southern Sotho', dbValues: ['st', 'Sesotho', 'sesotho', 'Southern Sotho'] },
+      { value: 'xitsonga', label: 'Xitsonga', native: 'Tsonga', dbValues: ['ts', 'Xitsonga', 'xitsonga', 'Tsonga'] },
+      { value: 'siswati', label: 'siSwati', native: 'Swati', dbValues: ['ss', 'siSwati', 'siswati', 'Swati'] },
+      { value: 'tshivenda', label: 'Tshivenda', native: 'Venda', dbValues: ['ve', 'Tshivenda', 'tshivenda', 'Venda'] },
+      { value: 'isindebele', label: 'isiNdebele', native: 'Ndebele', dbValues: ['nr', 'isiNdebele', 'isindebele', 'Ndebele'] }
+    ],
+    'Nigeria': [
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'hausa', label: 'Hausa', native: 'Hausa', dbValues: ['ha', 'Hausa', 'hausa'] },
+      { value: 'yoruba', label: 'Yorùbá', native: 'Yoruba', dbValues: ['yo', 'Yoruba', 'yoruba', 'Yorùbá'] },
+      { value: 'igbo', label: 'Igbo', native: 'Igbo', dbValues: ['ig', 'Igbo', 'igbo'] },
+      { value: 'pidgin', label: 'Pidgin', native: 'Nigerian Pidgin', dbValues: ['pcm', 'Pidgin', 'pidgin'] }
+    ],
+    'Kenya': [
+      { value: 'swahili', label: 'Kiswahili', native: 'Swahili', dbValues: ['sw', 'Swahili', 'swahili', 'Kiswahili'] },
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'kikuyu', label: 'Gĩkũyũ', native: 'Kikuyu', dbValues: ['ki', 'Kikuyu', 'kikuyu'] },
+      { value: 'luo', label: 'Dholuo', native: 'Luo', dbValues: ['luo', 'Luo'] },
+      { value: 'kalenjin', label: 'Kalenjin', native: 'Kalenjin', dbValues: ['kalenjin', 'Kalenjin'] }
+    ],
+    'Ghana': [
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'twi', label: 'Twi', native: 'Akan', dbValues: ['tw', 'Twi', 'twi', 'Akan'] },
+      { value: 'ewe', label: 'Ewe', native: 'Ewe', dbValues: ['ee', 'Ewe', 'ewe'] },
+      { value: 'ga', label: 'Ga', native: 'Ga', dbValues: ['gaa', 'Ga', 'ga'] },
+      { value: 'dagbani', label: 'Dagbani', native: 'Dagbani', dbValues: ['dag', 'Dagbani', 'dagbani'] }
+    ],
+    'Tanzania': [
+      { value: 'swahili', label: 'Kiswahili', native: 'Swahili', dbValues: ['sw', 'Swahili', 'swahili', 'Kiswahili'] },
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'sukuma', label: 'Sukuma', native: 'Sukuma', dbValues: ['suk', 'Sukuma', 'sukuma'] }
+    ],
+    'Zimbabwe': [
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'shona', label: 'chiShona', native: 'Shona', dbValues: ['sn', 'Shona', 'shona', 'chiShona'] },
+      { value: 'ndebele', label: 'isiNdebele', native: 'Ndebele', dbValues: ['nd', 'Ndebele', 'ndebele', 'isiNdebele'] }
+    ],
+    'Africa': [
+      { value: 'english', label: 'English', native: 'English', dbValues: ['en', 'English', 'english'] },
+      { value: 'french', label: 'Français', native: 'French', dbValues: ['fr', 'French', 'french', 'Français'] },
+      { value: 'portuguese', label: 'Português', native: 'Portuguese', dbValues: ['pt', 'Portuguese', 'portuguese', 'Português'] },
+      { value: 'swahili', label: 'Kiswahili', native: 'Swahili', dbValues: ['sw', 'Swahili', 'swahili', 'Kiswahili'] },
+      { value: 'hausa', label: 'Hausa', native: 'Hausa', dbValues: ['ha', 'Hausa', 'hausa'] },
+      { value: 'arabic', label: 'العربية', native: 'Arabic', dbValues: ['ar', 'Arabic', 'arabic'] }
+    ]
+  };
+
+  const journeyStepOrder = ['mood', 'region', 'language', 'format'];
+
+  function journeyStepEl(step) {
+    return document.querySelector(`.journey-step[data-step="${step}"]`);
+  }
+
+  function lockJourneyStep(step, hint) {
+    const el = journeyStepEl(step);
+    if (!el) return;
+    el.classList.add('locked');
+    el.classList.remove('unlocked', 'current-focus');
+    const optionsEl = el.querySelector('.step-options');
+    let hintEl = el.querySelector('.step-locked-hint');
+    if (!hintEl) {
+      hintEl = document.createElement('div');
+      hintEl.className = 'step-locked-hint';
+      optionsEl.insertAdjacentElement('afterend', hintEl);
+    }
+    hintEl.innerHTML = `<i class="fas fa-lock"></i> ${hint}`;
+  }
+
+  function unlockJourneyStep(step) {
+    const el = journeyStepEl(step);
+    if (!el) return;
+    const hintEl = el.querySelector('.step-locked-hint');
+    if (hintEl) hintEl.remove();
+    el.classList.remove('locked');
+    el.classList.add('unlocked', 'current-focus');
+    // Only the step actively inviting a click gets the pulse - once other
+    // steps unlock later, this one just keeps its normal unlocked look.
+    journeyStepOrder.forEach(s => {
+      if (s !== step) journeyStepEl(s)?.classList.remove('current-focus');
+    });
+  }
+
+  // Re-locks every step after (and including) fromIndex - used when an
+  // earlier choice changes, since a new country invalidates whatever
+  // language was picked for the old one, etc. Keeps the journey honest
+  // instead of leaving a stale selection from a world the explorer already
+  // left behind.
+  function relockJourneyFrom(fromIndex) {
+    for (let i = fromIndex; i < journeyStepOrder.length; i++) {
+      const step = journeyStepOrder[i];
+      journeySelections[step] = null;
+      if (step === 'region') journeySelections.regionCountry = null;
+      const hint = step === 'region' ? 'Choose your mood to reveal the regions'
+        : step === 'language' ? 'Choose a region to reveal its languages'
+        : 'Choose a language to reveal formats';
+      lockJourneyStep(step, hint);
+    }
+    const resultsContainer = document.getElementById('journeyResults');
+    if (resultsContainer) resultsContainer.style.display = 'none';
+  }
+
+  function renderLanguageOptionsForCountry(country) {
+    const languageContainer = document.getElementById('languageOptions');
+    if (!languageContainer) return;
+
+    const languages = countryLanguages[country] || countryLanguages['Africa'];
+
+    languageContainer.innerHTML = languages.map(option => `
+      <div class="journey-option language-option" data-value="${option.value}" data-db-values="${option.dbValues.join('|')}">
+        <span>${option.label}</span>
+        <span style="font-size: 11px; opacity: 0.7;">${option.native}</span>
+      </div>
+    `).join('');
+
+    languageContainer.querySelectorAll('.language-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        languageContainer.querySelectorAll('.language-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        journeySelections.language = opt.dataset.value;
+        journeySelections.languageDbValues = opt.dataset.dbValues.split('|');
+        unlockJourneyStep('format');
+        journeyStepEl('format')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      });
+    });
+  }
+
   function setupJourneyOptions() {
     // Mood Options
     const moodOptions = [
@@ -53,26 +199,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       { value: 'spiritual', label: 'Spiritual', icon: 'fas fa-pray', color: '#A855F7' }
     ];
 
-    // Region Options
+    // Region Options - real African countries/regions this platform serves
     const regionOptions = [
-      { value: 'south-africa', label: 'South Africa', flag: 'ZA', country: 'South Africa' },
-      { value: 'nigeria', label: 'Nigeria', flag: 'NG', country: 'Nigeria' },
-      { value: 'kenya', label: 'Kenya', flag: 'KE', country: 'Kenya' },
-      { value: 'ghana', label: 'Ghana', flag: 'GH', country: 'Ghana' },
-      { value: 'tanzania', label: 'Tanzania', flag: 'TZ', country: 'Tanzania' },
-      { value: 'zimbabwe', label: 'Zimbabwe', flag: 'ZW', country: 'Zimbabwe' },
-      { value: 'pan-african', label: 'Pan-African', flag: 'AF', country: 'Africa' }
-    ];
-
-    // Language Options
-    const languageOptions = [
-      { value: 'english', label: 'English', nativeName: 'English', code: 'en' },
-      { value: 'zulu', label: 'isiZulu', nativeName: 'Zulu', code: 'zu' },
-      { value: 'xhosa', label: 'isiXhosa', nativeName: 'Xhosa', code: 'xh' },
-      { value: 'swahili', label: 'Kiswahili', nativeName: 'Swahili', code: 'sw' },
-      { value: 'yoruba', label: 'Yorùbá', nativeName: 'Yoruba', code: 'yo' },
-      { value: 'french', label: 'Français', nativeName: 'French', code: 'fr' },
-      { value: 'portuguese', label: 'Português', nativeName: 'Portuguese', code: 'pt' }
+      { value: 'south-africa', label: 'South Africa', country: 'South Africa' },
+      { value: 'nigeria', label: 'Nigeria', country: 'Nigeria' },
+      { value: 'kenya', label: 'Kenya', country: 'Kenya' },
+      { value: 'ghana', label: 'Ghana', country: 'Ghana' },
+      { value: 'tanzania', label: 'Tanzania', country: 'Tanzania' },
+      { value: 'zimbabwe', label: 'Zimbabwe', country: 'Zimbabwe' },
+      { value: 'pan-african', label: 'Pan-African', country: 'Africa' }
     ];
 
     // Format Options
@@ -86,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       { value: 'vlogs-tutorials', label: 'Vlogs & Tutorials', icon: 'fas fa-chalkboard-user', color: '#3B82F6' }
     ];
 
-    // Render Mood Options
+    // Render Mood Options (step 1 - always open, this is where the journey starts)
     const moodContainer = document.getElementById('moodOptions');
     if (moodContainer) {
       moodContainer.innerHTML = moodOptions.map(option => `
@@ -96,16 +231,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         </div>
       `).join('');
 
-      document.querySelectorAll('.mood-option').forEach(opt => {
+      moodContainer.querySelectorAll('.mood-option').forEach(opt => {
         opt.addEventListener('click', () => {
-          document.querySelectorAll('.mood-option').forEach(o => o.classList.remove('active'));
+          moodContainer.querySelectorAll('.mood-option').forEach(o => o.classList.remove('active'));
           opt.classList.add('active');
           journeySelections.mood = opt.dataset.value;
+          // Changing mood re-opens a fresh path forward - region onward
+          // re-locks so a stale country/language/format from a previous
+          // pass through the journey can't linger.
+          relockJourneyFrom(1);
+          unlockJourneyStep('region');
+          journeyStepEl('region')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         });
       });
     }
 
-    // Render Region Options
+    // Render Region Options (rendered now, but the step stays locked until mood is chosen)
     const regionContainer = document.getElementById('regionOptions');
     if (regionContainer) {
       regionContainer.innerHTML = regionOptions.map(option => `
@@ -114,36 +255,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         </div>
       `).join('');
 
-      document.querySelectorAll('.region-option').forEach(opt => {
+      regionContainer.querySelectorAll('.region-option').forEach(opt => {
         opt.addEventListener('click', () => {
-          document.querySelectorAll('.region-option').forEach(o => o.classList.remove('active'));
+          regionContainer.querySelectorAll('.region-option').forEach(o => o.classList.remove('active'));
           opt.classList.add('active');
           journeySelections.region = opt.dataset.value;
           journeySelections.regionCountry = opt.dataset.country;
+          // A new country means the language step now belongs to a
+          // different world - reset language/format first, then reveal
+          // this country's real languages.
+          relockJourneyFrom(2);
+          renderLanguageOptionsForCountry(opt.dataset.country);
+          unlockJourneyStep('language');
+          journeyStepEl('language')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         });
       });
     }
 
-    // Render Language Options
-    const languageContainer = document.getElementById('languageOptions');
-    if (languageContainer) {
-      languageContainer.innerHTML = languageOptions.map(option => `
-        <div class="journey-option language-option" data-value="${option.value}" data-code="${option.code}">
-          <span>${option.label}</span>
-          <span style="font-size: 11px; opacity: 0.7;">${option.nativeName}</span>
-        </div>
-      `).join('');
+    // Language options are populated dynamically per-country by
+    // renderLanguageOptionsForCountry() once a region is picked - nothing
+    // to render here yet.
 
-      document.querySelectorAll('.language-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-          document.querySelectorAll('.language-option').forEach(o => o.classList.remove('active'));
-          opt.classList.add('active');
-          journeySelections.language = opt.dataset.value;
-        });
-      });
-    }
-
-    // Render Format Options
+    // Render Format Options (rendered now, but the step stays locked until language is chosen)
     const formatContainer = document.getElementById('formatOptions');
     if (formatContainer) {
       formatContainer.innerHTML = formatOptions.map(option => `
@@ -153,14 +286,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         </div>
       `).join('');
 
-      document.querySelectorAll('.format-option').forEach(opt => {
+      formatContainer.querySelectorAll('.format-option').forEach(opt => {
         opt.addEventListener('click', () => {
-          document.querySelectorAll('.format-option').forEach(o => o.classList.remove('active'));
+          formatContainer.querySelectorAll('.format-option').forEach(o => o.classList.remove('active'));
           opt.classList.add('active');
           journeySelections.format = opt.dataset.value;
+          journeyStepEl('format')?.classList.remove('current-focus');
         });
       });
     }
+
+    // Start the journey: only Step 1 is open, everything after it is a
+    // locked world waiting to be revealed.
+    journeyStepEl('mood')?.classList.add('current-focus');
+    lockJourneyStep('region', 'Choose your mood to reveal the regions');
+    lockJourneyStep('language', 'Choose a region to reveal its languages');
+    lockJourneyStep('format', 'Choose a language to reveal formats');
   }
 
   // ============================================
@@ -224,6 +365,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             genre,
             created_at,
             content_type,
+            language,
             tags,
             country,
             region
@@ -233,11 +375,23 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Apply filters based on selections
         if (contentType) {
-          query = query.eq('content_type', contentType);
+          // Real content_type values are inconsistently cased ('movie',
+          // 'Music', 'Short' - confirmed via the live schema), so an .eq()
+          // here silently dropped every Music/Short-form result even when
+          // matching content existed. ilike matches case-insensitively.
+          query = query.ilike('content_type', contentType);
         }
 
         if (journeySelections.regionCountry && journeySelections.regionCountry !== 'Africa') {
           query = query.eq('country', journeySelections.regionCountry);
+        }
+
+        // Real language values are inconsistently formatted too ('en' vs
+        // 'English' vs 'Setswana' - same live-schema check), so match
+        // against every known representation of the chosen language
+        // instead of a single exact string.
+        if (journeySelections.languageDbValues && journeySelections.languageDbValues.length > 0) {
+          query = query.in('language', journeySelections.languageDbValues);
         }
 
         const { data, error } = await query.order('created_at', { ascending: false });

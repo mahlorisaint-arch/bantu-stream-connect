@@ -78,6 +78,78 @@
   align-items: center;
   color: var(--slate-grey);
   font-size: 20px;
+  transition: color 0.4s ease, opacity 0.4s ease;
+}
+
+.journey-connector.locked {
+  color: rgba(148, 163, 184, 0.25);
+  opacity: 0.5;
+}
+
+/* Progressive reveal - "world within a world": each step stays locked
+   (dimmed, non-interactive, showing a short prompt instead of its real
+   options) until the step before it has a selection, so the journey
+   unfolds one world at a time instead of dumping every choice on screen
+   at once. */
+.journey-step {
+  transition: opacity 0.4s ease, filter 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+}
+
+.journey-step.locked {
+  opacity: 0.4;
+  filter: grayscale(0.6) blur(0.3px);
+  pointer-events: none;
+}
+
+.journey-step.locked .step-options {
+  display: none;
+}
+
+.journey-step.unlocked {
+  animation: stepUnlock 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The step the explorer should act on next - a soft pulse invites the
+   next click, same cyan language as the rest of the platform's glow
+   accents. */
+.journey-step.current-focus {
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.15), 0 0 24px rgba(0, 229, 255, 0.12);
+  animation: stepFocusPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes stepUnlock {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes stepFocusPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.15), 0 0 24px rgba(0, 229, 255, 0.12); }
+  50% { box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.3), 0 0 32px rgba(0, 229, 255, 0.22); }
+}
+
+.step-locked-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--slate-grey);
+  font-size: 0.8rem;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+.step-locked-hint i {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* Language options carry a country-specific accent instead of a fixed
+   single color, since the whole point of this step is "these are
+   specifically South Africa's/Nigeria's/... languages" - a subtle visual
+   cue that the list itself is bespoke to what was picked in step 2, not a
+   generic fallback that happens to be showing. */
+.journey-step[data-step="language"] .step-options {
+  animation: fadeInUp 0.4s ease;
 }
 
 .journey-action {
