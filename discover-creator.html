@@ -1797,12 +1797,15 @@ async function handleCollabRequest(creatorId) {
 
         // Companion notification so the recipient sees a bell alert.
         // Uses the existing valid 'system' type — no schema migration needed.
+        // action_url sends the recipient to the sender's profile, so they
+        // can see who's asking before responding.
         const { error: notifError } = await supabaseClient.from('notifications').insert({
             user_id: creatorId,
             type: 'system',
             title: 'New collab request',
             message: `${senderName}: "${message.trim()}"`,
             sender_name: senderName,
+            action_url: `/creator-channel.html?id=${user.id}`,
             metadata: { sender_id: user.id, request_text: message.trim(), kind: 'collab_request' }
         });
         if (notifError) console.warn('Collab notification insert failed (request itself was still saved):', notifError);
