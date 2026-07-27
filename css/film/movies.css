@@ -107,14 +107,12 @@ body { background: #000000; }
   font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
 }
 .btn-favorite:hover { background: rgba(255, 255, 255, 0.2); }
-.btn-favorite .fav-label::after { content: ""; }
 .btn-favorite.favorited {
   background: rgba(239, 68, 68, 0.15);
   border-color: #EF4444;
   color: #EF4444;
 }
 .btn-favorite.favorited .fa-heart { color: #EF4444; }
-.btn-favorite.favorited .fav-label::after { content: "d"; }
 .fav-pop { animation: favPop 0.4s ease; }
 
 @keyframes favPop {
