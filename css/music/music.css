@@ -433,7 +433,10 @@ body { background: #000000; }
 /* ==========================================================================
    MYSTERY PORTAL (FIX #4: Click now works)
    ========================================================================== */
-.portal-section { margin-bottom: 40px; }
+/* scroll-margin-top so a notification's #portal-section anchor (or the
+   deep-link JS scrollIntoView in music.js) doesn't land the section
+   partially hidden under the sticky .header. */
+.portal-section { margin-bottom: 40px; scroll-margin-top: 90px; }
 
 .portal-timer {
   display: flex;
@@ -602,7 +605,9 @@ body { background: #000000; }
 /* ==========================================================================
    WORLDS SECTION (FIX #3: In-page tab exploration)
    ========================================================================== */
-.worlds-section { margin-bottom: 40px; }
+/* Same sticky-header clearance as .portal-section, for the world_unlock/
+   world_content deep-link's scrollIntoView() in music.js. */
+.worlds-section { margin-bottom: 40px; scroll-margin-top: 90px; }
 
 .worlds-back-btn {
   display: flex;

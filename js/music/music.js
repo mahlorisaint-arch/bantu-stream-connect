@@ -731,6 +731,34 @@
 
   // ===== WORLDS (FIXED: Breadcrumb, Navigation, Real Gating) =====
 
+  // Opens straight into the world (and sub-world, if present) a
+  // notification's action_url points at - ?world=<id>&worldName=<name>
+  // and, for world_unlock notifications, &subworld=<id>&subworldName=<name>.
+  // Bypasses the click-driven lock check in loadSubWorlds() intentionally:
+  // this only ever runs for a subworld id that fn_process_listen_event
+  // just unlocked for real (unlocked_subworlds is append-only, so a
+  // notification's target can't have been re-locked since).
+  async function handleWorldDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const worldId = params.get('world');
+    if (!worldId) return;
+
+    const worldName = params.get('worldName') || window.worlds.find(w => w.id === worldId)?.name || 'World';
+
+    window.currentWorldId = worldId;
+    window.currentWorldView = 'detail';
+    window.worldBreadcrumb = [{ id: worldId, name: worldName }];
+    showWorldDetailUI();
+    await loadWorldDetails(worldId);
+
+    const subworldId = params.get('subworld');
+    if (subworldId) {
+      openSubWorld(subworldId, params.get('subworldName') || 'Sub-world');
+    }
+
+    document.getElementById('worlds-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   // FIXED: When clicking a world from the main grid (Resets breadcrumb)
   function openWorldDetail(worldId, worldName) {
     window.currentWorldId = worldId;
@@ -1429,6 +1457,11 @@
         loadSocialStrip(),
         loadTrending()
       ]);
+
+      // Deep link from a notification's action_url (?world=&worldName=&
+      // subworld=&subworldName=) - opens straight into the world/sub-world
+      // it references, same real unlock state as the manual click path.
+      await handleWorldDeepLink();
 
       // SECTION 5: Check for pending unlock celebrations after worlds load
       await checkPendingUnlockCelebration();
