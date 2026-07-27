@@ -267,19 +267,25 @@ body { background: #000000; }
 .upload-card:hover .upload-card__thumb img { transform: scale(1.05); }
 
 /* ===== HOVER PLAY ICON =====
-   This class was referenced in the card markup (movies.js) but never
-   actually styled anywhere movies.html loads - a pre-existing gap. Matches
-   trending.css's real, working .media-hover-play pattern: centered overlay,
-   brand-blue icon with a glow instead of a plain white play triangle. */
-.media-hover-play {
+   Ported verbatim from trending_screen.html's real, working pattern
+   (css/trending/trending.css's .play-overlay/.play-icon, itself ported from
+   css/home-feed-ui.css's Continue Watching cards): a dark scrim behind a
+   circular transparent-glassmorphic, cyan-bordered button - not a bare
+   glowing icon with no button shape (the old .media-hover-play recipe). */
+.play-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease; z-index: 2;
+  background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.3s ease; z-index: 2;
 }
-.upload-card:hover .media-hover-play { opacity: 1; }
-.media-hover-play i {
-  font-size: 22px; color: var(--brand-cyan-core);
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.9), 0 0 20px rgba(0, 229, 255, 0.6), 0 0 36px rgba(0, 229, 255, 0.35);
+.upload-card:hover .play-overlay { opacity: 1; }
+.play-icon {
+  width: 50px; height: 50px; background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 229, 255, 0.4); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #00E5FF; font-size: 20px; transform: scale(0.8);
+  transition: transform 0.3s ease, border-color 0.3s ease;
 }
+.upload-card:hover .play-icon { transform: scale(1); }
 
 /* ===== BADGES - transparent glassmorphic, tinted by the badge's own color
    (not solid-filled), matching .badge-premium/.badge-feature/.top10-stamp

@@ -325,7 +325,7 @@
           ${leavingBadge}
           <span class="upload-card__badge" style="background: ${hexToRgba(meta.color, 0.18)}; border: 1px solid ${hexToRgba(meta.color, 0.45)}; color: ${meta.color};">${meta.label}</span>
           ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
-          <div class="media-hover-play"><i class="fas fa-play"></i></div>
+          <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
         </div>
         <p class="upload-card__title">${escapeHtml(item.title)}</p>
         <p class="upload-card__byline">${escapeHtml(creatorName)}</p>
@@ -783,7 +783,7 @@
           <div class="upload-card" data-content-id="${w.Content.id}" tabindex="0" role="link">
             <div class="upload-card__thumb" style="background-image:url(${getPosterUrl(w.Content, 400)});">
               ${leavingBadge}
-              <div class="media-hover-play"><i class="fas fa-play"></i></div>
+              <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
             </div>
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
             <p class="upload-card__title">${escapeHtml(w.Content.title)}</p>
