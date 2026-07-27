@@ -648,8 +648,6 @@
 
     async function loadDashboardData() {
         try {
-            setLoading(true, 'Loading dashboard data...');
-
             // Single, consistent source of truth for these stats. This used
             // to branch through analyticsManager.getDashboardData('30days')
             // first (a 30-day-windowed view count, uploads count with no
@@ -664,37 +662,47 @@
             // or draft) - the upload-card renderer below already branches on
             // Published/Draft status, but could never actually show a draft
             // before since the old query excluded them.
-            const { data, error } = await window.supabaseClient
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false });
+            // Content->engagement-stats is a genuine chain (the stats query
+            // needs contentIds from the Content query first), but
+            // connectors/earnings/profile are each independent of that chain
+            // and of each other - only currentUser.id is needed. Run the
+            // chain and the three independent queries concurrently instead
+            // of five queries back to back.
+            const contentAndStats = (async () => {
+                const { data, error } = await window.supabaseClient
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false });
 
-            if (error) throw error;
+                if (error) throw error;
 
-            const content = data || [];
-            const contentIds = content.map(item => item.id);
+                const content = data || [];
+                const contentIds = content.map(item => item.id);
 
-            // Real views from content_engagement_stats - not content_views,
-            // which is RLS-blocked for this kind of read (same convention
-            // used platform-wide for views/likes/comments).
-            const { data: statsData } = contentIds.length
-                ? await window.supabaseClient
-                    .from('content_engagement_stats')
-                    .select('content_id, total_views')
-                    .in('content_id', contentIds)
-                : { data: [] };
+                // Real views from content_engagement_stats - not content_views,
+                // which is RLS-blocked for this kind of read (same convention
+                // used platform-wide for views/likes/comments).
+                const { data: statsData } = contentIds.length
+                    ? await window.supabaseClient
+                        .from('content_engagement_stats')
+                        .select('content_id, total_views')
+                        .in('content_id', contentIds)
+                    : { data: [] };
 
-            const viewsMap = {};
-            (statsData || []).forEach(row => { viewsMap[row.content_id] = row.total_views || 0; });
+                const viewsMap = {};
+                (statsData || []).forEach(row => { viewsMap[row.content_id] = row.total_views || 0; });
 
-            let totalViewsCount = 0;
-            content.forEach(item => {
-                item.real_views = viewsMap[item.id] || 0;
-                totalViewsCount += item.real_views;
-            });
+                let totalViewsCount = 0;
+                content.forEach(item => {
+                    item.real_views = viewsMap[item.id] || 0;
+                    totalViewsCount += item.real_views;
+                });
 
-            const { count: connectorsCount } = await window.supabaseClient
+                return { content, totalViewsCount };
+            })();
+
+            const connectorsQuery = window.supabaseClient
                 .from('connectors')
                 .select('*', { count: 'exact', head: true })
                 .eq('connected_id', currentUser.id)
@@ -706,10 +714,24 @@
             // Earnings stat card is hidden for now, but this is still
             // computed in case it's needed elsewhere (e.g. monetization
             // eligibility messaging).
-            const { data: earningsData } = await window.supabaseClient
+            const earningsQuery = window.supabaseClient
                 .from('creator_earnings')
                 .select('amount')
                 .eq('creator_id', currentUser.id);
+
+            const profileQuery = window.supabaseClient
+                .from('user_profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .maybeSingle();
+
+            const [
+                { content, totalViewsCount },
+                { count: connectorsCount },
+                { data: earningsData },
+                { data: userProfile }
+            ] = await Promise.all([contentAndStats, connectorsQuery, earningsQuery, profileQuery]);
+
             const totalEarningsAmount = (earningsData || []).reduce((sum, e) => sum + (e.amount || 0), 0);
 
             const analyticsData = {
@@ -721,12 +743,6 @@
                 is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
             };
 
-            const { data: userProfile } = await window.supabaseClient
-                .from('user_profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .maybeSingle();
-            
             dashboardData = {
                 user: {
                     name: userProfile?.full_name || 
@@ -757,8 +773,6 @@
             if (dashboardData.analytics.is_eligible_for_monetization) {
                 showToast('🎉 You\'re eligible for monetization!', 'success');
             }
-            
-            setLoading(false);
         } catch (error) {
             console.error('❌ Error loading dashboard data:', error);
             showError('Loading Error', 'Failed to load dashboard data. Please refresh the page.');
@@ -1009,8 +1023,6 @@
 
     async function checkAuthentication() {
         try {
-            setLoading(true, 'Checking authentication...');
-            
             const { data: { session }, error } = await window.supabaseClient.auth.getSession();
             
             if (error || !session?.user) {
@@ -1097,17 +1109,34 @@
 
     async function initializeDashboard() {
         console.log('👑 Initializing Creator Dashboard with Journalist Verification...');
-        
+
+        // Header/sidebar/stat-card/upload-grid shells don't need to wait on
+        // auth or any of the fetches below - reveal them immediately
+        // instead of holding #app hidden behind #loading until
+        // authentication plus every section finishes. setLoading() is
+        // still used as-is for the journalist-application submit flow
+        // (a real "block the page during this specific action" case) -
+        // just not for the initial page load.
+        if (loadingScreen) loadingScreen.style.display = 'none';
+        if (app) app.style.display = 'block';
+
         const isAuthenticated = await checkAuthentication();
         if (!isAuthenticated) return;
-        
-        analyticsManager = await initializeAnalyticsManager();
-        await loadDashboardData();
-        await updateNotificationsSummary();
-        await setupJournalistVerification();
+
+        // initializeAnalyticsManager()/loadDashboardData()/
+        // updateNotificationsSummary()/setupJournalistVerification() only
+        // depend on currentUser (already resolved above) and each render
+        // into their own section - none of them depend on each other's
+        // results, so run them concurrently instead of one after another.
+        [analyticsManager] = await Promise.all([
+            initializeAnalyticsManager(),
+            loadDashboardData(),
+            updateNotificationsSummary(),
+            setupJournalistVerification()
+        ]);
 
         setupEventListeners();
-        
+
         console.log('✅ Creator Dashboard initialized successfully');
     }
 

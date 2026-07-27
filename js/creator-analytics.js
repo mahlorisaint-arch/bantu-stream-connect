@@ -187,19 +187,19 @@ class CreatorAnalytics {
         
         // Get date filter
         const dateFilter = this._getDateFilter(timeRange, activeFilters.customDateRange);
-        
-        // Get summary with filters
-        const summary = await this.getDashboardSummary(timeRange, activeFilters);
-        
-        // Get content list with filters
-        let content = [];
-        try {
-          content = await this.getContentList(timeRange, 'views', 50, activeFilters);
-        } catch (e) {
-          console.warn('⚠️ Could not fetch content list:', e.message);
-          content = [];
-        }
-        
+
+        // Summary and content list are independent queries (each keyed
+        // separately in _queueRequest, so they genuinely run concurrently
+        // rather than serializing through it) - fetch both at once instead
+        // of one after another.
+        const [summary, content] = await Promise.all([
+          this.getDashboardSummary(timeRange, activeFilters),
+          this.getContentList(timeRange, 'views', 50, activeFilters).catch(e => {
+            console.warn('⚠️ Could not fetch content list:', e.message);
+            return [];
+          })
+        ]);
+
         const result = {
           summary,
           content,

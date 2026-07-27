@@ -219,9 +219,12 @@
       </div>
     </div>
 
-    <!-- Content Grid -->
+    <!-- Content Grid - static shaped skeleton, visible the instant HTML
+         parses; loadUserContent() replaces this innerHTML once its fetch
+         resolves. -->
     <div id="contentGrid" class="content-grid">
-      <!-- Content will be loaded here -->
+      <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+      <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
     </div>
   </main>
 
@@ -747,8 +750,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ CHECK AUTHENTICATION
   async function checkAuthentication() {
     try {
-      setLoading(true, 'Checking authentication...');
-      
       const sessionResponse = await window.supabaseClient.auth.getSession();
       const session = sessionResponse.data.session;
       
@@ -1135,8 +1136,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ LOAD USER CONTENT
   async function loadUserContent() {
     try {
-      setLoading(true, 'Loading your content...');
-
       if (!currentUser) {
         throw new Error('No authenticated user');
       }
@@ -1188,8 +1187,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderFilterChips();
       filterContent(selectedFilter);
       updateStats();
-      
-      setLoading(false);
     } catch (error) {
       console.error('❌ Error loading content:', error);
       showError('Loading Error', 'Failed to load your content. Please try again.');
@@ -1918,29 +1915,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ INITIALIZE PAGE
   async function initializePage() {
     console.log('📤 Initializing My Uploads Page...');
-    
+
+    // Header/sidebar/content-grid/playlists shells don't need to wait on
+    // auth or any of the fetches below - reveal them immediately instead
+    // of holding #app hidden behind #loading until authentication plus
+    // every section finishes. setLoading() is left in place for other
+    // in-page actions (e.g. delete/edit flows); just not used for the
+    // initial page load.
+    loadingScreen.style.display = 'none';
+    app.style.display = 'block';
+
     // Check authentication
     const isAuthenticated = await checkAuthentication();
     if (!isAuthenticated) {
       return;
     }
-    
-    // Load user content
-    await loadUserContent();
 
-    // Load creator's own playlists (creator_playlists)
-    await loadCreatorPlaylists();
+    // loadUserContent()/loadCreatorPlaylists()/loadNotifications() only
+    // depend on currentUser (already resolved above) and each render into
+    // their own section - none of them depend on each other's results, so
+    // run them concurrently instead of one after another.
+    await Promise.all([
+      loadUserContent(),
+      loadCreatorPlaylists(),
+      loadNotifications()
+    ]);
 
-    // Load notifications
-    await loadNotifications();
-    
     // Setup modals and panels
     setupSearchModal();
     setupNotificationsPanel();
-    
+
     // Setup event listeners
     setupEventListeners();
-    
+
     console.log('✅ My Uploads Page initialized successfully');
   }
   

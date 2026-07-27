@@ -184,7 +184,13 @@
         <h2 class="section-title"><i class="fas fa-play-circle"></i> Continue Watching</h2>
         <span id="continueCount" class="history-count">0 items</span>
       </div>
-      <div class="space-grid" id="continueGrid"></div>
+      <!-- Static shaped skeleton for the default-active tab, visible the
+           instant HTML parses - loadContinueWatching() replaces this
+           innerHTML once its fetch resolves. -->
+      <div class="space-grid" id="continueGrid">
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+      </div>
       <div id="continueEmpty" class="empty-state" style="display: none;">
         <i class="fas fa-play-circle"></i>
         <h3>Nothing to continue</h3>

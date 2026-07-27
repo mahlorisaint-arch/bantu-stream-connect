@@ -164,23 +164,29 @@
       // ✅ 5F: Setup scheduled reports
       setupScheduledReports();
       
-      // Load initial data
+      // Load initial data. loadAudienceInsights() only depends on
+      // analyticsManager (already set above) and its own DOM elements, not
+      // on the main dashboard data, so fire both concurrently instead of
+      // making the Audience Insights section wait for the main dashboard
+      // fetch+render to finish first.
       console.log('📊 Fetching dashboard data...');
-      const data = await analyticsManager.getDashboardData(currentTimeRange);
-      
+      const hasAudienceSection = !!document.querySelector('.audience-section');
+      const [data] = await Promise.all([
+        analyticsManager.getDashboardData(currentTimeRange),
+        hasAudienceSection ? loadAudienceInsights() : Promise.resolve()
+      ]);
+
       if (data && !data.error) {
         console.log('✅ Dashboard data loaded, rendering...');
         renderDashboard(data);
       } else {
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
-      
-      // ✅ 5E: Load audience insights
-      if (document.querySelector('.audience-section')) {
-        await loadAudienceInsights();
+
+      if (hasAudienceSection) {
         setupAudienceTimeRange();
       }
-      
+
       // ✅ CRITICAL: Mark complete BEFORE showing content
       initializationComplete = true;
       

@@ -457,7 +457,13 @@ Sidebar (Creator's world / Top supporter) is untouched.
       <div class="home-section-header">
         <p class="section-label">Recent uploads</p>
       </div>
-      <div class="upload-grid" id="upload-grid"></div>
+      <!-- Static shaped skeleton, visible the instant HTML parses -
+           renderUploadGrid() replaces this innerHTML once loadCreatorData()
+           resolves. -->
+      <div class="upload-grid" id="upload-grid">
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+      </div>
       <div id="no-content" class="empty-state" style="display: none;">
         <div class="empty-icon"><i class="fas fa-video-slash"></i></div>
         <h3>No Uploads Yet</h3>

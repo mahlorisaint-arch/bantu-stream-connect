@@ -2287,13 +2287,34 @@ return;
 }
 
 window.loadingText = document.getElementById('loading-text');
-if (window.loadingText) window.loadingText.textContent = 'Loading creator profile...';
+if (window.loadingText) window.loadingText.textContent = 'Loading Creator Channel...';
 
-const { data: profile, error: profileError } = await supabase
-.from('user_profiles')
-.select('*')
-.eq('id', window.creatorId)
-.maybeSingle();
+// All of these only need window.creatorId (already known from the URL) or
+// window.currentUser (already known synchronously) - none of them depend
+// on each other's results, so run them concurrently instead of one after
+// another. Profile is checked for existence after the batch resolves; the
+// others firing anyway in the rare "creator not found" case is a
+// negligible cost against the real win on every normal load.
+const connectionsQuery = window.currentUser
+? supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1)
+: Promise.resolve({ data: null });
+
+const [
+{ data: profile, error: profileError },
+creatorContent,
+{ count: connectorCount, error: countError },
+{ data: connections },
+playlists,
+{ data: badges }
+] = await Promise.all([
+supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle(),
+loadContentWithEngagementStats(window.creatorId, 50),
+supabase.from('connectors').select('*', { count: 'exact', head: true }).eq('connected_id', window.creatorId).eq('connection_type', 'creator'),
+connectionsQuery,
+loadPlaylistsWithItems(window.creatorId),
+supabase.from('user_badges').select('*').eq('user_id', window.creatorId),
+loadCreatorRecord()
+]);
 
 if (profileError || !profile) {
 showToast('Creator not found', 'error');
@@ -2307,40 +2328,16 @@ if (profile.channel_banner_url) {
 setBannerImage(profile.channel_banner_url);
 }
 
-if (window.loadingText) window.loadingText.textContent = 'Loading creator content...';
-window.creatorContent = await loadContentWithEngagementStats(window.creatorId, 50);
+window.creatorContent = creatorContent;
 window.streakCount = computeUploadStreak(window.creatorContent);
-
-const { count: connectorCount, error: countError } = await supabase
-.from('connectors')
-.select('*', { count: 'exact', head: true })
-.eq('connected_id', window.creatorId)
-.eq('connection_type', 'creator');
 
 if (countError) throw countError;
 window.connectorCount = connectorCount || 0;
 
-if (window.currentUser) {
-const { data: connections } = await supabase
-.from('connectors')
-.select('*')
-.eq('connector_id', window.currentUser.id)
-.eq('connected_id', window.creatorId)
-.eq('connection_type', 'creator')
-.limit(1);
+window.isConnected = window.currentUser ? !!(connections && connections.length > 0) : false;
 
-window.isConnected = connections && connections.length > 0;
-} else {
-window.isConnected = false;
-}
-
-if (window.loadingText) window.loadingText.textContent = 'Loading playlists...';
-window.playlists = await loadPlaylistsWithItems(window.creatorId);
-
-const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
+window.playlists = playlists;
 window.achievements = badges || [];
-
-await loadCreatorRecord();
 
 console.log('✅ Creator data loaded:', {
 profile: window.creatorProfile,
@@ -2869,11 +2866,17 @@ window.addEventListener('resize', checkOverflow);
 // ===== INITIALIZE =====
 async function initializeCreatorChannel() {
 try {
+// Header/sidebar/tabs/banner shell doesn't need to wait on auth or the
+// creator's data - reveal it immediately instead of holding #app hidden
+// behind #loading until checkAuth()+loadCreatorData() both finish. The
+// content areas (renderHomeTab/renderAboutTab) stay empty/skeleton until
+// loadCreatorData() actually populates them, same as before, they just
+// aren't hidden behind an opaque full-page overlay while that happens.
 const loading = document.getElementById('loading');
 const app = document.getElementById('app');
 
-if (loading) loading.style.display = 'flex';
-if (app) app.style.display = 'none';
+if (loading) loading.style.display = 'none';
+if (app) app.style.display = 'block';
 
 window.loadingText = document.getElementById('loading-text');
 
@@ -2888,11 +2891,6 @@ await loadCreatorData();
 
 setupEventListeners();
 setupMoreMenu(); // FIX 3: Wire up the three-dot menu with self-contained modal opening
-
-setTimeout(() => {
-if (loading) loading.style.display = 'none';
-if (app) app.style.display = 'block';
-}, 500);
 
 console.log('✅ Creator channel initialized with PHASE 5 + NEW DESIGN!');
 console.log('   🚀 Using content_engagement_stats for metrics');

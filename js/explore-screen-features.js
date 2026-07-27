@@ -770,8 +770,17 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 7. INITIALIZE
   // ============================================
   async function initialize() {
+    // The shell (header/sidebar/section containers) doesn't need to wait on
+    // any of the three fetches below - each of renderDiscoveryWorlds()/
+    // renderCulturalHub()/updateEnergyBar() already shows its own shaped
+    // skeleton and swaps to real content independently. The full-page
+    // #loading overlay was covering all of that (and the header/sidebar)
+    // until every fetch finished, so nothing was visible in the meantime -
+    // hide it immediately instead of after Promise.all() resolves.
     const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
     const app = document.getElementById('app');
+    if (app) app.style.display = 'block';
     try {
       setupJourneyOptions();
       const generateBtn = document.getElementById('generateJourneyBtn');
@@ -783,13 +792,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         renderCulturalHub(),
         updateEnergyBar()
       ]);
-      if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
       console.log('Explore Screen initialized with real data');
     } catch (error) {
       console.error('Error initializing explore screen:', error);
-      if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
     }
   }
 

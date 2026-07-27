@@ -445,6 +445,23 @@ body {
     overflow: hidden;
 }
 
+/* Skeleton card - same shape as .creator-card/.card-media above, shown
+   while loadFeaturedCreators() is in flight instead of a generic spinner. */
+.skel-creator-card {
+    background: linear-gradient(135deg, #14141e 0%, #1a1a24 100%);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--card-border);
+    overflow: hidden;
+}
+.skel-creator-card .skel-card { height: 200px; aspect-ratio: auto; border-radius: 0; }
+.skel-creator-card .skel-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.skel-creator-card .skel-header-row { display: flex; align-items: center; gap: 10px; }
+.skel-creator-card .skel-avatar { width: 44px; height: 44px; flex-shrink: 0; }
+.skel-creator-card .skel-header-text { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.skel-creator-card .skel-line-title { width: 60%; }
+.skel-creator-card .skel-line-sub { width: 40%; height: 12px; border-radius: 4px; }
+.skel-creator-card .skel-stats-row { display: flex; gap: 16px; margin-top: 4px; }
+
 .card-thumbnail {
     width: 100%;
     height: 100%;
@@ -1127,10 +1144,16 @@ body {
     </div>
     
     <div id="creatorsGrid" class="creator-grid">
-        <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>Loading creators...</p>
-        </div>
+        <!-- Static skeleton - visible the instant HTML parses, before any
+             Supabase call starts. renderFeaturedCreators() below replaces
+             this same shape via renderSkeletonCreatorCards() on re-loads
+             (filter changes). -->
+        <div class="skel-creator-card"><div class="skel-card skel-shimmer"></div><div class="skel-body"><div class="skel-header-row"><div class="skel-avatar skel-shimmer"></div><div class="skel-header-text"><div class="skel-line skel-line-title skel-shimmer"></div><div class="skel-line skel-line-sub skel-shimmer"></div></div></div><div class="skel-stats-row"><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div></div></div></div>
+        <div class="skel-creator-card"><div class="skel-card skel-shimmer"></div><div class="skel-body"><div class="skel-header-row"><div class="skel-avatar skel-shimmer"></div><div class="skel-header-text"><div class="skel-line skel-line-title skel-shimmer"></div><div class="skel-line skel-line-sub skel-shimmer"></div></div></div><div class="skel-stats-row"><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div></div></div></div>
+        <div class="skel-creator-card"><div class="skel-card skel-shimmer"></div><div class="skel-body"><div class="skel-header-row"><div class="skel-avatar skel-shimmer"></div><div class="skel-header-text"><div class="skel-line skel-line-title skel-shimmer"></div><div class="skel-line skel-line-sub skel-shimmer"></div></div></div><div class="skel-stats-row"><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div></div></div></div>
+        <div class="skel-creator-card"><div class="skel-card skel-shimmer"></div><div class="skel-body"><div class="skel-header-row"><div class="skel-avatar skel-shimmer"></div><div class="skel-header-text"><div class="skel-line skel-line-title skel-shimmer"></div><div class="skel-line skel-line-sub skel-shimmer"></div></div></div><div class="skel-stats-row"><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div></div></div></div>
+        <div class="skel-creator-card"><div class="skel-card skel-shimmer"></div><div class="skel-body"><div class="skel-header-row"><div class="skel-avatar skel-shimmer"></div><div class="skel-header-text"><div class="skel-line skel-line-title skel-shimmer"></div><div class="skel-line skel-line-sub skel-shimmer"></div></div></div><div class="skel-stats-row"><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div></div></div></div>
+        <div class="skel-creator-card"><div class="skel-card skel-shimmer"></div><div class="skel-body"><div class="skel-header-row"><div class="skel-avatar skel-shimmer"></div><div class="skel-header-text"><div class="skel-line skel-line-title skel-shimmer"></div><div class="skel-line skel-line-sub skel-shimmer"></div></div></div><div class="skel-stats-row"><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div><div class="skel-stat-number skel-shimmer"></div></div></div></div>
     </div>
 </main>
 
@@ -1378,7 +1401,7 @@ async function fetchConnectedIds(userId) {
 // Load featured creators with rotation
 async function loadFeaturedCreators() {
     const grid = document.getElementById('creatorsGrid');
-    grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading creators...</p></div>';
+    grid.innerHTML = renderSkeletonCreatorCards();
     try {
         if (!supabaseClient) await initSupabase();
         let query = supabaseClient.from('mv_discover_feed').select('*');
@@ -1422,6 +1445,29 @@ function attachCardEvents() {
     document.querySelectorAll('.connect-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleConnect(btn.dataset.creatorId); }));
     document.querySelectorAll('.collab-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleCollabRequest(btn.dataset.creatorId); }));
     document.querySelectorAll('.creator-card').forEach(card => card.addEventListener('click', () => window.location.href = `creator-channel.html?id=${card.dataset.creatorId}`));
+}
+
+function renderSkeletonCreatorCards(count = 6) {
+    const card = `
+        <div class="skel-creator-card">
+            <div class="skel-card skel-shimmer"></div>
+            <div class="skel-body">
+                <div class="skel-header-row">
+                    <div class="skel-avatar skel-shimmer"></div>
+                    <div class="skel-header-text">
+                        <div class="skel-line skel-line-title skel-shimmer"></div>
+                        <div class="skel-line skel-line-sub skel-shimmer"></div>
+                    </div>
+                </div>
+                <div class="skel-stats-row">
+                    <div class="skel-stat-number skel-shimmer"></div>
+                    <div class="skel-stat-number skel-shimmer"></div>
+                    <div class="skel-stat-number skel-shimmer"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    return card.repeat(count);
 }
 
 function renderCreatorCard(creator) {

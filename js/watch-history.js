@@ -22,6 +22,13 @@ let isLoading = false;
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ DOM loaded, starting Watch History initialization...');
 
+    // Header/sidebar/section containers don't need to wait on auth or the
+    // history fetch - reveal the shell immediately (#historyGrid keeps its
+    // static skeleton until loadWatchHistory() replaces it) instead of
+    // holding the whole page behind #loading until both finish.
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
     await checkAuth();
 
     setupEventListeners();
@@ -29,9 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser) {
         await loadWatchHistory();
     }
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
 
     console.log('✅ Watch History fully initialized');
 });

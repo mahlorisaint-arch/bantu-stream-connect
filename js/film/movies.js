@@ -822,10 +822,20 @@
   }
 
   async function refreshBrowseContent() {
-    await loadHero();
-    await loadTop10();
-    await loadMoodRows();
-    await loadContinueWatching();
+    // loadTop10()/loadMoodRows() exclude whatever loadHero()/loadTop10()
+    // already featured (featuredContentId/topContentIds) so the same title
+    // doesn't show up in multiple rows - that chain has to stay sequential.
+    // loadContinueWatching() is unrelated (keyed on window.currentUser and
+    // watch_progress, no shared exclusion state), so it can run alongside
+    // the chain instead of waiting for it.
+    await Promise.all([
+      (async () => {
+        await loadHero();
+        await loadTop10();
+        await loadMoodRows();
+      })(),
+      loadContinueWatching()
+    ]);
   }
 
   function setupFilterChips() {
@@ -906,25 +916,27 @@
     const loading = document.getElementById('loading');
     const app = document.getElementById('app');
 
+    // Show app shell immediately with skeletons. Previously #loading (a
+    // full-screen overlay) stayed up until after refreshBrowseContent()
+    // resolved, so revealing #app here didn't actually show anything - the
+    // overlay was still covering it the whole time. Hide it here too, and
+    // don't block the reveal on initSharedComponents() (header/sidebar
+    // profile info can populate a moment later; it doesn't need to gate
+    // the shell being visible at all).
+    if (loading) loading.style.display = 'none';
+    if (app) app.style.display = 'block';
+    if (window.initSharedComponents) {
+      window.initSharedComponents();
+    }
+
     try {
-      if (window.initSharedComponents) {
-        await window.initSharedComponents();
-      }
-
-      // Show app shell immediately with skeletons
-      if (app) app.style.display = 'block';
-
       await refreshBrowseContent();
 
       setupFilterChips();
 
-      if (loading) loading.style.display = 'none';
-
       console.log('✅ Movies browse screen initialized with real data');
     } catch (e) {
       console.error('Initialization error:', e);
-      if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
     }
   }
 

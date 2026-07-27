@@ -192,14 +192,18 @@
             <!-- Stats Row -->
             <section class="dashboard-section">
                 <div class="stats-row">
+                    <!-- Stat values start as shaped skeleton bars (real numbers look
+                         wrong here - "0" reads as "you have zero uploads" rather than
+                         "still loading"). updateStats() overwrites textContent with
+                         the real formatted number once loadDashboardData() resolves. -->
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                        <div id="totalUploads" class="stat-value">0</div>
+                        <div id="totalUploads" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
                         <div class="stat-label">Uploads</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-eye"></i></div>
-                        <div id="totalViews" class="stat-value">0</div>
+                        <div id="totalViews" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
                         <div class="stat-label">Total Views</div>
                     </div>
                     <!-- Earnings stat hidden for now — no real payout flow exists yet
@@ -211,7 +215,7 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div id="totalConnectors" class="stat-value">0</div>
+                        <div id="totalConnectors" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
                         <div class="stat-label">Connectors</div>
                     </div>
                 </div>
@@ -241,8 +245,12 @@
                         </svg>
                     </a>
                 </div>
+                <!-- Static shaped skeleton, visible the instant HTML parses -
+                     updateUploads() replaces this innerHTML once
+                     loadDashboardData() resolves. -->
                 <div id="uploadsContent" class="uploads-grid">
-                    <!-- Content will be loaded here -->
+                    <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+                    <div class="skel-card skel-shimmer"></div>
                 </div>
             </section>
 

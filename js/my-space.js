@@ -23,6 +23,13 @@ let currentUser = null;
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ DOM loaded, starting My Space initialization...');
 
+    // Header/sidebar/tab shell doesn't need to wait on auth or any of the
+    // four (already-parallel) section fetches below - reveal it immediately
+    // instead of holding the whole page behind #loading until everything
+    // finishes.
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
     await checkAuth();
 
     if (currentUser) {
@@ -34,9 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadFollowing()
         ]);
     }
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
 
     console.log('✅ My Space fully initialized');
 });

@@ -1527,29 +1527,30 @@ async function loadCriticalContentData(contentId) {
         } catch(e) { console.warn('Cache parse error:', e); }
     }
     
-    const profileData = await fetchContentProfileDetails(contentId);
-    if (!profileData) {
-        await loadContentFromURLLegacy();
-        return;
-    }
-    
-    let watchProgress = null;
-    if (window.currentUserId) {
-        const { data: progressData } = await window.supabaseClient
-            .from('watch_progress')
-            .select('last_position, is_completed')
-            .eq('user_id', window.currentUserId)
-            .eq('content_id', contentId)
-            .maybeSingle();
-        watchProgress = progressData;
-    }
-    
-    const { data: streamingData } = await window.supabaseClient
+    // watch_progress and the streaming-fields query only need contentId/
+    // currentUserId, not profileData - fetch all three concurrently instead
+    // of one after another.
+    const watchProgressQuery = window.currentUserId
+        ? window.supabaseClient.from('watch_progress').select('last_position, is_completed').eq('user_id', window.currentUserId).eq('content_id', contentId).maybeSingle()
+        : Promise.resolve({ data: null });
+
+    const streamingDataQuery = window.supabaseClient
         .from('Content')
         .select('quality_profiles, hls_manifest_url, data_saver_url')
         .eq('id', contentId)
         .maybeSingle();
-    
+
+    const [profileData, { data: watchProgress }, { data: streamingData }] = await Promise.all([
+        fetchContentProfileDetails(contentId),
+        watchProgressQuery,
+        streamingDataQuery
+    ]);
+
+    if (!profileData) {
+        await loadContentFromURLLegacy();
+        return;
+    }
+
     const contentObj = {
         id: profileData.id,
         title: profileData.title || 'Untitled',

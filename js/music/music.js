@@ -1465,8 +1465,16 @@
 
   // ===== INITIALIZE =====
   async function initialize() {
+    // Header/sidebar/section containers don't need to wait on auth, the
+    // quiz, or any of the five section fetches below - reveal the shell
+    // immediately instead of holding #app hidden behind #loading until
+    // everything (including the post-load streak/celebration steps)
+    // finishes. Each of the five loadX() calls already runs concurrently
+    // via Promise.all and updates its own section directly.
     const loading = document.getElementById('loading');
     const app = document.getElementById('app');
+    if (loading) loading.style.display = 'none';
+    if (app) app.style.display = 'block';
 
     try {
       await checkAuth();
@@ -1489,21 +1497,16 @@
       // Render Sonic DNA
       renderSonicDNA();
       createPortalParticles();
-      
+
       // Compute streak (SECTION 4 FIX)
       await computeAndRenderStreak();
 
       // Setup event listeners
       setupEventListeners();
 
-      if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
-
       console.log('✅ Music discovery page initialized');
     } catch (e) {
       console.error('Initialization error:', e);
-      if (loading) loading.style.display = 'none';
-      if (app) app.style.display = 'block';
     }
   }
 

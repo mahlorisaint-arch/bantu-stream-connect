@@ -202,19 +202,23 @@
 <!-- Watch History Section -->
 <div class="profile-content-section" id="profile-history-section">
 <h3 class="content-section-title"><i class="fas fa-history"></i> Watch History</h3>
-<div class="horizontal-scroll" id="profile-history"></div>
+<!-- Static shaped skeletons, visible the instant HTML parses - each
+     loadX() function replaces its own container's innerHTML independently
+     once its own fetch resolves (the three run concurrently, not one
+     after another). -->
+<div class="horizontal-scroll" id="profile-history"><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div></div>
 </div>
 
 <!-- User Playlists Section -->
 <div class="profile-content-section" id="profile-playlists-section">
 <h3 class="content-section-title"><i class="fas fa-list"></i> My Playlists</h3>
-<div class="horizontal-scroll" id="profile-playlists"></div>
+<div class="horizontal-scroll" id="profile-playlists"><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div></div>
 </div>
 
 <!-- Favorite Content Section -->
 <div class="profile-content-section" id="profile-favorites-section">
 <h3 class="content-section-title"><i class="fas fa-heart"></i> Favorite Content</h3>
-<div class="horizontal-scroll" id="profile-favorites"></div>
+<div class="horizontal-scroll" id="profile-favorites"><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div></div>
 </div>
 
 </main>
@@ -1182,33 +1186,35 @@ window.bantuSupabase = window.supabaseClient;
 
     // ===== INITIALIZE =====
     async function initializeManageProfiles() {
-        try {
-            document.getElementById('loading').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
+        // Header/sidebar/section shells don't need to wait on auth or any
+        // of the four independent section fetches below - reveal them
+        // immediately instead of holding the whole page behind #loading
+        // until everything finishes.
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
 
+        try {
             await checkAuth();
             if (!window.currentUser) return;
 
-            await loadUserProfiles();
-            await loadWatchHistory();
-            await loadUserPlaylists();
-            await loadFavoriteContent();
+            // loadUserProfiles/loadWatchHistory/loadUserPlaylists/
+            // loadFavoriteContent only depend on window.currentUser (already
+            // resolved above) and each render into their own separate
+            // container - none of them depend on each other's results, so
+            // run them concurrently instead of one after another.
+            await Promise.all([
+                loadUserProfiles(),
+                loadWatchHistory(),
+                loadUserPlaylists(),
+                loadFavoriteContent()
+            ]);
             setupEventListeners();
-
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            }, 500);
 
             console.log('✅ My Profile initialized with Cloudflare R2 upload');
 
         } catch (error) {
             console.error('❌ Error initializing my profile:', error);
             showToast('Failed to load profile', 'error');
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            }, 1000);
         }
     }
 

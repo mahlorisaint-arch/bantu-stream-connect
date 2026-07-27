@@ -161,7 +161,13 @@
 
     <div id="continue-watching-container" style="display: none;"></div>
 
-    <div id="trending-sections"></div>
+    <!-- Static shaped skeleton, visible the instant HTML parses - loadContent()
+         replaces this innerHTML once fetchContent() resolves. -->
+    <div id="trending-sections"><div class="content-grid">
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+    </div></div>
 
     <div id="shorts-section" class="shorts-section section">
         <div class="section-header">
@@ -371,34 +377,40 @@ function renderShorts(items) {
 function attachCardListeners() { document.querySelectorAll('[data-content-id]').forEach(card=>card.addEventListener('click',()=>{ window.location.href=`content-detail.html?id=${card.dataset.contentId}`; })); }
 
 async function loadContent() {
-    const contentData = await fetchContent(0, 80, currentFilter);
-    allContentData = contentData;
+    // Trending sections and Continue Watching are independent (the latter
+    // only needs currentUser, not allContentData) - fire both immediately
+    // instead of making Continue Watching wait for the whole trending grid
+    // to fetch and render first, and let each render the moment its own
+    // data resolves rather than blocking on the other.
+    fetchContent(0, 80, currentFilter).then(contentData => {
+        allContentData = contentData;
 
-    const featured = [...contentData].sort((a,b)=>(b.real_momentum||b.real_views||0)-(a.real_momentum||a.real_views||0))[0];
-    const shorts = contentData.filter(c => (c.duration||0)<60 || c.content_format==='short').slice(0,15);
-    const communityGems = [...contentData].sort((a,b)=>((b.real_momentum||0)+(b.real_views||0)+(b.real_likes||0)*2)-((a.real_momentum||0)+(a.real_views||0)+(a.real_likes||0)*2)).slice(0,12);
+        const featured = [...contentData].sort((a,b)=>(b.real_momentum||b.real_views||0)-(a.real_momentum||a.real_views||0))[0];
+        const shorts = contentData.filter(c => (c.duration||0)<60 || c.content_format==='short').slice(0,15);
+        const communityGems = [...contentData].sort((a,b)=>((b.real_momentum||0)+(b.real_views||0)+(b.real_likes||0)*2)-((a.real_momentum||0)+(a.real_views||0)+(a.real_likes||0)*2)).slice(0,12);
 
-    const shortsContainer = document.getElementById('shorts-scroll');
-    if (shortsContainer) shortsContainer.innerHTML = renderShorts(shorts);
+        const shortsContainer = document.getElementById('shorts-scroll');
+        if (shortsContainer) shortsContainer.innerHTML = renderShorts(shorts);
 
-    let html = '';
-    if (featured) {
-        // Audio content gets "Listen Now" instead of "Watch Now" — same redirect either way.
-        const watchLabel = featured.media_type === 'audio' ? 'LISTEN NOW' : 'WATCH NOW';
-        html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div><div class="featured-trend-card" data-content-id="${featured.id}">${featured.is_live ? '<span class="live-badge"><i class="fas fa-circle"></i> LIVE</span>' : ''}<div class="featured-bg" style="background-image:url('${buildThumbnailUrl(featured.thumbnail_url)}')"></div><div class="featured-overlay"><h2 class="featured-title">${escapeHtml(featured.title)}</h2><div class="featured-creator">@${escapeHtml(featured.user_profiles?.username||'Creator')} · ${formatTimeAgo(featured.created_at)}</div><div class="featured-stats"><span><i class="fas fa-eye"></i> ${formatNumber(featured.real_views)} views</span></div><button class="watch-now-btn">${watchLabel} <i class="fas fa-play"></i></button></div></div></section>`;
-    }
-    if (communityGems.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2></div><div class="content-grid">${renderCards(communityGems)}</div></section>`;
+        let html = '';
+        if (featured) {
+            // Audio content gets "Listen Now" instead of "Watch Now" — same redirect either way.
+            const watchLabel = featured.media_type === 'audio' ? 'LISTEN NOW' : 'WATCH NOW';
+            html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div><div class="featured-trend-card" data-content-id="${featured.id}">${featured.is_live ? '<span class="live-badge"><i class="fas fa-circle"></i> LIVE</span>' : ''}<div class="featured-bg" style="background-image:url('${buildThumbnailUrl(featured.thumbnail_url)}')"></div><div class="featured-overlay"><h2 class="featured-title">${escapeHtml(featured.title)}</h2><div class="featured-creator">@${escapeHtml(featured.user_profiles?.username||'Creator')} · ${formatTimeAgo(featured.created_at)}</div><div class="featured-stats"><span><i class="fas fa-eye"></i> ${formatNumber(featured.real_views)} views</span></div><button class="watch-now-btn">${watchLabel} <i class="fas fa-play"></i></button></div></div></section>`;
+        }
+        if (communityGems.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2></div><div class="content-grid">${renderCards(communityGems)}</div></section>`;
 
-    document.getElementById('trending-sections').innerHTML = html;
-    attachCardListeners();
+        document.getElementById('trending-sections').innerHTML = html;
+        attachCardListeners();
+    });
 
-    const continueItems = await loadContinueWatching();
-    if (continueItems.length) {
+    loadContinueWatching().then(continueItems => {
+        if (!continueItems.length) return;
         const item = continueItems[0];
         const percent = Math.min(100, (item.last_position/(item.Content?.duration||1))*100);
         document.getElementById('continue-watching-container').innerHTML = `<div class="continue-watching-bar" onclick="window.location.href='content-detail.html?id=${item.Content.id}'"><img class="continue-thumbnail" src="${buildThumbnailUrl(item.Content.thumbnail_url)}"><div class="progress-container"><strong>Continue: ${escapeHtml(item.Content.title)}</strong><div class="progress-track"><div class="progress-fill" style="width:${percent}%"></div></div><span style="font-size:0.8rem">${Math.floor(percent)}% complete</span></div><button class="watch-now-btn" style="padding:8px 20px" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${item.Content.id}'">RESUME</button></div>`;
         document.getElementById('continue-watching-container').style.display = 'block';
-    }
+    });
 }
 
 // ==========================================

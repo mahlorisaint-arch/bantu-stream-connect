@@ -234,7 +234,13 @@
       <h2 class="section-title"><i class="fas fa-history"></i> Your Watch History</h2>
       <span id="historyCount" class="history-count">0 items</span>
     </div>
-    <div class="history-grid" id="historyGrid"></div>
+    <!-- Static shaped skeleton, visible the instant HTML parses -
+         loadWatchHistory() replaces this innerHTML once its fetch resolves. -->
+    <div class="history-grid" id="historyGrid">
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+    </div>
   </section>
 
   <!-- Empty State -->

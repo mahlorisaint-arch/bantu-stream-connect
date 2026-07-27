@@ -37,15 +37,20 @@ const NOTIFICATION_TYPES = ['like', 'comment', 'follow', 'collab_request', 'syst
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ DOM loaded, starting Settings initialization...');
 
+    // Header/sidebar/form section shells don't need to wait on auth or the
+    // settings fetch - reveal them immediately instead of holding the whole
+    // page behind #loading until both finish. (loadSettings() itself is
+    // already a single query for every preference field, not several
+    // sequential ones, so there's no fetch-level parallelization to add here.)
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
     await checkAuth();
 
     if (currentUser) {
         await loadSettings();
         setupEventListeners();
     }
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
 
     console.log('✅ Settings fully initialized');
 });

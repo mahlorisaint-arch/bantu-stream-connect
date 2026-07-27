@@ -160,6 +160,38 @@ html.theme-light .loading-screen { background: var(--deep-black); }
 html.theme-high-contrast .spinner { border-top-color: #00E5FF; }
 
 /* ============================================ */
+/* SKELETON SHIMMER SYSTEM - canonical, shared version of the shimmer
+   pattern that used to only live in css/film/movies.css (.skel-shimmer /
+   @keyframes shimmer). Ported here so every screen can use the same
+   shimmer + a common set of shaped skeleton primitives instead of each
+   page inventing its own (or falling back to a generic gray box). Compose
+   these with a section's own real layout classes - e.g. a card skeleton
+   is .skel-shimmer plus the real card's own width/aspect-ratio/radius. */
+/* ============================================ */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skel-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 37%, rgba(255,255,255,0.04) 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+html.theme-light .skel-shimmer {
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.09) 37%, rgba(0,0,0,0.04) 63%);
+  background-size: 800px 100%;
+}
+
+/* Shared shape primitives - width/height overridden per use, these just
+   set the base shape (rectangle/circle/pill) and radius. */
+.skel-card { border-radius: 8px; aspect-ratio: 16/9; }
+.skel-avatar { border-radius: 50%; }
+.skel-line { height: 14px; border-radius: 4px; }
+.skel-line.skel-line-title { height: 20px; border-radius: 5px; }
+.skel-pill { border-radius: 999px; }
+.skel-stat-number { height: 28px; width: 70px; border-radius: 6px; }
+
+/* ============================================ */
 /* TOAST NOTIFICATIONS */
 /* ============================================ */
 #toast-container {

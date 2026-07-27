@@ -390,18 +390,23 @@ async function checkAuthentication() {
 // INITIALIZATION - SKELETON FIRST THEN LOAD
 // ============================================
 async function initMusicUploadExtensions() {
-    await loadGenresForUpload();
-    await loadTagsForUpload();
+    // Independent queries (genres vs tags), different dropdown/chip targets -
+    // fetch both at once instead of one after another.
+    await Promise.all([loadGenresForUpload(), loadTagsForUpload()]);
     setupContentFormatToggle();
 }
 
 async function initialize() {
     console.log('🚀 Initializing Creator Upload...');
-    
-    // Show skeleton/loading state
-    loadingScreen.style.display = 'flex';
-    app.style.display = 'none';
-    
+
+    // Header/sidebar/upload form don't need to wait on the Supabase client,
+    // auth check, or extension setup below - reveal them immediately
+    // instead of holding #app hidden behind #loading until all of it
+    // finishes. The form is mostly empty inputs the creator fills in
+    // themselves, not data-driven content that needs to be ready first.
+    loadingScreen.style.display = 'none';
+    app.style.display = 'block';
+
     try {
         // STEP 1: Get Supabase client first
         const client = await getSupabaseClient();
@@ -539,10 +544,6 @@ async function initialize() {
             showToast('Some features may not work properly. Please refresh the page.', 'warning');
         }
     }
-    
-    // Hide loading screen and show app
-    loadingScreen.style.display = 'none';
-    app.style.display = 'block';
 }
 
 // ============================================
