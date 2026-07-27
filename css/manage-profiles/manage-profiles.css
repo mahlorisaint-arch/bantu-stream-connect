@@ -4,6 +4,8 @@
    theme-selector/back-to-top all come from shared-components.css.
    ========================================================================== */
 
+body { background: #000000; }
+
 .container { max-width: 1200px; margin: 0 auto; padding: 24px; padding-bottom: 100px; }
 
 /* ===== PAGE HEADER ===== */

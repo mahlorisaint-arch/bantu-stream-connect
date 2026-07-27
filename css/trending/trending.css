@@ -29,6 +29,7 @@
    page rubber-band/pan horizontally even though body's own overflow is
    clipped. Belt-and-suspenders fix scoped to this page. */
 html, body { overflow-x: hidden; max-width: 100%; }
+body { background: #000000; }
 
 .trending-main { max-width: 1600px; margin: 0 auto; padding: 20px 20px 120px; overflow-x: hidden; }
 

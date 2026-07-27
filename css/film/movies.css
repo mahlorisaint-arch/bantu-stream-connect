@@ -9,6 +9,8 @@
   --brand-cyan-core: var(--bantu-blue);
 }
 
+body { background: #000000; }
+
 .movies-main { max-width: 1600px; margin: 0 auto; padding-bottom: 120px; }
 
 /* ===== HERO SECTION ===== */

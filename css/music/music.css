@@ -17,6 +17,8 @@
   --portal-glow-strong: rgba(0, 229, 255, 0.4);
 }
 
+body { background: #000000; }
+
 /* ===== MAIN LAYOUT ===== */
 .music-main {
   max-width: 1440px;

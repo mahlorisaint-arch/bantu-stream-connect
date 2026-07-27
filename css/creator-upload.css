@@ -6,6 +6,8 @@
 /* :root theme vars, global reset, body, loading-screen/spinner, header/logo
    all now come from shared-components.css (already loaded on this page). */
 
+body { background: #000000; }
+
 /* Upload Card */
 .upload-card {
 background: var(--card-bg);

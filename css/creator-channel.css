@@ -111,7 +111,7 @@ background: #000000;
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
 font-family: 'Inter', sans-serif;
-background: var(--deep-black);
+background: #000000;
 color: var(--soft-white);
 min-height: 100vh;
 overflow-x: hidden !important;
@@ -227,21 +227,6 @@ PLAYLIST BUILDER STYLES
 /* ============================================
 LOADING SCREEN — now owned by shared-components.css
 ============================================ */
-/* ============================================
-ANIMATED BACKGROUND - FIXED: Added pointer-events: none
-============================================ */
-.animated-bg {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden;
-pointer-events: none; /* CRITICAL FIX: Allows clicks to pass through to UI */
-}
-.glow-cycle {
-position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.1;
-animation: float 8s infinite ease-in-out;
-}
-.glow-1 { width: 400px; height: 400px; background: #00E5FF; top: 10%; left: 5%; }
-.glow-2 { width: 300px; height: 300px; background: #00E5FF; top: 60%; right: 10%; animation-delay: 2s; }
-.glow-3 { width: 350px; height: 350px; background: #00E5FF; bottom: 10%; left: 20%; animation-delay: 4s; }
-@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.05); } }
 /* ============================================
 SIDEBAR MENU & HEADER — now owned by shared-components.css
 (sectioned sidebar, glass header, profile dropdown, rsa-badge, etc.)
