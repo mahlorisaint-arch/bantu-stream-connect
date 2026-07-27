@@ -12,6 +12,23 @@
   window.currentUser = null;
   let currentFilter = 'all';
 
+  // ===== AUTH =====
+  // Without this, window.currentUser stayed permanently null - Continue
+  // Watching always hid itself, Favorite always thought nobody was signed
+  // in, and toggleFavorite/checkFavoriteStatus never had a real user id to
+  // work with, even for an actually-logged-in user. Matches music.js's
+  // real, working checkAuth()/onAuthStateChange pattern.
+  async function checkAuth() {
+    try {
+      const { data } = await supabase.auth.getSession();
+      window.currentUser = data?.session?.user || null;
+      return window.currentUser;
+    } catch (e) {
+      console.error('Auth error:', e);
+      return null;
+    }
+  }
+
   // Hover-preview-clip logic (getPreviewUrl/attachHoverPreview/etc.) now
   // lives in js/shared/preview-clips.js (window.BSCPreviewClips), shared
   // with the home feed instead of duplicated here.
@@ -569,7 +586,11 @@
 
   window.toggleFavorite = async function(contentId, btnEl) {
     if (!window.currentUser) {
-      window.openAuthModal?.();
+      // window.openAuthModal never existed anywhere in the codebase - this
+      // silently did nothing, making the button look completely dead.
+      // Real, working pattern used everywhere else on the platform.
+      if (window.showToast) window.showToast('Please sign in to save favorites', 'warning');
+      window.location.href = `../login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
       return;
     }
     const isFav = btnEl.classList.contains('favorited');
@@ -888,6 +909,10 @@
     }
 
     try {
+      // Must resolve before refreshBrowseContent() - loadContinueWatching()
+      // (run inside it) reads window.currentUser synchronously at the top.
+      await checkAuth();
+
       await refreshBrowseContent();
 
       setupFilterChips();
@@ -897,6 +922,20 @@
       console.error('Initialization error:', e);
     }
   }
+
+  // ===== AUTH STATE CHANGES =====
+  // Keeps window.currentUser live if the session resolves after initial
+  // load or the user signs in/out while on this page (matches music.js's
+  // real, working checkAuth()/onAuthStateChange pattern).
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') {
+      window.currentUser = session.user;
+      loadContinueWatching();
+    } else if (event === 'SIGNED_OUT') {
+      window.currentUser = null;
+      setSectionVisibility('row-continue', false);
+    }
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
