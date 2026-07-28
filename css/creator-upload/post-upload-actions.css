@@ -54,3 +54,10 @@ background-color: #f00; animation: fall linear forwards;
 z-index: 9999;
 }
 @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+@media (max-width: 480px) {
+.state-screen { padding: 24px 14px; }
+.success-icon { width: 56px; height: 56px; font-size: 26px; margin-bottom: 14px; }
+.state-title { font-size: 18px; margin-bottom: 10px; }
+.state-message { font-size: 13px; margin-bottom: 20px; }
+}
