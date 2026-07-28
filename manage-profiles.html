@@ -199,26 +199,31 @@
 </div>
 </div>
 
-<!-- Watch History Section -->
-<div class="profile-content-section" id="profile-history-section">
-<h3 class="content-section-title"><i class="fas fa-history"></i> Watch History</h3>
+<!-- Content tabs (History/Playlists/Favorites) — same glass-pill tab
+     pattern as creator-dashboard.html/my-space.html. -->
+<div class="glass-tabs" id="profileContentTabs" role="tablist">
+  <button class="glass-tab active" data-tab="history" role="tab" aria-selected="true">Watch History</button>
+  <button class="glass-tab" data-tab="playlists" role="tab" aria-selected="false">My Playlists</button>
+  <button class="glass-tab" data-tab="favorites" role="tab" aria-selected="false">Favorites</button>
+</div>
+
+<!-- Watch History Tab -->
+<div class="profile-tab-panel" data-panel="history">
 <!-- Static shaped skeletons, visible the instant HTML parses - each
      loadX() function replaces its own container's innerHTML independently
      once its own fetch resolves (the three run concurrently, not one
      after another). -->
-<div class="horizontal-scroll" id="profile-history"><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div></div>
+<div class="horizontal-scroll" id="profile-history"><div class="skel-card skel-shimmer" style="min-width:160px;"></div><div class="skel-card skel-shimmer" style="min-width:160px;"></div><div class="skel-card skel-shimmer" style="min-width:160px;"></div></div>
 </div>
 
-<!-- User Playlists Section -->
-<div class="profile-content-section" id="profile-playlists-section">
-<h3 class="content-section-title"><i class="fas fa-list"></i> My Playlists</h3>
-<div class="horizontal-scroll" id="profile-playlists"><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div></div>
+<!-- My Playlists Tab -->
+<div class="profile-tab-panel" data-panel="playlists" hidden>
+<div class="horizontal-scroll" id="profile-playlists"><div class="skel-card skel-shimmer" style="min-width:160px;"></div><div class="skel-card skel-shimmer" style="min-width:160px;"></div><div class="skel-card skel-shimmer" style="min-width:160px;"></div></div>
 </div>
 
-<!-- Favorite Content Section -->
-<div class="profile-content-section" id="profile-favorites-section">
-<h3 class="content-section-title"><i class="fas fa-heart"></i> Favorite Content</h3>
-<div class="horizontal-scroll" id="profile-favorites"><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div><div class="skel-card skel-shimmer" style="min-width:200px;"></div></div>
+<!-- Favorites Tab -->
+<div class="profile-tab-panel" data-panel="favorites" hidden>
+<div class="horizontal-scroll" id="profile-favorites"><div class="skel-card skel-shimmer" style="min-width:160px;"></div><div class="skel-card skel-shimmer" style="min-width:160px;"></div><div class="skel-card skel-shimmer" style="min-width:160px;"></div></div>
 </div>
 
 </main>
@@ -999,29 +1004,30 @@ window.bantuSupabase = window.supabaseClient;
         if (!container) return;
 
         if (history.length === 0) {
-            container.innerHTML = '<p style="color:var(--slate-grey);">No watch history yet</p>';
+            container.innerHTML = `<div class="empty-state-small"><i class="fas fa-history"></i><p>No watch history yet</p></div>`;
             return;
         }
 
         container.innerHTML = history.map(item => {
             const content = item.Content;
-            const thumbnail = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+            const title = escapeHtml(content?.title || 'Unknown');
+            const thumbnail = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : '';
             const progress = item.progress || 0;
 
             return `
-                <div class="content-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
-                    <div class="content-thumbnail">
-                        <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
+                <div class="uc-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
+                    <div class="uc-thumb">
+                        ${thumbnail
+                            ? `<img src="${thumbnail}" alt="${title}" loading="lazy" onerror="this.parentElement.querySelector('img').remove(); this.parentElement.insertAdjacentHTML('afterbegin', '<div class=\\'uc-thumb-placeholder\\'><i class=\\'fas fa-film\\'></i></div>')">`
+                            : `<div class="uc-thumb-placeholder"><i class="fas fa-film"></i></div>`
+                        }
+                        <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                         <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(0,0,0,0.5);">
                             <div style="width:${progress}%;height:100%;background:var(--warm-gold);"></div>
                         </div>
                     </div>
-                    <div class="content-info">
-                        <div class="content-title">${escapeHtml(content?.title || 'Unknown')}</div>
-                        <div class="content-meta">${formatDate(item.updated_at)}</div>
-                    </div>
+                    <h3 class="uc-title" title="${title}">${title}</h3>
+                    <div class="uc-meta">${formatDate(item.updated_at)}</div>
                 </div>
             `;
         }).join('');
@@ -1034,48 +1040,80 @@ window.bantuSupabase = window.supabaseClient;
 
             const { data: playlists, error } = await supabase
                 .from('playlists')
-                .select('*')
+                .select('id, name')
                 .eq('user_id', window.currentUser.id)
                 .order('updated_at', { ascending: false })
                 .limit(10);
 
             if (error) {
                 console.error('Playlists error:', error);
-                document.getElementById('profile-playlists').innerHTML = '<p style="color:var(--slate-grey);">No playlists yet</p>';
+                document.getElementById('profile-playlists').innerHTML = `<div class="empty-state-small"><i class="fas fa-list"></i><p>No playlists yet</p></div>`;
                 return;
             }
 
-            renderUserPlaylists(playlists || []);
+            // playlists has no video_count column - real per-item counts and
+            // thumbnails come from playlist_items (same batch pattern
+            // js/my-space.js's loadPlaylists() uses), not a fabricated stock
+            // photo (this used to always show the same hardcoded Unsplash
+            // image and an always-0 count regardless of the real playlist).
+            const playlistIds = (playlists || []).map(p => p.id);
+            let counts = {}, firstContentId = {}, thumbs = {};
+            if (playlistIds.length) {
+                const { data: items } = await supabase
+                    .from('playlist_items')
+                    .select('playlist_id, content_id, position')
+                    .in('playlist_id', playlistIds)
+                    .order('position', { ascending: true });
+
+                (items || []).forEach(row => {
+                    counts[row.playlist_id] = (counts[row.playlist_id] || 0) + 1;
+                    if (!(row.playlist_id in firstContentId)) firstContentId[row.playlist_id] = row.content_id;
+                });
+
+                const firstIds = [...new Set(Object.values(firstContentId))];
+                if (firstIds.length) {
+                    const { data: contentRows } = await supabase
+                        .from('Content')
+                        .select('id, thumbnail_url')
+                        .in('id', firstIds);
+                    (contentRows || []).forEach(row => { thumbs[row.id] = row.thumbnail_url; });
+                }
+            }
+
+            renderUserPlaylists(playlists || [], counts, firstContentId, thumbs);
         } catch (error) {
             console.error('Error loading playlists:', error);
-            document.getElementById('profile-playlists').innerHTML = '<p style="color:var(--slate-grey);">No playlists yet</p>';
+            document.getElementById('profile-playlists').innerHTML = `<div class="empty-state-small"><i class="fas fa-list"></i><p>No playlists yet</p></div>`;
         }
     }
 
-    function renderUserPlaylists(playlists) {
+    function renderUserPlaylists(playlists, counts, firstContentId, thumbs) {
         const container = document.getElementById('profile-playlists');
         if (!container) return;
 
         if (playlists.length === 0) {
-            container.innerHTML = '<p style="color:var(--slate-grey);">No playlists yet</p>';
+            container.innerHTML = `<div class="empty-state-small"><i class="fas fa-list"></i><p>No playlists yet</p></div>`;
             return;
         }
 
         container.innerHTML = playlists.map(playlist => {
-            const thumbnail = 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop';
+            const count = counts[playlist.id] || 0;
+            const thumbContentId = firstContentId[playlist.id];
+            const rawThumb = thumbContentId ? thumbs[thumbContentId] : null;
+            const thumbnail = rawThumb ? fixMediaUrl(rawThumb) : '';
+            const title = escapeHtml(playlist.name || 'Untitled Playlist');
 
             return `
-                <div class="content-card" onclick="window.location.href='playlist.html?id=${playlist.id}'">
-                    <div class="content-thumbnail">
-                        <img src="${thumbnail}" alt="${escapeHtml(playlist.name || '')}" loading="lazy">
-                        <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:white;padding:4px 10px;border-radius:20px;font-size:11px;">
-                            <i class="fas fa-list"></i> ${playlist.video_count || 0}
-                        </div>
+                <div class="uc-card" onclick="window.location.href='my-space.html'">
+                    <div class="uc-thumb">
+                        ${thumbnail
+                            ? `<img src="${thumbnail}" alt="${title}" loading="lazy">`
+                            : `<div class="uc-thumb-placeholder"><i class="fas fa-list"></i></div>`
+                        }
+                        <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                     </div>
-                    <div class="content-info">
-                        <div class="content-title">${escapeHtml(playlist.name || 'Untitled')}</div>
-                        <div class="content-meta">${playlist.video_count || 0} videos</div>
-                    </div>
+                    <h3 class="uc-title" title="${title}">${title}</h3>
+                    <div class="uc-meta">${count} item${count !== 1 ? 's' : ''}</div>
                 </div>
             `;
         }).join('');
@@ -1119,31 +1157,59 @@ window.bantuSupabase = window.supabaseClient;
         if (!container) return;
 
         if (favorites.length === 0) {
-            container.innerHTML = '<p style="color:var(--slate-grey);">No favorites yet</p>';
+            container.innerHTML = `<div class="empty-state-small"><i class="fas fa-heart"></i><p>No favorites yet</p></div>`;
             return;
         }
 
         container.innerHTML = favorites.map(fav => {
             const content = fav.Content;
-            const thumbnail = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+            const title = escapeHtml(content?.title || 'Unknown');
+            const thumbnail = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : '';
 
             return `
-                <div class="content-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
-                    <div class="content-thumbnail">
-                        <img src="${thumbnail}" alt="${escapeHtml(content?.title || '')}" loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';">
+                <div class="uc-card" onclick="window.location.href='content-detail.html?id=${content?.id}'">
+                    <div class="uc-thumb">
+                        ${thumbnail
+                            ? `<img src="${thumbnail}" alt="${title}" loading="lazy" onerror="this.parentElement.querySelector('img').remove(); this.parentElement.insertAdjacentHTML('afterbegin', '<div class=\\'uc-thumb-placeholder\\'><i class=\\'fas fa-film\\'></i></div>')">`
+                            : `<div class="uc-thumb-placeholder"><i class="fas fa-film"></i></div>`
+                        }
+                        <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                     </div>
-                    <div class="content-info">
-                        <div class="content-title">${escapeHtml(content?.title || 'Unknown')}</div>
-                        <div class="content-meta">${content?.media_type || 'video'}</div>
-                    </div>
+                    <h3 class="uc-title" title="${title}">${title}</h3>
+                    <div class="uc-meta">${content?.media_type || 'video'}</div>
                 </div>
             `;
         }).join('');
     }
 
     // ===== EVENT LISTENERS =====
+    // Tabs — same in-page interaction pattern as my-space.js's setupTabs()/
+    // creator-dashboard.js's setupDashboardTabs().
+    function setupProfileContentTabs() {
+        const tabs = document.querySelectorAll('#profileContentTabs .glass-tab');
+        const panels = document.querySelectorAll('.profile-tab-panel');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.tab;
+
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                panels.forEach(panel => {
+                    panel.hidden = panel.dataset.panel !== target;
+                });
+            });
+        });
+    }
+
     function setupEventListeners() {
+        setupProfileContentTabs();
+
         document.getElementById('close-modal-btn')?.addEventListener('click', () => {
             document.getElementById('profile-modal').classList.remove('active');
         });

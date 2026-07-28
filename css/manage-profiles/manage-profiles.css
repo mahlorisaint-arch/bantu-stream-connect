@@ -114,16 +114,6 @@ input:checked + .toggle-slider { background-color: var(--warm-gold); }
 
 input:checked + .toggle-slider:before { transform: translateX(24px); }
 
-/* ===== Content Sections (Watch History / Playlists / Favorites rails) ===== */
-.profile-content-section {
-background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px;
-padding: 30px; margin-bottom: 40px; backdrop-filter: blur(10px);
-}
-
-.content-section-title {
-font-family: 'Orbitron', sans-serif; font-size: 20px; margin-bottom: 20px;
-color: var(--soft-white); display: flex; align-items: center; gap: 10px;
-}
 
 .horizontal-scroll {
 display: flex; gap: 15px; overflow-x: auto; padding: 10px 0;
@@ -136,22 +126,135 @@ scrollbar-width: thin; scrollbar-color: var(--warm-gold) var(--deep-navy);
 
 .horizontal-scroll::-webkit-scrollbar-thumb { background: var(--warm-gold); border-radius: 4px; }
 
-.content-card {
-min-width: 200px; background: var(--card-bg); border: 1px solid var(--card-border);
-border-radius: 15px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;
+/* ============================================
+   GLASS PILL TABS — same recipe as css/creator-dashboard.css's
+   .glass-tabs/.glass-tab (creator-channel-aligned design system).
+   ============================================ */
+.glass-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    margin-bottom: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.glass-tabs::-webkit-scrollbar { display: none; }
+.glass-tab {
+    flex-shrink: 0;
+    padding: 9px 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--slate-grey);
+    font-family: inherit;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+}
+.glass-tab:hover { color: var(--soft-white); }
+.glass-tab.active {
+    background: rgba(0, 229, 255, 0.12);
+    border-color: rgba(0, 229, 255, 0.4);
+    color: var(--bantu-blue);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+}
+.profile-tab-panel[hidden] { display: none !important; }
+@media (max-width: 767px) {
+    .glass-tabs { padding: 3px; gap: 4px; }
+    .glass-tab { padding: 7px 14px; font-size: var(--font-xs); }
 }
 
-.content-card:hover { transform: translateY(-5px); border-color: var(--warm-gold); }
+/* ============================================
+   CONTENT CARDS — same recipe as css/creator-channel.css's .upload-card,
+   in the horizontal-scroll variant creator-channel itself uses for preview
+   rows (.home-preview-row .upload-card { width: 160px }). Fixed-width
+   instead of a grid since these sit inside .horizontal-scroll rows.
+   ============================================ */
+.horizontal-scroll .uc-card {
+    width: 160px;
+    flex-shrink: 0;
+}
+.uc-card {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+.uc-card:hover { transform: translateY(-4px); }
+.uc-thumb {
+    position: relative;
+    background: var(--deep-navy);
+    border-radius: 8px;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 6px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+}
+.uc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.uc-thumb-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--slate-grey);
+}
+.uc-title {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 0 0 3px;
+    color: var(--soft-white);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.uc-meta { font-size: 11px; color: var(--slate-grey); }
 
-.content-thumbnail { width: 100%; height: 120px; background: var(--deep-navy); position: relative; }
+/* Play icon on card thumbnails — verbatim recipe from css/home-feed-ui.css
+   (the canonical source; same one trending_screen.html's content cards use):
+   transparent glassmorphic circle, cyan border, no solid fill. */
+.play-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.3s ease; z-index: 3;
+}
+.uc-card:hover .play-overlay { opacity: 1; }
+.play-icon {
+    width: 44px; height: 44px;
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #00E5FF; font-size: 18px;
+    transform: scale(0.8);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.uc-card:hover .play-icon { transform: scale(1); }
 
-.content-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
-
-.content-info { padding: 15px; }
-
-.content-title { font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--soft-white); }
-
-.content-meta { font-size: 12px; color: var(--slate-grey); }
+.empty-state-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 30px 20px;
+    color: var(--slate-grey);
+    text-align: center;
+}
+.empty-state-small i { font-size: 24px; opacity: 0.5; }
+.empty-state-small p { font-size: 13px; margin: 0; }
 
 /* ===== Modal (Edit Profile) ===== */
 .profile-modal {

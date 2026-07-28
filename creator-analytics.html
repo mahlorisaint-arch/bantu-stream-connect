@@ -19,14 +19,12 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- Base Styles — base.css/components.css are still needed here for the
-       Schedule Report modal (.modal-overlay/.modal-body/.modal-footer) and
-       generic .btn/.btn-primary/.btn-secondary buttons used throughout this
-       page; only .header/.logo/.spinner are superseded, and shared-
-       components.css (linked after) wins that cascade for the canonical
-       header/sidebar markup below. -->
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/components.css">
+  <!-- base.css/components.css removed - they redefined .header/.logo/
+       .icon-btn/.profile-btn (fighting shared-components.css's canonical
+       header for the cascade) for the sake of a couple of classes
+       (.modal-overlay/.btn/.container) that creator-analytics.css already
+       has its own real versions of (or, for .container, now does - see
+       above). -->
   <link rel="stylesheet" href="css/creator-analytics.css">
   <link rel="stylesheet" href="css/shared-components.css">
 

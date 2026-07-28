@@ -20,6 +20,20 @@
   --error-color: #ef4444;
 }
 
+/* Was only ever defined in the legacy css/base.css - the one class this
+   page actually needed from there. Ported so base.css/components.css can
+   be dropped entirely (they otherwise redefine .header/.logo/.icon-btn/
+   .profile-btn, fighting shared-components.css's canonical versions of the
+   same classes for the header). */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  position: relative;
+  z-index: 2;
+  padding-bottom: 100px;
+}
+
 /* ============================================
    ✅ ANALYTICS CONTROLS
    ============================================ */
@@ -32,31 +46,45 @@
   gap: 15px;
 }
 
+/* Glass pill tabs — same recipe as css/creator-dashboard.css's
+   .glass-tabs/.glass-tab (creator-channel-aligned design system). Kept as
+   .time-range-selector/.time-range-btn since creator-analytics-page.js
+   dispatches on those class names, just restyled to match. */
 .time-range-selector {
   display: flex;
-  gap: 8px;
-  background: var(--card-bg);
-  padding: 6px;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
+  gap: 6px;
+  padding: 4px;
+  background: var(--glass-bg, rgba(10, 12, 18, 0.6));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .time-range-btn {
-  padding: 8px 16px;
+  padding: 9px 18px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--slate-grey);
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
-.time-range-btn.active,
-.time-range-btn:hover {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  color: white;
+.time-range-btn:hover { color: var(--soft-white); }
+
+.time-range-btn.active {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: var(--bantu-blue);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+}
+
+@media (max-width: 767px) {
+  .time-range-selector { padding: 3px; gap: 4px; }
+  .time-range-btn { padding: 7px 14px; font-size: 11px; }
 }
 
 /* ============================================
@@ -338,27 +366,42 @@
   color: var(--warm-gold);
 }
 
+/* Glass pill tabs — same recipe as .time-range-selector/.glass-tab above. */
 .table-controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  padding: 4px;
+  background: var(--glass-bg, rgba(10, 12, 18, 0.6));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  width: fit-content;
 }
 
 .table-btn {
   padding: 8px 16px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: var(--slate-grey);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
-.table-btn.active,
-.table-btn:hover {
-  background: var(--bantu-blue);
-  color: white;
-  border-color: var(--bantu-blue);
+.table-btn:hover { color: var(--soft-white); }
+
+.table-btn.active {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: var(--bantu-blue);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+}
+
+@media (max-width: 767px) {
+  .table-controls { padding: 3px; gap: 4px; }
+  .table-btn { padding: 7px 14px; font-size: 11px; }
 }
 
 .table-container {

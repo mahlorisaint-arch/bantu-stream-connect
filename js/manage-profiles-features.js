@@ -775,7 +775,57 @@ function setupProfileContentSections() {
   if (window.currentProfile) {
     loadProfileFavorites();
     loadProfileWatchHistory();
+    loadProfilePlaylists();
   }
+  setupProfileContentTabs();
+}
+
+// ==========================================================================
+// TABS — same in-page interaction pattern as my-space.js's setupTabs()/
+// creator-dashboard.js's setupDashboardTabs().
+// ==========================================================================
+function setupProfileContentTabs() {
+  const tabs = document.querySelectorAll('#profileContentTabs .glass-tab');
+  const panels = document.querySelectorAll('.profile-tab-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+
+      tabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      panels.forEach(panel => {
+        panel.hidden = panel.dataset.panel !== target;
+      });
+    });
+  });
+}
+
+// Shared card renderer for the History/Favorites rails — same .uc-card
+// recipe as creator-channel.css's .upload-card, in the horizontal-scroll
+// (fixed 160px width) variant. Play icon is the canonical home-feed-ui.css
+// recipe, same as every other content card on the platform.
+function renderProfileContentCard(contentId, content, metaText) {
+  const title = escapeHtml(content?.title || 'Unknown');
+  const thumb = content?.thumbnail_url ? window.contentSupabase.fixMediaUrl(content.thumbnail_url) : '';
+  return `
+    <div class="uc-card" onclick="window.location.href='content-detail.html?id=${contentId}'">
+      <div class="uc-thumb">
+        ${thumb
+          ? `<img src="${thumb}" alt="${title}" onerror="this.parentElement.querySelector('img').remove(); this.parentElement.insertAdjacentHTML('afterbegin', '<div class=\\'uc-thumb-placeholder\\'><i class=\\'fas fa-film\\'></i></div>')">`
+          : `<div class="uc-thumb-placeholder"><i class="fas fa-film"></i></div>`
+        }
+        <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+      </div>
+      <h3 class="uc-title" title="${title}">${title}</h3>
+      <div class="uc-meta">${metaText}</div>
+    </div>
+  `;
 }
 
 // ============================================
@@ -784,16 +834,16 @@ function setupProfileContentSections() {
 async function loadProfileFavorites() {
   const container = document.getElementById('profile-favorites');
   if (!container || !window.currentProfile) return;
-  
+
   try {
     const { data, error } = await window.supabaseAuth
       .from('favorites')
       .select('*, content:content_id(*)')
       .eq('user_id', window.currentProfile.id)
       .limit(10);
-    
+
     if (error) throw error;
-    
+
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="empty-state-small">
@@ -803,43 +853,37 @@ async function loadProfileFavorites() {
       `;
       return;
     }
-    
-    container.innerHTML = data.map(item => `
-      <div class="content-thumbnail" onclick="window.location.href='watch.html?id=${item.content_id}'">
-        <div class="thumbnail-image">
-          ${item.content?.thumbnail_url
-            ? `<img src="${window.contentSupabase.fixMediaUrl(item.content.thumbnail_url)}" alt="${escapeHtml(item.content.title)}" style="width:100%;height:100%;object-fit:cover;">`
-            : `<i class="fas fa-film"></i>`
-          }
-        </div>
-        <div class="thumbnail-info">
-          <div class="thumbnail-title">${escapeHtml(item.content?.title || 'Unknown')}</div>
-          <div class="thumbnail-meta">Added ${formatTimeAgo(item.created_at)}</div>
-        </div>
-      </div>
-    `).join('');
+
+    container.innerHTML = data.map(item =>
+      renderProfileContentCard(item.content_id, item.content, `Added ${formatTimeAgo(item.created_at)}`)
+    ).join('');
   } catch (error) {
     console.error('Error loading favorites:', error);
   }
 }
 
 // ============================================
-// LOAD PROFILE WATCH HISTORY
+// LOAD PROFILE WATCH HISTORY — watch_progress is the real table (this used
+// to query a `watch_history` table that has never existed in this schema;
+// the query always failed silently and this section stayed on its loading
+// skeleton forever). Same table my-space.js's Continue Watching reads, just
+// without the is_completed filter, since "history" means everything
+// watched, not just in-progress items.
 // ============================================
 async function loadProfileWatchHistory() {
   const container = document.getElementById('profile-history');
   if (!container || !window.currentProfile) return;
-  
+
   try {
     const { data, error } = await window.supabaseAuth
-      .from('watch_history')
-      .select('*, content:content_id(*)')
+      .from('watch_progress')
+      .select('content_id, updated_at, content:content_id(*)')
       .eq('user_id', window.currentProfile.id)
-      .order('watched_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(10);
-    
+
     if (error) throw error;
-    
+
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="empty-state-small">
@@ -849,23 +893,90 @@ async function loadProfileWatchHistory() {
       `;
       return;
     }
-    
-    container.innerHTML = data.map(item => `
-      <div class="content-thumbnail" onclick="window.location.href='watch.html?id=${item.content_id}'">
-        <div class="thumbnail-image">
-          ${item.content?.thumbnail_url
-            ? `<img src="${window.contentSupabase.fixMediaUrl(item.content.thumbnail_url)}" alt="${escapeHtml(item.content.title)}" style="width:100%;height:100%;object-fit:cover;">`
-            : `<i class="fas fa-film"></i>`
-          }
-        </div>
-        <div class="thumbnail-info">
-          <div class="thumbnail-title">${escapeHtml(item.content?.title || 'Unknown')}</div>
-          <div class="thumbnail-meta">Watched ${formatTimeAgo(item.watched_at)}</div>
-        </div>
-      </div>
-    `).join('');
+
+    container.innerHTML = data.map(item =>
+      renderProfileContentCard(item.content_id, item.content, `Watched ${formatTimeAgo(item.updated_at)}`)
+    ).join('');
   } catch (error) {
     console.error('Error loading watch history:', error);
+  }
+}
+
+// ============================================
+// LOAD PROFILE PLAYLISTS — never actually wired up before (the container
+// existed in the HTML with a permanent loading skeleton, but nothing in
+// this file or manage-profiles.js ever queried or rendered into it). Same
+// real playlists/playlist_items pattern as my-space.js's loadPlaylists().
+// ============================================
+async function loadProfilePlaylists() {
+  const container = document.getElementById('profile-playlists');
+  if (!container || !window.currentProfile) return;
+
+  try {
+    const { data: playlists, error } = await window.supabaseAuth
+      .from('playlists')
+      .select('id, name, total_duration')
+      .eq('user_id', window.currentProfile.id)
+      .order('updated_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    if (!playlists || playlists.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state-small">
+          <i class="fas fa-list"></i>
+          <p>No playlists yet</p>
+        </div>
+      `;
+      return;
+    }
+
+    const playlistIds = playlists.map(p => p.id);
+    const { data: items } = await window.supabaseAuth
+      .from('playlist_items')
+      .select('playlist_id, content_id, position')
+      .in('playlist_id', playlistIds)
+      .order('position', { ascending: true });
+
+    const counts = {};
+    const firstContentId = {};
+    (items || []).forEach(row => {
+      counts[row.playlist_id] = (counts[row.playlist_id] || 0) + 1;
+      if (!(row.playlist_id in firstContentId)) firstContentId[row.playlist_id] = row.content_id;
+    });
+
+    const firstIds = [...new Set(Object.values(firstContentId))];
+    let thumbs = {};
+    if (firstIds.length) {
+      const { data: contentRows } = await window.supabaseAuth
+        .from('Content')
+        .select('id, thumbnail_url')
+        .in('id', firstIds);
+      (contentRows || []).forEach(row => { thumbs[row.id] = row.thumbnail_url; });
+    }
+
+    container.innerHTML = playlists.map(playlist => {
+      const count = counts[playlist.id] || 0;
+      const thumbContentId = firstContentId[playlist.id];
+      const thumbUrl = thumbContentId ? thumbs[thumbContentId] : null;
+      const title = escapeHtml(playlist.name || 'Untitled Playlist');
+      return `
+        <div class="uc-card" onclick="window.location.href='my-space.html'">
+          <div class="uc-thumb">
+            ${thumbUrl
+              ? `<img src="${window.contentSupabase.fixMediaUrl(thumbUrl)}" alt="${title}">`
+              : `<div class="uc-thumb-placeholder"><i class="fas fa-list"></i></div>`
+            }
+            <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+          </div>
+          <h3 class="uc-title" title="${title}">${title}</h3>
+          <div class="uc-meta">${count} item${count !== 1 ? 's' : ''}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Error loading playlists:', error);
   }
 }
 
