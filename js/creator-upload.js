@@ -577,7 +577,11 @@ window.captureCameraImage = function() {
 };
 
 window.viewContent = function() {
-    window.location.href = 'content-library.html';
+    if (window._lastContentId) {
+        window.location.href = `content-detail.html?id=${window._lastContentId}`;
+    } else {
+        window.location.href = 'content-library.html';
+    }
 };
 
 window.shareContent = function() {
@@ -602,6 +606,7 @@ window.uploadAnother = function() {
     selectedGenres = [];
     selectedSAGenres = [];
     movieTags = [];
+    window._lastContentId = null;
     if (typeof resetBatchState === 'function') resetBatchState();
 
     const fileInfo = document.getElementById('media-file-info');

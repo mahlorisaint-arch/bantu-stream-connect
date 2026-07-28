@@ -436,6 +436,7 @@ async function uploadContent(isDraft = false) {
 
             if (dbError) throw new Error(dbError.message);
 
+            window._lastContentId = newContent.id;
             processingState.classList.remove('active');
             successState.classList.add('active');
             triggerConfetti();

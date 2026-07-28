@@ -26,7 +26,11 @@ window.removeMediaFile = function() {
 
 window.openImagePicker = function() { document.getElementById('thumbnail-file-input').click(); };
 window.captureCameraImage = function() { document.getElementById('camera-file-input').click(); };
-window.viewContent = function() { window.location.href = 'content-library.html'; };
+// window.viewContent is defined in creator-upload.js (loaded after this
+// file, so its definition is the one that actually runs) - it redirects to
+// the specific content-detail.html?id=<just-uploaded id> instead of the
+// generic content-library.html this duplicate used to point to. Removed
+// here rather than left as a misleading, shadowed copy.
 window.shareContent = function() {
     if (navigator.share) {
         navigator.share({ title: 'Check out my content on Bantu Stream Connect!', url: window.location.origin });

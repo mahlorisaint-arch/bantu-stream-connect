@@ -447,6 +447,7 @@ async function runBatchUpload(isDraft) {
                     onProgress: (p) => updateRowProgress(row, p),
                     onSuccess: (content) => {
                         row.contentId = content.id;
+                        if (!window._lastContentId) window._lastContentId = content.id;
                         setRowStatus(row, content._linkWarning ? 'published-unlinked' : 'done', content._linkWarning || null);
                         resolve();
                     },
@@ -532,6 +533,7 @@ async function retryBatchRow(localId) {
         onProgress: (p) => updateRowProgress(row, p),
         onSuccess: (content) => {
             row.contentId = content.id;
+            if (!window._lastContentId) window._lastContentId = content.id;
             setRowStatus(row, content._linkWarning ? 'published-unlinked' : 'done', content._linkWarning || null);
             showToast(`"${row.title}" published`, 'success');
         },
