@@ -176,10 +176,22 @@ body { background: #000000; }
   text-transform: capitalize;
 }
 
-.playlist-delete-btn {
+.playlist-card-actions {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.playlist-card:hover .playlist-card-actions {
+  opacity: 1;
+}
+
+.playlist-edit-btn,
+.playlist-delete-btn {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -190,12 +202,13 @@ body { background: #000000; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
   transition: all 0.2s ease;
 }
 
-.playlist-card:hover .playlist-delete-btn {
-  opacity: 1;
+.playlist-edit-btn:hover {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #00E5FF;
 }
 
 .playlist-delete-btn:hover {

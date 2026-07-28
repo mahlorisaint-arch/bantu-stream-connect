@@ -411,6 +411,48 @@
   </div>
 </div>
 
+<!-- Edit Playlist Modal -->
+<div id="editPlaylistModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <div class="modal-icon">
+        <i class="fas fa-edit"></i>
+      </div>
+      <div class="modal-title" id="editPlaylistModalTitle">Edit Playlist</div>
+      <button class="modal-close" id="closeEditPlaylistModal">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="editPlaylistForm" class="edit-form">
+        <input type="hidden" id="editPlaylistId">
+
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" id="editPlaylistName" class="form-input" required maxlength="200">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="editPlaylistDescription" class="form-textarea" rows="4" maxlength="1000"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Visibility</label>
+          <select id="editPlaylistVisibility" class="form-select">
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="cancelEditPlaylist">Cancel</button>
+      <button class="save-btn" id="saveEditPlaylist">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- Search Modal -->
 <div id="search-modal" class="modal-overlay">
   <div style="width:90%;max-width:800px;background:var(--card-bg);border-radius:20px;padding:30px;backdrop-filter:blur(10px);">
@@ -537,7 +579,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const closeEditModal = document.getElementById('closeEditModal');
   const cancelEdit = document.getElementById('cancelEdit');
   const saveEdit = document.getElementById('saveEdit');
-  
+
+  const editPlaylistModal = document.getElementById('editPlaylistModal');
+  const closeEditPlaylistModal = document.getElementById('closeEditPlaylistModal');
+  const cancelEditPlaylist = document.getElementById('cancelEditPlaylist');
+  const saveEditPlaylist = document.getElementById('saveEditPlaylist');
+
   // Search Modal Elements
   const searchModal = document.getElementById('search-modal');
   const closeSearchBtn = document.getElementById('close-search-btn');
@@ -557,6 +604,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentDeleteType = 'content'; // 'content' | 'playlist'
   let currentInsightsContent = null;
   let currentEditContent = null;
+  let currentEditPlaylist = null;
   let isLoading = true;
   let notifications = [];
   let creatorAnalytics = null;
@@ -1079,9 +1127,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p class="playlist-card-title" title="${safeName}">${safeName}</p>
             <p class="playlist-card-meta">${escapeHtml(playlist.playlist_type || 'playlist')}</p>
           </div>
-          <button type="button" class="playlist-delete-btn" onclick="window.deletePlaylist('${playlist.id}', '${safeName.replace(/'/g, "\\'")}')" title="Delete playlist">
-            <i class="fas fa-trash"></i>
-          </button>
+          <div class="playlist-card-actions">
+            <button type="button" class="playlist-edit-btn" onclick="window.editPlaylist('${playlist.id}')" title="Edit playlist">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="playlist-delete-btn" onclick="window.deletePlaylist('${playlist.id}', '${safeName.replace(/'/g, "\\'")}')" title="Delete playlist">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         </div>
       `;
     }).join('');
@@ -1095,6 +1148,78 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('deleteModalTitle').textContent = 'Delete Playlist';
     document.getElementById('deleteModalNote').textContent = 'This action cannot be undone. The playlist and its item order will be permanently removed (the content itself stays on the platform).';
     deleteModal.style.display = 'flex';
+  }
+
+  // Opens the edit-playlist modal, prefilled from the already-loaded
+  // creatorPlaylists array (same id-lookup pattern as editContent()).
+  function editPlaylist(playlistId) {
+    const playlist = creatorPlaylists.find(p => String(p.id) === String(playlistId));
+    if (!playlist) return;
+
+    currentEditPlaylist = playlist;
+
+    document.getElementById('editPlaylistId').value = playlist.id;
+    document.getElementById('editPlaylistName').value = playlist.name || '';
+    document.getElementById('editPlaylistDescription').value = playlist.description || '';
+    document.getElementById('editPlaylistVisibility').value = playlist.visibility || 'public';
+
+    document.getElementById('editPlaylistModalTitle').textContent = `Edit: ${playlist.name || 'Playlist'}`;
+    editPlaylistModal.style.display = 'flex';
+  }
+
+  async function handleSavePlaylistEdit() {
+    try {
+      const playlistId = document.getElementById('editPlaylistId').value;
+      const name = document.getElementById('editPlaylistName').value.trim();
+      const description = document.getElementById('editPlaylistDescription').value.trim();
+      const visibility = document.getElementById('editPlaylistVisibility').value;
+
+      if (!name) {
+        showToast('Playlist name is required', 'error');
+        return;
+      }
+
+      showToast('Updating playlist...', 'info');
+
+      const { error } = await window.supabaseClient
+        .from('creator_playlists')
+        .update({
+          name: name,
+          description: description,
+          visibility: visibility,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', playlistId)
+        .eq('creator_id', currentUser.id);
+
+      if (error) throw error;
+
+      const playlistIndex = creatorPlaylists.findIndex(p => String(p.id) === String(playlistId));
+      if (playlistIndex !== -1) {
+        creatorPlaylists[playlistIndex] = {
+          ...creatorPlaylists[playlistIndex],
+          name: name,
+          description: description,
+          visibility: visibility
+        };
+      }
+
+      // Re-render from the local array rather than re-fetching — mirrors
+      // handleSaveEdit()'s pattern for content.
+      const playlistIds = creatorPlaylists.map(p => p.id);
+      const { counts, firstContentId } = await fetchCreatorPlaylistItemsMeta(playlistIds);
+      const missingThumbIds = creatorPlaylists
+        .filter(p => !p.custom_thumbnail_url && firstContentId[p.id])
+        .map(p => firstContentId[p.id]);
+      const thumbnails = await fetchContentThumbnails([...new Set(missingThumbIds)]);
+      renderCreatorPlaylists(creatorPlaylists, counts, firstContentId, thumbnails);
+
+      editPlaylistModal.style.display = 'none';
+      showToast('Playlist updated successfully!', 'success');
+    } catch (error) {
+      console.error('Error updating playlist:', error);
+      showToast('Failed to update playlist', 'error');
+    }
   }
 
 
@@ -1417,7 +1542,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // ✅ SHOW CONTENT INSIGHTS
   function showContentInsights(contentId) {
-    const content = allContent.find(c => c.id === contentId);
+    // content.id is a numeric bigint from Supabase; contentId arrives as a
+    // string (stringified into the onclick="" HTML attribute), so a strict
+    // === always failed here and made the button look unresponsive.
+    const content = allContent.find(c => String(c.id) === String(contentId));
     if (!content) return;
     
     currentInsightsContent = content;
@@ -1463,7 +1591,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // ✅ EDIT CONTENT
   function editContent(contentId) {
-    const content = allContent.find(c => c.id === contentId);
+    // Same string-vs-numeric-id mismatch as showContentInsights() above.
+    const content = allContent.find(c => String(c.id) === String(contentId));
     if (!content) return;
     
     currentEditContent = content;
@@ -1509,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (error) throw error;
       
       // Update local data
-      const contentIndex = allContent.findIndex(c => c.id === contentId);
+      const contentIndex = allContent.findIndex(c => String(c.id) === String(contentId));
       if (contentIndex !== -1) {
         allContent[contentIndex] = {
           ...allContent[contentIndex],
@@ -1591,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (error) throw error;
 
       // Remove from local arrays
-      allContent = allContent.filter(c => c.id !== currentDeleteId);
+      allContent = allContent.filter(c => String(c.id) !== String(currentDeleteId));
       filterContent(selectedFilter);
 
       // Refresh creator summary totals after deletion
@@ -1884,7 +2013,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     saveEdit.addEventListener('click', handleSaveEdit);
-    
+
+    closeEditPlaylistModal.addEventListener('click', () => {
+      editPlaylistModal.style.display = 'none';
+    });
+
+    cancelEditPlaylist.addEventListener('click', () => {
+      editPlaylistModal.style.display = 'none';
+    });
+
+    saveEditPlaylist.addEventListener('click', handleSavePlaylistEdit);
+
     // Close modals when clicking outside
     deleteModal.addEventListener('click', (e) => {
       if (e.target === deleteModal) {
@@ -1902,6 +2041,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     editModal.addEventListener('click', (e) => {
       if (e.target === editModal) {
         editModal.style.display = 'none';
+      }
+    });
+
+    editPlaylistModal.addEventListener('click', (e) => {
+      if (e.target === editPlaylistModal) {
+        editPlaylistModal.style.display = 'none';
       }
     });
   }
@@ -1951,7 +2096,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.viewContent = viewContent;
   window.deleteContent = deleteContent;
   window.deletePlaylist = deletePlaylist;
-  
+  window.editPlaylist = editPlaylist;
+
   // Start initialization
   await initializePage();
   
