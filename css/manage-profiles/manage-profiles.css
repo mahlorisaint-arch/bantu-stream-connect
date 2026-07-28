@@ -6,13 +6,24 @@
 
 body { background: #000000; }
 
+/* Cyan-glassmorphic card recipe (platform-wide default rollout) — overrides
+   shared-components.css's plain-slate --card-bg/--card-border for this page
+   only, same pattern used in css/creator-analytics.css. Every var(--card-bg)/
+   var(--card-border) usage below (page-header, profile-summary-card,
+   profile-settings-section, setting-item, modal-content) picks this up. */
+:root {
+  --card-bg: rgba(6, 20, 26, 0.75);
+  --card-border: rgba(0, 229, 255, 0.3);
+}
+
 .container { max-width: 1200px; margin: 0 auto; padding: 24px; padding-bottom: 100px; }
 
 /* ===== PAGE HEADER ===== */
 .page-header {
 text-align: center; margin-bottom: 40px; padding: 30px 20px;
 background: var(--card-bg); border: 1px solid var(--card-border);
-border-radius: 20px; backdrop-filter: blur(10px);
+border-radius: 20px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 
 .page-title {
@@ -31,12 +42,19 @@ display: flex; align-items: center; justify-content: center; gap: 15px;
 .profile-summary-card {
 background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px;
 padding: 30px; display: flex; align-items: center; gap: 25px; backdrop-filter: blur(10px);
-flex-wrap: wrap;
+-webkit-backdrop-filter: blur(10px); box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
+flex-wrap: wrap; transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-summary-card:hover {
+border-color: rgba(0, 229, 255, 0.5); box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
 }
 
 .profile-summary-empty {
 text-align: center; padding: 60px 20px; color: var(--slate-grey);
 background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px;
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 .profile-summary-empty i { font-size: 48px; margin-bottom: 20px; opacity: 0.5; display: block; }
 
@@ -75,7 +93,8 @@ font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 /* ===== Profile Settings Section ===== */
 .profile-settings-section {
 background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px;
-padding: 30px; margin-bottom: 40px; backdrop-filter: blur(10px);
+padding: 30px; margin-bottom: 40px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 
 .settings-title {
@@ -88,7 +107,11 @@ color: var(--soft-white); display: flex; align-items: center; gap: 10px;
 .setting-item {
 display: flex; justify-content: space-between; align-items: center;
 padding: 20px; background: rgba(255,255,255,0.03); border-radius: 15px;
-border: 1px solid var(--card-border);
+border: 1px solid var(--card-border); transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.setting-item:hover {
+border-color: rgba(0, 229, 255, 0.5); box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
 }
 
 .setting-info h3 { font-size: 16px; margin-bottom: 5px; color: var(--soft-white); }
@@ -268,7 +291,8 @@ justify-content: center; z-index: 2000; backdrop-filter: blur(5px);
 .modal-content {
 background: var(--card-bg); border: 1px solid var(--card-border);
 border-radius: 20px; padding: 30px; max-width: 600px; width: 90%;
-max-height: 90vh; overflow-y: auto; backdrop-filter: blur(10px);
+max-height: 90vh; overflow-y: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
 }
 
 .modal-header {
@@ -456,15 +480,43 @@ font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
 .container { padding: 16px; padding-bottom: 100px; }
-.page-title { font-size: 24px; }
-.profile-summary-card { flex-direction: column; text-align: center; }
-.profile-bio { max-width: 100%; }
-.setting-item { flex-direction: column; align-items: flex-start; gap: 15px; }
+.page-header { padding: 20px 16px; margin-bottom: 24px; }
+.page-title { font-size: 22px; gap: 10px; }
+.page-subtitle { font-size: 13px; }
+
+.profile-summary { margin-bottom: 24px; }
+.profile-summary-card { flex-direction: column; text-align: center; padding: 18px; gap: 14px; }
+.profile-summary-empty { padding: 36px 16px; }
+.profile-avatar { width: 72px; height: 72px; }
+.profile-avatar i { font-size: 30px; }
+.profile-name { font-size: 18px; }
+.profile-type { font-size: 11px; margin-bottom: 8px; }
+.profile-bio { max-width: 100%; font-size: 13px; margin-bottom: 10px; }
+.profile-action-btn { padding: 8px 18px; font-size: 12px; }
+
+.profile-settings-section { padding: 18px; margin-bottom: 24px; }
+.settings-title { font-size: 18px; margin-bottom: 16px; }
+.settings-card { gap: 12px; }
+.setting-item { flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px; }
+.setting-info h3 { font-size: 14px; }
+.setting-info p { font-size: 12px; }
+
 .profile-type-options { grid-template-columns: 1fr; }
+.profile-type-option { padding: 12px; }
+
+.modal-content { padding: 20px; }
+.modal-header { margin-bottom: 18px; padding-bottom: 12px; }
+.modal-header h2 { font-size: 19px; }
+.avatar-preview { width: 90px; height: 90px; }
+.avatar-placeholder i { font-size: 36px; }
 .modal-footer { flex-direction: column; }
 .upload-progress { min-width: 280px; padding: 20px; }
 }
 
 @media (max-width: 480px) {
 .header { padding: 8px 14px; }
+.page-title { font-size: 19px; }
+.profile-avatar { width: 64px; height: 64px; }
+.profile-avatar i { font-size: 26px; }
+.profile-name { font-size: 16px; }
 }
