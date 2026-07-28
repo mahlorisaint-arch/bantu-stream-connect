@@ -22,18 +22,35 @@ body { background: #000000; }
 .page-header h1 i { color: var(--warm-gold); -webkit-text-fill-color: var(--warm-gold); }
 .page-subtitle { color: var(--slate-grey); font-size: 14px; }
 
-/* ===== STATS SUMMARY ===== */
+/* ===== STATS SUMMARY — always a single row of 3, thin/glassmorphic with a
+   cyan highlight (same recipe as this session's .glass-tab pills), never
+   stacked vertically even on mobile/tablet. ===== */
 .history-stats {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
   margin-bottom: 24px;
 }
 .stat-card {
-  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
-  padding: 20px; display: flex; align-items: center; gap: 14px; backdrop-filter: blur(10px);
+  background: rgba(6, 20, 26, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 12px;
+  padding: 14px 10px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.stat-card i { font-size: 22px; color: var(--warm-gold); width: 32px; text-align: center; }
-.stat-value { font-size: 20px; font-weight: 700; color: var(--soft-white); }
-.stat-label { font-size: 12px; color: var(--slate-grey); }
+.stat-card:hover { border-color: rgba(0, 229, 255, 0.5); box-shadow: 0 0 16px rgba(0, 229, 255, 0.15); }
+.stat-card i { font-size: 18px; color: #00E5FF; }
+.stat-value { font-size: 16px; font-weight: 700; color: var(--soft-white); }
+.stat-label { font-size: 10px; color: var(--slate-grey); white-space: nowrap; }
+
+@media (max-width: 767px) {
+  .history-stats { gap: 6px; }
+  .stat-card { padding: 10px 6px; gap: 4px; border-radius: 10px; }
+  .stat-card i { font-size: 15px; }
+  .stat-value { font-size: 13px; }
+  .stat-label { font-size: 8.5px; white-space: normal; line-height: 1.2; }
+}
 
 /* ===== FILTERS BAR ===== */
 .filters-bar {
@@ -201,7 +218,6 @@ body { background: #000000; }
   .filters-bar { flex-direction: column; align-items: stretch; }
   .filter-group { min-width: 100%; }
   .clear-history-btn { margin-left: 0; justify-content: center; }
-  .history-stats { grid-template-columns: 1fr; gap: 12px; }
   .history-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
 
@@ -220,6 +236,8 @@ body { background: #000000; }
    generic layout tier. Same spirit here: small text-size nudges only. */
 @media (max-width: 360px) {
   .page-header h1 { font-size: 18px; }
-  .stat-value { font-size: 16px; }
+  .stat-card { padding: 8px 4px; }
+  .stat-value { font-size: 12px; }
+  .stat-label { font-size: 8px; }
   .history-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
 }
