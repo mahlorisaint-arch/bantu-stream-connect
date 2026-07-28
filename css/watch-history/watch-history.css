@@ -52,31 +52,40 @@ body { background: #000000; }
   .stat-label { font-size: 8.5px; white-space: normal; line-height: 1.2; }
 }
 
-/* ===== FILTERS BAR ===== */
+/* ===== FILTERS BAR — same thin/glassmorphic/cyan-highlight recipe as the
+   stat cards above; the three selects stay in one row instead of stacking
+   into three full-width rows on mobile/tablet. ===== */
 .filters-bar {
-  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
-  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
-  padding: 16px; margin-bottom: 32px; backdrop-filter: blur(10px);
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+  background: rgba(6, 20, 26, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px; margin-bottom: 32px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
-.filter-group { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; min-width: 0; }
 .filter-group label {
-  font-size: 11px; color: var(--slate-grey); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.5px;
+  font-size: 10px; color: var(--slate-grey); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
 }
 .filter-select {
-  padding: 8px 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border);
-  border-radius: 8px; color: var(--soft-white); font-size: 13px; font-family: 'Inter', sans-serif;
-  cursor: pointer; outline: none; transition: border-color 0.2s ease;
+  width: 100%; padding: 7px 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px; color: var(--soft-white); font-size: 12px; font-family: 'Inter', sans-serif;
+  cursor: pointer; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.filter-select:focus { border-color: var(--brand-cyan-core); }
+.filter-select:focus { border-color: #00E5FF; box-shadow: 0 0 10px rgba(0, 229, 255, 0.2); }
 .filter-select option { background: var(--deep-navy); color: var(--soft-white); }
 .clear-history-btn {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+  flex: 1 1 100%; margin-left: 0; margin-top: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 10px 20px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35);
   border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 600; cursor: pointer;
   transition: all 0.2s ease; font-family: 'Inter', sans-serif;
 }
 .clear-history-btn:hover { background: rgba(239, 68, 68, 0.25); }
+@media (min-width: 768px) {
+  .clear-history-btn { flex: 0 0 auto; margin-left: auto; margin-top: 0; }
+}
 
 /* ===== SECTION HEADER (matches css/music/music.css exactly) ===== */
 .history-section { margin-bottom: 40px; }
@@ -215,17 +224,16 @@ body { background: #000000; }
 @media (max-width: 768px) {
   .page-header { padding: 24px 0 12px; }
   .page-header h1 { font-size: 24px; }
-  .filters-bar { flex-direction: column; align-items: stretch; }
-  .filter-group { min-width: 100%; }
-  .clear-history-btn { margin-left: 0; justify-content: center; }
   .history-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
 
 @media (max-width: 480px) {
   .watch-history-main { padding: 0 4% 100px; }
   .page-header h1 { font-size: 20px; }
-  .filters-bar { padding: 12px; }
-  .filter-select { font-size: 12px; padding: 6px 10px; }
+  .filters-bar { padding: 10px; gap: 8px; }
+  .filter-group { flex-basis: 100px; }
+  .filter-group label { font-size: 8.5px; }
+  .filter-select { font-size: 10px; padding: 6px 6px; }
   .history-grid { gap: 8px; }
   .history-card-title { font-size: 11px; }
   .history-card-meta { font-size: 10px; }
