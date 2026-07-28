@@ -1448,7 +1448,8 @@ function getNotificationIconMeta(type) {
         streak_nudge: { icon: 'fa-fire', bg: 'rgba(248, 113, 113, 0.15)', color: '#F87171' },
         world_content: { icon: 'fa-wave-square', bg: 'rgba(45, 212, 191, 0.15)', color: '#2DD4BF' },
         creator_upload: { icon: 'fa-upload', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
-        collab_response: { icon: 'fa-handshake', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' }
+        collab_response: { icon: 'fa-handshake', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
+        collab_message: { icon: 'fa-comment-dots', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' }
     };
     return mapping[type] || defaultMeta;
 }

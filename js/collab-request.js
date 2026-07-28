@@ -3,6 +3,9 @@ const requestId = urlParams.get('id');
 
 let currentUserId = null;
 let requestData = null;
+let threadInitialized = false;
+let threadChannel = null;
+const seenMessageIds = new Set();
 
 async function init() {
     const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -93,6 +96,27 @@ function renderRequest(req, otherProfile, isSender) {
             responseEl.style.display = 'none';
         }
     }
+
+    updateThreadVisibility(req.status);
+}
+
+function updateThreadVisibility(status) {
+    const threadCard = document.getElementById('collab-thread-card');
+    const closedNotice = document.getElementById('collab-thread-closed');
+
+    if (status === 'accepted') {
+        threadCard.style.display = 'block';
+        closedNotice.style.display = 'none';
+        if (!threadInitialized) initThread();
+    } else if (status === 'declined') {
+        threadCard.style.display = 'none';
+        closedNotice.style.display = 'block';
+        teardownThreadSubscription();
+    } else {
+        threadCard.style.display = 'none';
+        closedNotice.style.display = 'none';
+        teardownThreadSubscription();
+    }
 }
 
 async function respond(status) {
@@ -124,6 +148,126 @@ function showError(msg) {
     document.getElementById('collab-card').style.display = 'none';
     document.getElementById('collab-error').style.display = 'block';
     document.getElementById('collab-error-text').textContent = msg;
+}
+
+// ===== Conversation thread - only reachable once the request is accepted
+// (the messages table's own INSERT policy enforces this server-side too). =====
+
+async function initThread() {
+    threadInitialized = true;
+
+    await loadMessages();
+    subscribeToThread();
+
+    const input = document.getElementById('collab-thread-input');
+    const sendBtn = document.getElementById('collab-thread-send');
+
+    sendBtn.onclick = sendMessage;
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    });
+}
+
+async function loadMessages() {
+    const { data, error } = await window.supabaseClient
+        .from('creator_collaboration_messages')
+        .select('*')
+        .eq('request_id', requestId)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Error loading collab messages:', error);
+        return;
+    }
+
+    const list = document.getElementById('collab-thread-list');
+    list.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        list.innerHTML = '<div class="collab-thread-empty">No messages yet. Say hello and start planning the collab.</div>';
+    } else {
+        data.forEach((msg) => {
+            seenMessageIds.add(msg.id);
+            list.appendChild(buildMessageEl(msg));
+        });
+        list.scrollTop = list.scrollHeight;
+    }
+}
+
+function buildMessageEl(msg) {
+    const el = document.createElement('div');
+    const isMine = msg.sender_id === currentUserId;
+    el.className = `collab-msg ${isMine ? 'collab-msg-mine' : 'collab-msg-theirs'}`;
+    el.innerHTML = `${escapeHtml(msg.message)}<span class="collab-msg-time">${new Date(msg.created_at).toLocaleString()}</span>`;
+    return el;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+async function sendMessage() {
+    const input = document.getElementById('collab-thread-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const sendBtn = document.getElementById('collab-thread-send');
+    sendBtn.disabled = true;
+
+    try {
+        const { error } = await window.supabaseClient
+            .from('creator_collaboration_messages')
+            .insert({ request_id: requestId, sender_id: currentUserId, message: text });
+
+        if (error) throw error;
+
+        input.value = '';
+        input.style.height = 'auto';
+    } catch (error) {
+        console.error('Error sending collab message:', error);
+        showToast('Could not send message', 'error');
+    } finally {
+        sendBtn.disabled = false;
+    }
+}
+
+function subscribeToThread() {
+    threadChannel = window.supabaseClient
+        .channel(`collab-thread-${requestId}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'creator_collaboration_messages',
+            filter: `request_id=eq.${requestId}`
+        }, (payload) => {
+            const msg = payload.new;
+            if (seenMessageIds.has(msg.id)) return;
+            seenMessageIds.add(msg.id);
+
+            const list = document.getElementById('collab-thread-list');
+            const emptyEl = list.querySelector('.collab-thread-empty');
+            if (emptyEl) emptyEl.remove();
+
+            list.appendChild(buildMessageEl(msg));
+            list.scrollTop = list.scrollHeight;
+        })
+        .subscribe();
+}
+
+function teardownThreadSubscription() {
+    if (threadChannel) {
+        window.supabaseClient.removeChannel(threadChannel);
+        threadChannel = null;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(init, 50));

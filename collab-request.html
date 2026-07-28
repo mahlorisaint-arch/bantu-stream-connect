@@ -56,6 +56,41 @@ body { background: #000000; }
 .collab-response-meta { color: var(--slate-grey); font-size: var(--font-xs); margin-top: 8px; }
 .collab-error { text-align: center; padding: 60px 20px; color: var(--slate-grey); }
 .collab-error i { font-size: 40px; margin-bottom: 16px; opacity: 0.5; }
+
+.collab-thread-card {
+  background: rgba(6, 20, 26, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: var(--card-radius, 16px);
+  margin-top: 20px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.08);
+}
+.collab-thread-header { font-family: 'Orbitron', sans-serif; font-size: var(--font-base); color: #00E5FF; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.collab-thread-list { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; margin-bottom: 14px; padding-right: 4px; }
+.collab-msg { max-width: 78%; padding: 10px 14px; border-radius: 12px; font-size: var(--font-sm); line-height: 1.5; word-wrap: break-word; }
+.collab-msg-mine { align-self: flex-end; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.3); color: var(--soft-white); border-bottom-right-radius: 3px; }
+.collab-msg-theirs { align-self: flex-start; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--soft-white); border-bottom-left-radius: 3px; }
+.collab-msg-time { display: block; font-size: 0.68rem; color: var(--slate-grey); margin-top: 4px; }
+.collab-thread-empty { text-align: center; color: var(--slate-grey); font-size: var(--font-sm); padding: 20px 0; }
+.collab-thread-compose { display: flex; gap: 10px; align-items: flex-end; }
+.collab-thread-input {
+  flex: 1; resize: none; max-height: 120px; padding: 10px 14px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 20px; color: var(--soft-white); font-family: 'Inter', sans-serif;
+  font-size: var(--font-sm); outline: none;
+}
+.collab-thread-input:focus { border-color: #00E5FF; box-shadow: 0 0 12px rgba(0, 229, 255, 0.2); }
+.collab-thread-send {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; border: none; cursor: pointer;
+  background: #00E5FF; color: #06141A; display: flex; align-items: center; justify-content: center;
+  transition: box-shadow 0.2s;
+}
+.collab-thread-send:hover { box-shadow: 0 0 16px rgba(0, 229, 255, 0.4); }
+.collab-thread-send:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.collab-thread-closed { text-align: center; color: var(--slate-grey); padding: 30px 20px; margin-top: 20px; }
+.collab-thread-closed i { font-size: 28px; margin-bottom: 10px; opacity: 0.5; display: block; }
 </style>
 </head>
 <body>
@@ -230,6 +265,23 @@ body { background: #000000; }
       <div class="collab-response-text" id="collab-response-text"></div>
       <div class="collab-response-meta" id="collab-response-meta"></div>
     </div>
+  </div>
+
+  <!-- Conversation - only shown once the request is accepted; the
+       creator_collaboration_messages INSERT policy enforces this server-
+       side too (status = 'accepted'), this is just the matching UI. -->
+  <div class="collab-thread-card" id="collab-thread-card" style="display: none;">
+    <div class="collab-thread-header"><i class="fas fa-comments"></i> Collab Chat</div>
+    <div class="collab-thread-list" id="collab-thread-list"></div>
+    <div class="collab-thread-compose">
+      <textarea class="collab-thread-input" id="collab-thread-input" placeholder="Message about the collab..." rows="1"></textarea>
+      <button class="collab-thread-send" id="collab-thread-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <div class="collab-thread-closed" id="collab-thread-closed" style="display: none;">
+    <i class="fas fa-comment-slash"></i>
+    <p>This request was declined, so the conversation is closed.</p>
   </div>
 
   <div class="collab-error" id="collab-error" style="display: none;">
