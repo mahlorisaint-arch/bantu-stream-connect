@@ -227,24 +227,35 @@
     // =====================================================
 
     /**
-     * Fetch live engagement counts from canonical tables
+     * Fetch live engagement counts from content_engagement_stats - the
+     * platform-wide convention for views/likes/comments/shares. This used
+     * to count content_views/content_likes directly, but content_views' RLS
+     * ("content_views_select_own_history": auth.uid() = user_id OR
+     * auth.uid() = viewer_id) means a viewer counting rows for a
+     * *recommended* item (which, by definition, belongs to some other
+     * creator and that they likely haven't watched yet) always got 0 back -
+     * recommended items in "Because You Watched" always showed 0 views/
+     * likes regardless of who was logged in. content_engagement_stats is
+     * publicly SELECT-readable and already aggregated, so one query
+     * replaces all four of the old per-content count queries.
      */
     async _fetchLiveEngagementCounts(contentId) {
       if (!contentId) return { views: 0, likes: 0, comments: 0, shares: 0 };
-      
+
       try {
-        const [viewsResult, likesResult, commentsResult, sharesResult] = await Promise.all([
-          this.supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)).eq('counted_as_view', true),
-          this.supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
-          this.supabase.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId)),
-          this.supabase.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', parseInt(contentId))
-        ]);
-        
+        const { data, error } = await this.supabase
+          .from('content_engagement_stats')
+          .select('total_views, total_likes, total_comments, total_shares')
+          .eq('content_id', parseInt(contentId))
+          .maybeSingle();
+
+        if (error) throw error;
+
         return {
-          views: viewsResult.count || 0,
-          likes: likesResult.count || 0,
-          comments: commentsResult.count || 0,
-          shares: sharesResult.count || 0
+          views: data?.total_views || 0,
+          likes: data?.total_likes || 0,
+          comments: data?.total_comments || 0,
+          shares: data?.total_shares || 0
         };
       } catch (error) {
         console.warn('Failed to fetch live engagement counts:', error);

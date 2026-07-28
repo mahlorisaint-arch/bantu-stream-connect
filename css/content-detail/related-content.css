@@ -514,12 +514,6 @@
     gap: 8px;
   }
 
-  .card-meta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
   .views-count {
     font-size: 10px;
   }

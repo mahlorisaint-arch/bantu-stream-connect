@@ -854,6 +854,11 @@ function setupAnalytics() {
     setupChartControls();
 }
 
+function safeSetAnalyticsText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
 async function loadCompleteAnalyticsData() {
     const user = await getCurrentUser();
     if (!user || !user.id) return;
@@ -902,37 +907,128 @@ async function loadCompleteAnalyticsData() {
         const avgWatchTimeSec = totalViews > 0 ? Math.floor(totalWatchTimeSec / totalViews) : 0;
         const engagementRate = totalViews > 0 ? (((totalLikes + totalComments) / totalViews) * 100).toFixed(1) : "0.0";
 
-        const totalViewsEl = document.getElementById('total-views');
-        const avgWatchTimeEl = document.getElementById('avg-watch-time');
-        const engagementRateEl = document.getElementById('engagement-rate');
-        const totalCommentsEl = document.getElementById('total-comments');
+        safeSetAnalyticsText('total-views', formatNumber(totalViews));
+        safeSetAnalyticsText('avg-watch-time', formatDuration(avgWatchTimeSec));
+        safeSetAnalyticsText('engagement-rate', engagementRate + '%');
+        safeSetAnalyticsText('total-comments', formatNumber(totalComments));
+        safeSetAnalyticsText('total-likes', formatNumber(totalLikes));
+        safeSetAnalyticsText('total-content', contentList.length.toString());
+        // totalShares was already computed above but never written to the
+        // DOM - #total-shares always showed the static "0" from the HTML.
+        safeSetAnalyticsText('total-shares', formatNumber(totalShares));
 
-        if (totalViewsEl) totalViewsEl.textContent = formatNumber(totalViews);
-        if (avgWatchTimeEl) avgWatchTimeEl.textContent = formatDuration(avgWatchTimeSec);
-        if (engagementRateEl) engagementRateEl.textContent = engagementRate + '%';
-        if (totalCommentsEl) totalCommentsEl.textContent = formatNumber(totalComments);
+        await loadAnalyticsRangeData(contentList, contentIds, '7d');
 
-        const totalLikesEl = document.getElementById('total-likes');
-        if (totalLikesEl) totalLikesEl.textContent = formatNumber(totalLikes);
-
-        const totalContentEl = document.getElementById('total-content');
-        if (totalContentEl) totalContentEl.textContent = contentList.length.toString();
-
-        const { data: viewsData, error: viewsError } = await window.supabaseClient
-            .from('content_views')
-            .select('created_at')
-            .in('content_id', contentIds);
-
-        if (viewsError) throw viewsError;
-
-        const dailyViews = getDailyViewsData(viewsData || []);
-        renderAnalyticsChart(dailyViews);
-        updateTrendIndicators();
+        // No real, defined data source exists yet for these (no session-
+        // boundary/exit tracking, no new-vs-returning viewer history) - an
+        // honest "not available" beats a fabricated 0:00/0%.
+        safeSetAnalyticsText('avg-session', '—');
+        safeSetAnalyticsText('bounce-rate', '—');
+        safeSetAnalyticsText('returning-viewers', '—');
+        safeSetAnalyticsText('new-viewers', '—');
 
     } catch (error) {
         console.error('❌ Error rendering aggregated analytics panels:', error);
         showToast('Error loading analytics data', 'error');
     }
+}
+
+/**
+ * Real per-range views/unique-viewers/chart/peak-times/top-content via the
+ * SECURITY DEFINER RPC family built for js/creator-analytics.js
+ * (get_creator_view_analytics / get_creator_content_view_analytics /
+ * get_creator_view_timestamps - supabase/migrations/20260728*.sql).
+ * content_views' RLS ("content_views_select_own_history": auth.uid() =
+ * user_id OR auth.uid() = viewer_id) blocks a creator from reading view
+ * rows for content they own but didn't personally watch, so the direct
+ * content_views queries this used to run here always came back empty.
+ */
+async function loadAnalyticsRangeData(contentList, contentIds, period) {
+    const { start, end } = getAnalyticsPeriodRange(period);
+
+    const [{ data: rangeAnalytics }, { data: timestampRows }, { data: contentViewRows }] = await Promise.all([
+        window.supabaseClient.rpc('get_creator_view_analytics', { p_start_date: start, p_end_date: end }),
+        window.supabaseClient.rpc('get_creator_view_timestamps', { p_start_date: start, p_end_date: end }),
+        window.supabaseClient.rpc('get_creator_content_view_analytics', { p_start_date: start, p_end_date: end, p_content_ids: contentIds })
+    ]);
+
+    const uniqueViewers = rangeAnalytics?.[0]?.unique_viewers;
+    safeSetAnalyticsText('unique-viewers', uniqueViewers !== undefined ? formatNumber(uniqueViewers) : '0');
+
+    const dailyViews = getDailyViewsData(timestampRows || []);
+    renderAnalyticsChart(dailyViews);
+    renderPeakTimes(timestampRows || []);
+    renderTopPerformingContent(contentList, contentViewRows || []);
+}
+
+function getAnalyticsPeriodRange(period) {
+    const end = new Date();
+    const start = new Date();
+    if (period === '7d') start.setDate(end.getDate() - 7);
+    else if (period === '30d') start.setDate(end.getDate() - 30);
+    else if (period === '90d') start.setDate(end.getDate() - 90);
+    else start.setFullYear(2020); // 'all' - platform predates this
+    return { start: start.toISOString(), end: end.toISOString() };
+}
+
+/**
+ * Peak Hour / Best Day - same hour/day bucketing pattern as
+ * getPeakViewingTimes() in js/creator-analytics.js, kept client-side so it
+ * buckets in the viewer's own local timezone.
+ */
+function renderPeakTimes(timestampRows) {
+    const peakTimeEl = document.getElementById('peak-time');
+    const bestDayEl = document.getElementById('best-day');
+    if (!peakTimeEl && !bestDayEl) return;
+
+    if (!timestampRows || timestampRows.length === 0) {
+        if (peakTimeEl) peakTimeEl.textContent = '--:--';
+        if (bestDayEl) bestDayEl.textContent = '--';
+        return;
+    }
+
+    const hourCount = new Array(24).fill(0);
+    const dayCount = new Array(7).fill(0);
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    timestampRows.forEach(row => {
+        const date = new Date(row.created_at);
+        hourCount[date.getHours()]++;
+        dayCount[date.getDay()]++;
+    });
+
+    const peakHour = hourCount.indexOf(Math.max(...hourCount));
+    const peakDay = dayCount.indexOf(Math.max(...dayCount));
+
+    if (peakTimeEl) peakTimeEl.textContent = peakHour >= 0 ? `${peakHour}:00` : '--:--';
+    if (bestDayEl) bestDayEl.textContent = peakDay >= 0 ? dayNames[peakDay] : '--';
+}
+
+function renderTopPerformingContent(contentList, contentViewRows) {
+    const container = document.getElementById('top-content-list');
+    if (!container) return;
+
+    const viewsByContent = new Map();
+    (contentViewRows || []).forEach(row => {
+        viewsByContent.set(row.content_id, Number(row.total_views) || 0);
+    });
+
+    const ranked = contentList
+        .map(item => ({ id: item.id, title: item.title, views: viewsByContent.get(item.id) || 0 }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5);
+
+    if (ranked.length === 0 || ranked.every(item => item.views === 0)) {
+        container.innerHTML = '<p style="text-align:center;color:var(--slate-grey);font-size:13px;padding:20px 0;">No views yet in this period</p>';
+        return;
+    }
+
+    container.innerHTML = ranked.map((item, index) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;${index < ranked.length - 1 ? 'border-bottom:1px solid var(--card-border);' : ''}">
+            <span style="font-size:13px;color:var(--soft-white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${escapeHtml(item.title || 'Untitled')}</span>
+            <span style="font-size:12px;color:var(--warm-gold);font-weight:600;flex-shrink:0;">${formatNumber(item.views)} views</span>
+        </div>
+    `).join('');
 }
 
 function getDailyViewsData(views) {
@@ -952,38 +1048,24 @@ function getDailyViewsData(views) {
     return last7Days;
 }
 
-function updateAnalyticsUI(totalViews, totalWatchTime, avgWatchTime, uniqueViewers, contentCount) {
-    const elements = {
-        'total-views': formatNumber(totalViews),
-        'total-watch-time': formatDuration(totalWatchTime),
-        'avg-watch-time': formatDuration(avgWatchTime),
-        'unique-viewers': formatNumber(uniqueViewers),
-        'total-content': contentCount.toString()
-    };
-    for (const [id, value] of Object.entries(elements)) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value;
-    }
-    updateTrendIndicators();
-}
+// updateAnalyticsUI() removed - it was never called anywhere in the
+// codebase (confirmed via repo-wide search), fully superseded by
+// loadCompleteAnalyticsData()/loadAnalyticsRangeData() above.
 
 async function loadEngagementMetrics(contentIds) {
     console.log('✨ Engagement metrics derived natively via stats infrastructure pipeline.');
 }
 
+// Trend indicators (Views/Watch Time/Engagement/Comments arrows) used to
+// hardcode +12%/+8%/+5% unconditionally regardless of any real data -
+// period-over-period comparison isn't implemented, so an honest "no trend
+// data yet" beats a fabricated number that always claims growth. Hides the
+// element rather than showing a fake arrow.
 function updateTrendIndicators() {
-    const trends = {
-        'views-trend': { value: '+12%', class: 'up' },
-        'watch-time-trend': { value: '+8%', class: 'up' },
-        'engagement-trend': { value: '+5%', class: 'up' }
-    };
-    for (const [id, trend] of Object.entries(trends)) {
+    ['views-trend', 'watch-time-trend', 'engagement-trend', 'comments-trend'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-            el.innerHTML = `<i class="fas fa-arrow-${trend.class === 'up' ? 'up' : 'down'}"></i> ${trend.value}`;
-            el.className = `analytics-trend ${trend.class}`;
-        }
-    }
+        if (el) el.style.display = 'none';
+    });
 }
 
 function setupChartControls() {
@@ -992,8 +1074,32 @@ function setupChartControls() {
         btn.onclick = async () => {
             chartButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            const currentPeriod = btn.dataset.period;
-            await refreshAnalyticsChart(currentPeriod);
+            await refreshAnalyticsChart(btn.dataset.period);
+        };
+    });
+
+    // The outer "Last 7/30/90 Days / All Time" period-btn row (top of the
+    // analytics modal body) had no click handler anywhere - a fully dead,
+    // cosmetic-only control. Wired to refresh every stat for the chosen
+    // range, not just the chart (that's the inner .chart-btn row's job).
+    const periodButtons = document.querySelectorAll('.period-btn');
+    periodButtons.forEach(btn => {
+        btn.onclick = async () => {
+            periodButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const user = await getCurrentUser();
+            if (!user || !user.id) return;
+            const { data: contentList } = await window.supabaseClient
+                .from('Content')
+                .select(`
+                    id,
+                    title,
+                    created_at,
+                    content_engagement_stats!inner(total_views, total_valid_views, total_likes, total_comments, total_watch_time_ms, total_shares)
+                `)
+                .eq('user_id', user.id);
+            if (!contentList || contentList.length === 0) return;
+            await loadAnalyticsRangeData(contentList, contentList.map(c => c.id), btn.dataset.period);
         };
     });
 }
@@ -1003,35 +1109,13 @@ async function refreshAnalyticsChart(period) {
     if (!user || !user.id) return;
 
     try {
-        const { data: contentList } = await window.supabaseClient
-            .from('Content')
-            .select('id')
-            .eq('user_id', user.id);
-
-        if (!contentList || contentList.length === 0) return;
-        const contentIds = contentList.map(c => c.id);
-
-        const { data: views, error } = await window.supabaseClient
-            .from('content_views')
-            .select('created_at')
-            .in('content_id', contentIds);
+        const { start, end } = getAnalyticsPeriodRange(period);
+        const { data: timestampRows, error } = await window.supabaseClient
+            .rpc('get_creator_view_timestamps', { p_start_date: start, p_end_date: end });
 
         if (error) throw error;
 
-        let filteredViews = views || [];
-        const now = new Date();
-
-        if (period === '7d') {
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(now.getDate() - 7);
-            filteredViews = views?.filter(v => new Date(v.created_at) >= sevenDaysAgo) || [];
-        } else if (period === '30d') {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(now.getDate() - 30);
-            filteredViews = views?.filter(v => new Date(v.created_at) >= thirtyDaysAgo) || [];
-        }
-
-        const chartData = getDailyViewsData(filteredViews);
+        const chartData = getDailyViewsData(timestampRows || []);
         updateAnalyticsChart(chartData);
     } catch (err) {
         console.error('❌ Failed filtering time-series charts:', err.message);

@@ -2301,7 +2301,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }, 300);
         }
-        
+
+        // initializeKeyboardShortcuts() was defined but never called anywhere
+        // in the codebase - space/arrows/f/m/etc never did anything. It
+        // needs window.enhancedVideoPlayer.video to exist first, so this
+        // runs after the 300ms fallback player-init above has had a chance
+        // to finish; the function itself already no-ops safely if the
+        // player isn't ready yet, matching this file's existing pattern.
+        setTimeout(() => {
+            if (typeof initializeKeyboardShortcuts === 'function') initializeKeyboardShortcuts();
+        }, 600);
+
     } catch (err) {
         console.error('❌ Critical load failed:', err);
         if (typeof showToast === 'function') showToast('Failed to load content. Retrying...', 'error');

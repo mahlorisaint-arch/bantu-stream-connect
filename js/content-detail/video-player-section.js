@@ -859,372 +859,18 @@ async function loadContentIntoPlayer(content, index = null) {
 // ============================================
 // ENHANCED VIDEO PLAYER CLASS
 // ============================================
-
-class EnhancedVideoPlayer {
-    constructor(options = {}) {
-        this.video = null;
-        this.container = null;
-        this.options = {
-            autoplay: options.autoplay || false,
-            defaultSpeed: options.defaultSpeed || 1.0,
-            defaultQuality: options.defaultQuality || 'auto',
-            defaultVolume: options.defaultVolume !== undefined ? options.defaultVolume : 1.0,
-            muted: options.muted || false,
-            contentId: options.contentId || null,
-            supabaseClient: options.supabaseClient || null,
-            userId: options.userId || null
-        };
-        
-        this.currentSpeed = this.options.defaultSpeed;
-        this.currentQuality = this.options.defaultQuality;
-        this.volume = this.options.defaultVolume;
-        this.isMuted = this.options.muted;
-        this.fullscreen = false;
-        this.eventListeners = {};
-        this._currentStreamingProvider = null;
-        this._isHLSStream = false;
-        this._isAudioMode = false;
-        this.viewRecorded = false;
-        this._viewThresholdReached = false;
-        this.contentId = this.options.contentId;
-        this._sourcePreserved = null;
-    }
-    
-    attach(videoElement, containerElement) {
-        this.video = videoElement;
-        this.container = containerElement;
-        
-        if (!this.video || !this.container) {
-            console.error('Failed to attach video player: missing elements');
-            return;
-        }
-        
-        this.setupVideoEvents();
-        this.applyInitialSettings();
-        console.log('✅ EnhancedVideoPlayer attached');
-    }
-    
-    setupVideoEvents() {
-        // Volume change
-        this.video.addEventListener('volumechange', () => {
-            this.volume = this.video.volume;
-            this.isMuted = this.video.muted;
-            this.emit('volumechange', { volume: this.volume, muted: this.isMuted });
-        });
-        
-        // Play
-        this.video.addEventListener('play', () => {
-            this.emit('play', { currentTime: this.video.currentTime });
-        });
-        
-        // Pause
-        this.video.addEventListener('pause', () => {
-            this.emit('pause', { currentTime: this.video.currentTime });
-        });
-        
-        // Time update
-        this.video.addEventListener('timeupdate', () => {
-            this.emit('timeupdate', { currentTime: this.video.currentTime, duration: this.video.duration });
-        });
-        
-        // Ended
-        this.video.addEventListener('ended', () => {
-            this.emit('mediaEnded', {
-                contentId: this.contentId,
-                playlistIndex: window.currentPlaylistIndex,
-                currentTime: this.video ? this.video.currentTime : 0,
-                duration: this.video ? this.video.duration : 0,
-                streamingProvider: this._currentStreamingProvider || null,
-                isAudio: this._isAudioMode
-            });
-        });
-        
-        // Error
-        this.video.addEventListener('error', (e) => {
-            console.error('Video error:', e);
-            this.emit('error', { error: e, message: this.video.error?.message });
-        });
-        
-        // Loaded metadata
-        this.video.addEventListener('loadedmetadata', () => {
-            console.log('Video metadata loaded');
-            this.emit('loadedmetadata', { duration: this.video.duration, width: this.video.videoWidth, height: this.video.videoHeight });
-        });
-        
-        // Can play
-        this.video.addEventListener('canplay', () => {
-            console.log('Video can play');
-            this.emit('canplay', {});
-        });
-        
-        // Fullscreen change
-        document.addEventListener('fullscreenchange', () => {
-            this.fullscreen = !!document.fullscreenElement;
-            this.emit('fullscreenchange', { fullscreen: this.fullscreen });
-        });
-    }
-    
-    applyInitialSettings() {
-        this.video.volume = this.volume;
-        this.video.muted = this.isMuted;
-        this.setPlaybackSpeed(this.currentSpeed);
-        
-        if (this.options.autoplay) {
-            this.video.play().catch(e => console.log('Autoplay prevented:', e));
-        }
-    }
-    
-    play() {
-        if (this.video) return this.video.play();
-        return Promise.reject(new Error('Video element not attached'));
-    }
-    
-    pause() {
-        if (this.video) this.video.pause();
-    }
-    
-    setPlaybackSpeed(speed) {
-        if (this.video) {
-            this.video.playbackRate = speed;
-            this.currentSpeed = speed;
-            this.emit('speedchange', { speed: speed });
-        }
-    }
-    
-    setVolume(volume) {
-        if (this.video && volume >= 0 && volume <= 1) {
-            this.video.volume = volume;
-            this.volume = volume;
-        }
-    }
-    
-    setMuted(muted) {
-        if (this.video) {
-            this.video.muted = muted;
-            this.isMuted = muted;
-        }
-    }
-    
-    toggleMute() {
-        this.setMuted(!this.isMuted);
-    }
-    
-    toggleFullscreen() {
-        if (!this.container) return;
-        
-        if (!this.fullscreen) {
-            this.container.requestFullscreen?.().catch(e => console.log('Fullscreen error:', e));
-        } else {
-            document.exitFullscreen?.();
-        }
-    }
-    
-    seekTo(time) {
-        if (this.video && time >= 0 && time <= this.video.duration) {
-            this.video.currentTime = time;
-        }
-    }
-    
-    /**
-     * Check if current source is audio
-     */
-    isAudioSource() {
-        return this._isAudioMode;
-    }
-    
-    /**
-     * 🚨 CRITICAL: Load source without destroying player instance
-     * Used for playlist track changes to preserve player state
-     * This is the preferred method for non-destructive source changes
-     */
-    async loadSource(sourceConfig) {
-        if (!this.video) return Promise.reject('Player not attached');
-        if (!sourceConfig || !sourceConfig.url) return Promise.reject('Invalid source config');
-        
-        const url = sourceConfig.url;
-        const type = sourceConfig.type || this.getMediaMimeType(url);
-        const contentId = sourceConfig.contentId || this.contentId;
-        const streamingProvider = sourceConfig.streamingProvider || null;
-        const isHLS = sourceConfig.isHLS || false;
-        const isAudio = sourceConfig.isAudio || false;
-        
-        console.log('🔄 Loading new source without destroying player:', { 
-            url, 
-            contentId, 
-            streamingProvider,
-            isHLS,
-            isAudio
-        });
-        
-        // Update contentId
-        if (contentId && contentId !== this.contentId) {
-            this.updateContentId(contentId);
-        }
-        
-        // 🚨 Store streaming provider for context
-        if (streamingProvider) {
-            this._currentStreamingProvider = streamingProvider;
-            this._isHLSStream = isHLS;
-        }
-        this._isAudioMode = isAudio;
-        
-        // Reset view recording flags for new source
-        this.viewRecorded = false;
-        this._viewThresholdReached = false;
-        
-        // Pause current playback
-        this.video.pause();
-        
-        // Update source
-        while (this.video.firstChild) {
-            this.video.removeChild(this.video.firstChild);
-        }
-        this.video.removeAttribute('src');
-        
-        // 🚨 For HLS manifests (Cloudflare Stream), set appropriate type
-        const source = document.createElement('source');
-        source.src = url;
-        source.type = type;
-        this.video.appendChild(source);
-        
-        // 🚨 If this is an HLS stream, notify streaming manager
-        // BUT skip for audio
-        if (!isAudio && (isHLS || url.includes('videodelivery.net') || url.endsWith('.m3u8'))) {
-            console.log('📺 HLS stream detected - ensuring streaming manager handles it');
-            if (window.streamingManager) {
-                // Give streaming manager a moment to reinitialize
-                setTimeout(() => {
-                    if (window.streamingManager && typeof window.streamingManager.reinitialize === 'function') {
-                        window.streamingManager.reinitialize(contentId).catch(err => {
-                            console.warn('Streaming manager reinit after loadSource:', err);
-                        });
-                    }
-                }, 50);
-            }
-        } else if (isAudio) {
-            console.log('🎵 Audio mode - bypassing HLS initialization');
-            // Ensure streaming manager is destroyed for audio
-            if (window.streamingManager) {
-                window.streamingManager.destroy();
-                window.streamingManager = null;
-            }
-        }
-        
-        // Load and attempt to play if user has interacted
-        this.video.load();
-        
-        if (document.body.classList.contains('user-interacted')) {
-            this.play().catch(err => {
-                console.warn('Auto-play after source change blocked:', err);
-                this._showPlayOverlay();
-            });
-        }
-        
-        // Update preserved source with provider info
-        this._sourcePreserved = { 
-            url, 
-            type, 
-            method: 'loadSource',
-            streamingProvider: streamingProvider,
-            isHLS: isHLS,
-            isAudio: isAudio
-        };
-        
-        this.emit('source:loaded', { url, contentId, type, streamingProvider, isHLS, isAudio });
-        
-        return Promise.resolve();
-    }
-    
-    /**
-     * Update contentId and sync with streaming manager
-     */
-    updateContentId(newContentId) {
-        if (this.contentId === newContentId) {
-            console.log('⚠️ Player contentId unchanged:', newContentId);
-            return;
-        }
-        
-        console.log(`🔄 Player contentId updated: ${this.contentId} -> ${newContentId}`);
-        this.contentId = newContentId;
-        
-        // Reset view recording state for new content
-        this.viewRecorded = false;
-        this._viewThresholdReached = false;
-        
-        // 🚨 Update session with new content ID
-        if (this.watchSession && typeof this.watchSession.updateContentId === 'function') {
-            this.watchSession.updateContentId(newContentId);
-        }
-        
-        // 🚨 If streaming provider changed, notify streaming manager
-        if (window.streamingManager && typeof window.streamingManager.updateContentId === 'function') {
-            window.streamingManager.updateContentId(newContentId);
-        }
-        
-        this.emit('content:changed', { 
-            contentId: newContentId,
-            streamingProvider: this._currentStreamingProvider 
-        });
-    }
-    
-    /**
-     * Get media MIME type from URL
-     */
-    getMediaMimeType(url = '') {
-        const lower = url.toLowerCase();
-        // HLS manifest
-        if (lower.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
-        if (lower.includes('videodelivery.net')) return 'application/vnd.apple.mpegurl';
-        // Video
-        if (lower.endsWith('.mp4')) return 'video/mp4';
-        if (lower.endsWith('.webm')) return 'video/webm';
-        if (lower.endsWith('.mov')) return 'video/quicktime';
-        // Audio
-        if (lower.endsWith('.mp3')) return 'audio/mpeg';
-        if (lower.endsWith('.wav')) return 'audio/wav';
-        if (lower.endsWith('.ogg')) return 'audio/ogg';
-        if (lower.endsWith('.m4a')) return 'audio/mp4';
-        return 'video/mp4';
-    }
-    
-    /**
-     * Show play overlay (for autoplay blocked state)
-     */
-    _showPlayOverlay() {
-        const overlay = document.getElementById('initialPlayOverlay');
-        if (overlay) overlay.classList.remove('hidden');
-    }
-    
-    on(event, callback) {
-        if (!this.eventListeners[event]) this.eventListeners[event] = [];
-        this.eventListeners[event].push(callback);
-    }
-    
-    off(event, callback) {
-        if (!this.eventListeners[event]) return;
-        if (callback) {
-            this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
-        } else {
-            delete this.eventListeners[event];
-        }
-    }
-    
-    emit(event, data) {
-        if (this.eventListeners[event]) {
-            this.eventListeners[event].forEach(callback => callback(data));
-        }
-    }
-    
-    destroy() {
-        if (this.video) {
-            this.pause();
-            this.video.src = '';
-            this.video.load();
-        }
-        this.eventListeners = {};
-        console.log('EnhancedVideoPlayer destroyed');
-    }
-}
+// A second, much thinner `class EnhancedVideoPlayer` used to be declared
+// right here. Because `new EnhancedVideoPlayer(...)` below lived in the
+// SAME file/scope as that declaration, JS lexical scoping resolved the
+// bare identifier to this local thin class — not window.EnhancedVideoPlayer
+// (the real, fully-featured implementation in js/video-player.js, which
+// _createControls()/_cacheControlElements() actually wires up to the real
+// static markup: play-pause-btn, skip/volume/progress/settings/fullscreen,
+// the mobile center transport controls, the error-overlay retry button, and
+// keyboard shortcuts) — regardless of what window.EnhancedVideoPlayer held.
+// The thin class had zero references to any of those control elements, so
+// none of them ever received a click listener. Removed; the real global
+// class is instantiated directly below instead.
 
 /**
  * Initialize enhanced video player with error handling
@@ -1246,70 +892,45 @@ function initializeEnhancedVideoPlayer() {
         };
         
         console.log('🎬 Creating EnhancedVideoPlayer...');
-        
-        const player = new EnhancedVideoPlayer({
+
+        // window.EnhancedVideoPlayer — the real, fully-featured class from
+        // js/video-player.js (see note above). Its own attach()/constructor
+        // already implement loadSource()/updateContentId(), so the "ensure
+        // method exists" polyfills that used to live here (compensating for
+        // the removed thin class sometimes lacking them) are gone too.
+        const player = new window.EnhancedVideoPlayer({
             autoplay: preferences.autoplay,
             defaultSpeed: preferences.playbackSpeed,
             defaultQuality: preferences.quality,
             defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
             muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
             contentId: window.currentContentId || window.currentContent?.id || null,
-            supabaseClient: window.supabaseClient,
+            supabase: window.supabaseClient,
             userId: window.currentUserId
         });
-        
+
         window.enhancedVideoPlayer = player;
         player.attach(videoElement, videoContainer);
-        
-        // Ensure loadSource method exists
-        if (!player.loadSource) {
-            player.loadSource = async function(sourceConfig) {
-                if (!player.video) return;
-                const url = sourceConfig.url;
-                const type = sourceConfig.type || player.getMediaMimeType(url);
-                const isAudio = sourceConfig.isAudio || false;
-                player._isAudioMode = isAudio;
-                player.pause();
-                while (player.video.firstChild) player.video.removeChild(player.video.firstChild);
-                player.video.removeAttribute('src');
-                const source = document.createElement('source');
-                source.src = url;
-                source.type = type;
-                player.video.appendChild(source);
-                player.video.load();
-                if (document.body.classList.contains('user-interacted')) {
-                    try { await player.video.play(); } catch(e) {}
-                }
-            };
-        }
-        
-        // Ensure updateContentId method exists
-        if (!player.updateContentId) {
-            player.updateContentId = function(newContentId) {
-                if (this.contentId === newContentId) return;
-                console.log(`🔄 Player contentId updated: ${this.contentId} -> ${newContentId}`);
-                this.contentId = newContentId;
-                this.viewRecorded = false;
-                this._viewThresholdReached = false;
-            };
-        }
-        
-        // Set up event handlers
-        player.on('play', () => {
+
+        // Set up event handlers. Event names below match the real class's
+        // actual _emit() calls (js/video-player.js) - 'playback:play' etc,
+        // not the bare 'play'/'pause'/'volumechange'/'error'/'loadedmetadata'
+        // the old thin class used to emit. mediaEnded is unprefixed on both.
+        player.on('playback:play', () => {
             console.log('▶️ Video playing...');
             if (window.stateManager) window.stateManager.setState('session.playing', true);
             if (typeof window.initializeWatchSessionOnPlay === 'function') window.initializeWatchSessionOnPlay();
         });
-        
-        player.on('pause', () => {
+
+        player.on('playback:pause', () => {
             if (window.stateManager) window.stateManager.setState('session.playing', false);
         });
-        
-        player.on('volumechange', (data) => {
+
+        player.on('playback:volumechange', (data) => {
             if (window.stateManager) window.stateManager.setState('session.volume', data.volume);
         });
-        
-        player.on('error', (event) => {
+
+        player.on('media:error', (event) => {
             const media = player?.video;
             if (media && media.error === null && media.networkState !== 3) return;
             console.error('🔴 Video player error:', event);
@@ -1317,8 +938,8 @@ function initializeEnhancedVideoPlayer() {
                 window.showToast('Playback error occurred', 'error');
             }
         });
-        
-        player.on('loadedmetadata', () => {
+
+        player.on('media:loadedmetadata', () => {
             console.log('✅ Video metadata loaded, ready to play');
             const placeholder = document.getElementById('videoPlaceholder');
             if (placeholder) placeholder.style.display = 'none';
@@ -1559,7 +1180,9 @@ async function initializeSingleMediaPage(contentItem) {
 // ============================================
 // GLOBAL EXPORTS
 // ============================================
-window.EnhancedVideoPlayer = EnhancedVideoPlayer;
+// window.EnhancedVideoPlayer is NOT reassigned here anymore - js/video-player.js
+// (loaded earlier) already sets it to the real class; this file no longer
+// declares its own, so there's nothing to (re-)export.
 window.initializeEnhancedVideoPlayer = initializeEnhancedVideoPlayer;
 window.loadContentIntoPlayer = loadContentIntoPlayer;
 window.getPlayableMediaUrl = getPlayableMediaUrl;

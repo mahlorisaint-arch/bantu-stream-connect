@@ -11,26 +11,48 @@ let currentGenre = 'all';
 let currentPage = 0;
 const ITEMS_PER_PAGE = 6;
 
+// The genre-filter-pill data-genre values (content-detail.html) are
+// lowercase ("music"/"stem"/"culture"/"news"), but real Content.genre
+// values are Title/Upper case ("Music"/"STEM"/"Culture"/"News" - same
+// casing used by the genre <select> on creator-upload.html). Postgres eq()
+// is case-sensitive, so filtering with the raw lowercase pill value always
+// matched 0 rows and silently fell through to the unfiltered-recent-content
+// fallback below - the pill looked active but never actually filtered.
+const GENRE_PILL_TO_DB_VALUE = {
+    music: 'Music',
+    stem: 'STEM',
+    culture: 'Culture',
+    news: 'News'
+};
+
 /**
- * Load related content from database
+ * Load related content from database.
+ * @param {boolean} append - false (default) replaces the grid (initial
+ *   load / genre change); true fetches the next page and appends to it
+ *   (Load More button).
  */
-async function loadRelatedContent(contentId, limit = 6, genre = 'all') {
+async function loadRelatedContent(contentId, genre = 'all', append = false) {
     if (!contentId) {
         console.warn('⚠️ Cannot load related content: missing contentId');
         return [];
     }
-    
+
     const skeleton = document.getElementById('relatedSkeleton');
     const grid = document.getElementById('relatedGrid');
     const empty = document.getElementById('relatedEmpty');
     const loadMore = document.getElementById('loadMoreContainer');
-    
-    // Show skeleton
-    if (skeleton) skeleton.style.display = 'grid';
-    if (grid) grid.style.display = 'none';
-    if (empty) empty.style.display = 'none';
-    if (loadMore) loadMore.style.display = 'none';
-    
+
+    if (!append) {
+        currentPage = 0;
+        if (skeleton) skeleton.style.display = 'grid';
+        if (grid) grid.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+        if (loadMore) loadMore.style.display = 'none';
+    }
+
+    const offset = currentPage * ITEMS_PER_PAGE;
+    const dbGenre = GENRE_PILL_TO_DB_VALUE[genre] || genre;
+
     try {
         // First get current content's genre
         const { data: currentContent, error: currentError } = await window.supabaseClient
@@ -38,11 +60,11 @@ async function loadRelatedContent(contentId, limit = 6, genre = 'all') {
             .select('genre, content_type, user_id')
             .eq('id', parseInt(contentId))
             .maybeSingle();
-        
+
         if (currentError) {
             console.warn('Could not fetch current content genre:', currentError);
         }
-        
+
         // Build query for related content
         let query = window.supabaseClient
             .from('Content')
@@ -65,20 +87,26 @@ async function loadRelatedContent(contentId, limit = 6, genre = 'all') {
             `)
             .eq('status', 'published')
             .neq('id', parseInt(contentId))
-            .limit(limit);
-        
+            .order('created_at', { ascending: false })
+            .range(offset, offset + ITEMS_PER_PAGE - 1);
+
         // Apply genre filter
-        if (genre !== 'all' && currentContent?.genre) {
-            query = query.eq('genre', genre);
+        if (dbGenre !== 'all' && currentContent?.genre) {
+            query = query.eq('genre', dbGenre);
         } else if (currentContent?.genre && currentContent.genre !== 'General') {
             query = query.eq('genre', currentContent.genre);
         }
-        
+
         const { data, error } = await query;
-        
+
         if (error) throw error;
-        
+
         if (!data || data.length === 0) {
+            if (append) {
+                // No more pages - keep whatever's already rendered, just hide the button.
+                if (loadMore) loadMore.style.display = 'none';
+                return [];
+            }
             // Fallback: Get any recent content
             const { data: fallbackData, error: fallbackError } = await window.supabaseClient
                 .from('Content')
@@ -102,10 +130,10 @@ async function loadRelatedContent(contentId, limit = 6, genre = 'all') {
                 .eq('status', 'published')
                 .neq('id', parseInt(contentId))
                 .order('created_at', { ascending: false })
-                .limit(limit);
-            
+                .range(offset, offset + ITEMS_PER_PAGE - 1);
+
             if (fallbackError) throw fallbackError;
-            
+
             if (!fallbackData || fallbackData.length === 0) {
                 // Hide skeleton, show empty
                 if (skeleton) skeleton.style.display = 'none';
@@ -114,27 +142,29 @@ async function loadRelatedContent(contentId, limit = 6, genre = 'all') {
                 if (loadMore) loadMore.style.display = 'none';
                 return [];
             }
-            
+
             const enrichedData = await enrichContentWithStats(fallbackData);
             currentRelatedItems = enrichedData;
             currentGenre = genre;
-            renderRelatedContent(enrichedData);
+            renderRelatedContent(enrichedData, false, fallbackData.length === ITEMS_PER_PAGE);
             return enrichedData;
         }
-        
+
         const enrichedData = await enrichContentWithStats(data);
-        currentRelatedItems = enrichedData;
+        currentRelatedItems = append ? currentRelatedItems.concat(enrichedData) : enrichedData;
         currentGenre = genre;
-        renderRelatedContent(enrichedData);
-        
+        renderRelatedContent(enrichedData, append, data.length === ITEMS_PER_PAGE);
+
         console.log(`✅ Loaded ${enrichedData.length} related content items`);
         return enrichedData;
-        
+
     } catch (error) {
         console.error('❌ Error loading related content:', error);
         if (skeleton) skeleton.style.display = 'none';
-        if (grid) grid.style.display = 'none';
-        if (empty) empty.style.display = 'block';
+        if (!append) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = 'block';
+        }
         if (loadMore) loadMore.style.display = 'none';
         return [];
     }
@@ -184,40 +214,44 @@ async function enrichContentWithStats(items) {
 }
 
 /**
- * Render related content into the grid
+ * Render related content into the grid.
+ * @param {boolean} append - true appends items.length cards to the existing
+ *   grid (Load More); false (default) replaces the grid entirely.
+ * @param {boolean} hasMore - whether this fetch returned a full page,
+ *   meaning another page might exist. Drives Load More's visibility instead
+ *   of the old `items.length >= 6` heuristic, which stayed true forever
+ *   once the total result set plateaued (every subsequent click re-fetched
+ *   the same items and the button never disappeared).
  */
-function renderRelatedContent(items) {
+function renderRelatedContent(items, append = false, hasMore = false) {
     const container = document.getElementById('relatedGrid');
     const skeleton = document.getElementById('relatedSkeleton');
     const empty = document.getElementById('relatedEmpty');
     const loadMore = document.getElementById('loadMoreContainer');
-    
+
     if (!container) {
         console.warn('Related content grid container not found');
         return;
     }
-    
+
     // Hide skeleton
     if (skeleton) skeleton.style.display = 'none';
-    
+
     if (!items || items.length === 0) {
-        container.style.display = 'none';
-        if (empty) empty.style.display = 'block';
+        if (!append) {
+            container.style.display = 'none';
+            if (empty) empty.style.display = 'block';
+        }
         if (loadMore) loadMore.style.display = 'none';
         return;
     }
-    
+
     container.style.display = 'grid';
     if (empty) empty.style.display = 'none';
-    
-    // Show load more if we have items and they might be more
-    if (loadMore && items.length >= 6) {
-        loadMore.style.display = 'block';
-    } else if (loadMore) {
-        loadMore.style.display = 'none';
-    }
-    
-    container.innerHTML = items.map(item => {
+
+    if (loadMore) loadMore.style.display = hasMore ? 'block' : 'none';
+
+    const cardsHtml = items.map(item => {
         const thumbnail = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || 
                          item.thumbnail_url || 
                          'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
@@ -276,9 +310,17 @@ function renderRelatedContent(items) {
             </a>
         `;
     }).join('');
-    
-    // Add click tracking
-    container.querySelectorAll('.related-card').forEach(card => {
+
+    if (append) {
+        container.insertAdjacentHTML('beforeend', cardsHtml);
+    } else {
+        container.innerHTML = cardsHtml;
+    }
+
+    // Add click tracking - only to cards that don't have it yet, so append
+    // mode doesn't pile up duplicate listeners on already-rendered cards.
+    container.querySelectorAll('.related-card:not([data-click-bound])').forEach(card => {
+        card.dataset.clickBound = 'true';
         card.addEventListener('click', function(e) {
             if (window.track?.relatedContentClick) {
                 const contentId = card.dataset.contentId;
@@ -286,7 +328,7 @@ function renderRelatedContent(items) {
             }
         });
     });
-    
+
     console.log('✅ Related content grid rendered with correct view counts');
 }
 
@@ -295,13 +337,13 @@ function renderRelatedContent(items) {
  */
 async function refreshRelatedContent(contentId = null) {
     const targetId = contentId || window.currentContent?.id;
-    
+
     if (!targetId) {
         console.warn('Cannot refresh related content: no content ID');
         return;
     }
-    
-    await loadRelatedContent(targetId, ITEMS_PER_PAGE, currentGenre);
+
+    await loadRelatedContent(targetId, currentGenre, false);
 }
 
 /**
@@ -352,12 +394,11 @@ function setupGenreFilters() {
             
             const genre = this.dataset.genre;
             currentGenre = genre;
-            currentPage = 0;
-            
-            // Reload with genre filter
+
+            // Reload with genre filter (loadRelatedContent resets currentPage
+            // itself for a non-append load)
             if (window.currentContent?.id) {
-                const limit = genre === 'all' ? ITEMS_PER_PAGE : ITEMS_PER_PAGE;
-                loadRelatedContent(window.currentContent.id, limit, genre);
+                loadRelatedContent(window.currentContent.id, genre, false);
             }
         });
     });
@@ -369,16 +410,16 @@ function setupGenreFilters() {
 function setupLoadMoreButton() {
     const btn = document.getElementById('loadMoreRelatedBtn');
     if (!btn) return;
-    
+
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
-    
+
     newBtn.addEventListener('click', function() {
-        // Load more items (increment page)
+        // Fetch the next page and append it (real offset-based pagination,
+        // not a growing .limit() re-fetch of the same unordered rows).
         currentPage++;
-        const newLimit = (currentPage + 1) * ITEMS_PER_PAGE;
         if (window.currentContent?.id) {
-            loadRelatedContent(window.currentContent.id, newLimit, currentGenre);
+            loadRelatedContent(window.currentContent.id, currentGenre, true);
         }
     });
 }

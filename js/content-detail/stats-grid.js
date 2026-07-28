@@ -255,25 +255,21 @@ function setupViewSyncListener() {
  */
 async function incrementContentViews(contentId) {
     if (!contentId) return false;
-    
+
     try {
+        // No fallback to a direct Content.update({views_count}) here on
+        // purpose - that column doesn't exist on Content at all (confirmed
+        // via the live schema), so a "fallback" that also always fails
+        // isn't a real fallback, just misleading dead code.
         const { error: rpcError } = await window.supabaseClient.rpc('increment_content_views', {
             content_id_input: parseInt(contentId)
         });
-        
+
         if (rpcError) {
-            console.warn('RPC increment failed, trying direct update:', rpcError);
-            const { error: updateError } = await window.supabaseClient
-                .from('Content')
-                .update({ views_count: window.supabaseClient.rpc('increment', { x: 1 }) })
-                .eq('id', contentId);
-            
-            if (updateError) {
-                console.error('Direct update also failed:', updateError);
-                return false;
-            }
+            console.error('❌ increment_content_views RPC failed:', rpcError);
+            return false;
         }
-        
+
         console.log('✅ Content views_count incremented for:', contentId);
         incrementFrontendViewCount();
         return true;

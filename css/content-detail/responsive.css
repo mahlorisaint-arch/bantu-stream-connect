@@ -545,12 +545,6 @@
     display: none;
   }
   
-  /* Description */
-  .description-metadata {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
   /* Tags */
   .genre-filters {
     width: 100%;
