@@ -29,6 +29,9 @@
   let currentTimeRange = '30days';
   let charts = {};
   let dom = {};
+  // Last-rendered Top Content rows, kept so the Views/Watch Time/Completion/
+  // Engagement table-btn row can re-sort client-side without a re-fetch.
+  let currentTopContentList = [];
   let initializationAttempts = 0;
   const MAX_INIT_ATTEMPTS = 1;
   
@@ -156,6 +159,7 @@
       // Setup UI controls
       setupTimeRangeSelector(analyticsManager);
       setupExportButton(analyticsManager);
+      setupTableSort();
       setupBackButton();
       
       // ✅ 5G: Setup filter bar
@@ -661,6 +665,7 @@
       }
       
       // Show empty state if no content found
+      currentTopContentList = [];
       tbody.innerHTML = `
         <tr>
           <td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">
@@ -679,7 +684,8 @@
   function renderTopContentTable(items) {
     const tbody = dom.topContentBody;
     if (!tbody) return;
-    
+
+    currentTopContentList = items;
     console.log('📊 Rendering top content table with', items.length, 'items');
     
     tbody.innerHTML = items.map(function(item, index) {
@@ -744,6 +750,51 @@
     }).join('');
     
     console.log('✅ Top content table rendered with', items.length, 'rows');
+  }
+
+  // Same field-extraction/fallback logic as renderTopContentTable() above,
+  // just returning the raw number instead of a formatted table cell.
+  function getTopContentSortValue(item, sortKey) {
+    const content = item.Content || item;
+    const analytics = item.analytics || item;
+
+    const views = analytics.totalViews || analytics.views || content.views_count || 0;
+    const totalWatchTime = analytics.totalWatchTime !== undefined ? analytics.totalWatchTime :
+                          (analytics.watchTime !== undefined ? analytics.watchTime : 0);
+    const completionRate = analytics.avgCompletionRate !== undefined ? analytics.avgCompletionRate :
+                          (analytics.completionRate !== undefined ? analytics.completionRate : 0);
+    const totalLikes = analytics.totalLikes || content.likes_count || 0;
+    const totalComments = analytics.totalComments || content.comments_count || 0;
+    const engagementRate = analytics.engagementRate !== undefined ? analytics.engagementRate :
+                          (views > 0 ? Math.round(((totalLikes + totalComments) / views) * 100) : 0);
+
+    switch (sortKey) {
+      case 'watchTime': return totalWatchTime;
+      case 'completion': return completionRate;
+      case 'engagement': return engagementRate;
+      case 'views':
+      default: return views;
+    }
+  }
+
+  // ============================================
+  // ✅ TOP CONTENT TABLE SORT (Views/Watch Time/Completion/Engagement)
+  // ============================================
+  function setupTableSort() {
+    const tableBtns = document.querySelectorAll('.table-btn');
+    if (!tableBtns.length) return;
+
+    tableBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        tableBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+
+        const sorted = [...currentTopContentList].sort(function(a, b) {
+          return getTopContentSortValue(b, btn.dataset.sort) - getTopContentSortValue(a, btn.dataset.sort);
+        });
+        renderTopContentTable(sorted);
+      });
+    });
   }
 
   // ============================================
