@@ -28,7 +28,13 @@ font-family: 'Orbitron', sans-serif;
 font-size: 32px; font-weight: 700;
 background: linear-gradient(135deg,var(--soft-white),var(--warm-gold));
 -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-margin-bottom: 30px; text-align: center;
+margin-bottom: 20px; text-align: center;
+}
+@media (max-width: 1024px) {
+.upload-card h1 { font-size: 22px; margin-bottom: 14px; }
+}
+@media (max-width: 480px) {
+.upload-card h1 { font-size: 18px; }
 }
 .creator-streak {
 position: absolute;
@@ -135,6 +141,5 @@ border-color: var(--warm-gold);
 .upload-card { padding: 18px 14px; }
 .action-buttons { flex-direction: column; }
 .thumbnail-actions { flex-direction: column; }
-.media-type-selector { flex-direction: column; }
 .mood-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
 }

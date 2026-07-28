@@ -1,19 +1,29 @@
-/* Content Type Selection Styles */
-.media-type-selector { display: flex; gap: 12px; margin-bottom: 15px; }
+/* Content Type Selection Styles — thin/glassmorphic/cyan-highlight recipe,
+   same as the stat cards elsewhere this session. Always stays a single row
+   of 3, never stacks vertically, even on mobile/tablet. */
+.media-type-selector { display: flex; gap: 8px; margin-bottom: 12px; }
 .media-type-option {
-flex: 1; padding: 12px;
-background: rgba(255,255,255,.05);
-border: 2px solid var(--card-border);
-border-radius: 12px;
-cursor: pointer; transition: all .3s ease;
-text-align: center; font-size: 14px; font-weight: 500;
+flex: 1; padding: 10px 6px;
+background: rgba(6, 20, 26, 0.75);
+border: 1px solid rgba(0, 229, 255, 0.25);
+border-radius: 10px;
+cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, color .2s ease;
+text-align: center; font-size: 11px; font-weight: 500;
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-.media-type-option:hover { border-color: var(--warm-gold); background: rgba(0, 229, 255,.05); }
+.media-type-option:hover { border-color: rgba(0, 229, 255, 0.5); background: rgba(0, 229, 255,.08); }
 .media-type-option.selected {
-border-color: var(--warm-gold);
-background: rgba(0, 229, 255,.1); color: var(--warm-gold);
+border-color: #00E5FF;
+background: rgba(0, 229, 255,.12); color: #00E5FF;
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
 }
-.media-type-option i { display: block; font-size: 24px; margin-bottom: 8px; }
+.media-type-option i { display: block; font-size: 16px; margin-bottom: 5px; }
+
+@media (max-width: 480px) {
+.media-type-selector { gap: 5px; }
+.media-type-option { padding: 8px 3px; font-size: 9px; }
+.media-type-option i { font-size: 13px; margin-bottom: 3px; }
+}
 
 .shorts-info-box {
 background: rgba(6, 20, 26, 0.75); border: 1px solid rgba(0, 229, 255, 0.3);
