@@ -71,7 +71,13 @@ display: flex; align-items: center; justify-content: center;
 
 .profile-summary-info { flex: 1; min-width: 200px; }
 
-.profile-name { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: var(--soft-white); }
+/* Scoped to .profile-summary-info, not a bare .profile-name - that class is
+   also the header profile-switcher button's name (shared-components.css,
+   14px). An unscoped rule here previously won the cascade (this file loads
+   after shared-components.css) and made the header name render at profile-
+   summary-card size on this page only - creator-dashboard.html has no such
+   override, which is why the header name was correct-sized there. */
+.profile-summary-info .profile-name { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: var(--soft-white); }
 
 .profile-type {
 display: inline-block; font-size: 12px; color: var(--warm-gold);
@@ -359,7 +365,7 @@ cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; 
 .avatar-hint { font-size: 12px; color: var(--slate-grey); }
 
 /* Profile Type Options */
-.profile-type-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.profile-type-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
 .profile-type-option {
 display: flex; flex-direction: column; align-items: center; padding: 15px;
@@ -489,7 +495,7 @@ font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 .profile-summary-empty { padding: 36px 16px; }
 .profile-avatar { width: 72px; height: 72px; }
 .profile-avatar i { font-size: 30px; }
-.profile-name { font-size: 18px; }
+.profile-summary-info .profile-name { font-size: 18px; }
 .profile-type { font-size: 11px; margin-bottom: 8px; }
 .profile-bio { max-width: 100%; font-size: 13px; margin-bottom: 10px; }
 .profile-action-btn { padding: 8px 18px; font-size: 12px; }
@@ -501,8 +507,8 @@ font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 .setting-info h3 { font-size: 14px; }
 .setting-info p { font-size: 12px; }
 
-.profile-type-options { grid-template-columns: 1fr; }
 .profile-type-option { padding: 12px; }
+.profile-type-option span { font-size: 12px; }
 
 .modal-content { padding: 20px; }
 .modal-header { margin-bottom: 18px; padding-bottom: 12px; }
@@ -518,5 +524,5 @@ font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 .page-title { font-size: 19px; }
 .profile-avatar { width: 64px; height: 64px; }
 .profile-avatar i { font-size: 26px; }
-.profile-name { font-size: 16px; }
+.profile-summary-info .profile-name { font-size: 16px; }
 }
