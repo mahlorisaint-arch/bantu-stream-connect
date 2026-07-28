@@ -156,31 +156,35 @@
 
         .mode-toggle {
             display: flex;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
+            gap: 6px;
+            background: rgba(6, 20, 26, 0.75);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 999px;
             padding: 4px;
             margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         .mode-btn {
             flex: 1;
             padding: 12px;
-            border: none;
+            border: 1px solid transparent;
             background: transparent;
             color: var(--slate-grey);
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border-radius: 8px;
+            transition: all 0.25s ease;
+            border-radius: 999px;
         }
 
+        .mode-btn:hover { color: var(--soft-white); }
+
         .mode-btn.active {
-            background: linear-gradient(
-                135deg,
-                var(--bantu-blue),
-                var(--warm-gold)
-            );
-            color: white;
+            background: rgba(0, 229, 255, 0.12);
+            border-color: rgba(0, 229, 255, 0.4);
+            color: var(--bantu-blue);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
         }
 
         .form-group {
@@ -233,16 +237,18 @@
         }
 
         .btn-primary {
-            background: linear-gradient(
-                135deg,
-                var(--bantu-blue),
-                var(--warm-gold)
-            );
-            color: white;
+            background: rgba(6, 20, 26, 0.75);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            color: #00E5FF;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
+            border-color: rgba(0, 229, 255, 0.6);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
         }
 
         .divider {
