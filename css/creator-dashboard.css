@@ -341,47 +341,49 @@ body { background: #000000; }
 }
 .uc-card:hover .play-icon { transform: scale(1); }
 
-/* Upload Promo */
+/* Upload Promo — same thin/glassmorphic/cyan-highlight recipe as the stat
+   cards above. */
 .upload-promo {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 24px;
-    padding: 40px;
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 14px;
+    padding: 18px;
     text-align: center;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 
 .promo-title {
     font-family: 'Orbitron', sans-serif;
-    font-size: 28px;
+    font-size: 16px;
     font-weight: 700;
     background: linear-gradient(135deg, var(--soft-white), var(--bantu-blue));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 15px;
+    margin-bottom: 6px;
 }
 
 .promo-text {
-    font-size: 16px;
+    font-size: 12px;
     color: rgba(248, 250, 252, 0.8);
-    margin-bottom: 25px;
+    margin-bottom: 14px;
     line-height: 1.5;
 }
 
 .upload-btn {
     background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
     color: var(--soft-white);
-    border: none;
-    padding: 15px 30px;
-    border-radius: 12px;
-    font-size: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 9px 22px;
+    border-radius: 10px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .upload-btn:hover {
@@ -389,52 +391,49 @@ body { background: #000000; }
     box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
 }
 
-/* Quick Actions */
+/* Quick Actions — same recipe, always a single row of 3 (Upload/Analytics/
+   Payout), never stacked, even on mobile/tablet. */
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
 }
 
 .action-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 25px;
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px 8px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 
 .action-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(0, 229, 255, 0.3);
+    border-color: rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
 }
 
 .action-icon {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 15px;
+    width: 34px;
+    height: 34px;
+    margin: 0 auto 8px;
     border-radius: 50%;
-    background: rgba(77, 171, 247, 0.2);
+    background: rgba(0, 229, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 15px;
     color: var(--bantu-blue);
 }
 
 .action-title {
-    font-size: 16px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--soft-white);
-}
-
-.payout-action {
-    grid-column: span 2;
-    max-width: 300px;
-    margin: 0 auto;
 }
 
 /* Payout Request is disabled for this pass — no real payout processing
@@ -447,16 +446,16 @@ body { background: #000000; }
 }
 
 .action-card.is-disabled:hover {
-    transform: none;
-    border-color: var(--card-border);
+    border-color: rgba(0, 229, 255, 0.3);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 
 .action-card-badge {
     display: inline-block;
-    margin-top: 10px;
-    padding: 3px 10px;
+    margin-top: 6px;
+    padding: 2px 8px;
     border-radius: 20px;
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -464,26 +463,40 @@ body { background: #000000; }
     color: var(--slate-grey);
 }
 
-/* Messages Section */
+@media (max-width: 767px) {
+    .upload-promo { padding: 14px; }
+    .promo-title { font-size: 14px; }
+    .promo-text { font-size: 11px; margin-bottom: 10px; }
+    .upload-btn { padding: 8px 18px; font-size: 12px; }
+    .quick-actions { gap: 6px; }
+    .action-card { padding: 10px 5px; border-radius: 10px; }
+    .action-icon { width: 28px; height: 28px; font-size: 12px; margin-bottom: 6px; }
+    .action-title { font-size: 9px; }
+    .action-card-badge { font-size: 7px; padding: 1px 6px; }
+}
+
+/* Messages Section — same recipe. */
 .messages-section {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 30px;
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 14px;
+    padding: 16px;
     backdrop-filter: blur(10px);
-    min-height: 200px;
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
+    min-height: 0;
 }
 
 .messages-icon {
-    font-size: 50px;
+    font-size: 26px;
     color: var(--slate-grey);
-    margin-bottom: 20px;
+    margin-bottom: 8px;
     opacity: 0.5;
     text-align: center;
 }
 
 .messages-text {
-    font-size: 16px;
+    font-size: 12px;
     color: var(--slate-grey);
     line-height: 1.5;
     text-align: center;
@@ -1150,15 +1163,7 @@ body { background: #000000; }
         width: 80px;
         height: 80px;
     }
-    
-    .quick-actions {
-        grid-template-columns: 1fr;
-    }
-    
-    .payout-action {
-        grid-column: span 1;
-    }
-    
+
     .modal-content {
         padding: 20px;
     }
