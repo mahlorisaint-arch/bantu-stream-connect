@@ -1782,11 +1782,13 @@ async function handleCollabRequest(creatorId) {
     if (!message || !message.trim()) return;
 
     try {
-        const { data: senderProfile } = await supabaseClient
-            .from('user_profiles').select('full_name, username').eq('id', user.id).maybeSingle();
-        const senderName = senderProfile?.full_name || senderProfile?.username || 'A creator';
-
-        // Primary record: the real collaboration_requests table (status/budget/deadline tracking).
+        // The real collaboration_requests table (status/budget/deadline tracking).
+        // The companion notification is NOT inserted from here - client-side
+        // inserts into `notifications` are blocked by RLS (no INSERT policy
+        // for authenticated users; every other real notification in this app
+        // is written server-side by a SECURITY DEFINER trigger, which bypasses
+        // RLS). trg_notify_collab_request on this table's own AFTER INSERT
+        // creates the recipient's notification for real.
         const { error: requestError } = await supabaseClient.from('creator_collaboration_requests').insert({
             from_creator_id: user.id,
             to_creator_id: creatorId,
@@ -1794,21 +1796,6 @@ async function handleCollabRequest(creatorId) {
             message: message.trim()
         });
         if (requestError) throw requestError;
-
-        // Companion notification so the recipient sees a bell alert.
-        // Uses the existing valid 'system' type — no schema migration needed.
-        // action_url sends the recipient to the sender's profile, so they
-        // can see who's asking before responding.
-        const { error: notifError } = await supabaseClient.from('notifications').insert({
-            user_id: creatorId,
-            type: 'system',
-            title: 'New collab request',
-            message: `${senderName}: "${message.trim()}"`,
-            sender_name: senderName,
-            action_url: `/creator-channel.html?id=${user.id}`,
-            metadata: { sender_id: user.id, request_text: message.trim(), kind: 'collab_request' }
-        });
-        if (notifError) console.warn('Collab notification insert failed (request itself was still saved):', notifError);
 
         showToast('Collab request sent!', 'success');
     } catch (e) {
