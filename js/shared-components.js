@@ -1315,7 +1315,7 @@ async function markNotificationAsRead(notificationId) {
     try {
         const { error } = await window.supabaseClient
             .from('notifications')
-            .update({ is_read: true, read_at: new Date().toISOString() })
+            .update({ is_read: true })
             .eq('id', notificationId);
 
         if (error) throw error;
@@ -1340,7 +1340,7 @@ async function markNotificationAsReadSilent(notificationId) {
     try {
         await window.supabaseClient
             .from('notifications')
-            .update({ is_read: true, read_at: new Date().toISOString() })
+            .update({ is_read: true })
             .eq('id', notificationId);
     } catch (err) {
         console.warn('Silent read synchronization error:', err.message);
@@ -1354,7 +1354,7 @@ async function markAllNotificationsAsRead() {
     try {
         const { error } = await window.supabaseClient
             .from('notifications')
-            .update({ is_read: true, read_at: new Date().toISOString() })
+            .update({ is_read: true })
             .eq('user_id', user.id)
             .eq('is_read', false);
 
@@ -1446,7 +1446,8 @@ function getNotificationIconMeta(type) {
         world_unlock: { icon: 'fa-lock-open', bg: 'rgba(251, 146, 60, 0.15)', color: '#FB923C' },
         portal_drop: { icon: 'fa-compact-disc', bg: 'rgba(139, 92, 246, 0.15)', color: '#A78BFA' },
         streak_nudge: { icon: 'fa-fire', bg: 'rgba(248, 113, 113, 0.15)', color: '#F87171' },
-        world_content: { icon: 'fa-wave-square', bg: 'rgba(45, 212, 191, 0.15)', color: '#2DD4BF' }
+        world_content: { icon: 'fa-wave-square', bg: 'rgba(45, 212, 191, 0.15)', color: '#2DD4BF' },
+        creator_upload: { icon: 'fa-upload', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' }
     };
     return mapping[type] || defaultMeta;
 }

@@ -2404,23 +2404,70 @@ btn.onclick = handleConnect;
 }
 }
 
-// ===== NOTIFY BUTTON — real localStorage-persisted upload notification toggle =====
-function setupNotifyButton() {
+// ===== NOTIFY BUTTON — real DB-backed upload notification subscription.
+// Writes to creator_upload_subscriptions; fn_notify_creator_upload() (trigger
+// on Content publish) reads that table server-side to fan out real
+// 'creator_upload' notifications. A localStorage toggle could never do this -
+// the upload trigger runs on the server and has no way to see another user's
+// browser storage. =====
+async function setupNotifyButton() {
 const btn = document.getElementById('notify-btn');
 if (!btn || !window.creatorId) return;
 
-const storageKey = `notify_creator_${window.creatorId}`;
-const isActive = localStorage.getItem(storageKey) === 'true';
-btn.classList.toggle('active', isActive);
+if (window.currentUser && window.currentUser.id === window.creatorId) {
+btn.style.display = 'none';
+return;
+}
 
-btn.onclick = () => {
+let isSubscribed = false;
+if (window.currentUser) {
+try {
+const { data } = await supabase
+.from('creator_upload_subscriptions')
+.select('id')
+.eq('subscriber_id', window.currentUser.id)
+.eq('creator_id', window.creatorId)
+.maybeSingle();
+isSubscribed = !!data;
+} catch (error) {
+console.error('Error checking upload subscription:', error);
+}
+}
+btn.classList.toggle('active', isSubscribed);
+
+btn.onclick = async () => {
+if (!window.currentUser) {
+handleLoginRequired();
+return;
+}
+
 const nowActive = !btn.classList.contains('active');
+
+try {
+if (nowActive) {
+const { error } = await supabase.from('creator_upload_subscriptions').insert({
+subscriber_id: window.currentUser.id,
+creator_id: window.creatorId
+});
+if (error) throw error;
+} else {
+const { error } = await supabase
+.from('creator_upload_subscriptions')
+.delete()
+.eq('subscriber_id', window.currentUser.id)
+.eq('creator_id', window.creatorId);
+if (error) throw error;
+}
+
 btn.classList.toggle('active', nowActive);
-localStorage.setItem(storageKey, String(nowActive));
 showToast(
 nowActive ? "You'll be notified about new uploads from this creator" : 'Notifications turned off',
 nowActive ? 'success' : 'info'
 );
+} catch (error) {
+console.error('Error updating upload subscription:', error);
+showToast('Could not update notification preference', 'error');
+}
 };
 }
 
