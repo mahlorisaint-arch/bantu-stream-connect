@@ -3525,7 +3525,23 @@
     
     _initializeTelemetrySession() {
       if (!this.config.enableTelemetry || !this.supabase || !this.contentId) return;
-      
+
+      // this.userId is only ever set once, in the constructor
+      // (options.userId || window.AuthHelper?.getUserProfile?.()?.id ||
+      // null) - and the player is constructed at page load, well before
+      // the async auth check typically resolves (confirmed live: real
+      // console logs show "EnhancedVideoPlayer instantiated {userId: null}"
+      // even in sessions where the user was already logged in seconds
+      // later). Nothing anywhere updates this.userId afterward, so every
+      // telemetry session built from it silently recorded as an anonymous
+      // user forever, even for a fully authenticated viewer. Re-resolve the
+      // live value right before use instead of trusting the stale snapshot.
+      const liveUserId = window.currentUserId || window.AuthHelper?.getUserProfile?.()?.id || this.userId || null;
+      if (liveUserId !== this.userId) {
+        console.log(`🔄 Player userId was stale (${this.userId}), refreshed to ${liveUserId}`);
+        this.userId = liveUserId;
+      }
+
       if (!this.playbackSessionId) {
         this.playbackSessionId = sessionStorage.getItem('bantu_playback_session');
         if (!this.playbackSessionId) {

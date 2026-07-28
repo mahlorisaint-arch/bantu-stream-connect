@@ -663,7 +663,17 @@
 
   WatchSessionManager.prototype._heartbeatTick = async function() {
     if (!this.isActive || !this.videoElement) return;
-    
+
+    // Self-heal a session that started with userId=null (e.g. playback
+    // began before auth resolved, or as an actual guest who then logs in
+    // mid-session) - re-check the live value on every tick so watch_progress
+    // starts saving within one heartbeat of auth actually being available,
+    // instead of staying anonymous for the rest of the session.
+    if (!this.userId && window.currentUserId) {
+      console.log(`🔄 WatchSessionManager userId was null, refreshed to ${window.currentUserId}`);
+      this.userId = window.currentUserId;
+    }
+
     const video = this.videoElement;
     if (video.paused || video.ended) return;
 
