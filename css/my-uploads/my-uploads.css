@@ -182,12 +182,9 @@ body { background: #000000; }
   right: 8px;
   display: flex;
   gap: 6px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.playlist-card:hover .playlist-card-actions {
-  opacity: 1;
+  /* Always visible rather than hover-revealed — :hover doesn't fire
+     reliably on touch devices, which would leave mobile/tablet users
+     with no way to see or reach these buttons at all. */
 }
 
 .playlist-edit-btn,
@@ -195,8 +192,10 @@ body { background: #000000; }
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(6, 20, 26, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--soft-white);
   display: flex;
   align-items: center;
