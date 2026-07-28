@@ -120,56 +120,6 @@ class CreatorAnalytics {
   }
 
   // ============================================
-  // ✅ 5G: BUILD AUDIENCE SEGMENT FILTER
-  // ============================================
-  async _getAudienceSegmentFilter(segment, contentIds, dateFilter) {
-    if (segment === 'all' || !this.userId) return contentIds;
-    
-    try {
-      // Get viewer IDs based on segment
-      let viewerQuery = this.supabase
-        .from('content_views')
-        .select('viewer_id')
-        .in('content_id', contentIds)
-        .gte('created_at', dateFilter.start)
-        .lte('created_at', dateFilter.end);
-      
-      if (segment === 'new') {
-        // Viewers who only viewed in last 7 days
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        viewerQuery = viewerQuery.gte('created_at', sevenDaysAgo.toISOString());
-      } else if (segment === 'returning') {
-        // This would need a more complex subquery in production
-        // For now, return all viewers
-        const { data: viewers } = await viewerQuery;
-        return viewers?.map(v => v.viewer_id).filter(Boolean) || [];
-      } else if (segment === 'connectors') {
-        // Viewers who are also connectors
-        const { data: connectors } = await this.supabase
-          .from('connectors')
-          .select('connector_id')
-          .eq('connected_id', this.userId);
-        const connectorIds = connectors?.map(c => c.connector_id) || [];
-        if (connectorIds.length > 0) {
-          viewerQuery = viewerQuery.in('viewer_id', connectorIds);
-        } else {
-          return []; // No connectors, return empty
-        }
-      }
-      
-      const { data: viewers, error } = await viewerQuery;
-      if (error) throw error;
-      
-      const viewerIds = [...new Set(viewers.map(v => v.viewer_id).filter(Boolean))];
-      return viewerIds;
-    } catch (error) {
-      console.warn('⚠️ Audience segment filter failed:', error);
-      return contentIds; // Fallback to all
-    }
-  }
-
-  // ============================================
   // ✅ DASHBOARD DATA WITH FILTERS (5G)
   // ============================================
   async getDashboardData(timeRange = '30days', filters = {}) {
@@ -237,24 +187,22 @@ class CreatorAnalytics {
 
     return this._queueRequest('summary_' + timeRange, async () => {
       try {
-        // First try materialized view (fastest)
-        let summary = await this._getFromMaterializedView();
-
-        // If materialized view not ready, calculate on the fly
-        if (!summary) {
-          summary = await this._calculateSummary(timeRange, filters);
-        } else {
-          // Add calculated fields that might not be in materialized view
-          summary = await this._enrichSummaryWithWatchTime(summary, timeRange, filters);
-        }
+        // creator_analytics_summary (the old "materialized view" shortcut)
+        // only has creator_id/aggregate_views/aggregate_likes columns - none
+        // of the total_views/unique_viewers/total_uploads/etc fields this
+        // page actually reads - and it's an all-time snapshot with no
+        // per-range breakdown anyway, so it can't back the 7/30/90 Days tabs.
+        // Always calculate fresh instead; get_creator_view_analytics() (see
+        // _calculateSummary()) makes that fast and, more importantly, correct.
+        const summary = await this._calculateSummary(timeRange, filters);
 
         this._setCache(cacheKey, summary);
-        
+
         // Trigger callback
         if (this.onDataLoaded) {
           this.onDataLoaded({ summary, timeRange });
         }
-        
+
         return summary;
       } catch (error) {
         console.error('❌ Error fetching dashboard summary:', error);
@@ -262,121 +210,6 @@ class CreatorAnalytics {
         return this._getEmptySummary();
       }
     });
-  }
-
-  // ============================================
-  // ✅ ENRICH SUMMARY WITH WATCH TIME DATA
-  // ============================================
-  async _enrichSummaryWithWatchTime(summary, timeRange, filters = {}) {
-    try {
-      const activeFilters = { ...this.activeFilters, ...filters };
-      const dateFilter = this._getDateFilter(timeRange, activeFilters.customDateRange);
-      const contentTypeFilter = this._getContentTypeFilter(activeFilters.contentType);
-      
-      // Get all content IDs for this user
-      let contentQuery = this.supabase
-        .from('Content')
-        .select('id, duration, media_type')
-        .eq('user_id', this.userId);
-      
-      if (contentTypeFilter) {
-        contentQuery = contentQuery.eq('media_type', contentTypeFilter.media_type);
-      }
-      
-      const { data: content, error: contentError } = await contentQuery;
-
-      if (contentError) throw contentError;
-      
-      if (content.length === 0) {
-        return {
-          ...summary,
-          total_watch_time: 0,
-          avg_completion_rate: 0
-        };
-      }
-
-      const contentIds = content.map(c => c.id);
-
-      // Get views with filter - FIXED: Use view_duration NOT watch_time
-      let viewsQuery = this.supabase
-        .from('content_views')
-        .select('view_duration, content_id, viewer_id')
-        .in('content_id', contentIds)
-        .gte('created_at', dateFilter.start)
-        .lte('created_at', dateFilter.end);
-
-      // Apply audience segment filter
-      if (activeFilters.audienceSegment !== 'all') {
-        const filteredViewerIds = await this._getAudienceSegmentFilter(
-          activeFilters.audienceSegment,
-          contentIds,
-          dateFilter
-        );
-        if (filteredViewerIds.length > 0) {
-          viewsQuery = viewsQuery.in('viewer_id', filteredViewerIds);
-        }
-      }
-
-      const { data: views, error: viewsError } = await viewsQuery;
-
-      if (viewsError) {
-        console.warn('⚠️ Error fetching views for enrichment:', viewsError);
-        return {
-          ...summary,
-          total_watch_time: 0,
-          avg_completion_rate: 0
-        };
-      }
-
-      const totalWatchTime = views.reduce((sum, v) => sum + (v.view_duration || 0), 0);
-      
-      // Calculate average completion rate
-      let avgCompletionRate = 0;
-      if (views.length > 0 && content.length > 0) {
-        // Group views by content
-        const viewsByContent = {};
-        views.forEach(view => {
-          if (!viewsByContent[view.content_id]) {
-            viewsByContent[view.content_id] = {
-              totalWatchTime: 0,
-              viewCount: 0
-            };
-          }
-          viewsByContent[view.content_id].totalWatchTime += view.view_duration || 0;
-          viewsByContent[view.content_id].viewCount++;
-        });
-
-        // Calculate average completion rate across all views
-        let totalCompletionRate = 0;
-        let validContentCount = 0;
-
-        content.forEach(item => {
-          const contentViews = viewsByContent[item.id];
-          if (contentViews && item.duration > 0) {
-            const avgWatchTimePerView = contentViews.totalWatchTime / contentViews.viewCount;
-            const completionRate = (avgWatchTimePerView / item.duration) * 100;
-            totalCompletionRate += Math.min(100, completionRate);
-            validContentCount++;
-          }
-        });
-
-        avgCompletionRate = validContentCount > 0 ? totalCompletionRate / validContentCount : 0;
-      }
-
-      return {
-        ...summary,
-        total_watch_time: totalWatchTime,
-        avg_completion_rate: Math.round(avgCompletionRate * 100) / 100
-      };
-
-    } catch (error) {
-      console.warn('⚠️ Could not enrich summary with watch time:', error);
-      return {
-        ...summary,
-        total_watch_time: 0,
-        avg_completion_rate: 0
-      };
-    }
   }
 
   // ============================================
@@ -432,50 +265,34 @@ class CreatorAnalytics {
         const likesByContent = {};
         (statsRows || []).forEach(row => { likesByContent[row.content_id] = row.total_likes || 0; });
 
-        // ✅ 5G: Apply audience segment filter
-        const filteredViewerIds = await this._getAudienceSegmentFilter(
-          activeFilters.audienceSegment,
-          contentIds,
-          dateFilter
-        );
-        
-        // Get view analytics - FIXED: Use view_duration NOT watch_time
-        let viewsQuery = this.supabase
-          .from('content_views')
-          .select('content_id, viewer_id, view_duration')
-          .in('content_id', contentIds)
-          .gte('created_at', dateFilter.start)
-          .lte('created_at', dateFilter.end);
-        
-        // Filter by audience segment if applicable
-        if (activeFilters.audienceSegment !== 'all' && filteredViewerIds.length > 0) {
-          viewsQuery = viewsQuery.in('viewer_id', filteredViewerIds);
-        }
-        
-        const { data: views, error: viewsError } = await viewsQuery;
-        if (viewsError) throw viewsError;
-        
-        // Group and calculate analytics
+        // Real per-content views/watch-time/unique-viewers via the same
+        // SECURITY DEFINER RPC used by _calculateSummary() - a direct
+        // content_views query here hit the same RLS wall (a creator can't
+        // read view rows for content they didn't personally watch), so this
+        // table always showed 0 views/watch time/completion for every row.
+        const { data: contentViewRows, error: contentViewError } = await this.supabase
+          .rpc('get_creator_content_view_analytics', {
+            p_start_date: dateFilter.start,
+            p_end_date: dateFilter.end,
+            p_content_ids: contentIds,
+            p_audience_segment: activeFilters.audienceSegment || 'all'
+          });
+        if (contentViewError) throw contentViewError;
+
         const viewsByContent = {};
-        views.forEach(view => {
-          if (!viewsByContent[view.content_id]) {
-            viewsByContent[view.content_id] = {
-              totalViews: 0,
-              uniqueViewers: new Set(),
-              totalWatchTime: 0
-            };
-          }
-          viewsByContent[view.content_id].totalViews++;
-          viewsByContent[view.content_id].uniqueViewers.add(view.viewer_id);
-          // FIXED: Use view_duration instead of watch_time
-          viewsByContent[view.content_id].totalWatchTime += view.view_duration || 0;
+        (contentViewRows || []).forEach(row => {
+          viewsByContent[row.content_id] = {
+            totalViews: Number(row.total_views) || 0,
+            uniqueViewers: Number(row.unique_viewers) || 0,
+            totalWatchTime: Number(row.total_watch_time_seconds) || 0
+          };
         });
-        
+
         // Build enriched content
         const contentWithAnalytics = content.map(item => {
           const analytics = viewsByContent[item.id] || {
             totalViews: 0,
-            uniqueViewers: new Set(),
+            uniqueViewers: 0,
             totalWatchTime: 0
           };
           const avgWatchTime = analytics.totalViews > 0
@@ -489,12 +306,12 @@ class CreatorAnalytics {
           const engagementRate = analytics.totalViews > 0
             ? (totalEngagements / analytics.totalViews) * 100
             : 0;
-          
+
           return {
             ...item,
             analytics: {
-              totalViews: analytics.totalViews || 0,
-              uniqueViewers: analytics.uniqueViewers.size,
+              totalViews: analytics.totalViews,
+              uniqueViewers: analytics.uniqueViewers,
               totalWatchTime: analytics.totalWatchTime,
               avgWatchTime: Math.round(avgWatchTime * 100) / 100,
               avgCompletionRate: Math.min(100, Math.round(avgCompletionRate * 100) / 100),
@@ -516,31 +333,6 @@ class CreatorAnalytics {
         return [];
       }
     });
-  }
-
-  // ============================================
-  // ✅ GET SUMMARY FROM MATERIALIZED VIEW
-  // ============================================
-  async _getFromMaterializedView() {
-    try {
-      const { data, error } = await this.supabase
-        .from('creator_analytics_summary')
-        .select('*')
-        .eq('creator_id', this.userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      if (data) {
-        console.log('📊 Materialized view data:', data);
-      }
-      
-      return data || null;
-
-    } catch (error) {
-      console.warn('⚠️ Materialized view not available, falling back to calculation:', error);
-      return null;
-    }
   }
 
   // ============================================
@@ -575,33 +367,28 @@ class CreatorAnalytics {
       return this._getEmptySummary();
     }
 
-    // Get total views with audience filter
-    let viewsQuery = this.supabase
-      .from('content_views')
-      .select('content_id, viewer_id')
-      .in('content_id', contentIds)
-      .gte('created_at', dateFilter.start)
-      .lte('created_at', dateFilter.end);
+    // Real per-range views/watch-time/unique-viewers/completion via a
+    // SECURITY DEFINER RPC. content_views' RLS ("content_views_select_own_history":
+    // auth.uid() = user_id OR auth.uid() = viewer_id) only lets a *viewer*
+    // read their own view row, not a creator reading views on content they
+    // own but didn't personally watch - a direct query here always came back
+    // empty/near-zero for real creators. get_creator_view_analytics() runs
+    // with elevated privileges internally but is hard-scoped to auth.uid(),
+    // so a caller can only ever get their own numbers back.
+    const { data: viewAnalyticsRows, error: viewAnalyticsError } = await this.supabase
+      .rpc('get_creator_view_analytics', {
+        p_start_date: dateFilter.start,
+        p_end_date: dateFilter.end,
+        p_audience_segment: activeFilters.audienceSegment || 'all'
+      });
 
-    // Apply audience segment filter
-    if (activeFilters.audienceSegment !== 'all') {
-      const filteredViewerIds = await this._getAudienceSegmentFilter(
-        activeFilters.audienceSegment,
-        contentIds,
-        dateFilter
-      );
-      if (filteredViewerIds.length > 0) {
-        viewsQuery = viewsQuery.in('viewer_id', filteredViewerIds);
-      }
-    }
+    if (viewAnalyticsError) throw viewAnalyticsError;
 
-    const { data: viewsData, error: viewsError } = await viewsQuery;
-
-    if (viewsError) throw viewsError;
-
-    // Calculate metrics
-    const totalViews = viewsData.length;
-    const uniqueViewers = new Set(viewsData.map(v => v.viewer_id)).size;
+    const viewAnalytics = (viewAnalyticsRows && viewAnalyticsRows[0]) || {};
+    const totalViews = Number(viewAnalytics.total_views) || 0;
+    const uniqueViewers = Number(viewAnalytics.unique_viewers) || 0;
+    const totalWatchTime = Number(viewAnalytics.total_watch_time_seconds) || 0;
+    const avgCompletionRate = Number(viewAnalytics.avg_completion_rate) || 0;
 
     // Real likes/comments/shares from content_engagement_stats.
     const { data: statsData, error: statsError } = await this.supabase
@@ -648,7 +435,7 @@ class CreatorAnalytics {
       creator_id: this.userId,
       total_uploads: content.length,
       total_views: totalViews,
-      total_watch_time: 0, // Will be enriched later
+      total_watch_time: totalWatchTime,
       unique_viewers: uniqueViewers,
       total_likes: totalLikes,
       total_comments: totalComments,
@@ -656,7 +443,7 @@ class CreatorAnalytics {
       total_connectors: connectorsCount || 0,
       total_earnings: totalEarnings,
       engagement_percentage: Math.round(engagementPercentage * 100) / 100,
-      avg_completion_rate: 0, // Will be enriched later
+      avg_completion_rate: Math.round(avgCompletionRate * 100) / 100,
       is_eligible_for_monetization: isEligibleForMonetization,
       calculated_at: new Date().toISOString()
     };
@@ -669,8 +456,9 @@ class CreatorAnalytics {
   // and unconditionally returned fake fallback numbers; Device Breakdown did
   // attempt a real query on content_views.device_type but silently
   // substituted the same kind of fake numbers on any failure with no visual
-  // distinction from real data. getPeakViewingTimes() below is untouched -
-  // it genuinely queries real content_views.created_at timestamps.
+  // distinction from real data. getPeakViewingTimes() below is real - it
+  // buckets genuine content_views.created_at timestamps, now fetched via
+  // get_creator_view_timestamps() (see below) instead of a direct query.
   // ============================================
   // ✅ 5E: GET PEAK VIEWING TIMES
   // ============================================
@@ -693,15 +481,16 @@ class CreatorAnalytics {
           return { byHour: [], byDay: [], peakHour: 'N/A', peakDay: 'N/A' };
         }
 
-        const contentIds = content.map(c => c.id);
-
-        // Get views with timestamps
+        // Real view timestamps via the same SECURITY DEFINER RPC family as
+        // _calculateSummary()/getContentList() - content_views' RLS blocks a
+        // creator from reading view rows for content they own but didn't
+        // personally watch, so a direct query here always came back empty
+        // and this card showed "N/A" for every creator.
         const { data: views, error: viewsError } = await this.supabase
-          .from('content_views')
-          .select('created_at')
-          .in('content_id', contentIds)
-          .gte('created_at', dateFilter.start)
-          .lte('created_at', dateFilter.end);
+          .rpc('get_creator_view_timestamps', {
+            p_start_date: dateFilter.start,
+            p_end_date: dateFilter.end
+          });
 
         if (viewsError) throw viewsError;
 
