@@ -24,9 +24,10 @@ font-weight: 600; font-size: 12px; margin-left: 10px;
 }
 .file-info {
 display: flex; align-items: center; gap: 15px;
-padding: 15px; background: rgba(255,255,255,.05);
+padding: 12px; background: rgba(6, 20, 26, 0.75);
 border-radius: 12px; margin-top: 10px;
-border: 1px solid var(--card-border); display: none;
+border: 1px solid rgba(0, 229, 255, 0.3); display: none;
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 .file-icon { font-size: 24px; color: var(--warm-gold); }
 .file-name { font-weight: 600; margin-bottom: 5px; color: var(--soft-white); }

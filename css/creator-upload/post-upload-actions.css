@@ -32,20 +32,22 @@ display: grid; grid-template-columns: 1fr 1fr;
 gap: 15px; width: 100%; max-width: 500px;
 }
 .action-card {
-background: rgba(255,255,255,.05);
-border: 1px solid var(--card-border);
-border-radius: 12px; padding: 15px;
-cursor: pointer; transition: all .3s ease;
+background: rgba(6, 20, 26, 0.75);
+border: 1px solid rgba(0, 229, 255, 0.3);
+border-radius: 12px; padding: 12px;
+cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 display: flex; flex-direction: column;
-align-items: center; gap: 10px;
+align-items: center; gap: 8px;
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 .action-card:hover {
-background: rgba(0, 229, 255,.1);
-border-color: var(--warm-gold);
+border-color: rgba(0, 229, 255, 0.5);
+box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
 transform: translateY(-2px);
 }
-.action-card i { font-size: 24px; color: var(--warm-gold); }
-.action-card span { font-size: 14px; font-weight: 500; }
+.action-card i { font-size: 20px; color: #00E5FF; }
+.action-card span { font-size: 12px; font-weight: 500; }
 .confetti {
 position: fixed; width: 10px; height: 10px;
 background-color: #f00; animation: fall linear forwards;

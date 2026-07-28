@@ -1,9 +1,12 @@
 /* Upload Quality Score Styles */
 .quality-checklist {
-background: rgba(0, 229, 255,.1);
-border: 1px solid var(--bantu-blue);
-border-radius: 12px; padding: 20px;
-margin: 20px 0;
+background: rgba(6, 20, 26, 0.75);
+border: 1px solid rgba(0, 229, 255, 0.3);
+border-radius: 14px; padding: 16px;
+margin: 16px 0;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 .checklist-header {
 display: flex; justify-content: space-between;

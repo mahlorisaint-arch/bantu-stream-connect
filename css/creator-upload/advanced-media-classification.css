@@ -1,10 +1,13 @@
 /* Advanced Media Classification Styles */
 .movie-classification-section {
-margin: 20px 0;
-padding: 20px;
-background: rgba(0, 229, 255, 0.1);
-border: 1px solid var(--bantu-blue);
-border-radius: 12px;
+margin: 16px 0;
+padding: 16px;
+background: rgba(6, 20, 26, 0.75);
+border: 1px solid rgba(0, 229, 255, 0.3);
+border-radius: 14px;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 display: none;
 }
 .movie-classification-section.active { display: block; }

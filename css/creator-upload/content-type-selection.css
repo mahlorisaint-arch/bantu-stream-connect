@@ -16,8 +16,10 @@ background: rgba(0, 229, 255,.1); color: var(--warm-gold);
 .media-type-option i { display: block; font-size: 24px; margin-bottom: 8px; }
 
 .shorts-info-box {
-background: rgba(0, 229, 255,.1); border: 1px solid var(--warm-gold);
-border-radius: 12px; padding: 15px; margin: 15px 0; display: none;
+background: rgba(6, 20, 26, 0.75); border: 1px solid rgba(0, 229, 255, 0.3);
+border-radius: 12px; padding: 14px; margin: 14px 0; display: none;
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
 }
 .shorts-info-box.active { display: block; }
 .shorts-info-box h4 { color: var(--warm-gold); margin-bottom: 8px; font-size: 16px; }
