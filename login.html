@@ -5,16 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Login - Bantu Stream Connect</title>
 
+    <!-- Clickjacking defense-in-depth, run as early as possible: if this
+         page is ever loaded inside a frame (e.g. an attacker's page with an
+         invisible iframe overlaying fake buttons on top of the real login
+         form to steal clicks/credentials), break out of it immediately.
+         This is a fallback for exactly the gap the CSP note below explains -
+         frame-ancestors doesn't work from a <meta> tag, only a real HTTP
+         header, which this static site isn't currently configured to send. -->
+    <script>
+        if (window.top !== window.self) {
+            window.top.location = window.self.location;
+        }
+    </script>
+
+    <!-- Content-Security-Policy — this page handles credentials directly,
+         so it gets the strictest baseline on the site: only the specific
+         CDN origins this page actually uses are allowed to load anything,
+         and no <base> tag or plugin objects can be injected. 'unsafe-inline'
+         is kept for script/style because the page's CSS and JS are both
+         inline blocks below - a nonce/hash-based policy would be stronger
+         but means the policy breaks every time this file is edited unless
+         the hash is recomputed in lockstep, which isn't a trade worth
+         making here. This still blocks the main threat of loading a
+         malicious script/stylesheet from an arbitrary third-party origin.
+
+         frame-ancestors is deliberately NOT here - the CSP spec has browsers
+         silently ignore that directive entirely when it's delivered via a
+         <meta> tag (it only takes effect as a real HTTP response header),
+         so putting it here would just be a false claim of protection.
+         Clickjacking is instead blocked below via a frame-busting script,
+         until/unless the host is configured to send a real
+         Content-Security-Policy: frame-ancestors 'none' (or
+         X-Frame-Options: DENY) response header - see note above the script. -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+        font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+        img-src 'self' data:;
+        connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co wss://ydnxqnbjoshvxteevemc.supabase.co;
+        base-uri 'self';
+        object-src 'none';
+    ">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font Awesome — pinned version + SRI hash (verified against the
+         bytes actually served at this URL) so a compromised CDN can't
+         silently swap in malicious CSS on the page that handles credentials. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
 
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase JS SDK — pinned to an exact version + SRI hash (was a
+         floating "@2" tag with no integrity check at all; a compromised or
+         MITM'd CDN response here would have full access to this page's
+         login/signup form fields before anything is even submitted). The
+         bare "@2" URL is also jsDelivr's dynamically-generated entry point
+         (it literally warns against using SRI with it) - this uses the
+         direct static file path instead, which is safe to hash. -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js" integrity="sha384-6foGJ1oz/y3anEo0BXRtTgBK1GvpnR0GbJZb0ijG+nBAJ4rYT+VqlD/9e3CSiFIA" crossorigin="anonymous"></script>
 
     <style>
         :root {
@@ -403,6 +454,7 @@
                 class="form-input"
                 id="loginEmail"
                 placeholder="you@example.com"
+                autocomplete="email"
                 required
             >
 
@@ -417,6 +469,7 @@
                 class="form-input"
                 id="loginPassword"
                 placeholder="Your password"
+                autocomplete="current-password"
                 required
             >
 
@@ -440,6 +493,7 @@
                 class="form-input"
                 id="signupFullName"
                 placeholder="Enter your full name"
+                autocomplete="name"
                 required
             >
 
@@ -454,6 +508,7 @@
                 class="form-input"
                 id="signupEmail"
                 placeholder="you@example.com"
+                autocomplete="email"
                 required
             >
 
@@ -468,6 +523,7 @@
                 class="form-input"
                 id="signupPassword"
                 placeholder="Create a strong password"
+                autocomplete="new-password"
                 required
             >
 
@@ -475,7 +531,7 @@
 
             <div class="password-requirements">
                 <div class="requirement" id="reqLength">
-                    • At least 6 characters
+                    • At least 8 characters
                 </div>
 
                 <div class="requirement" id="reqUppercase">
@@ -496,6 +552,7 @@
                 class="form-input"
                 id="signupConfirmPassword"
                 placeholder="Confirm your password"
+                autocomplete="new-password"
                 required
             >
 
@@ -597,7 +654,7 @@
     function validatePassword(password) {
 
         const requirements = {
-            length: password.length >= 6,
+            length: password.length >= 8,
             uppercase: /[A-Z]/.test(password),
             number: /[0-9]/.test(password)
         };
@@ -645,37 +702,25 @@
         });
     }
 
-    // USERNAME GENERATOR
-    async function generateUniqueUsername(fullName) {
-
-        const base = fullName
+    // USERNAME BASE — sanitized only. The on_auth_user_created DB trigger
+    // (handle_new_creator()) appends its own uuid-based suffix server-side
+    // and is what actually guarantees uniqueness, so there's no need to
+    // pre-check availability of a candidate here (the old version of this
+    // function did, but the value it checked was never what actually got
+    // inserted anyway — the trigger always overrides the suffix).
+    function sanitizeUsernameBase(fullName) {
+        return fullName
             .toLowerCase()
             .trim()
             .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9_]/g, '');
+            .replace(/[^a-z0-9_]/g, '') || 'user';
+    }
 
-        let username;
-        let exists = true;
-
-        while (exists) {
-
-            const randomDigits =
-                Math.floor(1000 + Math.random() * 9000);
-
-            username =
-                `${base}_${randomDigits}`;
-
-            const { data } =
-                await supabaseClient
-                    .from('user_profiles')
-                    .select('username')
-                    .eq('username', username)
-                    .maybeSingle();
-
-            exists = !!data;
-        }
-
-        return username;
+    // Minimal HTML-escaping for values interpolated into innerHTML.
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     // REDIRECT
@@ -798,11 +843,19 @@
 
         try {
 
-            // AUTO GENERATE USERNAME
-            const username =
-                await generateUniqueUsername(fullName);
+            const usernameBase =
+                sanitizeUsernameBase(fullName);
 
-            // CREATE AUTH USER
+            // CREATE AUTH USER — the on_auth_user_created DB trigger
+            // (handle_new_creator()) inserts the matching user_profiles AND
+            // creators rows atomically, server-side, as soon as this
+            // succeeds. There used to be a second client-side insert into
+            // user_profiles right after this, which always collided with
+            // the row the trigger had already created (ON CONFLICT DO
+            // NOTHING on the trigger's side, but a plain .insert() here) —
+            // every signup was silently succeeding while showing the user
+            // "Signup failed". Removed; the real (trigger-generated)
+            // username is fetched back below instead of guessed client-side.
             const {
                 data: authData,
                 error: authError
@@ -818,7 +871,7 @@
 
                     data: {
                         full_name: fullName,
-                        username: username
+                        username: usernameBase
                     }
                 }
             });
@@ -833,32 +886,22 @@
                 );
             }
 
-            // INSERT USER PROFILE
-            const {
-                error: profileError
-            } = await supabaseClient
-                .from('user_profiles')
-                .insert([{
+            // user_profiles is public-SELECT-readable, so this works even
+            // when email confirmation is required and there's no session
+            // yet. Best-effort only — the account is already fully created
+            // either way, this is purely for display.
+            const { data: profileRow } =
+                await supabaseClient
+                    .from('user_profiles')
+                    .select('username')
+                    .eq('id', user.id)
+                    .maybeSingle();
 
-                    id: user.id,
-
-                    email: email,
-
-                    full_name: fullName,
-
-                    username: username,
-
-                    role: 'creator'
-                }]);
-
-            if (profileError) {
-                throw profileError;
-            }
+            const username = profileRow?.username;
 
             successMessage.innerHTML = `
                 ✨ Account created successfully!<br><br>
-                Your creator username:<br>
-                <strong>@${username}</strong><br><br>
+                ${username ? `Your creator username:<br><strong>@${escapeHtml(username)}</strong><br><br>` : ''}
                 Please verify your email.
             `;
 
