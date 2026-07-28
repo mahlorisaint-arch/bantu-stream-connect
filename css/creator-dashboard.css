@@ -197,52 +197,136 @@ body { background: #000000; }
     border-color: var(--warm-gold);
 }
 
-/* My Uploads */
-.uploads-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.upload-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 20px;
+/* ============================================
+   GLASS PILL TABS — Overview/Uploads/Analytics. Thin, transparent,
+   glassmorphic; same recipe reused verbatim in css/my-uploads/my-uploads.css
+   for its filter chips, so both pages read as one design system.
+   ============================================ */
+.glass-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    margin-bottom: 24px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    -webkit-backdrop-filter: blur(10px);
+    overflow-x: auto;
+    scrollbar-width: none;
 }
-
-.upload-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(0, 229, 255, 0.3);
-}
-
-.upload-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--soft-white);
-    margin-bottom: 15px;
-    line-height: 1.4;
-}
-
-.upload-status {
-    display: inline-block;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.status-published {
-    background: rgba(0, 229, 255, 0.2);
-    color: var(--warm-gold);
-}
-
-.status-draft {
-    background: rgba(148, 163, 184, 0.2);
+.glass-tabs::-webkit-scrollbar { display: none; }
+.glass-tab {
+    flex-shrink: 0;
+    padding: 9px 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
     color: var(--slate-grey);
+    font-family: inherit;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.25s ease;
 }
+.glass-tab:hover { color: var(--soft-white); }
+.glass-tab.active {
+    background: rgba(0, 229, 255, 0.12);
+    border-color: rgba(0, 229, 255, 0.4);
+    color: var(--bantu-blue);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+}
+.dashboard-tab-panel[hidden] { display: none !important; }
+@media (max-width: 767px) {
+    .glass-tabs { padding: 3px; gap: 4px; margin-bottom: 18px; }
+    .glass-tab { padding: 7px 14px; font-size: var(--font-xs); }
+}
+
+/* ============================================
+   UPLOAD/CONTENT CARD GRID — same recipe as creator-channel.css's
+   .upload-grid/.upload-card (css/creator-channel.css), so a creator's
+   content looks identical whether they're on their own channel, the
+   dashboard preview, or the full My Uploads page.
+   ============================================ */
+.uc-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+@media (min-width: 480px) { .uc-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 768px) { .uc-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1200px) { .uc-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1600px) { .uc-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.uc-card {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+.uc-card:hover { transform: translateY(-4px); }
+.uc-thumb {
+    position: relative;
+    background: #1a2033;
+    border-radius: 6px;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 6px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+}
+.uc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.uc-thumb-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: var(--slate-grey);
+    background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
+}
+.uc-badge {
+    position: absolute; top: 5px; left: 5px;
+    font-size: 9px; padding: 1px 6px; border-radius: 3px; font-weight: 500;
+}
+.uc-badge.published { background: rgba(0, 229, 255, 0.85); color: #06141A; }
+.uc-badge.draft { background: rgba(148, 163, 184, 0.85); color: #06141A; }
+.uc-title {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 0 0 3px;
+    color: var(--soft-white);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+@media (min-width: 1200px) { .uc-title { font-size: 13px; } }
+.uc-meta { font-size: 11px; color: var(--slate-grey); }
+
+/* Play icon on card thumbnails — verbatim recipe from css/home-feed-ui.css
+   (the canonical source; same one trending_screen.html's content cards use):
+   transparent glassmorphic circle, cyan border, no solid fill. */
+.play-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.3s ease; z-index: 3;
+}
+.uc-card:hover .play-overlay { opacity: 1; }
+.play-icon {
+    width: 50px; height: 50px;
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #00E5FF; font-size: 20px;
+    transform: scale(0.8);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.uc-card:hover .play-icon { transform: scale(1); }
 
 /* Upload Promo */
 .upload-promo {
@@ -1065,11 +1149,7 @@ body { background: #000000; }
     .stats-row {
         grid-template-columns: 1fr;
     }
-    
-    .uploads-grid {
-        grid-template-columns: 1fr;
-    }
-    
+
     .modal-actions {
         flex-direction: column;
     }
@@ -1085,4 +1165,87 @@ body { background: #000000; }
     .cta-state h3 {
         font-size: 20px;
     }
+}
+
+/* ============================================
+   ANALYTICS TAB
+   ============================================ */
+.top-content-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.top-content-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.top-content-item:hover {
+    border-color: rgba(0, 229, 255, 0.4);
+    transform: translateY(-2px);
+}
+.top-content-rank {
+    width: 26px;
+    flex-shrink: 0;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--warm-gold);
+}
+.top-content-thumb {
+    width: 72px;
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #1a2033;
+}
+.top-content-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.top-content-thumb-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--slate-grey); font-size: 16px;
+    background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
+}
+.top-content-info { flex: 1; min-width: 0; }
+.top-content-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--soft-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.top-content-views {
+    font-size: 11px;
+    color: var(--slate-grey);
+    margin-top: 2px;
+}
+.view-full-analytics-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 10px 20px;
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 999px;
+    color: var(--bantu-blue);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.view-full-analytics-link:hover {
+    background: rgba(0, 229, 255, 0.18);
+    box-shadow: 0 0 14px rgba(0, 229, 255, 0.2);
 }

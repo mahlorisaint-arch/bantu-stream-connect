@@ -170,7 +170,8 @@
 
         <!-- Main Content -->
         <main class="container">
-            <!-- Welcome Header -->
+            <!-- Welcome Header - stays above the tabs on every tab, matches
+                 creator-channel's identity-card-above-tabs layout. -->
             <section class="dashboard-section">
                 <div class="dashboard-hero">
                     <div class="creator-profile">
@@ -189,117 +190,148 @@
                 </div>
             </section>
 
-            <!-- Stats Row -->
-            <section class="dashboard-section">
-                <div class="stats-row">
-                    <!-- Stat values start as shaped skeleton bars (real numbers look
-                         wrong here - "0" reads as "you have zero uploads" rather than
-                         "still loading"). updateStats() overwrites textContent with
-                         the real formatted number once loadDashboardData() resolves. -->
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                        <div id="totalUploads" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
-                        <div class="stat-label">Uploads</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-eye"></i></div>
-                        <div id="totalViews" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
-                        <div class="stat-label">Total Views</div>
-                    </div>
-                    <!-- Earnings stat hidden for now — no real payout flow exists yet
-                         (see the disabled Payout Request quick-action below). -->
-                    <div class="stat-card" style="display: none;">
-                        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
-                        <div id="totalEarnings" class="stat-value">R0.00</div>
-                        <div class="stat-label">Earnings</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div id="totalConnectors" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
-                        <div class="stat-label">Connectors</div>
-                    </div>
-                </div>
-            </section>
+            <!-- Tabs -->
+            <div class="glass-tabs" id="dashboardTabs" role="tablist">
+                <button class="glass-tab active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+                <button class="glass-tab" data-tab="uploads" role="tab" aria-selected="false">Uploads</button>
+                <button class="glass-tab" data-tab="analytics" role="tab" aria-selected="false">Analytics</button>
+            </div>
 
-            <!-- JOURNALIST VERIFICATION MODULE -->
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <i class="fas fa-newspaper" style="margin-right: 10px;"></i>
-                        Journalist Verification
-                    </h2>
-                </div>
-                <div id="journalist-verification-container" class="journalist-verification">
-                    <!-- Dynamic content loaded via JavaScript -->
-                </div>
-            </section>
+            <!-- OVERVIEW TAB -->
+            <div class="dashboard-tab-panel" data-panel="overview">
 
-            <!-- My Uploads Section -->
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">My Uploads</h2>
-                    <a href="my-uploads.html" class="see-all-btn">
-                        See All
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
+                <!-- Stats Row -->
+                <section class="dashboard-section">
+                    <div class="stats-row">
+                        <!-- Stat values start as shaped skeleton bars (real numbers look
+                             wrong here - "0" reads as "you have zero uploads" rather than
+                             "still loading"). updateStats() overwrites textContent with
+                             the real formatted number once loadDashboardData() resolves. -->
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                            <div id="totalUploads" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
+                            <div class="stat-label">Uploads</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                            <div id="totalViews" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
+                            <div class="stat-label">Total Views</div>
+                        </div>
+                        <!-- Earnings stat hidden for now — no real payout flow exists yet
+                             (see the disabled Payout Request quick-action below). -->
+                        <div class="stat-card" style="display: none;">
+                            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                            <div id="totalEarnings" class="stat-value">R0.00</div>
+                            <div class="stat-label">Earnings</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div id="totalConnectors" class="stat-value"><span class="skel-stat-number skel-shimmer"></span></div>
+                            <div class="stat-label">Connectors</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- JOURNALIST VERIFICATION MODULE -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-newspaper" style="margin-right: 10px;"></i>
+                            Journalist Verification
+                        </h2>
+                    </div>
+                    <div id="journalist-verification-container" class="journalist-verification">
+                        <!-- Dynamic content loaded via JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Upload New Content -->
+                <section class="dashboard-section">
+                    <div class="upload-promo">
+                        <h2 class="promo-title">Upload New Content</h2>
+                        <p class="promo-text">Share your stories with the world and start earning</p>
+                        <button id="uploadContentBtn" class="upload-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Upload Content
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Quick Actions -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Quick Actions</h2>
+                    </div>
+                    <div class="quick-actions">
+                        <div class="action-card" id="quickUpload">
+                            <div class="action-icon"><i class="fas fa-cloud-upload"></i></div>
+                            <div class="action-title">Upload Content</div>
+                        </div>
+                        <div class="action-card" id="viewAnalytics">
+                            <div class="action-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="action-title">View Analytics</div>
+                        </div>
+                        <div class="action-card payout-action is-disabled" id="payoutRequest" disabled title="Payout requests aren't available yet">
+                            <div class="action-icon"><i class="fas fa-wallet"></i></div>
+                            <div class="action-title">Payout Request</div>
+                            <span class="action-card-badge">Coming soon</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Messages & Notifications -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Messages & Notifications</h2>
+                    </div>
+                    <div class="messages-section">
+                        <div class="messages-icon"><i class="fas fa-bell"></i></div>
+                        <p id="notificationsSummary" class="messages-text">Loading your notifications...</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- UPLOADS TAB -->
+            <div class="dashboard-tab-panel" data-panel="uploads" hidden>
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">My Uploads</h2>
+                        <a href="my-uploads.html" class="see-all-btn">
+                            See All
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                    <!-- Static shaped skeleton, visible the instant HTML parses -
+                         updateUploads() replaces this innerHTML once
+                         loadDashboardData() resolves. -->
+                    <div id="uploadsContent" class="uc-grid">
+                        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+                        <div class="skel-card skel-shimmer"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ANALYTICS TAB -->
+            <div class="dashboard-tab-panel" data-panel="analytics" hidden>
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Top Performing Content</h2>
+                    </div>
+                    <!-- Ranked by real views (content_engagement_stats, same source
+                         as every other stat on this page) - populated by
+                         renderTopContent() once loadDashboardData() resolves. -->
+                    <div id="topContentList" class="top-content-list">
+                        <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
+                    </div>
+                    <a href="creator-analytics.html" class="view-full-analytics-link">
+                        <i class="fas fa-chart-line"></i> View Full Analytics
                     </a>
-                </div>
-                <!-- Static shaped skeleton, visible the instant HTML parses -
-                     updateUploads() replaces this innerHTML once
-                     loadDashboardData() resolves. -->
-                <div id="uploadsContent" class="uploads-grid">
-                    <div class="skel-card skel-shimmer"></div><div class="skel-card skel-shimmer"></div>
-                    <div class="skel-card skel-shimmer"></div>
-                </div>
-            </section>
-
-            <!-- Upload New Content -->
-            <section class="dashboard-section">
-                <div class="upload-promo">
-                    <h2 class="promo-title">Upload New Content</h2>
-                    <p class="promo-text">Share your stories with the world and start earning</p>
-                    <button id="uploadContentBtn" class="upload-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5v14M5 12h14"/>
-                        </svg>
-                        Upload Content
-                    </button>
-                </div>
-            </section>
-
-            <!-- Quick Actions -->
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">Quick Actions</h2>
-                </div>
-                <div class="quick-actions">
-                    <div class="action-card" id="quickUpload">
-                        <div class="action-icon"><i class="fas fa-cloud-upload"></i></div>
-                        <div class="action-title">Upload Content</div>
-                    </div>
-                    <div class="action-card" id="viewAnalytics">
-                        <div class="action-icon"><i class="fas fa-chart-line"></i></div>
-                        <div class="action-title">View Analytics</div>
-                    </div>
-                    <div class="action-card payout-action is-disabled" id="payoutRequest" disabled title="Payout requests aren't available yet">
-                        <div class="action-icon"><i class="fas fa-wallet"></i></div>
-                        <div class="action-title">Payout Request</div>
-                        <span class="action-card-badge">Coming soon</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Messages & Notifications -->
-            <section class="dashboard-section">
-                <div class="section-header">
-                    <h2 class="section-title">Messages & Notifications</h2>
-                </div>
-                <div class="messages-section">
-                    <div class="messages-icon"><i class="fas fa-bell"></i></div>
-                    <p id="notificationsSummary" class="messages-text">Loading your notifications...</p>
-                </div>
-            </section>
+                </section>
+            </div>
         </main>
 
         <footer class="footer">

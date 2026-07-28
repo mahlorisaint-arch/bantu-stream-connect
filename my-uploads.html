@@ -1280,7 +1280,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     contentGrid.innerHTML = filteredContent.map(content => {
       const title = content.title || 'Untitled';
-      const description = content.description || '';
       const status = content.status || 'draft';
       const mediaType = content.media_type || 'video';
       const thumbnailUrl = content.thumbnail_url;
@@ -1296,82 +1295,77 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       return `
         <div class="content-card" data-content-id="${content.id}">
-          <div class="card-header">
-            <div class="thumbnail-container">
-              ${thumbnailUrl ? `
-                <img src="${thumbnailUrl.startsWith('http') ? thumbnailUrl : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${thumbnailUrl}`}" 
-                     alt="${escapeHtml(title)}"
-                     class="thumbnail-img"
-                     onerror="this.parentElement.innerHTML='<div class=\\'thumbnail-placeholder\\'><i class=\\'fas ${mediaIcon}\\'></i></div>'">
-              ` : `
-                <div class="thumbnail-placeholder">
-                  <i class="fas ${mediaIcon}"></i>
-                </div>
-              `}
+          <div class="thumbnail-container" onclick="window.viewContent('${content.id}')">
+            ${thumbnailUrl ? `
+              <img src="${thumbnailUrl.startsWith('http') ? thumbnailUrl : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${thumbnailUrl}`}"
+                   alt="${escapeHtml(title)}"
+                   class="thumbnail-img"
+                   onerror="this.parentElement.innerHTML='<div class=\\'thumbnail-placeholder\\'><i class=\\'fas ${mediaIcon}\\'></i></div>'">
+            ` : `
+              <div class="thumbnail-placeholder">
+                <i class="fas ${mediaIcon}"></i>
+              </div>
+            `}
+            <span class="status-badge ${statusClass}">${statusText}</span>
+            <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+          </div>
+
+          <div class="content-info">
+            <div class="title-row">
+              <h3 class="content-title" title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
             </div>
-            
-            <div class="content-info">
-              <div class="title-row">
-                <h3 class="content-title" title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
-                <span class="status-badge ${statusClass}">${statusText}</span>
-              </div>
-              
-              ${description ? `
-                <p class="content-description">${escapeHtml(description)}</p>
-              ` : ''}
-              
-              <div class="metadata-row">
-                ${genre ? `
-                  <span class="metadata-chip">
-                    <i class="fas fa-tag"></i>
-                    ${escapeHtml(genre)}
-                  </span>
-                ` : ''}
-                
+
+            <div class="metadata-row">
+              ${genre ? `
                 <span class="metadata-chip">
-                  <i class="fas ${mediaIcon}"></i>
-                  ${mediaType.toUpperCase()}
+                  <i class="fas fa-tag"></i>
+                  ${escapeHtml(genre)}
                 </span>
-                
-                ${createdAt ? `
-                  <span class="metadata-chip">
-                    <i class="fas fa-calendar"></i>
-                    ${formatDate(createdAt)}
-                  </span>
-                ` : ''}
+              ` : ''}
+
+              <span class="metadata-chip">
+                <i class="fas ${mediaIcon}"></i>
+                ${mediaType.toUpperCase()}
+              </span>
+
+              ${createdAt ? `
+                <span class="metadata-chip">
+                  <i class="fas fa-calendar"></i>
+                  ${formatDate(createdAt)}
+                </span>
+              ` : ''}
+            </div>
+
+            <div class="stats-row">
+              <div class="stat-item">
+                <i class="fas fa-eye stat-icon views"></i>
+                <span class="stat-value">${formatNumber(viewsCount)}</span>
               </div>
-              
-              <div class="stats-row">
-                <div class="stat-item">
-                  <i class="fas fa-eye stat-icon views"></i>
-                  <span class="stat-value">${formatNumber(viewsCount)}</span>
-                </div>
-                <div class="stat-item">
-                  <i class="fas fa-heart stat-icon likes"></i>
-                  <span class="stat-value">${formatNumber(likesCount)}</span>
-                </div>
-                <div class="stat-item">
-                  <i class="fas fa-comment stat-icon comments"></i>
-                  <span class="stat-value">${formatNumber(commentsCount)}</span>
-                </div>
+              <div class="stat-item">
+                <i class="fas fa-heart stat-icon likes"></i>
+                <span class="stat-value">${formatNumber(likesCount)}</span>
+              </div>
+              <div class="stat-item">
+                <i class="fas fa-comment stat-icon comments"></i>
+                <span class="stat-value">${formatNumber(commentsCount)}</span>
               </div>
             </div>
           </div>
-          
+
           <div class="action-buttons">
-            <div class="action-btn edit" onclick="window.editContent('${content.id}')">
+            <div class="action-btn edit" onclick="window.editContent('${content.id}')" title="Edit">
               <i class="fas fa-edit"></i>
               <span>Edit</span>
             </div>
-            <div class="action-btn insights" onclick="window.showContentInsights('${content.id}')">
+            <div class="action-btn insights" onclick="window.showContentInsights('${content.id}')" title="Insights">
               <i class="fas fa-chart-line"></i>
               <span>Insights</span>
             </div>
-            <div class="action-btn view" onclick="window.viewContent('${content.id}')">
+            <div class="action-btn view" onclick="window.viewContent('${content.id}')" title="View">
               <i class="fas fa-eye"></i>
               <span>View</span>
             </div>
-            <div class="action-btn delete" onclick="window.deleteContent('${content.id}', '${escapeHtml(title).replace(/'/g, "\\'")}')">
+            <div class="action-btn delete" onclick="window.deleteContent('${content.id}', '${escapeHtml(title).replace(/'/g, "\\'")}')" title="Delete">
               <i class="fas fa-trash"></i>
               <span>Delete</span>
             </div>

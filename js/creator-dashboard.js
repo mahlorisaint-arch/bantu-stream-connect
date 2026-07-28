@@ -840,21 +840,29 @@
         }
         
         uploadsContent.innerHTML = content.map(item => {
-            const statusClass = item.status === 'published' ? 'status-published' : 'status-draft';
-            const statusText = item.status === 'published' ? 'Published' : 'Draft';
+            const statusClass = item.status === 'published' ? 'published' : 'draft';
+            const statusText = item.status === 'published' ? 'LIVE' : 'DRAFT';
+            const safeTitle = escapeHtml(item.title);
+            const thumb = item.thumbnail_url
+                ? (item.thumbnail_url.startsWith('http') ? item.thumbnail_url : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url}`)
+                : '';
             return `
-                <div class="upload-card" data-content-id="${item.id}" style="cursor: pointer;">
-                    <h3 class="upload-title" title="${item.title}">
-                        ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
-                    </h3>
-                    <div class="upload-status ${statusClass}">
-                        ${statusText} • ${formatNumber(item.views)} views
+                <div class="uc-card" data-content-id="${item.id}">
+                    <div class="uc-thumb">
+                        ${thumb
+                            ? `<img src="${thumb}" alt="${safeTitle}" onerror="this.parentElement.querySelector('img').remove(); this.parentElement.insertAdjacentHTML('afterbegin', '<div class=\\'uc-thumb-placeholder\\'><i class=\\'fas fa-film\\'></i></div>')">`
+                            : `<div class="uc-thumb-placeholder"><i class="fas fa-film"></i></div>`
+                        }
+                        <span class="uc-badge ${statusClass}">${statusText}</span>
+                        <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                     </div>
+                    <h3 class="uc-title" title="${safeTitle}">${safeTitle}</h3>
+                    <div class="uc-meta">${formatNumber(item.views)} views</div>
                 </div>
             `;
         }).join('');
-        
-        document.querySelectorAll('.upload-card').forEach(card => {
+
+        document.querySelectorAll('.uc-card').forEach(card => {
             card.addEventListener('click', async () => {
                 const contentId = card.dataset.contentId;
                 if (contentId) {
@@ -1080,9 +1088,12 @@
         
         if (viewAnalytics) {
             viewAnalytics.addEventListener('click', () => {
-                window.location.href = 'creator-analytics.html';
+                const analyticsTab = document.querySelector('.glass-tab[data-tab="analytics"]');
+                if (analyticsTab) analyticsTab.click();
             });
         }
+
+        setupDashboardTabs();
         
         // Payout Request is disabled entirely for this pass (no real payout
         // processing exists) — the quick-action card is rendered as a
@@ -1104,7 +1115,87 @@
                 window.location.href = 'login.html?redirect=creator-dashboard.html';
             });
         }
-        
+
+    }
+
+    // ==========================================================================
+    // TABS — same in-page interaction pattern as my-space.js's setupTabs()/
+    // creator-channel.js's setupTabs(), just glass-pill styled instead of
+    // underline-styled (.glass-tab/.dashboard-tab-panel instead of
+    // .channel-tab/.tab-panel, to avoid colliding with creator-channel.css's
+    // own tab classes if that stylesheet is ever loaded on the same page).
+    // ==========================================================================
+    function setupDashboardTabs() {
+        const tabs = document.querySelectorAll('#dashboardTabs .glass-tab');
+        const panels = document.querySelectorAll('.dashboard-tab-panel');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.tab;
+
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                panels.forEach(panel => {
+                    panel.hidden = panel.dataset.panel !== target;
+                });
+
+                if (target === 'analytics') renderTopContent();
+            });
+        });
+    }
+
+    // Ranked by real views (dashboardData.content already carries real_views
+    // from content_engagement_stats, the same source every other stat on this
+    // page uses) - no separate query, just sorts what loadDashboardData()
+    // already fetched.
+    function renderTopContent() {
+        const list = document.getElementById('topContentList');
+        if (!list || !dashboardData) return;
+
+        const ranked = [...(dashboardData.content || [])].sort((a, b) => (b.views || 0) - (a.views || 0));
+
+        if (ranked.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
+                    <p class="empty-text">No content yet — upload something to see how it performs.</p>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = ranked.map((item, index) => {
+            const thumb = item.thumbnail_url
+                ? (item.thumbnail_url.startsWith('http') ? item.thumbnail_url : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url}`)
+                : '';
+            const safeTitle = escapeHtml(item.title);
+            return `
+                <div class="top-content-item" data-content-id="${item.id}">
+                    <div class="top-content-rank">#${index + 1}</div>
+                    <div class="top-content-thumb">
+                        ${thumb
+                            ? `<img src="${thumb}" alt="${safeTitle}" onerror="this.parentElement.innerHTML='<div class=\\'top-content-thumb-placeholder\\'><i class=\\'fas fa-film\\'></i></div>'">`
+                            : `<div class="top-content-thumb-placeholder"><i class="fas fa-film"></i></div>`
+                        }
+                    </div>
+                    <div class="top-content-info">
+                        <div class="top-content-title">${safeTitle}</div>
+                        <div class="top-content-views">${formatNumber(item.views || 0)} views</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        list.querySelectorAll('.top-content-item').forEach(el => {
+            el.addEventListener('click', () => {
+                window.location.href = `content-detail.html?id=${el.dataset.contentId}`;
+            });
+        });
     }
 
     async function initializeDashboard() {
