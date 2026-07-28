@@ -310,7 +310,7 @@ function setupInitialPlayButton() {
     
     const newPlayButton = playButton.cloneNode(true);
     playButton.parentNode.replaceChild(newPlayButton, playButton);
-    newPlayButton.addEventListener('click', startPlaybackFromUserGesture);
+    newPlayButton.addEventListener('click', startInitialPlaybackFromUserGesture);
     console.log('✅ Initial play overlay button bound to direct user gesture');
 }
 
@@ -319,10 +319,23 @@ function setupInitialPlayButton() {
 // ============================================
 
 /**
- * Start playback from user gesture (bypasses autoplay restrictions)
- * Shows player container, ensures visibility, then plays
+ * Start playback from user gesture (bypasses autoplay restrictions).
+ * Shows player container, ensures visibility, then plays from the current
+ * position - i.e. the beginning, for a first-ever play click.
+ *
+ * Renamed from startPlaybackFromUserGesture to
+ * startInitialPlaybackFromUserGesture: content-detail.js declares its own,
+ * DIFFERENT function of that same name (which does accept and correctly
+ * seek to a resumeSeconds argument) and exports it as
+ * window.startPlaybackFromUserGesture - the Resume button (hero-section.js)
+ * calls that one explicitly via window.*. Because content-detail.js is a
+ * module loaded last, its export always won out for window.*, so this
+ * duplicate wasn't the direct cause of a broken Resume click - but it WAS a
+ * same-named, incompatible (no-args, no seeking) duplicate that any future
+ * script-order change could have made win instead, silently dropping resume
+ * again. Renamed and no longer exported to window.* here at all.
  */
-const startPlaybackFromUserGesture = async () => {
+const startInitialPlaybackFromUserGesture = async () => {
     try {
         // Ensure player container is visible FIRST
         const player = document.getElementById('inlinePlayer');
@@ -343,7 +356,7 @@ const startPlaybackFromUserGesture = async () => {
             // Try to initialize player if not ready
             if (typeof initializeEnhancedVideoPlayer === 'function') {
                 initializeEnhancedVideoPlayer();
-                setTimeout(startPlaybackFromUserGesture, 500);
+                setTimeout(startInitialPlaybackFromUserGesture, 500);
             }
             return;
         }
@@ -919,7 +932,9 @@ function initializeEnhancedVideoPlayer() {
         player.on('playback:play', () => {
             console.log('▶️ Video playing...');
             if (window.stateManager) window.stateManager.setState('session.playing', true);
-            if (typeof window.initializeWatchSessionOnPlay === 'function') window.initializeWatchSessionOnPlay();
+            // No manual watch-session init here anymore - the real player
+            // class already starts its own telemetry session internally on
+            // play (_handlePlay -> _initializeTelemetrySession).
         });
 
         player.on('playback:pause', () => {
@@ -967,128 +982,20 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // ============================================
-// WATCH SESSION MANAGER (for view recording)
+// WATCH SESSION MANAGER
 // ============================================
-
-class WatchSessionManager {
-    constructor(contentId, userId) {
-        this.contentId = contentId;
-        this.userId = userId || null;
-        this.playbackSessionId = this._generateUUID();
-        this.sequenceNumber = 0;
-        this.totalWatchTimeMs = 0;
-        this.maxProgressSeconds = 0;
-        this.heartbeatInterval = null;
-        this.lastHeartbeatTime = Date.now();
-        this.isActive = false;
-        this.viewRecorded = false;
-        this.viewThresholdReached = false;
-    }
-    
-    _generateUUID() {
-        return crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    async initializeSession(platform = 'Web', deviceType = 'Desktop') {
-        try {
-            const { error } = await window.supabaseClient
-                .from('playback_sessions')
-                .insert({
-                    playback_session_id: this.playbackSessionId,
-                    content_id: parseInt(this.contentId),
-                    user_id: this.userId,
-                    session_id: window.currentSessionId || this._generateUUID(),
-                    platform: platform,
-                    device_type: deviceType,
-                    started_at: new Date().toISOString()
-                });
-            if (error) return false;
-            this.isActive = true;
-            console.log(`🎬 Watch session initialized: ${this.playbackSessionId}`);
-            return true;
-        } catch (error) { return false; }
-    }
-    
-    startHeartbeatLoop(videoElement) {
-        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-        this.heartbeatInterval = setInterval(async () => {
-            if (!this.isActive || !videoElement || videoElement.paused) return;
-            
-            const currentTime = Math.floor(videoElement.currentTime);
-            const now = Date.now();
-            const deltaWatchTimeMs = now - this.lastHeartbeatTime;
-            this.sequenceNumber++;
-            this.totalWatchTimeMs += deltaWatchTimeMs;
-            if (currentTime > this.maxProgressSeconds) this.maxProgressSeconds = currentTime;
-            this.lastHeartbeatTime = now;
-            
-            // 🛠️ FIX 1: Resolve Supabase .catch() Runtime Crash
-            // Changed from .insert(...).catch() to .then() syntax for proper error handling
-            window.supabaseClient
-                .from('playback_heartbeats')
-                .insert({
-                    playback_session_id: this.playbackSessionId,
-                    content_id: parseInt(this.contentId),
-                    user_id: this.userId,
-                    sequence_number: this.sequenceNumber,
-                    progress_seconds: currentTime,
-                    cumulative_watch_time_ms: this.totalWatchTimeMs,
-                    playback_state: 'PLAYING'
-                })
-                .then(({ error }) => {
-                    if (error) {
-                        console.error("❌ Telemetry Engine: Failed to commit heartbeat:", error);
-                    } else {
-                        console.log("⚡ Telemetry Engine: Heartbeat successfully synced to Supabase.");
-                    }
-                });
-            
-            await window.supabaseClient.from('playback_sessions').update({
-                total_watch_time_ms: this.totalWatchTimeMs,
-                max_progress_seconds: this.maxProgressSeconds,
-                heartbeat_count: this.sequenceNumber,
-                last_heartbeat_at: new Date().toISOString()
-            }).eq('playback_session_id', this.playbackSessionId);
-            
-            // Record view at threshold (15 seconds or 30% duration)
-            const duration = videoElement.duration || 0;
-            const thresholdSeconds = Math.min(15, duration * 0.3);
-            
-            if (!this.viewRecorded && this.totalWatchTimeMs >= thresholdSeconds * 1000) {
-                this.viewRecorded = true;
-                this.viewThresholdReached = true;
-                
-                if (typeof window.recordContentViewRPC === 'function') {
-                    await window.recordContentViewRPC(this.contentId, this.userId, this.playbackSessionId);
-                }
-            }
-        }, 10000);
-    }
-    
-    start(videoElement) { if (videoElement) this.startHeartbeatLoop(videoElement); }
-    
-    stop() {
-        this.isActive = false;
-        if (this.heartbeatInterval) { clearInterval(this.heartbeatInterval); this.heartbeatInterval = null; }
-        window.supabaseClient.from('playback_sessions').update({ completed: true, exited_at: new Date().toISOString() }).eq('playback_session_id', this.playbackSessionId);
-    }
-}
-
-function initializeWatchSessionOnPlay() {
-    if (!window.currentContent || !window.currentUserId) return;
-    const player = window.enhancedVideoPlayer;
-    if (!player?.video) return;
-    
-    if (window.watchSession) { window.watchSession.stop(); window.watchSession = null; }
-    
-    try {
-        window.currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        window.watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
-        window.watchSession.initializeSession('Web', 'Desktop');
-        window.watchSession.start(player.video);
-        console.log('✅ Watch session started');
-    } catch (error) { console.error('Failed to initialize watch session:', error); }
-}
+// A second, thinner `class WatchSessionManager` + initializeWatchSessionOnPlay()
+// used to live here, exported as window.WatchSessionManager - overwriting
+// the real, far more complete WatchSessionManager from js/watch-session.js
+// (which now correctly upserts watch_progress, since the periodic-sync fix
+// above). The real EnhancedVideoPlayer class (js/video-player.js) already
+// runs its own internal telemetry session automatically on play
+// (_handlePlay -> _initializeTelemetrySession, constructing a real
+// WatchSessionManager with the correct config-object API) - this file's
+// copy was fully redundant with that, and was also called with the wrong
+// (positional contentId/userId, not a config object) arguments against
+// window.WatchSessionManager, which only "worked" because it was shadowing
+// the real constructor with this incompatible one. Removed entirely.
 
 // ============================================
 // DIAGNOSTIC SINGLE MEDIA PAGE INITIALIZATION
@@ -1193,9 +1100,11 @@ window.closeVideoPlayer = closeVideoPlayer;
 window.showInitialPlayOverlay = showInitialPlayOverlay;
 window.hideInitialPlayOverlay = hideInitialPlayOverlay;
 window.setupInitialPlayButton = setupInitialPlayButton;
-window.startPlaybackFromUserGesture = startPlaybackFromUserGesture;
-window.WatchSessionManager = WatchSessionManager;
-window.initializeWatchSessionOnPlay = initializeWatchSessionOnPlay;
+// window.startPlaybackFromUserGesture is NOT set here anymore - see the
+// comment above startInitialPlaybackFromUserGesture's definition. Only
+// content-detail.js's resume-aware version should own that window property.
+// window.WatchSessionManager / window.initializeWatchSessionOnPlay are NOT
+// set here anymore either - see the "WATCH SESSION MANAGER" comment above.
 window.applySingleMediaThumbnail = applySingleMediaThumbnail;
 window.initializeSingleMediaPage = initializeSingleMediaPage;
 

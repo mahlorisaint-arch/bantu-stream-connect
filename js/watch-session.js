@@ -724,6 +724,35 @@
         // Session container failure is more serious, but still non-blocking
       }
 
+      // 🛡️ Periodic watch_progress sync (every heartbeat, ~10s) so Resume
+      // has something recent to read back even if the exit-time-only path
+      // (_syncFinalState, fired from visibilitychange/beforeunload/ended)
+      // never runs - beforeunload-triggered async Supabase calls in
+      // particular are frequently cancelled mid-flight by the browser
+      // before the page actually unloads, so relying on exit alone silently
+      // lost progress on a real fraction of sessions (tab crash, force-
+      // close, a slow network request racing the unload). This was
+      // previously the only gap - the heartbeat already reliably updates
+      // playback_heartbeats/playback_sessions on this same interval.
+      if (this.userId) {
+        const { error: progressError } = await this.supabase
+          .from('watch_progress')
+          .upsert({
+            user_id: this.userId,
+            content_id: parseInt(this.contentId),
+            last_position: currentTime,
+            total_watch_time: Math.floor(this.totalWatchTimeMs / 1000),
+            is_completed: this.isCompleted,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,content_id'
+          });
+
+        if (progressError) {
+          console.warn('⚠️ Periodic watch_progress sync failed:', progressError.message);
+        }
+      }
+
       // 🚨 Check view threshold and record view (this uses RPC, not direct insert)
       const dynamicThreshold = this._getDynamicViewThreshold();
       

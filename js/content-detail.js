@@ -834,121 +834,20 @@ function setupShareModal() {
 }
 
 // ============================================
-// WATCH SESSION MANAGER CLASS
+// WATCH SESSION MANAGER
 // ============================================
-class WatchSessionManager {
-    constructor(contentId, userId) {
-        this.contentId = contentId;
-        this.userId = userId || null;
-        this.playbackSessionId = this._generateUUID();
-        this.sequenceNumber = 0;
-        this.totalWatchTimeMs = 0;
-        this.maxProgressSeconds = 0;
-        this.heartbeatInterval = null;
-        this.lastHeartbeatTime = Date.now();
-        this.isActive = false;
-        this.viewRecorded = false;
-        this.viewThresholdReached = false;
-    }
-    
-    _generateUUID() {
-        return crypto.randomUUID ? crypto.randomUUID() : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    async initializeSession(platform = 'Web', deviceType = 'Desktop') {
-        try {
-            const { error } = await window.supabaseClient
-                .from('playback_sessions')
-                .insert({
-                    playback_session_id: this.playbackSessionId,
-                    content_id: parseInt(this.contentId),
-                    user_id: this.userId,
-                    session_id: currentSessionId || this._generateUUID(),
-                    platform: platform,
-                    device_type: deviceType,
-                    started_at: new Date().toISOString()
-                });
-            if (error) throw error;
-            this.isActive = true;
-            return true;
-        } catch (error) {
-            console.error('Session init error:', error);
-            return false;
-        }
-    }
-    
-    startHeartbeatLoop(videoElement) {
-        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-        this.heartbeatInterval = setInterval(async () => {
-            if (!this.isActive) return;
-            if (!videoElement || videoElement.paused) return;
-            
-            const currentTime = Math.floor(videoElement.currentTime);
-            const now = Date.now();
-            const deltaWatchTimeMs = now - this.lastHeartbeatTime;
-            this.sequenceNumber++;
-            this.totalWatchTimeMs += deltaWatchTimeMs;
-            if (currentTime > this.maxProgressSeconds) {
-                this.maxProgressSeconds = currentTime;
-            }
-            this.lastHeartbeatTime = now;
-            
-            await window.supabaseClient
-                .from('playback_heartbeats')
-                .insert({
-                    playback_session_id: this.playbackSessionId,
-                    content_id: parseInt(this.contentId),
-                    user_id: this.userId,
-                    sequence_number: this.sequenceNumber,
-                    progress_seconds: currentTime,
-                    cumulative_watch_time_ms: this.totalWatchTimeMs,
-                    playback_state: 'PLAYING'
-                });
-            
-            await window.supabaseClient
-                .from('playback_sessions')
-                .update({
-                    total_watch_time_ms: this.totalWatchTimeMs,
-                    max_progress_seconds: this.maxProgressSeconds,
-                    heartbeat_count: this.sequenceNumber,
-                    last_heartbeat_at: new Date().toISOString()
-                })
-                .eq('playback_session_id', this.playbackSessionId);
-            
-            const duration = videoElement.duration || 0;
-            const thirtyPercentDuration = duration * 0.3;
-            const thresholdSeconds = Math.min(15, thirtyPercentDuration);
-            
-            if (!this.viewRecorded && this.totalWatchTimeMs >= thresholdSeconds * 1000) {
-                this.viewRecorded = true;
-                this.viewThresholdReached = true;
-                await recordContentViewRPC(this.contentId, this.userId, this.playbackSessionId);
-            }
-        }, 10000);
-    }
-    
-    start(videoElement) {
-        if (!videoElement) return;
-        this.startHeartbeatLoop(videoElement);
-    }
-    
-    stop() {
-        this.isActive = false;
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
-        window.supabaseClient
-            .from('playback_sessions')
-            .update({ completed: true, exited_at: new Date().toISOString() })
-            .eq('playback_session_id', this.playbackSessionId)
-            .then(({ error }) => {
-                if (error) console.error('Session close error:', error);
-            });
-    }
-}
-
-window.WatchSessionManager = WatchSessionManager;
+// A local `class WatchSessionManager` used to be declared here and
+// exported to window.WatchSessionManager, overwriting the real, far more
+// complete implementation in js/watch-session.js (which correctly upserts
+// watch_progress on a periodic heartbeat, not just at exit). This is the
+// module loaded last on content-detail.html, so this copy's export always
+// won regardless of what any other script assigned. The real
+// EnhancedVideoPlayer class (js/video-player.js) already starts its own
+// telemetry session automatically on play - this was fully redundant with
+// it, and was also always called with the wrong (positional contentId/
+// userId, not a config object) arguments against what should have been the
+// real constructor. Removed entirely - window.WatchSessionManager now
+// correctly stays whatever js/watch-session.js (loaded earlier) set it to.
 
 // ============================================
 // PLAYLIST LOADING FUNCTIONS
@@ -1403,9 +1302,12 @@ const startPlaybackFromUserGesture = async (resumeSeconds) => {
         const overlay = document.getElementById('initialPlayOverlay');
         if (overlay) overlay.classList.add('hidden');
 
-        if (window.currentContent?.id && !watchSession) {
-            initializeWatchSessionOnPlay();
-        }
+        // No manual watch-session init here anymore - the real player class
+        // (js/video-player.js) already starts its own telemetry session
+        // internally on play (_handlePlay -> _initializeTelemetrySession).
+        // initializeWatchSessionOnPlay() used to duplicate that here, always
+        // calling the wrong (shadowed) WatchSessionManager with the wrong
+        // (positional, not config-object) arguments.
 
     } catch (error) {
         console.warn('⚠️ Direct playback failed:', error.message);
@@ -1414,28 +1316,6 @@ const startPlaybackFromUserGesture = async (resumeSeconds) => {
         }
     }
 };
-
-function initializeWatchSessionOnPlay() {
-    if (!window.currentContent || !window.currentUserId) return;
-    
-    const player = window.enhancedVideoPlayer || enhancedVideoPlayer;
-    if (!player?.video) return;
-    
-    if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-    }
-    
-    try {
-        currentSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        watchSession = new WatchSessionManager(window.currentContentId, window.currentUserId);
-        watchSession.initializeSession('Web', 'Desktop');
-        watchSession.start(player.video);
-        window._watchSession = watchSession;
-    } catch (error) {
-        console.error('❌ Failed to initialize watch session:', error);
-    }
-}
 
 // ============================================
 // LOADING FUNCTIONS
