@@ -1559,7 +1559,7 @@ async function loadCriticalContentData(contentId) {
 }
 
 // ============================================
-// USER-SPECIFIC CONTENT STATE (resume position, like/favorite)
+// USER-SPECIFIC CONTENT STATE (resume position, like/dislike/favorite/watch-later)
 // ============================================
 // Deliberately split out of loadCriticalContentData: the content fetch -
 // and therefore the player - must never wait on auth resolving first, so
@@ -1567,6 +1567,15 @@ async function loadCriticalContentData(contentId) {
 // however long that takes, without blocking anything above it. Also
 // fixes a latent gap where the cache-hit branch above never initialized
 // like/favorite button state at all (only the fresh-fetch path did).
+//
+// setCurrentContent() (called during content load, above) also tries to
+// do this via its own setTimeout(loadAndUpdateEngagementStates, 100), but
+// that check reads window.currentUserId synchronously at content-load
+// time - now that content loads concurrently with auth instead of after
+// it, that check almost always loses the race and silently never fires.
+// This call is the reliable one: it runs only once auth is confirmed
+// ready, so like/dislike/favorite/watch-later highlighting always
+// eventually appears, just not before the player does.
 async function applyUserContentState(contentId) {
     if (!window.currentUserId) return;
 
@@ -1580,9 +1589,8 @@ async function applyUserContentState(contentId) {
         addResumeButton(freshProgress.last_position);
     }
 
-    if (typeof initializeLikeButton === 'function') {
-        await initializeLikeButton(contentId, window.currentUserId);
-        await initializeFavoriteButton(contentId, window.currentUserId);
+    if (typeof loadAndUpdateEngagementStates === 'function') {
+        await loadAndUpdateEngagementStates();
     }
 }
 

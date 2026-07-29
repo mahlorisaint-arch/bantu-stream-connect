@@ -10,18 +10,47 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Chart.js, Supabase, HLS.js - all deferred (was blocking HTML parsing
+     sequentially, one full network round-trip at a time, before the
+     browser could even reach DOMContentLoaded - measured 3-5s of dead
+     time before the content fetch that the player needs even started.
+     defer preserves execution order (still runs before DOMContentLoaded,
+     still in this same document order relative to every other deferred/
+     module script below), it just lets the browser download all of them
+     in parallel instead of one-at-a-time-blocking. -->
 <!-- Chart.js for Analytics -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 <!-- Supabase JS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <!-- PHASE 4: HLS.js Library for Adaptive Streaming -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js" defer></script>
 
 <!-- ============================================ -->
 <!-- SHARED COMPONENTS CSS - GLOBAL STYLES -->
 <!-- ============================================ -->
 <link rel="stylesheet" href="css/shared-components.css">
-<link rel="stylesheet" href="css/content-detail.css">
+<!-- Was one <link> to css/content-detail.css, which was itself just 13
+     @import statements and no rules of its own. @import forces the
+     browser to fully download and parse the parent file before it can
+     even discover the imported files exist - an extra serial round-trip
+     that plain <link> tags don't have, since the browser can discover
+     and start fetching all of these in parallel straight from this HTML.
+     Order preserved exactly as content-detail.css documented it
+     (specificity increases bottom to top: layout, then section modules,
+     then feature modules, then overlays/modals, responsive always last). -->
+<link rel="stylesheet" href="css/content-detail/layout.css">
+<link rel="stylesheet" href="css/content-detail/video-player.css">
+<link rel="stylesheet" href="css/content-detail/creator-info-bar.css">
+<link rel="stylesheet" href="css/content-detail/stats-grid.css">
+<link rel="stylesheet" href="css/content-detail/description-section.css">
+<link rel="stylesheet" href="css/content-detail/comments-section.css">
+<link rel="stylesheet" href="css/content-detail/continue-watching.css">
+<link rel="stylesheet" href="css/content-detail/because-you-watched.css">
+<link rel="stylesheet" href="css/content-detail/more-from-creator.css">
+<link rel="stylesheet" href="css/content-detail/related-content.css">
+<link rel="stylesheet" href="css/content-detail/playlist-queue.css">
+<link rel="stylesheet" href="css/content-detail/modals.css">
+<link rel="stylesheet" href="css/content-detail/responsive.css">
 
 <style>
 body.content-detail-page { background: #000000; }
@@ -1511,51 +1540,62 @@ console.log('✅ Global utility functions loaded');
 </script>
 
 <!-- SECOND: Supabase Client -->
-<script>
-    window.SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-    window.supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    console.log('✅ Supabase client initialized');
-</script>
+<!-- An external deferred script, not an inline block wrapped in
+     DOMContentLoaded: inline scripts always run immediately/synchronously
+     at their document position regardless of any defer attempt, but
+     shared-components.js (below) calls
+     window.supabaseClient.auth.onAuthStateChange() at ITS OWN top level
+     during the same "run all deferred scripts in document order" phase -
+     which finishes before DOMContentLoaded fires. A DOMContentLoaded
+     listener here would run too late for that. Being deferred itself
+     keeps this in the same document-order sequence as everything that
+     depends on it. -->
+<script src="js/supabase-client-init.js" defer></script>
 
 <!-- THIRD: Core Scripts -->
-<script src="js/state-manager.js"></script>
-<script src="js/supabase-helper.js"></script>
-<script src="js/auth-helper.js"></script>
-<script src="js/security.js"></script>
-<script src="js/analytics.js"></script>
-<script src="js/playlist-manager.js"></script>
-<script src="js/streaming-manager.js"></script>
-<script src="js/video-player.js"></script>
-<script src="js/virtual-scroll.js"></script>
-<script src="js/video-player-features.js"></script>
-<script src="js/watch-session.js"></script>
-<script src="js/recommendation-engine.js"></script>
-<script src="js/queue-manager.js"></script>
-<script src="js/content-collections-engine.js"></script>
-<script src="js/keyboard-shortcuts.js"></script>
-<script src="js/playlist-modal.js"></script>
+<!-- All deferred - same reasoning as the CDN scripts above: downloading
+     now happens in parallel instead of one-at-a-time-blocking, while
+     defer preserves this exact document-order execution sequence
+     (including relative to the module-script main orchestrator below,
+     which is deferred by default as type="module"), so nothing here
+     changes which script sees which global defined first. -->
+<script src="js/state-manager.js" defer></script>
+<script src="js/supabase-helper.js" defer></script>
+<script src="js/auth-helper.js" defer></script>
+<script src="js/security.js" defer></script>
+<script src="js/analytics.js" defer></script>
+<script src="js/playlist-manager.js" defer></script>
+<script src="js/streaming-manager.js" defer></script>
+<script src="js/video-player.js" defer></script>
+<script src="js/virtual-scroll.js" defer></script>
+<script src="js/video-player-features.js" defer></script>
+<script src="js/watch-session.js" defer></script>
+<script src="js/recommendation-engine.js" defer></script>
+<script src="js/queue-manager.js" defer></script>
+<script src="js/content-collections-engine.js" defer></script>
+<script src="js/keyboard-shortcuts.js" defer></script>
+<script src="js/playlist-modal.js" defer></script>
 
 <!-- FOURTH: Shared Components (depends on utilities) -->
-<script src="js/shared-components.js"></script>
+<script src="js/shared-components.js" defer></script>
 
 <!-- FIFTH: Section Modules -->
-<script src="js/content-detail/hero-section.js"></script>
-<script src="js/content-detail/creator-section.js"></script>
-<script src="js/content-detail/stats-grid.js"></script>
-<script src="js/content-detail/description-section.js"></script>
-<script src="js/content-detail/comments-section.js"></script>
-<script src="js/content-detail/continue-watching.js"></script>
-<script src="js/content-detail/because-you-watched.js"></script>
-<script src="js/content-detail/more-from-this-creator.js"></script>
-<script src="js/content-detail/related-content.js"></script>
-<script src="js/content-detail/playlist-queue.js"></script>
-<script src="js/content-detail/legacy-playlist.js"></script>
-<script src="js/content-detail/playlist-sidebar.js"></script>
-<script src="js/content-detail/video-player-section.js"></script>
+<script src="js/content-detail/hero-section.js" defer></script>
+<script src="js/content-detail/creator-section.js" defer></script>
+<script src="js/content-detail/stats-grid.js" defer></script>
+<script src="js/content-detail/description-section.js" defer></script>
+<script src="js/content-detail/comments-section.js" defer></script>
+<script src="js/content-detail/continue-watching.js" defer></script>
+<script src="js/content-detail/because-you-watched.js" defer></script>
+<script src="js/content-detail/more-from-this-creator.js" defer></script>
+<script src="js/content-detail/related-content.js" defer></script>
+<script src="js/content-detail/playlist-queue.js" defer></script>
+<script src="js/content-detail/legacy-playlist.js" defer></script>
+<script src="js/content-detail/playlist-sidebar.js" defer></script>
+<script src="js/content-detail/video-player-section.js" defer></script>
 
 <!-- SIXTH: Features (utility belt) -->
-<script src="js/content-detail-features.js"></script>
+<script src="js/content-detail-features.js" defer></script>
 
 <!-- SEVENTH: Main Orchestrator (MUST BE LAST) -->
 <script type="module" src="js/content-detail.js"></script>
