@@ -2334,12 +2334,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (skeleton) skeleton.style.display = 'none';
         if (mainContent) mainContent.style.display = '';
         if (typeof updateCommentInputState === 'function') updateCommentInputState();
-        
+
+        // Player starts loading its source the moment the skeleton is gone
+        // and the video element is actually visible/laid-out - not after
+        // analytics/search/notifications/share modals, playlist manager,
+        // and the recommendation engine have all initialized and been
+        // awaited first, plus a flat 300ms delay on top of that. None of
+        // those are dependencies of initializeEnhancedVideoPlayer() (it
+        // only needs the DOM elements, window.currentContentId,
+        // window.supabaseClient, window.currentUserId - all already set by
+        // this point), so there's no reason for the player to wait behind
+        // them. This is what makes big platforms feel instant: player
+        // chrome + source loading starts immediately, everything else
+        // (modals, recommendations, playlist UI) fills in around it.
+        if (!window.isPlaylistMode && window.currentContent?.id) {
+            const player = document.getElementById('inlinePlayer');
+            const video = document.getElementById('inlineVideoPlayer');
+            if (player && video && !window.enhancedVideoPlayer && typeof initializeEnhancedVideoPlayer === 'function') {
+                initializeEnhancedVideoPlayer();
+            }
+        }
+
         if (typeof initAnalyticsModal === 'function') initAnalyticsModal();
         if (typeof initSearchModal === 'function') initSearchModal();
         if (typeof initNotificationsPanel === 'function') initNotificationsPanel();
         if (typeof setupShareModal === 'function') setupShareModal();
-        
+
         if (window.PlaylistManager && window.currentUserId && typeof initializePlaylistManager === 'function') {
             await initializePlaylistManager();
         }
@@ -2355,21 +2375,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await initializeRecommendationEngineForPlaylist(window.currentPlaylistItems[0]?.id);
             }
         }
-        
+
         if (typeof applyMobileHeaderStyles === 'function') applyMobileHeaderStyles();
-        
+
         if (!window.isPlaylistMode && window.currentContent && window.ContentCollectionsEngine) {
             await window.ContentCollectionsEngine.initialize(window.currentContent);
-        }
-        
-        if (!window.isPlaylistMode && window.currentContent?.id) {
-            setTimeout(() => {
-                const player = document.getElementById('inlinePlayer');
-                const video = document.getElementById('inlineVideoPlayer');
-                if (player && video && !window.enhancedVideoPlayer && typeof initializeEnhancedVideoPlayer === 'function') {
-                    initializeEnhancedVideoPlayer();
-                }
-            }, 300);
         }
 
         // initializeKeyboardShortcuts() was defined but never called anywhere
