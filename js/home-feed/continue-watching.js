@@ -198,13 +198,13 @@ const ContinueWatching = (function() {
         // Get metrics for content
         const metrics = await fetchMetrics(contentData);
         
-        // Enrich content with metrics
+        // Enrich content with metrics. Only connectors is actually
+        // rendered (renderCards below) - views/likes/shares used to be
+        // computed here via three extra raw-count queries and discarded
+        // entirely, never read anywhere.
         const enrichedData = contentData.map(item => ({
             ...item,
             metrics: {
-                views: metrics.views[item.id] || 0,
-                likes: metrics.likes[item.id] || 0,
-                shares: metrics.shares[item.id] || 0,
                 connectors: metrics.connectors[item.user_id] || 0
             }
         }));
@@ -224,61 +224,15 @@ const ContinueWatching = (function() {
      * Fetch metrics for content
      */
     async function fetchMetrics(contentList) {
-        const contentIds = contentList.map(c => c.id);
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
-        
-        const [views, likes, shares, connectors] = await Promise.all([
-            fetchViewCounts(contentIds),
-            fetchLikeCounts(contentIds),
-            fetchShareCounts(contentIds),
+
+        const [connectors] = await Promise.all([
             fetchConnectorCounts(creatorIds)
         ]);
-        
-        return { views, likes, shares, connectors };
+
+        return { connectors };
     }
-    
-    /**
-     * Fetch view counts
-     */
-    async function fetchViewCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch like counts
-     */
-    async function fetchLikeCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch share counts
-     */
-    async function fetchShareCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
+
     /**
      * Fetch connector counts for creators
      */

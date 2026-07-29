@@ -81,40 +81,33 @@ const TrendingNow = (function() {
     async function loadTrendingStats() {
         try {
             if (!window.supabaseAuth) return;
-            
-            // Get total views in last 24 hours
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            
-            const { count: views24h } = await window.supabaseAuth
-                .from('content_views')
-                .select('id', { count: 'exact', head: true })
-                .gte('created_at', yesterday.toISOString());
-            
-            // Get trending content count
-            const { data: trendingContent } = await window.supabaseAuth
-                .from('Content')
-                .select('id')
-                .eq('status', 'published')
-                .gt('views_count', 1000);
-            
-            // Calculate trending velocity (views per hour)
-            const trendingVelocity = Math.floor((views24h || 0) / 24);
-            
+
+            // Raw content_views counts here used to be silently wrong: RLS
+            // restricts SELECT to auth.uid() = user_id OR viewer_id, so
+            // anon visitors always got 0 rows (no anon policy at all) and
+            // authenticated users only ever saw their OWN view count, never
+            // a real aggregate. Whenever that came back 0 (nearly always),
+            // this used to fall back to hardcoded fake numbers shown as if
+            // real. get_trending_stats_24h() aggregates safely server-side
+            // instead - see migration adjust_trending_stats_threshold_for_current_scale.
+            const { data, error } = await window.supabaseAuth.rpc('get_trending_stats_24h');
+            if (error) throw error;
+
             window.trendingStats = {
-                views24h: views24h || 12450,
-                trendingCount: trendingContent?.length || 342,
-                velocity: trendingVelocity || 500,
+                views24h: data?.views_24h || 0,
+                trendingCount: data?.trending_count || 0,
+                velocity: data?.velocity_per_hour || 0,
                 lastUpdated: Date.now()
             };
-            
-            
+
         } catch (err) {
             console.error('Error loading trending stats:', err);
+            // Honest empty state instead of fabricated numbers - matches
+            // how Live Now hides entirely rather than show a fake count.
             window.trendingStats = {
-                views24h: 12450,
-                trendingCount: 342,
-                velocity: 500,
+                views24h: 0,
+                trendingCount: 0,
+                velocity: 0,
                 lastUpdated: Date.now()
             };
         }
@@ -412,79 +405,34 @@ const TrendingNow = (function() {
         const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
         
         const metrics = await fetchAllMetrics(contentIds, creatorIds);
-        
+
         return contentList.map(item => ({
             ...item,
             metrics: {
-                views: item.views_count || 0,  // Use the views_count from merged data
-                likes: metrics.likes[item.id] || 0,
-                shares: metrics.shares[item.id] || 0,
+                // views/likes/shares all come from item.*_count, already
+                // correctly sourced from content_engagement_stats by
+                // fetchTrendingContent() above. This function used to
+                // separately raw-count content_likes/content_shares here
+                // and use THOSE instead, discarding the correct values -
+                // views_count was already right, likes/shares weren't.
+                views: item.views_count || 0,
+                likes: item.likes_count || 0,
+                shares: item.shares_count || 0,
                 favorites: item.favorites_count || 0,
                 connectors: metrics.connectors[item.user_id] || 0
             }
         }));
     }
-    
+
     /**
      * Fetch all metrics in parallel
      */
     async function fetchAllMetrics(contentIds, creatorIds) {
-        const [views, likes, shares, connectors] = await Promise.all([
-            fetchViewCounts(contentIds),
-            fetchLikeCounts(contentIds),
-            fetchShareCounts(contentIds),
+        const [connectors] = await Promise.all([
             fetchConnectorCounts(creatorIds)
         ]);
-        
-        return { views, likes, shares, connectors };
-    }
-    
-    /**
-     * Fetch view counts (last 24h for trending velocity)
-     */
-    async function fetchViewCounts(contentIds) {
-        if (!contentIds.length) return {};
-        
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        const { data } = await window.supabaseAuth
-            .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds)
-            .gte('created_at', yesterday.toISOString());
-        
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch like counts
-     */
-    async function fetchLikeCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
-    }
-    
-    /**
-     * Fetch share counts
-     */
-    async function fetchShareCounts(contentIds) {
-        if (!contentIds.length) return {};
-        const { data } = await window.supabaseAuth
-            .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
-        const counts = {};
-        data?.forEach(row => counts[row.content_id] = (counts[row.content_id] || 0) + 1);
-        return counts;
+
+        return { connectors };
     }
     
     /**

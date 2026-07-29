@@ -639,10 +639,11 @@ const ForYou = (function() {
                 showEmptyState();
             }
         } catch (err) {
+            console.error('For You fallback load failed:', err);
             showEmptyState();
         }
     }
-    
+
     /**
      * Build section data with metrics from content_engagement_stats
      */

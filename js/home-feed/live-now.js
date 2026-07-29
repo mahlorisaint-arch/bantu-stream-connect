@@ -254,46 +254,46 @@ const LiveNow = (function() {
      */
     async function enrichWithLiveData(streams) {
         if (!streams.length) return [];
-        
-        const enriched = [];
-        
-        for (const stream of streams) {
-            // Get view count from content_engagement_stats
-            let viewCount = 0;
-            try {
-                const { data: stats, error: statsError } = await window.supabaseAuth
-                    .from('content_engagement_stats')
-                    .select('total_views')
-                    .eq('content_id', stream.id)
-                    .maybeSingle();
-                
-                if (!statsError && stats) {
-                    viewCount = stats.total_views || 0;
-                }
-            } catch (err) {
-                // Table might not exist, use fallback
-                viewCount = Math.floor(Math.random() * 500) + 50;
-            }
-            
+
+        // Single batched query instead of one per stream (was N sequential
+        // round-trips). On any failure, viewCounts stays an empty map and
+        // every stream honestly shows 0 - previously this fell back to
+        // Math.random() * 500 + 50, showing a fabricated "live viewer
+        // count" with no indication to the user it wasn't real.
+        const streamIds = streams.map(s => s.id);
+        const viewCounts = {};
+        try {
+            const { data: statsRows, error: statsError } = await window.supabaseAuth
+                .from('content_engagement_stats')
+                .select('content_id, total_views')
+                .in('content_id', streamIds);
+
+            if (statsError) throw statsError;
+            (statsRows || []).forEach(row => {
+                viewCounts[row.content_id] = row.total_views || 0;
+            });
+        } catch (err) {
+            console.error('Error fetching live viewer counts:', err);
+        }
+
+        return streams.map(stream => {
             // Calculate stream duration
             const streamStart = new Date(stream.created_at);
             const now = new Date();
             const durationMs = now - streamStart;
             const durationMinutes = Math.floor(durationMs / 60000);
             const durationHours = Math.floor(durationMinutes / 60);
-            const durationDisplay = durationHours > 0 
-                ? `${durationHours}h ${durationMinutes % 60}m` 
+            const durationDisplay = durationHours > 0
+                ? `${durationHours}h ${durationMinutes % 60}m`
                 : durationMinutes > 0 ? `${durationMinutes}m` : 'Just started';
-            
-            enriched.push({
+
+            return {
                 ...stream,
-                live_viewers: viewCount,
+                live_viewers: viewCounts[stream.id] || 0,
                 stream_duration: durationDisplay,
                 is_live: true
-            });
-        }
-        
-        return enriched;
+            };
+        });
     }
     
     /**

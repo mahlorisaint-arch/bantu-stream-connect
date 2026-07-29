@@ -17,8 +17,7 @@ const CommunityFavorites = (function() {
     let section = null;
     let currentUser = null;
     let refreshInterval = null;
-    let communityStats = null;
-    
+
     // Configuration
     const CACHE_KEY = 'feed_communityFavorites';
     const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -53,13 +52,7 @@ const CommunityFavorites = (function() {
         
         // Get current user
         await getCurrentUser();
-        
-        // Load community stats
-        await loadCommunityStats();
-        
-        // Add community stats bar
-        addCommunityStatsBar();
-        
+
         // Load content
         await loadContent();
 
@@ -125,116 +118,11 @@ const CommunityFavorites = (function() {
     }
     
     /**
-     * Load community statistics
-     * UPDATED: Uses content_engagement_stats for total likes/shares
-     */
-    async function loadCommunityStats() {
-        try {
-            if (!window.supabaseAuth) return;
-            
-            // Get total favorites across platform (using favorites_count from Content)
-            const { data: favoritesData } = await window.supabaseAuth
-                .from('Content')
-                .select('favorites_count')
-                .eq('status', 'published');
-            
-            const totalFavorites = favoritesData?.reduce((sum, item) => sum + (item.favorites_count || 0), 0) || 0;
-            
-            // Get total likes from content_engagement_stats
-            const { data: likesData } = await window.supabaseAuth
-                .from('content_engagement_stats')
-                .select('total_likes');
-            
-            const totalLikes = likesData?.reduce((sum, item) => sum + (item.total_likes || 0), 0) || 0;
-            
-            // Get total shares from content_engagement_stats
-            const { data: sharesData } = await window.supabaseAuth
-                .from('content_engagement_stats')
-                .select('total_shares');
-            
-            const totalShares = sharesData?.reduce((sum, item) => sum + (item.total_shares || 0), 0) || 0;
-            
-            // Get unique connectors count
-            const { count: connectorsCount } = await window.supabaseAuth
-                .from('connectors')
-                .select('*', { count: 'exact', head: true });
-            
-            // Get today's active users (simplified - using content_views)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const { count: todayActive } = await window.supabaseAuth
-                .from('content_views')
-                .select('profile_id', { count: 'exact', head: true })
-                .gte('created_at', today.toISOString());
-            
-            communityStats = {
-                totalFavorites: totalFavorites,
-                totalLikes: totalLikes,
-                totalShares: totalShares,
-                connectorsCount: connectorsCount || 0,
-                todayActive: todayActive || 0,
-                lastUpdated: Date.now()
-            };
-            
-            
-        } catch (err) {
-            console.error('Error loading community stats:', err);
-            communityStats = {
-                totalFavorites: 12500,
-                totalLikes: 45000,
-                totalShares: 8900,
-                connectorsCount: 12500,
-                todayActive: 342,
-                lastUpdated: Date.now()
-            };
-        }
-    }
-    
-    /**
-     * Add community stats bar - Updated to show likes and shares
-     */
-    function addCommunityStatsBar() {
-        const statsContainer = document.getElementById('community-favorites-stats');
-        if (!statsContainer) return;
-        
-        statsContainer.innerHTML = `
-            <div class="community-stat-item">
-                <i class="fas fa-heart"></i>
-                <div>
-                    <div class="stat-value">${formatNumber(communityStats?.totalFavorites || 0)}</div>
-                    <div class="stat-label">Total Favorites</div>
-                </div>
-            </div>
-            <div class="community-stat-item">
-                <i class="fas fa-thumbs-up"></i>
-                <div>
-                    <div class="stat-value">${formatNumber(communityStats?.totalLikes || 0)}</div>
-                    <div class="stat-label">Total Likes</div>
-                </div>
-            </div>
-            <div class="community-stat-item">
-                <i class="fas fa-share-alt"></i>
-                <div>
-                    <div class="stat-value">${formatNumber(communityStats?.totalShares || 0)}</div>
-                    <div class="stat-label">Total Shares</div>
-                </div>
-            </div>
-            <div class="community-stat-item">
-                <i class="fas fa-users"></i>
-                <div>
-                    <div class="stat-value">${formatNumber(communityStats?.connectorsCount || 0)}</div>
-                    <div class="stat-label">Community Members</div>
-                </div>
-            </div>
-        `;
-    }
-    
-    /**
      * Load community favorites content
      * UPDATED: Now joins with content_engagement_stats and orders by total_likes DESC, total_shares DESC
      */
     async function loadContent() {
-        
+
         // Try cached data first
         const cachedData = loadFromCache();
         if (cachedData && cachedData.length > 0) {
@@ -245,49 +133,57 @@ const CommunityFavorites = (function() {
             refreshInBackground();
             return;
         }
-        
+
         // Show skeletons
         showSkeletons();
-        
+
         try {
-            const contentList = await fetchCommunityFavorites();
-            
-            if (!contentList || contentList.length === 0) {
-                showEmptyState();
-                return;
-            }
-            
-            // Build complete dataset with metrics from engagement_stats
-            let sectionData = await buildSectionData(contentList);
-            
-            // Apply community boost logic (likes/shares/favorites/views/
-            // connectors weighted score, boosted for SA-region and
-            // local-language content - see applyCommunityBoost)
-            sectionData = applyCommunityBoost(sectionData);
-
-            // Sort by the boosted community_score computed above, not
-            // raw engagement - this is what actually makes the SA-region/
-            // local-language boost mean something instead of being
-            // computed and discarded.
-            sectionData.sort((a, b) => (b.community_score || 0) - (a.community_score || 0));
-
-            // Render
-            container.innerHTML = '';
-            renderCards(sectionData);
-            
-            // Cache the result
-            saveToCache(sectionData);
-            
-            // Animate cards
-            animateCards();
-            
-            
+            await fetchAndRenderFreshContent();
         } catch (err) {
             console.error("❌ Community Favorites Section Error:", err);
             if (!loadFromCache()) {
                 showErrorState();
             }
         }
+    }
+
+    /**
+     * Fetch, build, boost, sort, render and cache fresh content - the real
+     * work behind loadContent()'s no-cache path, extracted so
+     * refreshInBackground() can reuse it too instead of silently doing
+     * nothing (see refreshInBackground below).
+     */
+    async function fetchAndRenderFreshContent() {
+        const contentList = await fetchCommunityFavorites();
+
+        if (!contentList || contentList.length === 0) {
+            showEmptyState();
+            return;
+        }
+
+        // Build complete dataset with metrics from engagement_stats
+        let sectionData = await buildSectionData(contentList);
+
+        // Apply community boost logic (likes/shares/favorites/views/
+        // connectors weighted score, boosted for SA-region and
+        // local-language content - see applyCommunityBoost)
+        sectionData = applyCommunityBoost(sectionData);
+
+        // Sort by the boosted community_score computed above, not
+        // raw engagement - this is what actually makes the SA-region/
+        // local-language boost mean something instead of being
+        // computed and discarded.
+        sectionData.sort((a, b) => (b.community_score || 0) - (a.community_score || 0));
+
+        // Render
+        container.innerHTML = '';
+        renderCards(sectionData);
+
+        // Cache the result
+        saveToCache(sectionData);
+
+        // Animate cards
+        animateCards();
     }
     
     /**
@@ -688,7 +584,6 @@ const CommunityFavorites = (function() {
             <i class="fas fa-info-circle" style="font-size: 14px; color: var(--slate-grey);"></i>
             <span class="tooltip-text">
                 Based on community likes and shares across the Bantu platform.
-                ${communityStats?.totalLikes ? `Over ${formatNumber(communityStats.totalLikes)} total likes given!` : ''}
             </span>
         `;
         
@@ -700,8 +595,15 @@ const CommunityFavorites = (function() {
      */
     async function refreshInBackground() {
         try {
-            await loadCommunityStats();
-            addCommunityStatsBar();
+            // Used to call loadCommunityStats()/addCommunityStatsBar(),
+            // which targeted a #community-favorites-stats container that
+            // doesn't exist anywhere in index.html - that stats bar was
+            // already removed from the page, so this function was silently
+            // doing nothing (running 5 queries on every 5-minute interval
+            // tick, all discarded) while the actual cached content cards
+            // shown to the user never got revalidated. Now does what its
+            // name says.
+            await fetchAndRenderFreshContent();
         } catch (err) {
             console.warn('Community Favorites background refresh failed:', err);
         }
@@ -834,7 +736,6 @@ const CommunityFavorites = (function() {
      */
     async function refresh() {
         await getCurrentUser();
-        await loadCommunityStats();
         await loadContent();
     }
     

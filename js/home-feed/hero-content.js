@@ -836,20 +836,17 @@
         },
         
         /**
-         * Get current user ID
+         * Get current user ID. window.currentUser is the reliable global on
+         * this page - set synchronously by home-feed.js's checkAuth() before
+         * any section module's init() runs. The other checks here
+         * (window.currentUserId, window.AuthHelper, localStorage 'userId')
+         * are content-detail.js-only globals that are never loaded/set on
+         * the home feed page, so this always returned null previously -
+         * meaning hero content views/playback sessions were always recorded
+         * as anonymous, even for a logged-in user.
          */
         getCurrentUserId() {
-            if (window.currentUserId) return window.currentUserId;
-            if (localStorage.getItem('userId')) return localStorage.getItem('userId');
-            if (window.AuthHelper?.getCurrentUser) {
-                const user = window.AuthHelper.getCurrentUser();
-                if (user?.id) return user.id;
-            }
-            if (window.AuthHelper?.getUserProfile) {
-                const profile = window.AuthHelper.getUserProfile();
-                if (profile?.id) return profile.id;
-            }
-            return null;
+            return window.currentUser?.id || null;
         },
         
         /**
