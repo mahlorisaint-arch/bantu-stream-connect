@@ -282,6 +282,7 @@ let _heavyVideoLoaded = false;
 
 // Engagement caches
 let likedContentCache = new Set();
+let dislikedContentCache = new Set();
 let favoritedContentCache = new Set();
 let watchLaterContentCache = new Set();
 
@@ -441,43 +442,48 @@ async function loadLiveEngagementCounts(contentId) {
  */
 async function loadAllEngagementStates(contentId, userId) {
     if (!userId || !contentId) {
-        return { liked: false, favorited: false, watchLater: false };
+        return { liked: false, disliked: false, favorited: false, watchLater: false };
     }
-    
+
     const token = crypto.randomUUID();
     window.engagementLoadToken = token;
-    
+
     try {
-        const [likeRes, favRes, wlRes] = await Promise.all([
+        const [likeRes, dislikeRes, favRes, wlRes] = await Promise.all([
             window.supabaseClient.from('content_likes').select('id').eq('content_id', parseInt(contentId)).eq('user_id', userId).maybeSingle(),
+            window.supabaseClient.from('content_dislikes').select('id').eq('content_id', parseInt(contentId)).eq('user_id', userId).maybeSingle(),
             window.supabaseClient.from('favorites').select('id').eq('content_id', parseInt(contentId)).eq('user_id', userId).maybeSingle(),
             window.supabaseClient.from('watch_later').select('id').eq('content_id', parseInt(contentId)).eq('user_id', userId).maybeSingle()
         ]);
-        
+
         const states = {
             liked: !!likeRes.data,
+            disliked: !!dislikeRes.data,
             favorited: !!favRes.data,
             watchLater: !!wlRes.data
         };
-        
+
         if (states.liked) likedContentCache.add(contentId);
         else likedContentCache.delete(contentId);
-        
+
+        if (states.disliked) dislikedContentCache.add(contentId);
+        else dislikedContentCache.delete(contentId);
+
         if (states.favorited) favoritedContentCache.add(contentId);
         else favoritedContentCache.delete(contentId);
-        
+
         if (states.watchLater) watchLaterContentCache.add(contentId);
         else watchLaterContentCache.delete(contentId);
-        
+
         // Update engagement buttons UI
         if (typeof updateEngagementButtonsUI === 'function') {
             updateEngagementButtonsUI(states);
         }
-        
+
         return states;
     } catch (error) {
         console.error('❌ Failed to load engagement states:', error);
-        return { liked: false, favorited: false, watchLater: false };
+        return { liked: false, disliked: false, favorited: false, watchLater: false };
     }
 }
 
@@ -598,12 +604,86 @@ async function toggleLike(contentId, userId, isCurrentlyLiked) {
                 .insert({ user_id: userId, content_id: parseInt(contentId) });
             if (error) throw error;
             likedContentCache.add(contentId);
+
+            // Mutual exclusivity: liking clears any existing dislike
+            if (dislikedContentCache.has(contentId)) {
+                await window.supabaseClient
+                    .from('content_dislikes')
+                    .delete()
+                    .eq('user_id', userId)
+                    .eq('content_id', parseInt(contentId));
+                dislikedContentCache.delete(contentId);
+            }
+
             return true;
         }
     } catch (error) {
         console.error('❌ Like toggle failed:', error);
         if (typeof showToast === 'function') showToast('Failed to update like', 'error');
         return isCurrentlyLiked;
+    }
+}
+
+/**
+ * Toggle dislike (mirrors toggleLike's existence-check-then-insert/delete
+ * pattern against the content_dislikes table so there are no 409s)
+ */
+async function toggleDislike(contentId, userId, isCurrentlyDisliked) {
+    if (!userId) {
+        if (typeof showToast === 'function') showToast('Sign in to dislike content', 'warning');
+        return false;
+    }
+
+    try {
+        if (isCurrentlyDisliked) {
+            const { error } = await window.supabaseClient
+                .from('content_dislikes')
+                .delete()
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId));
+            if (error) throw error;
+            dislikedContentCache.delete(contentId);
+            return false;
+        } else {
+            const { data: existing } = await window.supabaseClient
+                .from('content_dislikes')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('content_id', parseInt(contentId))
+                .maybeSingle();
+
+            if (existing) {
+                const { error } = await window.supabaseClient
+                    .from('content_dislikes')
+                    .delete()
+                    .eq('id', existing.id);
+                if (error) throw error;
+                dislikedContentCache.delete(contentId);
+                return false;
+            }
+
+            const { error } = await window.supabaseClient
+                .from('content_dislikes')
+                .insert({ user_id: userId, content_id: parseInt(contentId) });
+            if (error) throw error;
+            dislikedContentCache.add(contentId);
+
+            // Mutual exclusivity: disliking clears any existing like
+            if (likedContentCache.has(contentId)) {
+                await window.supabaseClient
+                    .from('content_likes')
+                    .delete()
+                    .eq('user_id', userId)
+                    .eq('content_id', parseInt(contentId));
+                likedContentCache.delete(contentId);
+            }
+
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Dislike toggle failed:', error);
+        if (typeof showToast === 'function') showToast('Failed to update dislike', 'error');
+        return isCurrentlyDisliked;
     }
 }
 
@@ -1823,6 +1903,89 @@ async function handleLikeButtonClick() {
 }
 
 /**
+ * Handle Dislike button click. Dislike counts aren't shown publicly
+ * (dislikeBtn is icon-only in the markup, matching current platform
+ * convention), so there's no count to optimistically update - just the
+ * active/inactive icon state.
+ */
+async function handleDislikeButtonClick() {
+    console.log('👎 Dislike button clicked');
+
+    if (!window.currentContent?.id) {
+        console.warn('No current content for dislike action');
+        if (typeof window.showToast === 'function') {
+            window.showToast('No content selected', 'error');
+        }
+        return;
+    }
+
+    if (!window.currentUserId) {
+        if (typeof window.showToast === 'function') {
+            window.showToast('Sign in to dislike content', 'warning');
+        }
+        setTimeout(() => {
+            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }, 1500);
+        return;
+    }
+
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    const isCurrentlyDisliked = dislikeBtn?.classList.contains('active') || false;
+
+    // Optimistic UI update
+    if (dislikeBtn) {
+        dislikeBtn.classList.toggle('active', !isCurrentlyDisliked);
+        dislikeBtn.innerHTML = !isCurrentlyDisliked
+            ? '<i class="fas fa-thumbs-down"></i>'
+            : '<i class="far fa-thumbs-down"></i>';
+        dislikeBtn.disabled = true;
+    }
+
+    try {
+        const newState = await toggleDislike(window.currentContent.id, window.currentUserId, isCurrentlyDisliked);
+
+        if (newState === isCurrentlyDisliked) {
+            // Revert on failure
+            if (dislikeBtn) {
+                dislikeBtn.classList.toggle('active', isCurrentlyDisliked);
+                dislikeBtn.innerHTML = isCurrentlyDisliked
+                    ? '<i class="fas fa-thumbs-down"></i>'
+                    : '<i class="far fa-thumbs-down"></i>';
+            }
+            if (typeof window.showToast === 'function') {
+                window.showToast('Failed to update dislike', 'error');
+            }
+        } else {
+            // Liking/disliking are mutually exclusive - refresh both buttons
+            // in case this dislike just cleared an existing like server-side
+            if (typeof updateEngagementButtonsUI === 'function') {
+                const states = await loadAllEngagementStates(window.currentContent.id, window.currentUserId);
+                updateEngagementButtonsUI(states);
+            }
+            if (window.currentContent) {
+                const liveCounts = await loadLiveEngagementCounts(window.currentContent.id);
+                window.currentContent.likes_count = liveCounts.likes;
+            }
+        }
+    } catch (error) {
+        console.error('❌ Dislike button error:', error);
+        if (dislikeBtn) {
+            dislikeBtn.classList.toggle('active', isCurrentlyDisliked);
+            dislikeBtn.innerHTML = isCurrentlyDisliked
+                ? '<i class="fas fa-thumbs-down"></i>'
+                : '<i class="far fa-thumbs-down"></i>';
+        }
+        if (typeof window.showToast === 'function') {
+            window.showToast('Failed to update dislike', 'error');
+        }
+    } finally {
+        if (dislikeBtn) {
+            dislikeBtn.disabled = false;
+        }
+    }
+}
+
+/**
  * Handle Favorite button click
  */
 async function handleFavoriteButtonClick() {
@@ -1981,6 +2144,15 @@ function setupEventListeners() {
         likeBtn.parentNode?.replaceChild(newLikeBtn, likeBtn);
         newLikeBtn.addEventListener('click', handleLikeButtonClick);
         console.log('✅ Like button listener attached');
+    }
+
+    // Dislike button
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    if (dislikeBtn) {
+        const newDislikeBtn = dislikeBtn.cloneNode(true);
+        dislikeBtn.parentNode?.replaceChild(newDislikeBtn, dislikeBtn);
+        newDislikeBtn.addEventListener('click', handleDislikeButtonClick);
+        console.log('✅ Dislike button listener attached');
     }
     
     // Favorite button

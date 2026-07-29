@@ -711,10 +711,9 @@ function refreshContentInBackground(contentId) {
 /**
  * Wire the creator-info-bar's More-options circular button (opens a small
  * dropdown housing Playlist toggle + Close Player — both real, pre-existing
- * buttons just relocated here, not reimplemented) and the Dislike pill
- * (no dislike backend/schema exists anywhere in this app, so it's a real,
- * clickable button that's honest about not being wired yet, same treatment
- * as the player's Cast/CC buttons).
+ * buttons just relocated here, not reimplemented). The Dislike pill itself
+ * is wired in content-detail.js's setupEventListeners(), alongside
+ * Like/Favorite/Watch Later.
  */
 function setupInfoBarMiscControls() {
     const moreBtn = document.getElementById('infoBarMoreBtn');
@@ -728,15 +727,6 @@ function setupInfoBarMiscControls() {
             if (!moreMenu.classList.contains('open')) return;
             if (e.target === moreBtn || moreMenu.contains(e.target)) return;
             moreMenu.classList.remove('open');
-        });
-    }
-
-    const dislikeBtn = document.getElementById('dislikeBtn');
-    if (dislikeBtn) {
-        dislikeBtn.addEventListener('click', () => {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Coming soon', 'info');
-            }
         });
     }
 }

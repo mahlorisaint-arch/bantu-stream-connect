@@ -116,6 +116,20 @@ function updateEngagementButtonsUI(states) {
         }
     }
 
+    // Dislike button (icon-only, no visible count)
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    if (dislikeBtn) {
+        if (states.disliked) {
+            dislikeBtn.classList.add('active');
+            dislikeBtn.innerHTML = '<i class="fas fa-thumbs-down"></i>';
+            dislikeBtn.setAttribute('data-disliked', 'true');
+        } else {
+            dislikeBtn.classList.remove('active');
+            dislikeBtn.innerHTML = '<i class="far fa-thumbs-down"></i>';
+            dislikeBtn.setAttribute('data-disliked', 'false');
+        }
+    }
+
     // Favorite button
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
