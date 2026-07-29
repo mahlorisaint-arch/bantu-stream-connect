@@ -865,31 +865,11 @@
     <script src="js/home-feed/bantu-waves-podcasts.js"></script>
     <script src="js/home-feed/bantu-waves-series.js"></script>
 
-    <!-- 4. Master Initializer -->
-    <script src="js/init-all-modules.js"></script>
-    
     <!-- 5. Global Shared Components -->
     <script src="js/shared-components.js"></script>
     
     <!-- 6. Other Features -->
     <script src="js/audio-player.js"></script>
     <script src="js/community-pulse.js"></script>
-    
-    <!-- 7. FALLBACK: Force hero initialization if master init fails -->
-    <script>
-    (function() {
-        // Fallback to ensure hero loads even if master init fails
-        setTimeout(function() {
-            if (window.HeroContent && !window.HeroContent.state?.initialized) {
-                console.log('🔄 [FALLBACK] Master init may have failed, forcing hero initialization...');
-                window.HeroContent.init();
-            } else if (!window.HeroContent) {
-                console.error('❌ [FALLBACK] HeroContent module not found on window!');
-            } else {
-                console.log('✅ [FALLBACK] HeroContent already initialized');
-            }
-        }, 3000);
-    })();
-    </script>
 </body>
 </html>

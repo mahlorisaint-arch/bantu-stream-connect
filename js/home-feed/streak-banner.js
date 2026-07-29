@@ -88,3 +88,14 @@ const StreakBannerModule = (function() {
 })();
 
 window.StreakBannerModule = StreakBannerModule;
+
+// Self-initialize like every other home-feed module (Continue Watching,
+// For You, Trending Now, etc.) instead of depending solely on
+// init-all-modules.js. That master initializer waits up to 2s for
+// window.supabaseAuth with no fallback - on a slow connection this module
+// would silently never run for a user who may have a real streak to show.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => StreakBannerModule.init());
+} else {
+    StreakBannerModule.init();
+}
