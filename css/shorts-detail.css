@@ -610,6 +610,11 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Flex items default to min-width:auto (their content's natural,
+     unwrapped size) - without this, a long creator name would hold the
+     pill open to that full width regardless of its own max-width:100%,
+     and the ellipsis above would never actually get a chance to engage. */
+  min-width: 0;
 }
 
 .shorts-meta {

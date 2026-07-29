@@ -18,11 +18,17 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Supabase JS SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Deferred (same fix applied to content-detail.html): lets these
+       download in parallel with the rest of the page instead of blocking
+       HTML parsing one at a time. Safe here - shorts-detail.js creates
+       its Supabase client inside its own DOMContentLoaded listener, not
+       at top-level script execution, and shared-components.js (which had
+       a top-level dependency on this) isn't even loaded on this page. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
   <!-- Swiper for Shorts Carousel -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
 
   <!-- Shared search-modal styling (same rules content-detail.html and
        trending_screen.html use), loaded before shorts-detail.css so

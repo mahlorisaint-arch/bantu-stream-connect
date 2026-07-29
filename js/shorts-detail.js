@@ -11,6 +11,14 @@
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
+// Self-contained dark-theme placeholder thumbnails (plain SVG data URIs) -
+// used only when a content item has no thumbnail_url, instead of a
+// third-party stock-image service (via.placeholder.com): no external
+// runtime dependency, no network round-trip, and it actually matches the
+// platform's dark background instead of a generic gray box.
+const PLACEHOLDER_THUMB_SQUARE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23151b21'/%3E%3C/svg%3E";
+const PLACEHOLDER_THUMB_TALL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='700'%3E%3Crect width='400' height='700' fill='%23151b21'/%3E%3C/svg%3E";
+
 // Global state
 let supabaseClient = null;
 let currentUser = null;
@@ -1030,7 +1038,7 @@ async function loadTrendingSearchItems() {
 
     placeholder.innerHTML = data.map(item => `
       <div class="trending-mini-card" data-content-id="${item.id}">
-        <img src="${fixMediaUrl(item.thumbnail_url) || 'https://via.placeholder.com/200x200'}" alt="" onerror="this.src='https://via.placeholder.com/200x200'">
+        <img src="${fixMediaUrl(item.thumbnail_url) || PLACEHOLDER_THUMB_SQUARE}" alt="" onerror="this.src='${PLACEHOLDER_THUMB_SQUARE}'">
         <div class="mini-card-details">
           <h5>${escapeHtml(item.title)}</h5>
           <span>${formatNumber(item.content_engagement_stats?.total_views || 0)} views · ${escapeHtml(item.genre || 'Vibe')}</span>
@@ -1198,7 +1206,7 @@ function generateSearchCardHtml(drop, isLongForm) {
   return `
     <div class="premium-search-card" data-content-id="${drop.id}" data-is-long-form="${isLongForm}">
       <div class="thumbnail-wrapper-frame">
-        <img src="${fixMediaUrl(drop.thumbnail_url) || 'https://via.placeholder.com/400x700'}" alt="" onerror="this.src='https://via.placeholder.com/400x700'">
+        <img src="${fixMediaUrl(drop.thumbnail_url) || PLACEHOLDER_THUMB_TALL}" alt="" onerror="this.src='${PLACEHOLDER_THUMB_TALL}'">
         ${durationStr ? `<span class="premium-duration-badge">${durationStr}</span>` : ''}
       </div>
       <div class="premium-card-payload">
