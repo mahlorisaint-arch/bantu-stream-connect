@@ -354,7 +354,7 @@
           const isActive = autoplayToggle.classList.toggle('active');
           localStorage.setItem('bantu_autoplay_enabled', isActive);
           console.log('🎵 Autoplay setting saved:', isActive ? 'ON' : 'OFF');
-          console.log('ℹ️ Note: Autoplay is now handled by content-detail.js (YouTube-style)');
+          console.log('ℹ️ Note: Autoplay is now handled by content-detail.js');
         });
       }
       
@@ -1181,7 +1181,7 @@
       window.videoPlayerFeatures = this;
       
       console.log('🚀 Initializing Phase 1 video player fixes and Phase 1D enhancements...');
-      console.log('🎯 NOTE: Autoplay is now handled by content-detail.js (YouTube-style)');
+      console.log('🎯 NOTE: Autoplay is now handled by content-detail.js');
       console.log('🎯 video-player-features.js does NOT contain any ended event handlers');
       
       this.removeDuplicateControls();

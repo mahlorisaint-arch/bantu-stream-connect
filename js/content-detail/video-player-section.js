@@ -960,7 +960,7 @@ function initializeEnhancedVideoPlayer() {
             if (placeholder) placeholder.style.display = 'none';
         });
         
-        // 🚨 Listen for mediaEnded event (YouTube-style architecture)
+        // 🚨 Listen for mediaEnded event (player/playlist separation of concerns)
         player.on('mediaEnded', (data) => {
             console.log('🏁 Media ended event received in content-detail player module:', data);
             // Forward to global handler

@@ -15,7 +15,7 @@
 // 🔧 CRITICAL FIX (2026-05-19): Removed all optional chaining assignments
 // 🔧 CRITICAL FIX (2026-05-19): Safe conditional checks for all player properties
 // 🔧 AUDIO RENDERER FIX (2026-05-19): Automatic mute fallback for AUDIO_RENDERER_ERROR
-// 🎯 YOUTUBE-STYLE PLAYLIST INTEGRATION (2026-05-21):
+// 🎯 PLAYLIST INTEGRATION (2026-05-21):
 // - Player ended event triggers window.playNextPlaylistItem()
 // - No playlist logic in player - only fires event for content-detail to handle
 // - One-way communication: player -> content-detail (not vice versa)
@@ -1194,7 +1194,7 @@
    * EnhancedVideoPlayer — Production video/audio player with telemetry,
    * collection awareness, and robust media handling
    * 
-   * 🎯 YOUTUBE-STYLE ARCHITECTURE:
+   * 🎯 PLAYER/PLAYLIST SEPARATION OF CONCERNS:
    * - Player ONLY handles playback
    * - On 'ended', calls window.playNextPlaylistItem() if available
    * - Content-detail.js owns all playlist navigation logic
@@ -2435,7 +2435,7 @@
       
       console.log('🏁 Media playback completed. Emitting ended event for external handler.');
       
-      // 🎯 YOUTUBE-STYLE ARCHITECTURE:
+      // 🎯 PLAYER/PLAYLIST SEPARATION OF CONCERNS:
       // Player ONLY emits the mediaEnded event
       // Content-detail.js owns ALL playlist navigation logic
       // This prevents duplicate advancement from video-player.js
@@ -4164,11 +4164,11 @@
   // Expose recordView function globally for content-detail.js to use
   window._recordViewViaRPC = recordViewViaRPC;
   
-  // 🎯 YOUTUBE-STYLE: Expose a helper function for content-detail to register
+  // 🎯 Expose a helper function for content-detail to register
   window._setupPlayerEndedCallback = function(callback) {
     if (typeof callback === 'function') {
       window._playerEndedCallback = callback;
-      console.log('✅ Player ended callback registered (YouTube-style)');
+      console.log('✅ Player ended callback registered');
     }
   };
   
@@ -4285,8 +4285,8 @@
   console.log('   🎵 AUDIO: Detaches HLS for audio tracks to prevent fatal crashes');
   console.log('   🎵 AUDIO: Uses safePlay() pattern for audio playback');
   console.log('   🎵 AUDIO RENDERER FIX: Automatic mute fallback for AUDIO_RENDERER_ERROR');
-  console.log('   🎯 YOUTUBE-STYLE: Player ended event triggers window.playNextPlaylistItem()');
-  console.log('   🎯 YOUTUBE-STYLE: Player does NOT own playlist logic - only fires event');
+  console.log('   🎯 Player ended event triggers window.playNextPlaylistItem()');
+  console.log('   🎯 Player does NOT own playlist logic - only fires event');
   console.log('   🔊 DESKTOP AUTOPLAY: Enhanced safePlay() with muted fallback');
   console.log('   🚨 CSS STATE ARCHITECTURE: .is-playing/.is-paused classes on wrapper');
   console.log('   🚨 CSS STATE ARCHITECTURE: State-driven CSS manages poster overlay visibility');

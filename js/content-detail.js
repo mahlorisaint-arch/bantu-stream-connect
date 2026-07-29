@@ -10,7 +10,7 @@
 // FIXED: Playlist duplicate key constraint error handling
 // PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
 // FIXED: Quality selector initialization and rendering issue
-// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now BEFORE hero section for prominent display
+// 🎯 HERO INTEGRATION: Video player now BEFORE hero section for prominent display
 // 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
 // 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
 // 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
@@ -29,10 +29,10 @@
 // 🎯 MOBILE FIX: Navigation button properly centered, no overflow, no horizontal scrolling
 // 🎯 MOBILE FIX: Header profile picture hidden on mobile phones
 // 🎯 MOBILE FIX: RSA badge stays inside header, no overflow
-// 🔧 CRITICAL FIX: Added session_id to view recording system (YouTube-style validation)
+// 🔧 CRITICAL FIX: Added session_id to view recording system (session-based validation)
 // 🔧 CRITICAL FIX: REMOVED creator_id from content_views operations (column doesn't exist)
 // 🔧 CRITICAL FIX: ADDED profile_id to content_views inserts (required column)
-// 🚀 PERFORMANCE: YouTube-style skeleton loading, critical data parallelization, lazy heavy features
+// 🚀 PERFORMANCE: Skeleton-first loading, critical data parallelization, lazy heavy features
 // 🔐 AUTH FIX: Ensured AuthHelper is fully initialized before UI updates
 // 🔐 AUTH FIX: Added waitForAuthHelper() to prevent timing issues
 // 🚀 PHASE 1D: COLLECTION-AWARE CONTENT DETAIL ENGINE
@@ -87,7 +87,7 @@
 // - Added result normalization to handle array vs object responses
 // - Added two-query fallback as enterprise-safe pattern
 // ============================================
-// 🎯 YOUTUBE-STYLE PLAYLIST ARCHITECTURE (2026-05-21):
+// 🎯 PERSISTENT PLAYLIST ARCHITECTURE (2026-05-21):
 // - Persistent DOM sidebar (never recreated) - ADDED
 // - CSS class-based toggle (max-height, opacity, NOT display:none) - ADDED
 // - Single render of tracklist (albumTracksRendered flag) - ADDED
@@ -126,7 +126,7 @@
 // - FIX #7: Realtime subscriptions for instant updates
 // - FIX #8: Watch session threshold recording (15 sec or 30% duration)
 // ============================================
-// 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24): YouTube-style playlist control separation
+// 🚨 CRITICAL ARCHITECTURE FIX (2026-05-24): Player/playlist control separation
 // - REMOVED all playlist advancement from video-player.js (BIGGEST FIX)
 // - ADDED transition lock (isTrackTransitioning) to prevent race conditions
 // - ADDED duplicate contentId guard in updateGlobalContentId
@@ -2070,7 +2070,7 @@ async function handleFavoriteButtonClick() {
 }
 
 /**
- * Handle Save button click — opens the YouTube-style "Save to..." picker
+ * Handle Save button click — opens the "Save to..." playlist picker
  * (js/playlist-modal.js's PlaylistModal) instead of directly toggling a
  * single Watch Later flag, so users can save into any of their own
  * playlists, create a new one on the spot, or quick-add to Watch Later.

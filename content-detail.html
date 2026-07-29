@@ -25,7 +25,7 @@
 
 <style>
 body.content-detail-page { background: #000000; }
-/* YouTube-Style Skeleton Loading UI — mirrors the real page shape: a
+/* Skeleton-First Loading UI — mirrors the real page shape: a
    full-width player, an info bar (thumbnail + title/meta + action
    pills), a description line, and a two-card rail. */
 .content-skeleton {
@@ -156,7 +156,7 @@ body.content-detail-page { background: #000000; }
     .skeleton-grid { grid-template-columns: 1fr; }
 }
 
-/* YouTube-Style Persistent Sidebar */
+/* Persistent Playlist Sidebar */
 .album-sidebar {
     width: 100%;
     max-height: 0;
@@ -299,42 +299,6 @@ body.content-detail-page { background: #000000; }
     <div id="loading-text">Loading content details...</div>
 </div>
 
-<!-- Content Skeleton — mirrors the real page shape (full-width player,
-     info bar, description, card rail) so it reads as one continuous
-     loading state instead of a stale, differently-shaped placeholder
-     that gets replaced by a second, different-looking loading view. -->
-<div id="content-skeleton" class="content-skeleton" style="display: none;">
-    <div class="skeleton-player"></div>
-    <div class="skeleton-info-bar">
-        <div class="skeleton-info-left">
-            <div class="skeleton-thumb"></div>
-            <div class="skeleton-info-text">
-                <div class="skeleton-title"></div>
-                <div class="skeleton-meta"></div>
-            </div>
-        </div>
-        <div class="skeleton-actions">
-            <div class="skeleton-btn"></div>
-            <div class="skeleton-btn"></div>
-            <div class="skeleton-btn"></div>
-        </div>
-    </div>
-    <div class="skeleton-description"></div>
-    <div class="skeleton-rail-title"></div>
-    <div class="skeleton-grid">
-        <div class="skeleton-card">
-            <div class="skeleton-card-thumb"></div>
-            <div class="skeleton-card-title"></div>
-            <div class="skeleton-card-meta"></div>
-        </div>
-        <div class="skeleton-card">
-            <div class="skeleton-card-thumb"></div>
-            <div class="skeleton-card-title"></div>
-            <div class="skeleton-card-meta"></div>
-        </div>
-    </div>
-</div>
-
 <!-- Sidebar Menu -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="sidebar-menu" id="sidebar-menu">
@@ -471,6 +435,48 @@ body.content-detail-page { background: #000000; }
             <div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
         </div>
     </header>
+
+    <!-- Content Skeleton — mirrors the real page shape (full-width player,
+         info bar, description, card rail) so it reads as one continuous
+         loading state instead of a stale, differently-shaped placeholder
+         that gets replaced by a second, different-looking loading view.
+         Lives here, between header and main, so it visually replaces
+         <main> in place while loading instead of rendering as a top-level
+         sibling before <header> - which pushed the header (and, with
+         <main> hidden and contributing no height, the footer right along
+         with it) down below the whole skeleton block, out of its sticky
+         top:0 position, until the skeleton was dismissed. -->
+    <div id="content-skeleton" class="content-skeleton" style="display: none;">
+        <div class="skeleton-player"></div>
+        <div class="skeleton-info-bar">
+            <div class="skeleton-info-left">
+                <div class="skeleton-thumb"></div>
+                <div class="skeleton-info-text">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-meta"></div>
+                </div>
+            </div>
+            <div class="skeleton-actions">
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn"></div>
+                <div class="skeleton-btn"></div>
+            </div>
+        </div>
+        <div class="skeleton-description"></div>
+        <div class="skeleton-rail-title"></div>
+        <div class="skeleton-grid">
+            <div class="skeleton-card">
+                <div class="skeleton-card-thumb"></div>
+                <div class="skeleton-card-title"></div>
+                <div class="skeleton-card-meta"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-card-thumb"></div>
+                <div class="skeleton-card-title"></div>
+                <div class="skeleton-card-meta"></div>
+            </div>
+        </div>
+    </div>
 
     <main class="container">
         <div class="inline-player" id="inlinePlayer">

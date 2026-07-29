@@ -1,7 +1,7 @@
 // js/content-detail/playlist-sidebar.js
 // ============================================
 // PLAYLIST SIDEBAR MODULE - COMPLETE BRAIN
-// Contains UI rendering for album/sidebar tracklist (YouTube-style persistent sidebar)
+// Contains UI rendering for album/sidebar tracklist (persistent sidebar, rendered once)
 // AND its specific DOM interaction logic (toggle, track click, active highlighting)
 // ============================================
 console.log('🎬 Playlist Sidebar Module Loading...');
@@ -13,7 +13,7 @@ let isAlbumExpanded = false;
 
 /**
  * Render album tracks into the persistent sidebar
- * This renders ONCE and never re-renders (YouTube-style architecture)
+ * This renders ONCE and never re-renders
  * @param {Array} tracks - Array of content items in the playlist/album
  */
 function renderAlbumTracks(tracks = []) {
@@ -23,7 +23,7 @@ function renderAlbumTracks(tracks = []) {
         return;
     }
     
-    // 🚨 CRITICAL: Only render once - YouTube-style persistent DOM
+    // 🚨 CRITICAL: Only render once - persistent DOM, never destructively rebuilt
     if (albumTracksRendered) {
         console.log('⚠️ Album tracks already rendered, skipping destructive re-render');
         return;
@@ -78,7 +78,7 @@ function renderAlbumTracks(tracks = []) {
 }
 
 /**
- * Toggle album tracklist visibility (YouTube-style CSS class toggle)
+ * Toggle album tracklist visibility (CSS class toggle, not display:none)
  * Uses CSS classes, NOT display:none - preserves DOM state
  */
 function toggleAlbumTracklist() {
@@ -111,7 +111,7 @@ function toggleAlbumTracklist() {
 }
 
 /**
- * Setup album toggle button (ONE TIME ONLY - YouTube-style)
+ * Setup album toggle button (ONE TIME ONLY)
  * Prevents duplicate initialization and event listener stacking
  */
 function setupAlbumToggle() {
@@ -148,7 +148,7 @@ function setupAlbumToggle() {
     });
     
     albumSidebarInitialized = true;
-    console.log('✅ Album toggle initialized (YouTube-style, one-time only)');
+    console.log('✅ Album toggle initialized (one-time only)');
 }
 
 /**
@@ -281,4 +281,4 @@ window.expandAlbumTracklist = expandAlbumTracklist;
 window.collapseAlbumTracklist = collapseAlbumTracklist;
 window.getAlbumExpandedState = getAlbumExpandedState;
 
-console.log('✅ Playlist Sidebar Module loaded (YouTube-style persistent sidebar)');
+console.log('✅ Playlist Sidebar Module loaded (persistent sidebar)');
