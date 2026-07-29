@@ -1417,7 +1417,7 @@ function hideLoading() {
 // ============================================
 // FETCH CONTENT PROFILE DETAILS
 // ============================================
-async function fetchContentProfileDetails(contentId) {
+async function fetchContentProfileDetails(contentId, attempt = 1) {
     try {
         const { data: mediaAsset, error: fetchError } = await window.supabaseClient
             .from('Content')
@@ -1466,6 +1466,18 @@ async function fetchContentProfileDetails(contentId) {
             creator_id: mediaAsset.user_id
         };
     } catch (error) {
+        // A single transient network blip here (QUIC handshake failure,
+        // connection reset - "TypeError: Failed to fetch" is the browser's
+        // generic name for both) currently falls straight through to
+        // loadContentFromURLLegacy(), which is a fully serial, un-cached
+        // re-fetch of everything (Content, then engagement counts, then
+        // watch_progress, then comments, then related content) - much
+        // slower than just retrying this same parallelized query once.
+        if (attempt < 2) {
+            console.warn('Profile fetch failed, retrying once:', error.message);
+            await new Promise(resolve => setTimeout(resolve, 400));
+            return fetchContentProfileDetails(contentId, attempt + 1);
+        }
         console.error("Critical Profile Fetch Interruption:", error.message);
         return null;
     }
@@ -2355,6 +2367,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        // Actually loads the source URL into the player instance just created
+        // above - instantiating the player alone only produces an empty shell
+        // still showing its poster/skeleton state. This used to run inside
+        // the requestIdleCallback below, racing against setupEventListeners()
+        // and loadSecondaryContentData() for idle time - on a page this busy
+        // (comments, related content, recommendation engine, realtime
+        // subscriptions all initializing around the same moment) the browser
+        // can stay non-idle long enough to hit that callback's full 2000ms
+        // timeout before the video source ever loads. It only needs
+        // window.currentContent and window.enhancedVideoPlayer, both already
+        // set by this point, so there's no reason to wait for idle time.
+        if (typeof initializeVideoPlayerSkeleton === 'function') initializeVideoPlayerSkeleton();
+
         if (typeof initAnalyticsModal === 'function') initAnalyticsModal();
         if (typeof initSearchModal === 'function') initSearchModal();
         if (typeof initNotificationsPanel === 'function') initNotificationsPanel();
@@ -2413,7 +2438,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (window.currentContent?.id) {
             loadSecondaryContentData(window.currentContent.id);
         }
-        if (typeof initializeVideoPlayerSkeleton === 'function') initializeVideoPlayerSkeleton();
     }, { timeout: 2000 });
     
     setTimeout(() => {

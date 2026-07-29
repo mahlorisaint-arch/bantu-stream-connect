@@ -156,7 +156,13 @@ body.content-detail-page { background: #000000; }
     .skeleton-grid { grid-template-columns: 1fr; }
 }
 
-/* Persistent Playlist Sidebar */
+/* Persistent Playlist Sidebar — cyan-glassmorphic, matching the player's
+   design system (creator-info-bar.css) instead of the platform's old
+   gold/blue default. Row layout (thumbnail + index + title + duration)
+   is deliberately generic across content types: it backs audio tracks,
+   video playlists, and series/episode lists alike, so a thumbnail is
+   included for visual recognition the way a bare track number alone
+   isn't enough for a series/episode list. */
 .album-sidebar {
     width: 100%;
     max-height: 0;
@@ -176,44 +182,138 @@ body.content-detail-page { background: #000000; }
 .album-track-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px 0;
+    gap: 4px;
+    padding: 10px;
     width: 100%;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 .album-track-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.04);
+    padding: 8px;
+    background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
     width: 100%;
     text-align: left;
     color: var(--soft-white, white);
     font-family: inherit;
 }
 .album-track-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     transform: translateX(4px);
 }
-.album-track-item.playing {
-    background: rgba(245, 158, 11, 0.2);
-    border-left: 3px solid #F59E0B;
+.album-track-item.playing,
+.album-track-item.active {
+    background: rgba(0, 229, 255, 0.1);
+    box-shadow: inset 3px 0 0 #00E5FF;
 }
+
+/* Thumbnail — a track's cover art or a video/episode frame; falls back
+   to a media-type icon (not a stock placeholder photo) when the content
+   item has no thumbnail_url. */
+.track-thumb {
+    position: relative;
+    width: 56px;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--slate-grey, #8a94a6);
+    font-size: 12px;
+}
+.track-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.track-play-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 20, 26, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00E5FF;
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.album-track-item:hover .track-play-overlay,
+.album-track-item.playing .track-play-overlay,
+.album-track-item.active .track-play-overlay {
+    opacity: 1;
+}
+
+/* Now-playing indicator — three animated bars, swapped in for the play
+   icon only on the actively-playing row so playback state reads at a
+   glance without re-rendering the list (matches the equalizer
+   convention from Spotify/Apple/YouTube Music playlists). Both the
+   static icon and the bars are always in the DOM; CSS alone decides
+   which shows, so the existing class-toggle-only active-state code
+   (updateActiveTrackInSidebar / syncPlaylistUI) doesn't need to know
+   about this markup to keep it in sync. */
+.track-eq {
+    display: none;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+}
+.album-track-item.playing .track-eq,
+.album-track-item.active .track-eq {
+    display: flex;
+}
+.album-track-item.playing .track-play-icon,
+.album-track-item.active .track-play-icon {
+    display: none;
+}
+.track-eq span {
+    width: 2px;
+    background: #00E5FF;
+    border-radius: 1px;
+    animation: trackEq 0.9s ease-in-out infinite;
+}
+.track-eq span:nth-child(1) { animation-delay: 0s; }
+.track-eq span:nth-child(2) { animation-delay: 0.2s; }
+.track-eq span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes trackEq {
+    0%, 100% { height: 3px; }
+    50% { height: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .track-eq span { animation: none; height: 8px; }
+}
+
 .track-num {
-    color: var(--slate-grey, #aaa);
-    font-size: 14px;
-    min-width: 32px;
+    color: var(--slate-grey, #8a94a6);
+    font-size: 13px;
+    min-width: 22px;
     font-weight: 600;
+    text-align: center;
+    font-family: monospace;
+    flex-shrink: 0;
+}
+.album-track-item.playing .track-num,
+.album-track-item.active .track-num {
+    color: #00E5FF;
+}
+.track-info {
+    flex: 1;
+    min-width: 0;
 }
 .track-title {
-    flex: 1;
+    display: block;
     color: var(--soft-white, white);
     font-size: 14px;
     font-weight: 500;
@@ -221,38 +321,46 @@ body.content-detail-page { background: #000000; }
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.album-track-item.playing .track-title,
+.album-track-item.active .track-title {
+    color: #00E5FF;
+}
 .track-duration {
-    color: var(--slate-grey, #aaa);
+    color: var(--slate-grey, #8a94a6);
     font-size: 12px;
     font-family: monospace;
+    flex-shrink: 0;
 }
 .empty-playlist {
     text-align: center;
     padding: 40px 20px;
-    color: var(--slate-grey, #aaa);
+    color: var(--slate-grey, #8a94a6);
     background: rgba(255, 255, 255, 0.03);
     border-radius: 16px;
+    border: 1px solid rgba(0, 229, 255, 0.1);
+}
+.empty-playlist i {
+    color: #00E5FF;
+    opacity: 0.6;
 }
 .album-toggle-btn {
-    background: linear-gradient(135deg, var(--bantu-blue, #1D4ED8), var(--warm-gold, #F59E0B));
-    border: none;
-    color: white;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    color: #00E5FF;
     padding: 10px 20px;
-    border-radius: 40px;
+    border-radius: 999px;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
     font-size: 14px;
 }
 .album-toggle-btn:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.05);
+    background: rgba(0, 229, 255, 0.1);
+    border-color: rgba(0, 229, 255, 0.7);
     gap: 16px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 .playlist-modal {
     animation: modalFadeIn 0.3s ease;
@@ -279,16 +387,19 @@ body.content-detail-page { background: #000000; }
 }
 @media (max-width: 768px) {
     .album-sidebar.expanded { max-height: 800px; }
-    .album-track-item { padding: 8px 12px; gap: 8px; }
-    .track-num { min-width: 28px; font-size: 12px; }
+    .album-track-item { padding: 6px; gap: 8px; }
+    .track-thumb { width: 48px; height: 28px; }
+    .track-num { min-width: 20px; font-size: 12px; }
     .track-title { font-size: 13px; }
     .track-duration { font-size: 11px; }
     .album-toggle-btn { padding: 8px 16px; font-size: 13px; }
 }
 @media (max-width: 480px) {
-    .album-track-item { padding: 6px 10px; }
-    .track-num { min-width: 24px; font-size: 11px; }
+    .album-track-item { padding: 5px; gap: 6px; }
+    .track-thumb { width: 40px; height: 24px; }
+    .track-num { min-width: 16px; font-size: 11px; }
     .track-title { font-size: 12px; }
+    .track-duration { display: none; }
 }
 </style>
 </head>

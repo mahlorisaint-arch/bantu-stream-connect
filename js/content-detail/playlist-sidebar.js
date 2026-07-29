@@ -48,17 +48,40 @@ function renderAlbumTracks(tracks = []) {
     });
     
     // Build the tracklist HTML
-    container.innerHTML = sortedTracks.map((item, index) => `
-        <button class="album-track-item ${window.currentContent?.id === item.id ? 'active playing' : ''}" 
-                data-index="${index}" 
+    // Thumbnail + fallback icon aren't audio-only: this sidebar also
+    // backs video playlists and series/episode lists, where a bare
+    // number isn't enough for visual recognition the way it is for a
+    // track list - a thumbnail (or a media-type icon when the item has
+    // none) does that job for every content type this renders.
+    container.innerHTML = sortedTracks.map((item, index) => {
+        const isActive = window.currentContent?.id === item.id;
+        const thumbUrl = item.thumbnail_url
+            ? (window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url, 'thumbnail') || item.thumbnail_url)
+            : null;
+        const fallbackIcon = item.media_type === 'audio' ? 'fa-music' : (item.media_type === 'video' ? 'fa-film' : 'fa-play');
+        const num = (index + 1).toString().padStart(2, '0');
+
+        return `
+        <button class="album-track-item ${isActive ? 'active playing' : ''}"
+                data-index="${index}"
                 data-content-id="${item.id}"
                 type="button"
-                aria-label="Play track ${index + 1}: ${window.escapeHtml(item.title || 'Untitled')}">
-            <span class="track-num">${(index + 1).toString().padStart(2, '0')}</span>
-            <span class="track-title">${window.escapeHtml(item.title || 'Untitled')}</span>
+                aria-label="Play ${index + 1}: ${window.escapeHtml(item.title || 'Untitled')}">
+            <div class="track-thumb">
+                ${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy" onerror="this.remove();">` : `<i class="fas ${fallbackIcon}"></i>`}
+                <div class="track-play-overlay">
+                    <i class="fas fa-play track-play-icon"></i>
+                    <span class="track-eq"><span></span><span></span><span></span></span>
+                </div>
+            </div>
+            <span class="track-num">${num}</span>
+            <div class="track-info">
+                <span class="track-title">${window.escapeHtml(item.title || 'Untitled')}</span>
+            </div>
             <span class="track-duration">${window.formatDuration(item.duration || 0)}</span>
         </button>
-    `).join('');
+        `;
+    }).join('');
     
     // Attach click handlers to tracks
     container.querySelectorAll('.album-track-item').forEach(trackItem => {
