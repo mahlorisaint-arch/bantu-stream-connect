@@ -1062,57 +1062,14 @@ const ForYou = (function() {
         return url;
     }
     
-    /**
-     * Format duration
-     */
-    function formatDuration(seconds) {
-        if (!seconds || isNaN(seconds) || seconds <= 0) return "0:00";
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    }
-    
-    /**
-     * Format number
-     */
-    function formatNumber(num) {
-        if (!num && num !== 0) return '0';
-        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-        return num.toString();
-    }
-    
-    /**
-     * Get initials
-     */
-    function getInitials(name) {
-        if (!name) return '?';
-        return name
-            .split(' ')
-            .map(part => part[0])
-            .join('')
-            .toUpperCase()
-            .substring(0, 2);
-    }
-    
-    /**
-     * Escape HTML
-     */
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    /**
-     * Truncate text
-     */
-    function truncateText(text, maxLength) {
-        if (!text || text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
-    }
-    
+    // formatDuration/formatNumber/getInitials/escapeHtml/truncateText now
+    // come from the global versions (js/home-feed.js,
+    // js/home-feed-features.js, loaded before this module) instead of a
+    // private copy. This file's own formatDuration was missing hour
+    // support entirely (always "mins:secs", so a 2hr piece of content
+    // showed as "125:30" instead of "2:05:30") - the global version
+    // handles it correctly.
+
     /**
      * Refresh module
      */
