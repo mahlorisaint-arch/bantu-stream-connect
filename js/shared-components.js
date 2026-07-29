@@ -1533,7 +1533,8 @@ function getNotificationIconMeta(type) {
         world_content: { icon: 'fa-wave-square', bg: 'rgba(45, 212, 191, 0.15)', color: '#2DD4BF' },
         creator_upload: { icon: 'fa-upload', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
         collab_response: { icon: 'fa-handshake', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
-        collab_message: { icon: 'fa-comment-dots', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' }
+        collab_message: { icon: 'fa-comment-dots', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
+        resume_reminder: { icon: 'fa-play-circle', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' }
     };
     return mapping[type] || defaultMeta;
 }
