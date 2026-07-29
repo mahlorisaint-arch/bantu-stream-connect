@@ -35,7 +35,10 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background: var(--deep-black);
+  /* True black, matching content-detail.html/home-feed - var(--deep-black)
+     resolves to #0A0E12 (a dark navy) in the default theme, not pure
+     black. */
+  background: #000000;
   color: var(--soft-white);
   overflow: hidden;
   height: 100vh;
@@ -55,7 +58,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--deep-black);
+  background: #000000;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -273,7 +276,7 @@ body {
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  background: var(--deep-black);
+  background: #000000;
   position: relative;
 }
 
@@ -903,17 +906,25 @@ body {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--cyan), var(--cyan-dim));
-  color: var(--deep-black);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid var(--cyan);
+  color: var(--cyan);
   font-size: 20px;
   flex: 0 0 52px;
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
   margin: 0 4px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.nav-item.nav-create:hover {
-  transform: scale(1.05);
+/* Fills solid cyan only on hover/press - idle state stays glass/outlined
+   above so it doesn't compete as hard with the rest of the nav. */
+.nav-item.nav-create:hover,
+.nav-item.nav-create:active {
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-dim));
   color: var(--deep-black);
+  transform: scale(1.05);
 }
 
 /* ============================================
