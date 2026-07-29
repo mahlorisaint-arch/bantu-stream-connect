@@ -1399,7 +1399,7 @@ async function loadCriticalContentData(contentId) {
     if (cached) {
         try {
             const parsed = JSON.parse(cached);
-            if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
+            if (parsed._cachedAt && Date.now() - parsed._cachedAt < 60000) {
                 await setCurrentContent(parsed);
                 refreshContentInBackground(contentId);
 
