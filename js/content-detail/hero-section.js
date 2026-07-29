@@ -746,7 +746,6 @@ function setupResponsiveActionRelocation() {
     const infoBarRight = document.querySelector('.info-bar-right');
     const moreMenu = document.getElementById('infoBarMoreMenu');
     const moreWrap = document.querySelector('.info-bar-more-wrap');
-    const albumToggleBtn = document.getElementById('albumToggleBtn');
 
     if (!shareBtn || !watchLaterBtn || !favoriteBtn || !infoBarRight || !moreMenu || !moreWrap) {
         return;
@@ -756,7 +755,13 @@ function setupResponsiveActionRelocation() {
 
     function relocate(isCompact) {
         if (isCompact) {
-            const anchor = albumToggleBtn || moreMenu.firstChild;
+            // Re-queried fresh on every call rather than captured once above -
+            // setupAlbumToggle() (playlist-sidebar.js) clones and replaces
+            // #albumToggleBtn to strip old listeners, which detaches whatever
+            // reference was captured before that ran. A stale reference here
+            // throws on insertBefore the next time relocate() fires (e.g.
+            // rotating a tablet crosses the 768px boundary).
+            const anchor = document.getElementById('albumToggleBtn') || moreMenu.firstChild;
             [shareBtn, watchLaterBtn, favoriteBtn].forEach(btn => {
                 moreMenu.insertBefore(btn, anchor);
             });
