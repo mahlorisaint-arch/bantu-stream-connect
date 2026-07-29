@@ -1494,24 +1494,6 @@ async function loadCriticalContentData(contentId) {
             if (parsed._cachedAt && Date.now() - parsed._cachedAt < 60000) {
                 await setCurrentContent(parsed);
                 refreshContentInBackground(contentId);
-
-                // watch_progress is time-sensitive per-session state (e.g. the
-                // user just finished watching and refreshed) - unlike counts,
-                // it's not safe to trust from a snapshot up to 5 minutes old.
-                // refreshContentInBackground() only refreshes views/likes, so
-                // fetch resume position fresh here instead of leaving it stuck
-                // on whatever was cached at page-load time.
-                if (window.currentUserId && typeof addResumeButton === 'function') {
-                    const { data: freshProgress } = await window.supabaseClient
-                        .from('watch_progress')
-                        .select('last_position, is_completed')
-                        .eq('user_id', window.currentUserId)
-                        .eq('content_id', contentId)
-                        .maybeSingle();
-                    if (freshProgress && freshProgress.last_position > 10 && !freshProgress.is_completed) {
-                        addResumeButton(freshProgress.last_position);
-                    }
-                }
                 return;
             }
         } catch(e) { console.warn('Cache parse error:', e); }
@@ -1574,14 +1556,31 @@ async function loadCriticalContentData(contentId) {
     
     await setCurrentContent(contentObj);
     localStorage.setItem(`content_${contentId}`, JSON.stringify(contentObj));
-    
-    if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed) {
-        if (typeof addResumeButton === 'function') {
-            addResumeButton(window.currentContent.watch_progress);
-        }
+}
+
+// ============================================
+// USER-SPECIFIC CONTENT STATE (resume position, like/favorite)
+// ============================================
+// Deliberately split out of loadCriticalContentData: the content fetch -
+// and therefore the player - must never wait on auth resolving first, so
+// this fills in personalized state once window.currentUserId is known,
+// however long that takes, without blocking anything above it. Also
+// fixes a latent gap where the cache-hit branch above never initialized
+// like/favorite button state at all (only the fresh-fetch path did).
+async function applyUserContentState(contentId) {
+    if (!window.currentUserId) return;
+
+    const { data: freshProgress } = await window.supabaseClient
+        .from('watch_progress')
+        .select('last_position, is_completed')
+        .eq('user_id', window.currentUserId)
+        .eq('content_id', contentId)
+        .maybeSingle();
+    if (freshProgress && freshProgress.last_position > 10 && !freshProgress.is_completed && typeof addResumeButton === 'function') {
+        addResumeButton(freshProgress.last_position);
     }
-    
-    if (window.currentUserId && typeof initializeLikeButton === 'function') {
+
+    if (typeof initializeLikeButton === 'function') {
         await initializeLikeButton(contentId, window.currentUserId);
         await initializeFavoriteButton(contentId, window.currentUserId);
     }
@@ -2302,30 +2301,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('bantu_view_session', currentSessionId);
     }
     
-    await waitForAuthHelper();
-    if (window.AuthHelper && !window.AuthHelper.isInitialized) {
-        await window.AuthHelper.initialize();
-    }
-    window.currentUserId = window.AuthHelper?.getUserProfile?.()?.id || null;
-    
+    // Auth/session restore + sidebar/header profile fetches run concurrently
+    // with content loading below instead of being awaited first - the
+    // player only needs content data, not auth, so it shouldn't sit behind
+    // however long session restore plus two profile fetches takes on top of
+    // its own load time. waitForAuthHelper() in particular has its own
+    // timeout fallback ("AuthHelper not loaded within timeout, continuing
+    // anyway") - proof this chain can be genuinely slow, exactly the kind of
+    // dependency the player can't afford to wait on. Personalized state
+    // (resume position, like/favorite highlight) fills in once this
+    // resolves, same as big platforms show video first and let sign-in
+    // state catch up a moment later.
+    const authReady = (async () => {
+        await waitForAuthHelper();
+        if (window.AuthHelper && !window.AuthHelper.isInitialized) {
+            await window.AuthHelper.initialize();
+        }
+        window.currentUserId = window.AuthHelper?.getUserProfile?.()?.id || null;
+        setupAuthListeners();
+        await updateSidebarProfile();
+        await updateHeaderProfile();
+        updateProfileSwitcher();
+    })();
+
     if (typeof initThemeSelector === 'function') initThemeSelector();
     if (typeof initGlobalNavigation === 'function') initGlobalNavigation();
     if (typeof setupCompleteSidebar === 'function') setupCompleteSidebar();
     if (typeof setupNavigationButtons === 'function') setupNavigationButtons();
     if (typeof setupNavButtonScrollAnimation === 'function') setupNavButtonScrollAnimation();
-    
+
     if (typeof UIScaleController !== 'undefined') {
         window.uiScaleController = new UIScaleController();
         window.uiScaleController.init();
     }
-    
-    setupAuthListeners();
-    await updateSidebarProfile();
-    await updateHeaderProfile();
-    updateProfileSwitcher();
-    
+
     if (typeof setupAlbumToggle === 'function') setupAlbumToggle();
-    
+
     try {
         if (playlistId) {
             window.isPlaylistMode = true;
@@ -2337,11 +2348,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             throw new Error('No content ID or playlist ID provided');
         }
-        
-        await Promise.all([
-            updateSidebarProfile(),
-            updateHeaderProfile()
-        ]);
         
         if (skeleton) skeleton.style.display = 'none';
         if (mainContent) mainContent.style.display = '';
@@ -2384,6 +2390,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof initSearchModal === 'function') initSearchModal();
         if (typeof initNotificationsPanel === 'function') initNotificationsPanel();
         if (typeof setupShareModal === 'function') setupShareModal();
+
+        // Everything from here down genuinely needs to know who's logged in
+        // (playlist manager, recommendation personalization, like/favorite
+        // state) - unlike the player above, so it's fine for this to wait.
+        // In practice authReady has usually already resolved by this point
+        // since it's been running the whole time content was loading; this
+        // just no longer forces the player to wait behind it too.
+        await authReady;
+
+        if (window.currentContent?.id) {
+            applyUserContentState(window.currentContent.id).catch(err => console.error('User content state update failed:', err));
+        }
 
         if (window.PlaylistManager && window.currentUserId && typeof initializePlaylistManager === 'function') {
             await initializePlaylistManager();
