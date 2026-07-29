@@ -1402,6 +1402,24 @@ async function loadCriticalContentData(contentId) {
             if (parsed._cachedAt && Date.now() - parsed._cachedAt < 300000) {
                 await setCurrentContent(parsed);
                 refreshContentInBackground(contentId);
+
+                // watch_progress is time-sensitive per-session state (e.g. the
+                // user just finished watching and refreshed) - unlike counts,
+                // it's not safe to trust from a snapshot up to 5 minutes old.
+                // refreshContentInBackground() only refreshes views/likes, so
+                // fetch resume position fresh here instead of leaving it stuck
+                // on whatever was cached at page-load time.
+                if (window.currentUserId && typeof addResumeButton === 'function') {
+                    const { data: freshProgress } = await window.supabaseClient
+                        .from('watch_progress')
+                        .select('last_position, is_completed')
+                        .eq('user_id', window.currentUserId)
+                        .eq('content_id', contentId)
+                        .maybeSingle();
+                    if (freshProgress && freshProgress.last_position > 10 && !freshProgress.is_completed) {
+                        addResumeButton(freshProgress.last_position);
+                    }
+                }
                 return;
             }
         } catch(e) { console.warn('Cache parse error:', e); }
