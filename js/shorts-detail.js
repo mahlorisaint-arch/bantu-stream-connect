@@ -2686,7 +2686,7 @@ function createShortSlide(short, index) {
 function setupEventListeners() {
   document.getElementById('profile-btn')?.addEventListener('click', () => {
     if (currentUser) {
-      window.location.href = `creator-channel.html?id=${currentUser.id}`;
+      window.location.href = 'manage-profiles.html';
     } else {
       window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
     }
