@@ -414,7 +414,7 @@ function buildUploadCardHTML(item) {
       <div class="${thumbClass}" style="background-image:url(${fixMediaUrl(item.thumbnail_url || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop')});">
         <span class="upload-card__badge" style="background:${color};color:${textColor};">${escapeHtml(label)}</span>
         ${originalRibbon}
-        <div class="media-hover-play"><i class="fas fa-play"></i></div>
+        <div class="media-hover-play"><div class="play-icon"><i class="fas fa-play"></i></div></div>
         ${item.duration ? `<span class="upload-card__duration">${formatDuration(item.duration)}</span>` : ''}
       </div>
       <p class="upload-card__title">${escapeHtml(item.title || 'Untitled')}</p>
@@ -461,7 +461,7 @@ function buildShortCardHTML(item) {
     <div class="short-card" data-content-id="${item.id}">
       <div class="short-card__thumb" style="${thumbUrl ? `background-image:url(${thumbUrl});` : ''}">
         ${item.is_pinned ? '<i class="fas fa-thumbtack short-card__pin"></i>' : ''}
-        <div class="media-hover-play"><i class="fas fa-play"></i></div>
+        <div class="media-hover-play"><div class="play-icon"><i class="fas fa-play"></i></div></div>
         <div class="short-card__plays"><i class="fas fa-play"></i>${plays}</div>
       </div>
       <p class="short-card__title">${escapeHtml(item.title || 'Untitled short')}</p>
