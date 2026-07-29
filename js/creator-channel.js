@@ -934,7 +934,7 @@ function buildCollectionCardHTML(playlist) {
     <div class="collection-card" data-playlist-id="${playlist.id}" data-playlist-type="${type}">
       <div class="collection-thumb-wrapper">
         <img src="${thumbnail}" alt="${escapeHtml(playlist.name)}" loading="lazy">
-        <div class="collection-overlay"><i class="fas fa-play"></i></div>
+        <div class="collection-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
         ${featuredRibbon}
         <span class="collection-type-badge ${badgeClass}"><i class="fas ${meta.icon}"></i>${meta.label}</span>
         <span class="collection-count-badge"><i class="fas fa-list"></i>${itemCount}</span>

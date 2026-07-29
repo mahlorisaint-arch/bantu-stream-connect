@@ -1062,11 +1062,6 @@ Replaces all old .series-container, .series-season, .season-header, etc.
   background: rgba(10,14,23,0.35); opacity: 0; transition: opacity 0.2s ease;
 }
 .collection-card:hover .collection-overlay { opacity: 1; }
-.collection-overlay i {
-  color: var(--brand-cyan-core);
-  font-size: 22px;
-  text-shadow: var(--brand-glow-stack);
-}
 
 .collection-type-badge {
   position: absolute; top: 8px; left: 8px;
@@ -1926,11 +1921,9 @@ BRAND GLOW SYSTEM — UNIVERSAL HOVER PLAY BUTTON + HOME PREVIEW ROWS
   transition: transform 0.3s ease, border-color 0.3s ease;
 }
 .upload-card:hover .play-icon,
-.short-card:hover .play-icon {
+.short-card:hover .play-icon,
+.collection-card:hover .play-icon {
   transform: scale(1);
-}
-.collection-overlay i {
-  font-size: 18px;
 }
 
 /* Featured/hero card: play icon always visible */
@@ -2328,7 +2321,9 @@ padding: 1px 5px !important;
 font-size: 8px !important;
 padding: 1px 5px !important;
 }
-.collection-overlay i {
+.play-icon {
+width: 40px !important;
+height: 40px !important;
 font-size: 16px !important;
 }
 /* About small mobile - v2 uses .about-stats-row */
