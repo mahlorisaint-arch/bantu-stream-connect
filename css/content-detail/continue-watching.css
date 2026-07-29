@@ -88,6 +88,11 @@
   text-decoration: none;
   color: inherit;
   position: relative;
+  /* Grid items default to min-width:auto (their content's natural size),
+     which can force the track - and page - wider than the screen on
+     narrow viewports. See trending.css's .upload-card for the canonical
+     reference. */
+  min-width: 0;
 }
 
 .continue-card:hover {
