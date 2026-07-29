@@ -369,6 +369,14 @@ CONTENT GRID & CARDS - FIXED
     display: block;
     position: relative;
     width: 100%;
+    /* Grid items default to min-width:auto (their content's natural size,
+       not the grid track's width) - matches the documented fix in
+       css/trending/trending.css's .upload-card for the same pattern
+       (repeat(2, 1fr) at the smallest breakpoint). Without this, a long
+       creator name or title inside a flex child without its own
+       min-width:0 can force this card - and with it the grid column and
+       the page - wider than the screen on narrow phones. */
+    min-width: 0;
 }
 
 .content-card:hover {
