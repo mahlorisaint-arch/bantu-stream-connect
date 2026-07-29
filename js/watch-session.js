@@ -872,6 +872,13 @@
 
     try {
       // Initialize playback session record
+      // NOTE: collection_id/playlist_id/sort_index/episode_number are NOT
+      // columns on this table (confirmed against the live schema) - including
+      // them here throws a "column does not exist" error, which used to be
+      // silently swallowed below and disable the whole session (isActive
+      // reset to false) before the heartbeat ever started. Collection/playlist
+      // context is still tracked in-memory (this.collectionId etc.) and used
+      // by _updateCollectionProgress()/_updatePlaylistProgress() separately.
       const { error } = await this.supabase
         .from('playback_sessions')
         .insert({
@@ -881,11 +888,7 @@
           session_id: this.globalSessionId,
           platform: this._getPlatform(),
           device_type: this._getDeviceType(),
-          started_at: new Date().toISOString(),
-          collection_id: this.collectionId,
-          playlist_id: this.playlistId,
-          sort_index: this.sortIndex,
-          episode_number: this.episodeNumber
+          started_at: new Date().toISOString()
         });
 
       if (error) {

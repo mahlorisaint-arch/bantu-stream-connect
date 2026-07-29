@@ -3543,12 +3543,27 @@
       }
 
       if (!this.playbackSessionId) {
-        this.playbackSessionId = sessionStorage.getItem('bantu_playback_session');
-        if (!this.playbackSessionId) {
+        // record_content_view's dedupe window is 20 minutes, but the
+        // underlying unique constraint on (content_id, session_id) has no
+        // time dimension - once a view is recorded for a given session id,
+        // that exact id can never insert again, ever. Reusing one id for the
+        // life of the browser tab meant a piece of content could only ever
+        // be counted as viewed ONCE per tab, permanently. Rotate to a fresh
+        // id once the cooldown has elapsed so a genuinely new viewing
+        // session actually gets counted instead of colliding forever.
+        const SESSION_COOLDOWN_MS = 20 * 60 * 1000;
+        const storedId = sessionStorage.getItem('bantu_playback_session');
+        const storedAt = parseInt(sessionStorage.getItem('bantu_playback_session_started') || '0', 10);
+        const isStale = !storedId || !storedAt || (Date.now() - storedAt) > SESSION_COOLDOWN_MS;
+
+        if (isStale) {
           this.playbackSessionId = typeof crypto?.randomUUID === 'function'
             ? crypto.randomUUID()
             : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
           sessionStorage.setItem('bantu_playback_session', this.playbackSessionId);
+          sessionStorage.setItem('bantu_playback_session_started', String(Date.now()));
+        } else {
+          this.playbackSessionId = storedId;
         }
       }
       
@@ -3584,7 +3599,17 @@
           });
           
           console.log('🎬 WatchSession initialized for telemetry');
-          
+
+          // The constructor above only builds the object - isActive stays false,
+          // and the heartbeat loop (periodic watch_progress sync) and exit-time
+          // handlers never start, until .initialize() is called. This was
+          // previously never called anywhere, so the real player's WatchSession
+          // was constructed but permanently inert: no playback_sessions row, no
+          // heartbeats, no watch_progress writes at all via this path.
+          this.watchSession.initialize(this.video).catch(error => {
+            console.warn('⚠️ Failed to start WatchSession:', error);
+          });
+
         } catch (error) {
           console.warn('⚠️ Failed to initialize WatchSession:', error);
         }
