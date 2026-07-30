@@ -1,0 +1,278 @@
+/* css/welcome.css - Post-signup welcome/conversion page */
+/* :root theme vars, header, sidebar, footer, loading-screen all come from
+   shared-components.css. Card/stat/typography patterns below are copied
+   from css/creator-dashboard.css (the reference this page is styled
+   against) rather than linking that file directly - it also carries a lot
+   of dashboard-specific CSS (journalist verification, upload grid, etc.)
+   this page has no use for. */
+
+body { background: #000000; }
+
+.welcome-page-container {
+    max-width: 900px;
+}
+
+/* ============================================
+   WELCOME HERO — same glass-card recipe as creator-dashboard.css's
+   .dashboard-hero, so this reads as the same design system.
+   ============================================ */
+.welcome-hero {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 48px 40px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-hero::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold));
+    border-radius: 26px;
+    z-index: -1;
+    opacity: 0.1;
+}
+
+.checkmark-circle {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 24px;
+    background: linear-gradient(135deg, var(--success-color, #10B981), var(--bantu-blue));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: welcomeScaleIn 0.5s ease-out 0.2s both;
+}
+
+@keyframes welcomeScaleIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.checkmark-circle i {
+    font-size: 44px;
+    color: var(--soft-white);
+}
+
+.welcome-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0 0 16px;
+    background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.user-email {
+    font-size: var(--font-lg);
+    color: var(--bantu-blue);
+    margin-bottom: 20px;
+    padding: 10px 18px;
+    background: rgba(0, 229, 255, 0.1);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.welcome-message {
+    font-size: var(--font-lg);
+    line-height: 1.6;
+    color: var(--slate-grey);
+    margin: 0;
+}
+
+/* ============================================
+   FEATURES GRID — same glassmorphic/cyan-highlight recipe as
+   creator-dashboard.css's .stat-card, applied to a 3-up feature grid.
+   ============================================ */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.feature-card {
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px 18px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.feature-card:hover {
+    border-color: rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
+    transform: translateY(-3px);
+}
+
+.feature-icon {
+    font-size: 28px;
+    color: #00E5FF;
+    margin-bottom: 12px;
+}
+
+.feature-title {
+    font-weight: 700;
+    font-size: var(--font-md, 1rem);
+    margin-bottom: 8px;
+    color: var(--soft-white);
+}
+
+.feature-desc {
+    font-size: var(--font-sm);
+    color: var(--slate-grey);
+    line-height: 1.4;
+}
+
+/* ============================================
+   STATS ROW — copied directly from creator-dashboard.css's .stats-row/
+   .stat-card (same class names, same recipe: thin/glassmorphic/cyan-
+   highlight, always a single row of 3, never stacked even on mobile).
+   ============================================ */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.stat-card {
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    border-color: rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.15);
+}
+
+.stat-icon {
+    font-size: 18px;
+    color: #00E5FF;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--soft-white);
+    margin-bottom: 2px;
+}
+
+.stat-label {
+    font-size: 10px;
+    color: var(--slate-grey);
+    white-space: nowrap;
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+.action-buttons {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 14px 28px;
+    border-radius: 999px;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: var(--font-sm);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-primary {
+    background: rgba(6, 20, 26, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    color: #00E5FF;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 229, 255, 0.6);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--soft-white);
+    border: 1px solid var(--card-border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--bantu-blue);
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.btn-logout {
+    background: rgba(239, 68, 68, 0.12);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.btn-logout:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   RESPONSIVE — same breakpoints as creator-dashboard.css
+   ============================================ */
+@media (max-width: 767px) {
+    .welcome-hero { padding: 32px 22px; }
+    .welcome-title { font-size: 24px; }
+    .checkmark-circle { width: 72px; height: 72px; }
+    .checkmark-circle i { font-size: 34px; }
+    .features-grid { grid-template-columns: 1fr; gap: 12px; }
+    .action-buttons { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+    .stats-row { gap: 6px; }
+    .stat-card { padding: 10px 6px; border-radius: 10px; }
+    .stat-icon { font-size: 15px; margin-bottom: 4px; }
+    .stat-value { font-size: 13px; }
+    .stat-label { font-size: 8.5px; white-space: normal; line-height: 1.2; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+    .welcome-hero { padding: 26px 16px; }
+    .welcome-title { font-size: 20px; }
+    .user-email { font-size: var(--font-sm); }
+    .welcome-message { font-size: var(--font-sm); }
+}

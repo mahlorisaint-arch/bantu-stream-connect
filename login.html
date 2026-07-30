@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Login - Bantu Stream Connect</title>
 
+    <!-- Google tag (gtag.js) - see welcome.html's <head> comment for the
+         full rationale (base site tag only, no conversion-action label
+         yet). Installed here too since this is the other half of the
+         funnel: welcome.html measures new signups, the 'login' event
+         fired below on successful sign-in measures returning users. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18084937071"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-18084937071');
+    </script>
+
     <!-- Clickjacking defense-in-depth, run as early as possible: if this
          page is ever loaded inside a frame (e.g. an attacker's page with an
          invisible iframe overlaying fake buttons on top of the real login
@@ -37,13 +50,25 @@
          until/unless the host is configured to send a real
          Content-Security-Policy: frame-ancestors 'none' (or
          X-Frame-Options: DENY) response header - see note above the script. -->
+    <!-- Google Ads (AW- prefix) conversion/remarketing tracking pulls in
+         more than just googletagmanager.com - live-tested and confirmed
+         these are the full set gtag.js actually calls out to for an AW-
+         config: doubleclick.net for the conversion/remarketing pixel
+         itself, google.com/google.co.za for its ccm/rmkt/1p-user-list
+         collect beacons (google.co.za specifically because this shows up
+         for a visitor Google geo-detects as South African - the primary
+         market this site's ad spend targets; a visitor from elsewhere may
+         get a different country-code Google domain here instead, which
+         would need adding the same way if it starts showing up in
+         console errors), in addition to the more commonly-documented
+         googletagmanager.com/google-analytics.com. -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://googleads.g.doubleclick.net;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
         font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
-        img-src 'self' data:;
-        connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co wss://ydnxqnbjoshvxteevemc.supabase.co;
+        img-src 'self' data: https://www.google.com https://www.google.co.za https://www.googletagmanager.com https://googleads.g.doubleclick.net https://ad.doubleclick.net;
+        connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co wss://ydnxqnbjoshvxteevemc.supabase.co https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://www.google.com https://www.google.co.za;
         base-uri 'self';
         object-src 'none';
     ">
@@ -160,7 +185,9 @@
             z-index: 2;
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(20px);
-            border-radius: 32px;
+            /* 24px, matching creator-dashboard.css's .dashboard-hero card
+               radius (was 32px, an off-scale one-off). */
+            border-radius: 24px;
             padding: 40px;
             width: 100%;
             max-width: 450px;
@@ -604,6 +631,18 @@
     const TARGET_REDIRECT_URL =
         'https://bantustreamconnect.com/';
 
+    // Signup's email-confirmation link needs its own target: welcome.html
+    // is the actual conversion-measurement page (see its own comments) -
+    // sending confirmed signups to the bare site root instead, as this
+    // used to, skipped it entirely. Must be an absolute URL (Supabase
+    // resolves this from an email client, not from this page) on the same
+    // origin as TARGET_REDIRECT_URL above, which is already allow-listed
+    // in this project's Supabase Auth redirect URL settings - if that
+    // allow-list is an exact match rather than a wildcard, this new path
+    // needs adding there too or the confirmation link will fail.
+    const SIGNUP_REDIRECT_URL =
+        'https://bantustreamconnect.com/welcome.html';
+
     let isLoginMode = true;
 
     const loginBtnTab =
@@ -867,7 +906,7 @@
                 options: {
 
                     emailRedirectTo:
-                        TARGET_REDIRECT_URL,
+                        SIGNUP_REDIRECT_URL,
 
                     data: {
                         full_name: fullName,
@@ -1017,6 +1056,19 @@
                 event === 'SIGNED_IN' &&
                 session
             ) {
+                // Returning-user tracking (the "and returning after
+                // signing up" half of the funnel) - this event is scoped
+                // to an actual sign-in action completing (password or
+                // OAuth), not page-load session hydration, which Supabase
+                // reports separately as 'INITIAL_SESSION'. A brand-new
+                // signup doesn't reach here either: this project requires
+                // email confirmation, so signUp() doesn't produce an
+                // active session by itself - that flow is measured on
+                // welcome.html instead once the confirmation link is
+                // clicked.
+                if (typeof gtag === 'function') {
+                    gtag('event', 'login', { 'method': 'email' });
+                }
                 redirectToTarget();
             }
         }
