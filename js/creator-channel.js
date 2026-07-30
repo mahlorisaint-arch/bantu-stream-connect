@@ -1200,6 +1200,12 @@ const ChannelPulse = {
     card.dataset.postId = id;
 
     const pinnedFlag = post.is_pinned ? '<span class="pulse-pinned-flag"><i class="fas fa-thumbtack"></i> Pinned</span>' : '';
+    const ownerControls = window.isOwner ? `
+      <div class="pulse-owner-controls">
+        <button class="pulse-icon-btn pulse-edit-btn" data-id="${id}" title="Edit post"><i class="fas fa-pen"></i></button>
+        <button class="pulse-icon-btn pulse-delete-btn" data-id="${id}" title="Delete post"><i class="fas fa-trash"></i></button>
+      </div>
+    ` : '';
 
     card.innerHTML = `
       <div class="pulse-header">
@@ -1208,6 +1214,7 @@ const ChannelPulse = {
           <h4>${escapeHtml(displayName)} ${pinnedFlag}</h4>
           <span>${formatTimeAgo(post.created_at)}</span>
         </div>
+        ${ownerControls}
       </div>
       <div class="pulse-content">${escapeHtml(post.content)}</div>
       ${post.post_type === 'poll' ? this.buildPollHTML(post.id) : ''}
@@ -1231,6 +1238,10 @@ const ChannelPulse = {
     card.querySelector('.comment-btn')?.addEventListener('click', () => this.handleComment(id));
     card.querySelector('.repost-btn')?.addEventListener('click', () => this.handleRepost(id));
     card.querySelector('.share-btn')?.addEventListener('click', () => this.handleShare(id));
+    if (window.isOwner) {
+      card.querySelector('.pulse-edit-btn')?.addEventListener('click', () => this.startEditPost(post));
+      card.querySelector('.pulse-delete-btn')?.addEventListener('click', () => this.deletePost(id));
+    }
 
     if (post.post_type === 'poll') {
       card.querySelectorAll('.pulse-poll-option:not(.is-locked)').forEach(el => {
@@ -1245,6 +1256,117 @@ const ChannelPulse = {
     }
 
     return card;
+  },
+
+  // Turns .pulse-content into an inline editable textarea (+ the poll
+  // question too, for poll posts) rather than opening a separate modal -
+  // poll OPTIONS are deliberately left immutable here: votes reference an
+  // option by index, so editing/removing an option after votes exist
+  // would silently misrepresent what people actually voted for.
+  startEditPost(post) {
+    const card = document.querySelector(`.pulse-card[data-post-id="${post.id}"]`);
+    const contentEl = card?.querySelector('.pulse-content');
+    if (!card || !contentEl) return;
+
+    const isPoll = post.post_type === 'poll';
+    const pollData = isPoll ? this.pollCache[post.id] : null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pulse-edit-wrapper';
+    wrapper.innerHTML = `
+      ${isPoll ? `<input type="text" class="pulse-edit-question form-input" value="${escapeHtml(pollData?.question || '')}" placeholder="Poll question">` : ''}
+      <textarea class="pulse-edit-textarea form-textarea">${escapeHtml(post.content || '')}</textarea>
+      <div class="pulse-edit-actions">
+        <button class="pulse-edit-save">Save</button>
+        <button class="pulse-edit-cancel">Cancel</button>
+      </div>
+    `;
+    contentEl.replaceWith(wrapper);
+
+    wrapper.querySelector('.pulse-edit-cancel').addEventListener('click', () => {
+      wrapper.replaceWith(contentEl);
+    });
+    wrapper.querySelector('.pulse-edit-save').addEventListener('click', () => this.saveEditPost(post, wrapper));
+  },
+
+  async saveEditPost(post, wrapper) {
+    const textarea = wrapper.querySelector('.pulse-edit-textarea');
+    const newContent = textarea.value.trim();
+    const questionInput = wrapper.querySelector('.pulse-edit-question');
+    const isPoll = post.post_type === 'poll';
+    const newQuestion = questionInput ? questionInput.value.trim() : null;
+
+    if (isPoll && questionInput && !newQuestion) {
+      showToast('Poll question cannot be empty', 'error');
+      return;
+    }
+
+    const saveBtn = wrapper.querySelector('.pulse-edit-save');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    try {
+      const { error } = await supabase.from('pulse_posts').update({ content: newContent }).eq('id', post.id);
+      if (error) throw error;
+
+      if (isPoll && newQuestion !== null) {
+        const pollData = this.pollCache[post.id];
+        if (pollData) {
+          const { error: pollError } = await supabase.from('pulse_post_polls').update({ question: newQuestion }).eq('id', pollData.pollId);
+          if (pollError) throw pollError;
+          pollData.question = newQuestion;
+        }
+      }
+
+      post.content = newContent;
+      const freshContentEl = document.createElement('div');
+      freshContentEl.className = 'pulse-content';
+      freshContentEl.textContent = newContent;
+      wrapper.replaceWith(freshContentEl);
+
+      if (isPoll) {
+        const card = document.querySelector(`.pulse-card[data-post-id="${post.id}"]`);
+        const pollContainer = card?.querySelector('.pulse-poll');
+        if (pollContainer) {
+          pollContainer.outerHTML = this.buildPollHTML(post.id);
+          card.querySelectorAll('.pulse-poll-option:not(.is-locked)').forEach(el => {
+            el.addEventListener('click', () => this.castPollVote(post.id, Number(el.dataset.optionIndex)));
+          });
+        }
+      }
+
+      showToast('Post updated', 'success');
+    } catch (e) {
+      console.error('Failed to save post edit:', e);
+      showToast('Failed to save changes', 'error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+    }
+  },
+
+  // pulse_posts -> pulse_post_media/pulse_post_polls/pulse_smart_links/
+  // pulse_post_reactions/pulse_post_comments/pulse_post_reposts are all
+  // ON DELETE CASCADE (confirmed against the schema), and
+  // pulse_post_polls -> pulse_poll_votes cascades too - a single delete
+  // here is sufficient, no manual cleanup of related tables needed.
+  async deletePost(postId) {
+    if (!confirm('Delete this post? This cannot be undone.')) return;
+    try {
+      const { error } = await supabase.from('pulse_posts').delete().eq('id', postId);
+      if (error) throw error;
+
+      const card = document.querySelector(`.pulse-card[data-post-id="${postId}"]`);
+      card?.remove();
+
+      const feedEl = document.getElementById('community-pulse-feed');
+      if (feedEl && !feedEl.querySelector('.pulse-card')) {
+        feedEl.innerHTML = this.emptyStateHTML();
+      }
+      showToast('Post deleted', 'success');
+    } catch (e) {
+      console.error('Failed to delete post:', e);
+      showToast('Failed to delete post', 'error');
+    }
   },
 
   buildPollHTML(postId) {
@@ -1630,6 +1752,15 @@ function renderAboutIdentity() {
     } else {
       socialsRow.style.display = 'none';
     }
+  }
+
+  // Computed fresh rather than trusting a possibly-not-yet-set
+  // window.isOwner - this can run before the header-profile code that
+  // otherwise sets it.
+  const editTrigger = document.getElementById('edit-about-trigger');
+  if (editTrigger) {
+    const isOwnerNow = !!(window.currentUser && window.creatorId && window.currentUser.id === window.creatorId);
+    editTrigger.style.display = isOwnerNow ? 'inline-flex' : 'none';
   }
 }
 
@@ -2531,6 +2662,93 @@ showToast('Failed to disconnect', 'error');
 }
 }
 
+// ===== EDIT ABOUT MODAL — open/populate, close, save =====
+function openEditAboutModal() {
+const modal = document.getElementById('edit-about-modal');
+if (!modal) { console.error('edit-about-modal not found in DOM'); return; }
+
+const profile = window.creatorProfile || {};
+const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+setVal('edit-quote', profile.quote || '');
+setVal('edit-mission', profile.creator_mission || profile.mission || '');
+setVal('edit-location', profile.location || '');
+setVal('edit-website', profile.website_url || '');
+setVal('edit-schedule', profile.upload_schedule || '');
+setVal('edit-tags', (profile.content_categories || []).join(', '));
+setVal('edit-social', profile.social_links ? JSON.stringify(profile.social_links) : '');
+
+modal.classList.add('active');
+}
+
+function closeEditAboutModal() {
+document.getElementById('edit-about-modal')?.classList.remove('active');
+}
+
+// user_profiles columns confirmed directly against the schema - quote,
+// creator_mission, location, website_url, upload_schedule,
+// content_categories (array, not "tags" - that column doesn't exist),
+// social_links (jsonb).
+async function saveAboutChanges() {
+if (!window.isOwner) {
+showToast('Only the channel owner can edit this', 'error');
+return;
+}
+
+const getVal = (id) => document.getElementById(id)?.value?.trim() || '';
+
+const socialRaw = getVal('edit-social');
+let socialLinks = {};
+if (socialRaw) {
+try {
+socialLinks = JSON.parse(socialRaw);
+} catch (e) {
+showToast('Social Links must be valid JSON', 'error');
+return;
+}
+}
+
+const tags = getVal('edit-tags').split(',').map(t => t.trim()).filter(Boolean);
+
+const updates = {
+quote: getVal('edit-quote'),
+creator_mission: getVal('edit-mission'),
+location: getVal('edit-location'),
+website_url: getVal('edit-website'),
+upload_schedule: getVal('edit-schedule'),
+content_categories: tags,
+social_links: socialLinks
+};
+
+const saveBtn = document.getElementById('save-about-btn');
+const originalHtml = saveBtn ? saveBtn.innerHTML : '';
+if (saveBtn) {
+saveBtn.disabled = true;
+saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+}
+
+try {
+const { error } = await supabase
+.from('user_profiles')
+.update(updates)
+.eq('id', window.creatorId);
+
+if (error) throw error;
+
+window.creatorProfile = { ...window.creatorProfile, ...updates };
+renderAboutIdentity();
+closeEditAboutModal();
+showToast('About section updated', 'success');
+} catch (err) {
+console.error('Failed to save about section:', err);
+showToast('Failed to save changes. Please try again.', 'error');
+} finally {
+if (saveBtn) {
+saveBtn.disabled = false;
+saveBtn.innerHTML = originalHtml;
+}
+}
+}
+
 // ===== FIX 3: THREE-DOT MENU — SELF-CONTAINED MODAL OPENING (Fix A) =====
 function setupMoreMenu() {
 const moreBtn = document.getElementById('more-btn');
@@ -2584,22 +2802,34 @@ const aboutItem = document.getElementById('more-menu-about');
 if (aboutItem) {
 aboutItem.addEventListener('click', () => {
 moreMenu.classList.remove('active');
-const modal = document.getElementById('edit-about-modal');
-if (!modal) { console.error('edit-about-modal not found in DOM'); return; }
+openEditAboutModal();
+});
+}
 
-// Populate the form fresh, inline, rather than depending on a
-// separate function reference that may have drifted.
-const profile = window.creatorProfile || {};
-const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-setVal('edit-quote', profile.creator_quote || profile.quote || '');
-setVal('edit-mission', profile.creator_mission || profile.mission || '');
-setVal('edit-location', profile.location || '');
-setVal('edit-website', profile.website_url || '');
-setVal('edit-schedule', profile.upload_schedule || '');
-setVal('edit-tags', (profile.tags || profile.content_categories || []).join(', '));
-setVal('edit-social', profile.social_links ? JSON.stringify(profile.social_links) : '');
+// EDIT-ABOUT PENCIL TRIGGER — same modal, reached directly from the
+// channel name row instead of through the more-menu.
+const editAboutTrigger = document.getElementById('edit-about-trigger');
+if (editAboutTrigger) {
+editAboutTrigger.addEventListener('click', () => {
+if (!window.isOwner) return;
+openEditAboutModal();
+});
+}
 
-modal.classList.add('active');
+// SAVE / CANCEL — both were previously unwired; the modal could be
+// opened but never closed or submitted.
+const saveAboutBtn = document.getElementById('save-about-btn');
+if (saveAboutBtn) {
+saveAboutBtn.addEventListener('click', saveAboutChanges);
+}
+const cancelAboutBtn = document.getElementById('cancel-about-btn');
+if (cancelAboutBtn) {
+cancelAboutBtn.addEventListener('click', closeEditAboutModal);
+}
+const editAboutModalEl = document.getElementById('edit-about-modal');
+if (editAboutModalEl) {
+editAboutModalEl.addEventListener('click', (e) => {
+if (e.target === editAboutModalEl) closeEditAboutModal();
 });
 }
 

@@ -561,6 +561,30 @@ border-color: var(--warm-gold);
 color: var(--warm-gold);
 }
 
+/* Pencil trigger next to the channel name - opens the same Edit About
+   modal as the more-menu's "About" item. Owner-only, toggled in
+   renderAboutIdentity(). */
+.edit-about-trigger {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 28px;
+height: 28px;
+border-radius: 50%;
+background: transparent;
+border: 1px solid var(--border-subtle);
+color: var(--text-secondary);
+font-size: 12px;
+cursor: pointer;
+transition: all 0.2s ease;
+flex-shrink: 0;
+}
+.edit-about-trigger:hover {
+background: rgba(0, 229, 255, 0.12);
+border-color: #00E5FF;
+color: #00E5FF;
+}
+
 /* ===== FIX 5: THREE-DOT DROPDOWN MENU ===== */
 .more-menu-wrapper { position: relative; }
 .more-menu {
@@ -1226,6 +1250,81 @@ line-height: 1.6;
 color: var(--text-primary);
 margin-bottom: var(--space-2);
 word-wrap: break-word;
+}
+
+/* Owner-only edit/delete controls (channel owner viewing their own
+   Community Pulse tab) - flex-shrink:0 so they don't get squeezed by
+   .pulse-creator-info's flex:1 next to them. */
+.pulse-owner-controls {
+display: flex;
+gap: 6px;
+flex-shrink: 0;
+}
+.pulse-icon-btn {
+width: 28px;
+height: 28px;
+border-radius: 50%;
+background: transparent;
+border: 1px solid var(--border-subtle);
+color: var(--text-secondary);
+font-size: 11px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s ease;
+}
+.pulse-icon-btn:hover {
+background: rgba(0, 229, 255, 0.12);
+border-color: #00E5FF;
+color: #00E5FF;
+}
+.pulse-delete-btn:hover {
+background: rgba(239, 68, 68, 0.12);
+border-color: #ef4444;
+color: #ef4444;
+}
+
+/* Inline edit state - replaces .pulse-content in place instead of a
+   separate modal. */
+.pulse-edit-wrapper {
+display: flex;
+flex-direction: column;
+gap: 8px;
+margin-bottom: var(--space-2);
+}
+.pulse-edit-textarea {
+min-height: 70px;
+}
+.pulse-edit-actions {
+display: flex;
+gap: 8px;
+justify-content: flex-end;
+}
+.pulse-edit-save,
+.pulse-edit-cancel {
+padding: 6px 16px;
+border-radius: 999px;
+font-size: 12px;
+font-weight: 600;
+cursor: pointer;
+border: 1px solid transparent;
+transition: all 0.2s ease;
+}
+.pulse-edit-save {
+background: #00E5FF;
+color: var(--bg-page, #06141A);
+}
+.pulse-edit-save:hover { filter: brightness(1.1); }
+.pulse-edit-save:disabled { opacity: 0.6; cursor: default; }
+.pulse-edit-cancel {
+background: transparent;
+border-color: var(--border-subtle);
+color: var(--text-secondary);
+}
+.pulse-edit-cancel:hover {
+border-color: var(--text-secondary);
+color: var(--text-primary);
 }
 
 /* Pulse Poll */
