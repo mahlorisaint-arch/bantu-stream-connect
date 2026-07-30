@@ -320,6 +320,15 @@
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// This page has no page-specific script tying into #loading/#app -
+// shared-components.js populates the header/sidebar asynchronously but
+// never touches #loading/#app itself (that's each page's own job elsewhere
+// in the codebase). Without this, the page stays stuck behind the spinner
+// forever. Separate from #welcomeLoadingState/#welcomeContent below, which
+// gate the actual signup-confirmation content on the auth check.
+document.getElementById('loading').style.display = 'none';
+document.getElementById('app').style.display = 'block';
 </script>
 <script>
     const supabaseClient = window.supabaseClient;
