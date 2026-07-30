@@ -34,24 +34,21 @@
     gap: var(--spacing-sm, 0.5rem);
 }
 
-.bantu-waves-midnight .section-title {
-    font-family: 'Orbitron', monospace;
-    font-size: var(--font-xl, 1.25rem);
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 0.5rem);
-    background: linear-gradient(135deg, var(--soft-white, #F8FAFC), #8B5CF6);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-.bantu-waves-midnight .section-title i {
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    color: #8B5CF6;
+/* .bantu-waves-midnight .section-title override removed: it fixed the
+   title at 20px/Orbitron/gradient-text with no responsive scale-down and
+   no overflow handling, which is exactly why "BANTU WAVES: MIDNIGHT
+   SESSIONS" (the longest of these four titles) was spilling out past its
+   card at tablet/mobile widths instead of ellipsizing - the canonical
+   .section-header .section-title rule (home-feed-ui.css) already handles
+   overflow/ellipsis/min-width correctly, same as Community Favorites,
+   which never overrides .section-title at all. Icon color comes from the
+   inline style="" on the <i> tag in index.html, unaffected by this
+   removal. midnight-time-badge (this section's header also contains one,
+   unlike the other three) gets flex-shrink: 0 below so it keeps its full
+   size while the title truncates around it, instead of both fighting for
+   space. */
+.bantu-waves-midnight .midnight-time-badge {
+    flex-shrink: 0;
 }
 
 /* Midnight Time Badge */

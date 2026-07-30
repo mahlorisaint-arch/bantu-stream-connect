@@ -18,25 +18,13 @@
     gap: var(--spacing-sm, 0.5rem);
 }
 
-.bantu-waves-music .section-title {
-    font-family: 'Orbitron', monospace;
-    font-size: var(--font-xl, 1.25rem);
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 0.5rem);
-    background: linear-gradient(135deg, var(--soft-white, #F8FAFC), var(--warm-gold, #00E5FF));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-.bantu-waves-music .section-title i {
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    color: var(--warm-gold, #00E5FF);
-}
+/* .bantu-waves-music .section-title override removed: it fixed the title
+   at 20px/Orbitron/gradient-text with no responsive scale-down and no
+   overflow handling, which is why it stayed oversized on tablet/mobile
+   instead of matching Community Favorites (19px -> 16px -> 15px) - that
+   section works correctly precisely because it never overrides
+   .section-title at all. Icon color comes from the inline style="" on
+   the <i> tag in index.html, unaffected by this removal. */
 
 /* Music Grid */
 .music-playlists-grid {
