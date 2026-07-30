@@ -207,6 +207,7 @@ function renderMoreFromCreatorRail(items, creatorId) {
                          loading="lazy"
                          onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                     <div class="thumbnail-overlay"></div>
+                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                     ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
                     <span class="media-type-badge ${isAudio ? 'audio' : 'video'}">
                         <i class="fas ${isAudio ? 'fa-headphones' : 'fa-play'}"></i>

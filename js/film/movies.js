@@ -516,7 +516,7 @@
               <div class="ep-thumb">
                 <img src="${getPosterUrl(c, 400)}" alt="${escapeHtml(c.title)}">
                 ${isCurrent ? '<div class="ep-check"><i class="fas fa-check-circle"></i></div>' : ''}
-                <div class="ep-play-overlay"><i class="fas fa-play"></i></div>
+                <div class="ep-play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 ${leavingBadge}
               </div>
               <div class="ep-info">

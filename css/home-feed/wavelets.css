@@ -88,10 +88,27 @@
     opacity: 1;
 }
 
-.wavelet-overlay i {
-    color: white;
-    font-size: calc(2.5rem * var(--ui-scale));
-    text-shadow: 0 0 calc(0.625rem * var(--ui-scale)) rgba(0, 0, 0, 0.5);
+.wavelet-overlay .play-icon {
+    width: 50px; height: 50px;
+    background: rgba(6, 20, 26, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.8);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.wavelet-card:hover .wavelet-overlay .play-icon {
+    transform: scale(1);
+}
+
+.wavelet-overlay .play-icon i {
+    color: #00E5FF;
+    font-size: 20px;
 }
 
 /* Wavelet Badge - transparent glassmorphic, highlighted by cyan (same

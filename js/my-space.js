@@ -149,7 +149,7 @@ function renderContinueWatching(items) {
                     <span class="space-card-badge is-progress"><i class="fas fa-play-circle"></i> ${progress}%</span>
                     ${content.duration ? `<span class="space-card-duration">${totalTime}</span>` : ''}
                     <div class="space-card-progress"><div class="space-card-progress-fill" style="width: ${progress}%;"></div></div>
-                    <div class="space-card-play"><i class="fas fa-play"></i></div>
+                    <div class="space-card-play"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 </div>
                 <p class="space-card-title">${escapeHtml(content.title)}</p>
                 <p class="space-card-byline"><i class="fas fa-user"></i> ${escapeHtml(creatorName)}</p>
@@ -213,7 +213,7 @@ function renderFavorites(items) {
                 <div class="space-card-thumb" style="background-image: url(${thumbnailUrl});">
                     <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
                     ${content.duration ? `<span class="space-card-duration">${totalTime}</span>` : ''}
-                    <div class="space-card-play"><i class="fas fa-play"></i></div>
+                    <div class="space-card-play"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 </div>
                 <p class="space-card-title">${escapeHtml(content.title)}</p>
                 <p class="space-card-byline"><i class="fas fa-user"></i> ${escapeHtml(creatorName)}</p>

@@ -426,9 +426,23 @@ body { background: #000000; }
 .ep-lock { color: var(--warm-gold); }
 .ep-play-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.2s ease; color: var(--brand-cyan-core); font-size: 12px; font-weight: 600;
+  background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.2s ease;
 }
-.ep-thumb.blurred:hover .ep-play-overlay { opacity: 1; }
+.episode-card:hover .ep-play-overlay { opacity: 1; }
+.ep-play-overlay .play-icon {
+  width: 50px; height: 50px;
+  background: rgba(6, 20, 26, 0.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transform: scale(0.8);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.episode-card:hover .ep-play-overlay .play-icon { transform: scale(1); }
+.ep-play-overlay .play-icon i {
+  color: #00E5FF; font-size: 20px;
+}
 .ep-info { padding: 0 4px; }
 .ep-number { font-size: 11px; color: var(--brand-cyan-core); font-weight: 600; text-transform: uppercase; }
 .ep-info h4 { font-size: 13px; color: var(--soft-white); margin: 4px 0; font-weight: 500; }

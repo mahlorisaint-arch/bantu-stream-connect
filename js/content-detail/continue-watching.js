@@ -133,6 +133,7 @@ function renderContinueWatching(items) {
                     <div class="progress-bar-overlay">
                         <div class="progress-fill" style="width:${progress}%"></div>
                     </div>
+                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                     <div class="resume-badge">
                         <i class="fas fa-play"></i> Resume
                     </div>

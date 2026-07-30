@@ -321,7 +321,7 @@ const Wavelets = (function() {
                          loading="lazy"
                          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';">
                     <div class="wavelet-overlay">
-                        <i class="fas fa-play"></i>
+                        <div class="play-icon"><i class="fas fa-play"></i></div>
                     </div>
                     <div class="wavelet-badge">
                         <i class="fas fa-bolt"></i> WAVELET

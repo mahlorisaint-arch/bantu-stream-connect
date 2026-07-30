@@ -259,7 +259,7 @@ function renderHistoryGrid(items) {
                     <div class="history-card-progress">
                         <div class="history-card-progress-fill" style="width: ${progress}%;"></div>
                     </div>
-                    <div class="history-card-play"><i class="fas fa-play"></i></div>
+                    <div class="history-card-play"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 </div>
                 <p class="history-card-title">${escapeHtml(content.title)}</p>
                 <p class="history-card-byline"><i class="fas fa-user"></i> ${escapeHtml(creatorName)}</p>
