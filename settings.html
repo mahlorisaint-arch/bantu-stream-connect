@@ -312,6 +312,15 @@
     </div>
   </section>
 
+  <!-- BLOCKED CREATORS -->
+  <section class="settings-card" id="blocked-creators-section">
+    <h2 class="settings-card-title"><i class="fas fa-ban"></i> Blocked Creators</h2>
+    <p class="settings-section-hint">You won't see content from blocked creators, and they can't interact with you.</p>
+    <div id="blocked-creators-list" class="blocked-creators-list">
+      <p class="settings-empty-hint">Loading...</p>
+    </div>
+  </section>
+
   <!-- DANGER ZONE -->
   <section class="settings-card danger-card">
     <h2 class="settings-card-title danger"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
@@ -331,9 +340,9 @@
         <h3>Delete account</h3>
         <p>Your account and all associated content will be permanently deleted. This cannot be undone.</p>
       </div>
-      <a class="settings-danger-btn" href="mailto:support@bantustreamconnect.co.za?subject=Account%20Deletion%20Request">
-        <i class="fas fa-envelope"></i> Contact support to delete your account
-      </a>
+      <button class="settings-danger-btn" id="delete-account-btn" onclick="window.openDeleteAccountModal()">
+        <i class="fas fa-user-slash"></i> Delete Account
+      </button>
     </div>
   </section>
 

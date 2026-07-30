@@ -1646,8 +1646,24 @@ async function loadContentFromURLLegacy() {
             is_completed: watchProgress?.is_completed || false
         };
         
+        if (contentObj.creator_id && typeof window.getBlockedUserIds === 'function') {
+            const blockedIds = await window.getBlockedUserIds();
+            if (blockedIds.has(contentObj.creator_id)) {
+                const heroSection = document.querySelector('.hero-section, .video-hero, #creatorInfoBar')?.closest('main') || document.querySelector('main') || document.body;
+                heroSection.innerHTML = `
+                    <div style="max-width:480px;margin:80px auto;text-align:center;padding:32px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;">
+                        <i class="fas fa-ban" style="font-size:36px;color:#EF4444;margin-bottom:16px;"></i>
+                        <h2 style="color:var(--soft-white);margin:0 0 10px;">Content unavailable</h2>
+                        <p style="color:var(--slate-grey);margin:0 0 20px;">You've blocked this creator, so their content is hidden. You can unblock them from Settings.</p>
+                        <a href="index.html" style="display:inline-block;padding:12px 24px;border-radius:999px;background:#00E5FF;color:#001014;font-weight:700;text-decoration:none;">Back to Home</a>
+                    </div>
+                `;
+                return;
+            }
+        }
+
         await setCurrentContent(contentObj);
-        
+
         if (window.currentContent.watch_progress > 10 && !window.currentContent.is_completed && typeof addResumeButton === 'function') {
             addResumeButton(window.currentContent.watch_progress);
         }
@@ -2223,7 +2239,37 @@ function setupEventListeners() {
             if (typeof closeVideoPlayer === 'function') closeVideoPlayer();
         });
     }
-    
+
+    // Report content
+    const reportContentBtn = document.getElementById('reportContentBtn');
+    if (reportContentBtn) {
+        reportContentBtn.addEventListener('click', function() {
+            if (!window.currentContent) return;
+            window.openReportContentModal(window.currentContent.id, window.currentContent.title || 'this content');
+        });
+    }
+
+    // Block creator
+    const blockCreatorBtn = document.getElementById('blockCreatorBtn');
+    if (blockCreatorBtn) {
+        blockCreatorBtn.addEventListener('click', function() {
+            if (!window.currentContent || !window.currentContent.creator_id) return;
+            const creatorName = window.currentContent.creator_display_name || window.currentContent.creator || 'this creator';
+            window.showConfirmModal({
+                icon: 'fa-ban',
+                danger: true,
+                title: `Block ${creatorName}?`,
+                message: `You won't see ${creatorName}'s content in your feed, search, or recommendations, and they won't be able to interact with you. You can unblock them anytime from Settings.`,
+                confirmText: 'Block',
+                confirmClass: 'danger',
+                onConfirm: async () => {
+                    await window.blockCreator(window.currentContent.creator_id, creatorName);
+                    window.location.href = 'index.html';
+                }
+            });
+        });
+    }
+
     if (typeof setupConnectButtons === 'function') {
         setupConnectButtons();
     }

@@ -224,6 +224,11 @@ async function enrichContentWithStats(items) {
  *   the same items and the button never disappeared).
  */
 function renderRelatedContent(items, append = false, hasMore = false) {
+    const blockedIds = window.platformComponents?.blockedUserIds;
+    if (blockedIds && blockedIds.size > 0 && items) {
+        items = items.filter(item => !blockedIds.has(item.user_id) && !blockedIds.has(item.user_profiles?.id));
+    }
+
     const container = document.getElementById('relatedGrid');
     const skeleton = document.getElementById('relatedSkeleton');
     const empty = document.getElementById('relatedEmpty');

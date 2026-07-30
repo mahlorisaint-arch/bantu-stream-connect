@@ -2417,6 +2417,28 @@ window.location.href = 'content-library.html';
 return;
 }
 
+if (typeof window.getBlockedUserIds === 'function') {
+const blockedIds = await window.getBlockedUserIds();
+if (blockedIds.has(window.creatorId)) {
+const loadingEl = document.getElementById('loading');
+if (loadingEl) loadingEl.style.display = 'none';
+const appEl = document.getElementById('app');
+if (appEl) appEl.style.display = 'block';
+const overlay = document.createElement('div');
+overlay.className = 'bsc-modal-overlay';
+overlay.innerHTML = `
+<div class="bsc-modal" style="text-align:center;">
+<div class="bsc-modal-icon danger" style="margin:0 auto 16px;"><i class="fas fa-ban"></i></div>
+<h3>Channel unavailable</h3>
+<p>You've blocked this creator, so their channel is hidden. You can unblock them from Settings.</p>
+<a href="index.html" class="bsc-modal-btn primary" style="display:block;text-decoration:none;">Back to Home</a>
+</div>
+`;
+document.body.appendChild(overlay);
+return;
+}
+}
+
 window.loadingText = document.getElementById('loading-text');
 if (window.loadingText) window.loadingText.textContent = 'Loading Creator Channel...';
 
@@ -2764,12 +2786,48 @@ const isOwnerNow = !!(window.currentUser && window.creatorId && window.currentUs
 // window.isOwner elsewhere (edit-about trigger, banner button, etc.)
 window.isOwner = isOwnerNow;
 
-if (!isOwnerNow) {
-showToast('Only the channel owner can access these options', 'info');
-return;
-}
+moreMenu.querySelectorAll('.owner-only-item').forEach(item => {
+  item.style.display = isOwnerNow ? '' : 'none';
+});
+moreMenu.querySelectorAll('.viewer-only-item').forEach(item => {
+  item.style.display = isOwnerNow ? 'none' : '';
+});
+
 moreMenu.classList.toggle('active');
 });
+
+// REPORT CREATOR ITEM
+const reportItem = document.getElementById('more-menu-report');
+if (reportItem) {
+reportItem.addEventListener('click', () => {
+moreMenu.classList.remove('active');
+if (!window.creatorId) return;
+const creatorName = window.creatorProfile?.full_name || window.creatorProfile?.username || 'this creator';
+window.openReportCreatorModal(window.creatorId, creatorName);
+});
+}
+
+// BLOCK CREATOR ITEM
+const blockItem = document.getElementById('more-menu-block');
+if (blockItem) {
+blockItem.addEventListener('click', () => {
+moreMenu.classList.remove('active');
+if (!window.creatorId) return;
+const creatorName = window.creatorProfile?.full_name || window.creatorProfile?.username || 'this creator';
+window.showConfirmModal({
+  icon: 'fa-ban',
+  danger: true,
+  title: `Block ${creatorName}?`,
+  message: `You won't see ${creatorName}'s content in your feed, search, or recommendations, and they won't be able to interact with you. You can unblock them anytime from Settings.`,
+  confirmText: 'Block',
+  confirmClass: 'danger',
+  onConfirm: async () => {
+    await window.blockCreator(window.creatorId, creatorName);
+    window.location.href = 'index.html';
+  }
+});
+});
+}
 
 document.addEventListener('click', (e) => {
 if (moreMenu.classList.contains('active') && !moreMenu.contains(e.target) && e.target !== moreBtn) {

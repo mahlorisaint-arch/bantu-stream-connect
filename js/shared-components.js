@@ -2219,6 +2219,293 @@ function setupHeaderButtons() {
 }
 
 // ============================================ */
+// SHARED CONFIRM / REPORT MODALS */
+// Built dynamically so pages don't need their own modal markup. */
+// ============================================ */
+function showConfirmModal({ icon = 'fa-triangle-exclamation', danger = false, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'primary', onConfirm }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'bsc-modal-overlay';
+    overlay.innerHTML = `
+        <div class="bsc-modal">
+            <div class="bsc-modal-icon ${danger ? 'danger' : ''}"><i class="fas ${icon}"></i></div>
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(message)}</p>
+            <div class="bsc-modal-actions">
+                <button class="bsc-modal-btn ghost" data-action="cancel">${escapeHtml(cancelText)}</button>
+                <button class="bsc-modal-btn ${confirmClass}" data-action="confirm">${escapeHtml(confirmText)}</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector('[data-action="cancel"]').onclick = close;
+    overlay.querySelector('[data-action="confirm"]').onclick = async () => {
+        const btn = overlay.querySelector('[data-action="confirm"]');
+        btn.disabled = true;
+        try {
+            await onConfirm();
+            close();
+        } catch (err) {
+            btn.disabled = false;
+            console.error('Confirm modal action failed:', err);
+        }
+    };
+    return overlay;
+}
+
+function showReportModal({ title = 'Report', reasons, onSubmit }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'bsc-modal-overlay';
+    overlay.innerHTML = `
+        <div class="bsc-modal">
+            <div class="bsc-modal-icon danger"><i class="fas fa-flag"></i></div>
+            <h3>${escapeHtml(title)}</h3>
+            <p>Help us keep Bantu Stream Connect safe. Your report is confidential.</p>
+            <div class="bsc-modal-field">
+                <label>Reason</label>
+                <select id="bsc-report-reason">
+                    ${reasons.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="bsc-modal-field">
+                <label>Additional details (optional)</label>
+                <textarea id="bsc-report-details" placeholder="Anything else we should know?"></textarea>
+            </div>
+            <div class="bsc-modal-actions">
+                <button class="bsc-modal-btn ghost" data-action="cancel">Cancel</button>
+                <button class="bsc-modal-btn danger" data-action="confirm">Submit Report</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector('[data-action="cancel"]').onclick = close;
+    overlay.querySelector('[data-action="confirm"]').onclick = async () => {
+        const btn = overlay.querySelector('[data-action="confirm"]');
+        btn.disabled = true;
+        const reason = overlay.querySelector('#bsc-report-reason').value;
+        const details = overlay.querySelector('#bsc-report-details').value.trim();
+        try {
+            await onSubmit({ reason, details });
+            close();
+        } catch (err) {
+            btn.disabled = false;
+            console.error('Report submission failed:', err);
+        }
+    };
+    return overlay;
+}
+
+// ============================================ */
+// CONTENT MODERATION: REPORTING & BLOCKING */
+// ============================================ */
+const DEFAULT_REPORT_REASONS = ['Spam', 'Harassment or bullying', 'Hate speech', 'Violence', 'Sexual content', 'Copyright infringement', 'Misinformation', 'Other'];
+
+async function reportContent({ contentId = null, reportedUserId = null, reason, details }) {
+    if (!window.supabaseClient) return;
+    const user = await getCurrentUser();
+    if (!user || !user.id) {
+        showToast('Sign in to submit a report', 'info');
+        return;
+    }
+    const { error } = await window.supabaseClient.from('content_reports').insert({
+        reporter_id: user.id,
+        content_id: contentId,
+        reported_user_id: reportedUserId,
+        reason,
+        details: details || null
+    });
+    if (error) {
+        console.error('Failed to submit report:', error);
+        showToast('Failed to submit report', 'error');
+        throw error;
+    }
+    showToast('Report submitted. Thank you for helping keep our community safe.', 'success');
+}
+
+function openReportContentModal(contentId, contentTitle = 'this content') {
+    showReportModal({
+        title: `Report ${contentTitle}`,
+        reasons: DEFAULT_REPORT_REASONS,
+        onSubmit: ({ reason, details }) => reportContent({ contentId, reason, details })
+    });
+}
+
+function openReportCreatorModal(creatorId, creatorName = 'this creator') {
+    showReportModal({
+        title: `Report ${creatorName}`,
+        reasons: DEFAULT_REPORT_REASONS,
+        onSubmit: ({ reason, details }) => reportContent({ reportedUserId: creatorId, reason, details })
+    });
+}
+
+async function getBlockedUserIds() {
+    if (window.platformComponents.blockedUserIds) return window.platformComponents.blockedUserIds;
+    if (!window.supabaseClient) return new Set();
+    const user = await getCurrentUser();
+    if (!user || !user.id) return new Set();
+    const { data, error } = await window.supabaseClient
+        .from('user_blocks')
+        .select('blocked_id')
+        .eq('blocker_id', user.id);
+    if (error) {
+        console.error('Failed to load blocked users:', error);
+        return new Set();
+    }
+    const ids = new Set((data || []).map(row => row.blocked_id));
+    window.platformComponents.blockedUserIds = ids;
+    return ids;
+}
+
+async function blockCreator(creatorId, creatorName = 'this creator') {
+    if (!window.supabaseClient) return;
+    const user = await getCurrentUser();
+    if (!user || !user.id) {
+        showToast('Sign in to block creators', 'info');
+        return;
+    }
+    const { error } = await window.supabaseClient.from('user_blocks').insert({
+        blocker_id: user.id,
+        blocked_id: creatorId
+    });
+    if (error) {
+        console.error('Failed to block creator:', error);
+        showToast('Failed to block creator', 'error');
+        throw error;
+    }
+    if (window.platformComponents.blockedUserIds) {
+        window.platformComponents.blockedUserIds.add(creatorId);
+    }
+    showToast(`${creatorName} has been blocked`, 'success');
+    document.dispatchEvent(new CustomEvent('bscBlockChanged', { detail: { creatorId, blocked: true } }));
+}
+
+async function unblockCreator(creatorId, creatorName = 'this creator') {
+    if (!window.supabaseClient) return;
+    const user = await getCurrentUser();
+    if (!user || !user.id) return;
+    const { error } = await window.supabaseClient
+        .from('user_blocks')
+        .delete()
+        .eq('blocker_id', user.id)
+        .eq('blocked_id', creatorId);
+    if (error) {
+        console.error('Failed to unblock creator:', error);
+        showToast('Failed to unblock creator', 'error');
+        throw error;
+    }
+    if (window.platformComponents.blockedUserIds) {
+        window.platformComponents.blockedUserIds.delete(creatorId);
+    }
+    showToast(`${creatorName} has been unblocked`, 'success');
+    document.dispatchEvent(new CustomEvent('bscBlockChanged', { detail: { creatorId, blocked: false } }));
+}
+
+function openBlockCreatorModal(creatorId, creatorName = 'this creator') {
+    showConfirmModal({
+        icon: 'fa-ban',
+        danger: true,
+        title: `Block ${creatorName}?`,
+        message: `You won't see ${creatorName}'s content in your feed, search, or recommendations, and they won't be able to interact with you. You can unblock them anytime from Settings.`,
+        confirmText: 'Block',
+        confirmClass: 'danger',
+        onConfirm: () => blockCreator(creatorId, creatorName)
+    });
+}
+
+// ============================================ */
+// ACCOUNT DELETION (soft delete, 30-day grace period) */
+// ============================================ */
+async function requestAccountDeletion() {
+    if (!window.supabaseClient) return;
+    const { error } = await window.supabaseClient.rpc('request_account_deletion');
+    if (error) {
+        console.error('Failed to request account deletion:', error);
+        showToast('Failed to process deletion request', 'error');
+        throw error;
+    }
+    showToast('Your account is scheduled for deletion in 30 days', 'info');
+    await window.supabaseClient.auth.signOut();
+    setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+}
+
+async function cancelAccountDeletion() {
+    if (!window.supabaseClient) return;
+    const { error } = await window.supabaseClient.rpc('cancel_account_deletion');
+    if (error) {
+        console.error('Failed to cancel account deletion:', error);
+        showToast('Failed to cancel deletion', 'error');
+        throw error;
+    }
+    showToast('Account deletion cancelled. Welcome back!', 'success');
+    setTimeout(() => window.location.reload(), 1000);
+}
+
+function openDeleteAccountModal() {
+    showConfirmModal({
+        icon: 'fa-user-slash',
+        danger: true,
+        title: 'Delete your account?',
+        message: 'Your account will be deactivated immediately and permanently deleted after 30 days. You can cancel anytime before then by logging back in. This will sign you out now.',
+        confirmText: 'Delete My Account',
+        confirmClass: 'danger',
+        onConfirm: () => requestAccountDeletion()
+    });
+}
+
+async function checkAccountDeletionStatus() {
+    if (!window.supabaseClient) return;
+    const user = await getCurrentUser();
+    if (!user || !user.id) return;
+
+    const { data, error } = await window.supabaseClient
+        .from('user_profiles')
+        .select('is_deactivated, deletion_scheduled_for')
+        .eq('id', user.id)
+        .single();
+
+    if (error || !data || !data.is_deactivated) return;
+    if (document.querySelector('.bsc-deletion-modal')) return;
+
+    const scheduledDate = data.deletion_scheduled_for
+        ? new Date(data.deletion_scheduled_for).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'soon';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'bsc-modal-overlay bsc-deletion-modal';
+    overlay.innerHTML = `
+        <div class="bsc-modal">
+            <div class="bsc-modal-icon danger"><i class="fas fa-user-slash"></i></div>
+            <h3>Account scheduled for deletion</h3>
+            <p>Your account and content will be permanently deleted on <strong>${escapeHtml(scheduledDate)}</strong>. Changed your mind?</p>
+            <div class="bsc-modal-actions">
+                <button class="bsc-modal-btn primary" data-action="cancel-deletion">Cancel Deletion</button>
+                <button class="bsc-modal-btn ghost" data-action="sign-out">Sign Out</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('[data-action="cancel-deletion"]').onclick = async (e) => {
+        e.target.disabled = true;
+        try {
+            await cancelAccountDeletion();
+            overlay.remove();
+        } catch (err) {
+            e.target.disabled = false;
+        }
+    };
+    overlay.querySelector('[data-action="sign-out"]').onclick = async () => {
+        await window.supabaseClient.auth.signOut();
+        window.location.href = 'index.html';
+    };
+}
+
+// ============================================ */
 // MAIN INITIALIZATION */
 // ============================================ */
 async function initSharedComponents() {
@@ -2247,6 +2534,7 @@ async function initSharedComponents() {
     await updateHeaderProfile();
     await updateSidebarProfile();
     await updateProfileDropdown();
+    await checkAccountDeletionStatus();
 
     applyMobileHeaderStyles();
     window.addEventListener('resize', applyMobileHeaderStyles);
@@ -2271,6 +2559,18 @@ async function initSharedComponents() {
     window.initCreatorMode = initCreatorMode;
     window.clearSearchHistory = clearSearchHistory;
     window.triggerFastSearch = triggerFastSearch;
+    window.showConfirmModal = showConfirmModal;
+    window.showReportModal = showReportModal;
+    window.reportContent = reportContent;
+    window.openReportContentModal = openReportContentModal;
+    window.openReportCreatorModal = openReportCreatorModal;
+    window.getBlockedUserIds = getBlockedUserIds;
+    window.blockCreator = blockCreator;
+    window.unblockCreator = unblockCreator;
+    window.openBlockCreatorModal = openBlockCreatorModal;
+    window.requestAccountDeletion = requestAccountDeletion;
+    window.cancelAccountDeletion = cancelAccountDeletion;
+    window.openDeleteAccountModal = openDeleteAccountModal;
 
     window.platformComponents.initialized = true;
     console.log('✅ Shared components initialized successfully — glass header, sections sidebar, no bottom nav');

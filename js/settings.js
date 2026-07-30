@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser) {
         await loadSettings();
         setupEventListeners();
+        loadBlockedCreators();
     }
 
     console.log('✅ Settings fully initialized');
@@ -307,6 +308,63 @@ function showToast(message, type = 'info') {
         toast.style.transform = 'translateY(10px)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ===== BLOCKED CREATORS =====
+async function loadBlockedCreators() {
+    const list = document.getElementById('blocked-creators-list');
+    if (!list || !currentUser) return;
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('user_blocks')
+            .select(`
+                blocked_id,
+                user_profiles!blocked_id ( id, full_name, username, avatar_url )
+            `)
+            .eq('blocker_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            list.innerHTML = '<p class="settings-empty-hint">You haven\'t blocked anyone.</p>';
+            return;
+        }
+
+        list.innerHTML = data.map(row => {
+            const p = row.user_profiles;
+            const name = p?.full_name || p?.username || 'Unknown creator';
+            const avatar = p?.avatar_url
+                ? `<img class="blocked-creator-avatar" src="${escapeHtml(p.avatar_url)}" alt="${escapeHtml(name)}">`
+                : `<div class="blocked-creator-avatar"></div>`;
+            return `
+                <div class="blocked-creator-row" data-creator-id="${row.blocked_id}">
+                    ${avatar}
+                    <span class="blocked-creator-name">${escapeHtml(name)}</span>
+                    <button class="unblock-btn" data-creator-id="${row.blocked_id}" data-creator-name="${escapeHtml(name)}">Unblock</button>
+                </div>
+            `;
+        }).join('');
+
+        list.querySelectorAll('.unblock-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                try {
+                    await window.unblockCreator(btn.dataset.creatorId, btn.dataset.creatorName);
+                    btn.closest('.blocked-creator-row')?.remove();
+                    if (!list.querySelector('.blocked-creator-row')) {
+                        list.innerHTML = '<p class="settings-empty-hint">You haven\'t blocked anyone.</p>';
+                    }
+                } catch (err) {
+                    btn.disabled = false;
+                }
+            });
+        });
+    } catch (err) {
+        console.error('Failed to load blocked creators:', err);
+        list.innerHTML = '<p class="settings-empty-hint">Could not load blocked creators.</p>';
+    }
 }
 
 })();

@@ -34,6 +34,7 @@ let currentVideo = null;
 let isMuted = true;
 let isPlaying = true;
 let userConnections = new Set();
+let hiddenShortIds = new Set(); // session-only "Not Interested" hides, not persisted server-side
 let moreMenuOpen = false;
 let lastTapTime = 0;
 let connectionFailed = false;
@@ -289,6 +290,14 @@ async function loadShorts() {
       // the general feed - not buried wherever it happens to fall in
       // created_at order, or missing entirely if it doesn't match.
       shortsData = requestedShort ? [requestedShort, ...data] : data;
+
+      if (typeof window.getBlockedUserIds === 'function') {
+        const blockedIds = await window.getBlockedUserIds();
+        if (blockedIds.size > 0) {
+          shortsData = shortsData.filter(s => !blockedIds.has(s.user_id));
+        }
+      }
+
       console.log(`✅ Loaded ${shortsData.length} shorts`);
       
       // Cache the data
@@ -2299,25 +2308,42 @@ function closeMoreMenu() {
 }
 
 function handleReport() {
-  showToast('Report submitted', 'success');
   closeMoreMenu();
-}
-
-function handleMuteCreator() {
-  showToast('Creator muted', 'info');
-  closeMoreMenu();
+  if (!currentShort) return;
+  window.openReportContentModal(currentShort.id, currentShort.title || 'this short');
 }
 
 function handleNotInterested() {
-  showToast('Thanks for feedback', 'info');
   closeMoreMenu();
+  if (!currentShort) return;
+  hiddenShortIds.add(currentShort.id);
+  showToast('Got it, hiding this from your feed for now', 'info');
+  if (typeof swiperInstance !== 'undefined' && swiperInstance) {
+    swiperInstance.slideNext();
+  }
 }
 
 function handleBlockCreator() {
-  if (confirm('Block this creator? You won\'t see their content.')) {
-    showToast('Creator blocked', 'info');
-    closeMoreMenu();
-  }
+  closeMoreMenu();
+  if (!currentShort || !currentShort.user_id) return;
+  const creatorName = currentShort.user_profiles?.full_name || currentShort.user_profiles?.username || 'this creator';
+  window.showConfirmModal({
+    icon: 'fa-ban',
+    danger: true,
+    title: `Block ${creatorName}?`,
+    message: `You won't see ${creatorName}'s content in your feed, search, or recommendations, and they won't be able to interact with you. You can unblock them anytime from Settings.`,
+    confirmText: 'Block',
+    confirmClass: 'danger',
+    onConfirm: async () => {
+      await window.blockCreator(currentShort.user_id, creatorName);
+      if (typeof shortsData !== 'undefined') {
+        shortsData = shortsData.filter(s => s.user_id !== currentShort.user_id);
+      }
+      if (typeof swiperInstance !== 'undefined' && swiperInstance) {
+        swiperInstance.slideNext();
+      }
+    }
+  });
 }
 
 // ============================================
@@ -2792,7 +2818,6 @@ function setupEventListeners() {
   });
   
   document.getElementById('more-report')?.addEventListener('click', handleReport);
-  document.getElementById('more-mute')?.addEventListener('click', handleMuteCreator);
   document.getElementById('more-not-interested')?.addEventListener('click', handleNotInterested);
   document.getElementById('more-block')?.addEventListener('click', handleBlockCreator);
   

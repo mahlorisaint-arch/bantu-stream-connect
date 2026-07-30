@@ -119,6 +119,29 @@ input:checked + .toggle-slider:before { transform: translateX(22px); }
 }
 .settings-danger-btn:hover { background: rgba(239, 68, 68, 0.25); }
 
+.settings-section-hint {
+  font-size: 13px; color: var(--text-muted); margin: -10px 0 16px;
+}
+.settings-empty-hint {
+  font-size: 13px; color: var(--text-muted); padding: 12px 0; margin: 0;
+}
+.blocked-creators-list { display: flex; flex-direction: column; gap: 10px; }
+.blocked-creator-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); border-radius: 10px;
+}
+.blocked-creator-avatar {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+.blocked-creator-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--soft-white); }
+.unblock-btn {
+  padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #00E5FF; cursor: pointer; transition: background 0.2s ease;
+}
+.unblock-btn:hover { background: rgba(0, 229, 255, 0.2); }
+
 /* ===== RESPONSIVE — breakpoints match Creator Channel/Movies/Music/Watch History/My Space (768/480) ===== */
 @media (max-width: 768px) {
   .page-header { padding: 24px 0 12px; }
