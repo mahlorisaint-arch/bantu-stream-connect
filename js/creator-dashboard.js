@@ -386,9 +386,9 @@
                     <i class="fas fa-user-graduate"></i>
                 </div>
                 <h3>Become a Verified Journalist</h3>
-                <p>✓ Publish news articles</p>
-                <p>✓ Build credibility</p>
-                <p>✓ Reach wider audience</p>
+                <p><i class="fas fa-check"></i> Publish news articles</p>
+                <p><i class="fas fa-check"></i> Build credibility</p>
+                <p><i class="fas fa-check"></i> Reach wider audience</p>
                 <button class="apply-now-btn" id="applyJournalistBtn">
                     <i class="fas fa-pen-fancy"></i> Apply Now
                 </button>
@@ -771,7 +771,7 @@
             updateUploads();
             
             if (dashboardData.analytics.is_eligible_for_monetization) {
-                showToast('🎉 You\'re eligible for monetization!', 'success');
+                showToast('You\'re eligible for monetization!', 'success');
             }
         } catch (error) {
             console.error('❌ Error loading dashboard data:', error);
@@ -832,7 +832,7 @@
                     </div>
                     <p class="empty-text">
                         You haven't uploaded yet.<br>
-                        Upload your first story today 🎬
+                        Upload your first story today
                     </p>
                 </div>
             `;
@@ -904,7 +904,7 @@
             let summaryHTML = `<div style="text-align:left">`;
             
             if (unreadCount > 0) {
-                summaryHTML += `<div style="color:#F59E0B;font-weight:600;margin-bottom:10px">🔔 ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}</div>`;
+                summaryHTML += `<div style="color:#00E5FF;font-weight:600;margin-bottom:10px"><i class="fas fa-bell"></i> ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}</div>`;
             }
             
             notificationsData.slice(0, 3).forEach(notification => {

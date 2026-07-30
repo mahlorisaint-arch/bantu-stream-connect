@@ -863,7 +863,7 @@ async function copyShareLink() {
             document.execCommand('copy');
             document.body.removeChild(textarea);
         }
-        if (typeof showToast === 'function') showToast('✨ Link copied!', 'success');
+        if (typeof showToast === 'function') showToast('Link copied!', 'success');
         await recordShareEvent(window.currentContent?.id, window.currentUserId);
         closeShareModal();
     } catch (err) {
@@ -875,7 +875,7 @@ async function copyShareLink() {
 function shareToPlatform(platform) {
     const url = window.location.href;
     const title = window.currentContent?.title || 'Check this out on Bantu Stream Connect';
-    const text = `📺 ${title}\nNO DNA, JUST RSA`;
+    const text = `${title}\nNO DNA, JUST RSA`;
     const targets = {
         whatsapp: `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`,
         twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,

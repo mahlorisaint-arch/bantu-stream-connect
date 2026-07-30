@@ -1103,7 +1103,7 @@
             <p class="report-types">
               ${(report.report_types || []).map(t => `<span class="badge">${t}</span>`).join(' ')}
             </p>
-            ${report.recipient_email ? `<p class="report-email">📧 ${escapeHtml(report.recipient_email)}</p>` : ''}
+            ${report.recipient_email ? `<p class="report-email"><i class="fas fa-envelope"></i> ${escapeHtml(report.recipient_email)}</p>` : ''}
             <p class="report-next">Next: ${formatDateTime(report.next_run_at)}</p>
           </div>
           <div class="report-actions">

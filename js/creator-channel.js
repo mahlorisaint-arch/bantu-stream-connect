@@ -764,7 +764,7 @@ card.style.backgroundImage = `url(${fixMediaUrl(featured.thumbnail_url || 'https
 
 const badge = document.getElementById('featured-badge');
 if (badge) {
-badge.textContent = featured.is_pinned ? '📌 Pinned' : 'New';
+badge.innerHTML = featured.is_pinned ? '<i class="fas fa-thumbtack"></i> Pinned' : 'New';
 }
 
 const duration = document.getElementById('featured-duration');
@@ -2099,7 +2099,7 @@ const { error: dbError } = await supabase
 if (dbError) throw dbError;
 
 setBannerImage(uploadData.fileUrl);
-showToast('Banner updated successfully! 🎉', 'success');
+showToast('Banner updated successfully!', 'success');
 
 if (window.creatorProfile) {
 window.creatorProfile.channel_banner_url = uploadData.fileUrl;
@@ -3013,7 +3013,7 @@ const { error: dbError } = await supabase
 if (dbError) throw dbError;
 
 setBannerImage(previewImg.src);
-showToast('Banner updated successfully! 🎉', 'success');
+showToast('Banner updated successfully!', 'success');
 hideBannerUploadModal();
 
 } catch (error) {

@@ -1503,7 +1503,7 @@ async function setupRealtimeNotifications() {
             updateNotificationBadge(unreadCount);
             updateNotificationsHeaderCount(unreadCount);
 
-            showToast(`🔔 ${newNotification.title}`, 'info');
+            showToast(newNotification.title, 'info');
         })
         .subscribe();
 }
