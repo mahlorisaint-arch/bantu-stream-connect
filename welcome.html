@@ -264,8 +264,49 @@
         </div>
     </main>
 
+    <!-- Search Modal + Notifications Panel: canonical shared-components.css/js
+         markup, copied verbatim from creator-dashboard.html - the header
+         above has #search-btn/#notifications-btn, which setupSearchModal()/
+         setupNotifications() (js/shared-components.js) wire up unconditionally
+         on every page that loads it. Without this markup those buttons exist
+         but do nothing when clicked. -->
+    <div id="search-modal">
+      <div class="search-modal-overlay"></div>
+      <div class="search-modal-content">
+        <div class="search-modal-header">
+          <div class="search-input-wrapper">
+            <input type="text" id="search-input" placeholder="Search videos, creators, hashtags..." autocomplete="off">
+            <button id="voice-search-modal-btn" class="voice-search-modal-btn"><i class="fas fa-microphone"></i></button>
+          </div>
+          <button id="close-search-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="search-filter-pills-bar">
+          <button class="search-filter-pill" data-filter-group="category" data-filter-value="">All</button>
+          <button class="search-filter-pill" data-filter-group="sort" data-filter-value="newest">Newest</button>
+          <button class="search-filter-pill" data-filter-group="sort" data-filter-value="popular">Popular</button>
+        </div>
+        <div id="search-results-grid"></div>
+      </div>
+    </div>
+
+    <div id="notifications-panel" class="notifications-panel">
+      <div class="notifications-header">
+        <h2>Notifications <span id="notifications-header-count"></span></h2>
+        <button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="notification-tabs-container">
+        <button class="notification-tab active" data-tab="all">All</button>
+        <button class="notification-tab" data-tab="unread">Unread</button>
+      </div>
+      <div class="notifications-list" id="notifications-list"></div>
+      <div class="notifications-footer">
+        <button id="mark-all-read" class="text-btn">Mark all as read</button>
+        <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
+      </div>
+    </div>
+
     <footer class="footer">
-        <p>&#127919; This page confirms your successful registration &mdash; a key milestone in your creator journey!</p>
+        <p>This page confirms your successful registration &mdash; a key milestone in your creator journey!</p>
         <p style="margin-top: 10px;">Need help? <a href="support.html">Contact Support</a></p>
         <p style="margin-top: 16px;">Bantu Stream Connect &copy; 2026 &bull; Built in South Africa &bull; NO DNA, JUST RSA</p>
     </footer>
