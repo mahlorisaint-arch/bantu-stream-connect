@@ -1820,13 +1820,33 @@ function setupLogout() {
     if (logoutBtn) {
         logoutBtn.onclick = async (e) => {
             e.preventDefault();
-            if (window.AuthHelper && typeof window.AuthHelper.logout === 'function') {
-                await window.AuthHelper.logout();
-            } else if (window.supabaseClient) {
-                await window.supabaseClient.auth.signOut();
+            try {
+                // window.supabaseClient can end up as this file's own
+                // top-level stub-fallback (search for "SEARCH-FIX" above) -
+                // a plain object with a .from() that always errors, no
+                // .auth at all - if this script runs before whatever the
+                // current page uses to create the real client. That stub
+                // is still truthy, so the old `else if (window.supabaseClient)`
+                // check here always passed, then .auth.signOut() threw
+                // (.auth is undefined on the stub) with no try/catch to
+                // catch it - the button looked completely dead, no error,
+                // no toast, nothing. Try every real client reference this
+                // codebase actually uses before giving up.
+                if (window.AuthHelper && typeof window.AuthHelper.logout === 'function') {
+                    await window.AuthHelper.logout();
+                } else if (window.supabaseClient?.auth?.signOut) {
+                    await window.supabaseClient.auth.signOut();
+                } else if (window.supabaseAuth?.auth?.signOut) {
+                    await window.supabaseAuth.auth.signOut();
+                } else {
+                    throw new Error('No working Supabase client available to sign out with');
+                }
+                showToast('Logged out successfully', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (err) {
+                console.error('Logout failed:', err);
+                showToast('Logout failed. Please try again.', 'error');
             }
-            showToast('Logged out successfully', 'success');
-            setTimeout(() => window.location.reload(), 1000);
         };
     }
 }

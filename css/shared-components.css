@@ -206,10 +206,18 @@ html.theme-light .skel-shimmer {
   pointer-events: none;
 }
 
+/* Platform-wide cyan-glass toast (was per-type semantic colors - red/
+   green/amber/blue - which is where the "green stuff" on success toasts
+   like "Welcome back!"/"Changes saved" came from). This is the same
+   recipe content-detail.html already proved out as a page-scoped
+   override (see css/content-detail/creator-info-bar.css's history); now
+   the actual global default every page gets through shared showToast(),
+   not a per-page opt-in. */
 .toast {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--card-border);
+  background: rgba(10, 14, 18, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 255, 0.35);
   border-radius: 50px;
   padding: 12px 24px;
   color: var(--soft-white);
@@ -218,20 +226,20 @@ html.theme-light .skel-shimmer {
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 229, 255, 0.2);
   animation: toastSlideIn 0.3s ease;
   pointer-events: auto;
 }
 
 .toast i { font-size: 16px; }
-.toast-success { border-left: 4px solid var(--success-color); }
-.toast-success i { color: var(--success-color); }
-.toast-error { border-left: 4px solid var(--error-color); }
-.toast-error i { color: var(--error-color); }
-.toast-warning { border-left: 4px solid var(--warning-color); }
-.toast-warning i { color: var(--warning-color); }
-.toast-info { border-left: 4px solid var(--bantu-blue); }
-.toast-info i { color: var(--bantu-blue); }
+.toast-success,
+.toast-error,
+.toast-warning,
+.toast-info { border-left: 4px solid #00E5FF; }
+.toast-success i,
+.toast-error i,
+.toast-warning i,
+.toast-info i { color: #00E5FF; }
 .toast-hide { animation: toastSlideOut 0.3s ease forwards; }
 
 @keyframes toastSlideIn {

@@ -1,0 +1,87 @@
+/* css/static-page.css - shared styling for simple content pages
+   (support.html, terms-of-service.html, and similar). Same card/
+   typography recipe as css/welcome.css (itself copied from
+   creator-dashboard.css), scoped down to just what a plain content page
+   needs - no stats row/feature grid. */
+
+body { background: #000000; }
+
+.static-page-container {
+    max-width: 720px;
+}
+
+.static-page-hero {
+    text-align: center;
+    padding: 20px 0 8px;
+}
+
+.static-page-icon {
+    font-size: 40px;
+    color: #00E5FF;
+    margin-bottom: 16px;
+}
+
+.static-page-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0 0 12px;
+    background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.static-page-subtitle {
+    font-size: var(--font-lg);
+    color: var(--slate-grey);
+    line-height: 1.6;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.static-page-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 32px;
+    backdrop-filter: blur(10px);
+}
+
+.static-page-card .section-title {
+    margin-bottom: 12px;
+}
+
+.static-page-text {
+    font-size: var(--font-sm);
+    color: var(--soft-white);
+    line-height: 1.6;
+    margin: 0 0 16px;
+}
+
+.static-page-text--muted {
+    color: var(--slate-grey);
+    margin-top: 20px;
+    margin-bottom: 0;
+}
+
+.static-page-email {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(0, 229, 255, 0.1);
+    border-radius: 999px;
+    color: #00E5FF;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.static-page-email:hover {
+    background: rgba(0, 229, 255, 0.18);
+}
+
+@media (max-width: 767px) {
+    .static-page-title { font-size: 24px; }
+    .static-page-card { padding: 24px 20px; }
+}
