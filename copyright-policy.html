@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>Support - Bantu Stream Connect</title>
+<title>Copyright Policy - Bantu Stream Connect</title>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,6 +18,7 @@
 
 <link rel="stylesheet" href="css/shared-components.css">
 <link rel="stylesheet" href="css/static-page.css">
+<link rel="stylesheet" href="css/legal-page.css">
 </head>
 <body>
 
@@ -124,7 +125,7 @@
 <!-- Loading Screen -->
 <div id="loading" class="loading-screen">
     <div class="spinner"></div>
-    <div id="loading-text">Loading Support...</div>
+    <div id="loading-text">Loading Copyright Policy...</div>
 </div>
 
 <div id="app" style="display: none;">
@@ -153,21 +154,97 @@
         </div>
     </header>
 
-    <main class="container static-page-container">
+    <main class="container legal-page-container">
         <section class="dashboard-section">
             <div class="static-page-hero">
-                <i class="fas fa-life-ring static-page-icon"></i>
-                <h1 class="static-page-title">Support</h1>
-                <p class="static-page-subtitle">We're building out our full help center. In the meantime, reach us directly and we'll get back to you.</p>
+                <i class="fas fa-copyright static-page-icon"></i>
+                <h1 class="static-page-title">Copyright Policy</h1>
+                <p class="static-page-subtitle">How we handle copyright infringement claims and takedown requests.</p>
             </div>
         </section>
 
         <section class="dashboard-section">
             <div class="static-page-card">
-                <h2 class="section-title">Contact Us</h2>
-                <p class="static-page-text">For account issues, technical problems, or general questions, email us at:</p>
-                <a href="mailto:support@bantustreamconnect.com" class="static-page-email"><i class="fas fa-envelope"></i> support@bantustreamconnect.com</a>
-                <p class="static-page-text static-page-text--muted">A full help center with guides and FAQs is coming soon.</p>
+                <div class="legal-section-header">
+                    <span class="legal-section-number">1</span>
+                    <h2>Our Policy</h2>
+                </div>
+                <div class="legal-body">
+                    <p>Bantu Stream Connect respects the intellectual property rights of others and expects creators using the Platform to do the same. If you are a copyright owner, or authorized to act on one's behalf, and believe that content on Bantu Stream Connect infringes your copyright, you can submit a takedown request using the form below.</p>
+                    <p>We review every submission and, where the claim is valid, remove or disable access to the reported content. Creators found to be repeat infringers may have their content removed and their accounts terminated.</p>
+                    <p class="legal-note">We do not yet have a formally registered DMCA designated agent. Until one is registered, copyright requests are handled by our support team at support@bantustreamconnect.com.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="static-page-card" id="copyright-form-card">
+                <div class="legal-section-header">
+                    <span class="legal-section-number">2</span>
+                    <h2>Submit a Takedown Request</h2>
+                </div>
+                <div class="legal-body">
+                    <form id="copyright-form">
+                        <div class="bsc-modal-field">
+                            <label>Your full name *</label>
+                            <input type="text" id="cr-name" required>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label>Your email address *</label>
+                            <input type="email" id="cr-email" required>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label>Organization (optional)</label>
+                            <input type="text" id="cr-org">
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label>Link to the content on Bantu Stream Connect *</label>
+                            <input type="url" id="cr-url" placeholder="https://bantustreamconnect.com/content-detail.html?id=..." required>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label>Describe the copyrighted work you claim has been infringed *</label>
+                            <textarea id="cr-work" required placeholder="e.g. title, description, where it was originally published"></textarea>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label>Describe how this content infringes your rights *</label>
+                            <textarea id="cr-infringement" required></textarea>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label style="display:flex;align-items:flex-start;gap:10px;font-weight:400;">
+                                <input type="checkbox" id="cr-good-faith" required style="width:auto;margin-top:3px;">
+                                <span>I have a good faith belief that use of this material is not authorized by the copyright owner, its agent, or the law. *</span>
+                            </label>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label style="display:flex;align-items:flex-start;gap:10px;font-weight:400;">
+                                <input type="checkbox" id="cr-accuracy" required style="width:auto;margin-top:3px;">
+                                <span>The information in this notice is accurate, and I am the copyright owner or authorized to act on their behalf. *</span>
+                            </label>
+                        </div>
+                        <div class="bsc-modal-field">
+                            <label>Electronic signature (type your full legal name) *</label>
+                            <input type="text" id="cr-signature" required>
+                        </div>
+                        <button type="submit" class="bsc-modal-btn danger" id="cr-submit-btn" style="width:100%;">Submit Takedown Request</button>
+                    </form>
+                    <div id="copyright-form-success" style="display:none;text-align:center;padding:20px 0;">
+                        <i class="fas fa-check-circle" style="font-size:36px;color:#00E5FF;margin-bottom:14px;"></i>
+                        <h3 style="color:var(--soft-white);margin:0 0 8px;">Request submitted</h3>
+                        <p style="color:var(--slate-grey);margin:0;">We'll review your request and follow up at the email you provided.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="static-page-card">
+                <div class="legal-section-header">
+                    <span class="legal-section-number">3</span>
+                    <h2>Counter-Notifications</h2>
+                </div>
+                <div class="legal-body">
+                    <p>If your content was removed and you believe it was removed in error, you can email support@bantustreamconnect.com with a description of the content, its original location on the Platform, and a statement that you consent to the jurisdiction of the courts of Johannesburg, South Africa to resolve the dispute. We'll review counter-notifications and may reinstate content where appropriate.</p>
+                </div>
             </div>
         </section>
     </main>
@@ -226,6 +303,37 @@
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+document.getElementById('copyright-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('cr-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    try {
+        const { error } = await window.supabaseClient.from('copyright_reports').insert({
+            reporter_name: document.getElementById('cr-name').value.trim(),
+            reporter_email: document.getElementById('cr-email').value.trim(),
+            reporter_organization: document.getElementById('cr-org').value.trim() || null,
+            content_url: document.getElementById('cr-url').value.trim(),
+            copyrighted_work_description: document.getElementById('cr-work').value.trim(),
+            infringement_description: document.getElementById('cr-infringement').value.trim(),
+            good_faith_statement: document.getElementById('cr-good-faith').checked,
+            accuracy_statement: document.getElementById('cr-accuracy').checked,
+            electronic_signature: document.getElementById('cr-signature').value.trim()
+        });
+
+        if (error) throw error;
+
+        document.getElementById('copyright-form').style.display = 'none';
+        document.getElementById('copyright-form-success').style.display = 'block';
+    } catch (err) {
+        console.error('Failed to submit copyright report:', err);
+        showToast('Failed to submit request. Please try again or email support@bantustreamconnect.com', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Takedown Request';
+    }
+});
 </script>
 </body>
 </html>
