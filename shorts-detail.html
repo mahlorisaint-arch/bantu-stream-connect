@@ -193,10 +193,14 @@
   <!-- NOTIFICATIONS PANEL -->
   <div id="notifications-panel" class="notifications-panel">
     <div class="notifications-header">
-      <h2>Notifications</h2>
+      <h2>Notifications <span id="notifications-header-count"></span></h2>
       <button id="close-notifications" class="icon-btn">
         <i class="fas fa-times"></i>
       </button>
+    </div>
+    <div class="notification-tabs-container">
+      <button class="notification-tab active" data-tab="all">All</button>
+      <button class="notification-tab" data-tab="unread">Unread</button>
     </div>
     <div class="notifications-list" id="notifications-list">
       <div class="empty-notifications">
@@ -206,6 +210,7 @@
     </div>
     <div class="notifications-footer">
       <button id="mark-all-read" class="text-btn">Mark all as read</button>
+      <button id="notification-settings-btn" class="text-btn"><i class="fas fa-cog"></i> Settings</button>
     </div>
   </div>
 
