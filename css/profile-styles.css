@@ -1235,10 +1235,10 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.toast.success {
-    background: var(--success-color);
-    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-}
+/* .toast.success (space-separated class) removed: dead code now that
+   every page's showToast() has been consolidated onto shared-components.js's
+   global version, which generates .toast-success (hyphenated) instead -
+   the cyan design system's actual selector. */
 
 @keyframes slideUp {
     from {

@@ -123,28 +123,11 @@
         if (errorState) errorState.style.display = 'block';
     }
 
-    function showToast(message, type = 'error') {
-        const container = document.getElementById('toast-container');
-        if (!container) {
-            console.warn('Toast container not found');
-            return;
-        }
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        
-        let icon = 'info-circle';
-        if (type === 'success') icon = 'check-circle';
-        else if (type === 'error') icon = 'exclamation-circle';
-        else if (type === 'warning') icon = 'exclamation-triangle';
-        
-        toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            if (toast.parentNode) toast.remove();
-        }, 3000);
-    }
+    // showToast() intentionally removed: this local copy used class="toast
+    // error" instead of "toast toast-error", so it never matched
+    // shared-components.css's .toast-success/.toast-error/etc selectors.
+    // shared-components.js's global showToast() (loaded on every page) is
+    // used instead now.
 
     function formatCurrency(amount) {
         return 'R' + parseFloat(amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");

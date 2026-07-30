@@ -291,8 +291,12 @@ async function loadShorts() {
       // created_at order, or missing entirely if it doesn't match.
       shortsData = requestedShort ? [requestedShort, ...data] : data;
 
-      if (typeof window.getBlockedUserIds === 'function') {
-        const blockedIds = await window.getBlockedUserIds();
+      if (currentUser) {
+        const { data: blocks } = await supabaseClient
+          .from('user_blocks')
+          .select('blocked_id')
+          .eq('blocker_id', currentUser.id);
+        const blockedIds = new Set((blocks || []).map(b => b.blocked_id));
         if (blockedIds.size > 0) {
           shortsData = shortsData.filter(s => !blockedIds.has(s.user_id));
         }
@@ -2310,7 +2314,10 @@ function closeMoreMenu() {
 function handleReport() {
   closeMoreMenu();
   if (!currentShort) return;
-  window.openReportContentModal(currentShort.id, currentShort.title || 'this short');
+  showReportModalLocal({
+    title: `Report ${currentShort.title || 'this short'}`,
+    onSubmit: ({ reason, details }) => reportContentLocal({ contentId: currentShort.id, reason, details })
+  });
 }
 
 function handleNotInterested() {
@@ -2327,7 +2334,7 @@ function handleBlockCreator() {
   closeMoreMenu();
   if (!currentShort || !currentShort.user_id) return;
   const creatorName = currentShort.user_profiles?.full_name || currentShort.user_profiles?.username || 'this creator';
-  window.showConfirmModal({
+  showConfirmModalLocal({
     icon: 'fa-ban',
     danger: true,
     title: `Block ${creatorName}?`,
@@ -2335,7 +2342,7 @@ function handleBlockCreator() {
     confirmText: 'Block',
     confirmClass: 'danger',
     onConfirm: async () => {
-      await window.blockCreator(currentShort.user_id, creatorName);
+      await blockCreatorLocal(currentShort.user_id, creatorName);
       if (typeof shortsData !== 'undefined') {
         shortsData = shortsData.filter(s => s.user_id !== currentShort.user_id);
       }
@@ -2493,31 +2500,145 @@ function hideLoadingScreen(showFallback = false, message = '') {
   }
 }
 
+// This page deliberately never loads js/shared-components.js (see the
+// comment on the deferred Supabase SDK <script> tag in shorts-detail.html -
+// this page creates its own client inside its own DOMContentLoaded
+// listener, and shared-components.js has a top-level dependency that
+// would race it). So unlike every other page, this local showToast() is
+// the real implementation, not a shadowing duplicate - it has to match
+// shared-components.css's canonical cyan markup exactly by hand, since it
+// can't just delegate to the shared JS function that isn't loaded here.
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
-  
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  
+  toast.className = `toast toast-${type}`;
   const icons = {
     success: 'fa-check-circle',
     error: 'fa-exclamation-circle',
+    warning: 'fa-exclamation-triangle',
     info: 'fa-info-circle'
   };
-  
-  toast.innerHTML = `
-    <i class="fas ${icons[type]}"></i>
-    <span>${escapeHtml(message)}</span>
-  `;
-  
+  toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
   container.appendChild(toast);
-  
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(100%)';
+    toast.classList.add('toast-hide');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+// Same reasoning as showToast() above: shared-components.js's
+// showConfirmModal()/showReportModal()/blockCreator() aren't available on
+// this page, so this is a local equivalent using the same .bsc-modal
+// markup/CSS (shared-components.css IS loaded here, just not the JS).
+function showConfirmModalLocal({ icon = 'fa-triangle-exclamation', danger = false, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'primary', onConfirm }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'bsc-modal-overlay';
+  overlay.innerHTML = `
+    <div class="bsc-modal">
+      <div class="bsc-modal-icon ${danger ? 'danger' : ''}"><i class="fas ${icon}"></i></div>
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(message)}</p>
+      <div class="bsc-modal-actions">
+        <button class="bsc-modal-btn ghost" data-action="cancel">${escapeHtml(cancelText)}</button>
+        <button class="bsc-modal-btn ${confirmClass}" data-action="confirm">${escapeHtml(confirmText)}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-action="cancel"]').onclick = close;
+  overlay.querySelector('[data-action="confirm"]').onclick = async () => {
+    const btn = overlay.querySelector('[data-action="confirm"]');
+    btn.disabled = true;
+    try {
+      await onConfirm();
+      close();
+    } catch (err) {
+      btn.disabled = false;
+      console.error('Confirm modal action failed:', err);
+    }
+  };
+}
+
+function showReportModalLocal({ title = 'Report', onSubmit }) {
+  const reasons = ['Spam', 'Harassment or bullying', 'Hate speech', 'Violence', 'Sexual content', 'Copyright infringement', 'Misinformation', 'Other'];
+  const overlay = document.createElement('div');
+  overlay.className = 'bsc-modal-overlay';
+  overlay.innerHTML = `
+    <div class="bsc-modal">
+      <div class="bsc-modal-icon danger"><i class="fas fa-flag"></i></div>
+      <h3>${escapeHtml(title)}</h3>
+      <p>Help us keep Bantu Stream Connect safe. Your report is confidential.</p>
+      <div class="bsc-modal-field">
+        <label>Reason</label>
+        <select id="sd-report-reason">${reasons.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('')}</select>
+      </div>
+      <div class="bsc-modal-field">
+        <label>Additional details (optional)</label>
+        <textarea id="sd-report-details" placeholder="Anything else we should know?"></textarea>
+      </div>
+      <div class="bsc-modal-actions">
+        <button class="bsc-modal-btn ghost" data-action="cancel">Cancel</button>
+        <button class="bsc-modal-btn danger" data-action="confirm">Submit Report</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-action="cancel"]').onclick = close;
+  overlay.querySelector('[data-action="confirm"]').onclick = async () => {
+    const btn = overlay.querySelector('[data-action="confirm"]');
+    btn.disabled = true;
+    const reason = overlay.querySelector('#sd-report-reason').value;
+    const details = overlay.querySelector('#sd-report-details').value.trim();
+    try {
+      await onSubmit({ reason, details });
+      close();
+    } catch (err) {
+      btn.disabled = false;
+      console.error('Report submission failed:', err);
+    }
+  };
+}
+
+async function reportContentLocal({ contentId = null, reportedUserId = null, reason, details }) {
+  if (!currentUser) {
+    showToast('Sign in to submit a report', 'info');
+    return;
+  }
+  const { error } = await supabaseClient.from('content_reports').insert({
+    reporter_id: currentUser.id,
+    content_id: contentId,
+    reported_user_id: reportedUserId,
+    reason,
+    details: details || null
+  });
+  if (error) {
+    console.error('Failed to submit report:', error);
+    showToast('Failed to submit report', 'error');
+    throw error;
+  }
+  showToast('Report submitted. Thank you for helping keep our community safe.', 'success');
+}
+
+async function blockCreatorLocal(creatorId, creatorName = 'this creator') {
+  if (!currentUser) {
+    showToast('Sign in to block creators', 'info');
+    return;
+  }
+  const { error } = await supabaseClient.from('user_blocks').insert({
+    blocker_id: currentUser.id,
+    blocked_id: creatorId
+  });
+  if (error) {
+    console.error('Failed to block creator:', error);
+    showToast('Failed to block creator', 'error');
+    throw error;
+  }
+  showToast(`${creatorName} has been blocked`, 'success');
 }
 
 function escapeHtml(text) {

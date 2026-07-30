@@ -32,20 +32,12 @@ const FILM_FORMATS = ['film', 'documentary'];
 const MUSIC_FORMATS = ['album_track', 'music', 'music_video', 'song', 'track', 'audio'];
 
 // ===== HELPER FUNCTIONS =====
-function showToast(message, type = 'info') {
-const container = document.getElementById('toast-container');
-if (!container) return;
-const toast = document.createElement('div');
-toast.className = `toast ${type}`;
-const icons = {error:'fa-exclamation-triangle', success:'fa-check-circle', warning:'fa-exclamation-circle', info:'fa-info-circle'};
-toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-container.appendChild(toast);
-setTimeout(() => {
-toast.style.opacity = '0';
-toast.style.transform = 'translateX(100%)';
-setTimeout(() => toast.remove(), 300);
-}, 3000);
-}
+// showToast() intentionally removed: this local copy used class="toast
+// success" instead of "toast toast-success", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors at all -
+// it fell back to unstyled/default rendering instead of the cyan design.
+// shared-components.js's global showToast() (loaded on every page) is used
+// instead now.
 
 function formatNumber(num) {
 if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';

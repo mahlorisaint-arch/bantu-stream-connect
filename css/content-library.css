@@ -892,22 +892,11 @@ body {
   font-size: 18px;
 }
 
-.toast.error {
-  background: rgba(239, 68, 68, 0.9);
-}
-
-.toast.success {
-  background: rgba(16, 185, 129, 0.9);
-}
-
-.toast.warning {
-  background: rgba(0, 229, 255, 0.9);
-}
-
-.toast.info {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-}
+/* .toast.success/.error/.warning/.info (space-separated class) removed:
+   dead code that never matched what showToast() actually generates. This
+   page doesn't load shared-components.css, so the real cyan .toast-success/
+   .toast-error/etc (hyphenated) rules now live in
+   content-library-features.css instead, loaded alongside this file. */
 
 @keyframes slideIn {
   from {

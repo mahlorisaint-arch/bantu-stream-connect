@@ -1328,9 +1328,11 @@ body {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.toast.success i { color: var(--success-color); }
-.toast.error i { color: var(--error-color); }
-.toast.info i { color: var(--cyan); }
+/* .toast.success/.error/.info i (space-separated class) removed: dead code
+   now that shorts-detail.js's showToast() has been consolidated onto
+   shared-components.js's global version, which generates .toast-success/
+   .toast-error/etc (hyphenated) instead - already styled uniformly cyan
+   there, matching the platform default. */
 
 /* ============================================
    DESKTOP / LAPTOP (>768px) - letterboxed card

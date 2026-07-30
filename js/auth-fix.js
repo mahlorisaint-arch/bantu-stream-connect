@@ -182,24 +182,11 @@ function getInitials(email) {
 }
 
 // Show toast
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    toast.setAttribute('role', 'alert');
-    
-    const container = document.getElementById('toast-container') || document.createElement('div');
-    if (!container.id) {
-        container.id = 'toast-container';
-        document.body.appendChild(container);
-    }
-    
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
+// showToast() intentionally removed: this local copy used class="toast
+// success" instead of "toast toast-success", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors, and
+// it rendered plain text with no icon. shared-components.js's global
+// showToast() (loaded on every page) is used instead now.
 
 // Initialize auth when page loads
 document.addEventListener('DOMContentLoaded', async () => {

@@ -673,9 +673,14 @@ align-items: center;
 gap: 10px;
 }
 
-.toast.success { background: rgba(16, 185, 129, 0.9); }
-.toast.error { background: rgba(239, 68, 68, 0.9); }
-.toast.warning { background: rgba(0, 229, 255, 0.9); }
+.toast-success,
+.toast-error,
+.toast-warning,
+.toast-info { border-left: 4px solid #00E5FF; }
+.toast-success i,
+.toast-error i,
+.toast-warning i,
+.toast-info i { color: #00E5FF; }
 
 @keyframes slideIn {
 from { transform: translateX(100%); opacity: 0; }
@@ -954,7 +959,7 @@ backdrop-filter: blur(10px);
         const container = document.getElementById('toast-container');
         if (!container) return;
         const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+        toast.className = `toast toast-${type}`;
         const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
         toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
         container.appendChild(toast);

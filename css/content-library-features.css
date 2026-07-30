@@ -553,22 +553,18 @@
   font-size: 18px;
 }
 
-.toast.error {
-  background: rgba(239, 68, 68, 0.9);
-}
-
-.toast.success {
-  background: rgba(16, 185, 129, 0.9);
-}
-
-.toast.warning {
-  background: rgba(0, 229, 255, 0.9);
-}
-
-.toast.info {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-}
+/* This page doesn't load shared-components.css (self-contained, like its
+   showToast() above), so it needs its own copy of the canonical cyan
+   recipe: same border-left/icon treatment for every type, not a
+   different color per type - matching shared-components.css exactly. */
+.toast-success,
+.toast-error,
+.toast-warning,
+.toast-info { border-left: 4px solid #00E5FF; }
+.toast-success i,
+.toast-error i,
+.toast-warning i,
+.toast-info i { color: #00E5FF; }
 
 @keyframes slideIn {
   from {

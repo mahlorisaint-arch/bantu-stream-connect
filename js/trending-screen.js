@@ -59,20 +59,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // SHOW TOAST MESSAGE
-  function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    const container = document.getElementById('toast-container');
-    if (container) {
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-  }
+  // showToast() intentionally removed: this local copy used class="toast
+  // success" instead of "toast toast-success", so it never matched
+  // shared-components.css's .toast-success/.toast-error/etc selectors, and
+  // it rendered plain text with no icon. shared-components.js's global
+  // showToast() (loaded on every page) is used instead now.
 
   // FORMAT NUMBERS
   function formatNumber(num) {

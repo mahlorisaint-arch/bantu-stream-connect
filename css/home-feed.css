@@ -325,10 +325,11 @@ SCROLLBAR & UTILITIES
     font-size: var(--font-sm);
 }
 .toast i { font-size: var(--icon-md); }
-.toast.error { background: rgba(239, 68, 68, 0.9); }
-.toast.success { background: rgba(16, 185, 129, 0.9); }
-.toast.warning { background: rgba(0, 229, 255, 0.9); }
-.toast.info { background: var(--card-bg); }
+/* .toast.success/.error/.warning/.info (space-separated class) removed:
+   dead code now that every page's showToast() has been consolidated onto
+   shared-components.js's global version, which generates .toast-success/
+   .toast-error/etc (hyphenated) instead - the cyan design system's actual
+   selectors. This block's hardcoded green/red never matches anymore. */
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }

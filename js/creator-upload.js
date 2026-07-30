@@ -32,16 +32,11 @@ const processingMessage = document.getElementById('processing-message');
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-function showToast(message, type = 'error') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
-    const container = document.getElementById('toast-container');
-    if (container) {
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-}
+// showToast() intentionally removed: this local copy used class="toast
+// error" instead of "toast toast-error", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors.
+// shared-components.js's global showToast() (loaded on every page) is
+// used instead now.
 
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';

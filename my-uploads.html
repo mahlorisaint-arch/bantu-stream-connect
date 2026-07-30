@@ -643,15 +643,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // ✅ SHOW TOAST MESSAGE
-  function showToast(message, type = 'error') {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icon = type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
-    toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
-    document.getElementById('toast-container').appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  }
+  // showToast() intentionally removed: this local copy used class="toast
+  // error" instead of "toast toast-error", so it never matched
+  // shared-components.css's .toast-success/.toast-error/etc selectors.
+  // shared-components.js's global showToast() (loaded on this page) is
+  // used instead now.
   
   // ✅ FORMAT CURRENCY (ZAR)
   function formatCurrency(amount) {

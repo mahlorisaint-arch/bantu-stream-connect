@@ -64,26 +64,11 @@
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-.toast.error {
-    background: rgba(239, 68, 68, 0.9);
-    border-color: rgba(239, 68, 68, 0.5);
-}
-
-.toast.success {
-    background: rgba(16, 185, 129, 0.9);
-    border-color: rgba(16, 185, 129, 0.5);
-}
-
-.toast.info {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-}
-
-.toast.warning {
-    background: rgba(0, 229, 255, 0.9);
-    color: var(--soft-white);
-    border-color: rgba(0, 229, 255, 0.5);
-}
+/* .toast.success/.error/.warning/.info (space-separated class) removed:
+   dead code now that every page's showToast() has been consolidated onto
+   shared-components.js's global version, which generates .toast-success/
+   .toast-error/etc (hyphenated) instead - the cyan design system's actual
+   selectors. This block's hardcoded green/red never matches anymore. */
 
 /* Modals */
 .modal-overlay {

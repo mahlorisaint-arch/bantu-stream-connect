@@ -70,18 +70,9 @@ window.supabaseAuth = supabaseAuth;
 // ============================================
 // CORE UTILITIES
 // ============================================
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('toast-hide');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+// showToast() intentionally removed: duplicated shared-components.js's
+// identical global version (loaded on every page), which is used instead
+// now - one canonical implementation instead of drift-prone copies.
 
 function escapeHtml(text) {
     if (!text) return '';

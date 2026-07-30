@@ -422,15 +422,11 @@ if (!initSupabaseClient()) {
 // ==========================================
 // UTILITIES
 // ==========================================
-function showToast(message, type = 'info') {
-const container = document.getElementById('toast-container');
-const toast = document.createElement('div');
-toast.className = `toast ${type}`;
-const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
-toast.innerHTML = `<i class="fas ${icons[type]}"></i> <span>${message}</span>`;
-container.appendChild(toast);
-setTimeout(() => { toast.style.animation = 'slideIn 0.3s ease reverse forwards'; setTimeout(() => toast.remove(), 300); }, 3000);
-}
+// showToast() intentionally removed: this local copy used class="toast
+// success" instead of "toast toast-success", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors.
+// shared-components.js's global showToast() (loaded on this page) is
+// used instead now.
 function escapeHtml(text) {
 if (!text) return '';
 const div = document.createElement('div');

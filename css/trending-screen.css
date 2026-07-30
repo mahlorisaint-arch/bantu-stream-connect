@@ -584,9 +584,12 @@ button:focus-visible, a:focus-visible {
   max-width: 300px;
 }
 
-.toast.success { background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%); }
-.toast.info { background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%); }
-.toast.error { background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%); }
+/* .toast.success/.info/.error (space-separated class) removed: dead code
+   now that every page's showToast() has been consolidated onto
+   shared-components.js's global version, which generates .toast-success/
+   .toast-error/etc (hyphenated) instead - the cyan design system's actual
+   selectors. This block's hardcoded green/red gradients never matches
+   anymore. */
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }

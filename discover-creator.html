@@ -1728,7 +1728,11 @@ function renderCompactCreatorCard(creator) {
 // ==========================================
 function formatNumber(num) { if (num>=1e6) return (num/1e6).toFixed(1)+'M'; if (num>=1e3) return (num/1e3).toFixed(1)+'K'; return num?.toString()||'0'; }
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-function showToast(msg, type='info') { const toast = document.createElement('div'); toast.className=`toast ${type}`; toast.innerHTML=`<i class="fas ${type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':'fa-info-circle'}"></i> ${msg}`; document.getElementById('toast-container').appendChild(toast); setTimeout(()=>toast.remove(),3000); }
+// showToast() intentionally removed: this local copy used class="toast
+// success" instead of "toast toast-success", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors.
+// shared-components.js's global showToast() (loaded on this page) is
+// used instead now.
 async function handleConnect(creatorId) {
     const user = await getCurrentUser?.() || window.currentUser;
     if (!user || !user.id) {

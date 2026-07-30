@@ -526,32 +526,8 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-
-    const icons = {
-        error: 'fa-exclamation-triangle',
-        success: 'fa-check-circle',
-        warning: 'fa-exclamation-circle',
-        info: 'fa-info-circle'
-    };
-
-    toast.innerHTML = `
-        <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
-        <span>${escapeHtml(message)}</span>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+// showToast() intentionally removed: duplicated shared-components.js's
+// identical global version (loaded on every page), which is used instead
+// now - one canonical implementation instead of drift-prone copies.
 
 })();

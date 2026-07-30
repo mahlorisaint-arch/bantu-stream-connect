@@ -648,28 +648,33 @@ function setupAnalytics() {
 // ============================================
 
 // Show toast notification
+// This page deliberately never loads js/shared-components.js - it has its
+// own self-contained setupNotifications()/setupAnalytics()/etc below - so
+// unlike most pages, this local showToast() is the real implementation,
+// not a shadowing duplicate. Fixed to match shared-components.css's
+// canonical cyan markup ("toast toast-<type>") by hand, since it can't
+// just delegate to the shared JS function that isn't loaded here.
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
-  
+
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  
+  toast.className = `toast toast-${type}`;
+
   const icons = {
     error: 'fa-exclamation-triangle',
     success: 'fa-check-circle',
     warning: 'fa-exclamation-circle',
     info: 'fa-info-circle'
   };
-  
+
   toast.innerHTML = `
     <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
     <span>${escapeHtml(message)}</span>
   `;
-  
+
   container.appendChild(toast);
-  
-  // Auto-dismiss after 3 seconds
+
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(100%)';

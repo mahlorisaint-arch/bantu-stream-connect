@@ -70,9 +70,11 @@ color: var(--soft-white); font-weight: 500;
 max-width: 300px; border: 1px solid var(--card-border);
 display: flex; align-items: center; gap: 10px;
 }
-.toast.error { background: rgba(239,68,68,.9); }
-.toast.success { background: rgba(16,185,129,.9); }
-.toast.info { background: rgba(0, 229, 255,.9); }
+/* .toast.success/.error/.info (space-separated class) removed: dead code
+   now that every page's showToast() has been consolidated onto
+   shared-components.js's global version, which generates .toast-success/
+   .toast-error/etc (hyphenated) instead - the cyan design system's actual
+   selectors. This block's hardcoded green/red never matches anymore. */
 
 /* Auth Modal */
 .auth-modal {

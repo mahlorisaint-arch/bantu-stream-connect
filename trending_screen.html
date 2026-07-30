@@ -255,7 +255,11 @@ const filters = ['All', 'Music', 'Film', 'Documentary', 'Series', 'Podcasts', 'S
 // ==========================================
 // UTILITIES
 // ==========================================
-function showToast(message, type = 'info') { const container = document.getElementById('toast-container'); if(!container) return; const toast = document.createElement('div'); toast.className = `toast ${type}`; const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'; toast.innerHTML = `<i class="fas ${icon}" style="margin-right: 8px;"></i>${message}`; container.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
+// showToast() intentionally removed: this local copy used class="toast
+// success" instead of "toast toast-success", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors.
+// shared-components.js's global showToast() (loaded on this page) is
+// used instead now.
 function formatNumber(num) { if (!num) return '0'; if (num >= 1000000) return (num/1000000).toFixed(1)+'M'; if (num >= 1000) return (num/1000).toFixed(1)+'K'; return num.toString(); }
 function formatDuration(seconds) { if (!seconds) return '0:00'; const mins = Math.floor(seconds/60); const secs = Math.floor(seconds%60); return `${mins}:${secs<10?'0':''}${secs}`; }
 function formatTimeAgo(timestamp) { if(!timestamp) return 'Just now'; const diffMs = Date.now() - new Date(timestamp).getTime(); const diffMins = Math.floor(diffMs/60000); const diffHours = Math.floor(diffMs/3600000); const diffDays = Math.floor(diffMs/86400000); if(diffMins<1) return 'Just now'; if(diffMins<60) return `${diffMins}m ago`; if(diffHours<24) return `${diffHours}h ago`; if(diffDays<7) return `${diffDays}d ago`; return new Date(timestamp).toLocaleDateString(); }

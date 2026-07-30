@@ -1953,22 +1953,12 @@ cursor: pointer; transition: all 0.3s ease;
 NOTIFICATIONS PANEL — now owned by shared-components.css
 ============================================ */
 /* ============================================
-TOAST — #toast-container positioning now owned by shared-components.css;
-.toast/.toast.error/.success/.warning stay here since creator-channel.js's
-showToast() generates class="toast <type>" (space-separated), which is a
-different naming convention than shared's .toast-error/.toast-success.
+TOAST — now fully owned by shared-components.css. creator-channel.js no
+longer has its own showToast() (removed - it generated the wrong class
+name and this page's .toast.success/.error/.warning existed only to match
+it), so the cyan .toast/.toast-success/.toast-error/etc rules there are
+what actually render here now.
 ============================================ */
-.toast {
-padding: 15px 25px; border-radius: 12px; color: var(--soft-white); font-weight: 500;
-animation: slideIn 0.3s ease; max-width: 300px; backdrop-filter: blur(10px);
-border: 1px solid var(--card-border); display: flex; align-items: center; gap: 10px;
-box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-.toast i { font-size: 18px; }
-.toast.error { background: rgba(239, 68, 68, 0.9); }
-.toast.success { background: rgba(16, 185, 129, 0.9); }
-.toast.warning { background: rgba(0, 229, 255, 0.9); }
-@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 /* ============================================
 CONFETTI
 ============================================ */

@@ -118,40 +118,12 @@ function debounce(func, wait) {
     };
 }
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) {
-        // Create container if not exists
-        const newContainer = document.createElement('div');
-        newContainer.id = 'toast-container';
-        newContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000;';
-        document.body.appendChild(newContainer);
-    }
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' :
-            type === 'error' ? 'fa-exclamation-circle' :
-                type === 'warning' ? 'fa-exclamation-triangle' :
-                    'fa-info-circle'}"></i>
-        <span>${escapeHtml(message)}</span>
-    `;
-    toast.style.cssText = `
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 20px;
-        background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : '#3b82f6'};
-        color: white;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    `;
-    toastContainer.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
+// showToast() intentionally removed: this local copy hardcoded inline
+// green/red/blue colors via style.cssText, which override any CSS
+// regardless of specificity - that's why this page kept showing old-style
+// toasts even after shared-components.css moved to the cyan design system.
+// shared-components.js's global showToast() (loaded on every page) is used
+// instead now.
 
 // ============================================
 // 🛠️ CRITICAL FIX: Prevent global namespace pollution and duplicate declaration crashes

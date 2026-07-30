@@ -1068,21 +1068,11 @@
   font-size: 20px;
 }
 
-.toast.success i {
-  color: var(--success-color);
-}
-
-.toast.error i {
-  color: var(--error-color);
-}
-
-.toast.warning i {
-  color: var(--warning-color);
-}
-
-.toast.info i {
-  color: var(--bantu-blue);
-}
+/* .toast.success/.error/.warning/.info i (space-separated class) removed:
+   dead code now that creator-analytics-page.js's showToast() has been
+   consolidated onto shared-components.js's global version, which generates
+   .toast-success/.toast-error/etc (hyphenated) instead - already styled
+   uniformly cyan there, matching the platform default. */
 
 .toast span {
   color: var(--soft-white);

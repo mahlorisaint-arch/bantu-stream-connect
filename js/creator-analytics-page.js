@@ -1318,67 +1318,10 @@
     return div.innerHTML;
   }
 
-  function showToast(message, type = 'info') {
-    let container = dom.toastContainer;
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'toast-container';
-      container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
-      document.body.appendChild(container);
-      dom.toastContainer = container;
-    }
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    
-    let bgColor;
-    if (type === 'success') {
-      bgColor = 'rgba(16,185,129,0.9)';
-    } else if (type === 'error') {
-      bgColor = 'rgba(239,68,68,0.9)';
-    } else if (type === 'warning') {
-      bgColor = 'rgba(245,158,11,0.9)';
-    } else {
-      bgColor = 'var(--card-bg, rgba(15,23,42,0.9))';
-    }
-    
-    toast.style.cssText = `
-      padding:12px 20px;
-      border-radius:10px;
-      color:white;
-      font-weight:500;
-      max-width:300px;
-      backdrop-filter:blur(10px);
-      border:1px solid var(--card-border, rgba(148,163,184,0.2));
-      display:flex;
-      align-items:center;
-      gap:10px;
-      animation:slideIn 0.3s ease;
-      background:${bgColor};
-    `;
-    
-    let icon;
-    if (type === 'success') {
-      icon = 'fa-check-circle';
-    } else if (type === 'error') {
-      icon = 'fa-exclamation-circle';
-    } else if (type === 'warning') {
-      icon = 'fa-exclamation-triangle';
-    } else {
-      icon = 'fa-info-circle';
-    }
-    
-    toast.innerHTML = '<i class="fas ' + icon + '"></i> <span>' + escapeHtml(message) + '</span>';
-    container.appendChild(toast);
-    
-    setTimeout(function() {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(100%)';
-      setTimeout(function() {
-        toast.remove();
-      }, 300);
-    }, 3000);
-  }
+  // showToast() intentionally removed: this local copy hardcoded inline
+  // green/red/amber rgba() colors via style.cssText, which override any CSS
+  // regardless of specificity. shared-components.js's global showToast()
+  // (loaded on every page) is used instead now.
 
   // ============================================
   // START

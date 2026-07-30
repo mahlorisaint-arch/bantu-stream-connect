@@ -1448,33 +1448,11 @@ function setupAnalytics() {
 // ============================================
 
 // Show toast notification
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  
-  const icons = {
-    error: 'fa-exclamation-triangle',
-    success: 'fa-check-circle',
-    warning: 'fa-exclamation-circle',
-    info: 'fa-info-circle'
-  };
-  
-  toast.innerHTML = `
-    <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
-    <span>${escapeHtml(message)}</span>
-  `;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+// showToast() intentionally removed: this local copy used class="toast
+// success" instead of "toast toast-success", so it never matched
+// shared-components.css's .toast-success/.toast-error/etc selectors.
+// shared-components.js's global showToast() (loaded on every page) is
+// used instead now.
 
 // Setup back to top button
 function setupBackToTop() {
