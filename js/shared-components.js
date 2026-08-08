@@ -1534,7 +1534,13 @@ function getNotificationIconMeta(type) {
         creator_upload: { icon: 'fa-upload', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
         collab_response: { icon: 'fa-handshake', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
         collab_message: { icon: 'fa-comment-dots', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
-        resume_reminder: { icon: 'fa-play-circle', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' }
+        resume_reminder: { icon: 'fa-play-circle', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
+        welcome_signup: { icon: 'fa-star', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
+        first_upload: { icon: 'fa-rocket', bg: 'rgba(0, 229, 255, 0.15)', color: '#00E5FF' },
+        upload_milestone_100: { icon: 'fa-award', bg: 'rgba(255, 201, 64, 0.15)', color: '#FFC940' },
+        signup_anniversary: { icon: 'fa-birthday-cake', bg: 'rgba(236, 72, 153, 0.15)', color: '#EC4899' },
+        streak_milestone: { icon: 'fa-fire-alt', bg: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B' },
+        first_engagement: { icon: 'fa-gem', bg: 'rgba(251, 191, 36, 0.15)', color: '#FBBF24' }
     };
     return mapping[type] || defaultMeta;
 }
