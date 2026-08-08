@@ -1,0 +1,14 @@
+-- Applied live via the Supabase MCP tool (2026-08-08). Record only -
+-- already applied, safe to rerun (IF NOT EXISTS).
+--
+-- Persists the video orientation the mobile app's creator-upload flow
+-- already detects at pick time (height > width, probed via
+-- video_player in creator_upload_screen.dart) - previously computed
+-- and then thrown away, only used for an in-memory "auto-classify as
+-- Shorts" genre suggestion. Needed so tap-to-navigate logic (home feed,
+-- creator channel, discover, etc.) can route duration<=60s AND
+-- vertical content straight to the Shorts detail screen instead of the
+-- regular content detail screen, without re-probing the video file at
+-- tap time. Null for anything published before this column existed -
+-- that's the correct "unknown" state, not defaulted to false.
+ALTER TABLE public."Content" ADD COLUMN IF NOT EXISTS is_vertical boolean;
