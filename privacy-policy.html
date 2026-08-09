@@ -163,7 +163,7 @@
                 <div class="legal-dates">
                     <span>Effective Date: 1 November 2025</span>
                     <span class="dot"></span>
-                    <span>Last Updated: 30 July 2026</span>
+                    <span>Last Updated: 9 August 2026</span>
                 </div>
             </div>
         </section>
@@ -204,23 +204,12 @@
                     <ul>
                         <li>Full name</li>
                         <li>Email address</li>
-                        <li>Phone number</li>
                         <li>Encrypted password</li>
-                        <li>Date of birth (used for age verification)</li>
                     </ul>
-                    <h4>Payment Information</h4>
-                    <p>If you subscribe, rent, purchase, or tip creators:</p>
-                    <ul>
-                        <li>Transaction details</li>
-                        <li>Payment confirmation data</li>
-                    </ul>
-                    <p class="legal-note">(We do not store your full credit/debit card number. Payments are handled by secure third-party processors such as Stripe, Paystack, or mobile money partners.)</p>
-                    <h4>Creator Payout Information</h4>
-                    <p>For creators receiving revenue:</p>
-                    <ul>
-                        <li>Bank account or mobile money details</li>
-                        <li>Tax documents (if legally required)</li>
-                    </ul>
+                    <h4>Payment Information (Planned, Not Yet Active)</h4>
+                    <p>Creator tipping and monetization features are planned but not yet live on the Platform (see our <a href="terms-of-service.html">Terms of Service</a>). No payment or transaction data is currently collected. When these features launch, this section will be updated before any such data is collected, and payments will be handled by secure third-party processors such as Stripe, Paystack, or mobile money partners - we will never store your full credit/debit card number.</p>
+                    <h4>Creator Payout Information (Planned, Not Yet Active)</h4>
+                    <p>Creator revenue payouts are planned but not yet live. No bank account, mobile money, or tax information is currently collected from creators.</p>
                     <h4>Support Information</h4>
                     <ul>
                         <li>Emails, support tickets, and communication logs</li>
@@ -258,17 +247,15 @@
                     </ul>
                     <h4>General Location Information</h4>
                     <ul>
-                        <li>Region/country inferred from IP</li>
-                        <li>Only collects precise GPS location if you explicitly opt in</li>
+                        <li>Region/country inferred from IP address</li>
                     </ul>
+                    <p class="legal-note">We do not currently request or collect precise GPS location on any platform. If that changes in the future, this section will be updated first.</p>
 
                     <h3>(C) Information From Third Parties</h3>
                     <ul>
-                        <li>Payment processors (to confirm transactions)</li>
-                        <li>Authentication providers (if you sign in using Google, Apple, etc.)</li>
-                        <li>Advertising partners (for ad-supported content tiers)</li>
-                        <li>Analytics services (Firebase, Google Analytics)</li>
+                        <li>Authentication providers (if you sign in using Google or Apple)</li>
                     </ul>
+                    <p class="legal-note">We do not currently use any advertising or analytics SDKs - push notifications are delivered via Firebase Cloud Messaging, but Firebase Analytics and Google Analytics are both explicitly disabled on the Platform.</p>
                 </div>
             </div>
         </section>
@@ -287,9 +274,9 @@
                                 <tr><th>Category</th><th>Purpose of Use</th></tr>
                             </thead>
                             <tbody>
-                                <tr><td>Service Operations</td><td>Account creation &amp; verification; subscription processing; streaming delivery; saving preferences.</td></tr>
+                                <tr><td>Service Operations</td><td>Account creation &amp; verification; streaming delivery; saving preferences.</td></tr>
                                 <tr><td>Personalization</td><td>Content suggestions based on your activity, preferences, and engagement patterns.</td></tr>
-                                <tr><td>Monetization &amp; Payouts</td><td>Creator revenue calculations; distributing the 90/10 split; processing viewer tips.</td></tr>
+                                <tr><td>Monetization &amp; Payouts</td><td>Planned for a future release - not yet active. No monetization data is currently processed.</td></tr>
                                 <tr><td>Security &amp; Safety</td><td>Fraud prevention; detecting abuse; enforcing Terms of Service; protecting intellectual property.</td></tr>
                                 <tr><td>Trust &amp; Safety</td><td>Reviewing content and account reports; enforcing blocks between users; processing copyright takedown requests.</td></tr>
                                 <tr><td>Product Improvement</td><td>Fixing bugs; monitoring performance; optimizing load time; improving quality.</td></tr>
@@ -360,17 +347,11 @@
                     <h3>B. With Trusted Third-Party Service Providers</h3>
                     <p>Including:</p>
                     <ul>
-                        <li>Payment processors</li>
-                        <li>Analytics tools (e.g., Firebase)</li>
-                        <li>Cloud storage &amp; hosting providers</li>
-                        <li>Advertising partners (for ad-supported streaming tiers)</li>
+                        <li>Cloud storage &amp; hosting providers (to store and deliver your content and data)</li>
+                        <li>Firebase Cloud Messaging (to deliver push notifications only - not analytics or advertising)</li>
+                        <li>Authentication providers, if you sign in using Google or Apple</li>
                     </ul>
-                    <p>Advertising partners may receive:</p>
-                    <ul>
-                        <li>Device identifiers (IDFA / Ad ID)</li>
-                        <li>Anonymous interaction metrics</li>
-                    </ul>
-                    <p class="legal-note">You can opt out of targeted advertising in your device settings.</p>
+                    <p class="legal-note">We do not currently use advertising partners or share any device identifiers (such as IDFA or Ad ID) with anyone - the Platform contains no advertising or ad-tracking SDKs. Payment processors will be added to this list once tipping/monetization features launch (see Section 2).</p>
 
                     <h3>C. For Legal Reasons</h3>
                     <p>We may disclose information if required by:</p>
@@ -412,14 +393,7 @@
                         </div>
                     </div>
                     <h3>Opt-Out Options</h3>
-                    <p>You can opt out of:</p>
-                    <ul>
-                        <li>Marketing emails</li>
-                        <li>Targeted advertising</li>
-                        <li>GPS location access</li>
-                        <li>Certain analytics tools</li>
-                    </ul>
-                    <p class="legal-note">Most controls are available in Account Settings.</p>
+                    <p>You can opt out of marketing emails at any time from Account Settings.</p>
                 </div>
             </div>
         </section>
@@ -439,19 +413,7 @@
                         <li>Saving preferences (e.g., volume, theme)</li>
                         <li>Stable video playback</li>
                     </ul>
-                    <h3>Analytics</h3>
-                    <ul>
-                        <li>Performance monitoring</li>
-                        <li>Crash detection</li>
-                        <li>Measuring usage trends</li>
-                    </ul>
-                    <h3>Advertising (Where Applicable)</h3>
-                    <ul>
-                        <li>Showing relevant ads</li>
-                        <li>Frequency capping</li>
-                        <li>Measuring ad performance</li>
-                    </ul>
-                    <p class="legal-note">You can manage cookies in your browser or device settings. Disabling essential cookies may affect streaming functionality.</p>
+                    <p class="legal-note">The Platform does not currently use any analytics, crash-reporting, or advertising cookies or SDKs. You can manage cookies in your browser or device settings - disabling essential cookies may affect streaming functionality.</p>
                 </div>
             </div>
         </section>
