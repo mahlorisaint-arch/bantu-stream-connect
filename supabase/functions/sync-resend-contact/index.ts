@@ -4,10 +4,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-const RESEND_AUDIENCE_NAME = "All contacts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// This account has exactly one audience (Resend's default, labeled "All
+// contacts" in the UI but not necessarily stored under that literal name),
+// so just take whichever audience comes back first rather than matching
+// on a name string that turned out not to match the API's actual data.
 async function getAudienceId(): Promise<string | null> {
   const resp = await fetch("https://api.resend.com/audiences", {
     headers: { "Authorization": `Bearer ${RESEND_API_KEY}` },
@@ -17,8 +20,7 @@ async function getAudienceId(): Promise<string | null> {
     return null;
   }
   const body = await resp.json();
-  const audience = body.data?.find((a: { name: string }) => a.name === RESEND_AUDIENCE_NAME);
-  return audience?.id ?? null;
+  return body.data?.[0]?.id ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -43,7 +45,7 @@ Deno.serve(async (req) => {
 
   const audienceId = await getAudienceId();
   if (!audienceId) {
-    console.error(`Could not find Resend audience named "${RESEND_AUDIENCE_NAME}"`);
+    console.error("No Resend audience found on this account");
     return new Response("Audience not found", { status: 500 });
   }
 
