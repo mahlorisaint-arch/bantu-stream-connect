@@ -382,7 +382,13 @@
                 return `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
             }
             
-            // Cloudflare R2 Audio - Skip for hero (we want video)
+            // R2-hosted video (self-hosted transcoder output) - real HLS
+            // manifest once processing finishes.
+            if (content.streaming_provider === 'cloudflare_r2' && content.media_type === 'video') {
+                return content.hls_manifest_url || null;
+            }
+
+            // Cloudflare R2 Audio - skip for hero (we want video)
             if (content.streaming_provider === 'cloudflare_r2') {
                 return null;
             }

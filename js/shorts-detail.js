@@ -195,6 +195,11 @@ function getPlayableMediaUrl(content) {
     return `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
   }
   
+  // 📺 R2-hosted video (self-hosted transcoder HLS output)
+  if (content.streaming_provider === 'cloudflare_r2' && content.media_type === 'video' && content.hls_manifest_url) {
+    return content.hls_manifest_url;
+  }
+
   // 🎵 Cloudflare R2 Audio - Return file_url (but shorts should be video)
   if (content.streaming_provider === 'cloudflare_r2' && content.file_url) {
     return fixMediaUrl(content.file_url);

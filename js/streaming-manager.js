@@ -153,7 +153,12 @@
         return;
       }
       
-      if (contentData?.streaming_provider === 'cloudflare_r2') {
+      // R2-hosted video (self-hosted transcoder output, replacing
+      // Cloudflare Stream - see supabase/migrations/20260816_video_transcode_pipeline.sql)
+      // falls through to the generic hls_manifest_url path below, same as
+      // it already handles any other HLS manifest URL. Only R2 audio
+      // skips HLS entirely here.
+      if (contentData?.streaming_provider === 'cloudflare_r2' && contentData?.media_type !== 'video') {
         this.contentType = 'audio';
         console.log('🎵 Cloudflare R2 audio detected - skipping HLS');
         // Clean up any old HLS instances

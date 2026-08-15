@@ -194,18 +194,25 @@ const BANTU_UPLOAD_ENGINE = {
                 finalStreamingProvider = 'cloudflare_r2';
             } 
             else {
-                uiCallbacks.updateStatus("Securing Cloudflare stream lane...");
+                // Video is routed through the same R2 presigned-PUT lane as
+                // everything else now (see
+                // C:\Users\User\.claude\plans\compiled-twirling-dream.md) -
+                // a self-hosted transcoder worker picks up the raw upload
+                // via a DB trigger and produces the real HLS output
+                // separately, flipping streaming_provider to 'cloudflare_r2'
+                // and filling in hls_manifest_url/thumbnail_url once ready.
+                uiCallbacks.updateStatus("Securing video storage lane...");
                 const videoHandshake = await this.getSecureUploadHandshake('video', rawMediaFile.name);
 
                 uiCallbacks.updateStatus("Uploading video file...");
-                await this.uploadFileViaXHR(rawMediaFile, videoHandshake.uploadUrl, true, uiCallbacks.onProgress);
-                
-                finalProviderVideoId = videoHandshake.providerVideoId;
-                finalStreamingProvider = 'cloudflare_stream';
+                await this.uploadFileViaXHR(rawMediaFile, videoHandshake.uploadUrl, false, uiCallbacks.onProgress);
 
-                if (!finalThumbnailUrl) {
-                    finalThumbnailUrl = `https://videodelivery.net/${finalProviderVideoId}/thumbnails/thumbnail.jpg?time=5s&height=600`;
-                }
+                finalMediaUrl = videoHandshake.fileUrl;
+                finalStreamingProvider = videoHandshake.streamingProvider;
+                // No thumbnail fabrication here anymore - the transcoder
+                // worker extracts a real, duration-aware one once
+                // processing finishes, unless the creator supplied their
+                // own custom thumbnail above.
             }
 
             // A batch item with no thumbnail of its own (typically an audio
@@ -232,6 +239,12 @@ const BANTU_UPLOAD_ENGINE = {
                 provider_video_id: finalProviderVideoId,
                 file_url: finalMediaUrl,
                 thumbnail_url: finalThumbnailUrl,
+                // New video uploads aren't watchable until the transcoder
+                // worker finishes (real minutes, not the near-instant
+                // readiness Cloudflare Stream had) - the column defaults to
+                // 'ready' for every other media type, so this only needs
+                // to be set explicitly here.
+                processing_status: mediaType === 'video' ? 'queued' : 'ready',
                 content_metadata: formData.genreSpecificMetadata || {},
                 primary_genre_id: formData.primaryGenreId || null,
                 user_id: user.id,

@@ -18,18 +18,21 @@ console.log('🎬 Video Player Section Module Loading...');
  */
 function getPlayableMediaUrl(content) {
     if (!content) return '';
-    
-    // 🎵 Audio Lane (Cloudflare R2)
-    if (content.streaming_provider === 'cloudflare_r2') {
-        return content.file_url;
-    }
-    
-    // 🎬 Video Lane (Cloudflare Stream Manifest)
+
+    // 🎬 Legacy Cloudflare Stream Manifest
     if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
         return `https://videodelivery.net/${content.provider_video_id}/manifest/video.m3u8`;
     }
-    
-    // 🔄 Legacy fallback
+
+    // 📺 R2-hosted video (self-hosted transcoder HLS output) - has a real
+    // manifest once processing_status is 'ready', same pattern as legacy
+    // Stream. Falls through with everything else (R2 audio, legacy files)
+    // to the plain file_url below.
+    if (content.streaming_provider === 'cloudflare_r2' && content.media_type === 'video' && content.hls_manifest_url) {
+        return content.hls_manifest_url;
+    }
+
+    // 🎵 Audio Lane (Cloudflare R2) / 🔄 Legacy fallback
     return content.file_url || '';
 }
 
@@ -41,11 +44,11 @@ function getPlayableMediaUrl(content) {
 function detectMediaType(content) {
     if (!content) return 'video';
     
-    if (content.streaming_provider === 'cloudflare_r2' || content.media_type === 'audio') {
-        return 'audio';
-    }
     if (content.streaming_provider === 'cloudflare_stream' || content.media_type === 'video') {
         return 'video';
+    }
+    if (content.streaming_provider === 'cloudflare_r2' || content.media_type === 'audio') {
+        return 'audio';
     }
     
     // Fallback check for file extensions if provider isn't set
