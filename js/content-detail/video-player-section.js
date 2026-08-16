@@ -1023,6 +1023,26 @@ async function initializeSingleMediaPage(contentItem) {
         return;
     }
 
+    // A video uploaded through the R2 transcoder pipeline isn't watchable
+    // until the worker finishes (real minutes, not the near-instant
+    // readiness Cloudflare Stream had) - without this check the player
+    // would try to load a null/empty source and fail silently. Only videos
+    // hit this; every other media type's processing_status defaults to
+    // 'ready' at insert time.
+    if (contentItem.media_type === 'video' && contentItem.processing_status && contentItem.processing_status !== 'ready') {
+        const playerContainer = document.getElementById('inlinePlayer');
+        if (playerContainer) {
+            const isFailed = contentItem.processing_status === 'failed';
+            playerContainer.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;min-height:280px;background:#0a0a0a;color:#fff;text-align:center;padding:24px;">
+                    <i class="fas ${isFailed ? 'fa-triangle-exclamation' : 'fa-spinner fa-spin'}" style="font-size:32px;color:${isFailed ? '#EF4444' : '#00E5FF'};"></i>
+                    <div style="font-size:16px;font-weight:600;">${isFailed ? 'Processing failed' : 'Processing your video…'}</div>
+                    <div style="font-size:13px;color:#9CA3AF;max-width:320px;">${isFailed ? 'Something went wrong while preparing this video. Please try re-uploading it.' : 'This usually takes a few minutes. Check back shortly — this page will keep working in the meantime.'}</div>
+                </div>`;
+        }
+        return;
+    }
+
     // 2. Data Shape Inspection Logger
     console.log('📊 [DIAGNOSTIC] Content Object Shape:', {
         hasThumbnail: !!contentItem.thumbnail_url,
