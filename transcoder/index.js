@@ -124,25 +124,35 @@ async function extractThumbnail(inputPath, outDir, duration) {
 
 async function uploadDirToR2(localDir, r2Prefix) {
   const entries = await fs.readdir(localDir, { withFileTypes: true, recursive: true });
-  const uploads = [];
-  for (const entry of entries) {
-    if (entry.isDirectory()) continue;
-    const localPath = path.join(entry.path || localDir, entry.name);
-    const relative = path.relative(localDir, localPath).split(path.sep).join("/");
-    const key = `${r2Prefix}/${relative}`;
-    const body = await fs.readFile(localPath);
-    const contentType = relative.endsWith(".m3u8")
-      ? "application/vnd.apple.mpegurl"
-      : relative.endsWith(".ts")
-      ? "video/mp2t"
-      : relative.endsWith(".jpg")
-      ? "image/jpeg"
-      : "application/octet-stream";
-    uploads.push(
-      s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: body, ContentType: contentType }))
-    );
-  }
-  await Promise.all(uploads);
+  const files = entries
+    .filter((entry) => !entry.isDirectory())
+    .map((entry) => {
+      const localPath = path.join(entry.path || localDir, entry.name);
+      const relative = path.relative(localDir, localPath).split(path.sep).join("/");
+      return { localPath, key: `${r2Prefix}/${relative}`, relative };
+    });
+
+  // Building this array via .map(async ...) - not a for-loop with an await
+  // before each push - matters: it creates every upload promise in the
+  // same synchronous tick, so Promise.all subscribes to all of them
+  // immediately. Pushing promises into an array across a loop that awaits
+  // in between (the previous version's fs.readFile before each push) can
+  // leave an early-rejecting promise briefly unobserved, which crashed the
+  // entire process on a real R2 permission error - one job's failure took
+  // down every other in-flight job with it.
+  await Promise.all(
+    files.map(async (f) => {
+      const body = await fs.readFile(f.localPath);
+      const contentType = f.relative.endsWith(".m3u8")
+        ? "application/vnd.apple.mpegurl"
+        : f.relative.endsWith(".ts")
+        ? "video/mp2t"
+        : f.relative.endsWith(".jpg")
+        ? "image/jpeg"
+        : "application/octet-stream";
+      return s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: f.key, Body: body, ContentType: contentType }));
+    })
+  );
 }
 
 async function downloadFile(url, destPath) {
@@ -222,9 +232,26 @@ app.post("/transcode", (req, res) => {
   // Respond immediately - transcoding takes real minutes, and the trigger
   // that calls this doesn't wait for a meaningful response either way.
   res.status(202).json({ status: "queued", contentId: record.id });
-  processVideo(record);
+  // processVideo already wraps its own body in try/catch, but this belt-
+  // and-suspenders .catch on the fire-and-forget call itself is what
+  // actually stops a bug there from becoming a process-wide crash - see
+  // the unhandledRejection handler below for why this matters concretely.
+  processVideo(record).catch((err) => console.error(`[${record.id}] uncaught in processVideo:`, err));
 });
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// One job's bug should never take down every other in-flight job. Real,
+// confirmed incident: an R2 permission error during upload crashed the
+// entire process (Node's default behavior for an unhandled rejection),
+// which killed whatever else was running at the time too - systemd
+// restarted the service, but the failed job was left stuck in
+// processing_status='queued' forever with no record of what happened.
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled rejection (process kept running):", err);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception (process kept running):", err);
+});
 
 app.listen(PORT, () => console.log(`Transcoder listening on :${PORT}`));
