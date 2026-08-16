@@ -76,9 +76,13 @@ const BANTU_UPLOAD_ENGINE = {
         console.log(`Requesting secure upload handshake for ${mediaType}...`);
         
         try {
-            // Call the function natively via the Supabase Client SDK
+            // useR2ForVideo: opts into the new self-hosted transcoder pipeline
+            // for video - get-upload-url still defaults video to the old
+            // Cloudflare Stream lane for any caller that omits this, since the
+            // iOS/Android app builds currently in App Store/Play Store review
+            // are frozen and still expect that old response shape.
             const { data, error } = await this.supabase.functions.invoke('get-upload-url', {
-                body: { mediaType, fileName }
+                body: { mediaType, fileName, useR2ForVideo: true }
             });
 
             // If Supabase returns an edge function execution error
