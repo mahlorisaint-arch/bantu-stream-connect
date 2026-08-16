@@ -17,18 +17,31 @@ alter table "Content" add constraint content_processing_status_check
 
 create extension if not exists pg_net with schema extensions;
 
+-- SECURITY NOTE: an earlier version of this function hardcoded the webhook
+-- secret directly here. That got pushed to this public repo and was
+-- flagged by GitGuardian - the secret has since been rotated (the leaked
+-- value is dead) and moved into Supabase Vault, read at call time instead
+-- of ever being written in plaintext again. See
+-- supabase/migrations/20260816b_fix_leaked_webhook_secret.sql.
 create or replace function public.trigger_video_transcode()
 returns trigger
 language plpgsql
 security definer
+set search_path = public, extensions, vault
 as $$
+declare
+  v_webhook_secret text;
 begin
   if new.media_type = 'video' and new.streaming_provider = 'pending_transcode' then
+    select decrypted_secret into v_webhook_secret
+    from vault.decrypted_secrets
+    where name = 'transcoder_webhook_secret';
+
     perform net.http_post(
       url := 'https://transcoder.bantustreamconnect.com/transcode',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'x-webhook-secret', 'cc306f0c1bbacf2e85c42f150d7ed7035414a182a593589c0aa19237318a7b1d'
+        'x-webhook-secret', v_webhook_secret
       ),
       body := jsonb_build_object('type', 'INSERT', 'table', 'Content', 'record', to_jsonb(new))
     );
