@@ -155,29 +155,48 @@ async function uploadDirToR2(localDir, r2Prefix) {
   );
 }
 
-// Tier 1+2 in-app Shorts recording: the mobile app's trim screen only ever
-// picks start/end points (no on-device FFmpeg with video encoding - see
-// shorts_trim_screen.dart's doc comment for why), so the real cut happens
-// here. Re-encodes rather than -c copy: this app's clips are short (Shorts
-// cap at 60s) and a stream-copy trim snaps to the nearest keyframe instead
-// of the exact point the creator chose - correctness matters more than the
-// small speed cost at this length. Runs once, upfront, so every downstream
-// step (probe/ladder/thumbnail) just sees a shorter file and needs no
-// trim-awareness of its own.
-async function trimInput(inputPath, jobDir, trimStartMs, trimEndMs) {
-  const trimmedPath = path.join(jobDir, `trimmed${path.extname(inputPath)}`);
-  const startSeconds = (trimStartMs / 1000).toFixed(3);
-  const clipSeconds = ((trimEndMs - trimStartMs) / 1000).toFixed(3);
-  await run("ffmpeg", [
-    "-y",
-    "-ss", startSeconds,
-    "-i", inputPath,
-    "-t", clipSeconds,
-    "-c:v", "libx264", "-preset", "veryfast",
-    "-c:a", "aac",
-    trimmedPath,
-  ]);
-  return trimmedPath;
+// Tier 3 filters: matches the same visual direction as each ColorFilter
+// matrix in the mobile app's lib/global/models/shorts_filter.dart (the
+// live on-device preview), expressed as ffmpeg video filters instead of a
+// 4x5 color matrix - the two engines don't share code or match pixel-for-
+// pixel, but this is the filter that actually ships. "original"/unset
+// never reaches here (createContent only sends filter_id when a real
+// filter was picked), so there's no identity entry to skip.
+const FILTER_CHAINS = {
+  vivid: "eq=saturation=1.4",
+  noir: "hue=s=0",
+  sepia: "colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131:0",
+  warm: "colorbalance=rm=0.20:bm=-0.15",
+  cool: "colorbalance=rm=-0.15:bm=0.20",
+  vintage: "eq=saturation=0.65:contrast=0.92:brightness=0.03,colorbalance=rm=0.08:bm=-0.05",
+  dramatic: "eq=contrast=1.3:brightness=-0.06",
+};
+
+// Tier 1+2+3 in-app Shorts recording: the mobile app's trim/filter screen
+// only ever picks trim points and a filter id (no on-device FFmpeg with
+// video encoding - see shorts_trim_screen.dart's doc comment for why), so
+// the real cut and the real filter bake-in both happen here, in one pass.
+// Re-encodes rather than -c copy for the trim: this app's clips are short
+// (Shorts cap at 60s) and a stream-copy trim snaps to the nearest keyframe
+// instead of the exact point the creator chose - correctness matters more
+// than the small speed cost at this length. Runs once, upfront, so every
+// downstream step (probe/ladder/thumbnail) just sees a already-processed
+// file and needs no trim/filter-awareness of its own.
+async function preprocessInput(inputPath, jobDir, { trimStartMs, trimEndMs, filterId }) {
+  const hasTrim = trimStartMs != null && trimEndMs != null && trimEndMs > trimStartMs;
+  const filterChain = filterId ? FILTER_CHAINS[filterId] : null;
+  if (!hasTrim && !filterChain) return inputPath;
+
+  const outputPath = path.join(jobDir, `preprocessed${path.extname(inputPath)}`);
+  const args = ["-y"];
+  if (hasTrim) args.push("-ss", (trimStartMs / 1000).toFixed(3));
+  args.push("-i", inputPath);
+  if (hasTrim) args.push("-t", ((trimEndMs - trimStartMs) / 1000).toFixed(3));
+  if (filterChain) args.push("-vf", filterChain);
+  args.push("-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac", outputPath);
+
+  await run("ffmpeg", args);
+  return outputPath;
 }
 
 async function downloadFile(url, destPath) {
@@ -198,9 +217,13 @@ async function processVideo(content) {
     let inputPath = path.join(jobDir, `input${inputExt}`);
     await downloadFile(content.file_url, inputPath);
 
-    if (content.trim_start_ms != null && content.trim_end_ms != null && content.trim_end_ms > content.trim_start_ms) {
-      console.log(`[${contentId}] trimming to ${content.trim_start_ms}ms-${content.trim_end_ms}ms`);
-      inputPath = await trimInput(inputPath, jobDir, content.trim_start_ms, content.trim_end_ms);
+    if ((content.trim_start_ms != null && content.trim_end_ms != null) || content.filter_id) {
+      console.log(`[${contentId}] preprocessing (trim=${content.trim_start_ms}-${content.trim_end_ms}, filter=${content.filter_id || "none"})`);
+      inputPath = await preprocessInput(inputPath, jobDir, {
+        trimStartMs: content.trim_start_ms,
+        trimEndMs: content.trim_end_ms,
+        filterId: content.filter_id,
+      });
     }
 
     console.log(`[${contentId}] probing source`);
