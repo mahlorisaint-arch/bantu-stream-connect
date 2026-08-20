@@ -155,6 +155,31 @@ async function uploadDirToR2(localDir, r2Prefix) {
   );
 }
 
+// Tier 1+2 in-app Shorts recording: the mobile app's trim screen only ever
+// picks start/end points (no on-device FFmpeg with video encoding - see
+// shorts_trim_screen.dart's doc comment for why), so the real cut happens
+// here. Re-encodes rather than -c copy: this app's clips are short (Shorts
+// cap at 60s) and a stream-copy trim snaps to the nearest keyframe instead
+// of the exact point the creator chose - correctness matters more than the
+// small speed cost at this length. Runs once, upfront, so every downstream
+// step (probe/ladder/thumbnail) just sees a shorter file and needs no
+// trim-awareness of its own.
+async function trimInput(inputPath, jobDir, trimStartMs, trimEndMs) {
+  const trimmedPath = path.join(jobDir, `trimmed${path.extname(inputPath)}`);
+  const startSeconds = (trimStartMs / 1000).toFixed(3);
+  const clipSeconds = ((trimEndMs - trimStartMs) / 1000).toFixed(3);
+  await run("ffmpeg", [
+    "-y",
+    "-ss", startSeconds,
+    "-i", inputPath,
+    "-t", clipSeconds,
+    "-c:v", "libx264", "-preset", "veryfast",
+    "-c:a", "aac",
+    trimmedPath,
+  ]);
+  return trimmedPath;
+}
+
 async function downloadFile(url, destPath) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to download source video: ${res.status} ${res.statusText}`);
@@ -170,8 +195,13 @@ async function processVideo(content) {
   try {
     console.log(`[${contentId}] downloading source: ${content.file_url}`);
     const inputExt = path.extname(new URL(content.file_url).pathname) || ".mp4";
-    const inputPath = path.join(jobDir, `input${inputExt}`);
+    let inputPath = path.join(jobDir, `input${inputExt}`);
     await downloadFile(content.file_url, inputPath);
+
+    if (content.trim_start_ms != null && content.trim_end_ms != null && content.trim_end_ms > content.trim_start_ms) {
+      console.log(`[${contentId}] trimming to ${content.trim_start_ms}ms-${content.trim_end_ms}ms`);
+      inputPath = await trimInput(inputPath, jobDir, content.trim_start_ms, content.trim_end_ms);
+    }
 
     console.log(`[${contentId}] probing source`);
     const { width, height, duration } = await probeVideo(inputPath);
