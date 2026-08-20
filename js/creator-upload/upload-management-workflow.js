@@ -256,6 +256,10 @@ const BANTU_UPLOAD_ENGINE = {
                 status: 'published'
             };
 
+            if (formData.language) {
+                contentPayload.language = formData.language;
+            }
+
             if (formData.duration) {
                 contentPayload.duration = formData.duration;
             }
@@ -383,15 +387,17 @@ async function uploadContent(isDraft = false) {
     processingMessage.innerHTML = 'Preparing your content...<br>This may take a moment';
 
     try {
+        const genreSpecificMetadata = collectContentMetadata() || {};
         const formData = {
             title: title,
             description: desc,
             genre: genre,
             contentFormat: contentFormat || null,
-            genreSpecificMetadata: collectContentMetadata() || {},
+            genreSpecificMetadata: genreSpecificMetadata,
             primaryGenreId: collectPrimaryGenreId(),
             duration: extractedDuration,
-            chapters: chapters.length > 0 ? chapters : null
+            chapters: chapters.length > 0 ? chapters : null,
+            language: resolveTopLevelLanguage(genre, genreSpecificMetadata)
         };
 
         // A single Music/Series/Podcast upload with an album/show title also

@@ -1,4 +1,50 @@
 // ============================================
+// SHARED LANGUAGE VOCABULARY
+// ============================================
+// The one canonical list Music and Podcast's 'language' select fields
+// share - the real display labels/values shown to and stored for
+// creators via content_metadata. Content.language itself needs a
+// different vocabulary (ISO 639 codes - see SA_LANGUAGE_CODE_BY_NAME
+// below), which is why this list is NOT what ends up in that column
+// directly.
+const SA_LANGUAGE_OPTIONS = ['English', 'isiZulu', 'isiXhosa', 'Afrikaans', 'Sesotho', 'Setswana', 'Sepedi', 'Xitsonga', 'siSwati', 'Tshivenda', 'isiNdebele'];
+
+// Maps a SA_LANGUAGE_OPTIONS label (or the #movie-language dropdown's own
+// value, before it was switched to ISO codes directly - kept here in case
+// old cached page state ever supplies one) to the ISO 639 code
+// Content.language actually needs - matches mobile's
+// kSaLanguageCodeByName and what for-you.js/trending-now.js's
+// LOCAL_LANGUAGES already expects. Real bug this fixes: creators picking
+// a language here previously had it land only in content_metadata (or,
+// for Movie/Documentary/Series, nowhere at all - collectMovieMetadata()
+// was dead code, never called) - Content.language stayed on its DB
+// default of 'en' regardless of what was actually selected.
+const SA_LANGUAGE_CODE_BY_NAME = {
+    'English': 'en', 'isiZulu': 'zu', 'isiXhosa': 'xh', 'Afrikaans': 'af',
+    'Sesotho': 'st', 'Setswana': 'tn', 'Sepedi': 'nso', 'Xitsonga': 'ts',
+    'siSwati': 'ss', 'Tshivenda': 've', 'isiNdebele': 'nr',
+    // Pre-fix #movie-language values, in case a cached page hasn't reloaded:
+    'Zulu': 'zu', 'Xhosa': 'xh', 'Sotho': 'st', 'Tswana': 'tn', 'Pedi': 'nso',
+    'Tsonga': 'ts', 'Swati': 'ss', 'Venda': 've', 'Ndebele': 'nr',
+};
+
+// Resolves whichever genre-specific language selection was made (the
+// #movie-language dropdown for Film/Documentary/Series, or Music/
+// Podcast's shared 'language' select field, already collected into
+// genreSpecificMetadata by this point) into the ISO code Content.language
+// needs. Genres with no language field of their own (Shorts, and any
+// genre with no dedicated dynamic form) correctly resolve to null.
+function resolveTopLevelLanguage(genre, genreSpecificMetadata) {
+    const config = genreConfig[genre];
+    if (config?.isMovieContent) {
+        const movieValue = document.getElementById('movie-language')?.value || null;
+        return movieValue ? (SA_LANGUAGE_CODE_BY_NAME[movieValue] || movieValue) : null;
+    }
+    const selected = genreSpecificMetadata?.language;
+    return selected ? (SA_LANGUAGE_CODE_BY_NAME[selected] || null) : null;
+}
+
+// ============================================
 // GENRE CONFIGURATION
 // ============================================
 const genreConfig = {
@@ -57,7 +103,8 @@ const genreConfig = {
             { name: 'featured_artists', type: 'tags', label: 'Featured Artists', required: false, placeholder: 'e.g., Artist 1, Artist 2' },
             { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
             { name: 'record_label', type: 'text', label: 'Record Label', required: false, placeholder: 'e.g., Bantu Records' },
-            { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] }
+            { name: 'media_type_toggle', type: 'radio', label: 'Content Type', required: true, options: ['Audio Track', 'Music Video'] },
+            { name: 'language', type: 'select', label: 'Language', required: true, options: SA_LANGUAGE_OPTIONS }
         ],
         content_format: 'music',
         requires_chapters: false,
@@ -76,7 +123,7 @@ const genreConfig = {
             { name: 'guest_names', type: 'tags', label: 'Guest Names', required: false, placeholder: 'e.g., Guest 1, Guest 2' },
             { name: 'explicit', type: 'checkbox', label: 'Contains Explicit Content', required: false },
             { name: 'category', type: 'select', label: 'Category', required: true, options: ['News', 'Business', 'Technology', 'Culture', 'Education', 'Entertainment', 'Health', 'Sports'] },
-            { name: 'language', type: 'select', label: 'Language', required: true, options: ['English', 'isiZulu', 'isiXhosa', 'Afrikaans', 'Sesotho', 'Setswana', 'Sepedi', 'Xitsonga', 'siSwati', 'Tshivenda', 'isiNdebele'] },
+            { name: 'language', type: 'select', label: 'Language', required: true, options: SA_LANGUAGE_OPTIONS },
             { name: 'country', type: 'text', label: 'Country of Origin', required: true, placeholder: 'e.g., South Africa' }
         ],
         content_format: 'podcast_episode',

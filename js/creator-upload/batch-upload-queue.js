@@ -418,15 +418,17 @@ async function runBatchUpload(isDraft) {
             }
         }
 
+        const rowMetadata = buildRowMetadata(genre, sharedMeta, row);
         const formData = {
             title: row.title,
             description: desc,
             genre: genre,
             contentFormat: contentFormat || null,
-            genreSpecificMetadata: buildRowMetadata(genre, sharedMeta, row),
+            genreSpecificMetadata: rowMetadata,
             primaryGenreId: collectPrimaryGenreId(),
             duration: row.extractedDuration,
             chapters: null,
+            language: resolveTopLevelLanguage(genre, rowMetadata),
             collection: {
                 name: collectionName,
                 playlistType: cfg.playlist_type,
@@ -507,14 +509,16 @@ async function retryBatchRow(localId) {
     const desc = document.getElementById('content-description').value.trim();
     const contentFormat = document.getElementById('content_format').value;
 
+    const retryRowMetadata = buildRowMetadata(genre, sharedMeta, row);
     const formData = {
         title: row.title,
         description: desc,
         genre: genre,
         contentFormat: contentFormat || null,
-        genreSpecificMetadata: buildRowMetadata(genre, sharedMeta, row),
+        genreSpecificMetadata: retryRowMetadata,
         duration: row.extractedDuration,
         chapters: null,
+        language: resolveTopLevelLanguage(genre, retryRowMetadata),
         collection: {
             name: currentBatchCollectionName,
             playlistType: cfg.playlist_type,
