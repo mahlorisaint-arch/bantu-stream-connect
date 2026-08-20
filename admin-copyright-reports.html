@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Copyright Reports - Admin - Bantu Stream Connect</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon/favicon-48x48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex, nofollow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet" href="css/shared-components.css">
+<link rel="stylesheet" href="css/static-page.css">
+<link rel="stylesheet" href="css/legal-page.css">
+<style>
+.cr-list { display: flex; flex-direction: column; gap: 16px; }
+.cr-card { border: 1px solid var(--border-color, #2a2a2a); border-radius: 12px; padding: 18px 20px; }
+.cr-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.cr-badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+.cr-badge.pending { background: rgba(255,193,7,0.15); color: #ffc107; }
+.cr-badge.content_removed { background: rgba(244,67,54,0.15); color: #f44336; }
+.cr-badge.dismissed { background: rgba(158,158,158,0.15); color: #9e9e9e; }
+.cr-field { margin-bottom: 8px; }
+.cr-field label { display: block; font-size: 12px; color: var(--slate-grey); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+.cr-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.cr-actions button { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; }
+.cr-btn-remove { background: #f44336; color: #fff; }
+.cr-btn-dismiss { background: rgba(255,255,255,0.08); color: var(--soft-white, #fff); }
+.cr-btn-remove:disabled, .cr-btn-dismiss:disabled { opacity: 0.5; cursor: not-allowed; }
+.cr-empty { text-align: center; padding: 40px 0; color: var(--slate-grey); }
+.cr-filter-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+.cr-filter-btn { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border-color, #2a2a2a); background: transparent; color: var(--slate-grey); cursor: pointer; font-size: 13px; }
+.cr-filter-btn.active { background: #00E5FF; color: #000; border-color: #00E5FF; }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+  <div class="sidebar-header">
+    <div class="sidebar-logo" onclick="window.location.href='index.html'">
+      <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+      <span class="sidebar-logo-text">BSC</span>
+    </div>
+    <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sidebar-profile" id="sidebar-profile">
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+    <div class="sidebar-profile-info">
+      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+    </div>
+    <i class="fas fa-chevron-right"></i>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header"><span>MAIN</span><i class="fas fa-chevron-down toggle-icon"></i></div>
+      <div class="sidebar-section-items">
+        <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<div id="theme-selector" class="theme-selector">
+  <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+  <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+  <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
+<div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">Checking access...</div>
+</div>
+
+<div id="app" style="display: none;">
+    <header class="header" id="site-header">
+        <div class="logo" onclick="window.location.href='index.html'">
+            <button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+            <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+            <div class="logo-text">BSC</div>
+        </div>
+        <div class="header-actions">
+            <div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
+        </div>
+    </header>
+
+    <main class="container legal-page-container">
+        <section class="dashboard-section">
+            <div class="static-page-hero">
+                <i class="fas fa-shield-halved static-page-icon"></i>
+                <h1 class="static-page-title">Copyright Reports</h1>
+                <p class="static-page-subtitle">Admin review queue for submitted takedown requests.</p>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="cr-filter-bar">
+                <button class="cr-filter-btn active" data-filter="pending">Pending</button>
+                <button class="cr-filter-btn" data-filter="content_removed">Content Removed</button>
+                <button class="cr-filter-btn" data-filter="dismissed">Dismissed</button>
+                <button class="cr-filter-btn" data-filter="all">All</button>
+            </div>
+            <div class="cr-list" id="cr-list"></div>
+            <div class="cr-empty" id="cr-empty" style="display:none;">No reports in this view.</div>
+        </section>
+    </main>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/shared-components.js"></script>
+<script>
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentFilter = 'pending';
+let allReports = [];
+
+function esc(s) {
+    if (s === null || s === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(s);
+    return div.innerHTML;
+}
+
+function renderReports() {
+    const listEl = document.getElementById('cr-list');
+    const emptyEl = document.getElementById('cr-empty');
+    const filtered = currentFilter === 'all' ? allReports : allReports.filter(r => r.status === currentFilter);
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    emptyEl.style.display = 'none';
+
+    listEl.innerHTML = filtered.map(r => `
+        <div class="cr-card" data-id="${r.id}">
+            <div class="cr-card-header">
+                <div>
+                    <strong>${esc(r.reporter_name)}</strong> &lt;${esc(r.reporter_email)}&gt;
+                    ${r.reporter_organization ? ` &bull; ${esc(r.reporter_organization)}` : ''}
+                </div>
+                <span class="cr-badge ${r.status}">${esc(r.status.replace('_', ' '))}</span>
+            </div>
+            <div class="cr-field"><label>Reported content</label><a href="${esc(r.content_url)}" target="_blank" rel="noopener">${esc(r.content_url)}</a></div>
+            <div class="cr-field"><label>Copyrighted work</label>${esc(r.copyrighted_work_description)}</div>
+            <div class="cr-field"><label>Claimed infringement</label>${esc(r.infringement_description)}</div>
+            <div class="cr-field"><label>Electronic signature</label>${esc(r.electronic_signature)}</div>
+            <div class="cr-field"><label>Submitted</label>${new Date(r.created_at).toLocaleString()}</div>
+            ${r.status === 'pending' ? `
+            <div class="cr-actions">
+                <button class="cr-btn-remove" data-action="remove" data-id="${r.id}" data-content-id="${r.content_id ?? ''}">Remove Content</button>
+                <button class="cr-btn-dismiss" data-action="dismiss" data-id="${r.id}">Dismiss</button>
+            </div>` : ''}
+        </div>
+    `).join('');
+}
+
+async function loadReports() {
+    const { data, error } = await window.supabaseClient
+        .from('copyright_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        showToast('Failed to load reports: ' + error.message, 'error');
+        return;
+    }
+    allReports = data || [];
+    renderReports();
+}
+
+document.getElementById('cr-list').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const reportId = btn.dataset.id;
+    const action = btn.dataset.action;
+    const contentId = btn.dataset.contentId;
+
+    const actionButtons = btn.closest('.cr-actions').querySelectorAll('button');
+    actionButtons.forEach(b => b.disabled = true);
+
+    try {
+        if (action === 'remove') {
+            if (!contentId) {
+                showToast('This report has no linked content_id - remove manually.', 'error');
+                actionButtons.forEach(b => b.disabled = false);
+                return;
+            }
+            const { error: contentErr } = await window.supabaseClient
+                .from('Content')
+                .update({ status: 'removed' })
+                .eq('id', contentId);
+            if (contentErr) throw contentErr;
+
+            const { error: reportErr } = await window.supabaseClient
+                .from('copyright_reports')
+                .update({ status: 'content_removed' })
+                .eq('id', reportId);
+            if (reportErr) throw reportErr;
+
+            showToast('Content removed and report marked.', 'success');
+        } else if (action === 'dismiss') {
+            const { error } = await window.supabaseClient
+                .from('copyright_reports')
+                .update({ status: 'dismissed' })
+                .eq('id', reportId);
+            if (error) throw error;
+            showToast('Report dismissed.', 'success');
+        }
+        await loadReports();
+    } catch (err) {
+        console.error(err);
+        showToast('Action failed: ' + err.message, 'error');
+        actionButtons.forEach(b => b.disabled = false);
+    }
+});
+
+document.querySelectorAll('.cr-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.cr-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderReports();
+    });
+});
+
+(async function init() {
+    const { data: { user } } = await window.supabaseClient.auth.getUser();
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+    const { data: profile, error: profileErr } = await window.supabaseClient
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (profileErr || !profile || profile.role !== 'admin') {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    await loadReports();
+})();
+</script>
+</body>
+</html>
