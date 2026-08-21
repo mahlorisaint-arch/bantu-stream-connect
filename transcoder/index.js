@@ -17,6 +17,8 @@ const fs = require("fs/promises");
 const fsSync = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { pipeline } = require("stream/promises");
+const { Readable } = require("stream");
 
 const PORT = process.env.PORT || 8080;
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
@@ -199,11 +201,17 @@ async function preprocessInput(inputPath, jobDir, { trimStartMs, trimEndMs, filt
   return outputPath;
 }
 
+// Streams the response body straight to disk instead of buffering the
+// whole file into a single in-memory Buffer first - the previous version
+// (Buffer.from(await res.arrayBuffer())) held the entire source video in
+// RAM before ever touching disk, which is fine at a few hundred MB but a
+// real OOM risk once uploads are allowed up to multi-GB (see the raised
+// MAX_FILE_SIZE on both clients) - especially with more than one large
+// job in flight at once (see MAX_CONCURRENT_JOBS below).
 async function downloadFile(url, destPath) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to download source video: ${res.status} ${res.statusText}`);
-  const buffer = Buffer.from(await res.arrayBuffer());
-  await fs.writeFile(destPath, buffer);
+  await pipeline(Readable.fromWeb(res.body), fsSync.createWriteStream(destPath));
 }
 
 async function processVideo(content) {
@@ -271,6 +279,40 @@ async function processVideo(content) {
   }
 }
 
+// Caps how many transcode jobs run at once. Each job can now hold a raw
+// source file up to MAX_FILE_SIZE (2GB) on disk plus its HLS output
+// before upload - with uploads no longer capped at 800MB, several large
+// jobs landing close together and running fully concurrently (the
+// previous behavior - every webhook fired processVideo() immediately,
+// no limit at all) risks exhausting the VPS's disk and CPU at once.
+// Anything past the cap waits in a simple in-memory queue and starts as
+// soon as a slot frees up.
+const MAX_CONCURRENT_JOBS = 2;
+let activeJobCount = 0;
+const pendingJobs = [];
+
+function scheduleTranscode(record) {
+  pendingJobs.push(record);
+  drainJobQueue();
+}
+
+function drainJobQueue() {
+  while (activeJobCount < MAX_CONCURRENT_JOBS && pendingJobs.length > 0) {
+    const record = pendingJobs.shift();
+    activeJobCount++;
+    // processVideo already wraps its own body in try/catch, but this belt-
+    // and-suspenders .catch on the fire-and-forget call itself is what
+    // actually stops a bug there from becoming a process-wide crash - see
+    // the unhandledRejection handler below for why this matters concretely.
+    processVideo(record)
+      .catch((err) => console.error(`[${record.id}] uncaught in processVideo:`, err))
+      .finally(() => {
+        activeJobCount--;
+        drainJobQueue();
+      });
+  }
+}
+
 const app = express();
 app.use(express.json());
 
@@ -285,11 +327,7 @@ app.post("/transcode", (req, res) => {
   // Respond immediately - transcoding takes real minutes, and the trigger
   // that calls this doesn't wait for a meaningful response either way.
   res.status(202).json({ status: "queued", contentId: record.id });
-  // processVideo already wraps its own body in try/catch, but this belt-
-  // and-suspenders .catch on the fire-and-forget call itself is what
-  // actually stops a bug there from becoming a process-wide crash - see
-  // the unhandledRejection handler below for why this matters concretely.
-  processVideo(record).catch((err) => console.error(`[${record.id}] uncaught in processVideo:`, err));
+  scheduleTranscode(record);
 });
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
