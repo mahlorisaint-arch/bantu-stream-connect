@@ -64,12 +64,19 @@ async function validateMediaFile(file) {
     updateChecklist();
 }
 
-const MEDIA_MAX_SIZE = 800 * 1024 * 1024;
+// Raised from 800MB - a single long-form episode (Series/Podcast) can
+// genuinely exceed that. 2GB, not higher, since mobile's upload is now
+// resilient to a bad connection (per-chunk retry, see
+// creator_upload_screen.dart's _uploadVideoMultipart) but still not fast
+// on one - a much larger ceiling would just mean a much longer real
+// upload time for exactly the data-constrained creators this matters
+// most for.
+const MEDIA_MAX_SIZE = 2 * 1024 * 1024 * 1024;
 const MEDIA_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
 const MEDIA_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
 
 function isValidMediaFile(file) {
-    if (file.size > MEDIA_MAX_SIZE) return { valid: false, reason: 'File size must be less than 800MB' };
+    if (file.size > MEDIA_MAX_SIZE) return { valid: false, reason: 'File size must be less than 2GB' };
     const isValidType = [...MEDIA_VIDEO_TYPES, ...MEDIA_AUDIO_TYPES].some(type => file.type.includes(type.split('/')[1]) || file.type === type);
     if (!isValidType) return { valid: false, reason: 'Please select a valid video or audio file' };
     return { valid: true };
