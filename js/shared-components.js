@@ -34,6 +34,38 @@ if (!window.supabaseClient && window.supabase) {
     window.supabaseClient = window.supabase;
     console.log('🔧 [SEARCH-FIX] Using window.supabase as supabaseClient for search');
 }
+
+// ============================================ */
+// SELF-BUILT MONITORING: error logging + page views */
+// Admin-only (RLS: insert open to everyone incl. guests, read is
+// admin-only - see supabase/migrations/20260904_app_monitoring_events_and_errors.sql).
+// error-handler.js is loaded dynamically here rather than added as a
+// <script> tag on all 26 pages that load this file - one place to
+// maintain instead of 26. It self-initializes its own global error/
+// rejection listeners as soon as it loads.
+// ============================================ */
+(function loadErrorHandler() {
+    if (window.errorHandler) return; // already loaded on this page somehow
+    const script = document.createElement('script');
+    script.src = 'js/error-handler.js';
+    script.async = false; // preserve deterministic load order
+    document.head.appendChild(script);
+})();
+
+// One page_view row per real page load. Silently no-ops if
+// window.supabaseClient isn't ready yet - not worth blocking on.
+(function logPageView() {
+    if (!window.supabaseClient) return;
+    window.supabaseClient.from('app_events').insert({
+        event_type: 'page_view',
+        screen_name: document.title || window.location.pathname,
+        platform: 'web',
+        user_id: window.currentUserId || null
+    }).then(({ error }) => {
+        if (error) console.error('Failed to log page view:', error);
+    });
+})();
+
 if (!window.supabaseClient) {
     console.warn('⚠️ [SEARCH-FIX] No Supabase client found. Search will not work.');
     window.supabaseClient = {

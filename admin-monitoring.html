@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Platform Monitoring - Admin - Bantu Stream Connect</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon/favicon-48x48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex, nofollow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet" href="css/shared-components.css">
+<link rel="stylesheet" href="css/static-page.css">
+<link rel="stylesheet" href="css/legal-page.css">
+<style>
+.mon-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 8px; }
+.mon-stat-card { border: 1px solid var(--border-color, #2a2a2a); border-radius: 12px; padding: 18px 20px; }
+.mon-stat-value { font-size: 32px; font-weight: 700; color: #00E5FF; font-variant-numeric: tabular-nums; }
+.mon-stat-label { font-size: 12px; color: var(--slate-grey); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 4px; }
+.mon-filter-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+.mon-filter-btn { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border-color, #2a2a2a); background: transparent; color: var(--slate-grey); cursor: pointer; font-size: 13px; }
+.mon-filter-btn.active { background: #00E5FF; color: #000; border-color: #00E5FF; }
+.mon-list { display: flex; flex-direction: column; gap: 10px; }
+.mon-screen-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color, #2a2a2a); border-radius: 10px; padding: 12px 16px; }
+.mon-screen-name { font-weight: 500; }
+.mon-screen-count { font-weight: 700; color: #00E5FF; font-variant-numeric: tabular-nums; }
+.mon-card { border: 1px solid var(--border-color, #2a2a2a); border-radius: 12px; padding: 16px 20px; }
+.mon-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.mon-badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; background: rgba(0,229,255,0.15); color: #00E5FF; white-space: nowrap; }
+.mon-error-message { font-weight: 600; margin: 8px 0 4px; word-break: break-word; }
+.mon-error-meta { font-size: 13px; color: var(--slate-grey); }
+.mon-stack-toggle { background: none; border: none; color: #00E5FF; cursor: pointer; font-size: 13px; padding: 6px 0; }
+.mon-stack-trace { display: none; white-space: pre-wrap; word-break: break-word; font-size: 12px; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; margin-top: 6px; max-height: 300px; overflow-y: auto; }
+.mon-empty { text-align: center; padding: 40px 0; color: var(--slate-grey); }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+  <div class="sidebar-header">
+    <div class="sidebar-logo" onclick="window.location.href='index.html'">
+      <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+      <span class="sidebar-logo-text">BSC</span>
+    </div>
+    <button class="sidebar-close" id="sidebar-close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sidebar-profile" id="sidebar-profile">
+    <div class="sidebar-profile-avatar" id="sidebar-profile-avatar"><i class="fas fa-user"></i></div>
+    <div class="sidebar-profile-info">
+      <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+      <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+    </div>
+    <i class="fas fa-chevron-right"></i>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section" data-section-id="main">
+      <div class="sidebar-section-header"><span>MAIN</span><i class="fas fa-chevron-down toggle-icon"></i></div>
+      <div class="sidebar-section-items">
+        <a href="index.html" class="sidebar-nav-item" data-page="home"><i class="fas fa-home"></i><span>Home</span></a>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<div id="theme-selector" class="theme-selector">
+  <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+  <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+  <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
+<div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">Checking access...</div>
+</div>
+
+<div id="app" style="display: none;">
+    <header class="header" id="site-header">
+        <div class="logo" onclick="window.location.href='index.html'">
+            <button class="menu-toggle" id="menu-toggle"><i class="fas fa-bars"></i></button>
+            <div class="logo-icon"><img src="assets/icon/bantu_stream_connect_icon.png" alt="BSC"></div>
+            <div class="logo-text">BSC</div>
+        </div>
+        <div class="header-actions">
+            <div class="rsa-badge"><i class="fas fa-map-marker-alt"></i><span>RSA</span></div>
+        </div>
+    </header>
+
+    <main class="container legal-page-container">
+        <section class="dashboard-section">
+            <div class="static-page-hero">
+                <i class="fas fa-gauge-high static-page-icon"></i>
+                <h1 class="static-page-title">Platform Monitoring</h1>
+                <p class="static-page-subtitle">Errors and screen/page views across web, Android and iOS.</p>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="mon-stats">
+                <div class="mon-stat-card">
+                    <div class="mon-stat-value" id="mon-events-today">-</div>
+                    <div class="mon-stat-label">Events Today</div>
+                </div>
+                <div class="mon-stat-card">
+                    <div class="mon-stat-value" id="mon-errors-today">-</div>
+                    <div class="mon-stat-label">Errors Today</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2 style="margin-bottom: 14px;">Top Screens &amp; Pages</h2>
+            <div class="mon-filter-bar">
+                <button class="mon-filter-btn active" data-range="24h">Last 24h</button>
+                <button class="mon-filter-btn" data-range="7d">Last 7 days</button>
+            </div>
+            <div class="mon-list" id="mon-screens-list"></div>
+            <div class="mon-empty" id="mon-screens-empty" style="display:none;">No screen/page views recorded in this window.</div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2 style="margin-bottom: 14px;">Recent Errors</h2>
+            <div class="mon-list" id="mon-errors-list"></div>
+            <div class="mon-empty" id="mon-errors-empty" style="display:none;">No errors recorded. 🎉</div>
+        </section>
+    </main>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/shared-components.js"></script>
+<script>
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentRange = '24h';
+
+function esc(s) {
+    if (s === null || s === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(s);
+    return div.innerHTML;
+}
+
+function startOfTodayIso() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+}
+
+function rangeStartIso(range) {
+    const d = new Date();
+    d.setHours(d.getHours() - (range === '7d' ? 24 * 7 : 24));
+    return d.toISOString();
+}
+
+async function loadStatCards() {
+    const todayIso = startOfTodayIso();
+
+    const [{ count: eventsCount, error: eventsErr }, { count: errorsCount, error: errorsErr }] = await Promise.all([
+        window.supabaseClient.from('app_events').select('*', { count: 'exact', head: true }).gte('created_at', todayIso),
+        window.supabaseClient.from('app_errors').select('*', { count: 'exact', head: true }).gte('created_at', todayIso)
+    ]);
+
+    if (!eventsErr) document.getElementById('mon-events-today').textContent = eventsCount ?? 0;
+    if (!errorsErr) document.getElementById('mon-errors-today').textContent = errorsCount ?? 0;
+}
+
+async function loadTopScreens() {
+    const listEl = document.getElementById('mon-screens-list');
+    const emptyEl = document.getElementById('mon-screens-empty');
+
+    // Aggregated client-side rather than via a database view/RPC - kept
+    // deliberately simple for this first version; revisit if volume ever
+    // makes fetching raw rows here impractical.
+    const { data, error } = await window.supabaseClient
+        .from('app_events')
+        .select('screen_name, platform')
+        .gte('created_at', rangeStartIso(currentRange))
+        .limit(5000);
+
+    if (error) {
+        showToast('Failed to load screen views: ' + error.message, 'error');
+        return;
+    }
+
+    const counts = {};
+    (data || []).forEach(row => {
+        const key = row.screen_name || '(unnamed)';
+        counts[key] = (counts[key] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20);
+
+    if (sorted.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = sorted.map(([name, count]) => `
+        <div class="mon-screen-row">
+            <span class="mon-screen-name">${esc(name)}</span>
+            <span class="mon-screen-count">${count}</span>
+        </div>
+    `).join('');
+}
+
+async function loadRecentErrors() {
+    const listEl = document.getElementById('mon-errors-list');
+    const emptyEl = document.getElementById('mon-errors-empty');
+
+    const { data, error } = await window.supabaseClient
+        .from('app_errors')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        showToast('Failed to load errors: ' + error.message, 'error');
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    emptyEl.style.display = 'none';
+
+    listEl.innerHTML = data.map(e => `
+        <div class="mon-card">
+            <div class="mon-card-header">
+                <span class="mon-badge">${esc(e.platform)}</span>
+                <span class="mon-error-meta">${new Date(e.created_at).toLocaleString()}</span>
+            </div>
+            <div class="mon-error-message">${esc(e.error_message)}</div>
+            <div class="mon-error-meta">${esc(e.screen_name || 'Unknown screen')} ${e.app_version ? '&bull; v' + esc(e.app_version) : ''}</div>
+            ${e.stack_trace ? `
+            <button class="mon-stack-toggle" data-action="toggle-stack">Show stack trace</button>
+            <div class="mon-stack-trace">${esc(e.stack_trace)}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+document.getElementById('mon-errors-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action="toggle-stack"]');
+    if (!btn) return;
+    const trace = btn.nextElementSibling;
+    const showing = trace.style.display === 'block';
+    trace.style.display = showing ? 'none' : 'block';
+    btn.textContent = showing ? 'Show stack trace' : 'Hide stack trace';
+});
+
+document.querySelectorAll('.mon-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mon-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRange = btn.dataset.range;
+        loadTopScreens();
+    });
+});
+
+(async function init() {
+    const { data: { user } } = await window.supabaseClient.auth.getUser();
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+    const { data: profile, error: profileErr } = await window.supabaseClient
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (profileErr || !profile || profile.role !== 'admin') {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    await Promise.all([loadStatCards(), loadTopScreens(), loadRecentErrors()]);
+})();
+</script>
+</body>
+</html>

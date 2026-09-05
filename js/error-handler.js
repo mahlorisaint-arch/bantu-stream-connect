@@ -7,7 +7,11 @@ class ErrorBoundary {
     
     this.setupGlobalHandlers();
     this.setupUnhandledRejection();
-    this.setupNetworkErrorHandling();
+    // setupNetworkErrorHandling() deliberately NOT called - it monkey-patches
+    // window.fetch site-wide to throw on non-ok responses, which changes
+    // behavior for every existing fetch() call. Too wide a blast radius to
+    // introduce silently alongside a monitoring feature. Revisit later if
+    // network-error visibility is specifically wanted.
   }
   
   setupGlobalHandlers() {
@@ -60,11 +64,15 @@ class ErrorBoundary {
   }
   
   handleError(error, context) {
-    // Check if we should show error to user
-    if (this.shouldShowError()) {
-      this.showUserFriendlyError(error, context);
-    }
-    
+    // User-facing error toasts deliberately disabled for now - this is a
+    // first rollout of error monitoring onto a live app with unknown
+    // latent bugs. Surfacing a toast the moment this ships would mean any
+    // previously-invisible-but-harmless error suddenly alarms real users.
+    // Silent background logging only for v1; revisit once real error data
+    // has been seen for a while. (shouldShowError()/showUserFriendlyError()
+    // are left intact below, just not called, so this is easy to turn back
+    // on later.)
+
     // Log to analytics/console
     this.logError({
       type: 'ERROR',
@@ -77,7 +85,7 @@ class ErrorBoundary {
     });
     
     // Send to error tracking service (if configured)
-    this.sendToErrorTracking(error);
+    this.sendToErrorTracking(error, context);
   }
   
   shouldShowError() {
@@ -168,9 +176,22 @@ class ErrorBoundary {
     }
   }
   
-  sendToErrorTracking(error) {
-    // Implement integration with Sentry/LogRocket/Rollbar here
-    // Example: window.Sentry?.captureException(error);
+  sendToErrorTracking(error, context) {
+    // Self-built, admin-only monitoring - writes straight to app_errors
+    // (RLS: insert open to everyone including guests, read is admin-only).
+    // Fire-and-forget, and guarded in case this fires before
+    // window.supabaseClient exists yet (this class self-initializes at
+    // script-parse time, so an error could theoretically happen that early).
+    if (!window.supabaseClient) return;
+    window.supabaseClient.from('app_errors').insert({
+      platform: 'web',
+      error_message: (error && (error.message || String(error))) || 'Unknown error',
+      stack_trace: error && error.stack ? String(error.stack) : null,
+      screen_name: document.title || window.location.pathname,
+      user_id: window.currentUserId || null
+    }).then(({ error: insertError }) => {
+      if (insertError) console.error('Failed to log error to app_errors:', insertError);
+    });
   }
   
   // Safe function wrapper for critical operations
