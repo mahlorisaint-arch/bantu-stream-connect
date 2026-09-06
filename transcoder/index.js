@@ -95,7 +95,14 @@ async function transcodeRendition(inputPath, outDir, rendition, aspectRatio) {
     "-y",
     "-i", inputPath,
     "-vf", `scale=${width}:${rendition.height}`,
-    "-c:v", "libx264", "-preset", "veryfast", "-b:v", rendition.videoBitrate,
+    // Explicit profile/level/pixel-format rather than libx264's defaults -
+    // needed to know for certain what to declare in the master playlist's
+    // CODECS attribute below. Main profile + level 4.0 comfortably covers
+    // the whole ladder up to 1080p on any modern phone; yuv420p guards
+    // against a 10-bit/unusual-chroma source producing a pixel format some
+    // mobile decoders reject outright.
+    "-c:v", "libx264", "-preset", "veryfast", "-profile:v", "main", "-level", "4.0", "-pix_fmt", "yuv420p",
+    "-b:v", rendition.videoBitrate,
     "-c:a", "aac", "-b:a", rendition.audioBitrate,
     "-hls_time", "6",
     "-hls_playlist_type", "vod",
@@ -106,10 +113,18 @@ async function transcodeRendition(inputPath, outDir, rendition, aspectRatio) {
   return { ...rendition, width, bandwidth, dir: renditionDir };
 }
 
+// RFC 6381 codec string matching the explicit -profile:v main -level 4.0
+// (avc1.4d0028) + AAC-LC (mp4a.40.2) set in transcodeRendition above. A
+// missing CODECS attribute is a real, known cause of some HLS players
+// failing to reliably select/play a multi-rendition master playlist -
+// this makes stream selection deterministic instead of relying on each
+// player's own fallback probing behavior.
+const HLS_CODECS = "avc1.4d0028,mp4a.40.2";
+
 async function buildMasterPlaylist(outDir, renditions) {
   const lines = ["#EXTM3U"];
   for (const r of renditions) {
-    lines.push(`#EXT-X-STREAM-INF:BANDWIDTH=${r.bandwidth},RESOLUTION=${r.width}x${r.height}`);
+    lines.push(`#EXT-X-STREAM-INF:BANDWIDTH=${r.bandwidth},RESOLUTION=${r.width}x${r.height},CODECS="${HLS_CODECS}"`);
     lines.push(`${r.name}/playlist.m3u8`);
   }
   const masterPath = path.join(outDir, "master.m3u8");
