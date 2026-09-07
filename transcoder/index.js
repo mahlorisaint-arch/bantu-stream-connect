@@ -58,20 +58,42 @@ function run(cmd, args) {
   });
 }
 
+// Real production bug, confirmed 2026-09-07 on a live creator upload:
+// phones commonly store portrait video as landscape-coded pixels plus a
+// rotation flag (old-style `rotate` tag, or the newer Display Matrix
+// side_data_list this specific case used - {rotation: -90}) rather than
+// physically transposed pixels. ffmpeg's own decoder auto-rotates the
+// actual frame content during a real encode by default, so the OUTPUT
+// pixels come out correctly oriented regardless - but this JS code was
+// computing aspectRatio from the raw, pre-rotation width/height, then
+// telling ffmpeg's scale filter to fit that correctly-rotated frame into
+// the WRONG (un-rotated) target box, stretching it. Swapping width/height
+// here when the source is rotated 90/270 fixes the target box to match
+// what ffmpeg will actually produce.
 async function probeVideo(filePath) {
   const { stdout } = await run("ffprobe", [
     "-v", "error",
     "-select_streams", "v:0",
-    "-show_entries", "stream=width,height",
+    "-show_entries", "stream=width,height:stream_tags=rotate:stream_side_data=rotation",
     "-show_entries", "format=duration",
     "-of", "json",
     filePath,
   ]);
   const data = JSON.parse(stdout);
   const stream = data.streams?.[0] || {};
+  let width = stream.width || 0;
+  let height = stream.height || 0;
+
+  const rotateTag = parseInt(stream.tags?.rotate || "0", 10);
+  const sideDataRotation = stream.side_data_list?.find((sd) => sd.rotation != null)?.rotation;
+  const rotation = (((sideDataRotation ?? rotateTag) % 360) + 360) % 360;
+  if (rotation === 90 || rotation === 270) {
+    [width, height] = [height, width];
+  }
+
   return {
-    width: stream.width || 0,
-    height: stream.height || 0,
+    width,
+    height,
     duration: parseFloat(data.format?.duration || "0"),
   };
 }
