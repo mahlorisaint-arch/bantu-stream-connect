@@ -124,7 +124,14 @@
     background-color: #000;
     width: 100%;
     height: 100%;
+    /* This is just the pre-metadata-load default now - JS (video-player-
+       section.js's media:loadedmetadata handler) overrides it with the
+       real video's aspect ratio once known, so a vertical video's player
+       grows tall instead of staying pillarboxed in a 16:9 box. max-height
+       is the safety net for that: without it, a very narrow/tall source
+       could push the player past a reasonable share of the viewport. */
     aspect-ratio: 16 / 9;
+    max-height: 80vh;
 }
 
 /* Explicit Base Video Layer */

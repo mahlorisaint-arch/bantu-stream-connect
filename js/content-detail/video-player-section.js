@@ -19,6 +19,14 @@ console.log('🎬 Video Player Section Module Loading...');
 function getPlayableMediaUrl(content) {
     if (!content) return '';
 
+    // 📱 Long vertical video: set only alongside hls_manifest_url becoming
+    // a 16:9-letterboxed compatibility stream for that same content (see
+    // the transcoder) - always the true native stream when present, so it
+    // wins over everything else.
+    if (content.hls_manifest_url_vertical) {
+        return content.hls_manifest_url_vertical;
+    }
+
     // 🎬 Legacy Cloudflare Stream Manifest
     if (content.streaming_provider === 'cloudflare_stream' && content.provider_video_id) {
         return `https://videodelivery.net/${content.provider_video_id}/manifest/video.m3u8`;
@@ -957,10 +965,26 @@ function initializeEnhancedVideoPlayer() {
             }
         });
 
-        player.on('media:loadedmetadata', () => {
+        player.on('media:loadedmetadata', (data) => {
             console.log('✅ Video metadata loaded, ready to play');
             const placeholder = document.getElementById('videoPlaceholder');
             if (placeholder) placeholder.style.display = 'none';
+
+            // Real bug, confirmed 2026-09-10: .video-container had a
+            // hard-coded static aspect-ratio: 16/9, so a vertical video got
+            // shrunk into a tiny pillarboxed sliver instead of growing tall
+            // like YouTube does for portrait video. dimensions.width/height
+            // (the real decoded video size) were already flowing through
+            // this exact event, just unused - set the container's own
+            // aspect-ratio from them so it fits the real video instead of
+            // an assumed shape. max-height: 80vh (video-player.css) keeps
+            // this from growing unreasonably tall on any source.
+            const width = data && data.dimensions && data.dimensions.width;
+            const height = data && data.dimensions && data.dimensions.height;
+            const container = document.getElementById('bantuVideoContainer');
+            if (container) {
+                container.style.aspectRatio = width && height ? `${width} / ${height}` : '16 / 9';
+            }
         });
         
         // 🚨 Listen for mediaEnded event (player/playlist separation of concerns)

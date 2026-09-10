@@ -154,6 +154,38 @@ async function buildMasterPlaylist(outDir, renditions) {
   return masterPath;
 }
 
+// Old-app-compatibility path: a vertical video's Content Detail player on
+// the currently-published app can only ever get taller by chance - it
+// reads hls_manifest_url exactly as it always has and cannot be taught
+// about a new field. So for long vertical content specifically, this
+// produces a SECOND ladder that pads the source into a 16:9 box (black
+// bars left/right) instead of cropping or distorting it - a full-width,
+// normally-sized (if letterboxed) video instead of the tiny shrunk one
+// the old app's fixed-16:9-shaped layout was producing. The true native
+// vertical ladder (transcodeRendition, unchanged) still gets produced
+// too - see processVideo for how the two get assigned to
+// hls_manifest_url vs. hls_manifest_url_vertical.
+async function transcodeLetterboxedRendition(inputPath, outDir, rendition) {
+  const renditionDir = path.join(outDir, rendition.name);
+  await fs.mkdir(renditionDir, { recursive: true });
+  const width = Math.round((rendition.height * 16) / 9 / 2) * 2;
+  const playlistPath = path.join(renditionDir, "playlist.m3u8");
+  await run("ffmpeg", [
+    "-y",
+    "-i", inputPath,
+    "-vf", `scale=${width}:${rendition.height}:force_original_aspect_ratio=decrease,pad=${width}:${rendition.height}:(ow-iw)/2:(oh-ih)/2:black`,
+    "-c:v", "libx264", "-preset", "veryfast", "-profile:v", "main", "-level", "4.0", "-pix_fmt", "yuv420p",
+    "-b:v", rendition.videoBitrate,
+    "-c:a", "aac", "-b:a", rendition.audioBitrate,
+    "-hls_time", "6",
+    "-hls_playlist_type", "vod",
+    "-hls_segment_filename", path.join(renditionDir, "seg_%03d.ts"),
+    playlistPath,
+  ]);
+  const bandwidth = (parseInt(rendition.videoBitrate) + parseInt(rendition.audioBitrate)) * 1000;
+  return { ...rendition, width, bandwidth, dir: renditionDir };
+}
+
 async function extractThumbnail(inputPath, outDir, duration) {
   const timestamp = Math.min(5, Math.max(0.5, duration * 0.1));
   const thumbPath = path.join(outDir, "thumbnail.jpg");
@@ -276,6 +308,12 @@ async function processVideo(content) {
     if (!height) throw new Error("Could not determine source video resolution");
     const aspectRatio = width / height;
 
+    // Only long vertical content needs the old-app-compatibility letterboxed
+    // output - Shorts (<=60s vertical) already play correctly through a
+    // different, already-correct full-screen crop player on both platforms,
+    // and landscape video was never affected by this in the first place.
+    const needsLegacyLetterbox = aspectRatio < 1 && duration > 60;
+
     const ladder = buildRenditionLadder(height);
     console.log(`[${contentId}] transcoding ${ladder.length} rendition(s): ${ladder.map((r) => r.name).join(", ")}`);
 
@@ -291,8 +329,32 @@ async function processVideo(content) {
     const r2Prefix = `content-video-hls/${contentId}`;
     console.log(`[${contentId}] uploading output to R2 (${r2Prefix})`);
     await uploadDirToR2(outDir, r2Prefix);
+    const nativeManifestUrl = `${R2_PUBLIC_BASE}/${r2Prefix}/master.m3u8`;
 
-    const hlsManifestUrl = `${R2_PUBLIC_BASE}/${r2Prefix}/master.m3u8`;
+    // hls_manifest_url is the one field every already-published app build
+    // can read (it was compiled with only that field name known) -
+    // hls_manifest_url_vertical is new, and only code taught to look for it
+    // will ever prefer it. For qualifying content the assignment flips: the
+    // old-compatible letterboxed stream takes over the old field, and the
+    // true vertical stream moves to the new one.
+    let hlsManifestUrl = nativeManifestUrl;
+    let hlsManifestUrlVertical = null;
+
+    if (needsLegacyLetterbox) {
+      console.log(`[${contentId}] building legacy 16:9-letterboxed output for old-app compatibility`);
+      const legacyOutDir = path.join(jobDir, "legacy-output");
+      await fs.mkdir(legacyOutDir, { recursive: true });
+      const legacyRenditions = [];
+      for (const rendition of ladder) {
+        legacyRenditions.push(await transcodeLetterboxedRendition(inputPath, legacyOutDir, rendition));
+      }
+      await buildMasterPlaylist(legacyOutDir, legacyRenditions);
+      const legacyR2Prefix = `${r2Prefix}/legacy`;
+      await uploadDirToR2(legacyOutDir, legacyR2Prefix);
+      hlsManifestUrl = `${R2_PUBLIC_BASE}/${legacyR2Prefix}/master.m3u8`;
+      hlsManifestUrlVertical = nativeManifestUrl;
+    }
+
     const thumbnailUrl = content.thumbnail_url || `${R2_PUBLIC_BASE}/${r2Prefix}/thumbnail.jpg`;
 
     const { error } = await supabase
@@ -300,6 +362,7 @@ async function processVideo(content) {
       .update({
         streaming_provider: "cloudflare_r2",
         hls_manifest_url: hlsManifestUrl,
+        hls_manifest_url_vertical: hlsManifestUrlVertical,
         thumbnail_url: thumbnailUrl,
         duration: Math.round(duration),
         processing_status: "ready",
@@ -307,7 +370,7 @@ async function processVideo(content) {
       .eq("id", contentId);
     if (error) throw error;
 
-    console.log(`[${contentId}] done - ${hlsManifestUrl}`);
+    console.log(`[${contentId}] done - ${hlsManifestUrl}${hlsManifestUrlVertical ? ` (native vertical: ${hlsManifestUrlVertical})` : ""}`);
   } catch (err) {
     console.error(`[${contentId}] FAILED:`, err.stderr || err.message || err);
     await supabase.from("Content").update({ processing_status: "failed" }).eq("id", contentId);

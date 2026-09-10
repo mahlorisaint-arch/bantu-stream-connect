@@ -887,10 +887,13 @@
     margin: 0 0 12px 0 !important;
   }
   
-  .video-container {
-    aspect-ratio: 16/9 !important;
-  }
-  
+  /* .video-container's aspect-ratio is no longer forced here - an
+     !important rule would silently defeat the dynamic real-aspect-ratio
+     sizing set by video-player-section.js's media:loadedmetadata handler
+     (inline styles lose to !important stylesheet rules regardless of
+     source order). video-player.css's own aspect-ratio/max-height rules
+     apply at every width, mobile included. */
+
   .bantu-logo {
     width: 50px !important;
     height: 50px !important;
@@ -1135,10 +1138,13 @@
   }
   
   /* Video player - KEEP FULL SIZE */
-  .video-container {
-    aspect-ratio: 16/9 !important;
-  }
-  
+  /* .video-container's aspect-ratio is no longer forced here - an
+     !important rule would silently defeat the dynamic real-aspect-ratio
+     sizing set by video-player-section.js's media:loadedmetadata handler
+     (inline styles lose to !important stylesheet rules regardless of
+     source order). video-player.css's own aspect-ratio/max-height rules
+     apply at every width, mobile included. */
+
   .bantu-logo {
     width: 40px !important;
     height: 40px !important;

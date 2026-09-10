@@ -535,7 +535,14 @@ async function setCurrentContent(content, index = null) {
     }
     
     window.currentContent = content;
-    
+
+    // Realtime engagement subscriptions are filtered per content_id, so
+    // they must be re-established whenever the current content changes
+    // (playlist/queue navigation happens without a full page reload).
+    if (window.videoPlayerFeatures?.setupRealtimeSubscriptions) {
+        window.videoPlayerFeatures.setupRealtimeSubscriptions();
+    }
+
     if (index !== undefined && index !== null) {
         window.currentPlaylistIndex = index;
     }
@@ -1508,7 +1515,7 @@ async function loadCriticalContentData(contentId) {
 
     const streamingDataQuery = window.supabaseClient
         .from('Content')
-        .select('quality_profiles, hls_manifest_url, data_saver_url')
+        .select('quality_profiles, hls_manifest_url, hls_manifest_url_vertical, data_saver_url')
         .eq('id', contentId)
         .maybeSingle();
 
@@ -1550,6 +1557,7 @@ async function loadCriticalContentData(contentId) {
         is_completed: watchProgress?.is_completed || false,
         quality_profiles: streamingData?.quality_profiles || [],
         hls_manifest_url: streamingData?.hls_manifest_url || null,
+        hls_manifest_url_vertical: streamingData?.hls_manifest_url_vertical || null,
         data_saver_url: streamingData?.data_saver_url || null,
         _cachedAt: Date.now()
     };
