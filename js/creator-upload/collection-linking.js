@@ -76,6 +76,20 @@ async function findOrCreateCreatorPlaylist({ creatorId, name, playlistType, genr
 }
 
 async function linkContentToCollection(playlistId, contentId, { sortIndex, itemType, trackNumber, seasonNumber, displayTitleOverride }) {
+    // Real bug, confirmed 2026-09-13 on a live album ("Reign Supreme"):
+    // sortIndex was always assigned from a simple upload-order counter
+    // (batch-upload-queue.js's nextSortIndex++), completely independent of
+    // trackNumber - the number a creator actually typed per row. The
+    // player only ever sorts by sort_index (playlist-sidebar.js), never
+    // track_number, so an album picked/uploaded in anything other than
+    // perfect track order (e.g. a file picker's alphabetical default)
+    // played back in upload order, not the artist's intended tracklist.
+    // When a real track number is given, it - not upload order - decides
+    // playback position. Series/Podcast episodes never pass trackNumber
+    // (see batch-upload-queue.js's `genre === 'Music' ? row.number : null`
+    // callers), so this is a no-op for those, unchanged.
+    const effectiveSortIndex = (trackNumber != null && trackNumber > 0) ? trackNumber - 1 : sortIndex;
+
     // item_type is uppercase ('TRACK'/'EPISODE') on every existing row —
     // matched here even though nothing currently reads it case-sensitively,
     // to stay consistent with real data rather than introduce a second casing.
@@ -84,7 +98,7 @@ async function linkContentToCollection(playlistId, contentId, { sortIndex, itemT
         .insert([{
             playlist_id: playlistId,
             content_id: contentId,
-            sort_index: sortIndex,
+            sort_index: effectiveSortIndex,
             item_type: itemType,
             track_number: trackNumber ?? null,
             disc_number: itemType === 'TRACK' ? 1 : null,
@@ -99,7 +113,7 @@ async function linkContentToCollection(playlistId, contentId, { sortIndex, itemT
         .insert([{
             playlist_id: playlistId,
             content_id: contentId,
-            position: sortIndex
+            position: effectiveSortIndex
         }]);
 
     if (cpiError) throw new Error(`creator_playlist_items insert failed: ${cpiError.message}`);
