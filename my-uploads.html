@@ -389,6 +389,15 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">Thumbnail</label>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <img id="editThumbnailPreview" src="" alt="Thumbnail preview" style="width:96px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--card-border);background:rgba(0,0,0,0.3);display:none;">
+            <input type="file" id="editThumbnailFile" accept="image/*" class="form-input" style="flex:1;">
+          </div>
+          <input type="text" id="editThumbnailUrl" class="form-input" placeholder="Or paste a thumbnail URL" style="margin-top:8px;">
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Genre/Category</label>
           <select id="editGenre" class="form-select">
             <option value="">Select Genre</option>
@@ -1481,11 +1490,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('editDescription').value = content.description || '';
     document.getElementById('editGenre').value = content.genre || '';
     document.getElementById('editStatus').value = content.status || 'draft';
-    
+
+    // Reset thumbnail inputs from any previous edit session, then show the
+    // current thumbnail (if any) in the preview.
+    const thumbFileInput = document.getElementById('editThumbnailFile');
+    const thumbUrlInput = document.getElementById('editThumbnailUrl');
+    const thumbPreview = document.getElementById('editThumbnailPreview');
+    thumbFileInput.value = '';
+    thumbUrlInput.value = '';
+    const existingThumbUrl = content.thumbnail_url
+      ? (content.thumbnail_url.startsWith('http') ? content.thumbnail_url : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${content.thumbnail_url.replace(/^\/+/, '')}`)
+      : '';
+    thumbPreview.src = existingThumbUrl;
+    thumbPreview.style.display = existingThumbUrl ? 'block' : 'none';
+
     document.getElementById('editModalTitle').textContent = `Edit: ${content.title || 'Content'}`;
     editModal.style.display = 'flex';
   }
-  
+
+  // Preview a newly picked thumbnail file immediately, same as the main
+  // upload flow's thumbnail zone.
+  document.getElementById('editThumbnailFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    document.getElementById('editThumbnailUrl').value = '';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const preview = document.getElementById('editThumbnailPreview');
+      preview.src = ev.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Picking a file and pasting a URL are mutually exclusive - clearing
+  // whichever one the creator isn't using keeps the priority order in
+  // handleSaveEdit() unambiguous.
+  document.getElementById('editThumbnailUrl').addEventListener('input', (e) => {
+    if (e.target.value.trim()) document.getElementById('editThumbnailFile').value = '';
+  });
+
+  // ==========================================
+  // Edit modal thumbnail upload - same get-upload-url edge function
+  // handshake used by creator-upload.html (BANTU_UPLOAD_ENGINE), ported
+  // inline rather than loading that whole engine on a page that isn't the
+  // upload flow - same choice already made in create-communitypulse.html.
+  // ==========================================
+  async function editModalUploadThumbnail(file) {
+    const { data, error } = await window.supabaseClient.functions.invoke('get-upload-url', {
+      body: { mediaType: 'image', fileName: file.name }
+    });
+    if (error) throw new Error(error.message || 'Failed to secure upload authorization channel.');
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', data.uploadUrl);
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed with status: ${xhr.status}`));
+      xhr.onerror = () => reject(new Error('Network connection dropped during transmission.'));
+      xhr.send(file);
+    });
+    return data.fileUrl;
+  }
+
   // ✅ SAVE EDIT HANDLER
   async function handleSaveEdit() {
     try {
@@ -1494,28 +1559,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       const description = document.getElementById('editDescription').value.trim();
       const genre = document.getElementById('editGenre').value;
       const status = document.getElementById('editStatus').value;
-      
+
       if (!title) {
         showToast('Title is required', 'error');
         return;
       }
-      
+
       // Show loading toast
       showToast('Updating content...', 'info');
-      
+
+      // Priority: a newly picked file > a pasted URL > leave the existing
+      // thumbnail_url untouched.
+      const thumbFile = document.getElementById('editThumbnailFile').files[0];
+      const pastedThumbUrl = document.getElementById('editThumbnailUrl').value.trim();
+      let thumbnailUrl;
+      if (thumbFile) {
+        thumbnailUrl = await editModalUploadThumbnail(thumbFile);
+      } else if (pastedThumbUrl) {
+        thumbnailUrl = pastedThumbUrl;
+      }
+
+      const updatePayload = {
+        title: title,
+        description: description,
+        genre: genre,
+        status: status,
+        updated_at: new Date().toISOString()
+      };
+      if (thumbnailUrl) updatePayload.thumbnail_url = thumbnailUrl;
+
       const { error } = await window.supabaseClient
         .from('Content')
-        .update({
-          title: title,
-          description: description,
-          genre: genre,
-          status: status,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', contentId);
-      
+
       if (error) throw error;
-      
+
       // Update local data
       const contentIndex = allContent.findIndex(c => String(c.id) === String(contentId));
       if (contentIndex !== -1) {
@@ -1524,13 +1603,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           title: title,
           description: description,
           genre: genre,
-          status: status
+          status: status,
+          ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {})
         };
       }
-      
+
       // Re-filter and render
       filterContent(selectedFilter);
-      
+
       editModal.style.display = 'none';
       showToast('Content updated successfully!', 'success');
     } catch (error) {
@@ -1748,8 +1828,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                       item.creator || 
                       'Creator';
       const creatorId = item.user_profiles?.id || item.user_id;
-      const thumbnailUrl = item.thumbnail_url 
-        ? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`
+      const thumbnailUrl = item.thumbnail_url
+        ? (item.thumbnail_url.startsWith('http') ? item.thumbnail_url : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`)
         : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
       
       return `
