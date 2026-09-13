@@ -70,11 +70,23 @@ function run(cmd, args) {
 // the WRONG (un-rotated) target box, stretching it. Swapping width/height
 // here when the source is rotated 90/270 fixes the target box to match
 // what ffmpeg will actually produce.
+// Real production incident, confirmed 2026-09-13: a creator's raw upload
+// had a fully intact 158.7s audio track muxed against a video track that
+// silently stopped at 39.5s (a broken export on the creator's end, not
+// anything this pipeline did). `format=duration` reports the container's
+// overall duration, which a still-complete audio track makes look
+// perfectly normal - so the old probeVideo returned 158.7s, the transcoder
+// dutifully encoded exactly what video frames existed (~35s after HLS
+// segmenting) with ffmpeg exiting 0 the whole way, and the job "succeeded"
+// with a duration in the database that had nothing to do with the actual
+// playable video. Reading the *video stream's own* duration here and
+// comparing it against the container's lets processVideo catch this before
+// publishing, instead of a creator/user discovering it by pressing play.
 async function probeVideo(filePath) {
   const { stdout } = await run("ffprobe", [
     "-v", "error",
     "-select_streams", "v:0",
-    "-show_entries", "stream=width,height:stream_tags=rotate:stream_side_data=rotation",
+    "-show_entries", "stream=width,height,duration:stream_tags=rotate:stream_side_data=rotation",
     "-show_entries", "format=duration",
     "-of", "json",
     filePath,
@@ -91,11 +103,35 @@ async function probeVideo(filePath) {
     [width, height] = [height, width];
   }
 
+  const containerDuration = parseFloat(data.format?.duration || "0");
+  const videoStreamDuration = parseFloat(stream.duration || "0");
+
   return {
     width,
     height,
-    duration: parseFloat(data.format?.duration || "0"),
+    duration: containerDuration,
+    videoStreamDuration,
   };
+}
+
+// Tolerance covers normal, harmless discrepancies (container duration
+// rounding, a trailing audio fade after the last video frame) without
+// missing a real broken-video-track case, where the gap is typically most
+// of the file, not a couple of seconds.
+const VIDEO_TRACK_DURATION_TOLERANCE_SECONDS = 5;
+const VIDEO_TRACK_DURATION_TOLERANCE_RATIO = 0.9;
+
+function assertVideoTrackMatchesContainer(videoStreamDuration, containerDuration) {
+  if (!videoStreamDuration || !containerDuration) return; // can't compare - let it through rather than false-failing
+  const shortfall = containerDuration - videoStreamDuration;
+  const ratio = videoStreamDuration / containerDuration;
+  if (shortfall > VIDEO_TRACK_DURATION_TOLERANCE_SECONDS && ratio < VIDEO_TRACK_DURATION_TOLERANCE_RATIO) {
+    throw new Error(
+      `Source video track (${videoStreamDuration.toFixed(1)}s) ends well before the file's overall duration ` +
+      `(${containerDuration.toFixed(1)}s) - the upload is likely corrupted (a broken/incomplete video track, ` +
+      `often with an intact audio track masking it). Re-export and re-upload the original file.`
+    );
+  }
 }
 
 function buildRenditionLadder(sourceHeight) {
@@ -304,8 +340,9 @@ async function processVideo(content) {
     }
 
     console.log(`[${contentId}] probing source`);
-    const { width, height, duration } = await probeVideo(inputPath);
+    const { width, height, duration, videoStreamDuration } = await probeVideo(inputPath);
     if (!height) throw new Error("Could not determine source video resolution");
+    assertVideoTrackMatchesContainer(videoStreamDuration, duration);
     const aspectRatio = width / height;
 
     // Only long vertical content needs the old-app-compatibility letterboxed
