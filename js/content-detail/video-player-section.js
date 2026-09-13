@@ -561,7 +561,35 @@ async function loadContentIntoPlayer(content, index = null) {
         console.warn('⚠️ loadContentIntoPlayer called with no content');
         return;
     }
-    
+
+    // A video uploaded through the R2 transcoder pipeline isn't watchable
+    // until the worker finishes (real minutes, not the near-instant
+    // readiness Cloudflare Stream had) - without this check the player
+    // falls through to "No playable media found" (getPlayableMediaUrl
+    // returns null/empty) instead of a real processing message, and never
+    // learns later that the video became ready. Real bug, confirmed
+    // 2026-09-13: a video finished transcoding successfully within
+    // minutes, but this screen kept showing an error/blank player over an
+    // hour later since nothing here ever re-checked. See
+    // video-player-features.js's setupRealtimeSubscriptions() for the
+    // live re-check that clears this once processing_status flips.
+    if (content.media_type === 'video' && content.processing_status && content.processing_status !== 'ready') {
+        const playerContainer = document.getElementById('inlinePlayer');
+        if (playerContainer) {
+            const isFailed = content.processing_status === 'failed';
+            playerContainer.style.display = 'block';
+            playerContainer.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;min-height:280px;background:#0a0a0a;color:#fff;text-align:center;padding:24px;">
+                    <i class="fas ${isFailed ? 'fa-triangle-exclamation' : 'fa-spinner fa-spin'}" style="font-size:32px;color:${isFailed ? '#EF4444' : '#00E5FF'};"></i>
+                    <div style="font-size:16px;font-weight:600;">${isFailed ? 'Processing failed' : 'Processing your video…'}</div>
+                    <div style="font-size:13px;color:#9CA3AF;max-width:320px;">${isFailed ? 'Something went wrong while preparing this video. Please try re-uploading it.' : 'This usually takes a few minutes. This page will update on its own once it\'s ready.'}</div>
+                </div>`;
+        }
+        const placeholder = document.getElementById('videoPlaceholder');
+        if (placeholder) placeholder.style.display = 'none';
+        return;
+    }
+
     const player = document.getElementById('inlinePlayer');
     const videoElement = document.getElementById('inlineVideoPlayer');
     const placeholder = document.getElementById('videoPlaceholder');

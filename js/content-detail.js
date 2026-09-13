@@ -1515,7 +1515,7 @@ async function loadCriticalContentData(contentId) {
 
     const streamingDataQuery = window.supabaseClient
         .from('Content')
-        .select('quality_profiles, hls_manifest_url, hls_manifest_url_vertical, data_saver_url')
+        .select('quality_profiles, hls_manifest_url, hls_manifest_url_vertical, data_saver_url, processing_status')
         .eq('id', contentId)
         .maybeSingle();
 
@@ -1559,6 +1559,7 @@ async function loadCriticalContentData(contentId) {
         hls_manifest_url: streamingData?.hls_manifest_url || null,
         hls_manifest_url_vertical: streamingData?.hls_manifest_url_vertical || null,
         data_saver_url: streamingData?.data_saver_url || null,
+        processing_status: streamingData?.processing_status || null,
         _cachedAt: Date.now()
     };
     

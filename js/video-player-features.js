@@ -980,65 +980,120 @@
 
     setupRealtimeSubscriptions() {
       if (!window.supabaseClient) return;
-      
-      console.log('📡 Setting up realtime subscriptions for engagement updates...');
-      
+
+      // Content changes within a single page load (playlist/queue
+      // autoplay, manual next/prev) without a full reload, so this must
+      // be safe to call again per content change - tear down whatever
+      // was subscribed for the previous content before resubscribing.
+      this._cleanupRealtimeSubscriptions();
+
+      const contentId = window.currentContent?.id;
+      if (!contentId) return;
+
+      console.log(`📡 Setting up realtime subscriptions for engagement updates (content ${contentId})...`);
+
+      // Filtered to this content only - previously these subscribed with
+      // no filter at all, so every open tab received every like/view/
+      // favorite/watch-later change happening platform-wide and
+      // discarded almost all of it client-side in _handleEngagementChange.
+      const contentFilter = `content_id=eq.${contentId}`;
+
       // Subscribe to content_likes changes
       const likesChannel = window.supabaseClient
-        .channel('engagement-likes-changes')
+        .channel(`engagement-likes-changes-${contentId}`)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'content_likes'
+          table: 'content_likes',
+          filter: contentFilter
         }, (payload) => {
           this._handleEngagementChange('like', payload);
         });
-      
+
       likesChannel.subscribe();
       this._realtimeChannels.push(likesChannel);
-      
+
       // Subscribe to favorites changes
       const favoritesChannel = window.supabaseClient
-        .channel('engagement-favorites-changes')
+        .channel(`engagement-favorites-changes-${contentId}`)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'favorites'
+          table: 'favorites',
+          filter: contentFilter
         }, (payload) => {
           this._handleEngagementChange('favorite', payload);
         });
-      
+
       favoritesChannel.subscribe();
       this._realtimeChannels.push(favoritesChannel);
-      
+
       // Subscribe to watch_later changes
       const watchLaterChannel = window.supabaseClient
-        .channel('engagement-watchlater-changes')
+        .channel(`engagement-watchlater-changes-${contentId}`)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'watch_later'
+          table: 'watch_later',
+          filter: contentFilter
         }, (payload) => {
           this._handleEngagementChange('watchLater', payload);
         });
-      
+
       watchLaterChannel.subscribe();
       this._realtimeChannels.push(watchLaterChannel);
-      
+
       // Subscribe to content_views changes
       const viewsChannel = window.supabaseClient
-        .channel('engagement-views-changes')
+        .channel(`engagement-views-changes-${contentId}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
-          table: 'content_views'
+          table: 'content_views',
+          filter: contentFilter
         }, (payload) => {
           this._handleEngagementChange('view', payload);
         });
-      
+
       viewsChannel.subscribe();
       this._realtimeChannels.push(viewsChannel);
-      
+
+      // Subscribe to the Content row itself - so a still-processing video
+      // learns the moment it becomes ready/failed instead of staying stuck
+      // on the processing/error state until a manual refresh. Real bug,
+      // confirmed 2026-09-13: a video finished transcoding successfully
+      // within minutes, but the screen showed it as still processing over
+      // an hour later since nothing here ever re-checked. See
+      // video-player-section.js's loadContentIntoPlayer() for the
+      // matching processing-state gate this re-triggers.
+      const processingStatusChannel = window.supabaseClient
+        .channel(`content-processing-status-${contentId}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Content',
+          filter: `id=eq.${contentId}`
+        }, (payload) => {
+          const newStatus = payload.new?.processing_status;
+          if (newStatus !== 'ready' && newStatus !== 'failed') return;
+          // Surgical update, not a wholesale replace - window.currentContent
+          // also carries enrichment fields (creator info, etc.) from the
+          // initial fetch that this raw table-row payload doesn't have.
+          if (window.currentContent) {
+            window.currentContent.processing_status = payload.new.processing_status;
+            window.currentContent.hls_manifest_url = payload.new.hls_manifest_url;
+            window.currentContent.hls_manifest_url_vertical = payload.new.hls_manifest_url_vertical;
+            window.currentContent.streaming_provider = payload.new.streaming_provider;
+            window.currentContent.provider_video_id = payload.new.provider_video_id;
+          }
+          if (typeof loadContentIntoPlayer === 'function') {
+            loadContentIntoPlayer(window.currentContent || payload.new);
+          }
+        });
+
+      processingStatusChannel.subscribe();
+      this._realtimeChannels.push(processingStatusChannel);
+
       console.log('✅ Realtime subscriptions established');
     }
     
