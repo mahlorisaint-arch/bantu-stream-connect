@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "NZ7P7FLVC5.com.bsc.app",
+        "paths": ["/shorts/*", "/shorts-detail.html"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+# Shorts Phase 2 (Part C §6 / Part D §10) - Android App Links and iOS
+# Universal Links both fetch these two files directly (no HTML, no JS) to
+# verify this domain is allowed to open BSC. Apple's fetcher in particular
+# requires apple-app-site-association to be served as JSON even though the
+# file itself has no .json extension - Cloudflare Pages' static server
+# would otherwise guess application/octet-stream for an extensionless
+# file and fail verification silently.
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+
+/.well-known/assetlinks.json
+  Content-Type: application/json

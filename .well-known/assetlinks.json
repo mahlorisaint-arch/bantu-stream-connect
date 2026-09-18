@@ -1,0 +1,15 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.bsc.app",
+      "sha256_cert_fingerprints": [
+        "93:B2:90:7B:51:97:94:9A:A9:96:63:01:8E:5B:49:D7:4A:81:E7:B2:73:F6:CE:22:DA:49:BA:01:1C:08:BE:4D",
+        "29:34:6C:A9:E7:62:47:CE:5D:13:E6:DA:0F:B1:84:ED:49:02:DB:97:50:5E:F9:BE:02:61:74:63:7F:C8:61:1F",
+        "F6:85:FA:76:F3:E1:04:DB:3C:41:26:82:96:24:CC:49:80:78:08:6D:61:95:AF:A3:3C:3B:A9:F0:13:91:80:95",
+        "53:6E:0D:F4:24:BB:99:FF:EB:E3:41:D5:A5:47:CE:C3:6F:CF:AF:14:A1:11:B4:88:A4:D4:66:1E:F4:72:61:97"
+      ]
+    }
+  }
+]
